@@ -262,6 +262,25 @@
       "permissions": { "aiToolAccess": true },
       "screenshots": [],
       "readme": "# Regex Builder\n\n正则构建、测试、解释，纯 MCP 最轻量插件。"
+    },
+    {
+      "id": "polaris.template",
+      "name": "Template Vault",
+      "version": "1.0.0",
+      "description": "消息/邮件模板库：存常用回复模板（拒绝/催办/通知/感谢/请假），{{变量}}填充，分类管理，AI 可调用渲染。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["template", "email", "snippet", "mcp", "panel"],
+      "icon": "Files",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/template",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/template/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/template/template.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/template/update.json",
+      "sha256": "d8a2349700d5b60ff48ce1bed3284b135e62144fc90649753b0c7b3190843da7",
+      "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Template Vault\n\n消息/邮件模板库，变量填充，分类管理。"
     }
   ]
 }

@@ -1,0 +1,36 @@
+{
+  "id": "polaris.template",
+  "name": "Template Vault",
+  "version": "1.0.0",
+  "description": "消息/邮件模板库：存常用回复模板（拒绝/催办/通知/感谢/请假），{{变量}}填充，分类管理，AI 可调用渲染。服务上班族重复沟通。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "template.panel",
+        "area": "activityBar",
+        "panelType": "templateVault",
+        "icon": "Files",
+        "labelKey": "labels.templatePanel",
+        "labelDefault": "Templates",
+        "order": 91
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js" },
+    "mcpServers": [
+      {
+        "id": "template-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/template",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/template/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/template/template.zip"
+  }
+}
