@@ -224,6 +224,25 @@
       "permissions": { "aiToolAccess": true, "network": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Habit Tracker\n\n习惯追踪，定时打卡，连续天数统计。"
+    },
+    {
+      "id": "polaris.cheatsheet",
+      "name": "Cheatsheet",
+      "version": "1.0.0",
+      "description": "本地命令速查库：git/vim/docker/快捷键存入，分类与全文搜索，AI 可调用查询直接回答怎么用。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["cheatsheet", "command", "shortcut", "mcp", "panel"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cheatsheet",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cheatsheet/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cheatsheet/cheatsheet.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cheatsheet/update.json",
+      "sha256": "bb9847eebea8819d4cd1aaf9da436101add1dcaa6dec26daa8d567f9c0ef015c",
+      "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Cheatsheet\n\n本地命令速查库，分类搜索，AI 查询。"
     }
   ]
 }

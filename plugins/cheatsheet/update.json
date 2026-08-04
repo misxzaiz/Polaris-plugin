@@ -1,0 +1,45 @@
+{
+  "id": "polaris.cheatsheet",
+  "name": "Cheatsheet",
+  "version": "1.0.0",
+  "description": "本地命令速查库：git/vim/docker/快捷键存入，分类与全文搜索，AI 可调用查询工具直接回答怎么用。服务开发者命令速查、学生软件快捷键、上班族 Excel/PPT 操作。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "cheatsheet.panel",
+        "area": "activityBar",
+        "panelType": "cheatsheet",
+        "icon": "Terminal",
+        "labelKey": "labels.cheatsheetPanel",
+        "labelDefault": "Cheatsheet",
+        "order": 90
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js" },
+    "mcpServers": [
+      {
+        "id": "cheatsheet-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "cheatsheet-card",
+        "mcpServerId": "cheatsheet-server",
+        "tools": ["search_commands"],
+        "mode": "result",
+        "entry": "./dist/card.js"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cheatsheet",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cheatsheet/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cheatsheet/cheatsheet.zip"
+  }
+}
