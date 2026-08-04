@@ -1,7 +1,7 @@
 {
   "id": "polaris.marketplace",
   "name": "Polaris 插件商城",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件。提供 ActivityBar 面板与 MCP 工具。",
   "enabledByDefault": true,
   "contributes": {
@@ -25,7 +25,9 @@
         "id": "marketplace-server",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

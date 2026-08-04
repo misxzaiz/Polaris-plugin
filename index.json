@@ -30,8 +30,8 @@
     {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",
-      "version": "1.0.0",
-      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件。提供 ActivityBar 面板与 MCP 工具。",
+      "version": "1.1.0",
+      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新。提供 ActivityBar 面板与 MCP 工具。",
       "author": "Polaris",
       "category": "productivity",
       "tags": ["marketplace", "panel", "mcp", "installer"],
@@ -41,10 +41,10 @@
       "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/plugin.json",
       "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/update.json",
-      "sha256": "13f5447acd1031c92bee65a124d29052236cff960306a7e2a4d16407b9245f24",
+      "sha256": "db2ff74578e4aaf470f47e84aa8f4c4cb6054f98700afb7a14bbd1ae14d58e9d",
       "permissions": { "aiToolAccess": true, "network": true, "appConfigRead": true },
       "screenshots": [],
-      "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件。"
+      "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。"
     }
   ]
 }

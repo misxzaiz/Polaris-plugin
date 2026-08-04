@@ -84,6 +84,44 @@ const tools = [
       },
       required: ['id']
     }
+  },
+  {
+    name: 'list_installed',
+    description: '列出本地已安装的 Polaris 插件（含 installPath / 版本 / 来源）。',
+    inputSchema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'uninstall_plugin',
+    description: '卸载已安装的插件。需先通过 list_installed 获取 installPath。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        installPath: { type: 'string', description: '插件安装路径（来自 list_installed）' }
+      },
+      required: ['installPath']
+    }
+  },
+  {
+    name: 'check_plugin_update',
+    description: '检查已安装插件是否有新版本（读取其 origin.updateUrl 比对版本）。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        installPath: { type: 'string', description: '插件安装路径' }
+      },
+      required: ['installPath']
+    }
+  },
+  {
+    name: 'apply_plugin_update',
+    description: '应用插件更新：下载新版本并替换。需先 installPath。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        installPath: { type: 'string', description: '插件安装路径' }
+      },
+      required: ['installPath']
+    }
   }
 ]
 
@@ -130,6 +168,36 @@ async function handleCall(name, args) {
       downloadUrl: p.downloadUrl,
       scope: args.scope || 'user',
       instruction: `在 Polaris 设置 → 插件 → 远程安装，粘贴此 downloadUrl；或让 AI 调用 installRemotePlugin 完成：${p.downloadUrl}`
+    }
+  }
+
+  // 以下工具操作本地已装插件。MCP server 为独立 Node 进程，无法直接调用
+  // Tauri 命令，因此返回操作指引与所需参数，由面板或 AI 在宿主侧执行。
+  if (name === 'list_installed') {
+    return {
+      note: 'MCP 进程无法直接读取本地已装列表。请在 Polaris 商城面板查看「已装」标签，',
+      hint: '或由 AI 引导用户打开 设置 → 插件 查看已装插件及其 installPath。'
+    }
+  }
+
+  if (name === 'uninstall_plugin') {
+    return {
+      installPath: args.installPath,
+      instruction: `调用 Polaris 命令 plugin_uninstall_local，参数 installPath="${args.installPath}"。面板的「已装」标签提供一键卸载。`
+    }
+  }
+
+  if (name === 'check_plugin_update') {
+    return {
+      installPath: args.installPath,
+      instruction: `调用 Polaris 命令 plugin_check_update，参数 installPath="${args.installPath}"。返回 updateAvailable/latestVersion/downloadUrl。面板「已装」标签提供一键检查。`
+    }
+  }
+
+  if (name === 'apply_plugin_update') {
+    return {
+      installPath: args.installPath,
+      instruction: `调用 Polaris 命令 plugin_apply_update，参数 installPath="${args.installPath}"。面板「已装」标签提供一键更新。`
     }
   }
 
