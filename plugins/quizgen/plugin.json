@@ -1,0 +1,33 @@
+{
+  "id": "polaris.quizgen",
+  "name": "Quiz Gen",
+  "version": "1.0.0",
+  "description": "即时测验生成器：AI 从任意文本生成选择题/填空题，ChatCard 交互式答题，即时评分反馈。服务学生考前自测。",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "quizgen-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "quizgen-card",
+        "mcpServerId": "quizgen-server",
+        "tools": ["generate_quiz"],
+        "mode": "interaction",
+        "entry": "./dist/card.js"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/quizgen",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quizgen/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quizgen/quizgen.zip"
+  }
+}

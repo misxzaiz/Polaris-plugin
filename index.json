@@ -281,6 +281,25 @@
       "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Template Vault\n\n消息/邮件模板库，变量填充，分类管理。"
+    },
+    {
+      "id": "polaris.quizgen",
+      "name": "Quiz Gen",
+      "version": "1.0.0",
+      "description": "即时测验生成器：AI 从任意文本生成选择题/填空题，ChatCard 交互式答题，即时评分反馈。服务学生考前自测。",
+      "author": "Polaris",
+      "category": "education",
+      "tags": ["quiz", "test", "chatcard", "interaction", "mcp"],
+      "icon": "CheckSquare",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/quizgen",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quizgen/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quizgen/quizgen.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quizgen/update.json",
+      "sha256": "89eaf20e581591c7981491466f5daed6798f3121d93e26562124b6d3b8b69a5c",
+      "permissions": { "aiToolAccess": true },
+      "screenshots": [],
+      "readme": "# Quiz Gen\n\n即时测验生成，ChatCard 交互答题，评分反馈。"
     }
   ]
 }
