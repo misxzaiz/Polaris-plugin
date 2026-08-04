@@ -59,6 +59,27 @@
       },
       "screenshots": [],
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。"
+    },
+    {
+      "id": "polaris.diagram",
+      "name": "Diagram Studio",
+      "version": "1.0.0",
+      "description": "对话式图表工作台：AI 用自然语言生成 Mermaid 图表，ChatCard 渲染，Panel 提供编辑、实时预览与 SVG/PNG 导出。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["diagram", "mermaid", "mcp", "panel", "chatcard"],
+      "icon": "Code2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/diagram",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diagram/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diagram/diagram.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diagram/update.json",
+      "sha256": "5b18a62d9564a979eaa84416eef72f017469e05fc573b185902931bf6d20af97",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Diagram Studio\n\n自然语言 → Mermaid 图表，对话式迭代，面板编辑与导出。"
     }
   ]
 }
