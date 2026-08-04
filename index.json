@@ -104,6 +104,27 @@
       },
       "screenshots": [],
       "readme": "# Recall Cards\n\nAI 从笔记生成记忆卡，FSRS 间隔复习，对话式交互答题。"
+    },
+    {
+      "id": "polaris.minutes",
+      "name": "Minutes Craft",
+      "version": "1.0.0",
+      "description": "会议纪要/周报/standup 结构化工作台：AI 按模板提炼转写为议题/决策/任务，Panel 编辑导出 Markdown，ChatCard 分节渲染。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["meeting", "report", "markdown", "mcp", "panel"],
+      "icon": "ClipboardList",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/minutes",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/minutes/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/minutes/minutes.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/minutes/update.json",
+      "sha256": "a6f2f56a1250f6c2bee90db97a08f57503d963bb1bce601b5b5585afcd3d47a5",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Minutes Craft\n\n会议纪要/周报/standup 结构化提炼，模板化导出。"
     }
   ]
 }
