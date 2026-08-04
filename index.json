@@ -243,6 +243,25 @@
       "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Cheatsheet\n\n本地命令速查库，分类搜索，AI 查询。"
+    },
+    {
+      "id": "polaris.regex",
+      "name": "Regex Builder",
+      "version": "1.0.0",
+      "description": "正则构建与测试器：AI 描述意图生成正则，执行匹配返回结果，逐段解释语法。纯 MCP 工具。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["regex", "mcp", "lightweight"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/regex",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex/regex.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex/update.json",
+      "sha256": "be839ffe2eb412cfa7b7367226dfa3ce00b4dbb11e3328b7f48b5a5266cabe33",
+      "permissions": { "aiToolAccess": true },
+      "screenshots": [],
+      "readme": "# Regex Builder\n\n正则构建、测试、解释，纯 MCP 最轻量插件。"
     }
   ]
 }
