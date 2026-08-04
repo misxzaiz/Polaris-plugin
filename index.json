@@ -338,6 +338,25 @@
       "permissions": { "aiToolAccess": true },
       "screenshots": [],
       "readme": "# JSON Explorer\n\nJSON 树形浏览，路径提取，搜索。"
+    },
+    {
+      "id": "polaris.link",
+      "name": "Link Vault",
+      "version": "1.0.0",
+      "description": "书签管理器：存 URL+标题+标签+描述，全文搜索，AI 可调用查询注入对话。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["bookmark", "link", "url", "mcp", "panel"],
+      "icon": "Globe2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/link",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/link/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/link/link.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/link/update.json",
+      "sha256": "1d29f64e0ff2c1709ff7160eed10a5238b7c2c0e646ad1102c36e7d3071897be",
+      "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Link Vault\n\n书签管理，全文搜索，AI 查询。"
     }
   ]
 }

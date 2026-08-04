@@ -1,0 +1,11 @@
+{
+  "name": "polaris-link-panel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Link Vault 面板（打包用）",
+  "scripts": {
+    "build:panel": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build": "npm run build:panel"
+  },
+  "devDependencies": { "esbuild": "^0.23.0" }
+}

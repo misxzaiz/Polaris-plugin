@@ -1,0 +1,36 @@
+{
+  "id": "polaris.link",
+  "name": "Link Vault",
+  "version": "1.0.0",
+  "description": "书签管理器：存 URL+标题+标签+描述，全文搜索，AI 可调用查询注入对话。服务学生资料链接/上班族项目参考/开发者工具文档统一管理。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "link.panel",
+        "area": "activityBar",
+        "panelType": "linkVault",
+        "icon": "Globe2",
+        "labelKey": "labels.linkPanel",
+        "labelDefault": "Links",
+        "order": 93
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js" },
+    "mcpServers": [
+      {
+        "id": "link-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/link",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/link/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/link/link.zip"
+  }
+}
