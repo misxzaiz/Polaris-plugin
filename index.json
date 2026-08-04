@@ -205,6 +205,25 @@
       "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Knowledge Base\n\n本地知识库，全文检索，AI 可调用注入上下文。"
+    },
+    {
+      "id": "polaris.habit",
+      "name": "Habit Tracker",
+      "version": "1.0.0",
+      "description": "习惯追踪与定时打卡：Service 定时检查到期，ChatCard 交互式询问，Panel 统计连续天数。喝水/站立/专注习惯养成。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["habit", "streak", "service", "interaction", "panel"],
+      "icon": "Target",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/habit",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/habit/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/habit/habit.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/habit/update.json",
+      "sha256": "1f970067dcebb82b610d585d843ab6e254177ef4a95f5381363c73cc8cac7490",
+      "permissions": { "aiToolAccess": true, "network": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Habit Tracker\n\n习惯追踪，定时打卡，连续天数统计。"
     }
   ]
 }
