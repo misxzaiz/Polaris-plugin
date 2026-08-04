@@ -167,6 +167,25 @@
       "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Literature Matrix\n\n文献结构化提取，对比矩阵，多格式引用导出。"
+    },
+    {
+      "id": "polaris.agenttrace",
+      "name": "Agent Trace",
+      "version": "1.0.0",
+      "description": "MCP 工具调用追踪器：记录入参/出参/耗时/错误，时间线可视化，导出 JSONL/CSV。调试 stdio 不透明与 schema 漂移。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["observability", "debug", "trace", "mcp", "panel"],
+      "icon": "Activity",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agent-trace",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agent-trace/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agent-trace/agent-trace.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agent-trace/update.json",
+      "sha256": "e2d1a18df2277fcc0be451a4622d1277badad7dd1ae68cda56a5aac68f626def",
+      "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Agent Trace\n\nMCP 工具调用追踪，时间线可视化，调试 agent。"
     }
   ]
 }
