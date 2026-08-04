@@ -186,6 +186,25 @@
       "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Agent Trace\n\nMCP 工具调用追踪，时间线可视化，调试 agent。"
+    },
+    {
+      "id": "polaris.knowledge",
+      "name": "Knowledge Base",
+      "version": "1.0.0",
+      "description": "本地知识库与全文检索：笔记/片段存入，按标签与全文搜索，AI 可调用查询工具注入上下文。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["knowledge", "search", "notes", "mcp", "panel"],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/knowledge",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/knowledge/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/knowledge/knowledge.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/knowledge/update.json",
+      "sha256": "756b35a69580dcc2b07b5ff77068ffe6960aa114bbbc5c54d68f9d9ad1f93a05",
+      "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Knowledge Base\n\n本地知识库，全文检索，AI 可调用注入上下文。"
     }
   ]
 }
