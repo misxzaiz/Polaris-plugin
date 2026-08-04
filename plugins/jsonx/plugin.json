@@ -1,0 +1,45 @@
+{
+  "id": "polaris.jsonx",
+  "name": "JSON Explorer",
+  "version": "1.0.0",
+  "description": "JSON 树形浏览器：AI 提取所有路径/搜索键值/取值，Panel 树形展开+搜索+路径复制，ChatCard 渲染结果。服务开发者调试 API 响应。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "jsonx.panel",
+        "area": "activityBar",
+        "panelType": "jsonExplorer",
+        "icon": "Code2",
+        "labelKey": "labels.jsonxPanel",
+        "labelDefault": "JSON",
+        "order": 92
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js" },
+    "mcpServers": [
+      {
+        "id": "jsonx-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "jsonx-card",
+        "mcpServerId": "jsonx-server",
+        "tools": ["search_json"],
+        "mode": "result",
+        "entry": "./dist/card.js"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jsonx",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jsonx/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jsonx/jsonx.zip"
+  }
+}

@@ -319,6 +319,25 @@
       "permissions": { "aiToolAccess": true },
       "screenshots": [],
       "readme": "# Cron Craft\n\ncron 构建、解释、下次触发计算，纯 MCP。"
+    },
+    {
+      "id": "polaris.jsonx",
+      "name": "JSON Explorer",
+      "version": "1.0.0",
+      "description": "JSON 树形浏览器：AI 提取所有路径/搜索键值/取值，Panel 树形展开+搜索+路径复制，ChatCard 渲染结果。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["json", "tree", "debug", "mcp", "panel"],
+      "icon": "Code2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jsonx",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jsonx/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jsonx/jsonx.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jsonx/update.json",
+      "sha256": "5b5249843bfe9649d4592ec08cbc8bb113379d587f73ae3518b3c3f89a121f18",
+      "permissions": { "aiToolAccess": true },
+      "screenshots": [],
+      "readme": "# JSON Explorer\n\nJSON 树形浏览，路径提取，搜索。"
     }
   ]
 }
