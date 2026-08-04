@@ -31,6 +31,9 @@ Polaris-plugin/
 │       ├── mcp/server.js       # 插件实现
 │       └── hello-tool.zip      # 安装包（由 scripts/pack 生成）
 ├── docs/                       # 商城使用与上架文档
+│   ├── SPEC.md                # 插件规范
+│   ├── PUBLISHING.md           # 上架指南
+│   └── plugin-development-guide.md  # Polaris 插件开发指南（完整）
 ├── scripts/                    # 索引校验 / 打包脚本
 └── examples/                   # 各类插件模板
 ```
@@ -56,6 +59,24 @@ Polaris 读取本仓库 `index.json` 渲染可浏览列表，点击「安装」�
 6. 提交 PR
 
 详见 [上架指南](docs/PUBLISHING.md)。
+
+## 开发文档
+
+完整的 Polaris 插件开发指南已收录在本仓库：
+
+📖 **[Polaris 插件开发指南](docs/plugin-development-guide.md)**
+
+内容覆盖：
+- 快速开始（最简 MCP 工具插件）
+- `plugin.json` 规范与字段约束
+- MCP Server 开发（JSON-RPC 2.0、模板占位符、返回格式）
+- 可视化 React 面板开发（组件规范、esbuild 打包）
+- 插件服务管理（HTTP / stdio / worker 后台服务、健康检查、自动重启）
+- 安装与调试技巧
+- 内置插件开发（`src/plugins/` + `builtinPlugins.ts` 注册）
+- 常见问题排查（Invalid hook call / MCP 启动失败 / 服务重启等）
+
+> 该文档源自 [Polaris](https://github.com/misxzaiz/Polaris) 项目 `docs/plugins/plugin-development-guide.md`，在本仓库作为上架参考。
 
 ## 协议
 
