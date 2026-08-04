@@ -125,6 +125,29 @@
       },
       "screenshots": [],
       "readme": "# Minutes Craft\n\n会议纪要/周报/standup 结构化提炼，模板化导出。"
+    },
+    {
+      "id": "polaris.promptvault",
+      "name": "Prompt Vault",
+      "version": "1.0.0",
+      "description": "本地 prompt 版本库：保存/渲染/对比 prompt 模板，变量注入试运行，版本快照防回归。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["prompt", "versioning", "template", "mcp", "panel"],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/prompt-vault",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-vault/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-vault/prompt-vault.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-vault/update.json",
+      "sha256": "86131c1872a0ed624e85362378943bad772acb665cbbcf63d010e3477c87d121",
+      "permissions": {
+        "aiToolAccess": true,
+        "appConfigRead": true,
+        "appConfigWrite": true
+      },
+      "screenshots": [],
+      "readme": "# Prompt Vault\n\n本地 prompt 版本管理，变量模板渲染，版本对比。"
     }
   ]
 }
