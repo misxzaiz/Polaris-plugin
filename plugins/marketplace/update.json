@@ -1,0 +1,43 @@
+{
+  "id": "polaris.marketplace",
+  "name": "Polaris 插件商城",
+  "version": "1.0.0",
+  "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件。提供 ActivityBar 面板与 MCP 工具。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "marketplace.panel",
+        "area": "activityBar",
+        "panelType": "marketplace",
+        "icon": "BookOpen",
+        "labelKey": "labels.marketplacePanel",
+        "labelDefault": "Marketplace",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "marketplace-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
+    "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/update.json",
+    "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/marketplace.zip"
+  }
+}

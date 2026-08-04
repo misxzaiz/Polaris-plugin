@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-04T00:00:00Z",
+  "updated": "2026-08-05T00:00:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -22,10 +22,29 @@
       "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/plugin.json",
       "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/hello-tool.zip",
       "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/update.json",
-      "sha256": "",
+      "sha256": "db28bf38ed6d20952c2513a5b24d752e8e9033830c86e7de5513cfb124b48d3e",
       "permissions": { "aiToolAccess": true },
       "screenshots": [],
       "readme": "# Hello Tool\n\n最小可安装插件示例。"
+    },
+    {
+      "id": "polaris.marketplace",
+      "name": "Polaris 插件商城",
+      "version": "1.0.0",
+      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件。提供 ActivityBar 面板与 MCP 工具。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": ["marketplace", "panel", "mcp", "installer"],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/plugin.json",
+      "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/marketplace.zip",
+      "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/update.json",
+      "sha256": "13f5447acd1031c92bee65a124d29052236cff960306a7e2a4d16407b9245f24",
+      "permissions": { "aiToolAccess": true, "network": true, "appConfigRead": true },
+      "screenshots": [],
+      "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件。"
     }
   ]
 }

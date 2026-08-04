@@ -2,7 +2,13 @@
 /**
  * 插件打包脚本：将 plugins/<name> 目录打成 <name>.zip
  * 用法： node scripts/pack.js plugins/<name>
- * 依赖：无外部依赖（使用 Node 内置模块；zip 用命令行 zip 或 archiver）
+ *
+ * 行为：
+ *  - 读取 plugin.json 校验 id/version
+ *  - 若存在 .pluginignore，按其规则排除（支持目录/后缀/精确文件）
+ *  - 将剩余文件复制到临时目录再压缩，保证 zip 根目录直接含 plugin.json
+ *  - 输出 sha256
+ * 依赖：无外部依赖（Node 内置 fs + PowerShell Compress-Archive / zip）
  */
 const fs = require('fs')
 const path = require('path')
@@ -28,29 +34,69 @@ if (!manifest.id || !manifest.version) {
   process.exit(1)
 }
 
-// 输出 zip 名：使用目录名而非 id，便于路径一致
 const dirName = path.basename(pluginDir)
 const zipName = `${dirName}.zip`
 const zipPath = path.join(pluginDir, zipName)
 
-// 删除旧 zip
-if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
+// 读取 .pluginignore
+const ignorePath = path.join(pluginDir, '.pluginignore')
+const ignoreRules = fs.existsSync(ignorePath)
+  ? fs.readFileSync(ignorePath, 'utf8').split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+  : []
 
-// 打包：进入插件目录打 zip，保证根目录含 plugin.json
-// Windows 可能无 zip 命令；优先使用 PowerShell Compress-Archive
-try {
-  if (process.platform === 'win32') {
-    // 在插件目录内打包，保证 zip 根目录直接含 plugin.json（无外层目录）
-    const files = fs.readdirSync(pluginDir).filter(f => f !== zipName)
-    const fileList = files.join(',')
-    // 用 PowerShell 在插件目录内 Compress-Archive，Source 用 * 保证根目录结构
-    execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${dirName}${path.sep}*' -DestinationPath '${dirName}${path.sep}${zipName}' -Force"`, { cwd: path.dirname(pluginDir), stdio: 'inherit' })
-  } else {
-    execSync(`cd "${pluginDir}" && zip -r "${zipName}" . -x "${zipName}"`, { stdio: 'inherit' })
+function isIgnored(relPath) {
+  const normalized = relPath.replace(/\\/g, '/')
+  return ignoreRules.some(rule => {
+    if (rule.endsWith('/')) return normalized.startsWith(rule) || normalized === rule.slice(0, -1)
+    if (rule.startsWith('*.')) return normalized.endsWith(rule.slice(1))
+    return normalized === rule || normalized.startsWith(rule + '/')
+  })
+}
+
+// 收集要打包的文件（相对路径）
+const filesToPack = []
+function walk(dir, relBase = '') {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const rel = relBase ? `${relBase}/${entry.name}` : entry.name
+    if (entry.name === zipName) continue
+    if (isIgnored(rel)) continue
+    const full = path.join(dir, entry.name)
+    if (entry.isDirectory()) {
+      walk(full, rel)
+    } else if (entry.isFile()) {
+      filesToPack.push(rel)
+    }
   }
-} catch (e) {
-  console.error('✗ 打包失败，尝试安装 archiver: npm i -g archiver', e.message)
+}
+walk(pluginDir)
+
+if (filesToPack.length === 0) {
+  console.error('✗ 没有可打包的文件（检查 .pluginignore）')
   process.exit(1)
+}
+
+// 复制到临时目录再压缩
+const tmpDir = path.join(pluginDir, '.tmp-pack-' + Date.now())
+fs.mkdirSync(tmpDir, { recursive: true })
+try {
+  for (const rel of filesToPack) {
+    const src = path.join(pluginDir, rel)
+    const dst = path.join(tmpDir, rel)
+    fs.mkdirSync(path.dirname(dst), { recursive: true })
+    fs.copyFileSync(src, dst)
+  }
+
+  // 删除旧 zip
+  if (fs.existsSync(zipPath)) fs.unlinkSync(zipPath)
+
+  // 压缩：在 tmpDir 内打 zip，保证根目录结构
+  if (process.platform === 'win32') {
+    execSync(`powershell -NoProfile -Command "Compress-Archive -Path '${tmpDir}${path.sep}*' -DestinationPath '${zipPath}' -Force"`, { stdio: 'inherit' })
+  } else {
+    execSync(`cd "${tmpDir}" && zip -r "${zipPath}" .`, { stdio: 'inherit' })
+  }
+} finally {
+  fs.rmSync(tmpDir, { recursive: true, force: true })
 }
 
 // 计算 sha256
@@ -59,5 +105,6 @@ const sha256 = crypto.createHash('sha256').update(buf).digest('hex')
 
 console.log(`✓ 已打包: ${zipPath}`)
 console.log(`  version: ${manifest.version}`)
+console.log(`  files:   ${filesToPack.length}`)
 console.log(`  sha256:  ${sha256}`)
-console.log(`  downloadUrl 提示: https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/${dirName}/${zipName}`)
+console.log(`  downloadUrl: https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/${dirName}/${zipName}`)
