@@ -1,0 +1,49 @@
+{
+  "id": "polaris.literature",
+  "name": "Literature Matrix",
+  "version": "1.0.0",
+  "description": "文献笔记结构化与对比矩阵：AI 从摘要提取作者/方法/结论，多篇对比成表，多格式引用导出（APA/IEEE/GB-T7714）。服务学生文献综述痛点。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "literature.panel",
+        "area": "activityBar",
+        "panelType": "literatureMatrix",
+        "icon": "BookOpen",
+        "labelKey": "labels.literaturePanel",
+        "labelDefault": "Literature",
+        "order": 86
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js" },
+    "mcpServers": [
+      {
+        "id": "literature-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "literature-card",
+        "mcpServerId": "literature-server",
+        "tools": ["extract_paper"],
+        "mode": "result",
+        "entry": "./dist/card.js"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "appConfigRead": true,
+    "appConfigWrite": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/literature",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/literature/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/literature/literature.zip"
+  }
+}

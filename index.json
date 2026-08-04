@@ -148,6 +148,25 @@
       },
       "screenshots": [],
       "readme": "# Prompt Vault\n\n本地 prompt 版本管理，变量模板渲染，版本对比。"
+    },
+    {
+      "id": "polaris.literature",
+      "name": "Literature Matrix",
+      "version": "1.0.0",
+      "description": "文献笔记结构化与对比矩阵：AI 提取作者/方法/结论，多篇对比成表，多格式引用导出（APA/IEEE/GB-T7714）。",
+      "author": "Polaris",
+      "category": "education",
+      "tags": ["literature", "research", "citation", "mcp", "panel"],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/literature",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/literature/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/literature/literature.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/literature/update.json",
+      "sha256": "a59f3f7c7599652e08ed1f815f7303b72d56c97e73d3cc9eecaa070196bc8301",
+      "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
+      "screenshots": [],
+      "readme": "# Literature Matrix\n\n文献结构化提取，对比矩阵，多格式引用导出。"
     }
   ]
 }
