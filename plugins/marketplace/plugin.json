@@ -39,7 +39,7 @@
   "origin": {
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
-    "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/update.json",
-    "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/marketplace.zip"
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip"
   }
 }

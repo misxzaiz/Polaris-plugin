@@ -18,7 +18,7 @@
   "origin": {
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/hello-tool",
-    "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/update.json",
-    "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/hello-tool.zip"
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/hello-tool.zip"
   }
 }

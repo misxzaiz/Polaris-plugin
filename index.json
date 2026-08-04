@@ -15,15 +15,20 @@
       "description": "最小可安装插件示例：贡献一个 MCP 工具 echo。",
       "author": "Polaris",
       "category": "utility",
-      "tags": ["example", "mcp"],
+      "tags": [
+        "example",
+        "mcp"
+      ],
       "icon": "Terminal",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/hello-tool",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/plugin.json",
-      "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/hello-tool.zip",
-      "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/update.json",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/hello-tool.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/update.json",
       "sha256": "db28bf38ed6d20952c2513a5b24d752e8e9033830c86e7de5513cfb124b48d3e",
-      "permissions": { "aiToolAccess": true },
+      "permissions": {
+        "aiToolAccess": true
+      },
       "screenshots": [],
       "readme": "# Hello Tool\n\n最小可安装插件示例。"
     },
@@ -34,15 +39,24 @@
       "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新。提供 ActivityBar 面板与 MCP 工具。",
       "author": "Polaris",
       "category": "productivity",
-      "tags": ["marketplace", "panel", "mcp", "installer"],
+      "tags": [
+        "marketplace",
+        "panel",
+        "mcp",
+        "installer"
+      ],
       "icon": "BookOpen",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/marketplace.zip",
-      "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/marketplace/update.json",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
       "sha256": "db2ff74578e4aaf470f47e84aa8f4c4cb6054f98700afb7a14bbd1ae14d58e9d",
-      "permissions": { "aiToolAccess": true, "network": true, "appConfigRead": true },
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "appConfigRead": true
+      },
       "screenshots": [],
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。"
     }
