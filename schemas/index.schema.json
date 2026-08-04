@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema",
+  "title": "Polaris Marketplace Index",
+  "type": "object",
+  "required": ["version", "marketplace", "plugins"],
+  "properties": {
+    "version": { "type": "string", "description": "索引格式版本" },
+    "updated": { "type": "string", "format": "date-time" },
+    "marketplace": {
+      "type": "object",
+      "required": ["name", "homepage"],
+      "properties": {
+        "name": { "type": "string" },
+        "homepage": { "type": "string", "format": "uri" },
+        "description": { "type": "string" }
+      }
+    },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "version", "manifestUrl", "downloadUrl", "updateUrl"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9.\\-]+$" },
+          "name": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+" },
+          "description": { "type": "string" },
+          "author": { "type": "string" },
+          "category": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "icon": { "type": "string" },
+          "homepage": { "type": "string", "format": "uri" },
+          "repository": { "type": "string", "format": "uri" },
+          "manifestUrl": { "type": "string", "format": "uri", "description": "指向 plugin.json，用于发现/校验" },
+          "downloadUrl": { "type": "string", "format": "uri", "description": "zip 安装包，供 Polaris installRemotePlugin 消费" },
+          "updateUrl": { "type": "string", "format": "uri", "description": "指向 update.json（含最新 manifest + downloadUrl），供 Polaris checkPluginUpdate 消费" },
+          "sha256": { "type": "string", "description": "zip 包校验和（可选）" },
+          "permissions": { "type": "object" },
+          "screenshots": { "type": "array", "items": { "type": "string", "format": "uri" } },
+          "readme": { "type": "string" }
+        }
+      }
+    }
+  }
+}

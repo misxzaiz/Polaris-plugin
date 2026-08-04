@@ -1,0 +1,24 @@
+{
+  "id": "namespace.plugin-name",
+  "name": "Plugin Name",
+  "version": "1.0.0",
+  "description": "插件一句话描述",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "my-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/<user>/<repo>",
+    "homepage": "https://github.com/<user>/<repo>",
+    "updateUrl": "https://raw.githubusercontent.com/<user>/<repo>/main/plugins/<dir>/update.json",
+    "downloadUrl": "https://raw.githubusercontent.com/<user>/<repo>/main/plugins/<dir>/<dir>.zip"
+  }
+}

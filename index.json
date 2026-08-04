@@ -1,0 +1,31 @@
+{
+  "$schema": "./schemas/index.schema.json",
+  "version": "1.0.0",
+  "updated": "2026-08-04T00:00:00Z",
+  "marketplace": {
+    "name": "Polaris Plugin Marketplace",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin",
+    "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
+  },
+  "plugins": [
+    {
+      "id": "polaris.example.hello",
+      "name": "Hello Tool (示例)",
+      "version": "1.0.0",
+      "description": "最小可安装插件示例：贡献一个 MCP 工具 echo。",
+      "author": "Polaris",
+      "category": "utility",
+      "tags": ["example", "mcp"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/hello-tool",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/plugin.json",
+      "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/hello-tool.zip",
+      "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/update.json",
+      "sha256": "",
+      "permissions": { "aiToolAccess": true },
+      "screenshots": [],
+      "readme": "# Hello Tool\n\n最小可安装插件示例。"
+    }
+  ]
+}

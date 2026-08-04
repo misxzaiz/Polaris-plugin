@@ -1,0 +1,6 @@
+node_modules/
+*.log
+
+# 敏感本地配置（含 token/session，禁止提交）
+.polaris/
+.claude/
