@@ -1,0 +1,66 @@
+{
+  "id": "polaris.recall",
+  "name": "Recall Cards",
+  "version": "1.0.0",
+  "description": "AI 记忆卡 + 间隔复习：AI 从笔记生成问答卡，后台服务用 FSRS 调度复习，面板翻面评分，聊天卡片交互式答题。解决学生/考证者的手动建卡疲劳。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "recall.panel",
+        "area": "activityBar",
+        "panelType": "recallCards",
+        "icon": "ClipboardList",
+        "labelKey": "labels.recallPanel",
+        "labelDefault": "Recall",
+        "order": 83
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js"
+    },
+    "mcpServers": [
+      {
+        "id": "recall-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{pluginDir}}"]
+      }
+    ],
+    "services": [
+      {
+        "id": "recall-svc",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 3,
+        "description": "Recall Cards 持久化与 FSRS 调度服务"
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "recall-card",
+        "mcpServerId": "recall-server",
+        "tools": ["quiz_me"],
+        "mode": "interaction",
+        "entry": "./dist/card.js"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "appConfigWrite": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/recall",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/recall/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/recall/recall.zip"
+  }
+}

@@ -80,6 +80,30 @@
       },
       "screenshots": [],
       "readme": "# Diagram Studio\n\n自然语言 → Mermaid 图表，对话式迭代，面板编辑与导出。"
+    },
+    {
+      "id": "polaris.recall",
+      "name": "Recall Cards",
+      "version": "1.0.0",
+      "description": "AI 记忆卡 + 间隔复习：AI 从笔记生成问答卡，后台服务 FSRS 调度，面板翻面评分，聊天卡片交互式答题。",
+      "author": "Polaris",
+      "category": "education",
+      "tags": ["flashcard", "spaced-repetition", "fsrs", "service", "chatcard"],
+      "icon": "ClipboardList",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/recall",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/recall/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/recall/recall.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/recall/update.json",
+      "sha256": "840327c4375a9ae3411ebf358953057e6d02de4a489096752033f12e27b67a29",
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "appConfigRead": true,
+        "appConfigWrite": true
+      },
+      "screenshots": [],
+      "readme": "# Recall Cards\n\nAI 从笔记生成记忆卡，FSRS 间隔复习，对话式交互答题。"
     }
   ]
 }
