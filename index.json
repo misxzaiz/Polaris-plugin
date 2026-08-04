@@ -300,6 +300,25 @@
       "permissions": { "aiToolAccess": true },
       "screenshots": [],
       "readme": "# Quiz Gen\n\n即时测验生成，ChatCard 交互答题，评分反馈。"
+    },
+    {
+      "id": "polaris.cron",
+      "name": "Cron Craft",
+      "version": "1.0.0",
+      "description": "cron 表达式构建与解释器：AI 描述意图生成 cron，逐字段解释，计算下次触发时间。纯 MCP 工具。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["cron", "schedule", "mcp", "lightweight"],
+      "icon": "Clock",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cron",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron/cron.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron/update.json",
+      "sha256": "20cefaa70b1ba97504a52123c29c99ca1c9a779ff1eb9c12dececa08ed6a8ff4",
+      "permissions": { "aiToolAccess": true },
+      "screenshots": [],
+      "readme": "# Cron Craft\n\ncron 构建、解释、下次触发计算，纯 MCP。"
     }
   ]
 }
