@@ -357,6 +357,25 @@
       "permissions": { "aiToolAccess": true, "appConfigRead": true, "appConfigWrite": true },
       "screenshots": [],
       "readme": "# Link Vault\n\n书签管理，全文搜索，AI 查询。"
+    },
+    {
+      "id": "polaris.sql",
+      "name": "SQL Craft",
+      "version": "1.0.0",
+      "description": "SQL 构建与格式化器：AI 描述意图生成 SQL 骨架，格式化美化，基本语法校验。纯 MCP 工具。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["sql", "format", "mcp", "lightweight"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/sql",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sql/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sql/sql.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sql/update.json",
+      "sha256": "a9e80111dd65a094ce2b2fb4893f0eece9d26296adf4c4a6afbbb2b18824fc0a",
+      "permissions": { "aiToolAccess": true },
+      "screenshots": [],
+      "readme": "# SQL Craft\n\nSQL 构建、格式化、校验，纯 MCP。"
     }
   ]
 }

@@ -1,0 +1,24 @@
+{
+  "id": "polaris.sql",
+  "name": "SQL Craft",
+  "version": "1.0.0",
+  "description": "SQL 构建与格式化器：AI 描述意图生成 SQL 骨架，格式化美化，基本语法校验。纯 MCP 工具，服务开发者 SQL 编写。",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "sql-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/sql",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sql/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sql/sql.zip"
+  }
+}
