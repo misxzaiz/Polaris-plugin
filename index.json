@@ -81,6 +81,28 @@
       },
       "screenshots": [],
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。"
+    },
+    {
+      "id": "polaris.ngrok-manager",
+      "name": "ngrok Manager",
+      "version": "1.0.0",
+      "description": "按端口启动/管理多个 ngrok HTTP 隧道:随机或固定保留域名,公网 URL 一键复制/打开,AI 可经 MCP 工具调用。需电脑预装 ngrok 并配置 authtoken。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["ngrok", "tunnel", "network", "mcp", "panel"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ngrok-manager",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ngrok-manager/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ngrok-manager/ngrok-manager.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ngrok-manager/update.json",
+      "sha256": "df74ec2ceb5821e5df80a3b6d631be963dbd5c0cbc468b71e92b726cc68664ed",
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "# ngrok Manager\n\n按端口启动/管理多个 ngrok HTTP 隧道。需电脑预装 ngrok 并配置 authtoken。"
     }
   ]
 }
