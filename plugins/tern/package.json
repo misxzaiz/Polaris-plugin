@@ -1,0 +1,11 @@
+{
+  "name": "tern",
+  "private": true,
+  "scripts": {
+    "build": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "watch": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

@@ -33,6 +33,28 @@
       "readme": "# Hello Tool\n\n最小可安装插件示例。"
     },
     {
+      "id": "polaris.tern",
+      "name": "Tern — 终端助手",
+      "version": "1.0.0",
+      "description": "终端助手：自然语言转命令、Git 操作、错误分析。支持 OpenAI 兼容 API。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["terminal", "ai", "git", "developer"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/tern",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tern/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tern/tern.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tern/update.json",
+      "sha256": "3d19dd03fe378e9c2ea6a82c23a473aa79c3fad68003fa49432596efdfcb2699",
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "# Tern — 终端助手\n\n终端助手面板：自然语言转命令、Git 操作、错误分析。"
+    },
+    {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",
       "version": "1.1.0",
