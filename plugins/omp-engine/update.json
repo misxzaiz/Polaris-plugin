@@ -1,8 +1,8 @@
 {
   "id": "omp-engine",
   "name": "Oh My Pi Engine",
-  "version": "1.0.2",
-  "description": "修复 omp 引擎 RPC 协议兼容：sessionFlags 改为 omp 风格（--resume 代替 --session-id），新增 omp 输入格式支持",
+  "version": "1.0.3",
+  "description": "update.json 改为完整 manifest 格式（含 id/contributes），修复商城检查更新",
   "author": "Polaris Community",
   "category": "ai-engine",
   "tags": [
