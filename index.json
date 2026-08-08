@@ -62,7 +62,7 @@
     {
       "id": "omp-engine",
       "name": "Oh My Pi Engine",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "description": "在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。支持流式输出、工具调用、中断、会话恢复。",
       "author": "Polaris Community",
       "category": "ai-engine",

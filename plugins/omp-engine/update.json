@@ -1,5 +1,5 @@
 {
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "修复 omp 引擎 RPC 协议兼容：sessionFlags 改为 omp 风格（--resume 代替 --session-id），新增 omp 输入格式支持",
   "published": "2026-08-08T15:53:00Z",
   "minAppVersion": "10.3.5",
