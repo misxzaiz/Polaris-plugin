@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-08T12:59:00Z",
+  "updated": "2026-08-08T13:00:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -58,6 +58,29 @@
       },
       "screenshots": [],
       "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST\n- **AI 助手**：OpenAI 协议，浮窗随时唤出"
+    },
+    {
+      "id": "omp-engine",
+      "name": "Oh My Pi Engine",
+      "version": "1.0.0",
+      "description": "在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。支持流式输出、工具调用、中断、会话恢复。",
+      "author": "Polaris Community",
+      "category": "ai-engine",
+      "tags": ["ai", "engine", "omp", "coding-agent"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
+      "sha256": "3799b8c1c422f51f780b1b60a39d1b3b3d6382a802f2162a4b60415fdfc48be2",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "# Oh My Pi Engine\n\n在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。\n\n## 安装前提\n\nOh My Pi 需要单独安装 CLI（macOS/Linux: `curl -fsSL https://omp.sh/install | sh`，Windows PowerShell: `irm https://omp.sh/install.ps1 | iex`）\n\n## 使用\n\n安装插件后，在 Polaris 设置 → AI 引擎中选择「Oh My Pi」即可切换。"
     }
   ]
 }

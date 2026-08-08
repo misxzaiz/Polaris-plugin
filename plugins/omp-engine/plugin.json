@@ -1,0 +1,48 @@
+{
+  "id": "omp-engine",
+  "name": "Oh My Pi Engine",
+  "version": "1.0.0",
+  "description": "Oh My Pi (omp) 引擎集成 — 基于 Pi fork 重构的全能终端 AI 编程代理（Rust 核心），支持 LSP/DAP/ast_edit/子代理/代码审查等功能。安装后可在 Polaris 引擎选择器中使用 Oh My Pi。",
+  "author": "Polaris Community",
+  "category": "ai-engine",
+  "tags": [
+    "ai",
+    "engine",
+    "omp",
+    "coding-agent",
+    "oh-my-pi"
+  ],
+  "icon": "Terminal",
+  "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
+  "repository": "https://github.com/misxzaiz/Polaris-plugin",
+  "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/plugin.json",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip",
+  "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
+  "sha256": "",
+  "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "network": true
+  },
+  "contributes": {
+    "engines": [
+      {
+        "id": "omp",
+        "name": "Oh My Pi",
+        "description": "Oh My Pi (omp) — 基于 Pi fork 重构的全能终端 AI 编程代理。内置 LSP（13 种操作）、DAP 调试（27 种操作）、ast_edit 结构化编辑、子代理并发、代码审查等功能。",
+        "cli": {
+          "command": "omp",
+          "installGuide": "安装方式: macOS/Linux → curl -fsSL https://omp.sh/install | sh ; Windows → irm https://omp.sh/install.ps1 | iex (PowerShell)"
+        },
+        "protocol": "pi-rpc",
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": true,
+          "resume": true
+        }
+      }
+    ]
+  },
+  "readme": "# Oh My Pi Engine\n\n## 简介\n\n在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。\n\n## 功能\n\n- 在 Polaris 引擎选择器中直接使用 Oh My Pi\n- 支持流式输出、工具调用、中断、会话恢复\n- 复用 Pi 引擎的 RPC 协议兼容层\n\n## 安装前提\n\nOh My Pi 需要单独安装 CLI：\n\n**macOS / Linux:**\n```bash\ncurl -fsSL https://omp.sh/install | sh\n```\n\n**Windows (PowerShell):**\n```powershell\nirm https://omp.sh/install.ps1 | iex\n```\n\n## 验证安装\n\n```bash\nomp --version\n# 应输出 omp/<version>\n```\n\n## 使用\n\n安装插件后，在 Polaris 设置 → AI 引擎中选择「Oh My Pi」即可切换。\n\n## 版本兼容性\n\n- 需要 Polaris v10.3.5+\n- 需要 omp CLI v17.0.0+"
+}
