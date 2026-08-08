@@ -120,7 +120,7 @@ process.stdin.on('data', chunk => {
     "aiToolAccess": true            // AI 工具调用
   },
 
-  // === 来源元数据（可选） ===
+  // === 来源元数据（远程安装/更新必填） ===
   "origin": {
     "repository": "https://github.com/user/repo",
     "homepage": "https://example.com",
@@ -146,6 +146,22 @@ process.stdin.on('data', chunk => {
 ### 支持的图标
 
 `Files` | `GitPullRequest` | `CheckSquare` | `Languages` | `Clock` | `Target` | `ClipboardList` | `Terminal` | `Code2` | `Bot` | `BookOpen` | `AlertCircle` | `Film` | `Activity`
+
+### 更新机制说明
+
+插件支持远程更新，流程如下：
+
+1. **Polaris 客户端**读取已安装插件 `plugin.json` 中的 `origin.updateUrl`
+2. GET 请求该 URL 获取最新 manifest（即 `update.json`）
+3. 比较 `update.json` 中的 `version` 与本地版本
+4. 若有新版，用 `update.json` 中的 `origin.downloadUrl` 下载新 zip 并替换
+
+因此：
+- **`update.json` 内容必须与最新 `plugin.json` 一致**，且版本号必须高于已安装版本才会提示更新
+- `plugin.json` 与 `update.json` 必须同步更新版本号
+- 每次发布新版本后，需重新打包 zip 并更新 `index.json` 中的 `version` 与 `sha256`
+
+> 详见 [`SPEC.md`](./SPEC.md) 和 [`PUBLISHING.md`](./PUBLISHING.md)。
 
 ---
 
