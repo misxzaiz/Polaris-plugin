@@ -2,5 +2,11 @@
   "version": "1.0.1",
   "description": "修复 omp 引擎 RPC 协议兼容：sessionFlags 改为 omp 风格（--resume 代替 --session-id），新增 omp 输入格式支持",
   "published": "2026-08-08T15:53:00Z",
-  "minAppVersion": "10.3.5"
+  "minAppVersion": "10.3.5",
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip"
+  }
 }
