@@ -35,6 +35,29 @@
       },
       "screenshots": [],
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。"
+    },
+    {
+      "id": "relay-devkit",
+      "name": "RELAY DevKit",
+      "version": "1.0.0",
+      "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手、跨域代理",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["api-client", "json", "sql", "database", "dev-tools", "panel", "service"],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/relay-devkit.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
+      "sha256": "bde4d450e76cc9fc41de03711f011c6714074444f9a0700ff797c6e6f2879e53",
+      "permissions": {
+        "workspaceRead": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST\n- **AI 助手**：OpenAI 协议，浮窗随时唤出"
     }
   ]
 }

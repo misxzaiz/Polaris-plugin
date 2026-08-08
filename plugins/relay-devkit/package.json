@@ -1,0 +1,23 @@
+{
+  "name": "relay-devkit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RELAY DevKit — 零构建纯前端工具箱 + Node 本地服务（静态 + /__proxy + /__db）。可作为 Polaris 插件面板使用。",
+  "bin": {
+    "relay": "server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "build": "node build.js",
+    "build:prod": "node build.js --minify",
+    "verify": "node relay-verify.js",
+    "verify:backend": "node relay-verify-backend.mjs"
+  },
+  "optionalDependencies": {
+    "mysql2": "^3.11.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

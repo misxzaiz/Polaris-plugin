@@ -1,0 +1,50 @@
+{
+  "id": "relay-devkit",
+  "name": "RELAY DevKit",
+  "version": "1.0.0",
+  "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "relay-devkit.panel",
+        "area": "activityBar",
+        "panelType": "relayDevkit",
+        "icon": "Terminal",
+        "labelKey": "plugins.relayDevkit",
+        "labelDefault": "DevKit",
+        "order": 80
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "relay-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/server.js", "{{port}}"],
+        "port": 9860,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 3000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 3,
+        "description": "RELAY HTTP 服务（静态资源 + /__proxy 跨域代理 + /__db 数据库桥接）"
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/relay-devkit.zip"
+  }
+}

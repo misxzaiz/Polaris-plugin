@@ -1,0 +1,48 @@
+# ---- 版本控制 ----
+.git/
+.gitignore
+
+# ---- 本机/IDE 配置 ----
+.polaris/
+_write_ai_context.mjs
+
+# ---- 开发依赖 ----
+node_modules/
+package.json
+package-lock.json
+
+# ---- 面板源码（构建产物已包含，源码不进包）----
+src/
+build.js
+
+# ---- 文档（保留在仓库，不进包）----
+docs/
+
+# ---- 构建辅助 ----
+dist/panel.js.map
+
+# ---- 历史遗留：Python 实现 ----
+*.py
+*.pyc
+__pycache__/
+
+# ---- 独立运行脚本（Polaris service 自动管理，不需要）----
+start.bat
+start.txt
+serve.sh
+stop.sh
+server.py
+
+# ---- 测试/验证文件 ----
+relay-verify.js
+relay-verify-backend.mjs
+relay-verify.png
+relay-media.png
+relay-verify-multitable.png
+
+# ---- 演示/示例数据（工具无关）----
+media.json
+nested.json
+users.json
+index.html
+showcase.html
