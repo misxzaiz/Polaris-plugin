@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Codebase Movie · 原型</title>
+  <style>
+    /* ===== Reset & Base ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f14;
+      --surface: #1a1a24;
+      --surface2: #24243a;
+      --border: #2a2a40;
+      --text: #e0e0f0;
+      --text2: #9090b0;
+      --accent: #6c6cff;
+      --accent2: #ff6b9d;
+      --accent3: #4fc3f7;
+      --green: #4caf7d;
+      --red: #ef5350;
+      --gold: #ffc107;
+      --radius: 12px;
+      --safe-bottom: env(safe-area-inset-bottom, 8px);
+    }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    /* ===== App Shell ===== */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      min-height: 52px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .header-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .header h1 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .header-sub {
+      font-size: 11px;
+      color: var(--text2);
+      margin-top: 1px;
+    }
+    .header-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .header-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      border: none;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .header-btn:active { background: var(--border); transform: scale(0.92); }
+
+    /* ===== Timeline Canvas Container ===== */
+    .timeline-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+    }
+    #timelineCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+
+    /* ===== Playback Controls ===== */
+    .playback-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .play-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .play-btn:active { transform: scale(0.9); }
+    .play-btn.playing { background: linear-gradient(135deg, var(--accent3), var(--accent)); }
+
+    .speed-btns {
+      display: flex;
+      gap: 4px;
+    }
+    .speed-btn {
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+    .speed-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .speed-btn:active { transform: scale(0.95); }
+
+    .progress-bar {
+      flex: 1;
+      position: relative;
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      cursor: pointer;
+      min-width: 60px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 2px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+    .progress-label {
+      font-size: 11px;
+      color: var(--text2);
+      min-width: 48px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ===== Bottom Sheet (Scene Detail) ===== */
+    .bottom-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--surface);
+      border-radius: 16px 16px 0 0;
+      border-top: 1px solid var(--border);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+      z-index: 10;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .bottom-sheet.open {
+      transform: translateY(0);
+    }
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      margin: 8px auto;
+      flex-shrink: 0;
+    }
+    .sheet-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 4px 16px 12px;
+      flex-shrink: 0;
+    }
+    .sheet-commit-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.4;
+      flex: 1;
+    }
+    .sheet-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: var(--surface2);
+      color: var(--text2);
+      font-size: 18px;
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sheet-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 16px 12px;
+      font-size: 12px;
+      color: var(--text2);
+      flex-shrink: 0;
+    }
+    .sheet-meta span { display: flex; align-items: center; gap: 4px; }
+    .sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sheet-body::-webkit-scrollbar { width: 3px; }
+    .sheet-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* File Change List */
+    .file-list { margin-bottom: 16px; }
+    .file-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+    }
+    .file-item:last-child { border-bottom: none; }
+    .file-name {
+      flex: 1;
+      font-size: 13px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      opacity: 0.9;
+    }
+    .file-stat {
+      font-size: 11px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    .file-stat.add { color: var(--green); }
+    .file-stat.del { color: var(--red); }
+    .file-stat.mod { color: var(--gold); }
+    .file-diff {
+      display: none;
+      padding: 8px;
+      margin-top: 4px;
+      background: var(--bg);
+      border-radius: 8px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .file-item.open .file-diff { display: block; }
+    .diff-add { color: var(--green); }
+    .diff-del { color: var(--red); }
+
+    /* AI Narration */
+    .narration {
+      background: linear-gradient(135deg, rgba(108,108,255,0.08), rgba(255,107,157,0.08));
+      border: 1px solid rgba(108,108,255,0.2);
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+    .narration-label {
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .narration-text {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    /* Branch Context Tags */
+    .branch-tags {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .branch-tag {
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--surface2);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .branch-tag.main { border-color: var(--accent); color: var(--accent); }
+    .branch-tag.feat { border-color: var(--accent3); color: var(--accent3); }
+    .branch-tag.fix { border-color: var(--gold); color: var(--gold); }
+
+    /* ===== Overlay ===== */
+    .sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 9;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .sheet-overlay.show { opacity: 1; pointer-events: auto; }
+
+    /* ===== Tooltip (idle hint) ===== */
+    .hint {
+      position: absolute;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface2);
+      color: var(--text2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+    }
+    .hint.show { opacity: 1; }
+
+    /* ===== Responsive ===== */
+    @media (min-width: 481px) {
+      #app {
+        border-left: 1px solid var(--border);
+        border-right: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <div class="header-icon">🎬</div>
+      <div>
+        <h1>Codebase Movie</h1>
+        <div class="header-sub">Polaris-plugin · 42 commits</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn" onclick="toggleSearch()" aria-label="搜索">🔍</button>
+      <button class="header-btn" onclick="toggleExport()" aria-label="导出">📤</button>
+    </div>
+  </header>
+
+  <!-- Timeline -->
+  <div class="timeline-area" id="timelineArea">
+    <canvas id="timelineCanvas"></canvas>
+    <div class="hint" id="hint">👆 点击节点查看提交详情</div>
+  </div>
+
+  <!-- Playback Bar -->
+  <div class="playback-bar">
+    <button class="play-btn" id="playBtn" onclick="togglePlay()" aria-label="播放/暂停">▶</button>
+    <div class="speed-btns">
+      <button class="speed-btn active" onclick="setSpeed(1)">1×</button>
+      <button class="speed-btn" onclick="setSpeed(2)">2×</button>
+      <button class="speed-btn" onclick="setSpeed(4)">4×</button>
+      <button class="speed-btn" onclick="setSpeed(8)">8×</button>
+    </div>
+    <div class="progress-bar" id="progressBar" onclick="seekProgress(event)">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">0/42</div>
+  </div>
+</div>
+
+<!-- Overlay + Bottom Sheet -->
+<div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+<div class="bottom-sheet" id="bottomSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-commit-title" id="sheetTitle">feat: 添加用户权限管理系统</div>
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+  </div>
+  <div class="sheet-meta" id="sheetMeta">
+    <span>👤 alice</span>
+    <span>🕐 2026-03-15 14:23</span>
+    <span>📍 a1b2c3d</span>
+  </div>
+  <div class="sheet-body" id="sheetBody">
+    <!-- content rendered by JS -->
+  </div>
+</div>
+
+<script>
+// =====================================================================
+//  Mock Data
+// =====================================================================
+const COMMITS = [
+  { hash: 'a1b2c3d', author: 'alice',   date: '2026-01-05', msg: 'feat: 初始化项目结构',          branch: 'main', add: 85,  del: 0,  files: [{n:'package.json',a:12,d:0},{n:'src/main.ts',a:30,d:0},{n:'tsconfig.json',a:8,d:0},{n:'README.md',a:35,d:0}], narr: '创建了项目骨架，包括 TypeScript 配置、入口文件和 README。这是整个代码库的起点。' },
+  { hash: 'b2c3d4e', author: 'alice',   date: '2026-01-08', msg: 'feat: 添加核心模块框架',        branch: 'main', add: 120, del: 0,  files: [{n:'src/core/engine.ts',a:60,d:0},{n:'src/core/types.ts',a:35,d:0},{n:'src/core/index.ts',a:25,d:0}], narr: '建立了核心引擎模块的框架，定义了主要类型接口和模块导出入口。' },
+  { hash: 'c3d4e5f', author: 'bob',     date: '2026-01-12', msg: 'feat: 添加 CLI 入口',            branch: 'main', add: 65,  del: 0,  files: [{n:'src/cli.ts',a:45,d:0},{n:'src/args.ts',a:20,d:0}], narr: '实现了命令行参数解析和 CLI 入口，用户可以通过终端启动应用。' },
+  { hash: 'd4e5f6g', author: 'alice',   date: '2026-01-15', msg: 'feat: 添加配置文件支持',         branch: 'main', add: 92,  del: 0,  files: [{n:'src/config.ts',a:55,d:0},{n:'src/config.schema.ts',a:37,d:0}], narr: '引入了配置文件系统，支持从 JSON/YAML 文件读取配置，并做了类型校验。' },
+  { hash: 'e5f6g7h', author: 'bob',     date: '2026-01-18', msg: 'refactor: 重构引擎接口',          branch: 'main', add: 45,  del: 30, files: [{n:'src/core/engine.ts',a:25,d:20},{n:'src/core/types.ts',a:20,d:10}], narr: '根据使用反馈重构了引擎接口，将部分类型定义从 types 移到 engine 内部，减少公共暴露面。' },
+  { hash: 'f6g7h8i', author: 'carol',   date: '2026-01-22', msg: 'feat: 添加日志模块',              branch: 'main', add: 78,  del: 0,  files: [{n:'src/logger.ts',a:58,d:0},{n:'src/logger.test.ts',a:20,d:0}], narr: '实现了结构化日志模块，支持分级输出和格式化，同时添加了单元测试。' },
+  { hash: 'g7h8i9j', author: 'alice',   date: '2026-01-25', msg: 'feat: 添加插件系统基础',          branch: 'feat-plugin', add: 150, del: 0,  files: [{n:'src/plugin/loader.ts',a:70,d:0},{n:'src/plugin/api.ts',a:50,d:0},{n:'src/plugin/types.ts',a:30,d:0}], narr: '这是工作量最大的一个分支提交——建立了插件系统的核心加载器、API 注册机制和类型定义。' },
+  { hash: 'h8i9j0k', author: 'alice',   date: '2026-01-28', msg: 'feat: 插件热加载支持',            branch: 'feat-plugin', add: 90,  del: 20, files: [{n:'src/plugin/loader.ts',a:55,d:15},{n:'src/plugin/watcher.ts',a:35,d:5}], narr: '实现了文件监听机制，支持插件在运行时热加载，无需重启应用。' },
+  { hash: 'i9j0k1l', author: 'bob',     date: '2026-02-01', msg: 'fix: 修复日志模块内存泄漏',       branch: 'fix-logger', add: 12,  del: 8,  files: [{n:'src/logger.ts',a:12,d:8}], narr: '日志模块在高压场景下存在句柄泄漏，这次修复了缓存队列的清理逻辑。' },
+  { hash: 'j0k1l2m', author: 'carol',   date: '2026-02-03', msg: 'test: 添加集成测试套件',          branch: 'main', add: 200, del: 0,  files: [{n:'tests/integration/engine.test.ts',a:120,d:0},{n:'tests/integration/cli.test.ts',a:80,d:0}], narr: '添加了引擎和 CLI 的集成测试套件，覆盖了核心流程的端到端场景。' },
+  { hash: 'k1l2m3n', author: 'alice',   date: '2026-02-08', msg: 'merge: 合并插件分支到主分支',     branch: 'main', add: 0,   del: 0,  files: [], narr: 'feat-plugin 分支经过测试后合并到 main，这是项目的一个重要里程碑——插件系统正式可用。' },
+  { hash: 'l2m3n4o', author: 'bob',     date: '2026-02-12', msg: 'feat: 添加用户权限管理系统',       branch: 'main', add: 135, del: 15, files: [{n:'src/auth/access.ts',a:60,d:10},{n:'src/auth/role.ts',a:45,d:0},{n:'src/auth/index.ts',a:15,d:5},{n:'src/plugin/api.ts',a:15,d:0}], narr: '引入了基于角色的访问控制（RBAC），将权限校验从散落在各处的逻辑集中到 auth 模块——代码库的"安全基建"。' },
+  { hash: 'm3n4o5p', author: 'carol',   date: '2026-02-18', msg: 'feat: 添加数据库迁移工具',         branch: 'feat-db', add: 180, del: 0,  files: [{n:'src/db/migrate.ts',a:90,d:0},{n:'src/db/schema.ts',a:60,d:0},{n:'src/db/seed.ts',a:30,d:0}], narr: '创建了数据库迁移工具，支持版本化 schema 变更和数据种子填充。' },
+  { hash: 'n4o5p6q', author: 'alice',   date: '2026-02-22', msg: 'feat: 添加 API 速率限制',          branch: 'main', add: 65,  del: 5,  files: [{n:'src/middleware/ratelimit.ts',a:55,d:0},{n:'src/core/engine.ts',a:10,d:5}], narr: '实现了基于令牌桶的 API 速率限制中间件，防止单个用户滥用资源。' },
+  { hash: 'o5p6q7r', author: 'bob',     date: '2026-03-01', msg: 'refactor: 模块拆分与重命名',       branch: 'main', add: 100, del: 80, files: [{n:'src/core/engine.ts',a:40,d:50},{n:'src/core/processor.ts',a:60,d:0},{n:'src/core/types.ts',a:0,d:30}], narr: '将越来越臃肿的 engine 模块拆分为 engine 和 processor 两个模块，types 中的类型定义分散到各模块内部。' },
+  { hash: 'p6q7r8s', author: 'carol',   date: '2026-03-05', msg: 'feat: 添加缓存层',                branch: 'main', add: 110, del: 0,  files: [{n:'src/cache/redis.ts',a:65,d:0},{n:'src/cache/memory.ts',a:45,d:0}], narr: '实现了双层缓存架构：本地内存缓存用于热数据，Redis 作为分布式缓存后端。' },
+  { hash: 'q7r8s9t', author: 'alice',   date: '2026-03-10', msg: 'docs: 添加 API 文档自动生成',      branch: 'main', add: 45,  del: 0,  files: [{n:'scripts/gendocs.ts',a:30,d:0},{n:'docs/api.md',a:15,d:0}], narr: '引入了基于 TypeScript 类型定义的 API 文档自动生成脚本，减少手动维护文档的工作量。' },
+  { hash: 'a1b2c3e', author: 'bob',     date: '2026-03-12', msg: 'fix: 修复并发请求下的竞态条件',   branch: 'fix-race', add: 25,  del: 15, files: [{n:'src/core/processor.ts',a:20,d:10},{n:'src/middleware/ratelimit.ts',a:5,d:5}], narr: '高并发下 processor 的状态更新存在竞态条件，改用原子操作修复。' },
+  { hash: 'r8s9t0u', author: 'alice',   date: '2026-03-15', msg: 'feat: 添加用户权限管理系统',       branch: 'main', add: 120, del: 12, files: [{n:'src/auth/access.ts',a:55,d:8},{n:'src/auth/role.ts',a:45,d:0},{n:'src/auth/index.ts',a:20,d:4}], narr: '这次提交完善了权限系统，增加了角色继承机制和权限缓存，显著提升了授权查询性能。' },
+  { hash: 's9t0u1v', author: 'carol',   date: '2026-03-20', msg: 'feat: 添加 WebSocket 支持',        branch: 'main', add: 95,  del: 0,  files: [{n:'src/ws/server.ts',a:55,d:0},{n:'src/ws/handler.ts',a:40,d:0}], narr: '实现了 WebSocket 服务端，支持实时推送通知和事件订阅。' },
+  { hash: 't0u1v2w', author: 'bob',     date: '2026-03-25', msg: 'chore: 升级依赖并修复兼容性',     branch: 'main', add: 30,  del: 20, files: [{n:'package.json',a:15,d:10},{n:'src/core/engine.ts',a:10,d:5},{n:'src/config.ts',a:5,d:5}], narr: '更新了主要依赖版本，并修复了因 API 变更导致的兼容性问题。' },
+  { hash: 'u1v2w3x', author: 'alice',   date: '2026-04-01', msg: 'release: v1.0.0-alpha',           branch: 'main', add: 10,  del: 5,  files: [{n:'package.json',a:5,d:3},{n:'CHANGELOG.md',a:5,d:2}], narr: '🎉 第一个里程碑！发布了 v1.0.0-alpha 版本，插件系统、权限管理、WebSocket 等核心功能全部就绪。' },
+  { hash: 'v2w3x4y', author: 'carol',   date: '2026-04-05', msg: 'perf: 优化查询性能',              branch: 'main', add: 40,  del: 25, files: [{n:'src/auth/access.ts',a:25,d:15},{n:'src/cache/redis.ts',a:15,d:10}], narr: '优化了权限查询的缓存命中率，将热点策略从 LRU 改为 LFU，缓存命中率提升了约 35%。' },
+  { hash: 'w3x4y5z', author: 'bob',     date: '2026-04-08', msg: 'feat: 添加指标收集与监控',         branch: 'main', add: 130, del: 0,  files: [{n:'src/metrics/collector.ts',a:70,d:0},{n:'src/metrics/prometheus.ts',a:60,d:0}], narr: '引入了 Prometheus 指标收集，覆盖请求量、延迟、错误率等关键指标。' },
+  { hash: 'x4y5z6a', author: 'alice',   date: '2026-04-12', msg: 'merge: 合并数据库分支',            branch: 'main', add: 5,   del: 2,  files: [{n:'src/db/migrate.ts',a:3,d:1},{n:'src/db/index.ts',a:2,d:1}], narr: 'feat-db 分支合并到 main，数据库迁移工具与主应用集成。' },
+  { hash: 'y5z6a7b', author: 'carol',   date: '2026-04-15', msg: 'test: 添加性能基准测试',           branch: 'main', add: 160, del: 0,  files: [{n:'tests/bench/auth.bench.ts',a:90,d:0},{n:'tests/bench/engine.bench.ts',a:70,d:0}], narr: '为权限系统和引擎核心添加了性能基准测试，方便后续性能回归检测。' },
+  { hash: 'z6a7b8c', author: 'bob',     date: '2026-04-18', msg: 'fix: 修复 WebSocket 断线重连',     branch: 'fix-ws', add: 20,  del: 10, files: [{n:'src/ws/server.ts',a:15,d:5},{n:'src/ws/handler.ts',a:5,d:5}], narr: '修复了 WebSocket 在连接不稳定时的重连逻辑，加入了指数退避策略。' },
+  { hash: 'a7b8c9d', author: 'alice',   date: '2026-04-22', msg: 'refactor: 统一错误处理',           branch: 'main', add: 55,  del: 40, files: [{n:'src/core/errors.ts',a:30,d:0},{n:'src/core/engine.ts',a:10,d:20},{n:'src/middleware/error.ts',a:15,d:20}], narr: '将分散在各处的错误处理逻辑统一为 Error 类层次结构，中间件层统一捕获和格式化错误响应。' },
+  { hash: 'b8c9d0e', author: 'carol',   date: '2026-04-25', msg: 'feat: 添加国际化支持',             branch: 'main', add: 85,  del: 0,  files: [{n:'src/i18n/zh.json',a:45,d:0},{n:'src/i18n/en.json',a:40,d:0}], narr: '添加了国际化框架，首批支持中文和英文，方便在 Polaris 多语言环境中使用。' },
+  { hash: 'c9d0e1f', author: 'alice',   date: '2026-05-01', msg: 'release: v1.0.0-beta',             branch: 'main', add: 8,   del: 3,  files: [{n:'package.json',a:4,d:2},{n:'CHANGELOG.md',a:4,d:1}], narr: '📦 beta 版本发布，经过内部测试和 bug 修复，项目进入公测阶段。' },
+  { hash: 'd0e1f2g', author: 'bob',     date: '2026-05-05', msg: 'feat: 添加 GraphQL API',           branch: 'feat-gql', add: 200, del: 0,  files: [{n:'src/gql/schema.ts',a:90,d:0},{n:'src/gql/resolver.ts',a:80,d:0},{n:'src/gql/index.ts',a:30,d:0}], narr: '引入了 GraphQL API 层，为前端提供灵活的查询能力，减少 REST 接口的维护成本。' },
+  { hash: 'e1f2g3h', author: 'carol',   date: '2026-05-08', msg: 'feat: 添加搜索功能',               branch: 'main', add: 70,  del: 0,  files: [{n:'src/search/index.ts',a:40,d:0},{n:'src/search/fuzzy.ts',a:30,d:0}], narr: '实现了模糊搜索功能，支持按关键词搜索插件和文档。' },
+  { hash: 'f2g3h4i', author: 'alice',   date: '2026-05-12', msg: 'docs: 完善开发者文档',             branch: 'main', add: 300, del: 0,  files: [{n:'docs/DEVELOPMENT.md',a:120,d:0},{n:'docs/ARCHITECTURE.md',a:100,d:0},{n:'docs/PLUGIN.md',a:80,d:0}], narr: '补全了开发者文档，包括环境搭建、架构说明和插件开发指南，降低新贡献者门槛。' },
+  { hash: 'g3h4i5j', author: 'bob',     date: '2026-05-15', msg: 'merge: 合并 GraphQL 分支',         branch: 'main', add: 3,   del: 1,  files: [{n:'src/gql/index.ts',a:2,d:1},{n:'src/gql/resolver.ts',a:1,d:0}], narr: 'feat-gql 分支合并，GraphQL API 正式集成到主应用。' },
+  { hash: 'h4i5j6k', author: 'carol',   date: '2026-05-18', msg: 'chore: 配置 CI/CD 流水线',          branch: 'main', add: 40,  del: 0,  files: [{n:'.github/workflows/ci.yml',a:25,d:0},{n:'.github/workflows/release.yml',a:15,d:0}], narr: '配置了 GitHub Actions 流水线，包括 lint、test、build 和自动发布流程。' },
+  { hash: 'i5j6k7l', author: 'alice',   date: '2026-05-22', msg: 'feat: 添加插件市场 API',           branch: 'main', add: 95,  del: 0,  files: [{n:'src/marketplace/api.ts',a:55,d:0},{n:'src/marketplace/store.ts',a:40,d:0}], narr: '实现了插件市场 API，支持远程插件发现、安装和更新——这是项目的"应用商店"基建。' },
+  { hash: 'j6k7l8m', author: 'bob',     date: '2026-05-25', msg: 'feat: 添加权限审计日志',           branch: 'main', add: 60,  del: 5,  files: [{n:'src/auth/audit.ts',a:50,d:0},{n:'src/auth/access.ts',a:10,d:5}], narr: '添加了权限变更审计日志，记录所有授权决策以供合规审查。' },
+  { hash: 'k7l8m9n', author: 'carol',   date: '2026-06-01', msg: 'release: v1.0.0-rc1',              branch: 'main', add: 5,   del: 2,  files: [{n:'package.json',a:3,d:1},{n:'CHANGELOG.md',a:2,d:1}], narr: '📦 候选版本发布，修复了 beta 阶段的社区反馈问题，准备正式发布。' },
+  { hash: 'l8m9n0o', author: 'alice',   date: '2026-06-05', msg: 'perf: 启动速度优化',               branch: 'main', add: 35,  del: 20, files: [{n:'src/plugin/loader.ts',a:20,d:12},{n:'src/core/engine.ts',a:15,d:8}], narr: '将插件加载从同步改为异步懒加载，启动时间从 3.2s 降到 1.1s。' },
+  { hash: 'm9n0o1p', author: 'bob',     date: '2026-06-10', msg: 'fix: 修复权限缓存穿透问题',        branch: 'main', add: 15,  del: 8,  files: [{n:'src/auth/access.ts',a:10,d:5},{n:'src/cache/redis.ts',a:5,d:3}], narr: '修复了缓存穿透导致数据库被打满的严重问题，加入布隆过滤器做第一层防护。' },
+  { hash: 'n0o1p2q', author: 'carol',   date: '2026-06-15', msg: 'feat: 添加健康检查端点',           branch: 'main', add: 45,  del: 0,  files: [{n:'src/health/checker.ts',a:30,d:0},{n:'src/health/endpoint.ts',a:15,d:0}], narr: '添加了健康检查机制，支持各依赖组件的独立健康状态检测。' },
+  { hash: 'o1p2q3r', author: 'alice',   date: '2026-06-20', msg: 'release: v1.0.0',                  branch: 'main', add: 10,  del: 5,  files: [{n:'package.json',a:5,d:3},{n:'CHANGELOG.md',a:5,d:2}], narr: '🎉🎉🎉 v1.0.0 正式版发布！从第一个 commit 到今天，历经 6 个月，42 个提交，3 位贡献者。' },
+];
+
+// =====================================================================
+//  State
+// =====================================================================
+const state = {
+  commits: COMMITS,
+  currentIndex: 0,
+  isPlaying: false,
+  speed: 1,
+  animId: null,
+  lastFrame: 0,
+};
+
+// =====================================================================
+//  Canvas Rendering
+// =====================================================================
+const canvas = document.getElementById('timelineCanvas');
+const ctx = canvas.getContext('2d');
+const area = document.getElementById('timelineArea');
+
+let dpr = 1;
+let W = 0, H = 0;
+let scrollX = 0;
+let isDragging = false, dragStartX = 0, dragStartScroll = 0;
+const NODE_R = 6;
+const BRANCH_H = 36;
+const TOP_PAD = 20;
+const LEFT_PAD = 60;  // branch labels
+const RIGHT_PAD = 20;
+const MONTH_W = 120;
+
+function resize() {
+  dpr = window.devicePixelRatio || 1;
+  const rect = area.getBoundingClientRect();
+  W = rect.width;
+  H = rect.height;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  draw();
+}
+window.addEventListener('resize', resize);
+
+// Branch colors
+const BRANCH_COLORS = {
+  'main': { line: '#6c6cff', node: '#6c6cff', bg: 'rgba(108,108,255,0.15)' },
+  'feat-plugin': { line: '#4fc3f7', node: '#4fc3f7', bg: 'rgba(79,195,247,0.15)' },
+  'fix-logger': { line: '#ffc107', node: '#ffc107', bg: 'rgba(255,193,7,0.15)' },
+  'feat-db': { line: '#4caf7d', node: '#4caf7d', bg: 'rgba(76,175,125,0.15)' },
+  'fix-race': { line: '#ff6b9d', node: '#ff6b9d', bg: 'rgba(255,107,157,0.15)' },
+  'fix-ws': { line: '#ffc107', node: '#ffc107', bg: 'rgba(255,193,7,0.15)' },
+  'feat-gql': { line: '#4fc3f7', node: '#4fc3f7', bg: 'rgba(79,195,247,0.15)' },
+};
+const DEFAULT_BRANCH_COLOR = { line: '#9090b0', node: '#9090b0', bg: 'rgba(144,144,176,0.15)' };
+
+// Collect unique branches in order
+function getBranches() {
+  const seen = new Set();
+  const branches = [];
+  for (const c of state.commits) {
+    if (!seen.has(c.branch)) {
+      seen.add(c.branch);
+      branches.push(c.branch);
+    }
+  }
+  // Ensure main is first
+  const mainIdx = branches.indexOf('main');
+  if (mainIdx > 0) { branches.splice(mainIdx, 1); branches.unshift('main'); }
+  return branches;
+}
+
+function getBranchY(branch, branches) {
+  const idx = branches.indexOf(branch);
+  return TOP_PAD + idx * BRANCH_H + 20;
+}
+
+function getCommitX(index) {
+  return LEFT_PAD + index * 28;
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const branches = getBranches();
+  const totalW = LEFT_PAD + state.commits.length * 28 + RIGHT_PAD;
+  const viewW = W;
+
+  // Draw background grid
+  ctx.strokeStyle = 'rgba(42,42,64,0.5)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= state.commits.length; i += 5) {
+    const x = getCommitX(i) - scrollX;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+
+  // Draw month labels
+  ctx.fillStyle = '#606080';
+  ctx.font = '10px -apple-system, sans-serif';
+  ctx.textAlign = 'center';
+  let lastMonth = '';
+  for (let i = 0; i < state.commits.length; i++) {
+    const month = state.commits[i].date.slice(0, 7);
+    if (month !== lastMonth) {
+      const x = getCommitX(i) - scrollX;
+      ctx.fillText(month, x, 12);
+      lastMonth = month;
+    }
+  }
+
+  // Draw branch labels + lines
+  for (const branch of branches) {
+    const y = getBranchY(branch, branches);
+    const color = BRANCH_COLORS[branch] || DEFAULT_BRANCH_COLOR;
+
+    // Label
+    ctx.fillStyle = color.node;
+    ctx.font = '600 10px -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(branch, LEFT_PAD - 8, y + 4);
+
+    // Line
+    ctx.strokeStyle = color.line;
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    const firstX = getCommitX(0) - scrollX;
+    const lastX = getCommitX(state.commits.length - 1) - scrollX;
+    ctx.moveTo(firstX, y);
+    ctx.lineTo(lastX, y);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Nodes
+    for (let i = 0; i < state.commits.length; i++) {
+      if (state.commits[i].branch !== branch) continue;
+      const x = getCommitX(i) - scrollX;
+      const isSelected = i === state.currentIndex;
+
+      // Connecting line between consecutive nodes on same branch
+      ctx.strokeStyle = color.line;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1.5;
+      for (let j = i + 1; j < state.commits.length; j++) {
+        if (state.commits[j].branch !== branch) continue;
+        const nx = getCommitX(j) - scrollX;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(nx, y);
+        ctx.stroke();
+        break;
+      }
+      ctx.globalAlpha = 1;
+
+      // Node circle
+      ctx.beginPath();
+      ctx.arc(x, y, isSelected ? NODE_R + 3 : NODE_R, 0, Math.PI * 2);
+      ctx.fillStyle = isSelected ? '#fff' : color.node;
+      ctx.fill();
+      if (isSelected) {
+        ctx.strokeStyle = color.node;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // Merge indicator (branch point)
+      if (i > 0 && state.commits[i].branch !== state.commits[i-1].branch) {
+        ctx.beginPath();
+        ctx.arc(x, y, NODE_R + 5, 0, Math.PI * 2);
+        ctx.strokeStyle = color.node;
+        ctx.globalAlpha = 0.3;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      // Tag markers for releases
+      if (state.commits[i].msg.startsWith('release:')) {
+        ctx.fillStyle = '#ffc107';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('🏷', x, y - 14);
+      }
+    }
+  }
+
+  // Update progress bar
+  const pct = state.commits.length > 1 ? (state.currentIndex / (state.commits.length - 1)) * 100 : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `${state.currentIndex + 1}/${state.commits.length}`;
+}
+
+// =====================================================================
+//  Touch / Mouse Interaction
+// =====================================================================
+function getEventPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) {
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function getCommitAt(pos) {
+  const branches = getBranches();
+  for (let i = 0; i < state.commits.length; i++) {
+    const cx = getCommitX(i) - scrollX;
+    const cy = getBranchY(state.commits[i].branch, branches);
+    const dx = pos.x - cx;
+    const dy = pos.y - cy;
+    if (dx * dx + dy * dy < 400) return i;
+  }
+  return -1;
+}
+
+function onPointerDown(e) {
+  e.preventDefault();
+  const pos = getEventPos(e);
+  const idx = getCommitAt(pos);
+  if (idx >= 0) {
+    state.currentIndex = idx;
+    if (state.isPlaying) { stopPlay(); }
+    draw();
+    showCommitDetail(idx);
+    return;
+  }
+  // Start drag
+  isDragging = true;
+  dragStartX = pos.x;
+  dragStartScroll = scrollX;
+  canvas.style.cursor = 'grabbing';
+}
+
+function onPointerMove(e) {
+  e.preventDefault();
+  const pos = getEventPos(e);
+  if (isDragging) {
+    scrollX = dragStartScroll + (dragStartX - pos.x);
+    const maxScroll = Math.max(0, LEFT_PAD + state.commits.length * 28 + RIGHT_PAD - W);
+    scrollX = Math.max(0, Math.min(scrollX, maxScroll));
+    draw();
+    return;
+  }
+  // Hover
+  const idx = getCommitAt(pos);
+  canvas.style.cursor = idx >= 0 ? 'pointer' : 'default';
+}
+
+function onPointerUp(e) {
+  isDragging = false;
+  canvas.style.cursor = 'default';
+}
+
+// Mouse events
+canvas.addEventListener('mousedown', onPointerDown);
+canvas.addEventListener('mousemove', onPointerMove);
+canvas.addEventListener('mouseup', onPointerUp);
+canvas.addEventListener('mouseleave', onPointerUp);
+
+// Touch events
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) onPointerDown(e);
+}, { passive: false });
+canvas.addEventListener('touchmove', (e) => {
+  if (e.touches.length === 1) onPointerMove(e);
+}, { passive: false });
+canvas.addEventListener('touchend', onPointerUp, { passive: false });
+
+// =====================================================================
+//  Playback
+// =====================================================================
+function togglePlay() {
+  if (state.isPlaying) { stopPlay(); }
+  else { startPlay(); }
+}
+
+function startPlay() {
+  state.isPlaying = true;
+  document.getElementById('playBtn').textContent = '⏸';
+  document.getElementById('playBtn').classList.add('playing');
+  state.lastFrame = performance.now();
+  playLoop();
+}
+
+function stopPlay() {
+  state.isPlaying = false;
+  document.getElementById('playBtn').textContent = '▶';
+  document.getElementById('playBtn').classList.remove('playing');
+  if (state.animId) { cancelAnimationFrame(state.animId); state.animId = null; }
+}
+
+function playLoop(now) {
+  if (!state.isPlaying) return;
+  const elapsed = (now - state.lastFrame) / 1000;
+  const step = state.speed * elapsed * 0.8; // commits per second
+  if (elapsed > 0.05) {
+    state.currentIndex = Math.min(state.currentIndex + Math.max(1, Math.round(step)), state.commits.length - 1);
+    state.lastFrame = now;
+    draw();
+    if (state.currentIndex >= state.commits.length - 1) {
+      stopPlay();
+      state.currentIndex = 0;
+      draw();
+      return;
+    }
+  }
+  state.animId = requestAnimationFrame(playLoop);
+}
+
+function setSpeed(s) {
+  state.speed = s;
+  document.querySelectorAll('.speed-btn').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.speed-btn').forEach(el => {
+    if (el.textContent === s + '×') el.classList.add('active');
+  });
+}
+
+function seekProgress(e) {
+  const rect = document.getElementById('progressBar').getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  state.currentIndex = Math.round(pct * (state.commits.length - 1));
+  if (state.isPlaying) stopPlay();
+  draw();
+  showCommitDetail(state.currentIndex);
+}
+
+function toggleSearch() {
+  alert('搜索功能：按作者、关键词或时间范围筛选提交（实现中）');
+}
+
+function toggleExport() {
+  alert('导出功能：生成 Markdown 报告或截图分享（实现中）');
+}
+
+// =====================================================================
+//  Bottom Sheet — Commit Detail
+// =====================================================================
+const sheet = document.getElementById('bottomSheet');
+const overlay = document.getElementById('sheetOverlay');
+
+function showCommitDetail(index) {
+  const c = state.commits[index];
+  if (!c) return;
+
+  document.getElementById('sheetTitle').textContent = c.msg;
+  document.getElementById('sheetMeta').innerHTML = `
+    <span>👤 ${c.author}</span>
+    <span>🕐 ${c.date}</span>
+    <span>📍 ${c.hash}</span>
+  `;
+
+  let html = '';
+
+  // Branch tags
+  html += `<div class="branch-tags">`;
+  const branchClass = c.branch === 'main' ? 'main' : c.branch.startsWith('feat') ? 'feat' : c.branch.startsWith('fix') ? 'fix' : '';
+  html += `<span class="branch-tag ${branchClass}">🌿 ${c.branch}</span>`;
+  html += `</div>`;
+
+  // AI Narration
+  if (c.narr) {
+    html += `<div class="narration">
+      <div class="narration-label">🤖 AI 旁白</div>
+      <div class="narration-text">${c.narr}</div>
+    </div>`;
+  }
+
+  // File changes
+  html += `<div class="file-list">`;
+  for (const f of c.files) {
+    const statType = f.a > 0 && f.d === 0 ? 'add' : f.d > 0 && f.a === 0 ? 'del' : 'mod';
+    const statLabel = statType === 'add' ? `+${f.a}` : statType === 'del' ? `-${f.d}` : `+${f.a} -${f.d}`;
+    html += `<div class="file-item" onclick="this.classList.toggle('open')">
+      <span class="file-name">${f.n}</span>
+      <span class="file-stat ${statType}">${statLabel}</span>
+      <div class="file-diff">
+        <span class="diff-add">+${'▌'.repeat(Math.min(f.a, 20))}</span>
+        ${f.d > 0 ? '\n' + '<span class="diff-del">-' + '▌'.repeat(Math.min(f.d, 20)) + '</span>' : ''}
+        <span style="color:var(--text2);display:block;margin-top:4px;">${f.a + f.d} 行变更</span>
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+
+  // Stats summary
+  const totalAdd = c.files.reduce((s, f) => s + f.a, 0);
+  const totalDel = c.files.reduce((s, f) => s + f.d, 0);
+  html += `<div style="display:flex;gap:12px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);">
+    <span>📄 ${c.files.length} 个文件</span>
+    <span class="file-stat add">+${totalAdd}</span>
+    <span class="file-stat del">-${totalDel}</span>
+  </div>`;
+
+  document.getElementById('sheetBody').innerHTML = html;
+  sheet.classList.add('open');
+  overlay.classList.add('show');
+}
+
+function closeSheet() {
+  sheet.classList.remove('open');
+  overlay.classList.remove('show');
+}
+
+// =====================================================================
+//  Auto-play hint
+// =====================================================================
+let hintTimer;
+function showHint() {
+  const hint = document.getElementById('hint');
+  hint.classList.add('show');
+  setTimeout(() => hint.classList.remove('show'), 4000);
+}
+
+// =====================================================================
+//  Init
+// =====================================================================
+resize();
+showHint();
+
+// Center on first commit
+scrollX = 0;
+draw();
+</script>
+</body>
+</html>

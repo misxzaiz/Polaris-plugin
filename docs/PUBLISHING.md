@@ -30,11 +30,11 @@ node scripts/pack.js plugins/<your-plugin>
 
 ### 3. 生成 update.json
 
-复制 `plugin.json` 为 `update.json`，确保 `origin.updateUrl` / `origin.downloadUrl` 指向本仓库 raw 文件地址：
+复制 `plugin.json` 为 `update.json`，确保 `origin.updateUrl` / `origin.downloadUrl` 指向本仓库 CDN 地址：
 
 ```
-https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/<your-plugin>/update.json
-https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/<your-plugin>/<your-plugin>.zip
+https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/update.json
+https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/<your-plugin>.zip
 ```
 
 > ⚠️ 每次 bump 版本号时，`plugin.json` 与 `update.json` 必须同步更新。
@@ -52,9 +52,9 @@ https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/<your-plu
   "author": "you",
   "category": "utility",
   "tags": ["mcp"],
-  "manifestUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/<your-plugin>/plugin.json",
-  "downloadUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/<your-plugin>/<your-plugin>.zip",
-  "updateUrl": "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/<your-plugin>/update.json",
+  "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/plugin.json",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/<your-plugin>.zip",
+  "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/update.json",
   "sha256": "<由 pack.js 输出>",
   "permissions": { "aiToolAccess": true },
   "readme": "# Your Plugin\n..."

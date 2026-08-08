@@ -36,13 +36,11 @@ for (const p of index.plugins) {
   seenIds.add(p.id)
 
   // 校验对应插件目录：从 manifestUrl 解析（最可靠）
-  let pluginDir
-  const urlMatch = p.manifestUrl.match(/\/plugins\/([^/]+)\/plugin\.json/)
-  if (urlMatch) {
-    pluginDir = path.join(root, 'plugins', urlMatch[1])
-  } else {
-    pluginDir = path.join(root, 'plugins', p.id.split('.').pop())
-  }
+  const dirName = (() => {
+    const urlMatch = p.manifestUrl.match(/\/plugins\/([^/]+)\/plugin\.json/)
+    return urlMatch ? urlMatch[1] : p.id.split('.').pop()
+  })()
+  const pluginDir = path.join(root, 'plugins', dirName)
   const pluginJsonPath = path.join(pluginDir, 'plugin.json')
   const updateJsonPath = path.join(pluginDir, 'update.json')
 

@@ -1,59 +1,13 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-05T00:00:00Z",
+  "updated": "2026-08-08T12:59:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
     "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
   },
   "plugins": [
-    {
-      "id": "polaris.example.hello",
-      "name": "Hello Tool (示例)",
-      "version": "1.0.0",
-      "description": "最小可安装插件示例：贡献一个 MCP 工具 echo。",
-      "author": "Polaris",
-      "category": "utility",
-      "tags": [
-        "example",
-        "mcp"
-      ],
-      "icon": "Terminal",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/hello-tool",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/hello-tool.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hello-tool/update.json",
-      "sha256": "db28bf38ed6d20952c2513a5b24d752e8e9033830c86e7de5513cfb124b48d3e",
-      "permissions": {
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# Hello Tool\n\n最小可安装插件示例。"
-    },
-    {
-      "id": "polaris.tern",
-      "name": "Tern — 终端助手",
-      "version": "1.0.0",
-      "description": "终端助手：自然语言转命令、Git 操作、错误分析。支持 OpenAI 兼容 API。",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": ["terminal", "ai", "git", "developer"],
-      "icon": "Terminal",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/tern",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tern/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tern/tern.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tern/update.json",
-      "sha256": "3d19dd03fe378e9c2ea6a82c23a473aa79c3fad68003fa49432596efdfcb2699",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "# Tern — 终端助手\n\n终端助手面板：自然语言转命令、Git 操作、错误分析。"
-    },
     {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",
@@ -73,7 +27,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "db2ff74578e4aaf470f47e84aa8f4c4cb6054f98700afb7a14bbd1ae14d58e9d",
+      "sha256": "00568348003e33853a4bdaff21a2087b4836876111d7bd01bd65fc6ae1b9ffc7",
       "permissions": {
         "aiToolAccess": true,
         "network": true,

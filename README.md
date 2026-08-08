@@ -24,12 +24,13 @@ Polaris-plugin/
 ├── index.json                  # 顶层插件索引（商城列表）
 ├── schemas/
 │   └── index.schema.json       # 索引 JSON Schema
-├── plugins/                    # 各插件源码 + 打包产物
-│   └── hello-tool/
+├── plugins/                    # 插件源码 + 打包产物
+│   └── marketplace/            # 插件商城插件本身
 │       ├── plugin.json         # 插件 manifest（Polaris 规范）
 │       ├── update.json         # 更新清单（供 checkPluginUpdate 拉取）
 │       ├── mcp/server.js       # 插件实现
-│       └── hello-tool.zip      # 安装包（由 scripts/pack 生成）
+│       ├── src/ + dist/        # 面板源码与构建产物
+│       └── marketplace.zip     # 安装包（由 scripts/pack 生成）
 ├── docs/                       # 商城使用与上架文档
 │   ├── SPEC.md                # 插件规范
 │   ├── PUBLISHING.md           # 上架指南
@@ -43,10 +44,10 @@ Polaris-plugin/
 ### 方式 A：在 Polaris 设置 → 插件 → 远程安装
 填入插件 zip 的 `downloadUrl`，例如：
 ```
-https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/hello-tool/hello-tool.zip
+https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip
 ```
 
-### 方式 B：插件市场面板（规划中）
+### 方式 B：插件市场面板（默认）
 Polaris 读取本仓库 `index.json` 渲染可浏览列表，点击「安装」即调用 `installRemotePlugin`。
 
 ## 上架一个新插件
