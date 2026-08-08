@@ -42,6 +42,13 @@
         },
         "protocol": "pi-rpc",
         "sessionFlags": "omp",
+        "providerConfig": {
+          "configFile": "agent/models.yml",
+          "format": "yaml",
+          "apiValue": "openai-completions",
+          "providerArg": "--provider",
+          "modelArg": "--model"
+        },
         "capabilities": {
           "tools": true,
           "streaming": true,
