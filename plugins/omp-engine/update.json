@@ -1,6 +1,24 @@
 {
+  "id": "omp-engine",
+  "name": "Oh My Pi Engine",
   "version": "1.0.2",
   "description": "修复 omp 引擎 RPC 协议兼容：sessionFlags 改为 omp 风格（--resume 代替 --session-id），新增 omp 输入格式支持",
+  "author": "Polaris Community",
+  "category": "ai-engine",
+  "tags": [
+    "ai",
+    "engine",
+    "omp",
+    "coding-agent",
+    "oh-my-pi"
+  ],
+  "icon": "Terminal",
+  "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
+  "repository": "https://github.com/misxzaiz/Polaris-plugin",
+  "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/plugin.json",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip",
+  "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
+  "sha256": "",
   "published": "2026-08-08T15:53:00Z",
   "minAppVersion": "10.3.5",
   "origin": {
@@ -8,5 +26,31 @@
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip"
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "network": true
+  },
+  "contributes": {
+    "engines": [
+      {
+        "id": "omp",
+        "name": "Oh My Pi",
+        "description": "Oh My Pi (omp) — 基于 Pi fork 重构的全能终端 AI 编程代理。内置 LSP（13 种操作）、DAP 调试（27 种操作）、ast_edit 结构化编辑、子代理并发、代码审查等功能。",
+        "cli": {
+          "command": "omp",
+          "installGuide": "安装方式: macOS/Linux → curl -fsSL https://omp.sh/install | sh ; Windows → irm https://omp.sh/install.ps1 | iex (PowerShell)"
+        },
+        "protocol": "pi-rpc",
+        "sessionFlags": "omp",
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": true,
+          "resume": true
+        }
+      }
+    ]
   }
 }
