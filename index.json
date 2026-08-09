@@ -115,9 +115,9 @@
       "icon": "BookOpen",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/zen.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/zen.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/update.json",
       "sha256": "224ff529bee984a2517cd9fd6aa95a6ccbf0c57adc3b9ef697584f34ef9e8fcd",
       "permissions": {
         "aiToolAccess": true,
