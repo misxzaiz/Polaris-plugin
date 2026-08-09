@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-10T00:05:00Z",
+  "updated": "2026-08-10T01:00:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -126,6 +126,30 @@
       },
       "screenshots": [],
       "readme": "# 禅房\n\n一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。\n\n## 功能\n\n- **木鱼**：点击或按空格敲击，连击有反馈，可选择木鱼/钵/磬音色\n- **抽签**：抽一支编程签，看今日运势\n- **答案之书**：默念问题，翻页得到答案，可追问\n- **日记**：小僧记录你的禅修之路\n\nAI 也可以调用小僧：`knock_fish`（敲木鱼）、`draw_fortune`（抽签）、`open_book`（翻答案之书）。"
+    },
+    {
+      "id": "polaris.blender-modeling",
+      "name": "Blender 3D 建模",
+      "version": "0.1.0",
+      "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["3d", "blender", "modeling", "preview", "mcp", "panel"],
+      "icon": "Target",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/blender-modeling",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/blender-modeling.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/update.json",
+      "sha256": "537fb1fda1659409d36b8ecadc49d7794d3f7418fd75878f7c540e150c44f716",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "appConfigRead": true
+      },
+      "screenshots": [],
+      "readme": "# Blender 3D 建模\n\nAI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。\n\n## 功能\n\n- **AI 对话建模**：在聊天中让 AI 帮你建 3D 模型\n- **聊天内嵌预览**：生成结果直接以 Three.js 3D 场景展示\n- **活动栏面板**：快速建模入口、模型管理\n- **木纹纹理**：程序化生成木纹贴图，自动嵌入 GLB\n\n## 使用方式\n\n1. 确保已安装 Blender（4.0+），并处于 PATH 中\n2. 安装插件后，在聊天中发送「帮我建一个木鱼」\n3. AI 自动调用 Blender 建模并展示预览\n\n## 内置脚本\n\n- **muyu**：传统木鱼法器，含底座、木鱼槌、木纹纹理\n- **qbox_character**：Q 版卡通角色（噜噜风格，开发中）\n\n## 环境变量\n\n- `BLENDER_PATH`：指定 blender.exe 路径（可选，默认自动查找）"
     }
   ]
 }
