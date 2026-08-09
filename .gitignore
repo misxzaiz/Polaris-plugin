@@ -7,3 +7,6 @@ node_modules/
 
 # 插件打包临时目录
 plugins/*/.tmp-pack-*
+
+# Blender 建模插件生成目录（测试输出，不提交）
+plugins/blender-modeling/generated/

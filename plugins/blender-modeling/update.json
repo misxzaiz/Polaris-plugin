@@ -1,7 +1,7 @@
 {
   "id": "polaris.blender-modeling",
   "name": "Blender 3D 建模",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。",
   "enabledByDefault": true,
   "contributes": {
@@ -48,6 +48,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/blender-modeling",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/blender-modeling/blender-modeling.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/blender-modeling.zip"
   }
 }

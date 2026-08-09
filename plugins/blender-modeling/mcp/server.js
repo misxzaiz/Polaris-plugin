@@ -300,6 +300,10 @@ async function runBlenderScript(scriptFile, params, outputName) {
       const stats = fs.statSync(outputPath)
       console.error(`[blender-mcp] Generated: ${outputPath} (${(stats.size / 1024).toFixed(1)} KB)`)
 
+      // 读取 GLB 为 base64（用于自包含预览，不依赖 HTTP 服务）
+      const glbBuffer = fs.readFileSync(outputPath)
+      const glbBase64 = glbBuffer.toString('base64')
+
       // 解析部件数
       const partsMatch = stdout.match(/Created\s+(\d+)\s+parts/)
       const parts = partsMatch ? parseInt(partsMatch[1]) : 0
@@ -311,6 +315,7 @@ async function runBlenderScript(scriptFile, params, outputName) {
       resolve({
         modelUrl: `http://127.0.0.1:${httpPort}/generated/${outputFile}`,
         previewUrl: `http://127.0.0.1:${httpPort}/preview.html?model=generated/${outputFile}`,
+        glbData: `data:model/gltf-binary;base64,${glbBase64}`,
         outputPath: exportPath,
         parts,
         script: path.basename(scriptFile, '.py'),

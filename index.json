@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-10T01:00:00Z",
+  "updated": "2026-08-10T01:15:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -130,8 +130,8 @@
     {
       "id": "polaris.blender-modeling",
       "name": "Blender 3D 建模",
-      "version": "0.1.0",
-      "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。",
+      "version": "0.1.1",
+      "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览（自包含，跨网络可用）。",
       "author": "Polaris",
       "category": "dev",
       "tags": ["3d", "blender", "modeling", "preview", "mcp", "panel"],
@@ -141,7 +141,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/blender-modeling.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/update.json",
-      "sha256": "537fb1fda1659409d36b8ecadc49d7794d3f7418fd75878f7c540e150c44f716",
+      "sha256": "a840a156d1ab238cf9b93b660966fe2c194538b239736c1ca94fcf5909b44049",
       "permissions": {
         "aiToolAccess": true,
         "workspaceRead": true,
