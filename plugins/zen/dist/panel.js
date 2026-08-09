@@ -1,5 +1,5 @@
 // src/Panel.tsx
-import { createElement as h, useCallback, useEffect, useRef, useState } from "react";
+import { createElement as h2, useCallback, useEffect as useEffect2, useRef as useRef2, useState } from "react";
 
 // node_modules/zustand/esm/vanilla.mjs
 var createStoreImpl = (createState) => {
@@ -399,20 +399,334 @@ var useZenStore = create()(
     }
   )
 );
-function getMonkFace(mood) {
-  switch (mood) {
-    case "idle":
-      return "( -_- )";
-    case "content":
-      return "( ^_^ )";
-    case "sleepy":
-      return "( -_-)zzz";
-    case "happy":
-      return "( ^o^ )";
+
+// src/MonkCanvas.tsx
+import { createElement as h, useEffect, useRef } from "react";
+var MONK_COLORS = {
+  skin: "#f5c99b",
+  skinShadow: "#e0a877",
+  robe: "#8a9a8a",
+  robeShadow: "#6f7f6f",
+  face: "#f7d4a8",
+  eyeClosed: "#3a3a3a",
+  eyeOpen: "#2a2a2a",
+  mouth: "#c96f5a",
+  blush: "#e8a08a",
+  bead: "#c96f5a"
+};
+var W = 120;
+var H = 120;
+function drawMonk(ctx, t, mood, isSleeping) {
+  ctx.clearRect(0, 0, W, H);
+  const breathe = isSleeping ? 0 : Math.sin(t * 2e-3) * 2;
+  const bob = mood === "happy" ? Math.abs(Math.sin(t * 6e-3)) * 6 : 0;
+  const sway = mood === "happy" ? Math.sin(t * 4e-3) * 2 : 0;
+  ctx.save();
+  ctx.translate(W / 2 + sway, H / 2 + breathe + bob);
+  const cx = 0;
+  const cy = 0;
+  ctx.fillStyle = MONK_COLORS.robe;
+  ctx.beginPath();
+  ctx.moveTo(-34, 18);
+  ctx.lineTo(-22, 52);
+  ctx.lineTo(22, 52);
+  ctx.lineTo(34, 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = MONK_COLORS.robeShadow;
+  ctx.beginPath();
+  ctx.moveTo(-22, 52);
+  ctx.lineTo(0, 52);
+  ctx.lineTo(0, 18);
+  ctx.lineTo(-22, 18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = MONK_COLORS.skin;
+  ctx.beginPath();
+  ctx.arc(cx, cy - 2, 24, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = MONK_COLORS.skinShadow;
+  ctx.beginPath();
+  ctx.arc(cx, cy - 20, 9, Math.PI, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = MONK_COLORS.eyeClosed;
+  ctx.lineWidth = 2;
+  ctx.lineCap = "round";
+  if (mood === "happy") {
+    ctx.strokeStyle = MONK_COLORS.eyeClosed;
+    ctx.beginPath();
+    ctx.arc(cx - 9, cy - 2, 5, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx + 9, cy - 2, 5, Math.PI * 1.1, Math.PI * 1.9);
+    ctx.stroke();
+  } else if (mood === "content" || mood === "idle" && !isSleeping) {
+    ctx.fillStyle = MONK_COLORS.eyeOpen;
+    ctx.beginPath();
+    ctx.arc(cx - 9, cy - 2, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + 9, cy - 2, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(cx - 13, cy - 2);
+    ctx.lineTo(cx - 5, cy - 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx + 5, cy - 2);
+    ctx.lineTo(cx + 13, cy - 2);
+    ctx.stroke();
   }
+  ctx.fillStyle = MONK_COLORS.blush;
+  ctx.globalAlpha = isSleeping ? 0.4 : 0.3;
+  ctx.beginPath();
+  ctx.arc(cx - 15, cy + 6, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx + 15, cy + 6, 3.5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = MONK_COLORS.mouth;
+  ctx.lineWidth = 1.6;
+  if (mood === "sleepy") {
+    ctx.beginPath();
+    ctx.arc(cx, cy + 8, 3, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (mood === "happy") {
+    ctx.beginPath();
+    ctx.arc(cx, cy + 6, 5, Math.PI * 0.15, Math.PI * 0.85);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, cy + 8);
+    ctx.lineTo(cx + 4, cy + 8);
+    ctx.stroke();
+  }
+  ctx.fillStyle = MONK_COLORS.bead;
+  ctx.beginPath();
+  ctx.arc(cx, cy - 14, 1.8, 0, Math.PI * 2);
+  ctx.fill();
+  if (mood === "sleepy") {
+    ctx.fillStyle = MONK_COLORS.eyeClosed;
+    ctx.font = "10px monospace";
+    ctx.fillText("z", 20 + Math.sin(t * 3e-3) * 2, -18);
+    ctx.fillText("Z", 30 + Math.sin(t * 3e-3) * 3, -26);
+  }
+  ctx.restore();
+}
+function MonkCanvas({ mood = "idle", size = 120 }) {
+  const canvasRef = useRef(null);
+  const moodRef = useRef(mood);
+  moodRef.current = mood;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const isSleeping = moodRef.current === "sleepy";
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.scale(dpr, dpr);
+    let raf = 0;
+    const start = performance.now();
+    const loop = (now) => {
+      const t = now - start;
+      drawMonk(ctx, t, moodRef.current, isSleeping);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [size]);
+  return h("canvas", {
+    ref: canvasRef,
+    style: { width: size, height: size },
+    width: size,
+    height: size
+  });
+}
+
+// src/zenStyles.ts
+var injected = false;
+function ensureZenStyles() {
+  if (injected) return;
+  injected = true;
+  const style = document.createElement("style");
+  style.textContent = `
+    /* \u2500\u2500 \u6728\u9C7C \u2500\u2500 */
+    @keyframes muyu-pulse {
+      0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(110, 168, 254, 0.4); }
+      40% { transform: scale(0.92); box-shadow: 0 0 0 8px rgba(110, 168, 254, 0.1); }
+      100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(110, 168, 254, 0); }
+    }
+    @keyframes muyu-ripple {
+      0% { transform: scale(0.8); opacity: 0.6; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    .muyu-btn {
+      position: relative;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      border: 2px solid var(--border-color, #3f3f46);
+      background: radial-gradient(circle at 40% 35%, #d4a76a, #b8864a 50%, #8b6914);
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      display: flex; align-items: center; justify-content: center;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .muyu-btn:hover { border-color: var(--accent, #6366f1); box-shadow: 0 0 16px rgba(110, 168, 254, 0.15); }
+    .muyu-btn:active { transform: scale(0.96); }
+    .muyu-btn.pulse { animation: muyu-pulse 0.3s ease-out; }
+    .muyu-btn::before {
+      content: ''; position: absolute; top: 50%; left: 50%;
+      width: 36px; height: 36px; transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 45% 40%, rgba(255,255,255,0.25), transparent 60%);
+      pointer-events: none;
+    }
+    .muyu-btn .muyu-eye {
+      position: absolute; width: 10px; height: 10px; border-radius: 50%;
+      background: #2a1a0a; top: 38%; left: 62%; transform: translate(-50%, -50%);
+      box-shadow: 0 0 2px rgba(0,0,0,0.3);
+    }
+    .muyu-btn .muyu-eye::after {
+      content: ''; position: absolute; width: 4px; height: 4px;
+      border-radius: 50%; background: white; top: 2px; left: 2px;
+    }
+    .muyu-btn .muyu-mouth {
+      position: absolute; width: 14px; height: 8px;
+      border-bottom: 2px solid #5a3a1a; border-radius: 50%;
+      bottom: 30%; left: 62%; transform: translateX(-50%);
+    }
+    .muyu-ripple {
+      position: absolute; inset: 0; border-radius: 50%;
+      border: 2px solid var(--accent, #6366f1);
+      pointer-events: none;
+      animation: muyu-ripple 0.5s ease-out forwards;
+    }
+
+    /* \u2500\u2500 \u62BD\u7B7E \u2500\u2500 */
+    @keyframes fortune-shake {
+      0% { transform: rotate(0deg); }
+      10% { transform: rotate(-8deg); }
+      20% { transform: rotate(8deg); }
+      30% { transform: rotate(-6deg); }
+      40% { transform: rotate(6deg); }
+      50% { transform: rotate(-4deg); }
+      60% { transform: rotate(4deg); }
+      70% { transform: rotate(-2deg); }
+      80% { transform: rotate(2deg); }
+      90% { transform: rotate(-1deg); }
+      100% { transform: rotate(0deg); }
+    }
+    @keyframes fortune-stick-slide {
+      0% { transform: translateY(-20px); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fortune-glow {
+      0% { filter: brightness(1); }
+      50% { filter: brightness(1.15); }
+      100% { filter: brightness(1); }
+    }
+    .fortune-shaking {
+      animation: fortune-shake 0.5s ease-in-out;
+    }
+    .fortune-stick {
+      animation: fortune-stick-slide 0.4s ease-out forwards;
+      opacity: 0;
+    }
+    .fortune-card {
+      animation: fortune-glow 1.5s ease-in-out 0.3s;
+    }
+    .fortune-card-inner {
+      animation: fortune-stick-slide 0.5s ease-out 0.2s both;
+    }
+
+    /* \u2500\u2500 \u7B54\u6848\u4E4B\u4E66\u7FFB\u9875 \u2500\u2500 */
+    @keyframes book-cover-open {
+      0% { transform: perspective(800px) rotateY(0deg); }
+      100% { transform: perspective(800px) rotateY(-180deg); }
+    }
+    @keyframes book-content-in {
+      0% { opacity: 0; transform: translateY(8px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes book-page-sway {
+      0%, 100% { transform: rotateY(0deg); }
+      25% { transform: rotateY(2deg); }
+      75% { transform: rotateY(-2deg); }
+    }
+    .book-cover {
+      position: relative;
+      width: 100%; max-width: 200px; height: 140px;
+      perspective: 800px;
+      cursor: pointer;
+    }
+    .book-cover-inner {
+      width: 100%; height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease-in-out;
+      border-radius: 4px;
+    }
+    .book-cover.open .book-cover-inner {
+      animation: book-cover-open 0.6s ease-in-out forwards;
+    }
+    .book-front, .book-back {
+      position: absolute; inset: 0;
+      backface-visibility: hidden;
+      border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; letter-spacing: 2px;
+    }
+    .book-front {
+      background: linear-gradient(135deg, #2d2d3a, #1a1a28);
+      border: 1px solid var(--border-color, #3f3f46);
+      color: var(--text-color, #e2e8f0);
+      z-index: 2;
+    }
+    .book-back {
+      background: var(--bg-background-elevated, #1e1e24);
+      border: 1px solid var(--border-color, #3f3f46);
+      transform: rotateY(180deg);
+      color: var(--text-secondary, #a1a1aa);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      padding: 12px;
+    }
+    .book-content {
+      animation: book-content-in 0.4s ease-out 0.5s both;
+    }
+    .book-body {
+      animation: book-page-sway 3s ease-in-out infinite;
+    }
+
+    /* \u2500\u2500 \u901A\u7528\u52A8\u753B \u2500\u2500 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fadeIn {
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .muyu-btn.pulse, .muyu-ripple,
+      .fortune-shaking, .fortune-stick, .fortune-card,
+      .book-cover-inner, .book-content, .book-body {
+        animation: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }
 
 // src/Panel.tsx
+ensureZenStyles();
 var FORTUNES = [
   { luck: "\u5927\u5409", text: "\u4ECA\u5929\u4F60\u63D0\u4EA4\u7684\u4EE3\u7801\uFF0C\u4F1A\u4E00\u6B21\u901A\u8FC7 review\uFF0C\u4E14\u6CA1\u6709 lint \u62A5\u9519\u3002", book: "\u300A\u4EE3\u7801\u6574\u6D01\u4E4B\u9053\u300B\u7B2C 42 \u9875" },
   { luck: "\u5927\u5409", text: "\u4F60\u7684 function \u5F88\u5FEB\u5C31\u8981\u88AB\u9999\u6C34\u7EA7\u91CD\u6784\uFF0C\u4F18\u96C5\u5F97\u50CF\u9996\u8BD7\u3002", book: "\u300A\u91CD\u6784\u300B\u7B2C 2 \u7248" },
@@ -450,36 +764,40 @@ var SECOND_LINES = {
 };
 function ZenPanel({ pluginId }) {
   const [tab, setTab] = useState("knock");
-  return h(
+  return h2(
     "div",
     { className: "flex h-full flex-col bg-background font-mono text-xs text-text-secondary" },
     // header
-    h(
+    h2(
       "div",
       { className: "flex items-center justify-between border-b border-border px-3 py-2" },
-      h("span", { className: "font-bold tracking-wider text-text" }, "\u7985\u623F"),
-      h("span", { className: "text-text-muted" }, getMonkFace("idle"))
+      h2("span", { className: "font-bold tracking-wider text-text" }, "\u7985\u623F"),
+      h2(
+        "div",
+        { className: "flex items-center gap-2" },
+        h2(MonkCanvas, { mood: "idle", size: 40 })
+      )
     ),
     // tabs
-    h(
+    h2(
       "div",
       { className: "flex border-b border-border" },
-      h(TabBtn, { active: tab === "knock", onClick: () => setTab("knock") }, "\u6728\u9C7C"),
-      h(TabBtn, { active: tab === "fortune", onClick: () => setTab("fortune") }, "\u62BD\u7B7E"),
-      h(TabBtn, { active: tab === "book", onClick: () => setTab("book") }, "\u7B54\u4E66"),
-      h(TabBtn, { active: tab === "diary", onClick: () => setTab("diary") }, "\u65E5\u8BB0")
+      h2(TabBtn, { active: tab === "knock", onClick: () => setTab("knock") }, "\u6728\u9C7C"),
+      h2(TabBtn, { active: tab === "fortune", onClick: () => setTab("fortune") }, "\u62BD\u7B7E"),
+      h2(TabBtn, { active: tab === "book", onClick: () => setTab("book") }, "\u7B54\u4E66"),
+      h2(TabBtn, { active: tab === "diary", onClick: () => setTab("diary") }, "\u65E5\u8BB0")
     ),
     // content
-    h(
+    h2(
       "div",
       { className: "flex-1 overflow-y-auto p-4" },
-      tab === "knock" && h(KnockTab),
-      tab === "fortune" && h(FortuneTab),
-      tab === "book" && h(BookTab),
-      tab === "diary" && h(DiaryTab)
+      tab === "knock" && h2(KnockTab),
+      tab === "fortune" && h2(FortuneTab),
+      tab === "book" && h2(BookTab),
+      tab === "diary" && h2(DiaryTab)
     ),
     // footer
-    h(
+    h2(
       "div",
       { className: "border-t border-border px-3 py-1.5 text-[11px] text-text-muted" },
       (() => {
@@ -491,7 +809,7 @@ function ZenPanel({ pluginId }) {
   );
 }
 function TabBtn({ active, onClick, children }) {
-  return h("button", {
+  return h2("button", {
     className: `flex-1 px-3 py-2 text-center text-[11px] font-medium tracking-wider transition-colors ${active ? "border-b-2 border-accent text-text" : "text-text-muted hover:text-text hover:bg-background-hover"}`,
     onClick
   }, children);
@@ -501,8 +819,10 @@ function KnockTab() {
   const [combo, setCombo] = useState(0);
   const [lastHit, setLastHit] = useState(0);
   const [zenText, setZenText] = useState(null);
-  const comboRef = useRef(0);
-  const timerRef = useRef(null);
+  const comboRef = useRef2(0);
+  const timerRef = useRef2(null);
+  const btnRef = useRef2(null);
+  const rippleCountRef = useRef2(0);
   const knock = useCallback(() => {
     const now = Date.now();
     const diff = now - lastHit;
@@ -513,6 +833,18 @@ function KnockTab() {
       comboRef.current = 1;
     }
     setCombo(comboRef.current);
+    if (btnRef.current) {
+      const btn = btnRef.current;
+      btn.classList.remove("pulse");
+      void btn.offsetWidth;
+      btn.classList.add("pulse");
+      const ripple = document.createElement("div");
+      ripple.className = "muyu-ripple";
+      ripple.style.animationDuration = `${0.4 - Math.min(rippleCountRef.current * 0.02, 0.15)}s`;
+      btn.appendChild(ripple);
+      rippleCountRef.current++;
+      setTimeout(() => ripple.remove(), 600);
+    }
     playKnockSound(soundPreference);
     if (comboRef.current === 5) {
       setZenText("\u5C0F\u50E7\u505C\u4F4F\uFF0C\u770B\u7740\u4F60\u3002");
@@ -530,7 +862,7 @@ function KnockTab() {
     }, 2e3);
     addKnock(1);
   }, [lastHit, soundPreference, addKnock, setMonkMood]);
-  useEffect(() => {
+  useEffect2(() => {
     const handler = (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.code === "Space") {
@@ -541,33 +873,43 @@ function KnockTab() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [knock]);
-  return h(
+  return h2(
     "div",
     { className: "flex flex-col items-center gap-4" },
-    h("div", { className: "text-lg" }, monkMood === "happy" ? "( ^o^ )" : monkMood === "content" ? "( ^_^ )" : "( -_- )"),
-    h("button", {
-      className: "flex h-20 w-20 items-center justify-center rounded-full border border-border bg-background-hover text-2xl hover:border-accent hover:shadow-[0_0_16px_rgba(110,168,254,0.15)] active:scale-95 transition-all",
-      onClick: knock,
-      title: "\u70B9\u51FB\u6728\u9C7C"
-    }, "\u02C7 \u02C7"),
-    h("div", { className: "text-center text-[11px] text-text-muted" }, "\u70B9\u51FB\u6728\u9C7C \xB7 \u7A7A\u683C\u8FDE\u51FB"),
-    zenText && h("div", { className: "animate-fadeIn rounded border border-border px-3 py-2 text-text" }, zenText),
-    h(
+    h2(
+      "div",
+      { className: "flex justify-center" },
+      h2(MonkCanvas, { mood: monkMood, size: 90 })
+    ),
+    h2(
+      "button",
+      {
+        ref: btnRef,
+        className: "muyu-btn",
+        onClick: knock,
+        title: "\u70B9\u51FB\u6728\u9C7C"
+      },
+      h2("div", { className: "muyu-eye" }),
+      h2("div", { className: "muyu-mouth" })
+    ),
+    h2("div", { className: "text-center text-[11px] text-text-muted" }, "\u70B9\u51FB\u6728\u9C7C \xB7 \u7A7A\u683C\u8FDE\u51FB"),
+    zenText && h2("div", { className: "animate-fadeIn rounded border border-border px-3 py-2 text-text" }, zenText),
+    h2(
       "div",
       { className: "mt-2 w-full border-t border-border pt-2 text-[11px] text-text-muted" },
-      h(
+      h2(
         "div",
         { className: "flex justify-between" },
-        h("span", null, `\u6572\u51FB ${knockCount} \u4E0B`),
-        h("span", null, `\u8FDE\u51FB ${combo} \u6B21`),
-        h("span", null, `\u653E\u7A7A ${Math.round(totalZenSeconds)} \u79D2`)
+        h2("span", null, `\u6572\u51FB ${knockCount} \u4E0B`),
+        h2("span", null, `\u8FDE\u51FB ${combo} \u6B21`),
+        h2("span", null, `\u653E\u7A7A ${Math.round(totalZenSeconds)} \u79D2`)
       ),
-      h(
+      h2(
         "div",
         { className: "mt-2 flex items-center gap-2" },
-        h("span", null, "\u97F3\u8272"),
+        h2("span", null, "\u97F3\u8272"),
         ["muyu", "bo", "qing"].map(
-          (p) => h("button", {
+          (p) => h2("button", {
             key: p,
             className: `rounded px-2 py-0.5 text-[10px] ${soundPreference === p ? "bg-accent text-black" : "border border-border hover:bg-background-hover"}`,
             onClick: () => setSoundPreference(p)
@@ -581,38 +923,77 @@ function FortuneTab() {
   const { fortuneCount, addFortune } = useZenStore();
   const [fortune, setFortune] = useState(null);
   const [shaking, setShaking] = useState(false);
+  const [showStick, setShowStick] = useState(false);
+  const containerRef = useRef2(null);
   const draw = () => {
     if (shaking) return;
     setShaking(true);
     setFortune(null);
+    setShowStick(false);
     setTimeout(() => {
       const f = FORTUNES[Math.floor(Math.random() * FORTUNES.length)];
       setFortune(f);
-      addFortune(f.luck, f.text);
       setShaking(false);
-    }, 600);
+      setShowStick(true);
+      addFortune(f.luck, f.text);
+      setTimeout(() => setShowStick(false), 400);
+    }, 500);
   };
   const luckColor = (luck) => {
     const map = { "\u5927\u5409": "text-pink-400", "\u4E2D\u5409": "text-amber-400", "\u5409": "text-green-400", "\u5C0F\u5409": "text-cyan-400", "\u672B\u5409": "text-text-muted", "\u51F6": "text-red-400", "\u5927\u51F6": "text-red-500" };
     return map[luck] || "text-text";
   };
-  return h(
+  const bgGlow = (luck) => {
+    const map = { "\u5927\u5409": "rgba(236,72,153,0.06)", "\u4E2D\u5409": "rgba(251,191,36,0.06)", "\u5409": "rgba(74,222,128,0.06)", "\u5C0F\u5409": "rgba(34,211,238,0.06)", "\u51F6": "rgba(248,113,113,0.06)", "\u5927\u51F6": "rgba(239,68,68,0.08)" };
+    return map[luck] || "transparent";
+  };
+  return h2(
     "div",
     { className: "flex flex-col items-center gap-4" },
-    h("div", { className: "text-lg" }, shaking ? "( \u30FB_\u30FB)" : "( ^_^ )"),
-    h("button", {
-      className: `rounded border border-border px-6 py-2 text-sm font-bold tracking-wider transition-all hover:border-accent hover:text-text ${shaking ? "animate-pulse opacity-50" : ""}`,
-      onClick: draw,
-      disabled: shaking
-    }, "\u70B9\u51FB\u62BD\u7B7E"),
-    fortune && h(
+    h2(
       "div",
-      { className: "animate-fadeIn mt-2 w-full max-w-xs rounded border border-border p-4 text-center" },
-      h("div", { className: `mb-2 text-lg font-bold tracking-wider ${luckColor(fortune.luck)}` }, fortune.luck),
-      h("div", { className: "mb-1 text-text leading-relaxed" }, fortune.text),
-      h("div", { className: "mt-2 text-[10px] text-text-muted italic" }, "-- " + fortune.book)
+      { className: "flex justify-center" },
+      h2(MonkCanvas, { mood: shaking ? "sleepy" : "content", size: 90 })
     ),
-    h("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u62BD ${fortuneCount} \u6B21`)
+    // 签筒
+    h2(
+      "div",
+      { ref: containerRef, className: "relative flex flex-col items-center" },
+      h2(
+        "button",
+        {
+          className: `relative w-24 h-28 rounded-t-lg rounded-b-2xl border-2 border-border bg-gradient-to-b from-amber-900/60 to-amber-950/60 flex items-center justify-center text-sm font-bold tracking-wider transition-all hover:border-accent hover:text-text ${shaking ? "fortune-shaking" : ""} ${shaking ? "opacity-70" : ""}`,
+          onClick: draw,
+          disabled: shaking
+        },
+        // 筒中签条
+        h2(
+          "div",
+          { className: "flex flex-col items-center gap-1" },
+          h2("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" }),
+          h2("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" }),
+          h2("div", { className: "w-1.5 h-4 bg-amber-200/50 rounded-full" }),
+          h2("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" })
+        ),
+        // 抽出的签条
+        showStick && fortune && h2("div", {
+          className: "fortune-stick absolute -top-10 left-1/2 -translate-x-1/2 bg-amber-100 text-amber-900 text-[11px] font-bold px-3 py-1 rounded shadow-lg whitespace-nowrap"
+        }, fortune.luck)
+      ),
+      h2("div", { className: "mt-1 text-[10px] text-text-muted" }, "\u70B9\u51FB\u62BD\u7B7E")
+    ),
+    // 签文
+    fortune && h2(
+      "div",
+      {
+        className: "fortune-card mt-2 w-full max-w-xs rounded border border-border p-4 text-center",
+        style: { background: bgGlow(fortune.luck) }
+      },
+      h2("div", { className: `mb-2 text-lg font-bold tracking-wider ${luckColor(fortune.luck)}` }, fortune.luck),
+      h2("div", { className: "mb-1 text-text leading-relaxed" }, fortune.text),
+      h2("div", { className: "mt-2 text-[10px] text-text-muted italic" }, "-- " + fortune.book)
+    ),
+    h2("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u62BD ${fortuneCount} \u6B21`)
   );
 }
 function BookTab() {
@@ -620,74 +1001,136 @@ function BookTab() {
   const [page, setPage] = useState(null);
   const [showSecond, setShowSecond] = useState(false);
   const [open, setOpen] = useState(false);
+  const [flipping, setFlipping] = useState(false);
   const flip = () => {
+    if (flipping) return;
+    setFlipping(true);
     const idx = Math.floor(Math.random() * PUNCHLINES.length);
     const [setup, punch] = PUNCHLINES[idx];
     setPage({ first: setup + punch, second: SECOND_LINES[idx] || "\u5C0F\u50E7\u4E5F\u4E0D\u77E5\u9053\u3002\u4F46\u4ED6\u77E5\u9053\u4F60\u6CA1\u5199\u6D4B\u8BD5\u3002", idx });
     setShowSecond(false);
     setOpen(true);
     addBook(setup + punch);
+    setTimeout(() => setFlipping(false), 700);
   };
-  return h(
+  const closeBook = () => {
+    setOpen(false);
+    setShowSecond(false);
+    setPage(null);
+  };
+  return h2(
     "div",
     { className: "flex flex-col items-center gap-4" },
-    h("div", { className: "text-lg" }, open ? "( -_- )" : "( ^_^ )"),
-    !open ? h(
+    h2(
+      "div",
+      { className: "flex justify-center" },
+      h2(MonkCanvas, { mood: flipping ? "sleepy" : open ? "idle" : "content", size: 90 })
+    ),
+    !open ? h2(
       "div",
       { className: "flex flex-col items-center gap-3" },
-      h("div", { className: "text-center text-[11px] text-text-muted" }, "\u9ED8\u5FF5\u4F60\u7684\u95EE\u9898\uFF0C\u7136\u540E\u7FFB\u5F00"),
-      h("button", {
-        className: "flex h-28 w-36 items-center justify-center rounded border border-border bg-background-hover text-sm font-bold tracking-widest transition-all hover:border-accent hover:text-text",
-        onClick: flip
-      }, "\u7B54\u6848\u4E4B\u4E66")
-    ) : h(
+      h2("div", { className: "text-center text-[11px] text-text-muted" }, "\u9ED8\u5FF5\u4F60\u7684\u95EE\u9898\uFF0C\u7136\u540E\u7FFB\u5F00"),
+      h2(
+        "div",
+        {
+          className: "book-cover",
+          onClick: flip
+        },
+        h2(
+          "div",
+          { className: "book-cover-inner" },
+          h2("div", { className: "book-front" }, "\u7B54\u6848\u4E4B\u4E66"),
+          h2("div", { className: "book-back" }, page ? page.first : "")
+        )
+      )
+    ) : h2(
       "div",
-      { className: "animate-fadeIn flex w-full max-w-xs flex-col gap-3" },
-      h("div", { className: "rounded border border-border p-4 text-text leading-relaxed" }, page.first),
-      !showSecond ? h("button", {
+      { className: "book-content flex w-full max-w-xs flex-col gap-3" },
+      h2("div", { className: "rounded border border-border p-4 text-text leading-relaxed book-body" }, page.first),
+      !showSecond ? h2("button", {
         className: "self-center rounded border border-border px-4 py-1.5 text-[11px] text-text-muted hover:border-accent hover:text-text transition-all",
         onClick: () => setShowSecond(true)
-      }, "\u8FFD\u95EE") : h("div", { className: "animate-fadeIn rounded border border-border p-4 text-text leading-relaxed" }, page.second),
-      h("button", {
+      }, "\u8FFD\u95EE") : h2("div", { className: "animate-fadeIn rounded border border-border p-4 text-text leading-relaxed" }, page.second),
+      h2("button", {
         className: "self-center text-[11px] text-text-muted hover:text-text mt-2",
-        onClick: () => {
-          setOpen(false);
-          setShowSecond(false);
-        }
+        onClick: closeBook
       }, "\u518D\u7FFB\u4E00\u672C")
     ),
-    h("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u7FFB ${bookCount} \u6B21`)
+    h2("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u7FFB ${bookCount} \u6B21`)
   );
 }
 function DiaryTab() {
   const { history, firstSeen, knockCount, fortuneCount, bookCount } = useZenStore();
   const totalDays = firstSeen ? Math.floor((Date.now() - new Date(firstSeen).getTime()) / 864e5) + 1 : 1;
-  return h(
+  const typeColor = (type) => {
+    if (type.startsWith("ai_")) return "border-l-cyan-400";
+    if (type === "knock" || type === "ai_knock") return "border-l-sky-400";
+    if (type === "fortune" || type === "ai_fortune") return "border-l-amber-400";
+    if (type === "book" || type === "ai_book") return "border-l-green-400";
+    return "border-l-border";
+  };
+  const typeDot = (type) => {
+    const map = { knock: "bg-sky-400", fortune: "bg-amber-400", book: "bg-green-400", ai_knock: "bg-cyan-400", ai_fortune: "bg-amber-400", ai_book: "bg-green-400" };
+    return map[type] || "bg-text-muted";
+  };
+  return h2(
     "div",
     { className: "flex flex-col gap-4" },
-    h(
+    // 统计卡片
+    h2(
       "div",
-      { className: "text-[11px] text-text-muted" },
-      `\u5C0F\u50E7\u966A\u4E86\u4F60 ${totalDays} \u5929\u3002\u6572\u4E86 ${knockCount} \u4E0B\uFF0C\u62BD\u4E86 ${fortuneCount} \u7B7E\uFF0C\u7FFB\u4E86 ${bookCount} \u6B21\u4E66\u3002`
-    ),
-    history.length === 0 ? h("div", { className: "text-center text-[11px] text-text-muted italic" }, "\u5C0F\u50E7\u7684\u65E5\u8BB0\u672C\u8FD8\u662F\u7A7A\u767D\u7684\u3002\u53BB\u627E\u4ED6\u5427\u3002") : history.slice(0, 7).map(
-      (day) => h(
+      { className: "flex gap-2 rounded border border-border bg-background-elevated p-3 text-[11px]" },
+      h2(
         "div",
-        { key: day.date },
-        h("div", { className: "mb-1 text-[11px] font-bold tracking-wider text-text" }, "-- " + day.date + " --"),
-        day.entries.slice(0, 20).map(
-          (entry, i) => h(
-            "div",
-            { key: i, className: "flex gap-3 py-0.5 text-[11px]" },
-            h("span", { className: "shrink-0 text-text-muted" }, entry.time),
-            h("span", { className: "text-text-muted" }, entry.type.startsWith("ai_") ? "AI" : "\u4F60"),
-            h("span", { className: "text-text-secondary" }, entry.detail)
-          )
-        ),
-        day.entries.length > 20 && h("div", { className: "text-[11px] text-text-muted italic" }, `... \u8FD8\u6709 ${day.entries.length - 20} \u6761`)
+        { className: "flex-1 text-center" },
+        h2("div", { className: "text-text font-bold text-lg" }, `${totalDays}`),
+        h2("div", { className: "text-text-muted" }, "\u5929")
+      ),
+      h2("div", { className: "w-px bg-border" }),
+      h2(
+        "div",
+        { className: "flex-1 text-center" },
+        h2("div", { className: "text-text font-bold text-lg" }, `${knockCount}`),
+        h2("div", { className: "text-text-muted" }, "\u6572")
+      ),
+      h2("div", { className: "w-px bg-border" }),
+      h2(
+        "div",
+        { className: "flex-1 text-center" },
+        h2("div", { className: "text-text font-bold text-lg" }, `${fortuneCount}`),
+        h2("div", { className: "text-text-muted" }, "\u7B7E")
+      ),
+      h2("div", { className: "w-px bg-border" }),
+      h2(
+        "div",
+        { className: "flex-1 text-center" },
+        h2("div", { className: "text-text font-bold text-lg" }, `${bookCount}`),
+        h2("div", { className: "text-text-muted" }, "\u7FFB")
       )
     ),
-    history.length > 7 && h("div", { className: "text-center text-[11px] text-text-muted" }, `\u8FD8\u6709 ${history.length - 7} \u5929\u7684\u8BB0\u5F55`)
+    history.length === 0 ? h2("div", { className: "text-center text-[11px] text-text-muted italic" }, "\u5C0F\u50E7\u7684\u65E5\u8BB0\u672C\u8FD8\u662F\u7A7A\u767D\u7684\u3002\u53BB\u627E\u4ED6\u5427\u3002") : history.slice(0, 7).map(
+      (day) => h2(
+        "div",
+        { key: day.date },
+        h2("div", { className: "mb-1 text-[11px] font-bold tracking-wider text-text" }, "-- " + day.date + " --"),
+        day.entries.slice(0, 20).map(
+          (entry, i) => h2(
+            "div",
+            {
+              key: i,
+              className: `flex items-start gap-2 py-0.5 pl-1 border-l-2 ${typeColor(entry.type)}`
+            },
+            // 时间点圆点
+            h2("div", { className: `w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${typeDot(entry.type)}` }),
+            h2("span", { className: "shrink-0 text-text-muted text-[10px]" }, entry.time),
+            h2("span", { className: "text-text-muted text-[10px]" }, entry.type.startsWith("ai_") ? "AI" : ""),
+            h2("span", { className: "text-text-secondary" }, entry.detail)
+          )
+        ),
+        day.entries.length > 20 && h2("div", { className: "text-[11px] text-text-muted italic" }, `... \u8FD8\u6709 ${day.entries.length - 20} \u6761`)
+      )
+    ),
+    history.length > 7 && h2("div", { className: "text-center text-[11px] text-text-muted" }, `\u8FD8\u6709 ${history.length - 7} \u5929\u7684\u8BB0\u5F55`)
   );
 }
 function playKnockSound(pref) {

@@ -2,11 +2,16 @@
  * 禅房面板 - 小僧与你
  *
  * 四个 tab：木鱼、抽签、答案之书、日记
- * 极简风格，黑底灰字，等宽字体，无装饰。
+ * 小僧 Canvas 动画 · 木鱼 CSS 绘制 · 抽签摇晃 · 翻页 3D 透视
  */
 
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
-import { useZenStore, getMonkFace } from './zenStore'
+import { useZenStore } from './zenStore'
+import { MonkCanvas } from './MonkCanvas'
+import { ensureZenStyles } from './zenStyles'
+
+// 面板加载时注入一次 CSS 动画样式
+ensureZenStyles()
 
 // ── 数据 ──────────────────────────────────────────────────────────────────
 
@@ -24,33 +29,6 @@ const FORTUNES = [
   { luck: '凶', text: '别在周五下午动生产环境的配置。真的。', book: '《Release It!》' },
   { luck: '凶', text: '注意：今天有字段类型被隐式转换的风险，小心被坑。', book: '《TypeScript 深度指南》' },
   { luck: '大凶', text: '不要 git push --force。今天说的就是你。', book: '《Git 时光机》' },
-]
-
-const ANSWERS = [
-  '答案是 42。',
-  '指针指向了 yes。',
-  '缓存未命中，请重试。',
-  '这个需求可以砍一半。',
-  '先 deprecate，再淘汰。',
-  '别重构，先加测试。',
-  '答案是 undefined，但你可以给它赋个默认值。',
-  '等下一个 release 再说。',
-  '你自己 merge 一下不就有答案了。',
-  '这个问题不在本次 sprint 范围内。',
-  '可以，但要加个 feature flag。',
-  '别问，问就是 git blame。',
-  '答案是 NaN，但 @@ 是合法的。',
-  '读一下文档，文档里有 3 个意思。',
-  '这个 bug 是特性，不是特性也当特性。',
-  '答案是 404：页面（和信心）都找不到。',
-  '先 commit 再问，答案会自己浮现。',
-  '你用 console.log 试一试，答案就在那里。',
-  '答案是：取决于你的运行时版本。',
-  '别 worry，未来会有库帮你解决这个。',
-  '你试过重启吗？',
-  '先写测试，再问。',
-  '你心里已经有答案了，你只是不想做。',
-  '这个问题不值一提——先跑一遍再说。',
 ]
 
 const PUNCHLINES = [
@@ -84,7 +62,9 @@ export default function ZenPanel({ pluginId }) {
     // header
     h('div', { className: 'flex items-center justify-between border-b border-border px-3 py-2' },
       h('span', { className: 'font-bold tracking-wider text-text' }, '禅房'),
-      h('span', { className: 'text-text-muted' }, getMonkFace('idle')),
+      h('div', { className: 'flex items-center gap-2' },
+        h(MonkCanvas, { mood: 'idle', size: 40 }),
+      ),
     ),
     // tabs
     h('div', { className: 'flex border-b border-border' },
@@ -133,6 +113,8 @@ function KnockTab() {
   const [zenText, setZenText] = useState(null)
   const comboRef = useRef(0)
   const timerRef = useRef(null)
+  const btnRef = useRef(null)
+  const rippleCountRef = useRef(0)
 
   const knock = useCallback(() => {
     const now = Date.now()
@@ -145,6 +127,22 @@ function KnockTab() {
       comboRef.current = 1
     }
     setCombo(comboRef.current)
+
+    // 木鱼脉冲动画
+    if (btnRef.current) {
+      const btn = btnRef.current
+      btn.classList.remove('pulse')
+      void btn.offsetWidth
+      btn.classList.add('pulse')
+
+      // 波纹
+      const ripple = document.createElement('div')
+      ripple.className = 'muyu-ripple'
+      ripple.style.animationDuration = `${0.4 - Math.min(rippleCountRef.current * 0.02, 0.15)}s`
+      btn.appendChild(ripple)
+      rippleCountRef.current++
+      setTimeout(() => ripple.remove(), 600)
+    }
 
     // 声音反馈
     playKnockSound(soundPreference)
@@ -184,12 +182,18 @@ function KnockTab() {
   }, [knock])
 
   return h('div', { className: 'flex flex-col items-center gap-4' },
-    h('div', { className: 'text-lg' }, monkMood === 'happy' ? '( ^o^ )' : monkMood === 'content' ? '( ^_^ )' : '( -_- )'),
+    h('div', { className: 'flex justify-center' },
+      h(MonkCanvas, { mood: monkMood, size: 90 }),
+    ),
     h('button', {
-      className: 'flex h-20 w-20 items-center justify-center rounded-full border border-border bg-background-hover text-2xl hover:border-accent hover:shadow-[0_0_16px_rgba(110,168,254,0.15)] active:scale-95 transition-all',
+      ref: btnRef,
+      className: 'muyu-btn',
       onClick: knock,
       title: '点击木鱼',
-    }, 'ˇ ˇ'),
+    },
+      h('div', { className: 'muyu-eye' }),
+      h('div', { className: 'muyu-mouth' }),
+    ),
     h('div', { className: 'text-center text-[11px] text-text-muted' }, '点击木鱼 · 空格连击'),
     zenText && h('div', { className: 'animate-fadeIn rounded border border-border px-3 py-2 text-text' }, zenText),
     h('div', { className: 'mt-2 w-full border-t border-border pt-2 text-[11px] text-text-muted' },
@@ -218,17 +222,25 @@ function FortuneTab() {
   const { fortuneCount, addFortune } = useZenStore()
   const [fortune, setFortune] = useState(null)
   const [shaking, setShaking] = useState(false)
+  const [showStick, setShowStick] = useState(false)
+  const containerRef = useRef(null)
 
   const draw = () => {
     if (shaking) return
     setShaking(true)
     setFortune(null)
+    setShowStick(false)
+
+    // 签筒摇晃 0.5s → 签条滑出
     setTimeout(() => {
       const f = FORTUNES[Math.floor(Math.random() * FORTUNES.length)]
       setFortune(f)
-      addFortune(f.luck, f.text)
       setShaking(false)
-    }, 600)
+      setShowStick(true)
+      addFortune(f.luck, f.text)
+      // 0.4s 后恢复
+      setTimeout(() => setShowStick(false), 400)
+    }, 500)
   }
 
   const luckColor = (luck) => {
@@ -236,14 +248,41 @@ function FortuneTab() {
     return map[luck] || 'text-text'
   }
 
+  const bgGlow = (luck) => {
+    const map = { '大吉': 'rgba(236,72,153,0.06)', '中吉': 'rgba(251,191,36,0.06)', '吉': 'rgba(74,222,128,0.06)', '小吉': 'rgba(34,211,238,0.06)', '凶': 'rgba(248,113,113,0.06)', '大凶': 'rgba(239,68,68,0.08)' }
+    return map[luck] || 'transparent'
+  }
+
   return h('div', { className: 'flex flex-col items-center gap-4' },
-    h('div', { className: 'text-lg' }, shaking ? '( ・_・)' : '( ^_^ )'),
-    h('button', {
-      className: `rounded border border-border px-6 py-2 text-sm font-bold tracking-wider transition-all hover:border-accent hover:text-text ${shaking ? 'animate-pulse opacity-50' : ''}`,
-      onClick: draw,
-      disabled: shaking,
-    }, '点击抽签'),
-    fortune && h('div', { className: 'animate-fadeIn mt-2 w-full max-w-xs rounded border border-border p-4 text-center' },
+    h('div', { className: 'flex justify-center' },
+      h(MonkCanvas, { mood: shaking ? 'sleepy' : 'content', size: 90 }),
+    ),
+    // 签筒
+    h('div', { ref: containerRef, className: 'relative flex flex-col items-center' },
+      h('button', {
+        className: `relative w-24 h-28 rounded-t-lg rounded-b-2xl border-2 border-border bg-gradient-to-b from-amber-900/60 to-amber-950/60 flex items-center justify-center text-sm font-bold tracking-wider transition-all hover:border-accent hover:text-text ${shaking ? 'fortune-shaking' : ''} ${shaking ? 'opacity-70' : ''}`,
+        onClick: draw,
+        disabled: shaking,
+      },
+        // 筒中签条
+        h('div', { className: 'flex flex-col items-center gap-1' },
+          h('div', { className: 'w-1 h-3 bg-amber-200/40 rounded-full' }),
+          h('div', { className: 'w-1 h-3 bg-amber-200/40 rounded-full' }),
+          h('div', { className: 'w-1.5 h-4 bg-amber-200/50 rounded-full' }),
+          h('div', { className: 'w-1 h-3 bg-amber-200/40 rounded-full' }),
+        ),
+        // 抽出的签条
+        showStick && fortune && h('div', {
+          className: 'fortune-stick absolute -top-10 left-1/2 -translate-x-1/2 bg-amber-100 text-amber-900 text-[11px] font-bold px-3 py-1 rounded shadow-lg whitespace-nowrap',
+        }, fortune.luck),
+      ),
+      h('div', { className: 'mt-1 text-[10px] text-text-muted' }, '点击抽签'),
+    ),
+    // 签文
+    fortune && h('div', {
+      className: 'fortune-card mt-2 w-full max-w-xs rounded border border-border p-4 text-center',
+      style: { background: bgGlow(fortune.luck) },
+    },
       h('div', { className: `mb-2 text-lg font-bold tracking-wider ${luckColor(fortune.luck)}` }, fortune.luck),
       h('div', { className: 'mb-1 text-text leading-relaxed' }, fortune.text),
       h('div', { className: 'mt-2 text-[10px] text-text-muted italic' }, '-- ' + fortune.book),
@@ -259,28 +298,45 @@ function BookTab() {
   const [page, setPage] = useState(null)
   const [showSecond, setShowSecond] = useState(false)
   const [open, setOpen] = useState(false)
+  const [flipping, setFlipping] = useState(false)
 
   const flip = () => {
+    if (flipping) return
+    setFlipping(true)
     const idx = Math.floor(Math.random() * PUNCHLINES.length)
     const [setup, punch] = PUNCHLINES[idx]
     setPage({ first: setup + punch, second: SECOND_LINES[idx] || '小僧也不知道。但他知道你没写测试。', idx })
     setShowSecond(false)
     setOpen(true)
     addBook(setup + punch)
+    setTimeout(() => setFlipping(false), 700)
+  }
+
+  const closeBook = () => {
+    setOpen(false)
+    setShowSecond(false)
+    setPage(null)
   }
 
   return h('div', { className: 'flex flex-col items-center gap-4' },
-    h('div', { className: 'text-lg' }, open ? '( -_- )' : '( ^_^ )'),
+    h('div', { className: 'flex justify-center' },
+      h(MonkCanvas, { mood: flipping ? 'sleepy' : open ? 'idle' : 'content', size: 90 }),
+    ),
     !open
       ? h('div', { className: 'flex flex-col items-center gap-3' },
           h('div', { className: 'text-center text-[11px] text-text-muted' }, '默念你的问题，然后翻开'),
-          h('button', {
-            className: 'flex h-28 w-36 items-center justify-center rounded border border-border bg-background-hover text-sm font-bold tracking-widest transition-all hover:border-accent hover:text-text',
+          h('div', {
+            className: 'book-cover',
             onClick: flip,
-          }, '答案之书'),
+          },
+            h('div', { className: 'book-cover-inner' },
+              h('div', { className: 'book-front' }, '答案之书'),
+              h('div', { className: 'book-back' }, page ? page.first : ''),
+            ),
+          ),
         )
-      : h('div', { className: 'animate-fadeIn flex w-full max-w-xs flex-col gap-3' },
-          h('div', { className: 'rounded border border-border p-4 text-text leading-relaxed' }, page.first),
+      : h('div', { className: 'book-content flex w-full max-w-xs flex-col gap-3' },
+          h('div', { className: 'rounded border border-border p-4 text-text leading-relaxed book-body' }, page.first),
           !showSecond
             ? h('button', {
                 className: 'self-center rounded border border-border px-4 py-1.5 text-[11px] text-text-muted hover:border-accent hover:text-text transition-all',
@@ -289,7 +345,7 @@ function BookTab() {
             : h('div', { className: 'animate-fadeIn rounded border border-border p-4 text-text leading-relaxed' }, page.second),
           h('button', {
             className: 'self-center text-[11px] text-text-muted hover:text-text mt-2',
-            onClick: () => { setOpen(false); setShowSecond(false) },
+            onClick: closeBook,
           }, '再翻一本'),
         ),
     h('div', { className: 'mt-2 text-[11px] text-text-muted' }, `今日已翻 ${bookCount} 次`),
@@ -305,9 +361,41 @@ function DiaryTab() {
     ? Math.floor((Date.now() - new Date(firstSeen).getTime()) / 86400000) + 1
     : 1
 
+  const typeColor = (type) => {
+    if (type.startsWith('ai_')) return 'border-l-cyan-400'
+    if (type === 'knock' || type === 'ai_knock') return 'border-l-sky-400'
+    if (type === 'fortune' || type === 'ai_fortune') return 'border-l-amber-400'
+    if (type === 'book' || type === 'ai_book') return 'border-l-green-400'
+    return 'border-l-border'
+  }
+
+  const typeDot = (type) => {
+    const map = { knock: 'bg-sky-400', fortune: 'bg-amber-400', book: 'bg-green-400', ai_knock: 'bg-cyan-400', ai_fortune: 'bg-amber-400', ai_book: 'bg-green-400' }
+    return map[type] || 'bg-text-muted'
+  }
+
   return h('div', { className: 'flex flex-col gap-4' },
-    h('div', { className: 'text-[11px] text-text-muted' },
-      `小僧陪了你 ${totalDays} 天。敲了 ${knockCount} 下，抽了 ${fortuneCount} 签，翻了 ${bookCount} 次书。`,
+    // 统计卡片
+    h('div', { className: 'flex gap-2 rounded border border-border bg-background-elevated p-3 text-[11px]' },
+      h('div', { className: 'flex-1 text-center' },
+        h('div', { className: 'text-text font-bold text-lg' }, `${totalDays}`),
+        h('div', { className: 'text-text-muted' }, '天'),
+      ),
+      h('div', { className: 'w-px bg-border' }),
+      h('div', { className: 'flex-1 text-center' },
+        h('div', { className: 'text-text font-bold text-lg' }, `${knockCount}`),
+        h('div', { className: 'text-text-muted' }, '敲'),
+      ),
+      h('div', { className: 'w-px bg-border' }),
+      h('div', { className: 'flex-1 text-center' },
+        h('div', { className: 'text-text font-bold text-lg' }, `${fortuneCount}`),
+        h('div', { className: 'text-text-muted' }, '签'),
+      ),
+      h('div', { className: 'w-px bg-border' }),
+      h('div', { className: 'flex-1 text-center' },
+        h('div', { className: 'text-text font-bold text-lg' }, `${bookCount}`),
+        h('div', { className: 'text-text-muted' }, '翻'),
+      ),
     ),
     history.length === 0
       ? h('div', { className: 'text-center text-[11px] text-text-muted italic' }, '小僧的日记本还是空白的。去找他吧。')
@@ -315,9 +403,14 @@ function DiaryTab() {
           h('div', { key: day.date },
             h('div', { className: 'mb-1 text-[11px] font-bold tracking-wider text-text' }, '-- ' + day.date + ' --'),
             day.entries.slice(0, 20).map((entry, i) =>
-              h('div', { key: i, className: 'flex gap-3 py-0.5 text-[11px]' },
-                h('span', { className: 'shrink-0 text-text-muted' }, entry.time),
-                h('span', { className: 'text-text-muted' }, entry.type.startsWith('ai_') ? 'AI' : '你'),
+              h('div', {
+                key: i,
+                className: `flex items-start gap-2 py-0.5 pl-1 border-l-2 ${typeColor(entry.type)}`,
+              },
+                // 时间点圆点
+                h('div', { className: `w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${typeDot(entry.type)}` }),
+                h('span', { className: 'shrink-0 text-text-muted text-[10px]' }, entry.time),
+                h('span', { className: 'text-text-muted text-[10px]' }, entry.type.startsWith('ai_') ? 'AI' : ''),
                 h('span', { className: 'text-text-secondary' }, entry.detail),
               ),
             ),
