@@ -1,5 +1,5 @@
 // src/PreviewCard.tsx
-import { createElement, useMemo, useCallback, useRef, useState } from "react";
+import { createElement, useMemo, useCallback, useEffect, useState } from "react";
 function parseData(data) {
   if (!data || typeof data !== "object") return null;
   if (data.content && Array.isArray(data.content) && data.content[0]?.text) {
@@ -16,7 +16,7 @@ function generatePreviewHtml(glbDataUri, scriptName, parts) {
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>3D \u6A21\u578B\u9884\u89C8</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -34,6 +34,7 @@ function generatePreviewHtml(glbDataUri, scriptName, parts) {
   }
   #toolbar button:hover { background: rgba(255,255,255,0.2); }
   #toolbar button.active { background: #4a9eff; }
+  #toolbar button.fullscreen { background: #4a9eff33; }
   #info {
     position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
     background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
@@ -50,6 +51,13 @@ function generatePreviewHtml(glbDataUri, scriptName, parts) {
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   #loading.hidden { display: none; }
+  #loading.error { color: #f66; }
+  #loading.error .spinner { display: none; }
+  @media (max-width: 480px) {
+    #toolbar { padding: 6px 10px; gap: 4px; }
+    #toolbar button { padding: 6px 10px; font-size: 11px; }
+    #info { font-size: 11px; padding: 4px 12px; }
+  }
 </style>
 </head>
 <body>
@@ -61,8 +69,12 @@ function generatePreviewHtml(glbDataUri, scriptName, parts) {
   <button id="btnWireframe">\u25C7 \u7EBF\u6846</button>
   <button id="btnAutoRotate">\u27F3 \u81EA\u8F6C</button>
   <span style="width:1px;height:24px;background:rgba(255,255,255,0.15);margin:0 4px;"></span>
-  <button id="btnFullscreen">\u26F6 \u5168\u5C4F</button>
+  <button id="btnFullscreen" class="fullscreen">\u26F6 \u5168\u5C4F</button>
 </div>
+<script>
+// CDN \u52A0\u8F7D\u5931\u8D25 fallback
+window.__THREE_LOAD_FAILED = false;
+<\/script>
 <script type="importmap">
 {
   "imports": {
@@ -76,8 +88,14 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-const container = document.getElementById('container');
 const loadingEl = document.getElementById('loading');
+const container = document.getElementById('container');
+
+if (typeof THREE === 'undefined') {
+  loadingEl.innerHTML = '<div class="error">\u26A0\uFE0F \u9884\u89C8\u7EC4\u4EF6\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u8FDE\u63A5\u540E\u91CD\u8BD5</div>';
+  throw new Error('Three.js \u52A0\u8F7D\u5931\u8D25');
+}
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a2e);
 
@@ -99,6 +117,10 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 1.5;
 controls.maxDistance = 10;
+controls.enablePan = true;
+controls.touchRotate = true;
+controls.touchZoom = true;
+controls.touchPan = true;
 
 const ambient = new THREE.AmbientLight(0x404060, 0.5);
 scene.add(ambient);
@@ -147,7 +169,6 @@ loader.load('${glbDataUri}', (gltf) => {
   camera.position.set(0, size.y * 0.7, maxDim * 2.2);
   controls.update();
   model.traverse(child => { if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; } });
-  // \u52A8\u753B
   if (gltf.animations && gltf.animations.length > 0) {
     const mixer = new THREE.AnimationMixer(model);
     const action = mixer.clipAction(gltf.animations[0]);
@@ -160,7 +181,7 @@ loader.load('${glbDataUri}', (gltf) => {
 }, (xhr) => {
   if (xhr.total) { const pct = Math.round((xhr.loaded / xhr.total) * 100); loadingEl.innerHTML = '<div class="spinner"></div><div>\u52A0\u8F7D\u4E2D ' + pct + '%</div>'; }
 }, (error) => {
-  loadingEl.innerHTML = '<div style="color:#f66">\u274C \u52A0\u8F7D\u5931\u8D25</div>';
+  loadingEl.innerHTML = '<div class="error">\u26A0\uFE0F \u6A21\u578B\u52A0\u8F7D\u5931\u8D25</div>';
 });
 
 function animate() {
@@ -203,10 +224,36 @@ window.addEventListener('resize', () => {
 </body>
 </html>`;
 }
-function ModelPreview({ glbData, parts, script, onOpenFullscreen }) {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [blobUrl, setBlobUrl] = useState(null);
-  const iframeRef = useRef(null);
+function ModelPreview({ token, modelUrl, parts, script }) {
+  const [glbData, setGlbData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    if (!token || !modelUrl) {
+      setLoading(false);
+      setError("no_data");
+      return;
+    }
+    let cancelled = false;
+    const baseUrl = modelUrl.substring(0, modelUrl.lastIndexOf("/generated/"));
+    const apiUrl = `${baseUrl}/api/glb-base64/${encodeURIComponent(token)}`;
+    fetch(apiUrl).then((res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }).then((data) => {
+      if (cancelled) return;
+      setGlbData(`data:model/gltf-binary;base64,${data.base64}`);
+      setLoading(false);
+    }).catch((err) => {
+      if (cancelled) return;
+      console.warn("[blender-card] \u4FA7\u901A\u9053\u52A0\u8F7D\u5931\u8D25, \u56DE\u9000\u5230\u672C\u5730\u6A21\u5F0F:", err.message);
+      setError("remote");
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, modelUrl]);
   const previewHtml = useMemo(() => {
     if (!glbData) return null;
     return generatePreviewHtml(glbData, script, parts);
@@ -215,7 +262,6 @@ function ModelPreview({ glbData, parts, script, onOpenFullscreen }) {
     if (!previewHtml) return;
     const blob = new Blob([previewHtml], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
     const opened = window.open(url, "_blank", "noopener,noreferrer");
     if (!opened) {
       const a = document.createElement("a");
@@ -226,6 +272,87 @@ function ModelPreview({ glbData, parts, script, onOpenFullscreen }) {
     }
     window.setTimeout(() => URL.revokeObjectURL(url), 3e4);
   }, [previewHtml]);
+  const downloadGlb = useCallback(() => {
+    if (!modelUrl) return;
+    const a = document.createElement("a");
+    a.href = modelUrl;
+    a.download = token || "model.glb";
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [modelUrl, token]);
+  if (loading) {
+    return createElement(
+      "div",
+      {
+        className: "my-2 rounded-lg border border-border bg-background-elevated overflow-hidden"
+      },
+      createElement(
+        "div",
+        {
+          className: "px-3 py-2 border-b border-border flex items-center gap-2"
+        },
+        createElement("span", { className: "text-xs font-mono px-1.5 py-0.5 rounded bg-accent/10 text-accent" }, script),
+        parts ? createElement("span", { className: "text-[11px] text-text-muted" }, `${parts} \u4E2A\u90E8\u4EF6`) : null,
+        createElement("span", { className: "ml-auto text-[11px] text-text-muted" }, "\u52A0\u8F7D\u9884\u89C8\u4E2D...")
+      ),
+      createElement(
+        "div",
+        {
+          className: "flex items-center justify-center h-[420px] text-text-muted text-xs",
+          style: { background: "#1a1a2e" }
+        },
+        createElement(
+          "div",
+          { className: "text-center" },
+          createElement("div", {
+            className: "mx-auto mb-2 w-8 h-8 border-2 border-text-muted border-t-transparent rounded-full",
+            style: { animation: "spin 0.8s linear infinite" }
+          }),
+          "\u52A0\u8F7D 3D \u6570\u636E..."
+        )
+      )
+    );
+  }
+  if (error === "remote") {
+    return createElement(
+      "div",
+      {
+        className: "my-2 rounded-lg border border-border bg-background-elevated overflow-hidden"
+      },
+      createElement(
+        "div",
+        {
+          className: "px-3 py-2 border-b border-border flex items-center justify-between"
+        },
+        createElement(
+          "div",
+          { className: "flex items-center gap-2" },
+          createElement("span", { className: "text-xs font-mono px-1.5 py-0.5 rounded bg-accent/10 text-accent" }, script),
+          parts ? createElement("span", { className: "text-[11px] text-text-muted" }, `${parts} \u4E2A\u90E8\u4EF6`) : null
+        ),
+        createElement("button", {
+          onClick: downloadGlb,
+          className: "inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+        }, "\u2B07 \u4E0B\u8F7D GLB")
+      ),
+      createElement(
+        "div",
+        {
+          className: "px-3 py-4 text-center text-xs text-text-muted"
+        },
+        createElement("div", { className: "text-lg mb-2" }, "\u{1F4F1}"),
+        createElement("p", {}, "3D \u9884\u89C8\u9700\u8981\u8FDE\u63A5\u5230\u684C\u9762\u7AEF\u751F\u6210\u73AF\u5883\u3002"),
+        createElement("p", { className: "mt-1" }, modelUrl ? `\u6A21\u578B\u5DF2\u4FDD\u5B58\uFF0C\u53EF\u5728\u684C\u9762\u7AEF\u6253\u5F00\u67E5\u770B\u3002` : ""),
+        modelUrl ? createElement("a", {
+          href: modelUrl,
+          target: "_blank",
+          className: "inline-block mt-2 text-accent hover:underline"
+        }, "\u70B9\u51FB\u6253\u5F00 GLB \u6A21\u578B") : null
+      )
+    );
+  }
   return createElement(
     "div",
     {
@@ -243,12 +370,21 @@ function ModelPreview({ glbData, parts, script, onOpenFullscreen }) {
         createElement("span", { className: "text-xs font-mono px-1.5 py-0.5 rounded bg-accent/10 text-accent" }, script),
         parts ? createElement("span", { className: "text-[11px] text-text-muted" }, `${parts} \u4E2A\u90E8\u4EF6`) : null
       ),
-      createElement("button", {
-        onClick: openFullscreen,
-        className: "inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
-      }, "\u26F6 \u5168\u5C4F\u9884\u89C8")
+      createElement(
+        "div",
+        { className: "flex items-center gap-1" },
+        createElement("button", {
+          onClick: downloadGlb,
+          title: "\u4E0B\u8F7D GLB \u6587\u4EF6",
+          className: "inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded text-text-muted hover:text-text hover:bg-background-hover transition-colors"
+        }, "\u2B07 \u4E0B\u8F7D"),
+        createElement("button", {
+          onClick: openFullscreen,
+          className: "inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
+        }, "\u26F6 \u5168\u5C4F\u9884\u89C8")
+      )
     ),
-    // 3D 预览 iframe（自包含 HTML）
+    // 3D 预览 iframe
     createElement(
       "div",
       {
@@ -256,12 +392,11 @@ function ModelPreview({ glbData, parts, script, onOpenFullscreen }) {
         style: { height: "420px", background: "#1a1a2e" }
       },
       previewHtml ? createElement("iframe", {
-        ref: iframeRef,
         srcDoc: previewHtml,
         className: "w-full h-full border-0",
         style: { background: "#1a1a2e" },
         allow: "autoplay; fullscreen",
-        sandbox: "allow-scripts allow-same-origin",
+        sandbox: "allow-scripts allow-same-origin allow-popups",
         loading: "lazy"
       }) : createElement("div", {
         className: "flex items-center justify-center h-full text-text-muted text-xs"
@@ -270,7 +405,7 @@ function ModelPreview({ glbData, parts, script, onOpenFullscreen }) {
     // 提示文字
     createElement("div", {
       className: "px-3 py-1.5 text-[10px] text-text-muted border-t border-border"
-    }, "\u{1F4A1} \u70B9\u51FB\u300C\u5168\u5C4F\u9884\u89C8\u300D\u5728\u65B0\u6807\u7B7E\u9875\u6253\u5F00\uFF0C\u652F\u6301\u5168\u5C4F\u67E5\u770B\u3002\u9884\u89C8\u5DF2\u5185\u5D4C\u5728\u804A\u5929\u4E2D\uFF0C\u5173\u95ED\u6B64\u5BF9\u8BDD\u540E\u4ECD\u53EF\u67E5\u770B\u3002")
+    }, "\u{1F5B1} \u62D6\u62FD/\u6EDA\u8F6E\u67E5\u770B \xB7 \u26F6 \u5168\u5C4F\u9884\u89C8\u5728\u684C\u9762\u7AEF\u83B7\u5F97\u6700\u4F73\u4F53\u9A8C \xB7 \u9884\u89C8\u5DF2\u6301\u4E45\u5316\u5728\u804A\u5929\u4E2D")
   );
 }
 function BlenderPreviewCard(props) {
@@ -329,23 +464,15 @@ function BlenderPreviewCard(props) {
     return createElement(
       "div",
       {},
-      // 简短文本提示
       createElement("div", {
         className: "my-1 text-xs text-text-secondary"
       }, `\u2705 \u6A21\u578B\u5DF2\u751F\u6210${d.parts ? ` (${d.parts} \u4E2A\u90E8\u4EF6)` : ""}`),
-      // 3D 预览（自包含，不依赖 HTTP 服务）
-      d.glbData ? createElement(ModelPreview, {
-        glbData: d.glbData,
+      createElement(ModelPreview, {
+        token: d.token,
+        modelUrl: d.modelUrl,
         parts: d.parts,
         script: d.script
-      }) : d.previewUrl ? createElement(
-        "div",
-        {
-          className: "my-1 rounded border border-border bg-background-elevated px-3 py-2 text-[11px] font-mono"
-        },
-        createElement("div", { className: "text-text-muted mb-1" }, "\u26A0\uFE0F \u9884\u89C8\u6570\u636E\u52A0\u8F7D\u4E2D\uFF0C\u652F\u6301\u5217\u8868\u6A21\u5F0F\uFF1A"),
-        createElement("a", { href: d.previewUrl, target: "_blank", className: "text-accent hover:underline" }, "\u6253\u5F00 3D \u9884\u89C8")
-      ) : null
+      })
     );
   }
   return createElement("div", {

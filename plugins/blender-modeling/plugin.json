@@ -1,7 +1,7 @@
 {
   "id": "polaris.blender-modeling",
   "name": "Blender 3D 建模",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。",
   "enabledByDefault": true,
   "contributes": {
