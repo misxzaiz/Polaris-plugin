@@ -1,8 +1,8 @@
 {
   "id": "omp-engine",
   "name": "Oh My Pi Engine",
-  "version": "1.0.3",
-  "description": "update.json 改为完整 manifest 格式（含 id/contributes），修复商城检查更新",
+  "version": "1.1.0",
+  "description": "新增 MCP 桥接支持（pi-extension），Polaris 插件 MCP 工具（如 polaris-computer/polaris-ask）自动注入 OMP 子进程；支持 MCP 开关控制",
   "author": "Polaris Community",
   "category": "ai-engine",
   "tags": [
@@ -44,6 +44,7 @@
         },
         "protocol": "pi-rpc",
         "sessionFlags": "omp",
+        "mcpConsumption": "pi-extension",
         "capabilities": {
           "tools": true,
           "streaming": true,
