@@ -1,0 +1,17 @@
+{
+  "name": "polaris-zen-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Polaris 禅房面板（打包用）",
+  "scripts": {
+    "build:panel": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:card": "esbuild src/ZenCard.tsx --bundle --format=esm --outfile=dist/zen-card.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build": "npm run build:panel && npm run build:card"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  },
+  "dependencies": {
+    "zustand": "^5.0.14"
+  }
+}

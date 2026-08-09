@@ -1,0 +1,6 @@
+{
+  "id": "omp-engine-adapter",
+  "version": "0.1.0",
+  "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/update.json",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip"
+}

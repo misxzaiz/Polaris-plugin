@@ -1,0 +1,52 @@
+{
+  "id": "polaris.zen",
+  "name": "禅房",
+  "version": "0.1.0",
+  "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "zen.panel",
+        "area": "activityBar",
+        "panelType": "zen",
+        "icon": "BookOpen",
+        "labelKey": "labels.zenPanel",
+        "labelDefault": "Zen",
+        "order": 80
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "polaris-zen",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "zen-card",
+        "mcpServerId": "polaris-zen",
+        "tools": ["knock_fish", "draw_fortune", "open_book"],
+        "mode": "result",
+        "entry": "./dist/zen-card.js"
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/zen.zip"
+  }
+}

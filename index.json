@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-08T13:00:00Z",
+  "updated": "2026-08-09T22:35:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -81,6 +81,51 @@
       },
       "screenshots": [],
       "readme": "# Oh My Pi Engine\n\n在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。\n\n## 安装前提\n\nOh My Pi 需要单独安装 CLI（macOS/Linux: `curl -fsSL https://omp.sh/install | sh`，Windows PowerShell: `irm https://omp.sh/install.ps1 | iex`）\n\n## 使用\n\n安装插件后，在 Polaris 设置 → AI 引擎中选择「Oh My Pi」即可切换。"
+    },
+    {
+      "id": "omp-engine-adapter",
+      "name": "Oh My Pi Adapter (engine-v1)",
+      "version": "0.1.0",
+      "description": "演示 engine-v1 适配器协议的 OMP 引擎适配器示例。加新引擎只需写一个适配器进程，不改 Polaris 核心。",
+      "author": "Polaris Community",
+      "category": "ai-engine",
+      "tags": ["ai", "engine", "adapter", "demo"],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine-adapter",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/update.json",
+      "sha256": "",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# OMP Adapter Demo\n\n演示 engine-v1 适配器协议的 OMP 引擎适配器示例。\n\n安装后可在 Polaris 引擎选择器中选择「OMP Adapter Demo」引擎，\n发消息后会收到 mock 回复（不连接真实 omp）。\n\n## 验证内容\n\n- 引擎注册与选择\n- start_session 协议帧（start_session → assistant_message → session_end）\n- 续聊（continue_session 协议帧）\n- 中断（interrupt 协议帧）\n\n## 插件包结构\n\n```\nplugins/omp-engine-adapter/\n├── plugin.json        # 声明 adapter + engines\n├── engine.js          # 适配器进程入口\n└── update.json        # 更新清单\n```"
+    },
+    {
+      "id": "polaris.zen",
+      "name": "禅房",
+      "version": "0.1.0",
+      "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
+      "author": "Polaris",
+      "category": "fun",
+      "tags": ["zen", "panel", "mcp", "relax", "fun"],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/zen.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
+      "sha256": "883c64771ffb4fc380926176e7ff0377a22ecf49f88029280b26947b310a3fae",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true,
+        "appConfigRead": true
+      },
+      "screenshots": [],
+      "readme": "# 禅房\n\n一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。\n\n## 功能\n\n- **木鱼**：点击或按空格敲击，连击有反馈，可选择木鱼/钵/磬音色\n- **抽签**：抽一支编程签，看今日运势\n- **答案之书**：默念问题，翻页得到答案，可追问\n- **日记**：小僧记录你的禅修之路\n\nAI 也可以调用小僧：`knock_fish`（敲木鱼）、`draw_fortune`（抽签）、`open_book`（翻答案之书）。"
     }
   ]
 }
