@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-09T23:55:00Z",
+  "updated": "2026-08-10T00:05:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -107,7 +107,7 @@
     {
       "id": "polaris.zen",
       "name": "禅房",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
       "author": "Polaris",
       "category": "fun",
@@ -118,7 +118,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/zen.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
-      "sha256": "7d4a63041f6751fb14eaf0ac029004c02167d8777af9f9d752314b7ecf2eeaca",
+      "sha256": "224ff529bee984a2517cd9fd6aa95a6ccbf0c57adc3b9ef697584f34ef9e8fcd",
       "permissions": {
         "aiToolAccess": true,
         "workspaceRead": true,

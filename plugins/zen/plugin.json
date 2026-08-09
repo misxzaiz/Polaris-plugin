@@ -1,7 +1,7 @@
 {
   "id": "polaris.zen",
   "name": "禅房",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
   "enabledByDefault": true,
   "contributes": {

@@ -70,5 +70,5 @@ function ZenCard(props) {
   }, "\u5C0F\u50E7\u9012\u7ED9\u4F60\u4E00\u5F20\u7EB8\u6761\uFF0C\u4F46\u4F60\u8BFB\u4E0D\u61C2");
 }
 export {
-  ZenCard
+  ZenCard as default
 };

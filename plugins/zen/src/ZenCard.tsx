@@ -36,7 +36,7 @@ const LUCK_COLORS = {
   '大凶': 'text-red-500',
 }
 
-export function ZenCard(props) {
+export default function ZenCard(props) {
   const d = parseData(props.data)
   if (!d || typeof d !== 'object') {
     return createElement('div', {
