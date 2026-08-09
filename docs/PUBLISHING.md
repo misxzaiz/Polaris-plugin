@@ -30,16 +30,38 @@ node scripts/pack.js plugins/<your-plugin>
 
 ### 3. 生成 update.json
 
-复制 `plugin.json` 为 `update.json`，确保 `origin.updateUrl` / `origin.downloadUrl` 指向本仓库 CDN 地址：
+复制 `plugin.json` 为 `update.json`。
 
+### 4. CDN 地址策略（重要）
+
+`updateUrl` 和 `downloadUrl` 使用不同的 CDN 引用策略：
+
+| URL | 策略 | 原因 |
+|-----|------|------|
+| `updateUrl` | `@main` | 版本比较必须动态指向最新，每次检查更新时返回最新版本号 |
+| `downloadUrl` | `@vX.Y.Z` tag | **zip 二进制文件在 jsdelivr CDN 中缓存难以清除**，用 git tag 固定后不可变，彻底绕过缓存 |
+| `manifestUrl` | `@main` | JSON 文本，缓存问题小，指向最新即可 |
+
+**正确示例（v0.1.2）：**
+
+```json
+{
+  "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/zen.zip"
+}
 ```
-https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/update.json
-https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/<your-plugin>.zip
+
+```jsonc
+// index.json 中该条目的 URL
+"manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/plugin.json",
+"downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/<your-plugin>/<your-plugin>.zip",
+"updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/<your-plugin>/update.json",
 ```
 
-> ⚠️ 每次 bump 版本号时，`plugin.json` 与 `update.json` 必须同步更新。
+> ⚠️ 不要用 commit hash 做 `updateUrl`，否则用户永远收不到后续更新！
+> ⚠️ 不要用 `@main` 做 `downloadUrl`，CDN 缓存会导致旧版 zip 被反复下载！
 
-### 4. 注册到 index.json
+### 5. 注册到 index.json
 
 在 `index.json` 的 `plugins[]` 数组追加：
 
@@ -76,10 +98,20 @@ node scripts/validate.js        # 校验 index.json + 所有 plugin.json
 
 1. 修改插件实现
 2. bump `plugin.json` 的 `version`
-3. 同步 `update.json`
+3. 同步 `update.json` 的 `version`，并更新 `origin.downloadUrl` 中的 tag 版本号（如 `@v0.1.2` → `@v0.1.3`）
 4. 重新打包 zip（`pack.js`）
-5. 更新 `index.json` 中该条目的 `version` 与 `sha256`
-6. PR
+5. 更新 `index.json` 中该条目的 `version`、`sha256`、`downloadUrl` tag
+6. 提交并打 tag：
+
+```bash
+git add plugins/<your-plugin>/ index.json
+git commit -m "release: <your-plugin> v0.1.3"
+git tag v0.1.3
+git push origin main --tags
+```
+
+> ⚠️ 每次发版必须 push 新 tag，否则 downloadUrl 指向旧版本 zip！
+> ⚠️ `plugin.json` 与 `update.json` 的版本号必须同步更新，否则更新检查失败。
 
 ## 分类建议（category）
 
