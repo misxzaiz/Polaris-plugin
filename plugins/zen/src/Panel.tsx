@@ -6,8 +6,7 @@
  */
 
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
-import { useZenStore } from './zenStore'
-import { MonkCanvas } from './MonkCanvas'
+import { useZenStore, getMonkFace } from './zenStore'
 import { ensureZenStyles } from './zenStyles'
 
 // 面板加载时注入一次 CSS 动画样式
@@ -63,7 +62,7 @@ export default function ZenPanel({ pluginId }) {
     h('div', { className: 'flex items-center justify-between border-b border-border px-3 py-2' },
       h('span', { className: 'font-bold tracking-wider text-text' }, '禅房'),
       h('div', { className: 'flex items-center gap-2' },
-        h(MonkCanvas, { mood: 'idle', size: 40 }),
+        h('span', { className: 'text-lg leading-none' }, getMonkFace('idle')),
       ),
     ),
     // tabs
@@ -183,7 +182,7 @@ function KnockTab() {
 
   return h('div', { className: 'flex flex-col items-center gap-4' },
     h('div', { className: 'flex justify-center' },
-      h(MonkCanvas, { mood: monkMood, size: 90 }),
+      h('div', { className: 'text-lg' }, getMonkFace(monkMood)),
     ),
     h('button', {
       ref: btnRef,
@@ -255,7 +254,7 @@ function FortuneTab() {
 
   return h('div', { className: 'flex flex-col items-center gap-4' },
     h('div', { className: 'flex justify-center' },
-      h(MonkCanvas, { mood: shaking ? 'sleepy' : 'content', size: 90 }),
+      h('div', { className: 'text-lg' }, shaking ? '( ・_・)' : '( ^_^ )'),
     ),
     // 签筒
     h('div', { ref: containerRef, className: 'relative flex flex-col items-center' },
@@ -320,7 +319,7 @@ function BookTab() {
 
   return h('div', { className: 'flex flex-col items-center gap-4' },
     h('div', { className: 'flex justify-center' },
-      h(MonkCanvas, { mood: flipping ? 'sleepy' : open ? 'idle' : 'content', size: 90 }),
+      h('div', { className: 'text-lg' }, flipping ? '( -_-)zzz' : open ? '( -_- )' : '( ^_^ )'),
     ),
     !open
       ? h('div', { className: 'flex flex-col items-center gap-3' },

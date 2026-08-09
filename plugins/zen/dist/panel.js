@@ -1,5 +1,5 @@
 // src/Panel.tsx
-import { createElement as h2, useCallback, useEffect as useEffect2, useRef as useRef2, useState } from "react";
+import { createElement as h, useCallback, useEffect, useRef, useState } from "react";
 
 // node_modules/zustand/esm/vanilla.mjs
 var createStoreImpl = (createState) => {
@@ -399,152 +399,17 @@ var useZenStore = create()(
     }
   )
 );
-
-// src/MonkCanvas.tsx
-import { createElement as h, useEffect, useRef } from "react";
-var MONK_COLORS = {
-  skin: "#f5c99b",
-  skinShadow: "#e0a877",
-  robe: "#8a9a8a",
-  robeShadow: "#6f7f6f",
-  face: "#f7d4a8",
-  eyeClosed: "#3a3a3a",
-  eyeOpen: "#2a2a2a",
-  mouth: "#c96f5a",
-  blush: "#e8a08a",
-  bead: "#c96f5a"
-};
-var W = 120;
-var H = 120;
-function drawMonk(ctx, t, mood, isSleeping) {
-  ctx.clearRect(0, 0, W, H);
-  const breathe = isSleeping ? 0 : Math.sin(t * 2e-3) * 2;
-  const bob = mood === "happy" ? Math.abs(Math.sin(t * 6e-3)) * 6 : 0;
-  const sway = mood === "happy" ? Math.sin(t * 4e-3) * 2 : 0;
-  ctx.save();
-  ctx.translate(W / 2 + sway, H / 2 + breathe + bob);
-  const cx = 0;
-  const cy = 0;
-  ctx.fillStyle = MONK_COLORS.robe;
-  ctx.beginPath();
-  ctx.moveTo(-34, 18);
-  ctx.lineTo(-22, 52);
-  ctx.lineTo(22, 52);
-  ctx.lineTo(34, 18);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = MONK_COLORS.robeShadow;
-  ctx.beginPath();
-  ctx.moveTo(-22, 52);
-  ctx.lineTo(0, 52);
-  ctx.lineTo(0, 18);
-  ctx.lineTo(-22, 18);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = MONK_COLORS.skin;
-  ctx.beginPath();
-  ctx.arc(cx, cy - 2, 24, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = MONK_COLORS.skinShadow;
-  ctx.beginPath();
-  ctx.arc(cx, cy - 20, 9, Math.PI, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = MONK_COLORS.eyeClosed;
-  ctx.lineWidth = 2;
-  ctx.lineCap = "round";
-  if (mood === "happy") {
-    ctx.strokeStyle = MONK_COLORS.eyeClosed;
-    ctx.beginPath();
-    ctx.arc(cx - 9, cy - 2, 5, Math.PI * 1.1, Math.PI * 1.9);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx + 9, cy - 2, 5, Math.PI * 1.1, Math.PI * 1.9);
-    ctx.stroke();
-  } else if (mood === "content" || mood === "idle" && !isSleeping) {
-    ctx.fillStyle = MONK_COLORS.eyeOpen;
-    ctx.beginPath();
-    ctx.arc(cx - 9, cy - 2, 2.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(cx + 9, cy - 2, 2.4, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(cx - 13, cy - 2);
-    ctx.lineTo(cx - 5, cy - 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx + 5, cy - 2);
-    ctx.lineTo(cx + 13, cy - 2);
-    ctx.stroke();
+function getMonkFace(mood) {
+  switch (mood) {
+    case "idle":
+      return "( -_- )";
+    case "content":
+      return "( ^_^ )";
+    case "sleepy":
+      return "( -_-)zzz";
+    case "happy":
+      return "( ^o^ )";
   }
-  ctx.fillStyle = MONK_COLORS.blush;
-  ctx.globalAlpha = isSleeping ? 0.4 : 0.3;
-  ctx.beginPath();
-  ctx.arc(cx - 15, cy + 6, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + 15, cy + 6, 3.5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-  ctx.strokeStyle = MONK_COLORS.mouth;
-  ctx.lineWidth = 1.6;
-  if (mood === "sleepy") {
-    ctx.beginPath();
-    ctx.arc(cx, cy + 8, 3, 0, Math.PI * 2);
-    ctx.stroke();
-  } else if (mood === "happy") {
-    ctx.beginPath();
-    ctx.arc(cx, cy + 6, 5, Math.PI * 0.15, Math.PI * 0.85);
-    ctx.stroke();
-  } else {
-    ctx.beginPath();
-    ctx.moveTo(cx - 4, cy + 8);
-    ctx.lineTo(cx + 4, cy + 8);
-    ctx.stroke();
-  }
-  ctx.fillStyle = MONK_COLORS.bead;
-  ctx.beginPath();
-  ctx.arc(cx, cy - 14, 1.8, 0, Math.PI * 2);
-  ctx.fill();
-  if (mood === "sleepy") {
-    ctx.fillStyle = MONK_COLORS.eyeClosed;
-    ctx.font = "10px monospace";
-    ctx.fillText("z", 20 + Math.sin(t * 3e-3) * 2, -18);
-    ctx.fillText("Z", 30 + Math.sin(t * 3e-3) * 3, -26);
-  }
-  ctx.restore();
-}
-function MonkCanvas({ mood = "idle", size = 120 }) {
-  const canvasRef = useRef(null);
-  const moodRef = useRef(mood);
-  moodRef.current = mood;
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const isSleeping = moodRef.current === "sleepy";
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    ctx.scale(dpr, dpr);
-    let raf = 0;
-    const start = performance.now();
-    const loop = (now) => {
-      const t = now - start;
-      drawMonk(ctx, t, moodRef.current, isSleeping);
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, [size]);
-  return h("canvas", {
-    ref: canvasRef,
-    style: { width: size, height: size },
-    width: size,
-    height: size
-  });
 }
 
 // src/zenStyles.ts
@@ -764,40 +629,40 @@ var SECOND_LINES = {
 };
 function ZenPanel({ pluginId }) {
   const [tab, setTab] = useState("knock");
-  return h2(
+  return h(
     "div",
     { className: "flex h-full flex-col bg-background font-mono text-xs text-text-secondary" },
     // header
-    h2(
+    h(
       "div",
       { className: "flex items-center justify-between border-b border-border px-3 py-2" },
-      h2("span", { className: "font-bold tracking-wider text-text" }, "\u7985\u623F"),
-      h2(
+      h("span", { className: "font-bold tracking-wider text-text" }, "\u7985\u623F"),
+      h(
         "div",
         { className: "flex items-center gap-2" },
-        h2(MonkCanvas, { mood: "idle", size: 40 })
+        h("span", { className: "text-lg leading-none" }, getMonkFace("idle"))
       )
     ),
     // tabs
-    h2(
+    h(
       "div",
       { className: "flex border-b border-border" },
-      h2(TabBtn, { active: tab === "knock", onClick: () => setTab("knock") }, "\u6728\u9C7C"),
-      h2(TabBtn, { active: tab === "fortune", onClick: () => setTab("fortune") }, "\u62BD\u7B7E"),
-      h2(TabBtn, { active: tab === "book", onClick: () => setTab("book") }, "\u7B54\u4E66"),
-      h2(TabBtn, { active: tab === "diary", onClick: () => setTab("diary") }, "\u65E5\u8BB0")
+      h(TabBtn, { active: tab === "knock", onClick: () => setTab("knock") }, "\u6728\u9C7C"),
+      h(TabBtn, { active: tab === "fortune", onClick: () => setTab("fortune") }, "\u62BD\u7B7E"),
+      h(TabBtn, { active: tab === "book", onClick: () => setTab("book") }, "\u7B54\u4E66"),
+      h(TabBtn, { active: tab === "diary", onClick: () => setTab("diary") }, "\u65E5\u8BB0")
     ),
     // content
-    h2(
+    h(
       "div",
       { className: "flex-1 overflow-y-auto p-4" },
-      tab === "knock" && h2(KnockTab),
-      tab === "fortune" && h2(FortuneTab),
-      tab === "book" && h2(BookTab),
-      tab === "diary" && h2(DiaryTab)
+      tab === "knock" && h(KnockTab),
+      tab === "fortune" && h(FortuneTab),
+      tab === "book" && h(BookTab),
+      tab === "diary" && h(DiaryTab)
     ),
     // footer
-    h2(
+    h(
       "div",
       { className: "border-t border-border px-3 py-1.5 text-[11px] text-text-muted" },
       (() => {
@@ -809,7 +674,7 @@ function ZenPanel({ pluginId }) {
   );
 }
 function TabBtn({ active, onClick, children }) {
-  return h2("button", {
+  return h("button", {
     className: `flex-1 px-3 py-2 text-center text-[11px] font-medium tracking-wider transition-colors ${active ? "border-b-2 border-accent text-text" : "text-text-muted hover:text-text hover:bg-background-hover"}`,
     onClick
   }, children);
@@ -819,10 +684,10 @@ function KnockTab() {
   const [combo, setCombo] = useState(0);
   const [lastHit, setLastHit] = useState(0);
   const [zenText, setZenText] = useState(null);
-  const comboRef = useRef2(0);
-  const timerRef = useRef2(null);
-  const btnRef = useRef2(null);
-  const rippleCountRef = useRef2(0);
+  const comboRef = useRef(0);
+  const timerRef = useRef(null);
+  const btnRef = useRef(null);
+  const rippleCountRef = useRef(0);
   const knock = useCallback(() => {
     const now = Date.now();
     const diff = now - lastHit;
@@ -862,7 +727,7 @@ function KnockTab() {
     }, 2e3);
     addKnock(1);
   }, [lastHit, soundPreference, addKnock, setMonkMood]);
-  useEffect2(() => {
+  useEffect(() => {
     const handler = (e) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.code === "Space") {
@@ -873,15 +738,15 @@ function KnockTab() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [knock]);
-  return h2(
+  return h(
     "div",
     { className: "flex flex-col items-center gap-4" },
-    h2(
+    h(
       "div",
       { className: "flex justify-center" },
-      h2(MonkCanvas, { mood: monkMood, size: 90 })
+      h("div", { className: "text-lg" }, getMonkFace(monkMood))
     ),
-    h2(
+    h(
       "button",
       {
         ref: btnRef,
@@ -889,27 +754,27 @@ function KnockTab() {
         onClick: knock,
         title: "\u70B9\u51FB\u6728\u9C7C"
       },
-      h2("div", { className: "muyu-eye" }),
-      h2("div", { className: "muyu-mouth" })
+      h("div", { className: "muyu-eye" }),
+      h("div", { className: "muyu-mouth" })
     ),
-    h2("div", { className: "text-center text-[11px] text-text-muted" }, "\u70B9\u51FB\u6728\u9C7C \xB7 \u7A7A\u683C\u8FDE\u51FB"),
-    zenText && h2("div", { className: "animate-fadeIn rounded border border-border px-3 py-2 text-text" }, zenText),
-    h2(
+    h("div", { className: "text-center text-[11px] text-text-muted" }, "\u70B9\u51FB\u6728\u9C7C \xB7 \u7A7A\u683C\u8FDE\u51FB"),
+    zenText && h("div", { className: "animate-fadeIn rounded border border-border px-3 py-2 text-text" }, zenText),
+    h(
       "div",
       { className: "mt-2 w-full border-t border-border pt-2 text-[11px] text-text-muted" },
-      h2(
+      h(
         "div",
         { className: "flex justify-between" },
-        h2("span", null, `\u6572\u51FB ${knockCount} \u4E0B`),
-        h2("span", null, `\u8FDE\u51FB ${combo} \u6B21`),
-        h2("span", null, `\u653E\u7A7A ${Math.round(totalZenSeconds)} \u79D2`)
+        h("span", null, `\u6572\u51FB ${knockCount} \u4E0B`),
+        h("span", null, `\u8FDE\u51FB ${combo} \u6B21`),
+        h("span", null, `\u653E\u7A7A ${Math.round(totalZenSeconds)} \u79D2`)
       ),
-      h2(
+      h(
         "div",
         { className: "mt-2 flex items-center gap-2" },
-        h2("span", null, "\u97F3\u8272"),
+        h("span", null, "\u97F3\u8272"),
         ["muyu", "bo", "qing"].map(
-          (p) => h2("button", {
+          (p) => h("button", {
             key: p,
             className: `rounded px-2 py-0.5 text-[10px] ${soundPreference === p ? "bg-accent text-black" : "border border-border hover:bg-background-hover"}`,
             onClick: () => setSoundPreference(p)
@@ -924,7 +789,7 @@ function FortuneTab() {
   const [fortune, setFortune] = useState(null);
   const [shaking, setShaking] = useState(false);
   const [showStick, setShowStick] = useState(false);
-  const containerRef = useRef2(null);
+  const containerRef = useRef(null);
   const draw = () => {
     if (shaking) return;
     setShaking(true);
@@ -947,19 +812,19 @@ function FortuneTab() {
     const map = { "\u5927\u5409": "rgba(236,72,153,0.06)", "\u4E2D\u5409": "rgba(251,191,36,0.06)", "\u5409": "rgba(74,222,128,0.06)", "\u5C0F\u5409": "rgba(34,211,238,0.06)", "\u51F6": "rgba(248,113,113,0.06)", "\u5927\u51F6": "rgba(239,68,68,0.08)" };
     return map[luck] || "transparent";
   };
-  return h2(
+  return h(
     "div",
     { className: "flex flex-col items-center gap-4" },
-    h2(
+    h(
       "div",
       { className: "flex justify-center" },
-      h2(MonkCanvas, { mood: shaking ? "sleepy" : "content", size: 90 })
+      h("div", { className: "text-lg" }, shaking ? "( \u30FB_\u30FB)" : "( ^_^ )")
     ),
     // 签筒
-    h2(
+    h(
       "div",
       { ref: containerRef, className: "relative flex flex-col items-center" },
-      h2(
+      h(
         "button",
         {
           className: `relative w-24 h-28 rounded-t-lg rounded-b-2xl border-2 border-border bg-gradient-to-b from-amber-900/60 to-amber-950/60 flex items-center justify-center text-sm font-bold tracking-wider transition-all hover:border-accent hover:text-text ${shaking ? "fortune-shaking" : ""} ${shaking ? "opacity-70" : ""}`,
@@ -967,33 +832,33 @@ function FortuneTab() {
           disabled: shaking
         },
         // 筒中签条
-        h2(
+        h(
           "div",
           { className: "flex flex-col items-center gap-1" },
-          h2("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" }),
-          h2("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" }),
-          h2("div", { className: "w-1.5 h-4 bg-amber-200/50 rounded-full" }),
-          h2("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" })
+          h("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" }),
+          h("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" }),
+          h("div", { className: "w-1.5 h-4 bg-amber-200/50 rounded-full" }),
+          h("div", { className: "w-1 h-3 bg-amber-200/40 rounded-full" })
         ),
         // 抽出的签条
-        showStick && fortune && h2("div", {
+        showStick && fortune && h("div", {
           className: "fortune-stick absolute -top-10 left-1/2 -translate-x-1/2 bg-amber-100 text-amber-900 text-[11px] font-bold px-3 py-1 rounded shadow-lg whitespace-nowrap"
         }, fortune.luck)
       ),
-      h2("div", { className: "mt-1 text-[10px] text-text-muted" }, "\u70B9\u51FB\u62BD\u7B7E")
+      h("div", { className: "mt-1 text-[10px] text-text-muted" }, "\u70B9\u51FB\u62BD\u7B7E")
     ),
     // 签文
-    fortune && h2(
+    fortune && h(
       "div",
       {
         className: "fortune-card mt-2 w-full max-w-xs rounded border border-border p-4 text-center",
         style: { background: bgGlow(fortune.luck) }
       },
-      h2("div", { className: `mb-2 text-lg font-bold tracking-wider ${luckColor(fortune.luck)}` }, fortune.luck),
-      h2("div", { className: "mb-1 text-text leading-relaxed" }, fortune.text),
-      h2("div", { className: "mt-2 text-[10px] text-text-muted italic" }, "-- " + fortune.book)
+      h("div", { className: `mb-2 text-lg font-bold tracking-wider ${luckColor(fortune.luck)}` }, fortune.luck),
+      h("div", { className: "mb-1 text-text leading-relaxed" }, fortune.text),
+      h("div", { className: "mt-2 text-[10px] text-text-muted italic" }, "-- " + fortune.book)
     ),
-    h2("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u62BD ${fortuneCount} \u6B21`)
+    h("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u62BD ${fortuneCount} \u6B21`)
   );
 }
 function BookTab() {
@@ -1018,45 +883,45 @@ function BookTab() {
     setShowSecond(false);
     setPage(null);
   };
-  return h2(
+  return h(
     "div",
     { className: "flex flex-col items-center gap-4" },
-    h2(
+    h(
       "div",
       { className: "flex justify-center" },
-      h2(MonkCanvas, { mood: flipping ? "sleepy" : open ? "idle" : "content", size: 90 })
+      h("div", { className: "text-lg" }, flipping ? "( -_-)zzz" : open ? "( -_- )" : "( ^_^ )")
     ),
-    !open ? h2(
+    !open ? h(
       "div",
       { className: "flex flex-col items-center gap-3" },
-      h2("div", { className: "text-center text-[11px] text-text-muted" }, "\u9ED8\u5FF5\u4F60\u7684\u95EE\u9898\uFF0C\u7136\u540E\u7FFB\u5F00"),
-      h2(
+      h("div", { className: "text-center text-[11px] text-text-muted" }, "\u9ED8\u5FF5\u4F60\u7684\u95EE\u9898\uFF0C\u7136\u540E\u7FFB\u5F00"),
+      h(
         "div",
         {
           className: "book-cover",
           onClick: flip
         },
-        h2(
+        h(
           "div",
           { className: "book-cover-inner" },
-          h2("div", { className: "book-front" }, "\u7B54\u6848\u4E4B\u4E66"),
-          h2("div", { className: "book-back" }, page ? page.first : "")
+          h("div", { className: "book-front" }, "\u7B54\u6848\u4E4B\u4E66"),
+          h("div", { className: "book-back" }, page ? page.first : "")
         )
       )
-    ) : h2(
+    ) : h(
       "div",
       { className: "book-content flex w-full max-w-xs flex-col gap-3" },
-      h2("div", { className: "rounded border border-border p-4 text-text leading-relaxed book-body" }, page.first),
-      !showSecond ? h2("button", {
+      h("div", { className: "rounded border border-border p-4 text-text leading-relaxed book-body" }, page.first),
+      !showSecond ? h("button", {
         className: "self-center rounded border border-border px-4 py-1.5 text-[11px] text-text-muted hover:border-accent hover:text-text transition-all",
         onClick: () => setShowSecond(true)
-      }, "\u8FFD\u95EE") : h2("div", { className: "animate-fadeIn rounded border border-border p-4 text-text leading-relaxed" }, page.second),
-      h2("button", {
+      }, "\u8FFD\u95EE") : h("div", { className: "animate-fadeIn rounded border border-border p-4 text-text leading-relaxed" }, page.second),
+      h("button", {
         className: "self-center text-[11px] text-text-muted hover:text-text mt-2",
         onClick: closeBook
       }, "\u518D\u7FFB\u4E00\u672C")
     ),
-    h2("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u7FFB ${bookCount} \u6B21`)
+    h("div", { className: "mt-2 text-[11px] text-text-muted" }, `\u4ECA\u65E5\u5DF2\u7FFB ${bookCount} \u6B21`)
   );
 }
 function DiaryTab() {
@@ -1073,64 +938,64 @@ function DiaryTab() {
     const map = { knock: "bg-sky-400", fortune: "bg-amber-400", book: "bg-green-400", ai_knock: "bg-cyan-400", ai_fortune: "bg-amber-400", ai_book: "bg-green-400" };
     return map[type] || "bg-text-muted";
   };
-  return h2(
+  return h(
     "div",
     { className: "flex flex-col gap-4" },
     // 统计卡片
-    h2(
+    h(
       "div",
       { className: "flex gap-2 rounded border border-border bg-background-elevated p-3 text-[11px]" },
-      h2(
+      h(
         "div",
         { className: "flex-1 text-center" },
-        h2("div", { className: "text-text font-bold text-lg" }, `${totalDays}`),
-        h2("div", { className: "text-text-muted" }, "\u5929")
+        h("div", { className: "text-text font-bold text-lg" }, `${totalDays}`),
+        h("div", { className: "text-text-muted" }, "\u5929")
       ),
-      h2("div", { className: "w-px bg-border" }),
-      h2(
+      h("div", { className: "w-px bg-border" }),
+      h(
         "div",
         { className: "flex-1 text-center" },
-        h2("div", { className: "text-text font-bold text-lg" }, `${knockCount}`),
-        h2("div", { className: "text-text-muted" }, "\u6572")
+        h("div", { className: "text-text font-bold text-lg" }, `${knockCount}`),
+        h("div", { className: "text-text-muted" }, "\u6572")
       ),
-      h2("div", { className: "w-px bg-border" }),
-      h2(
+      h("div", { className: "w-px bg-border" }),
+      h(
         "div",
         { className: "flex-1 text-center" },
-        h2("div", { className: "text-text font-bold text-lg" }, `${fortuneCount}`),
-        h2("div", { className: "text-text-muted" }, "\u7B7E")
+        h("div", { className: "text-text font-bold text-lg" }, `${fortuneCount}`),
+        h("div", { className: "text-text-muted" }, "\u7B7E")
       ),
-      h2("div", { className: "w-px bg-border" }),
-      h2(
+      h("div", { className: "w-px bg-border" }),
+      h(
         "div",
         { className: "flex-1 text-center" },
-        h2("div", { className: "text-text font-bold text-lg" }, `${bookCount}`),
-        h2("div", { className: "text-text-muted" }, "\u7FFB")
+        h("div", { className: "text-text font-bold text-lg" }, `${bookCount}`),
+        h("div", { className: "text-text-muted" }, "\u7FFB")
       )
     ),
-    history.length === 0 ? h2("div", { className: "text-center text-[11px] text-text-muted italic" }, "\u5C0F\u50E7\u7684\u65E5\u8BB0\u672C\u8FD8\u662F\u7A7A\u767D\u7684\u3002\u53BB\u627E\u4ED6\u5427\u3002") : history.slice(0, 7).map(
-      (day) => h2(
+    history.length === 0 ? h("div", { className: "text-center text-[11px] text-text-muted italic" }, "\u5C0F\u50E7\u7684\u65E5\u8BB0\u672C\u8FD8\u662F\u7A7A\u767D\u7684\u3002\u53BB\u627E\u4ED6\u5427\u3002") : history.slice(0, 7).map(
+      (day) => h(
         "div",
         { key: day.date },
-        h2("div", { className: "mb-1 text-[11px] font-bold tracking-wider text-text" }, "-- " + day.date + " --"),
+        h("div", { className: "mb-1 text-[11px] font-bold tracking-wider text-text" }, "-- " + day.date + " --"),
         day.entries.slice(0, 20).map(
-          (entry, i) => h2(
+          (entry, i) => h(
             "div",
             {
               key: i,
               className: `flex items-start gap-2 py-0.5 pl-1 border-l-2 ${typeColor(entry.type)}`
             },
             // 时间点圆点
-            h2("div", { className: `w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${typeDot(entry.type)}` }),
-            h2("span", { className: "shrink-0 text-text-muted text-[10px]" }, entry.time),
-            h2("span", { className: "text-text-muted text-[10px]" }, entry.type.startsWith("ai_") ? "AI" : ""),
-            h2("span", { className: "text-text-secondary" }, entry.detail)
+            h("div", { className: `w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${typeDot(entry.type)}` }),
+            h("span", { className: "shrink-0 text-text-muted text-[10px]" }, entry.time),
+            h("span", { className: "text-text-muted text-[10px]" }, entry.type.startsWith("ai_") ? "AI" : ""),
+            h("span", { className: "text-text-secondary" }, entry.detail)
           )
         ),
-        day.entries.length > 20 && h2("div", { className: "text-[11px] text-text-muted italic" }, `... \u8FD8\u6709 ${day.entries.length - 20} \u6761`)
+        day.entries.length > 20 && h("div", { className: "text-[11px] text-text-muted italic" }, `... \u8FD8\u6709 ${day.entries.length - 20} \u6761`)
       )
     ),
-    history.length > 7 && h2("div", { className: "text-center text-[11px] text-text-muted" }, `\u8FD8\u6709 ${history.length - 7} \u5929\u7684\u8BB0\u5F55`)
+    history.length > 7 && h("div", { className: "text-center text-[11px] text-text-muted" }, `\u8FD8\u6709 ${history.length - 7} \u5929\u7684\u8BB0\u5F55`)
   );
 }
 function playKnockSound(pref) {
