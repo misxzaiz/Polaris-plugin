@@ -1,0 +1,14 @@
+{
+  "name": "polaris-blender-modeling-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Polaris Blender 3D 建模插件（打包用）",
+  "scripts": {
+    "build:panel": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:card": "esbuild src/PreviewCard.tsx --bundle --format=esm --outfile=dist/preview-card.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build": "npm run build:card && npm run build:panel"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  }
+}
