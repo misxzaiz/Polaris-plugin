@@ -1,8 +1,8 @@
 {
   "id": "polaris.blender-modeling",
   "name": "Blender 3D 建模",
-  "version": "0.2.1",
-  "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，支持脚本注册、参数验证和骨骼动画导出。",
+  "version": "0.2.2",
+  "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，支持脚本注册（path/content 双模式）、参数验证（含数组 items）和骨骼动画导出。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -48,6 +48,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/blender-modeling",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.1/plugins/blender-modeling/blender-modeling.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/blender-modeling/blender-modeling.zip"
   }
 }

@@ -137,6 +137,22 @@ function validateParams(params, schema) {
         if (rule.enum && !rule.enum.includes(value)) {
           errors.push(`参数 "${key}" 的值 "${value}" 不在允许范围内: [${rule.enum.join(', ')}]`)
         }
+        // 数组元素类型验证（items）
+        if (Array.isArray(value) && rule.items && rule.items.type) {
+          for (let idx = 0; idx < value.length; idx++) {
+            const itemErr = checkType(`${key}[${idx}]`, value[idx], rule.items.type)
+            if (itemErr) errors.push(itemErr)
+          }
+        }
+        // 数组长度限制（minItems / maxItems）
+        if (Array.isArray(value)) {
+          if (rule.minItems !== undefined && value.length < rule.minItems) {
+            errors.push(`参数 "${key}" 的数组长度 ${value.length} 小于最小长度 ${rule.minItems}`)
+          }
+          if (rule.maxItems !== undefined && value.length > rule.maxItems) {
+            errors.push(`参数 "${key}" 的数组长度 ${value.length} 大于最大长度 ${rule.maxItems}`)
+          }
+        }
       }
     } else if (!additional) {
       errors.push(`未知参数: "${key}"`)
@@ -191,6 +207,7 @@ function saveRegistry(registry) {
 
 /**
  * 注册新脚本
+ * 支持 content 或 path 两种模式（path 模式由 handleRegisterScript 处理后传入 content）
  * @param {string} name - 脚本名称
  * @param {string} content - Python 脚本内容
  * @param {object} params_schema - 参数验证规则（JSON Schema）
@@ -205,7 +222,7 @@ function registerScript(name, content, params_schema, description) {
     throw new Error(`脚本名称 "${name}" 不合法，只能包含字母、数字、下划线和连字符`)
   }
   if (!content || typeof content !== 'string') {
-    throw new Error('脚本内容 "content" 为必填字符串')
+    throw new Error('必须提供 "path"（脚本文件路径）或 "content"（脚本内容）之一')
   }
   if (content.length < 10) {
     throw new Error('脚本内容过短，请确认上传了完整的 Python 脚本')
@@ -288,6 +305,105 @@ function getScriptInfo(name) {
 }
 
 /**
+ * 安全解析 Python 字典/列表字面量为 JS 对象
+ * 不依赖 eval，先做字符串转换再 JSON.parse
+ * 支持的 Python 语法：
+ *   - 字典 {key: value}
+ *   - 列表 [1, 2, 3]
+ *   - 元组 (...) → 转为数组
+ *   - True / False / None
+ *   - 字符串 "..." 或 '...'
+ *   - 数字（含整数/浮点数）
+ */
+function safeParsePyDict(pyLiteral) {
+  // 按行移除 # 注释（跳过引号内的 #），兼容 "#8B5A2B" 等 hex 颜色字符串
+  const lines = pyLiteral.split('\n').map(line => {
+    let inQuote = false
+    let quoteChar = ''
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i]
+      if (inQuote) {
+        if (c === '\\') { i++ }
+        else if (c === quoteChar) { inQuote = false }
+      } else {
+        if (c === '"' || c === "'") { inQuote = true; quoteChar = c }
+        else if (c === '#') { return line.slice(0, i).trimEnd() }
+      }
+    }
+    return line
+  }).join('\n')
+
+  let js = lines
+    .replace(/\(/g, '[')
+    .replace(/\)/g, ']')
+    .replace(/\bTrue\b/g, 'true')
+    .replace(/\bFalse\b/g, 'false')
+    .replace(/\bNone\b/g, 'null')
+
+  // 移除尾部逗号（trailing comma），逐行分析，精确判断
+  js = removeTrailingCommas(js)
+
+  return JSON.parse(js)
+}
+
+/**
+ * 精确移除 Python 风格的尾部逗号
+ * 策略：逐行扫描，仅当以下条件同时满足时才移除逗号：
+ *   1. 逗号后到行尾只有空白字符
+ *   2. 下一个非空行是纯闭合括号（} 或 ]）
+ *   3. 括号后面没有逗号（区分 "key": val, "key2": val2 和 "key": val,\n}）
+ */
+function removeTrailingCommas(input) {
+  const lines = input.split('\n')
+  let depth = 0
+  let inStr = false
+  let esc = false
+
+  return lines.map((line, li) => {
+    let lastComma = -1
+    let lInStr = inStr
+    let lEsc = esc
+    let lDepth = depth
+
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i]
+      if (lEsc) { lEsc = false; continue }
+      if (c === '\\' && lInStr) { lEsc = true; continue }
+      if (c === '"' || c === "'") { lInStr = !lInStr; continue }
+      if (lInStr) continue
+      if (c === '{') { lDepth++; continue }
+      if (c === '}') { lDepth--; continue }
+      if (c === ',') lastComma = i
+    }
+
+    inStr = lInStr
+    esc = lEsc
+    depth = lDepth
+
+    if (lastComma < 0) return line
+
+    const afterComma = line.slice(lastComma + 1)
+    if (afterComma.trim() !== '') return line
+
+    // 查找下一个非空行
+    let nextLine = ''
+    for (let ni = li + 1; ni < lines.length; ni++) {
+      if (lines[ni].trim() !== '') {
+        nextLine = lines[ni].trim()
+        break
+      }
+    }
+
+    // 如果下一个非空行是纯闭合括号，则移除逗号
+    if (/^[}\]]+$/.test(nextLine)) {
+      return line.slice(0, lastComma) + line.slice(lastComma + 1)
+    }
+
+    return line
+  }).join('\n')
+}
+
+/**
  * 从 Python 脚本内容中提取 metadata
  */
 function extractScriptMetadata(name, file, content) {
@@ -310,52 +426,85 @@ function extractScriptMetadata(name, file, content) {
       .slice(0, 300)
   }
 
-  // 提取 params_schema
-  const schemaMatch = content.match(/params_schema\s*=\s*(\{[\s\S]*?^\s*\})/m)
-  if (schemaMatch) {
+  // 提取 params_schema（使用平衡括号计数，正确处理嵌套结构）
+  const schemaBlock = extractBalancedDict(content, 'params_schema')
+  if (schemaBlock) {
     try {
-      let js = schemaMatch[1]
-        .replace(/\(/g, '[')
-        .replace(/\)/g, ']')
-        .replace(/#.*$/gm, '')
-        .replace(/\bTrue\b/g, 'true')
-        .replace(/\bFalse\b/g, 'false')
-        .replace(/\bNone\b/g, 'null')
-      metadata.params_schema = eval('(' + js + ')')
+      metadata.params_schema = safeParsePyDict(schemaBlock)
     } catch (e) {
       // schema 解析失败不影响功能
     }
   }
 
   // 提取 params 默认值（作为参考）
-  const paramsMatch = content.match(/^params\s*=\s*(\{[\s\S]*?^\s*\})/m)
-  if (paramsMatch && !metadata.params_schema) {
-    try {
-      let js = paramsMatch[1]
-        .replace(/\(/g, '[')
-        .replace(/\)/g, ']')
-        .replace(/#.*$/gm, '')
-        .replace(/\bTrue\b/g, 'true')
-        .replace(/\bFalse\b/g, 'false')
-        .replace(/\bNone\b/g, 'null')
-      const parsed = eval('(' + js + ')')
-      // 生成简化 schema
-      metadata.params_schema = {
-        type: 'object',
-        properties: Object.fromEntries(
-          Object.entries(parsed).map(([k, v]) => [
-            k,
-            { type: Array.isArray(v) ? 'array' : typeof v, default: v }
-          ])
-        ),
-        additionalProperties: true,
+  if (!metadata.params_schema) {
+    const paramsBlock = extractBalancedDict(content, 'params')
+    if (paramsBlock) {
+      try {
+        const parsed = safeParsePyDict(paramsBlock)
+        metadata.params_schema = {
+          type: 'object',
+          properties: Object.fromEntries(
+            Object.entries(parsed).map(([k, v]) => [
+              k,
+              { type: Array.isArray(v) ? 'array' : typeof v, default: v }
+            ])
+          ),
+          additionalProperties: true,
+        }
+      } catch (e) {
+        // ignore
       }
-    } catch (e) {
-      // ignore
     }
   }
 
   return metadata
+}
+
+/**
+ * 使用平衡括号计数提取嵌套字典块（如 params_schema 或 params）
+ * 解决 lazy regex 在嵌套 {} 中提前匹配的问题
+ * @param {string} text - 完整脚本内容
+ * @param {string} varName - 变量名（如 'params_schema' 或 'params'）
+ * @returns {string|null} 提取的字典字符串（含外层 {}），未找到返回 null
+ */
+function extractBalancedDict(text, varName) {
+  const idx = text.indexOf(`${varName} = {`)
+  if (idx === -1) return null
+
+  const braceStart = text.indexOf('{', idx)
+  let depth = 0
+  let inStr = false
+  let esc = false
+  let endIdx = -1
+
+  for (let i = braceStart; i < text.length; i++) {
+    const c = text[i]
+    if (esc) {
+      esc = false
+      continue
+    }
+    if (c === '\\' && inStr) {
+      esc = true
+      continue
+    }
+    if (c === '"' || c === "'") {
+      inStr = !inStr
+      continue
+    }
+    if (inStr) continue
+    if (c === '{') {
+      depth++
+    } else if (c === '}') {
+      depth--
+      if (depth === 0) {
+        endIdx = i
+        break
+      }
+    }
+  }
+
+  return endIdx >= 0 ? text.slice(braceStart, endIdx + 1) : null
 }
 
 /**
@@ -514,7 +663,7 @@ function startFileServer() {
 
 // ── Blender 建模执行 ──────────────────────────────────────────────
 
-async function runBlenderScript(scriptPath, params, outputName) {
+async function runBlenderScript(scriptPath, params, outputName, timeoutMs) {
   const blenderPath = findBlender()
   if (!blenderPath) {
     throw new Error(
@@ -528,8 +677,9 @@ async function runBlenderScript(scriptPath, params, outputName) {
   }
 
   const timestamp = Date.now()
+  const suffix = Math.random().toString(36).slice(2, 7)
   const safeName = (outputName || 'model').replace(/[^a-zA-Z0-9_-]/g, '_')
-  const outputFile = `${safeName}_${timestamp}.glb`
+  const outputFile = `${safeName}_${timestamp}_${suffix}.glb`
   const outputPath = path.join(GENERATED_DIR, outputFile)
 
   const scriptPathResolved = scriptPath.startsWith('/') || scriptPath.startsWith('\\')
@@ -562,10 +712,12 @@ async function runBlenderScript(scriptPath, params, outputName) {
     proc.stdout.on('data', (data) => { stdout += data.toString() })
     proc.stderr.on('data', (data) => { stderr += data.toString() })
 
+    const effectiveTimeout = Math.min(Math.max(timeoutMs || 90000, 10000), 600000)
+
     const timeout = setTimeout(() => {
       proc.kill()
-      reject(new Error('Blender 执行超时（90s）'))
-    }, 90000)
+      reject(new Error(`Blender 执行超时（${Math.round(effectiveTimeout / 1000)}s）`))
+    }, effectiveTimeout)
 
     proc.on('close', (code) => {
       clearTimeout(timeout)
@@ -615,6 +767,7 @@ async function handleGenerate3D(args) {
   const script = args.script || 'muyu'
   const params = args.params || {}
   const outputName = args.outputName || 'model'
+  const timeoutMs = args.timeout || undefined
 
   await startFileServer()
 
@@ -660,7 +813,7 @@ async function handleGenerate3D(args) {
     : scriptInfo.file || `${script}.py`
 
   try {
-    const result = await runBlenderScript(scriptPath, params, outputName)
+    const result = await runBlenderScript(scriptPath, params, outputName, timeoutMs)
     return {
       content: [{
         type: 'text',
@@ -706,9 +859,24 @@ function handleListModels() {
 
 function handleRegisterScript(args) {
   try {
+    // 支持两种注册方式：
+    // 1. path 模式：AI 先 Write 文件到磁盘，MCP 读取（推荐，减少上下文占用）
+    // 2. content 模式：脚本内容直接内联（向后兼容）
+    let content = args.content
+    if (!content && args.path && typeof args.path === 'string') {
+      const resolved = path.resolve(args.path)
+      if (!fs.existsSync(resolved)) {
+        throw new Error(`脚本文件不存在: ${resolved}`)
+      }
+      if (path.extname(resolved).toLowerCase() !== '.py') {
+        throw new Error(`脚本文件必须是 .py 后缀: ${resolved}`)
+      }
+      content = fs.readFileSync(resolved, 'utf-8')
+    }
+
     const result = registerScript(
       args.name,
-      args.content,
+      content,
       args.params_schema || null,
       args.description
     )
@@ -798,6 +966,13 @@ const tools = [
           description: '输出文件名（不含路径和扩展名），默认 "model"',
           default: 'model',
         },
+        timeout: {
+          type: 'integer',
+          description: 'Blender 执行超时时间（毫秒），默认 90000，范围 10000-600000',
+          default: 90000,
+          minimum: 10000,
+          maximum: 600000,
+        },
       },
       required: ['script'],
       additionalProperties: false,
@@ -814,7 +989,7 @@ const tools = [
   },
   {
     name: 'blender_register_script',
-    description: '上传并注册一个新的 Blender 建模脚本。注册后该脚本可通过 blender_generate_3d 调用，并在 blender_list_models 中可见。params_schema 定义参数的验证规则。',
+    description: '上传并注册一个新的 Blender 建模脚本。注册后该脚本可通过 blender_generate_3d 调用，并在 blender_list_models 中可见。推荐使用 path 模式（AI 先写文件再传路径），大幅减少上下文占用。params_schema 定义参数的验证规则。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -822,9 +997,13 @@ const tools = [
           type: 'string',
           description: '脚本名称（如 "muyu_advanced"），仅包含字母、数字、下划线和连字符',
         },
+        path: {
+          type: 'string',
+          description: 'Python 脚本文件路径（推荐，AI 先用 Write 写入文件，再传路径；大幅减少上下文占用）。与 content 二选一',
+        },
         content: {
           type: 'string',
-          description: '完整的 Python 建模脚本内容（Blender Python API）',
+          description: '完整的 Python 建模脚本内容（Blender Python API）。与 path 二选一，path 未提供时使用',
         },
         params_schema: {
           type: 'object',
@@ -835,7 +1014,7 @@ const tools = [
           description: '脚本描述（用于列表展示）',
         },
       },
-      required: ['name', 'content'],
+      required: ['name'],
       additionalProperties: false,
     }
   },
@@ -879,7 +1058,7 @@ process.stdin.on('data', chunk => {
         result: {
           protocolVersion: '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'polaris-blender', version: '0.2.0' }
+          serverInfo: { name: 'polaris-blender', version: '0.2.2' }
         }
       })
     } else if (msg.method === 'notifications/initialized') {
