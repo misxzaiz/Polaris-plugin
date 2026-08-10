@@ -473,13 +473,20 @@ export default function BlenderPreviewCard(props) {
             key: i,
             className: 'px-3 py-2 text-[11px] font-mono'
           },
-            createElement('div', { className: 'text-text font-medium' }, m.name),
-            m.description ? createElement('div', { className: 'text-text-muted mt-0.5 text-[10px]' }, m.description) : null,
-            m.params ? createElement('div', {
-              className: 'text-text-muted text-[10px] mt-0.5'
-            }, `参数: ${Object.keys(m.params).length} 个`) : null,
+            createElement('div', { className: 'flex items-center gap-2' },
+              createElement('span', { className: 'text-text font-medium' }, m.name),
+              m.isRegistered ? createElement('span', { className: 'px-1 py-0.5 rounded bg-accent/10 text-accent text-[9px]' }, '已注册') : null,
+            ),
+            m.description ? createElement('div', { className: 'text-text-muted mt-0.5 text-[10px]' }, m.description.slice(0, 150)) : null,
+            m.params_schema
+              ? createElement('div', { className: 'text-text-muted text-[10px] mt-0.5' }, `参数: ${m.params} 个（含验证规则）`)
+              : m.params ? createElement('div', { className: 'text-text-muted text-[10px] mt-0.5' }, `参数: ${m.params} 个`) : null,
           )
         )
+      ),
+      // 提示注册入口
+      createElement('div', { className: 'px-3 py-1.5 text-[10px] text-text-muted border-t border-border' },
+        '💡 可通过 blender_register_script 上传自定义建模脚本'
       )
     )
   }

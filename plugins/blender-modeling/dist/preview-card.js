@@ -450,13 +450,22 @@ function BlenderPreviewCard(props) {
               key: i,
               className: "px-3 py-2 text-[11px] font-mono"
             },
-            createElement("div", { className: "text-text font-medium" }, m.name),
-            m.description ? createElement("div", { className: "text-text-muted mt-0.5 text-[10px]" }, m.description) : null,
-            m.params ? createElement("div", {
-              className: "text-text-muted text-[10px] mt-0.5"
-            }, `\u53C2\u6570: ${Object.keys(m.params).length} \u4E2A`) : null
+            createElement(
+              "div",
+              { className: "flex items-center gap-2" },
+              createElement("span", { className: "text-text font-medium" }, m.name),
+              m.isRegistered ? createElement("span", { className: "px-1 py-0.5 rounded bg-accent/10 text-accent text-[9px]" }, "\u5DF2\u6CE8\u518C") : null
+            ),
+            m.description ? createElement("div", { className: "text-text-muted mt-0.5 text-[10px]" }, m.description.slice(0, 150)) : null,
+            m.params_schema ? createElement("div", { className: "text-text-muted text-[10px] mt-0.5" }, `\u53C2\u6570: ${m.params} \u4E2A\uFF08\u542B\u9A8C\u8BC1\u89C4\u5219\uFF09`) : m.params ? createElement("div", { className: "text-text-muted text-[10px] mt-0.5" }, `\u53C2\u6570: ${m.params} \u4E2A`) : null
           )
         )
+      ),
+      // 提示注册入口
+      createElement(
+        "div",
+        { className: "px-3 py-1.5 text-[10px] text-text-muted border-t border-border" },
+        "\u{1F4A1} \u53EF\u901A\u8FC7 blender_register_script \u4E0A\u4F20\u81EA\u5B9A\u4E49\u5EFA\u6A21\u811A\u672C"
       )
     );
   }

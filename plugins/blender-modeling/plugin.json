@@ -1,8 +1,8 @@
 {
   "id": "polaris.blender-modeling",
   "name": "Blender 3D 建模",
-  "version": "0.2.0",
-  "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。",
+  "version": "0.2.1",
+  "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，支持脚本注册、参数验证和骨骼动画导出。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -32,7 +32,7 @@
       {
         "id": "blender-preview-card",
         "mcpServerId": "polaris-blender",
-        "tools": ["blender_generate_3d", "blender_list_models"],
+        "tools": ["blender_generate_3d", "blender_list_models", "blender_register_script", "blender_unregister_script"],
         "mode": "result",
         "entry": "./dist/preview-card.js"
       }
