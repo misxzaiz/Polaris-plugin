@@ -8,6 +8,7 @@
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
 import { useZenStore, getMonkFace } from './zenStore'
 import { ensureZenStyles } from './zenStyles'
+import { FISH_HTML } from './fishHtml'
 
 // 面板加载时注入一次 CSS 动画样式
 ensureZenStyles()
@@ -67,7 +68,7 @@ export default function ZenPanel({ pluginId }) {
     ),
     // tabs
     h('div', { className: 'flex border-b border-border' },
-      h(TabBtn, { active: tab === 'knock', onClick: () => setTab('knock') }, '木鱼'),
+      h(TabBtn, { active: tab === 'knock', onClick: () => setTab('knock') }, '鱼'),
       h(TabBtn, { active: tab === 'fortune', onClick: () => setTab('fortune') }, '抽签'),
       h(TabBtn, { active: tab === 'book', onClick: () => setTab('book') }, '答书'),
       h(TabBtn, { active: tab === 'diary', onClick: () => setTab('diary') }, '日记'),
@@ -112,7 +113,7 @@ function KnockTab() {
   const [zenText, setZenText] = useState(null)
   const comboRef = useRef(0)
   const timerRef = useRef(null)
-  const btnRef = useRef(null)
+  const iframeRef = useRef(null)
   const rippleCountRef = useRef(0)
 
   const knock = useCallback(() => {
@@ -127,20 +128,9 @@ function KnockTab() {
     }
     setCombo(comboRef.current)
 
-    // 木鱼脉冲动画
-    if (btnRef.current) {
-      const btn = btnRef.current
-      btn.classList.remove('pulse')
-      void btn.offsetWidth
-      btn.classList.add('pulse')
-
-      // 波纹
-      const ripple = document.createElement('div')
-      ripple.className = 'muyu-ripple'
-      ripple.style.animationDuration = `${0.4 - Math.min(rippleCountRef.current * 0.02, 0.15)}s`
-      btn.appendChild(ripple)
-      rippleCountRef.current++
-      setTimeout(() => ripple.remove(), 600)
+    // 通知 3D 鱼摆动
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage({ type: 'knock' }, '*')
     }
 
     // 声音反馈
@@ -184,16 +174,19 @@ function KnockTab() {
     h('div', { className: 'flex justify-center' },
       h('div', { className: 'text-lg' }, getMonkFace(monkMood)),
     ),
-    h('button', {
-      ref: btnRef,
-      className: 'muyu-btn',
+    h('div', {
+      className: 'relative w-full h-44 rounded-lg overflow-hidden border border-border cursor-pointer',
       onClick: knock,
-      title: '点击木鱼',
+      title: '点击鱼',
     },
-      h('div', { className: 'muyu-eye' }),
-      h('div', { className: 'muyu-mouth' }),
+      h('iframe', {
+        ref: iframeRef,
+        srcDoc: FISH_HTML,
+        style: { width: '100%', height: '100%', border: 'none', display: 'block', cursor: 'pointer' },
+        title: '3D 鱼',
+      }),
     ),
-    h('div', { className: 'text-center text-[11px] text-text-muted' }, '点击木鱼 · 空格连击'),
+    h('div', { className: 'text-center text-[11px] text-text-muted' }, '点击鱼 · 空格连击'),
     zenText && h('div', { className: 'animate-fadeIn rounded border border-border px-3 py-2 text-text' }, zenText),
     h('div', { className: 'mt-2 w-full border-t border-border pt-2 text-[11px] text-text-muted' },
       h('div', { className: 'flex justify-between' },

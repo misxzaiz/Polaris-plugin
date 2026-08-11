@@ -1,7 +1,7 @@
 {
   "id": "polaris.zen",
   "name": "禅房",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
   "enabledByDefault": true,
   "contributes": {
@@ -47,6 +47,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/zen.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.3/plugins/zen/zen.zip"
   }
 }

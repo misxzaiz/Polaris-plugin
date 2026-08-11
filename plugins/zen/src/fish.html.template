@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #1a2230; }
+#canvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+/* Three.js 0.147.0 (embedded for offline use) */
+INJECT_THREE_MIN
+</script>
+<script>
+/* OrbitControls (embedded) */
+INJECT_ORBIT_CONTROLS
+</script>
+<script>
+/* GLTFLoader (embedded) */
+INJECT_GLTF_LOADER
+</script>
+<script>
+(function() {
+  const canvas = document.getElementById('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.5;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x1a2230);
+  scene.fog = new THREE.Fog(0x1a2230, 12, 30);
+
+  const camera = new THREE.PerspectiveCamera(25, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 0.15, 1.8);
+
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 0, 0);
+  controls.enablePan = false;
+  controls.minDistance = 1.5;
+  controls.maxDistance = 5;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.5;
+
+  // HDRI-like procedural environment
+  const envCanvas = document.createElement('canvas');
+  envCanvas.width = 512; envCanvas.height = 256;
+  const ctx = envCanvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+  grad.addColorStop(0, '#6a8090');
+  grad.addColorStop(0.25, '#b0c8d8');
+  grad.addColorStop(0.45, '#e0e8f0');
+  grad.addColorStop(0.55, '#c0ccd8');
+  grad.addColorStop(0.75, '#708090');
+  grad.addColorStop(1, '#203040');
+  ctx.fillStyle = grad; ctx.fillRect(0, 0, 512, 256);
+  const envTex = new THREE.CanvasTexture(envCanvas);
+  envTex.mapping = THREE.EquirectangularReflectionMapping;
+  envTex.encoding = THREE.sRGBEncoding;
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const rt = pmrem.fromEquirectangular(envTex);
+  scene.environment = rt.texture;
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+
+  const key = new THREE.DirectionalLight(0xffffff, 2.0);
+  key.position.set(3, 4, 5); key.castShadow = true;
+  scene.add(key);
+
+  const fill = new THREE.DirectionalLight(0x8899cc, 0.8);
+  fill.position.set(-3, 2, -2);
+  scene.add(fill);
+
+  scene.add(new THREE.PointLight(0x6366f1, 0.8, 10)).position.set(-2, 1, -3);
+  scene.add(new THREE.PointLight(0x4488cc, 0.4, 8)).position.set(0, -2, 2);
+
+  // Load fish model
+  const GLB_DATA = 'INJECT_BASE64_HERE';
+  const loader = new THREE.GLTFLoader();
+  const blob = base64ToBlob(GLB_DATA);
+  const url = URL.createObjectURL(blob);
+
+  const fishMeshRef = { model: null };
+  let wobbleIntensity = 0, wobbleTime = 0;
+
+  loader.load(url, (gltf) => {
+    const model = gltf.scene;
+    model.scale.setScalar(2.5);
+    model.traverse((child) => {
+      if (child.isMesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        if (child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(m => { m.envMapIntensity = 1.0; });
+          } else {
+            child.material.envMapIntensity = 1.0;
+          }
+        }
+      }
+    });
+    scene.add(model);
+    fishMeshRef.model = model;
+    URL.revokeObjectURL(url);
+  });
+
+  function base64ToBlob(base64) {
+    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    return new Blob([bytes], { type: 'model/gltf-binary' });
+  }
+
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'knock') {
+      wobbleIntensity = 1.0;
+    }
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+
+    if (wobbleIntensity > 0) {
+      wobbleTime += 0.15;
+      wobbleIntensity *= 0.88;
+    }
+
+    if (fishMeshRef.model) {
+      if (wobbleIntensity > 0.001) {
+        fishMeshRef.model.traverse((child) => {
+          if (child.isMesh && child.geometry && child.geometry.attributes.position) {
+            const pos = child.geometry.attributes.position;
+            for (let i = 0; i < pos.count; i++) {
+              const x = pos.getX(i);
+              const y = pos.getY(i);
+              const wave = Math.sin(x * 3 + wobbleTime) * 0.02 * wobbleIntensity;
+              pos.setY(i, y + wave);
+            }
+            pos.needsUpdate = true;
+          }
+        });
+        fishMeshRef.model.rotation.y = Math.sin(wobbleTime * 2) * 0.1 * wobbleIntensity;
+      } else {
+        fishMeshRef.model.rotation.y = Math.sin(Date.now() * 0.001) * 0.05;
+        fishMeshRef.model.position.y = Math.sin(Date.now() * 0.0015) * 0.02;
+      }
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+</script>
+</body>
+</html>
