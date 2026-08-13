@@ -1,0 +1,7 @@
+{
+  "id": "dsh-engine",
+  "version": "0.1.0",
+  "origin": {
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/dsh-engine.zip"
+  }
+}

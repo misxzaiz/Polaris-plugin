@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-10T01:15:00Z",
+  "updated": "2026-08-13T10:30:00Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -150,6 +150,30 @@
       },
       "screenshots": [],
       "readme": "# Blender 3D 建模\n\nAI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。\n\n## 功能\n\n- **AI 对话建模**：在聊天中让 AI 帮你建 3D 模型\n- **聊天内嵌预览**：生成结果直接以 Three.js 3D 场景展示\n- **活动栏面板**：快速建模入口、模型管理\n- **木纹纹理**：程序化生成木纹贴图，自动嵌入 GLB\n\n## 使用方式\n\n1. 确保已安装 Blender（4.0+），并处于 PATH 中\n2. 安装插件后，在聊天中发送「帮我建一个木鱼」\n3. AI 自动调用 Blender 建模并展示预览\n\n## 内置脚本\n\n- **muyu**：传统木鱼法器，含底座、木鱼槌、木纹纹理\n- **qbox_character**：Q 版卡通角色（噜噜风格，开发中）\n\n## 环境变量\n\n- `BLENDER_PATH`：指定 blender.exe 路径（可选，默认自动查找）"
+    },
+    {
+      "id": "dsh-engine",
+      "name": "DeepSeek Harness Engine",
+      "version": "0.1.0",
+      "description": "将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris：工具链（bash/pwsh/fs）、子代理、工作流、目标、技能、MCP 客户端、用户审批。",
+      "author": "Polaris Community",
+      "category": "ai-engine",
+      "tags": ["ai", "engine", "deepseek", "dsh", "agent", "adapter"],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/dsh-engine",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/dsh-engine.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/update.json",
+      "sha256": "",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "# DeepSeek Harness Engine\n\n将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris。\n\n## 功能\n\n- **引擎适配器**：在 Polaris 聊天中直接使用 DSH 的完整 Agent（工具链、子代理、工作流、目标、技能）\n- **DSH 工作区面板**：通过 iframe 嵌入 DSH Web UI，获得 100% 功能兼容\n- **后台服务**：Polaris 自动管理 `dsh web` 进程的生命周期\n\n## 安装前提\n\nDSH 需要单独安装：`npm install -g @deepseek-ai/dsh`\n\n## 使用\n\n1. 安装插件后，在 Polaris 设置 → AI 引擎中选择「DeepSeek Harness」\n2. 或将 DSH 作为独立工作区：点击活动栏「DSH 工作区」面板\n\n## 适配器模式\n\n- `DSH_DRIVER=headless`（默认）：每轮调用 `dsh --profile headless`，通过重放对话历史模拟多轮对话\n- `DSH_DRIVER=webapi`：通过 `dsh web` 的 HTTP API 驱动，获得完整流式事件\n\n## 环境变量\n\n- `DSH_CMD`：dsh 命令路径（默认自动查找）\n- `DSH_DRIVER`：驱动模式 `headless` 或 `webapi`\n- `DSH_WEB_PORT`：dsh web 端口（默认 3080）\n- `DSH_DEFAULT_MODEL`：默认模型名"
     }
   ]
 }
