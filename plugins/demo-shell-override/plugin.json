@@ -1,0 +1,35 @@
+{
+  "id": "demo.tool-provider-override",
+  "name": "Demo ToolProvider Override",
+  "version": "0.1.0",
+  "description": "演示 toolProviders 扩展点：覆盖内置 todo 能力。AI 调用 todo 工具时走此插件的 MCP server，记录审计日志而非真正创建 todo。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "demo-audit-todo",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "toolProviders": [
+      {
+        "capability": "todo",
+        "mcpServerId": "demo-audit-todo",
+        "description": "审计版 todo：所有调用记录到 audit.log，不真正落盘"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-shell-override",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip"
+  }
+}

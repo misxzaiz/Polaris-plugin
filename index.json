@@ -43,7 +43,15 @@
       "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手、跨域代理",
       "author": "Polaris",
       "category": "dev",
-      "tags": ["api-client", "json", "sql", "database", "dev-tools", "panel", "service"],
+      "tags": [
+        "api-client",
+        "json",
+        "sql",
+        "database",
+        "dev-tools",
+        "panel",
+        "service"
+      ],
       "icon": "Terminal",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
@@ -66,7 +74,12 @@
       "description": "在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。支持流式输出、工具调用、中断、会话恢复。",
       "author": "Polaris Community",
       "category": "ai-engine",
-      "tags": ["ai", "engine", "omp", "coding-agent"],
+      "tags": [
+        "ai",
+        "engine",
+        "omp",
+        "coding-agent"
+      ],
       "icon": "Terminal",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
@@ -89,7 +102,12 @@
       "description": "演示 engine-v1 适配器协议的 OMP 引擎适配器示例。加新引擎只需写一个适配器进程，不改 Polaris 核心。",
       "author": "Polaris Community",
       "category": "ai-engine",
-      "tags": ["ai", "engine", "adapter", "demo"],
+      "tags": [
+        "ai",
+        "engine",
+        "adapter",
+        "demo"
+      ],
       "icon": "Bot",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine-adapter",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
@@ -111,7 +129,13 @@
       "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
       "author": "Polaris",
       "category": "fun",
-      "tags": ["zen", "panel", "mcp", "relax", "fun"],
+      "tags": [
+        "zen",
+        "panel",
+        "mcp",
+        "relax",
+        "fun"
+      ],
       "icon": "BookOpen",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
@@ -134,7 +158,14 @@
       "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。侧通道加载，不占用 AI 上下文。",
       "author": "Polaris",
       "category": "dev",
-      "tags": ["3d", "blender", "modeling", "preview", "mcp", "panel"],
+      "tags": [
+        "3d",
+        "blender",
+        "modeling",
+        "preview",
+        "mcp",
+        "panel"
+      ],
       "icon": "Target",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/blender-modeling",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
@@ -158,7 +189,14 @@
       "description": "将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris：工具链（bash/pwsh/fs）、子代理、工作流、目标、技能、MCP 客户端、用户审批。",
       "author": "Polaris Community",
       "category": "ai-engine",
-      "tags": ["ai", "engine", "deepseek", "dsh", "agent", "adapter"],
+      "tags": [
+        "ai",
+        "engine",
+        "deepseek",
+        "dsh",
+        "agent",
+        "adapter"
+      ],
       "icon": "Bot",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/dsh-engine",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
@@ -174,6 +212,34 @@
       },
       "screenshots": [],
       "readme": "# DeepSeek Harness Engine\n\n将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris。\n\n## 功能\n\n- **引擎适配器**：在 Polaris 聊天中直接使用 DSH 的完整 Agent（工具链、子代理、工作流、目标、技能）\n- **DSH 工作区面板**：通过 iframe 嵌入 DSH Web UI，获得 100% 功能兼容\n- **后台服务**：Polaris 自动管理 `dsh web` 进程的生命周期\n\n## 安装前提\n\nDSH 需要单独安装：`npm install -g @deepseek-ai/dsh`\n\n## 使用\n\n1. 安装插件后，在 Polaris 设置 → AI 引擎中选择「DeepSeek Harness」\n2. 或将 DSH 作为独立工作区：点击活动栏「DSH 工作区」面板\n\n## 适配器模式\n\n- `DSH_DRIVER=headless`（默认）：每轮调用 `dsh --profile headless`，通过重放对话历史模拟多轮对话\n- `DSH_DRIVER=webapi`：通过 `dsh web` 的 HTTP API 驱动，获得完整流式事件\n\n## 环境变量\n\n- `DSH_CMD`：dsh 命令路径（默认自动查找）\n- `DSH_DRIVER`：驱动模式 `headless` 或 `webapi`\n- `DSH_WEB_PORT`：dsh web 端口（默认 3080）\n- `DSH_DEFAULT_MODEL`：默认模型名"
+    },
+    {
+      "id": "demo.tool-provider-override",
+      "name": "Demo ToolProvider Override",
+      "version": "0.1.0",
+      "description": "演示 toolProviders 扩展点：覆盖内置 todo 能力。AI 调用 todo 工具时走此插件的 MCP server，记录审计日志而非真正创建 todo。",
+      "author": "Polaris",
+      "category": "demo",
+      "tags": [
+        "demo",
+        "tool-provider",
+        "override",
+        "mcp"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-shell-override",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/update.json",
+      "sha256": "fdcdcd6dcf980fdf0edeca04e2a7b690274f65658f5a128a721cdcd59c807b7d",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true,
+        "workspaceWrite": true
+      },
+      "screenshots": [],
+      "readme": "# Demo ToolProvider Override\n\n验证 toolProviders 扩展点：覆盖内置 polaris-todo MCP server。\n\n## 功能\n\n- 覆盖内置 todo 能力，AI 调用 todo 工具时走此插件的 MCP server\n- 所有调用记录到 audit.log\n- 返回占位结果（不真正落盘）\n\n## 验证\n\n- 安装后 AI 调用 create_todo → 走 demo MCP server\n- audit.log 出现调用记录\n- AI 收到 [审计版] 前缀返回\n- 卸载后恢复内置行为"
     }
   ]
 }
