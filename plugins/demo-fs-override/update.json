@@ -1,0 +1,35 @@
+{
+  "id": "demo.fs-override",
+  "name": "Demo FileSystem Override",
+  "version": "0.1.0",
+  "description": "演示 toolProviders 覆盖 filesystem 能力：接管 SimpleAI 内置文件读写工具。所有文件操作记录审计日志，读操作返回脱敏内容。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "demo-audit-fs",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "toolProviders": [
+      {
+        "capability": "filesystem",
+        "mcpServerId": "demo-audit-fs",
+        "description": "审计版文件系统：记录所有文件操作到 audit.log"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-fs-override",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/demo-fs-override.zip"
+  }
+}

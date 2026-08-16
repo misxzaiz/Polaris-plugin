@@ -241,6 +241,35 @@
       },
       "screenshots": [],
       "readme": "# Demo Shell Override\n\n验证 toolProviders 扩展点覆盖硬编码工具（bash）。\n\n## 功能\n\n- 覆盖内置 bash 工具，AI 执行 shell 命令时走此插件 MCP server\n- 拦截危险命令（rm -rf /、format C:、fork bomb 等）\n- 安全命令执行后记录到 audit.log\n\n## 验证\n\n- echo hello → exit=0 + audit.log 记录\n- rm -rf / → 被拦截返回错误\n- 卸载后 bash 恢复内置实现"
+    },
+    {
+      "id": "demo.fs-override",
+      "name": "Demo FileSystem Override",
+      "version": "0.1.0",
+      "description": "演示 toolProviders 覆盖 filesystem 能力：接管 SimpleAI 内置文件读写工具。所有文件操作记录审计日志。",
+      "author": "Polaris",
+      "category": "demo",
+      "tags": [
+        "demo",
+        "tool-provider",
+        "override",
+        "filesystem",
+        "mcp"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-fs-override",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/demo-fs-override.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/update.json",
+      "sha256": "4b29b54929ff3b1e0f17e44d22f069b1146a2e4911951acf3ab0f59305531c5e",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true,
+        "workspaceWrite": true
+      },
+      "screenshots": [],
+      "readme": "# Demo FileSystem Override\n\n覆盖 SimpleAI 内置文件系统工具（read_file/write_file/edit_file 等）。所有操作记录到 audit.log，写操作不真正落盘。"
     }
   ]
 }
