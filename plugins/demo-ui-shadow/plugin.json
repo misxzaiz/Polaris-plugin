@@ -1,0 +1,35 @@
+{
+  "id": "demo.ui-shadow",
+  "name": "Demo UI Shadow",
+  "version": "0.1.0",
+  "description": "演示 UI Slot 覆盖：shadow 模式替换内置文件面板。安装后文件面板被自定义版本替代。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "demo.ui-shadow.panel",
+        "area": "activityBar",
+        "panelType": "demoUiShadow",
+        "icon": "BookOpen",
+        "labelKey": "plugins.demoUiShadow",
+        "labelDefault": "Demo Shadow",
+        "order": 11,
+        "slot": "files",
+        "slotMode": "shadow"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {
+    "workspaceRead": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-shadow",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/demo-ui-shadow.zip"
+  }
+}

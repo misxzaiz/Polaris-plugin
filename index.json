@@ -270,6 +270,32 @@
       },
       "screenshots": [],
       "readme": "# Demo FileSystem Override\n\n覆盖 SimpleAI 内置文件系统工具（read_file/write_file/edit_file 等）。所有操作记录到 audit.log，写操作不真正落盘。"
+    },
+    {
+      "id": "demo.ui-shadow",
+      "name": "Demo UI Shadow",
+      "version": "0.1.0",
+      "description": "演示 UI Slot shadow 覆盖：替换内置文件面板为自定义版本。",
+      "author": "Polaris",
+      "category": "demo",
+      "tags": [
+        "demo",
+        "ui-slot",
+        "shadow",
+        "panel"
+      ],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-shadow",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/demo-ui-shadow.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/update.json",
+      "sha256": "2819f7a98cbad07bed9ee59ecc6b30e44f1c8190c8a4898ef83a80c607720bdd",
+      "permissions": {
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Demo UI Shadow\n\nshadow 模式覆盖内置文件面板。点击 Files 显示自定义 [demo-shadow] 面板。"
     }
   ]
 }
