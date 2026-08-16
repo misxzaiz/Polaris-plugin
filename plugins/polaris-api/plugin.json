@@ -1,0 +1,50 @@
+{
+  "id": "polaris-api",
+  "name": "Polaris API",
+  "version": "1.0.0",
+  "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "polaris-api.panel",
+        "area": "activityBar",
+        "panelType": "polarisApi",
+        "icon": "Beaker",
+        "labelKey": "plugins.polarisApi",
+        "labelDefault": "API",
+        "order": 85
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "polaris-api-proxy",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/server.js", "{{port}}"],
+        "port": 9870,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 3000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 3,
+        "description": "Polaris API 代理服务（跨域转发 + 静态资源）"
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/polaris-api.zip"
+  }
+}

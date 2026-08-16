@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.0.0",
-  "updated": "2026-08-16",
+  "updated": "2026-08-17",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -480,6 +480,29 @@
       },
       "screenshots": [],
       "readme": ""
+    },
+    {
+      "id": "polaris.api",
+      "name": "Polaris API",
+      "version": "1.0.0",
+      "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持、AI 辅助调试",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": ["api", "rest", "http", "ai", "panel"],
+      "icon": "Beaker",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/polaris-api.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
+      "sha256": "84457b921ecece31af91b6d3b8a9f6bfa282fb392112e04ae0beb9e80e5964a5",
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Polaris API\n\n轻量级 AI 加持的 API 请求客户端。\n\n## 功能\n- 智能请求编辑器（URL 自动解析参数、语法提示、常用 Headers 补全）\n- 响应查看器（JSON 树/表格/原始视图、路径下钻、错误诊断）\n- AI 深度集成（自然语言生成请求、错误分析、Mock 数据、代码生成）\n- 集合管理（多级文件夹、搜索、Postman/OpenAPI/HAR 导入）\n- 环境变量（baseUrl + 自定义变量）\n- 跨域代理\n- 代码生成（cURL/Python/JavaScript/Go/Rust）\n- 响应历史记录"
     }
   ]
 }

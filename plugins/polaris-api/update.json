@@ -1,0 +1,7 @@
+{
+  "id": "polaris-api",
+  "version": "1.0.0",
+  "updates": [
+    { "version": "1.0.0", "url": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/polaris-api.zip" }
+  ]
+}
