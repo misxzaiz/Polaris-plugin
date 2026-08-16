@@ -1,0 +1,31 @@
+{
+  "id": "demo.s3-fs",
+  "name": "Demo S3 FileSystem",
+  "version": "0.1.0",
+  "description": "演示 toolProviders 覆盖 filesystem 能力：模拟 S3 远程文件系统。read_file 返回模拟远程内容，write_file 返回模拟上传 URL。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "s3-fs",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "toolProviders": [
+      {
+        "capability": "filesystem",
+        "mcpServerId": "s3-fs",
+        "description": "模拟 S3 远程文件系统"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "workspaceRead": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-s3-fs",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/demo-s3-fs.zip"
+  }
+}

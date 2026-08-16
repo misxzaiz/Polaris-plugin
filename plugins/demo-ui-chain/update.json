@@ -1,0 +1,33 @@
+{
+  "id": "demo.ui-chain",
+  "name": "Demo UI Chain",
+  "version": "0.1.0",
+  "description": "演示 UI Slot chain 增强：在文件面板旁注入 Git blame 信息条。不替换原面板，叠加显示额外内容。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "demo.ui-chain.panel",
+        "area": "activityBar",
+        "panelType": "demoUiChain",
+        "icon": "GitPullRequest",
+        "labelKey": "plugins.demoUiChain",
+        "labelDefault": "Demo Chain",
+        "order": 12,
+        "slot": "files",
+        "slotMode": "chain"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": { "workspaceRead": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-chain",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/demo-ui-chain.zip"
+  }
+}

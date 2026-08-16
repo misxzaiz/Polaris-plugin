@@ -1,0 +1,31 @@
+{
+  "id": "demo.dsh-subagent",
+  "name": "Demo DSH SubAgent",
+  "version": "0.1.0",
+  "description": "演示 toolProviders 覆盖 subagent 能力：模拟 DSH（DeepSeek Harness）子代理派发。声明将 dispatch_agent 转发到 DSH 的 spawn/fork provider。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "dsh-subagent",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "toolProviders": [
+      {
+        "capability": "subagent",
+        "mcpServerId": "dsh-subagent",
+        "description": "DSH 子代理：转发到 deepseek-harness spawn/fork provider"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "workspaceRead": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-dsh-subagent",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/demo-dsh-subagent.zip"
+  }
+}

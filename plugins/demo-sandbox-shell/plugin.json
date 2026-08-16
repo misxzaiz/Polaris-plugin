@@ -1,0 +1,31 @@
+{
+  "id": "demo.sandbox-shell",
+  "name": "Demo Sandbox Shell",
+  "version": "0.1.0",
+  "description": "演示 toolProviders 覆盖 shell 能力：沙箱化执行，限制工作目录（只能在 workspacePath 下）+ 禁止网络命令（curl/wget）。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "sandbox-shell",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{workspacePath}}"]
+      }
+    ],
+    "toolProviders": [
+      {
+        "capability": "shell",
+        "mcpServerId": "sandbox-shell",
+        "description": "沙箱化 shell：限制工作目录 + 禁止网络命令"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "workspaceRead": true, "workspaceWrite": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-sandbox-shell",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/demo-sandbox-shell.zip"
+  }
+}

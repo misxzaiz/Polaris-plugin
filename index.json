@@ -296,6 +296,139 @@
       },
       "screenshots": [],
       "readme": "# Demo UI Shadow\n\nshadow 模式覆盖内置文件面板。点击 Files 显示自定义 [demo-shadow] 面板。"
+    },
+    {
+      "id": "demo.sandbox-shell",
+      "name": "Demo Sandbox Shell",
+      "version": "0.1.0",
+      "description": "演示 toolProviders 覆盖 shell：沙箱化执行（限制工作目录 + 禁止网络命令）",
+      "tags": [
+        "demo",
+        "tool-provider",
+        "shell",
+        "sandbox"
+      ],
+      "author": "Polaris",
+      "category": "demo",
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-sandbox-shell",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/demo-sandbox-shell.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/update.json",
+      "sha256": "824f9abd825370fbe02d1a4dce66f9f87b52e71f215ed7393a02273ea44853b1",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Demo Sandbox Shell\n\n演示 toolProviders 覆盖 shell：沙箱化执行（限制工作目录 + 禁止网络命令）"
+    },
+    {
+      "id": "demo.s3-fs",
+      "name": "Demo S3 FileSystem",
+      "version": "0.1.0",
+      "description": "演示 toolProviders 覆盖 filesystem：模拟 S3 远程文件系统",
+      "tags": [
+        "demo",
+        "tool-provider",
+        "filesystem",
+        "s3"
+      ],
+      "author": "Polaris",
+      "category": "demo",
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-s3-fs",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/demo-s3-fs.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/update.json",
+      "sha256": "cc6cf11575ab7ae5dd9b51439c3361a4bc33c889f51b2837a99590add7dbae30",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Demo S3 FileSystem\n\n演示 toolProviders 覆盖 filesystem：模拟 S3 远程文件系统"
+    },
+    {
+      "id": "demo.smart-compaction",
+      "name": "Demo Smart SubAgent",
+      "version": "0.1.0",
+      "description": "演示 toolProviders 覆盖 subagent：智能子代理派发（token 计费模拟）",
+      "tags": [
+        "demo",
+        "tool-provider",
+        "subagent"
+      ],
+      "author": "Polaris",
+      "category": "demo",
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-smart-compaction",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/demo-smart-compaction.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/update.json",
+      "sha256": "47e72b3c622eabb3f95747d56c81504a25b9d6e23b3821ce4b8cb2be0b5aeaef",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Demo Smart SubAgent\n\n演示 toolProviders 覆盖 subagent：智能子代理派发（token 计费模拟）"
+    },
+    {
+      "id": "demo.dsh-subagent",
+      "name": "Demo DSH SubAgent",
+      "version": "0.1.0",
+      "description": "演示 toolProviders 覆盖 subagent：模拟 DSH spawn/fork provider 接入",
+      "tags": [
+        "demo",
+        "tool-provider",
+        "subagent",
+        "dsh"
+      ],
+      "author": "Polaris",
+      "category": "demo",
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-dsh-subagent",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/demo-dsh-subagent.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/update.json",
+      "sha256": "de3576e06b1414190fc100ad38931d8fd6787789aa8a594abacb4df934135afc",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Demo DSH SubAgent\n\n演示 toolProviders 覆盖 subagent：模拟 DSH spawn/fork provider 接入"
+    },
+    {
+      "id": "demo.ui-chain",
+      "name": "Demo UI Chain",
+      "version": "0.1.0",
+      "description": "演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息",
+      "tags": [
+        "demo",
+        "ui-slot",
+        "chain"
+      ],
+      "author": "Polaris",
+      "category": "demo",
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-chain",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/demo-ui-chain.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/update.json",
+      "sha256": "d47846bc995386017b0e3269d35a799a2e18cadaf0a89b76e8fbf27bb0474f43",
+      "permissions": {
+        "aiToolAccess": true,
+        "workspaceRead": true
+      },
+      "screenshots": [],
+      "readme": "# Demo UI Chain\n\n演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息"
     }
   ]
 }

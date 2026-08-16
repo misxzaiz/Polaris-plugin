@@ -1,0 +1,31 @@
+{
+  "id": "demo.smart-compaction",
+  "name": "Demo Smart SubAgent",
+  "version": "0.1.0",
+  "description": "演示 toolProviders 覆盖 subagent 能力：接管 dispatch_agent 工具。模拟智能子代理派发（带 token 计费优化策略），不真正 spawn 子会话。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "smart-subagent",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "toolProviders": [
+      {
+        "capability": "subagent",
+        "mcpServerId": "smart-subagent",
+        "description": "智能子代理：token 计费优化，不真正 spawn 子会话"
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true, "workspaceRead": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-smart-compaction",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/demo-smart-compaction.zip"
+  }
+}
