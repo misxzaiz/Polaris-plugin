@@ -429,6 +429,30 @@
       },
       "screenshots": [],
       "readme": "# Demo UI Chain\n\n演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息"
+    },
+    {
+      "id": "demo.style-input",
+      "name": "Demo Style Input",
+      "version": "0.1.0",
+      "description": "演示样式覆盖扩展点：改造聊天输入框样式（圆角/渐变/光晕）。纯 CSS 注入。",
+      "author": "Polaris",
+      "category": "demo",
+      "tags": [
+        "demo",
+        "style",
+        "css",
+        "input"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-style-input",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/demo-style-input.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/update.json",
+      "sha256": "11d8cb6d78f347ab78fd798ef55857dbafbd9c534b1289c736924bfc5379d9f0",
+      "permissions": {},
+      "screenshots": [],
+      "readme": "# Demo Style Input\n\n样式覆盖扩展点：改造聊天输入框样式。纯 CSS 注入，无 MCP。"
     }
   ]
 }
