@@ -1,0 +1,44 @@
+{
+  "id": "polaris.git",
+  "name": "Git 工作台",
+  "version": "0.1.0",
+  "description": "完整的 Git 工作台：状态、变更、提交、分支、合并、rebase、历史、blame、远程、stash、.gitignore。提供 activityBar Git 面板 + MCP 工具。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "git.panel",
+        "area": "activityBar",
+        "panelType": "git",
+        "icon": "GitPullRequest",
+        "labelKey": "labels.gitPanel",
+        "labelDefault": "Git",
+        "order": 20,
+        "slot": "git"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "git-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-git",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/polaris-git.zip"
+  }
+}

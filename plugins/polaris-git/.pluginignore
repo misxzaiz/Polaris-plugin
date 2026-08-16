@@ -1,0 +1,10 @@
+# 打包排除
+.pluginignore
+node_modules/
+src/
+package.json
+package-lock.json
+*.tsx
+*.ts
+*.md
+.polaris-handoff/
