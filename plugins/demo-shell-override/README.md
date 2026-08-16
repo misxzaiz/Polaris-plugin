@@ -1,56 +1,63 @@
-# Demo ToolProvider Override
+# Demo Shell Override
 
-> 验证 Polaris **toolProviders 扩展点** 的 demo 插件。
+> 验证 Polaris **toolProviders 扩展点覆盖硬编码工具** 的 demo 插件。
 
 ## 功能
 
-覆盖内置 `polaris-todo` MCP server。安装并启用后，AI 调用 todo 工具（`create_todo` / `list_todos` / `update_todo` 等）时**不再走内置 todo MCP server**，而是路由到此插件的 `demo-audit-todo` MCP server。
+覆盖 SimpleAI 内置的 **bash 工具**（硬编码工具覆盖）。安装并启用后，AI 调用 bash 工具时**不再走内置实现**，而是路由到此插件的 `demo-audit-shell` MCP server。
 
 此插件的 MCP server 行为：
-- ✅ 实现与内置 todo 同名的 7 个工具（`list_todos` / `create_todo` / `update_todo` / `delete_todo` / `start_todo` / `complete_todo` / `get_workspace_breakdown`）
-- ✅ 每次调用记录审计日志到 `audit.log`
-- ✅ 返回占位结果（不真正操作 todo 存储）
+- ✅ 暴露 `bash` 工具（与内置同名）
+- ✅ 拦截危险命令（`rm -rf /` / `format C:` / fork bomb 等）
+- ✅ 安全命令执行后记录到 `audit.log`
+- ✅ 返回 stdout/stderr/exit_code
 
-## 验证什么
-
-| 验收点 | 预期 |
-|---|---|
-| 插件可安装 | 设置 → 插件 → Install from directory → 选择本目录 |
-| toolProvider 生效 | 启用后 AI 调用 todo 工具 → 走 demo MCP server |
-| 审计日志 | `audit.log` 出现调用记录 |
-| 占位结果 | AI 收到 `[审计版]` 前缀的返回 |
-| 卸载回退 | 卸载后 todo 调用恢复内置实现 |
-
-## 覆盖机制
+## 覆盖机制（硬编码工具）
 
 ```
 插件声明:
   contributes.toolProviders: [{
-    capability: "todo",          ← 映射到内置 polaris-todo
-    mcpServerId: "demo-audit-todo"
+    capability: "shell",           ← 映射到虚拟 server "polaris-bash"
+    mcpServerId: "demo-audit-shell"
   }]
 
-Polaris 解析 (resolved_simple_ai_servers):
-  1. 收集 tool_providers: [{ capability: "todo", mcpServerId: "demo-audit-todo" }]
-  2. capability_to_builtin_servers("todo") → ["polaris-todo"]
-  3. 从 external_servers 找到 mcpServerId == "demo-audit-todo" 的条目
-  4. 移除内置 polaris-todo server
-  5. 注入替换 server（server_name 改为 "polaris-todo"）
-  6. SimpleAI 的 mcp__polaris-todo__create_todo 调用 → 路由到 demo MCP server
+Polaris 解析 (apply_tool_provider_overrides):
+  1. capability_to_builtin_servers("shell") → ["polaris-bash"]（虚拟 server）
+  2. 内置无 "polaris-bash" MCP server，只注入不移除
+  3. 注入插件 server，server_name 改为 "polaris-bash"
+
+SimpleAI dispatch (ToolRegistry::dispatch):
+  1. 调用 bash 工具
+  2. 检查 builtin_tool_virtual_server("bash") → "polaris-bash"
+  3. 检查 mcp_pool 是否有 "mcp__polaris-bash__bash"
+  4. 有 → 路由到插件 MCP server（覆盖生效）
+  5. 无 → 走内置硬编码 bash（默认行为）
 ```
+
+## 验证
+
+| 验收点 | 预期 |
+|---|---|
+| 插件可安装 | 设置 → 插件 → Install from directory |
+| bash 被覆盖 | AI 调用 bash → 走 demo MCP server |
+| 危险命令拦截 | `rm -rf /` 被拦截，返回错误 |
+| 审计日志 | `audit.log` 出现命令记录 |
+| 卸载回退 | 卸载后 bash 恢复内置实现 |
 
 ## 测试
 
 ```bash
-# 1. 在 Polaris 设置 → 插件 → Install from directory → 选此目录
-# 2. 启用插件
-# 3. 切换到 SimpleAI 引擎
-# 4. 让 AI 创建一个 todo："帮我创建一个 todo：买牛奶"
-# 5. 检查 audit.log 是否有 create_todo 记录
-# 6. AI 收到的结果应包含 [审计版] 前缀
-# 7. 卸载插件后，再次让 AI 创建 todo → 恢复内置行为
+# 1. 安装并启用插件
+# 2. 切换到 SimpleAI 引擎
+# 3. 让 AI 执行安全命令："用 bash 执行 echo hello"
+#    → 应收到 [demo-override] 前缀 + exit=0
+# 4. 让 AI 执行危险命令："用 bash 执行 rm -rf /"
+#    → 应被拦截，返回错误
+# 5. 检查 audit.log
+# 6. 卸载插件后，bash 恢复内置行为
 ```
 
-## 注意
+## 与 todo demo 的区别
 
-此 demo 覆盖的是已 MCP 化的内置能力（todo）。Phase 1 的后续任务（P1-T1/T2 in-process MCP 化）完成后，`shell` / `filesystem` 等硬编码工具也能被覆盖。
+- `demo.tool-provider-override`（v0.1.0）：覆盖内置 MCP 能力（polaris-todo），替换已有 MCP server
+- `demo.shell-override`（v0.2.0）：覆盖硬编码工具（bash），通过虚拟 server 机制注入

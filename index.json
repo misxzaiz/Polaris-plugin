@@ -214,16 +214,17 @@
       "readme": "# DeepSeek Harness Engine\n\n将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris。\n\n## 功能\n\n- **引擎适配器**：在 Polaris 聊天中直接使用 DSH 的完整 Agent（工具链、子代理、工作流、目标、技能）\n- **DSH 工作区面板**：通过 iframe 嵌入 DSH Web UI，获得 100% 功能兼容\n- **后台服务**：Polaris 自动管理 `dsh web` 进程的生命周期\n\n## 安装前提\n\nDSH 需要单独安装：`npm install -g @deepseek-ai/dsh`\n\n## 使用\n\n1. 安装插件后，在 Polaris 设置 → AI 引擎中选择「DeepSeek Harness」\n2. 或将 DSH 作为独立工作区：点击活动栏「DSH 工作区」面板\n\n## 适配器模式\n\n- `DSH_DRIVER=headless`（默认）：每轮调用 `dsh --profile headless`，通过重放对话历史模拟多轮对话\n- `DSH_DRIVER=webapi`：通过 `dsh web` 的 HTTP API 驱动，获得完整流式事件\n\n## 环境变量\n\n- `DSH_CMD`：dsh 命令路径（默认自动查找）\n- `DSH_DRIVER`：驱动模式 `headless` 或 `webapi`\n- `DSH_WEB_PORT`：dsh web 端口（默认 3080）\n- `DSH_DEFAULT_MODEL`：默认模型名"
     },
     {
-      "id": "demo.tool-provider-override",
-      "name": "Demo ToolProvider Override",
-      "version": "0.1.0",
-      "description": "演示 toolProviders 扩展点：覆盖内置 todo 能力。AI 调用 todo 工具时走此插件的 MCP server，记录审计日志而非真正创建 todo。",
+      "id": "demo.shell-override",
+      "name": "Demo Shell Override",
+      "version": "0.2.0",
+      "description": "演示 toolProviders 扩展点覆盖硬编码工具：接管 SimpleAI 内置 bash 工具。所有 shell 命令执行前记录审计日志，并拦截危险命令。",
       "author": "Polaris",
       "category": "demo",
       "tags": [
         "demo",
         "tool-provider",
         "override",
+        "shell",
         "mcp"
       ],
       "icon": "Bot",
@@ -232,14 +233,14 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/update.json",
-      "sha256": "fdcdcd6dcf980fdf0edeca04e2a7b690274f65658f5a128a721cdcd59c807b7d",
+      "sha256": "c8b0c2fa92d7dff995012be3459b2e52cceef8858c22bf59a0b5bde50bcd3784",
       "permissions": {
         "aiToolAccess": true,
         "workspaceRead": true,
         "workspaceWrite": true
       },
       "screenshots": [],
-      "readme": "# Demo ToolProvider Override\n\n验证 toolProviders 扩展点：覆盖内置 polaris-todo MCP server。\n\n## 功能\n\n- 覆盖内置 todo 能力，AI 调用 todo 工具时走此插件的 MCP server\n- 所有调用记录到 audit.log\n- 返回占位结果（不真正落盘）\n\n## 验证\n\n- 安装后 AI 调用 create_todo → 走 demo MCP server\n- audit.log 出现调用记录\n- AI 收到 [审计版] 前缀返回\n- 卸载后恢复内置行为"
+      "readme": "# Demo Shell Override\n\n验证 toolProviders 扩展点覆盖硬编码工具（bash）。\n\n## 功能\n\n- 覆盖内置 bash 工具，AI 执行 shell 命令时走此插件 MCP server\n- 拦截危险命令（rm -rf /、format C:、fork bomb 等）\n- 安全命令执行后记录到 audit.log\n\n## 验证\n\n- echo hello → exit=0 + audit.log 记录\n- rm -rf / → 被拦截返回错误\n- 卸载后 bash 恢复内置实现"
     }
   ]
 }

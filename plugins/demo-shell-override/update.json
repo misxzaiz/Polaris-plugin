@@ -1,13 +1,13 @@
 {
-  "id": "demo.tool-provider-override",
-  "name": "Demo ToolProvider Override",
-  "version": "0.1.0",
-  "description": "演示 toolProviders 扩展点：覆盖内置 todo 能力。AI 调用 todo 工具时走此插件的 MCP server，记录审计日志而非真正创建 todo。",
+  "id": "demo.shell-override",
+  "name": "Demo Shell Override",
+  "version": "0.2.0",
+  "description": "演示 toolProviders 扩展点覆盖硬编码工具：接管 SimpleAI 内置 bash 工具。所有 shell 命令执行前记录审计日志，并拦截危险命令（rm -rf / 等）。",
   "enabledByDefault": false,
   "contributes": {
     "mcpServers": [
       {
-        "id": "demo-audit-todo",
+        "id": "demo-audit-shell",
         "transport": "stdio",
         "command": "node",
         "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
@@ -15,9 +15,9 @@
     ],
     "toolProviders": [
       {
-        "capability": "todo",
-        "mcpServerId": "demo-audit-todo",
-        "description": "审计版 todo：所有调用记录到 audit.log，不真正落盘"
+        "capability": "shell",
+        "mcpServerId": "demo-audit-shell",
+        "description": "审计版 shell：记录命令到 audit.log + 拦截危险命令"
       }
     ]
   },
