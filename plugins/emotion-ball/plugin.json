@@ -1,0 +1,35 @@
+{
+  "id": "emotion-ball",
+  "name": "Emotion Ball",
+  "version": "0.1.0",
+  "description": "A dynamic emotion ball that visualizes AI states. Test panel with manual controls + OpenAI-compatible AI chat integration.",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "emotion-ball.panel",
+        "area": "activityBar",
+        "panelType": "emotion-ball",
+        "icon": "Orbit",
+        "labelKey": "labels.panel",
+        "labelDefault": "Emotion Ball",
+        "order": 85
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "appConfigRead": true,
+    "networkAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/emotion-ball",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/emotion-ball/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/emotion-ball/emotion-ball.zip"
+  }
+}

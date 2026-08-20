@@ -1,0 +1,15 @@
+{
+  "name": "polaris-emotion-ball-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Polaris Emotion Ball plugin (test panel)",
+  "scripts": {
+    "build": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  },
+  "dependencies": {
+    "zustand": "^5.0.14"
+  }
+}
