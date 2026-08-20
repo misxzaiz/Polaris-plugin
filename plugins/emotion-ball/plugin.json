@@ -10,7 +10,7 @@
         "id": "emotion-ball.panel",
         "area": "activityBar",
         "panelType": "emotion-ball",
-        "icon": "Orbit",
+        "icon": "Target",
         "labelKey": "labels.panel",
         "labelDefault": "Emotion Ball",
         "order": 85
