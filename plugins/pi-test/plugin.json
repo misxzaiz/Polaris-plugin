@@ -1,0 +1,43 @@
+{
+  "id": "pi-test",
+  "name": "Pi Test Adapter",
+  "version": "0.1.0",
+  "description": "Pi 引擎适配器测试插件 —— 通过 engine-v1 协议验证 PluginProcessEngine 路径。mock 模式，不连接真实 pi CLI。",
+  "enabledByDefault": false,
+  "contributes": {
+    "engines": [
+      {
+        "id": "pi-test",
+        "name": "Pi Test (engine-v1)",
+        "description": "Pi 引擎适配器测试（mock 模式）。验证 engine-v1 协议参数透传、事件流回传、续聊、中断等完整路径。",
+        "cli": {
+          "command": "node",
+          "args": [],
+          "installGuide": "适配器测试引擎，无需真实 pi CLI"
+        },
+        "adapter": {
+          "entry": "engine.mjs",
+          "runtime": "node",
+          "protocol": "engine-v1"
+        },
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": true,
+          "resume": true
+        }
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": false,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pi-test",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pi-test/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pi-test/pi-test.zip"
+  }
+}
