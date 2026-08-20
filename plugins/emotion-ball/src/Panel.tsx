@@ -1,141 +1,225 @@
 /**
- * Emotion Ball 测试面板
+ * EmotionBall v2 — 测试面板
  *
- * 功能：
- * 1. 情绪球实时展示
- * 2. 手动切换情绪（测试各种状态）
- * 3. AI 对话集成（OpenAI 兼容协议）—— 自动解析情绪
- * 4. 配置管理
+ * 三 tab：
+ * 1. 画廊：32 状态网格预览，hover 激活，点击切换主球
+ * 2. AI 对话：OpenAI 协议，AI 输出 emotionId 自动切球
+ * 3. 配置：API 端点/Key/模型 + 主题色
+ *
+ * 生产级：错误处理、主题适配、性能（画廊静态帧）。
  */
 
 import React from 'react'
-import { EmotionBall, type EmotionState } from './EmotionBall'
-import { useAiChatStore, sendChatMessage, parseEmotionFromText, stripEmotionTag } from './aiChatStore'
-import { ensureStyles } from './styles'
+import { EmotionBallView } from './BallView'
+import {
+  useChatStore, sendChatMessage, parseEmotionFromText, stripEmotionTag, groupedEmotions,
+} from './aiChatStore'
+import { EMOTION_SEED } from './emotions'
+import { ensurePanelStyles } from './styles'
 
-// 注入一次 CSS
-ensureStyles()
+ensurePanelStyles()
 
-// ── 情绪选项 ──────────────────────────────────────────────────────────────
-
-const EMOTION_OPTIONS: EmotionState[] = [
-  'idle', 'thinking', 'streaming', 'happy', 'sad', 'excited', 'error', 'listening',
-]
-
-const EMOTION_LABELS: Record<EmotionState, string> = {
-  idle: 'Idle 空闲',
-  thinking: 'Thinking 思考',
-  streaming: 'Streaming 输出',
-  happy: 'Happy 开心',
-  sad: 'Sad 忧伤',
-  excited: 'Excited 兴奋',
-  error: 'Error 错误',
-  listening: 'Listening 聆听',
+const GROUP_COLORS: Record<string, string> = {
+  life: '#5b95f0',
+  emotion: '#f5b13f',
+  agent: '#3fbe86',
+  custom: '#9a72ee',
 }
 
-// ── 面板主组件 ────────────────────────────────────────────────────────────
-
 export default function EmotionBallPanel() {
-  const {
-    aiConfig, setAiConfig,
-    messages, addMessage, clearMessages,
-    aiStatus, aiError, setAiStatus, setAiError,
-    emotion, setEmotion,
-    streamText, setStreamText, appendStreamText,
-    autoEmotion, setAutoEmotion,
-    showHistory, setShowHistory,
-  } = useAiChatStore()
+  const s = useChatStore()
+  const [tab, setTab] = React.useState<'gallery' | 'chat' | 'config'>('gallery')
+  const [mainEmotion, setMainEmotion] = React.useState('02')
+  const [shape, setShape] = React.useState<'blob' | 'wedge' | 'gem'>('blob')
+  const [previewHover, setPreviewHover] = React.useState<string | null>(null)
 
+  return React.createElement('div', { className: 'ebv2-panel' },
+    // Header
+    React.createElement('div', { className: 'ebv2-header' },
+      React.createElement('span', { className: 'ebv2-title' }, 'Emotion Ball v2'),
+      React.createElement('div', { className: 'ebv2-header-right' },
+        React.createElement('span', {
+          className: 'ebv2-status-dot ' + (
+            s.aiStatus === 'error' ? 'dot-error' :
+            s.aiStatus === 'streaming' || s.aiStatus === 'connecting' ? 'dot-active' : 'dot-idle'
+          ),
+        }),
+        React.createElement('span', { className: 'ebv2-status-text' },
+          s.aiStatus === 'idle' ? '空闲' : s.aiStatus === 'connecting' ? '连接中' : s.aiStatus === 'streaming' ? '输出中' : '错误'
+        ),
+      ),
+    ),
+
+    // 主球展示区
+    React.createElement('div', { className: 'ebv2-stage' },
+      React.createElement(EmotionBallView, {
+        emotion: s.aiStatus === 'streaming' || s.aiStatus === 'connecting' ? s.emotion : mainEmotion,
+        shape,
+        size: 180,
+        gaze: true,
+        onEmotionChange: (id: string) => setMainEmotion(id),
+      }),
+      React.createElement('div', { className: 'ebv2-stage-info' },
+        React.createElement('div', { className: 'ebv2-stage-name' },
+          (EMOTION_SEED.find((e) => e.id === (s.aiStatus === 'streaming' || s.aiStatus === 'connecting' ? s.emotion : mainEmotion)) || EMOTION_SEED[0]).name
+        ),
+        React.createElement('div', { className: 'ebv2-stage-desc' },
+          (EMOTION_SEED.find((e) => e.id === (s.aiStatus === 'streaming' || s.aiStatus === 'connecting' ? s.emotion : mainEmotion)) || EMOTION_SEED[0]).desc
+        ),
+      ),
+      // 形态切换
+      React.createElement('div', { className: 'ebv2-shape-switch' },
+        ['blob', 'wedge', 'gem'].map((sh) =>
+          React.createElement('button', {
+            key: sh,
+            className: 'ebv2-shape-btn ' + (shape === sh ? 'active' : ''),
+            onClick: () => setShape(sh as any),
+          }, sh === 'blob' ? '圆胖' : sh === 'wedge' ? '三角' : '菱形')
+        ),
+      ),
+    ),
+
+    // Tabs
+    React.createElement('div', { className: 'ebv2-tabs' },
+      React.createElement(TabBtn, { active: tab === 'gallery', onClick: () => setTab('gallery') }, '画廊'),
+      React.createElement(TabBtn, { active: tab === 'chat', onClick: () => setTab('chat') }, 'AI 对话'),
+      React.createElement(TabBtn, { active: tab === 'config', onClick: () => setTab('config') }, '配置'),
+    ),
+
+    // Tab 内容
+    React.createElement('div', { className: 'ebv2-tab-content' },
+      tab === 'gallery' && React.createElement(GalleryTab, {
+        onPick: (id) => { setMainEmotion(id); setTab('gallery') },
+        hover: previewHover,
+        setHover: setPreviewHover,
+      }),
+      tab === 'chat' && React.createElement(ChatTab, { onEmotion: setMainEmotion }),
+      tab === 'config' && React.createElement(ConfigTab),
+    ),
+  )
+}
+
+function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return React.createElement('button', {
+    className: 'ebv2-tab-btn ' + (active ? 'active' : ''),
+    onClick,
+  }, children)
+}
+
+// ============ 画廊 Tab ============
+
+function GalleryTab({ onPick, hover, setHover }: {
+  onPick: (id: string) => void
+  hover: string | null
+  setHover: (id: string | null) => void
+}) {
+  const groups = groupedEmotions()
+  return React.createElement('div', { className: 'ebv2-gallery' },
+    groups.map((g) =>
+      React.createElement('div', { key: g.group, className: 'ebv2-gallery-group' },
+        React.createElement('div', { className: 'ebv2-gallery-group-title' },
+          React.createElement('span', {
+            className: 'ebv2-group-dot',
+            style: { background: GROUP_COLORS[g.group] || '#888' },
+          }),
+          g.label,
+        ),
+        React.createElement('div', { className: 'ebv2-gallery-grid' },
+          g.items.map((e) =>
+            React.createElement('div', {
+              key: e.id,
+              className: 'ebv2-gallery-card ' + (hover === e.id ? 'hover' : ''),
+              onMouseEnter: () => setHover(e.id),
+              onMouseLeave: () => setHover(null),
+              onClick: () => onPick(e.id),
+            },
+              React.createElement(EmotionBallView, {
+                emotion: e.id,
+                size: 64,
+                gaze: false,
+                lite: true,
+              }),
+              React.createElement('div', { className: 'ebv2-card-id' }, e.id),
+              React.createElement('div', { className: 'ebv2-card-name' }, e.name),
+            ),
+          ),
+        ),
+      ),
+    ),
+  )
+}
+
+// ============ AI 对话 Tab ============
+
+function ChatTab({ onEmotion }: { onEmotion: (id: string) => void }) {
+  const s = useChatStore()
   const [input, setInput] = React.useState('')
-  const [tab, setTab] = React.useState<'preview' | 'chat' | 'config'>('preview')
-  const [selectedEmotion, setSelectedEmotion] = React.useState<EmotionState>('idle')
   const abortRef = React.useRef<AbortController | null>(null)
-  const chatEndRef = React.useRef<HTMLDivElement>(null)
-  const streamTextRef = React.useRef('')
+  const scrollRef = React.useRef<HTMLDivElement>(null)
+  const streamRef = React.useRef('')
 
-  // 自动滚动对话到底部
   React.useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, streamText])
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [s.messages, s.streamText])
 
-  // 手动切换情绪
-  const handleManualEmotion = React.useCallback((e: EmotionState) => {
-    setSelectedEmotion(e)
-    setEmotion(e)
-  }, [setEmotion, setSelectedEmotion])
-
-  // 发送 AI 消息
   const handleSend = React.useCallback(async () => {
     const text = input.trim()
-    if (!text || aiStatus === 'connecting' || aiStatus === 'streaming') return
-
-    // 检查配置
-    if (!aiConfig.apiKey) {
-      setAiError('请先配置 API Key')
-      setTab('config')
+    if (!text || s.aiStatus === 'connecting' || s.aiStatus === 'streaming') return
+    if (!s.aiConfig.apiKey) {
+      s.setAiError('请先在配置页填入 API Key')
       return
     }
-
     setInput('')
-    setStreamText('')
-    streamTextRef.current = ''
+    s.setStreamText('')
+    streamRef.current = ''
+    s.setAiError(null)
+    s.addMessage({ role: 'user', content: text })
+    s.setAiStatus('connecting')
+    if (s.autoEmotion) s.setEmotion('30') // 思考
 
-    const userMsg = { role: 'user' as const, content: text }
-    addMessage(userMsg)
-
-    setAiStatus('connecting')
-    setAiError(null)
-    if (autoEmotion) setEmotion('thinking')
-
-    const abortController = new AbortController()
-    abortRef.current = abortController
-
+    const ac = new AbortController()
+    abortRef.current = ac
     try {
-      const fullText = await sendChatMessage(
-        aiConfig,
-        [...messages, userMsg],
+      const full = await sendChatMessage(
+        s.aiConfig,
+        [...s.messages, { role: 'user', content: text }],
         (chunk) => {
-          // 首次收到 chunk 时切换状态
-          if (streamTextRef.current === '') {
-            setAiStatus('streaming')
-            if (autoEmotion) setEmotion('streaming')
+          if (streamRef.current === '') {
+            s.setAiStatus('streaming')
+            if (s.autoEmotion) s.setEmotion('33') // 生成
           }
-          streamTextRef.current += chunk
-          appendStreamText(chunk)
+          streamRef.current += chunk
+          s.appendStreamText(chunk)
+          // 实时检测情绪
+          if (s.autoEmotion) {
+            const eid = parseEmotionFromText(streamRef.current)
+            if (eid) { s.setEmotion(eid); onEmotion(eid) }
+          }
         },
-        abortController.signal,
+        ac.signal,
       )
-
-      // 完成
-      const cleanText = stripEmotionTag(fullText)
-      const detectedEmotion = autoEmotion ? (parseEmotionFromText(fullText) || 'happy') : emotion
-
-      addMessage({ role: 'assistant', content: cleanText || '(empty response)' })
-      setAiStatus('idle')
-      if (autoEmotion) setEmotion(detectedEmotion)
-      setStreamText('')
-      streamTextRef.current = ''
+      const clean = stripEmotionTag(full)
+      const eid = s.autoEmotion ? (parseEmotionFromText(full) || '02') : '02'
+      s.addMessage({ role: 'assistant', content: clean || '(空响应)' })
+      s.setAiStatus('idle')
+      if (s.autoEmotion) { s.setEmotion(eid); onEmotion(eid) }
+      s.setStreamText('')
+      streamRef.current = ''
     } catch (err: any) {
-      if (err.name === 'AbortError') {
-        setAiStatus('idle')
-        if (autoEmotion) setEmotion('idle')
-        return
-      }
-      setAiError(err.message || 'Unknown error')
-      setAiStatus('error')
-      if (autoEmotion) setEmotion('error')
+      if (err.name === 'AbortError') { s.setAiStatus('idle'); s.setEmotion('02'); return }
+      s.setAiError(err.message || String(err))
+      s.setAiStatus('error')
+      if (s.autoEmotion) s.setEmotion('35') // 出错
     }
-  }, [input, aiStatus, aiConfig, messages, addMessage, setStreamText, appendStreamText, setAiStatus, setAiError, autoEmotion, emotion, setEmotion])
+  }, [input, s, onEmotion])
 
-  // 中断
   const handleStop = React.useCallback(() => {
     abortRef.current?.abort()
     abortRef.current = null
-    setAiStatus('idle')
-    if (autoEmotion) setEmotion('idle')
-  }, [setAiStatus, setEmotion, autoEmotion])
+    s.setAiStatus('idle')
+    s.setEmotion('02')
+  }, [s])
 
-  // 键盘快捷键
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -143,228 +227,119 @@ export default function EmotionBallPanel() {
     }
   }, [handleSend])
 
-  // ── 渲染 ──
-
-  return React.createElement('div', { className: 'eb-panel' },
-    // ===== Header =====
-    React.createElement('div', { className: 'eb-header' },
-      React.createElement('span', { className: 'eb-title' }, 'Emotion Ball'),
-      React.createElement('span', {
-        className: `eb-badge ${aiStatus === 'error' ? 'eb-badge-error' : aiStatus === 'streaming' || aiStatus === 'connecting' ? 'eb-badge-active' : ''}`,
-      }, aiStatus === 'idle' ? 'Idle' : aiStatus === 'connecting' ? '连接中...' : aiStatus === 'streaming' ? '输出中' : 'Error'),
-    ),
-
-    // ===== Emotion Ball 展示区 =====
-    React.createElement('div', { className: 'eb-ball-area' },
-      React.createElement('div', { className: 'eb-ball-container' },
-        React.createElement(EmotionBall, { emotion, size: 80, compact: false }),
-      ),
-      React.createElement('div', { className: 'eb-ball-label' }, EMOTION_LABELS[emotion]),
-    ),
-
-    // ===== Tabs =====
-    React.createElement('div', { className: 'eb-tabs' },
-      React.createElement(TabBtn, { active: tab === 'preview', onClick: () => setTab('preview') }, '预览'),
-      React.createElement(TabBtn, { active: tab === 'chat', onClick: () => setTab('chat') }, 'AI 对话'),
-      React.createElement(TabBtn, { active: tab === 'config', onClick: () => setTab('config') }, '配置'),
-    ),
-
-    // ===== Tab 内容 =====
-    React.createElement('div', { className: 'eb-tab-content' },
-      // ── 预览 Tab ──
-      tab === 'preview' && React.createElement('div', { className: 'eb-preview-grid' },
-        EMOTION_OPTIONS.map((e) =>
-          React.createElement('button', {
-            key: e,
-            className: `eb-preview-btn ${emotion === e ? 'eb-preview-btn-active' : ''}`,
-            onClick: () => handleManualEmotion(e),
-          },
-            React.createElement(EmotionBall, { emotion: e, size: 32, compact: true }),
-            React.createElement('span', { className: 'eb-preview-label' }, EMOTION_LABELS[e]),
-          ),
+  return React.createElement('div', { className: 'ebv2-chat' },
+    React.createElement('div', { ref: scrollRef, className: 'ebv2-chat-msgs' },
+      s.messages.slice(1).map((m, i) =>
+        React.createElement('div', {
+          key: i,
+          className: 'ebv2-chat-msg ' + (m.role === 'user' ? 'user' : 'assistant'),
+        },
+          React.createElement('div', { className: 'ebv2-chat-role' }, m.role === 'user' ? '我' : 'AI'),
+          React.createElement('div', { className: 'ebv2-chat-content' }, m.content),
         ),
       ),
-
-      // ── AI 对话 Tab ──
-      tab === 'chat' && React.createElement('div', { className: 'eb-chat-area' },
-        // 对话消息列表
-        React.createElement('div', { className: 'eb-chat-messages' },
-          messages.slice(1).map((msg, i) =>
-            React.createElement('div', {
-              key: i,
-              className: `eb-chat-msg ${msg.role === 'user' ? 'eb-chat-msg-user' : 'eb-chat-msg-assistant'}`,
-            },
-              React.createElement('div', { className: 'eb-chat-role' }, msg.role === 'user' ? 'You' : 'AI'),
-              React.createElement('div', { className: 'eb-chat-content' }, msg.content),
-            ),
-          ),
-          // 流式输出中
-          streamText && React.createElement('div', { className: 'eb-chat-msg eb-chat-msg-assistant eb-chat-msg-streaming' },
-            React.createElement('div', { className: 'eb-chat-role' }, 'AI'),
-            React.createElement('div', { className: 'eb-chat-content' }, streamText),
-          ),
-          // 空状态
-          messages.length <= 1 && !streamText && React.createElement('div', { className: 'eb-chat-empty' },
-            '发送一条消息，AI 回复时会自动切换情绪球',
-          ),
-          React.createElement('div', { ref: chatEndRef }),
-        ),
-
-        // 错误提示
-        aiError && React.createElement('div', { className: 'eb-chat-error' }, aiError),
-
-        // 输入区
-        React.createElement('div', { className: 'eb-chat-input-row' },
-          React.createElement('textarea', {
-            className: 'eb-chat-input',
-            value: input,
-            onChange: (e: any) => setInput(e.target.value),
-            onKeyDown: handleKeyDown,
-            placeholder: '输入消息...',
-            rows: 2,
-            disabled: aiStatus === 'connecting' || aiStatus === 'streaming',
-          }),
-          React.createElement('div', { className: 'eb-chat-actions' },
-            (aiStatus === 'connecting' || aiStatus === 'streaming')
-              ? React.createElement('button', { className: 'eb-btn eb-btn-stop', onClick: handleStop }, '停止')
-              : React.createElement('button', {
-                  className: 'eb-btn eb-btn-send',
-                  onClick: handleSend,
-                  disabled: !input.trim(),
-                }, '发送'),
-          ),
-        ),
-
-        // 自动情绪开关
-        React.createElement('div', { className: 'eb-chat-footer' },
-          React.createElement('label', { className: 'eb-checkbox' },
-            React.createElement('input', {
-              type: 'checkbox',
-              checked: autoEmotion,
-              onChange: (e: any) => setAutoEmotion(e.target.checked),
-            }),
-            React.createElement('span', null, '自动情绪（AI 回复中解析 [emotion:xxx] 标记）'),
-          ),
-          React.createElement('button', {
-            className: 'eb-btn-ghost',
-            onClick: () => setShowHistory(!showHistory),
-          }, showHistory ? '隐藏历史' : '显示历史'),
-        ),
-
-        // 对话历史
-        showHistory && React.createElement('div', { className: 'eb-chat-history' },
-          React.createElement('div', { className: 'eb-chat-history-title' }, '对话历史'),
-          messages.map((msg, i) =>
-            React.createElement('div', { key: i, className: `eb-history-item ${msg.role === 'system' ? 'eb-history-system' : ''}` },
-              React.createElement('span', { className: 'eb-history-role' }, `[${msg.role}]`),
-              React.createElement('span', { className: 'eb-history-text' }, msg.content.slice(0, 80) + (msg.content.length > 80 ? '...' : '')),
-            ),
-          ),
-          React.createElement('button', {
-            className: 'eb-btn-ghost',
-            onClick: () => { clearMessages(); setShowHistory(false) },
-            style: { color: 'var(--eb-error, #ef4444)', marginTop: 8 },
-          }, '清空对话'),
-        ),
+      s.streamText && React.createElement('div', { className: 'ebv2-chat-msg assistant streaming' },
+        React.createElement('div', { className: 'ebv2-chat-role' }, 'AI'),
+        React.createElement('div', { className: 'ebv2-chat-content' }, s.streamText),
       ),
+      s.messages.length <= 1 && !s.streamText && React.createElement('div', { className: 'ebv2-chat-empty' },
+        '发送消息测试 AI 情绪球。AI 回复时会自动切换情绪。'
+      ),
+    ),
 
-      // ── 配置 Tab ──
-      tab === 'config' && React.createElement('div', { className: 'eb-config' },
-        React.createElement('div', { className: 'eb-config-field' },
-          React.createElement('label', { className: 'eb-config-label' }, 'API 端点'),
-          React.createElement('input', {
-            className: 'eb-config-input',
-            value: aiConfig.baseUrl,
-            onChange: (e: any) => setAiConfig({ baseUrl: e.target.value }),
-            placeholder: 'https://api.openai.com/v1',
-          }),
-        ),
-        React.createElement('div', { className: 'eb-config-field' },
-          React.createElement('label', { className: 'eb-config-label' }, 'API Key'),
-          React.createElement('input', {
-            className: 'eb-config-input',
-            type: 'password',
-            value: aiConfig.apiKey,
-            onChange: (e: any) => setAiConfig({ apiKey: e.target.value }),
-            placeholder: 'sk-...',
-          }),
-        ),
-        React.createElement('div', { className: 'eb-config-field' },
-          React.createElement('label', { className: 'eb-config-label' }, '模型'),
-          React.createElement('input', {
-            className: 'eb-config-input',
-            value: aiConfig.model,
-            onChange: (e: any) => setAiConfig({ model: e.target.value }),
-            placeholder: 'gpt-4o-mini',
-          }),
-        ),
-        React.createElement('div', { className: 'eb-config-hint' },
-          '支持任何 OpenAI 兼容 API（DeepSeek / Groq / 本地 ollama / 中转站等）',
-        ),
-        // 快速选择
-        React.createElement('div', { className: 'eb-config-presets' },
-          React.createElement('div', { className: 'eb-config-preset-title' }, '快速选择'),
-          React.createElement('div', { className: 'eb-config-preset-grid' },
-            React.createElement(PresetBtn, {
-              label: 'OpenAI',
-              config: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
-              current: aiConfig,
-              onSelect: setAiConfig,
-            }),
-            React.createElement(PresetBtn, {
-              label: 'DeepSeek',
-              config: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
-              current: aiConfig,
-              onSelect: setAiConfig,
-            }),
-            React.createElement(PresetBtn, {
-              label: 'Groq',
-              config: { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
-              current: aiConfig,
-              onSelect: setAiConfig,
-            }),
-            React.createElement(PresetBtn, {
-              label: 'Ollama',
-              config: { baseUrl: 'http://localhost:11434/v1', model: 'llama3.2' },
-              current: aiConfig,
-              onSelect: setAiConfig,
-            }),
-          ),
-        ),
-        React.createElement('div', { className: 'eb-config-status' },
-          React.createElement('span', null, '状态: '),
-          React.createElement('span', {
-            className: aiStatus === 'error' ? 'eb-status-error' : aiStatus === 'streaming' ? 'eb-status-ok' : '',
-          }, aiStatus === 'idle' ? '未连接' : aiStatus === 'connecting' ? '连接中...' : aiStatus === 'streaming' ? '已连接' : aiError || '错误'),
-        ),
+    s.aiError && React.createElement('div', { className: 'ebv2-chat-error' }, s.aiError),
+
+    React.createElement('div', { className: 'ebv2-chat-input-row' },
+      React.createElement('textarea', {
+        className: 'ebv2-chat-input',
+        value: input,
+        onChange: (e: any) => setInput(e.target.value),
+        onKeyDown: handleKeyDown,
+        placeholder: '输入消息（Enter 发送，Shift+Enter 换行）',
+        rows: 2,
+        disabled: s.aiStatus === 'connecting' || s.aiStatus === 'streaming',
+      }),
+      React.createElement('div', { className: 'ebv2-chat-actions' },
+        (s.aiStatus === 'connecting' || s.aiStatus === 'streaming')
+          ? React.createElement('button', { className: 'ebv2-btn stop', onClick: handleStop }, '停止')
+          : React.createElement('button', {
+              className: 'ebv2-btn send',
+              onClick: handleSend,
+              disabled: !input.trim(),
+            }, '发送'),
+      ),
+    ),
+
+    React.createElement('div', { className: 'ebv2-chat-footer' },
+      React.createElement('label', { className: 'ebv2-checkbox' },
+        React.createElement('input', {
+          type: 'checkbox',
+          checked: s.autoEmotion,
+          onChange: (e: any) => s.setAutoEmotion(e.target.checked),
+        }),
+        React.createElement('span', null, '自动情绪（解析 [emotion:ID]）'),
+      ),
+      React.createElement('button', {
+        className: 'ebv2-btn-ghost',
+        onClick: () => s.clearMessages(),
+      }, '清空'),
+    ),
+  )
+}
+
+// ============ 配置 Tab ============
+
+function ConfigTab() {
+  const s = useChatStore()
+  return React.createElement('div', { className: 'ebv2-config' },
+    React.createElement('div', { className: 'ebv2-config-field' },
+      React.createElement('label', { className: 'ebv2-config-label' }, 'API 端点'),
+      React.createElement('input', {
+        className: 'ebv2-config-input',
+        value: s.aiConfig.baseUrl,
+        onChange: (e: any) => s.setAiConfig({ baseUrl: e.target.value }),
+        placeholder: 'https://api.openai.com/v1',
+      }),
+    ),
+    React.createElement('div', { className: 'ebv2-config-field' },
+      React.createElement('label', { className: 'ebv2-config-label' }, 'API Key'),
+      React.createElement('input', {
+        className: 'ebv2-config-input',
+        type: 'password',
+        value: s.aiConfig.apiKey,
+        onChange: (e: any) => s.setAiConfig({ apiKey: e.target.value }),
+        placeholder: 'sk-...',
+      }),
+    ),
+    React.createElement('div', { className: 'ebv2-config-field' },
+      React.createElement('label', { className: 'ebv2-config-label' }, '模型'),
+      React.createElement('input', {
+        className: 'ebv2-config-input',
+        value: s.aiConfig.model,
+        onChange: (e: any) => s.setAiConfig({ model: e.target.value }),
+        placeholder: 'gpt-4o-mini',
+      }),
+    ),
+    React.createElement('div', { className: 'ebv2-config-hint' },
+      '支持任何 OpenAI 兼容 API（DeepSeek / Groq / Ollama / 中转站等）。AI 需在回复末尾输出 [emotion:ID] 标记。'
+    ),
+    React.createElement('div', { className: 'ebv2-config-presets' },
+      React.createElement('div', { className: 'ebv2-config-preset-title' }, '快速选择'),
+      React.createElement('div', { className: 'ebv2-config-preset-grid' },
+        presetBtn('OpenAI', { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' }, s),
+        presetBtn('DeepSeek', { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' }, s),
+        presetBtn('Groq', { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' }, s),
+        presetBtn('Ollama', { baseUrl: 'http://localhost:11434/v1', model: 'llama3.2' }, s),
       ),
     ),
   )
 }
 
-// ── 子组件 ────────────────────────────────────────────────────────────────
-
-function TabBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: any }) {
+function presetBtn(label: string, cfg: { baseUrl: string; model: string }, s: any) {
+  const active = s.aiConfig.baseUrl === cfg.baseUrl && s.aiConfig.model === cfg.model
   return React.createElement('button', {
-    className: `eb-tab-btn ${active ? 'eb-tab-btn-active' : ''}`,
-    onClick,
-  }, children)
-}
-
-function PresetBtn({
-  label,
-  config,
-  current,
-  onSelect,
-}: {
-  label: string
-  config: { baseUrl: string; model: string }
-  current: { baseUrl: string; model: string }
-  onSelect: (patch: { baseUrl: string; model: string }) => void
-}) {
-  const isActive = current.baseUrl === config.baseUrl && current.model === config.model
-  return React.createElement('button', {
-    className: `eb-preset-btn ${isActive ? 'eb-preset-btn-active' : ''}`,
-    onClick: () => onSelect(config),
+    key: label,
+    className: 'ebv2-preset-btn ' + (active ? 'active' : ''),
+    onClick: () => s.setAiConfig(cfg),
   }, label)
 }

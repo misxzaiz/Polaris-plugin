@@ -1,8 +1,8 @@
 {
   "id": "emotion-ball",
   "name": "Emotion Ball",
-  "version": "0.1.0",
-  "description": "A dynamic emotion ball that visualizes AI states. Test panel with manual controls + OpenAI-compatible AI chat integration.",
+  "version": "0.2.0",
+  "description": "32-state SVG emotion ball with spherical eye projection, ribbons, confetti, gaze tracking, and OpenAI-compatible AI chat integration.",
   "enabledByDefault": true,
   "contributes": {
     "views": [
