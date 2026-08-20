@@ -3,7 +3,7 @@
   "name": "Emotion Ball",
   "version": "0.1.0",
   "description": "A dynamic emotion ball that visualizes AI states. Test panel with manual controls + OpenAI-compatible AI chat integration.",
-  "enabledByDefault": false,
+  "enabledByDefault": true,
   "contributes": {
     "views": [
       {
