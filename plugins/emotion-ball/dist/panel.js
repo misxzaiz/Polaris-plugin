@@ -1,8 +1,8 @@
 // src/Panel.tsx
-import { createElement as h2, useCallback, useEffect, useRef, useState } from "react";
+import React3 from "react";
 
 // src/EmotionBall.tsx
-import { createElement as h, memo } from "react";
+import React from "react";
 var EMOTION_CONFIG = {
   idle: {
     primary: "#3b82f6",
@@ -69,7 +69,7 @@ var EMOTION_CONFIG = {
     label: "Listening"
   }
 };
-var EmotionBall = memo(function EmotionBall2({
+var EmotionBall = React.memo(function EmotionBall2({
   emotion,
   size = 48,
   compact = false
@@ -78,7 +78,7 @@ var EmotionBall = memo(function EmotionBall2({
   const s = compact ? Math.max(size * 0.6, 24) : size;
   const innerSize = s * 0.45;
   const innerOffset = (s - innerSize) / 2;
-  return h(
+  return React.createElement(
     "div",
     {
       className: "eb-root",
@@ -92,7 +92,7 @@ var EmotionBall = memo(function EmotionBall2({
       }
     },
     // 球体容器
-    h(
+    React.createElement(
       "div",
       {
         style: {
@@ -104,7 +104,7 @@ var EmotionBall = memo(function EmotionBall2({
         "data-emotion": emotion
       },
       // 辉光
-      h("div", {
+      React.createElement("div", {
         style: {
           position: "absolute",
           inset: -s * 0.15,
@@ -115,7 +115,7 @@ var EmotionBall = memo(function EmotionBall2({
         }
       }),
       // 外圈（主色）
-      h("div", {
+      React.createElement("div", {
         style: {
           position: "absolute",
           inset: 0,
@@ -127,7 +127,7 @@ var EmotionBall = memo(function EmotionBall2({
         }
       }),
       // 渐变弧（secondary）
-      h("div", {
+      React.createElement("div", {
         style: {
           position: "absolute",
           inset: 0,
@@ -140,7 +140,7 @@ var EmotionBall = memo(function EmotionBall2({
         }
       }),
       // 内圈
-      h("div", {
+      React.createElement("div", {
         style: {
           position: "absolute",
           top: innerOffset,
@@ -155,7 +155,7 @@ var EmotionBall = memo(function EmotionBall2({
         }
       }),
       // 中心亮点
-      h("div", {
+      React.createElement("div", {
         style: {
           position: "absolute",
           top: "50%",
@@ -199,15 +199,15 @@ var createStoreImpl = (createState) => {
 var createStore = (createState) => createState ? createStoreImpl(createState) : createStoreImpl;
 
 // node_modules/zustand/esm/react.mjs
-import React from "react";
+import React2 from "react";
 var identity = (arg) => arg;
 function useStore(api, selector = identity) {
-  const slice = React.useSyncExternalStore(
+  const slice = React2.useSyncExternalStore(
     api.subscribe,
-    React.useCallback(() => selector(api.getState()), [api, selector]),
-    React.useCallback(() => selector(api.getInitialState()), [api, selector])
+    React2.useCallback(() => selector(api.getState()), [api, selector]),
+    React2.useCallback(() => selector(api.getInitialState()), [api, selector])
   );
-  React.useDebugValue(slice);
+  React2.useDebugValue(slice);
   return slice;
 }
 var createImpl = (createState) => {
@@ -899,20 +899,20 @@ function EmotionBallPanel() {
     showHistory,
     setShowHistory
   } = useAiChatStore();
-  const [input, setInput] = useState("");
+  const [input, setInput] = React3.useState("");
   const [tab, setTab] = useState("preview");
   const [selectedEmotion, setSelectedEmotion] = useState("idle");
   const abortRef = useRef(null);
   const chatEndRef = useRef(null);
-  const streamTextRef = useRef("");
-  useEffect(() => {
+  const streamTextRef = React3.useRef("");
+  React3.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamText]);
-  const handleManualEmotion = useCallback((e) => {
+  const handleManualEmotion = React3.useCallback((e) => {
     setSelectedEmotion(e);
     setEmotion(e);
   }, [setEmotion, setSelectedEmotion]);
-  const handleSend = useCallback(async () => {
+  const handleSend = React3.useCallback(async () => {
     const text = input.trim();
     if (!text || aiStatus === "connecting" || aiStatus === "streaming") return;
     if (!aiConfig.apiKey) {
@@ -962,111 +962,111 @@ function EmotionBallPanel() {
       if (autoEmotion) setEmotion("error");
     }
   }, [input, aiStatus, aiConfig, messages, addMessage, setStreamText, appendStreamText, setAiStatus, setAiError, autoEmotion, emotion, setEmotion]);
-  const handleStop = useCallback(() => {
+  const handleStop = React3.useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
     setAiStatus("idle");
     if (autoEmotion) setEmotion("idle");
   }, [setAiStatus, setEmotion, autoEmotion]);
-  const handleKeyDown = useCallback((e) => {
+  const handleKeyDown = React3.useCallback((e) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   }, [handleSend]);
-  return h2(
+  return React3.createElement(
     "div",
     { className: "eb-panel" },
     // ===== Header =====
-    h2(
+    React3.createElement(
       "div",
       { className: "eb-header" },
-      h2("span", { className: "eb-title" }, "Emotion Ball"),
-      h2("span", {
+      React3.createElement("span", { className: "eb-title" }, "Emotion Ball"),
+      React3.createElement("span", {
         className: `eb-badge ${aiStatus === "error" ? "eb-badge-error" : aiStatus === "streaming" || aiStatus === "connecting" ? "eb-badge-active" : ""}`
       }, aiStatus === "idle" ? "Idle" : aiStatus === "connecting" ? "\u8FDE\u63A5\u4E2D..." : aiStatus === "streaming" ? "\u8F93\u51FA\u4E2D" : "Error")
     ),
     // ===== Emotion Ball 展示区 =====
-    h2(
+    React3.createElement(
       "div",
       { className: "eb-ball-area" },
-      h2(
+      React3.createElement(
         "div",
         { className: "eb-ball-container" },
-        h2(EmotionBall, { emotion, size: 80, compact: false })
+        React3.createElement(EmotionBall, { emotion, size: 80, compact: false })
       ),
-      h2("div", { className: "eb-ball-label" }, EMOTION_LABELS[emotion])
+      React3.createElement("div", { className: "eb-ball-label" }, EMOTION_LABELS[emotion])
     ),
     // ===== Tabs =====
-    h2(
+    React3.createElement(
       "div",
       { className: "eb-tabs" },
-      h2(TabBtn, { active: tab === "preview", onClick: () => setTab("preview") }, "\u9884\u89C8"),
-      h2(TabBtn, { active: tab === "chat", onClick: () => setTab("chat") }, "AI \u5BF9\u8BDD"),
-      h2(TabBtn, { active: tab === "config", onClick: () => setTab("config") }, "\u914D\u7F6E")
+      React3.createElement(TabBtn, { active: tab === "preview", onClick: () => setTab("preview") }, "\u9884\u89C8"),
+      React3.createElement(TabBtn, { active: tab === "chat", onClick: () => setTab("chat") }, "AI \u5BF9\u8BDD"),
+      React3.createElement(TabBtn, { active: tab === "config", onClick: () => setTab("config") }, "\u914D\u7F6E")
     ),
     // ===== Tab 内容 =====
-    h2(
+    React3.createElement(
       "div",
       { className: "eb-tab-content" },
       // ── 预览 Tab ──
-      tab === "preview" && h2(
+      tab === "preview" && React3.createElement(
         "div",
         { className: "eb-preview-grid" },
         EMOTION_OPTIONS.map(
-          (e) => h2(
+          (e) => React3.createElement(
             "button",
             {
               key: e,
               className: `eb-preview-btn ${emotion === e ? "eb-preview-btn-active" : ""}`,
               onClick: () => handleManualEmotion(e)
             },
-            h2(EmotionBall, { emotion: e, size: 32, compact: true }),
-            h2("span", { className: "eb-preview-label" }, EMOTION_LABELS[e])
+            React3.createElement(EmotionBall, { emotion: e, size: 32, compact: true }),
+            React3.createElement("span", { className: "eb-preview-label" }, EMOTION_LABELS[e])
           )
         )
       ),
       // ── AI 对话 Tab ──
-      tab === "chat" && h2(
+      tab === "chat" && React3.createElement(
         "div",
         { className: "eb-chat-area" },
         // 对话消息列表
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-chat-messages" },
           messages.slice(1).map(
-            (msg, i) => h2(
+            (msg, i) => React3.createElement(
               "div",
               {
                 key: i,
                 className: `eb-chat-msg ${msg.role === "user" ? "eb-chat-msg-user" : "eb-chat-msg-assistant"}`
               },
-              h2("div", { className: "eb-chat-role" }, msg.role === "user" ? "You" : "AI"),
-              h2("div", { className: "eb-chat-content" }, msg.content)
+              React3.createElement("div", { className: "eb-chat-role" }, msg.role === "user" ? "You" : "AI"),
+              React3.createElement("div", { className: "eb-chat-content" }, msg.content)
             )
           ),
           // 流式输出中
-          streamText && h2(
+          streamText && React3.createElement(
             "div",
             { className: "eb-chat-msg eb-chat-msg-assistant eb-chat-msg-streaming" },
-            h2("div", { className: "eb-chat-role" }, "AI"),
-            h2("div", { className: "eb-chat-content" }, streamText)
+            React3.createElement("div", { className: "eb-chat-role" }, "AI"),
+            React3.createElement("div", { className: "eb-chat-content" }, streamText)
           ),
           // 空状态
-          messages.length <= 1 && !streamText && h2(
+          messages.length <= 1 && !streamText && React3.createElement(
             "div",
             { className: "eb-chat-empty" },
             "\u53D1\u9001\u4E00\u6761\u6D88\u606F\uFF0CAI \u56DE\u590D\u65F6\u4F1A\u81EA\u52A8\u5207\u6362\u60C5\u7EEA\u7403"
           ),
-          h2("div", { ref: chatEndRef })
+          React3.createElement("div", { ref: chatEndRef })
         ),
         // 错误提示
-        aiError && h2("div", { className: "eb-chat-error" }, aiError),
+        aiError && React3.createElement("div", { className: "eb-chat-error" }, aiError),
         // 输入区
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-chat-input-row" },
-          h2("textarea", {
+          React3.createElement("textarea", {
             className: "eb-chat-input",
             value: input,
             onChange: (e) => setInput(e.target.value),
@@ -1075,10 +1075,10 @@ function EmotionBallPanel() {
             rows: 2,
             disabled: aiStatus === "connecting" || aiStatus === "streaming"
           }),
-          h2(
+          React3.createElement(
             "div",
             { className: "eb-chat-actions" },
-            aiStatus === "connecting" || aiStatus === "streaming" ? h2("button", { className: "eb-btn eb-btn-stop", onClick: handleStop }, "\u505C\u6B62") : h2("button", {
+            aiStatus === "connecting" || aiStatus === "streaming" ? React3.createElement("button", { className: "eb-btn eb-btn-stop", onClick: handleStop }, "\u505C\u6B62") : React3.createElement("button", {
               className: "eb-btn eb-btn-send",
               onClick: handleSend,
               disabled: !input.trim()
@@ -1086,38 +1086,38 @@ function EmotionBallPanel() {
           )
         ),
         // 自动情绪开关
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-chat-footer" },
-          h2(
+          React3.createElement(
             "label",
             { className: "eb-checkbox" },
-            h2("input", {
+            React3.createElement("input", {
               type: "checkbox",
               checked: autoEmotion,
               onChange: (e) => setAutoEmotion(e.target.checked)
             }),
-            h2("span", null, "\u81EA\u52A8\u60C5\u7EEA\uFF08AI \u56DE\u590D\u4E2D\u89E3\u6790 [emotion:xxx] \u6807\u8BB0\uFF09")
+            React3.createElement("span", null, "\u81EA\u52A8\u60C5\u7EEA\uFF08AI \u56DE\u590D\u4E2D\u89E3\u6790 [emotion:xxx] \u6807\u8BB0\uFF09")
           ),
-          h2("button", {
+          React3.createElement("button", {
             className: "eb-btn-ghost",
             onClick: () => setShowHistory(!showHistory)
           }, showHistory ? "\u9690\u85CF\u5386\u53F2" : "\u663E\u793A\u5386\u53F2")
         ),
         // 对话历史
-        showHistory && h2(
+        showHistory && React3.createElement(
           "div",
           { className: "eb-chat-history" },
-          h2("div", { className: "eb-chat-history-title" }, "\u5BF9\u8BDD\u5386\u53F2"),
+          React3.createElement("div", { className: "eb-chat-history-title" }, "\u5BF9\u8BDD\u5386\u53F2"),
           messages.map(
-            (msg, i) => h2(
+            (msg, i) => React3.createElement(
               "div",
               { key: i, className: `eb-history-item ${msg.role === "system" ? "eb-history-system" : ""}` },
-              h2("span", { className: "eb-history-role" }, `[${msg.role}]`),
-              h2("span", { className: "eb-history-text" }, msg.content.slice(0, 80) + (msg.content.length > 80 ? "..." : ""))
+              React3.createElement("span", { className: "eb-history-role" }, `[${msg.role}]`),
+              React3.createElement("span", { className: "eb-history-text" }, msg.content.slice(0, 80) + (msg.content.length > 80 ? "..." : ""))
             )
           ),
-          h2("button", {
+          React3.createElement("button", {
             className: "eb-btn-ghost",
             onClick: () => {
               clearMessages();
@@ -1128,25 +1128,25 @@ function EmotionBallPanel() {
         )
       ),
       // ── 配置 Tab ──
-      tab === "config" && h2(
+      tab === "config" && React3.createElement(
         "div",
         { className: "eb-config" },
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-config-field" },
-          h2("label", { className: "eb-config-label" }, "API \u7AEF\u70B9"),
-          h2("input", {
+          React3.createElement("label", { className: "eb-config-label" }, "API \u7AEF\u70B9"),
+          React3.createElement("input", {
             className: "eb-config-input",
             value: aiConfig.baseUrl,
             onChange: (e) => setAiConfig({ baseUrl: e.target.value }),
             placeholder: "https://api.openai.com/v1"
           })
         ),
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-config-field" },
-          h2("label", { className: "eb-config-label" }, "API Key"),
-          h2("input", {
+          React3.createElement("label", { className: "eb-config-label" }, "API Key"),
+          React3.createElement("input", {
             className: "eb-config-input",
             type: "password",
             value: aiConfig.apiKey,
@@ -1154,49 +1154,49 @@ function EmotionBallPanel() {
             placeholder: "sk-..."
           })
         ),
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-config-field" },
-          h2("label", { className: "eb-config-label" }, "\u6A21\u578B"),
-          h2("input", {
+          React3.createElement("label", { className: "eb-config-label" }, "\u6A21\u578B"),
+          React3.createElement("input", {
             className: "eb-config-input",
             value: aiConfig.model,
             onChange: (e) => setAiConfig({ model: e.target.value }),
             placeholder: "gpt-4o-mini"
           })
         ),
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-config-hint" },
           "\u652F\u6301\u4EFB\u4F55 OpenAI \u517C\u5BB9 API\uFF08DeepSeek / Groq / \u672C\u5730 ollama / \u4E2D\u8F6C\u7AD9\u7B49\uFF09"
         ),
         // 快速选择
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-config-presets" },
-          h2("div", { className: "eb-config-preset-title" }, "\u5FEB\u901F\u9009\u62E9"),
-          h2(
+          React3.createElement("div", { className: "eb-config-preset-title" }, "\u5FEB\u901F\u9009\u62E9"),
+          React3.createElement(
             "div",
             { className: "eb-config-preset-grid" },
-            h2(PresetBtn, {
+            React3.createElement(PresetBtn, {
               label: "OpenAI",
               config: { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
               current: aiConfig,
               onSelect: setAiConfig
             }),
-            h2(PresetBtn, {
+            React3.createElement(PresetBtn, {
               label: "DeepSeek",
               config: { baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
               current: aiConfig,
               onSelect: setAiConfig
             }),
-            h2(PresetBtn, {
+            React3.createElement(PresetBtn, {
               label: "Groq",
               config: { baseUrl: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" },
               current: aiConfig,
               onSelect: setAiConfig
             }),
-            h2(PresetBtn, {
+            React3.createElement(PresetBtn, {
               label: "Ollama",
               config: { baseUrl: "http://localhost:11434/v1", model: "llama3.2" },
               current: aiConfig,
@@ -1204,11 +1204,11 @@ function EmotionBallPanel() {
             })
           )
         ),
-        h2(
+        React3.createElement(
           "div",
           { className: "eb-config-status" },
-          h2("span", null, "\u72B6\u6001: "),
-          h2("span", {
+          React3.createElement("span", null, "\u72B6\u6001: "),
+          React3.createElement("span", {
             className: aiStatus === "error" ? "eb-status-error" : aiStatus === "streaming" ? "eb-status-ok" : ""
           }, aiStatus === "idle" ? "\u672A\u8FDE\u63A5" : aiStatus === "connecting" ? "\u8FDE\u63A5\u4E2D..." : aiStatus === "streaming" ? "\u5DF2\u8FDE\u63A5" : aiError || "\u9519\u8BEF")
         )
@@ -1217,7 +1217,7 @@ function EmotionBallPanel() {
   );
 }
 function TabBtn({ active, onClick, children }) {
-  return h2("button", {
+  return React3.createElement("button", {
     className: `eb-tab-btn ${active ? "eb-tab-btn-active" : ""}`,
     onClick
   }, children);
@@ -1229,7 +1229,7 @@ function PresetBtn({
   onSelect
 }) {
   const isActive = current.baseUrl === config.baseUrl && current.model === config.model;
-  return h2("button", {
+  return React3.createElement("button", {
     className: `eb-preset-btn ${isActive ? "eb-preset-btn-active" : ""}`,
     onClick: () => onSelect(config)
   }, label);

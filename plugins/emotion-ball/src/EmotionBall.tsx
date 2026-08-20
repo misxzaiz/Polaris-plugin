@@ -12,7 +12,7 @@
  * - listening: 绿色脉冲
  */
 
-import { createElement as h, memo, useMemo } from 'react'
+import React from 'react'
 
 export type EmotionState =
   | 'idle'
@@ -115,7 +115,7 @@ const EMOTION_CONFIG: Record<EmotionState, EmotionConfig> = {
 
 // ── 组件 ────────────────────────────────────────────────────────────────────
 
-export const EmotionBall = memo(function EmotionBall({
+export const EmotionBall = React.memo(function EmotionBall({
   emotion,
   size = 48,
   compact = false,
@@ -128,7 +128,7 @@ export const EmotionBall = memo(function EmotionBall({
   const innerOffset = (s - innerSize) / 2
 
   // 动态注入 @keyframes（仅一次）
-  return h('div', {
+  return React.createElement('div', {
     className: 'eb-root',
     style: {
       display: 'flex',
@@ -140,7 +140,7 @@ export const EmotionBall = memo(function EmotionBall({
     },
   },
     // 球体容器
-    h('div', {
+    React.createElement('div', {
       style: {
         position: 'relative',
         width: s,
@@ -150,7 +150,7 @@ export const EmotionBall = memo(function EmotionBall({
       'data-emotion': emotion,
     },
       // 辉光
-      h('div', {
+      React.createElement('div', {
         style: {
           position: 'absolute',
           inset: -s * 0.15,
@@ -161,7 +161,7 @@ export const EmotionBall = memo(function EmotionBall({
         },
       }),
       // 外圈（主色）
-      h('div', {
+      React.createElement('div', {
         style: {
           position: 'absolute',
           inset: 0,
@@ -173,7 +173,7 @@ export const EmotionBall = memo(function EmotionBall({
         },
       }),
       // 渐变弧（secondary）
-      h('div', {
+      React.createElement('div', {
         style: {
           position: 'absolute',
           inset: 0,
@@ -186,7 +186,7 @@ export const EmotionBall = memo(function EmotionBall({
         },
       }),
       // 内圈
-      h('div', {
+      React.createElement('div', {
         style: {
           position: 'absolute',
           top: innerOffset,
@@ -201,7 +201,7 @@ export const EmotionBall = memo(function EmotionBall({
         },
       }),
       // 中心亮点
-      h('div', {
+      React.createElement('div', {
         style: {
           position: 'absolute',
           top: '50%',
