@@ -900,10 +900,10 @@ function EmotionBallPanel() {
     setShowHistory
   } = useAiChatStore();
   const [input, setInput] = React3.useState("");
-  const [tab, setTab] = useState("preview");
-  const [selectedEmotion, setSelectedEmotion] = useState("idle");
-  const abortRef = useRef(null);
-  const chatEndRef = useRef(null);
+  const [tab, setTab] = React3.useState("preview");
+  const [selectedEmotion, setSelectedEmotion] = React3.useState("idle");
+  const abortRef = React3.useRef(null);
+  const chatEndRef = React3.useRef(null);
   const streamTextRef = React3.useRef("");
   React3.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });

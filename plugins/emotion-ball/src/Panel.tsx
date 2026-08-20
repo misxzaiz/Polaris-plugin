@@ -47,10 +47,10 @@ export default function EmotionBallPanel() {
   } = useAiChatStore()
 
   const [input, setInput] = React.useState('')
-  const [tab, setTab] = useState<'preview' | 'chat' | 'config'>('preview')
-  const [selectedEmotion, setSelectedEmotion] = useState<EmotionState>('idle')
-  const abortRef = useRef<AbortController | null>(null)
-  const chatEndRef = useRef<HTMLDivElement>(null)
+  const [tab, setTab] = React.useState<'preview' | 'chat' | 'config'>('preview')
+  const [selectedEmotion, setSelectedEmotion] = React.useState<EmotionState>('idle')
+  const abortRef = React.useRef<AbortController | null>(null)
+  const chatEndRef = React.useRef<HTMLDivElement>(null)
   const streamTextRef = React.useRef('')
 
   // 自动滚动对话到底部
