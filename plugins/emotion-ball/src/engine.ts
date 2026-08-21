@@ -1,29 +1,17 @@
 /**
- * EmotionBall v2 — 驱动层
+ * EmotionBall v3 — 驱动层
  *
- * rAF 状态机 + 弹簧插值 + 表情池轮换 + AI 协议处理。
+ * rAF 状态机 + 简化插值 + 表情轮换 + AI 协议处理。
  * 原创实现，基于动画原理独立编写。
+ *
+ * v3 变更：弃用 48 点眼环球面投影 + 弹簧物理，改用轻量 pose 直接驱动
+ * （眼白椭圆 + 瞳孔 + 嘴巴），动画原语叠加到临时偏移，绝不累加污染。
  */
 
 import { BallRenderer, defaultPose, clonePose, type Pose } from './renderer'
-import { EMOTION_SEED, DEFAULT_BODY, DEFAULT_EYE, genEyeRings } from './emotions'
-import type { EmotionDef, Anim, EyePose, BodyPose } from './emotions'
+import { EMOTION_SEED } from './emotions'
+import type { EmotionDef, Anim, EyePose, BodyPose, MouthPose } from './emotions'
 import { lerp, lerpColor, clamp, TAU } from './geometry'
-
-interface Spring { x: number; v: number; t: number }
-
-function spring(v0: number): Spring { return { x: v0, v: 0, t: v0 } }
-
-/** 临界阻尼弹簧步进，子步 1/120 保证稳定 */
-function springStep(s: Spring, w: number, z: number, dt: number) {
-  const sub = 4
-  const h = dt / sub
-  for (let i = 0; i < sub; i++) {
-    s.v += (-2 * z * w * s.v - w * w * (s.x - s.t)) * h
-    s.x += s.v * h
-    if (!isFinite(s.x) || !isFinite(s.v)) { s.x = s.t; s.v = 0 }
-  }
-}
 
 /** 6 种动画原语求值 */
 function animVal(a: Anim, t: number, dt: number): number {
@@ -44,14 +32,12 @@ function animVal(a: Anim, t: number, dt: number): number {
       return (u < 0.5 ? u * 2 : 2 - u * 2) * 2 - 1 * (a.amp || 0)
     }
     case 'jitter': {
-      // 伪噪声抖动（多频正弦叠加）
       const s = a.speed || 1
       const n = Math.sin(t * s * 7.3) * 0.6 + Math.sin(t * s * 13.1) * 0.3 + Math.sin(t * s * 23.7) * 0.1
       const dec = a.decay ? Math.max(0, 1 - t / a.decay) : 1
       return n * (a.amp || 0) * dec
     }
     case 'pulse': {
-      // 0→amp 节奏缩放
       const u = (t % p) / p
       return (u < 0.5 ? u * 2 : 1 - (u - 0.5) * 2) * (a.amp || 0)
     }
@@ -83,24 +69,13 @@ export class EmotionEngine {
   private fallbackId: string
   private curPose: Pose
   private targetPose: Pose
-  private eyeSpringL: { x: Spring; y: Spring }[] = []
-  private eyeSpringR: { x: Spring; y: Spring }[] = []
-  private bodySpring: { x: Spring; y: Spring; scale: Spring; rotate: Spring } = {
-    x: spring(0), y: spring(0), scale: spring(1), rotate: spring(0),
-  }
-  private rings = genEyeRings()
-  private curRingIdx = 0
-  private targetRingIdx = 0
-  private ringT = 1
-  private poolTimer = 0
-  private poolNext = 3000
+  private transT = 1
+  private transFrom: Pose = defaultPose()
+  private transTo: Pose = defaultPose()
   private blinkTimer = 0
   private blinkNext = 5000
   private blinkPhase = 0
   private animStartT = 0
-  private transT = 1
-  private transFrom: Pose = defaultPose()
-  private transTo: Pose = defaultPose()
   private sequence: any = null
   private seqT = 0
   private anticsTimer = 0
@@ -134,37 +109,26 @@ export class EmotionEngine {
     this.curPose = defaultPose()
     this.targetPose = this.computePose(this.curId)
     this.curPose = clonePose(this.targetPose)
-    this.initSprings()
-    this.enterEmotion(this.curId, false)
+    this.transFrom = clonePose(this.curPose)
+    this.transTo = clonePose(this.targetPose)
+    this.transT = 1
+    this.animStartT = performance.now()
+    const def = this.emotions.get(this.curId)!
+    this.blinkNext = def.blinkMs ? this.randRange(def.blinkMs[0], def.blinkMs[1]) : 99999
+
+    // 进入即触发的一次性特效（睡眠 zzz、彩带等持续特效由帧循环控制）
+    if (def.body?.confetti) this.renderer.burst(24)
+    if (def.body?.orbit) {
+      this.renderer.spawnOrbit(0)
+      this.renderer.spawnOrbit(1)
+    }
 
     if (opts.autostart !== false) {
       this.start()
     } else {
       // 静态帧模式：渲染一次初始姿态
-      this.renderer.setEyeRings(this.rings[this.curRingIdx].L, this.rings[this.curRingIdx].R)
       this.renderer.applyPose(this.curPose, 0)
     }
-  }
-
-  private initSprings() {
-    this.eyeSpringL = []
-    this.eyeSpringR = []
-    for (const r of this.rings) {
-      const cL = this.ringCentroid(r.L)
-      const cR = this.ringCentroid(r.R)
-      this.eyeSpringL.push({
-        x: spring(cL[0]), y: spring(cL[1]),
-      })
-      this.eyeSpringR.push({
-        x: spring(cR[0]), y: spring(cR[1]),
-      })
-    }
-  }
-
-  private ringCentroid(ring: number[][]): [number, number] {
-    let x = 0, y = 0
-    for (const p of ring) { x += p[0]; y += p[1] }
-    return [x / ring.length, y / ring.length]
   }
 
   /** 计算某个情绪的基础 pose */
@@ -182,11 +146,7 @@ export class EmotionEngine {
       p.left.open = def.openness
       p.right.open = def.openness
     }
-    // 初始眼环
-    if (def.pool.length > 0) {
-      this.targetRingIdx = def.pool[0]
-      if (this.ringT >= 1) this.curRingIdx = this.targetRingIdx
-    }
+    if (def.mouth) Object.assign(p.mouth, def.mouth)
     return p
   }
 
@@ -203,16 +163,14 @@ export class EmotionEngine {
     this.transTo = clonePose(this.targetPose)
     this.transT = 0
     this.animStartT = performance.now()
-    this.poolTimer = 0
-    this.poolNext = def.poolMs ? this.randRange(def.poolMs[0], def.poolMs[1]) : 99999
-    this.blinkNext = def.blinkMs ? this.randRange(def.blinkMs[0], def.blinkMs[1]) : 99999
-    this.blinkTimer = 0
     this.sequence = def.sequence || null
     this.seqT = 0
+    this.anticsTimer = 0
     this.idleTimer = 0
+    this.blinkTimer = 0
+    this.blinkNext = def.blinkMs ? this.randRange(def.blinkMs[0], def.blinkMs[1]) : 99999
 
     // 进入即触发的事件
-    if (def.body?.ribbons) this.renderer.spawnTrailSpin(4)
     if (def.body?.confetti) this.renderer.burst(24)
     if (def.body?.orbit) {
       this.renderer.spawnOrbit(0)
@@ -286,78 +244,66 @@ export class EmotionEngine {
   private frame(dt: number, now: number) {
     const def = this.emotions.get(this.curId)!
 
-    // 过渡
+    // 过渡插值
     if (this.transT < 1) {
       this.transT = Math.min(1, this.transT + dt * 1000 / (def.transition || 400))
       const e = this.easeInOut(this.transT)
       this.curPose.body = this.lerpBody(this.transFrom.body, this.transTo.body, e)
       this.curPose.left = this.lerpEye(this.transFrom.left, this.transTo.left, e)
       this.curPose.right = this.lerpEye(this.transFrom.right, this.transTo.right, e)
+      this.curPose.mouth = this.lerpMouth(this.transFrom.mouth, this.transTo.mouth, e)
     } else {
       this.curPose.body = { ...this.targetPose.body }
       this.curPose.left = { ...this.targetPose.left }
       this.curPose.right = { ...this.targetPose.right }
+      this.curPose.mouth = { ...this.targetPose.mouth }
     }
 
-    // 表情池轮换
-    this.poolTimer += dt * 1000
-    if (def.pool.length > 1 && this.poolTimer > this.poolNext) {
-      this.poolTimer = 0
-      this.poolNext = this.randRange(def.poolMs[0], def.poolMs[1])
-      const others = def.pool.filter((i) => i !== this.targetRingIdx)
-      const next = others[Math.floor(Math.random() * others.length)]
-      this.targetRingIdx = next
-      this.ringT = 0
-    }
-
-    // 眼环插值
-    if (this.ringT < 1) {
-      this.ringT = Math.min(1, this.ringT + dt * (def.poolSpeed || 6))
-      const e = this.easeInOut(this.ringT)
-      const L = this.lerpRingPts(this.rings[this.curRingIdx].L, this.rings[this.targetRingIdx].L, e)
-      const R = this.lerpRingPts(this.rings[this.curRingIdx].R, this.rings[this.targetRingIdx].R, e)
-      this.renderer.setEyeRings(L, R)
-      if (this.ringT >= 1) this.curRingIdx = this.targetRingIdx
-    } else {
-      this.renderer.setEyeRings(this.rings[this.curRingIdx].L, this.rings[this.curRingIdx].R)
-    }
-
-    // 动画原语（叠加到临时偏移，不累加污染 pose）
-    const animOff = { eyeX: 0, eyeY: 0, eyeOpen: 0, bodyX: 0, bodyY: 0, bodyScale: 0 }
+    // 动画原语（叠加到临时偏移，不累加污染）
+    const animOff: Record<string, number> = { lookX: 0, lookY: 0, open: 0, bodyX: 0, bodyY: 0, bodyScale: 0, mouthOpen: 0, width: 0 }
+    const t = (now - this.animStartT) / 1000
     if (def.anims) {
-      const t = (now - this.animStartT) / 1000
       for (const a of def.anims) {
         const v = animVal(a, t, dt)
-        if (a.target === 'eyes') {
-          if (a.prop === 'lookX') animOff.eyeX += v
-          else if (a.prop === 'lookY') animOff.eyeY += v
-          else if (a.prop === 'x') animOff.eyeX += v
-          else if (a.prop === 'y') animOff.eyeY += v
-          else if (a.prop === 'open') animOff.eyeOpen += v
-        } else if (a.target === 'body') {
-          if (a.prop === 'x') animOff.bodyX += v
-          else if (a.prop === 'y') animOff.bodyY += v
-          else if (a.prop === 'scale') animOff.bodyScale += v
+        switch (a.target) {
+          case 'eyes':
+            if (a.prop === 'lookX') animOff.lookX += v
+            else if (a.prop === 'lookY') animOff.lookY += v
+            else if (a.prop === 'x') animOff.lookX += v * 0.12
+            else if (a.prop === 'y') animOff.lookY += v * 0.12
+            else if (a.prop === 'open') animOff.open += v
+            break
+          case 'body':
+            if (a.prop === 'x') animOff.bodyX += v
+            else if (a.prop === 'y') animOff.bodyY += v
+            else if (a.prop === 'scale') animOff.bodyScale += v
+            break
+          case 'mouth':
+            if (a.prop === 'mouthOpen' || a.prop === 'open') animOff.mouthOpen += v
+            else if (a.prop === 'width') animOff.width += v
+            break
         }
       }
     }
-    this.curPose.left.lookX = this.targetPose.left.lookX + animOff.eyeX
-    this.curPose.left.lookY = this.targetPose.left.lookY + animOff.eyeY
-    this.curPose.right.lookX = this.targetPose.right.lookX + animOff.eyeX
-    this.curPose.right.lookY = this.targetPose.right.lookY + animOff.eyeY
+
+    // 应用到 curPose（基于 target，不累加）
+    this.curPose.left.lookX = clamp(this.targetPose.left.lookX + animOff.lookX, -1, 1)
+    this.curPose.left.lookY = clamp(this.targetPose.left.lookY + animOff.lookY, -1, 1)
+    this.curPose.right.lookX = clamp(this.targetPose.right.lookX + animOff.lookX, -1, 1)
+    this.curPose.right.lookY = clamp(this.targetPose.right.lookY + animOff.lookY, -1, 1)
     this.curPose.body.x = this.targetPose.body.x + animOff.bodyX
     this.curPose.body.y = this.targetPose.body.y + animOff.bodyY
 
-    // 呼吸（叠加到 scale）
+    // 呼吸
     const breathe = def.body?.breathe || 0.01
     this.curPose.body.scale = this.targetPose.body.scale + animOff.bodyScale + Math.sin(now * 0.0015) * breathe
 
-    // 注视
+    // 注视（鼠标）
     if (def.gaze) {
-      this.curPose.left.lookX += this.gazeX * 8
-      this.curPose.left.lookY += this.gazeY * 5
-      this.curPose.right.lookX += this.gazeX * 8
-      this.curPose.right.lookY += this.gazeY * 5
+      this.curPose.left.lookX = clamp(this.curPose.left.lookX + this.gazeX * 0.4, -1, 1)
+      this.curPose.left.lookY = clamp(this.curPose.left.lookY + this.gazeY * 0.4, -1, 1)
+      this.curPose.right.lookX = clamp(this.curPose.right.lookX + this.gazeX * 0.4, -1, 1)
+      this.curPose.right.lookY = clamp(this.curPose.right.lookY + this.gazeY * 0.4, -1, 1)
     }
 
     // 眨眼（基于 target open，不累乘）
@@ -390,25 +336,34 @@ export class EmotionEngine {
           if (f.eyes?.left) Object.assign(this.curPose.left, f.eyes.left)
           if (f.eyes?.right) Object.assign(this.curPose.right, f.eyes.right)
           if (f.body) Object.assign(this.curPose.body, f.body)
+          if (f.mouth) Object.assign(this.curPose.mouth, f.mouth)
         }
       }
       const last = frames[frames.length - 1]
       if (last && this.seqT * 1000 > last.at + 600) {
         const settle = this.sequence.settle
-        if (settle === 'base') { this.targetRingIdx = def.pool[0] || 0; this.ringT = 0 }
+        if (settle === 'base') { /* 已到基础姿态 */ }
         else if (settle === 'hold') { /* 定格 */ }
         else if (settle && (settle as any).next) { this.enterEmotion((settle as any).next, true) }
         this.sequence = null
       }
     }
 
-    // 待机 antics
+    // 待机 antics（偶尔自旋甩彩带 / 轻跳）
     if (def.antics) {
       this.anticsTimer += dt
       if (this.anticsTimer > this.randRange(9, 18)) {
         this.anticsTimer = 0
         if (Math.random() < 0.5) this.yawVel = (Math.random() < 0.5 ? -1 : 1) * 6
-        else this.curPose.body.y -= 20
+        else {
+          this.curPose.body.y = this.targetPose.body.y - 18
+          this.curPose.body.scale = this.targetPose.body.scale * 1.04
+        }
+      }
+      // antics 结束后恢复
+      if (this.anticsTimer > 0.5) {
+        this.curPose.body.y = this.targetPose.body.y
+        this.curPose.body.scale = this.targetPose.body.scale
       }
     }
 
@@ -445,9 +400,9 @@ export class EmotionEngine {
       rotate: lerp(a.rotate, b.rotate, t),
       color: lerpColor(a.color, b.color, t),
       breathe: lerp(a.breathe, b.breathe, t),
+      zzz: lerp(a.zzz, b.zzz, t),
       ribbons: t > 0.5 ? b.ribbons : a.ribbons,
       confetti: t > 0.5 ? b.confetti : a.confetti,
-      zzz: lerp(a.zzz, b.zzz, t),
       orbit: t > 0.5 ? b.orbit : a.orbit,
     }
   }
@@ -457,22 +412,19 @@ export class EmotionEngine {
       ...a,
       x: lerp(a.x, b.x, t),
       y: lerp(a.y, b.y, t),
-      scaleX: lerp(a.scaleX, b.scaleX, t),
-      scaleY: lerp(a.scaleY, b.scaleY, t),
-      rotate: lerp(a.rotate, b.rotate, t),
       open: lerp(a.open, b.open, t),
-      color: lerpColor(a.color, b.color, t),
       lookX: lerp(a.lookX, b.lookX, t),
       lookY: lerp(a.lookY, b.lookY, t),
+      squint: lerp(a.squint, b.squint, t),
     }
   }
 
-  private lerpRingPts(a: number[][], b: number[][], t: number): number[][] {
-    const out: number[][] = new Array(a.length)
-    for (let i = 0; i < a.length; i++) {
-      out[i] = [lerp(a[i][0], b[i][0], t), lerp(a[i][1], b[i][1], t)]
+  private lerpMouth(a: MouthPose, b: MouthPose, t: number): MouthPose {
+    return {
+      type: t > 0.5 ? b.type : a.type,
+      width: lerp(a.width, b.width, t),
+      open: lerp(a.open, b.open, t),
     }
-    return out
   }
 }
 

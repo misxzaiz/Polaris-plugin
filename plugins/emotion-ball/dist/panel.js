@@ -1,3 +1,7 @@
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+
 // src/Panel.tsx
 import React3 from "react";
 
@@ -6,24 +10,12 @@ import React from "react";
 
 // src/geometry.ts
 var HEAD_C = 110;
-var EYE_HALF = 20;
 var TAU = Math.PI * 2;
-function rad(d) {
-  return d * Math.PI / 180;
-}
 function clamp(v, a, b) {
   return v < a ? a : v > b ? b : v;
 }
 function lerp(a, b, t) {
   return a + (b - a) * t;
-}
-function centroid(ring) {
-  let x = 0, y = 0;
-  for (const p of ring) {
-    x += p[0];
-    y += p[1];
-  }
-  return [x / ring.length, y / ring.length];
 }
 function ringPath(ring) {
   let s = "M";
@@ -31,25 +23,6 @@ function ringPath(ring) {
     s += (i ? "L" : "") + ring[i][0].toFixed(2) + " " + ring[i][1].toFixed(2);
   }
   return s + "Z";
-}
-function genEyeRing(cx, cy, rx, ry, openTop = 1, openBot = 1, tilt = 0, squish = 0) {
-  const N = 48;
-  const ring = [];
-  const ct = Math.cos(rad(tilt));
-  const st = Math.sin(rad(tilt));
-  for (let i = 0; i < N; i++) {
-    const a = i / N * TAU;
-    const sa = Math.sin(a);
-    const open = sa >= 0 ? openTop : openBot;
-    const ryc = ry * (0.04 + 0.96 * open);
-    const rxc = rx * (1 - squish * (1 - open));
-    let x = Math.cos(a) * rxc;
-    let y = sa * ryc;
-    const rx2 = x * ct - y * st;
-    const ry2 = x * st + y * ct;
-    ring.push([+(cx + rx2).toFixed(2), +(cy + ry2).toFixed(2)]);
-  }
-  return ring;
 }
 function genBlobBody(cx, cy, r, wobble = 0) {
   const N = 48;
@@ -91,49 +64,6 @@ function shade(hex, amt) {
 }
 
 // src/emotions.ts
-var L_OFF = [-EYE_HALF - 4, 0];
-var R_OFF = [EYE_HALF + 4, 0];
-var RING_PARAMS = [
-  [17, 20, 1, 1, 0, 0],
-  // 0 平静大眼（更圆更萌）
-  [18, 22, 1.05, 1.05, 0, 0],
-  // 1 圆睁
-  [17, 17, 0.08, 1, 0, 0],
-  // 2 笑眼(上弧闭)
-  [15, 10, 0.5, 0.5, 0, 0.4],
-  // 3 眯眼
-  [15, 2, 0.04, 0.04, 0, 0.6],
-  // 4 闭合细线
-  [16, 15, 1, 0.85, -18, 0],
-  // 5 斜左
-  [16, 15, 1, 0.85, 18, 0],
-  // 6 斜右
-  [17, 16, 0.3, 1, 0, 0.2],
-  // 7 怒目(上压)
-  [16, 12, 0.55, 0.55, 0, 0],
-  // 8 困倦半开
-  [19, 12, 1, 1, 0, 0],
-  // 9 聆听(扁宽)
-  [14, 9, 0.6, 0.6, 0, 0.3],
-  // 10 扫读窄
-  [12, 13, 0.7, 0.7, 0, 0.1],
-  // 11 害羞小
-  [20, 24, 1.1, 1.1, 0, 0],
-  // 12 惊讶大圆
-  [17, 17, 1, 0.4, -10, 0],
-  // 13 悲伤下垂
-  [16, 16, 1, 0.9, -4, 0]
-  // 14 期待上望
-];
-function genEyeRings() {
-  return RING_PARAMS.map((p) => {
-    const [rx, ry, ot, ob, tilt, sq] = p;
-    return {
-      L: genEyeRing(HEAD_C + L_OFF[0], HEAD_C + L_OFF[1], rx, ry, ot, ob, tilt, sq),
-      R: genEyeRing(HEAD_C + R_OFF[0], HEAD_C + R_OFF[1], rx, ry, ot, ob, -tilt, sq)
-    };
-  });
-}
 var DEFAULT_BODY = {
   x: 0,
   y: 0,
@@ -149,13 +79,15 @@ var DEFAULT_BODY = {
 var DEFAULT_EYE = {
   x: 0,
   y: 0,
-  scaleX: 1,
-  scaleY: 1,
-  rotate: 0,
   open: 1,
-  color: "#1A1A1A",
   lookX: 0,
-  lookY: 0
+  lookY: 0,
+  squint: 0
+};
+var DEFAULT_MOUTH = {
+  type: "smile",
+  width: 0.4,
+  open: 0
 };
 var EMOTION_SEED = [
   // ===== 1) 生命周期（8 个） =====
@@ -163,36 +95,34 @@ var EMOTION_SEED = [
     id: "00",
     name: "\u7761\u7720",
     group: "life",
-    desc: "\u95ED\u773C\u6210\u7EC6\u7EBF\uFF0C\u53F3\u4E0A\u89D2 zzz \u7F13\u7F13\u98D8\u8D77\uFF0C\u53EA\u5269\u7F13\u6162\u547C\u5438",
-    en: { name: "Sleeping", desc: "Eyes closed to thin lines, zzz drifting up, slow breath only" },
+    desc: "\u95ED\u773C\u6210\u7EBF\uFF0C\u53F3\u4E0A\u89D2 zzz \u7F13\u7F13\u98D8\u8D77\uFF0C\u53EA\u5269\u7F13\u6162\u547C\u5438",
+    en: { name: "Sleeping", desc: "Eyes closed, zzz drifting up, slow breath only" },
     transition: 900,
     gaze: false,
-    pool: [4],
-    poolMs: [6e3, 1e4],
     blinkMs: null,
-    openness: 0.08,
+    openness: 0.02,
     body: { y: 4, rotate: -2, breathe: 0.018, color: "#EEEBE4", zzz: 1 },
-    eyes: { both: { y: 4, lookY: 2 } },
+    eyes: { both: { y: 4 } },
+    mouth: { type: "none", width: 0 },
     anims: [{ target: "eyes", prop: "y", type: "sine", amp: 1.2, period: 3600 }]
   },
   {
     id: "01",
     name: "\u5524\u9192",
     group: "life",
-    desc: "\u4ECE\u95ED\u5408\u773C\u73AF\u7F13\u7F13\u7741\u5F00\uFF0C\u63C9\u773C\u4F3C\u7684\u7728\u4E24\u4E0B\uFF0C\u8FDB\u5165\u5F85\u673A",
+    desc: "\u4ECE\u95ED\u5408\u773C\u7F13\u7F13\u7741\u5F00\uFF0C\u63C9\u773C\u4F3C\u7684\u7728\u4E24\u4E0B\uFF0C\u8FDB\u5165\u5F85\u673A",
     en: { name: "Waking", desc: "Eyes crack open with groggy blinks, then idle" },
     transition: 320,
     gaze: false,
-    pool: [4],
-    poolMs: [800, 800],
     blinkMs: null,
+    mouth: { type: "flat", width: 0.3 },
     sequence: {
       settle: { next: "02" },
       frames: [
-        { at: 0, eyes: { both: { open: 0.1, y: 4 } } },
-        { at: 420, eyes: { left: { open: 0.55, y: 2 }, right: { open: 0.12, y: 4 } } },
-        { at: 820, eyes: { both: { open: 0.3, y: 3 } } },
-        { at: 1400, eyes: { both: { open: 1, scaleX: 1.12, scaleY: 1.12, y: -2 } } },
+        { at: 0, eyes: { both: { open: 0.05, y: 4 } } },
+        { at: 420, eyes: { left: { open: 0.4, y: 2 }, right: { open: 0.1, y: 4 } } },
+        { at: 820, eyes: { both: { open: 0.2, y: 3 } } },
+        { at: 1400, eyes: { both: { open: 1, y: -2 } } },
         { at: 2100, eyes: { both: { open: 1, y: 0 } } }
       ]
     }
@@ -205,59 +135,55 @@ var EMOTION_SEED = [
     en: { name: "Idle", desc: "Glances left and right, occasional ribbon spin" },
     transition: 700,
     gaze: true,
-    pool: [0],
-    poolMs: [9e3, 16e3],
     blinkMs: [6e3, 14e3],
     antics: true,
     body: { breathe: 0.012 },
+    mouth: { type: "smile", width: 0.35 },
     anims: [
-      { target: "eyes", prop: "lookX", type: "glance", amp: 10, period: 4800 },
-      { target: "eyes", prop: "lookY", type: "sine", amp: 2, period: 4100, phase: 1.1 }
+      { target: "eyes", prop: "lookX", type: "glance", amp: 0.5, period: 4800 },
+      { target: "eyes", prop: "lookY", type: "sine", amp: 0.12, period: 4100, phase: 1.1 }
     ]
   },
   {
     id: "03",
     name: "\u597D\u5947",
     group: "life",
-    desc: "\u5706\u7741\u4E0E\u5E73\u9759\u773C\u73AF\u5FEB\u901F\u8F6E\u6362\uFF0C\u5934\u5FAE\u503E\uFF0C\u76EE\u5149\u6253\u91CF",
-    en: { name: "Curious", desc: "Wide and calm rings rotate quickly, head tilted" },
+    desc: "\u5706\u7741\u773C\uFF0C\u5934\u5FAE\u503E\uFF0C\u76EE\u5149\u6253\u91CF",
+    en: { name: "Curious", desc: "Wide eyes, head tilted, look around" },
     transition: 420,
     gaze: true,
-    pool: [1, 0, 14],
-    poolMs: [1800, 3200],
     blinkMs: [2500, 5500],
-    poolSpeed: 10,
     body: { rotate: 4, breathe: 0.01 },
-    eyes: { both: { lookY: -1 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "sine", amp: 2.4, period: 2800 }]
+    eyes: { both: { open: 1.08, lookY: -0.2 } },
+    mouth: { type: "o", width: 0.3, open: 0.3 },
+    anims: [{ target: "eyes", prop: "lookX", type: "sine", amp: 0.2, period: 2800 }]
   },
   {
     id: "04",
     name: "\u503E\u542C",
     group: "life",
-    desc: "\u6241\u5BBD\u773C\u73AF\uFF0C\u76EE\u5149\u5FAE\u5411\u4E0A\uFF0C\u7F13\u7F13\u5DE6\u53F3\u626B\u89C6",
-    en: { name: "Listening", desc: "Wide flat eyes, gazing slightly up, slow scan" },
+    desc: "\u76EE\u5149\u5FAE\u5411\u4E0A\uFF0C\u7F13\u7F13\u5DE6\u53F3\u626B\u89C6",
+    en: { name: "Listening", desc: "Gazing slightly up, slow scan" },
     transition: 500,
     gaze: true,
-    pool: [9],
-    poolMs: [4e3, 7e3],
     blinkMs: [4e3, 8e3],
-    eyes: { both: { lookY: -2 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "sine", amp: 4, period: 5200 }]
+    eyes: { both: { lookY: -0.25 } },
+    mouth: { type: "smile", width: 0.25 },
+    anims: [{ target: "eyes", prop: "lookX", type: "sine", amp: 0.25, period: 5200 }]
   },
   {
     id: "05",
     name: "\u4E13\u6CE8",
     group: "life",
-    desc: "\u772F\u773C\u7A84\u73AF\uFF0C\u76EE\u5149\u9501\u5B9A\u6B63\u524D\u65B9\uFF0C\u547C\u5438\u6781\u7F13",
-    en: { name: "Focused", desc: "Narrow eyes locked forward, slow breath" },
+    desc: "\u772F\u773C\uFF0C\u76EE\u5149\u9501\u5B9A\u6B63\u524D\u65B9\uFF0C\u547C\u5438\u6781\u7F13",
+    en: { name: "Focused", desc: "Narrowed eyes locked forward, slow breath" },
     transition: 400,
     gaze: true,
-    pool: [10],
-    poolMs: [8e3, 12e3],
     blinkMs: [5e3, 1e4],
     body: { breathe: 6e-3 },
-    anims: [{ target: "eyes", prop: "lookY", type: "sine", amp: 0.8, period: 6e3 }]
+    eyes: { both: { squint: 0.45 } },
+    mouth: { type: "flat", width: 0.25 },
+    anims: [{ target: "eyes", prop: "lookY", type: "sine", amp: 0.08, period: 6e3 }]
   },
   {
     id: "06",
@@ -267,26 +193,25 @@ var EMOTION_SEED = [
     en: { name: "Confused", desc: "One eye wide, one squinting, head tilted, wandering gaze" },
     transition: 500,
     gaze: true,
-    pool: [1, 3],
-    poolMs: [2500, 4500],
     blinkMs: [3e3, 6e3],
     body: { rotate: 6 },
-    eyes: { left: { scaleY: 0.6 }, right: { scaleY: 1 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 3, speed: 0.4, decay: 0 }]
+    eyes: { left: { open: 1.05 }, right: { open: 0.45, squint: 0.5 } },
+    mouth: { type: "w", width: 0.35 },
+    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 0.25, speed: 0.4, decay: 0 }]
   },
   {
     id: "07",
     name: "\u8D70\u795E",
     group: "life",
-    desc: "\u773C\u73AF\u7F13\u6162\u4E0A\u7FFB\uFF0C\u547C\u5438\u7EF5\u957F\uFF0C\u5BF9\u5916\u754C\u77ED\u6682\u5931\u7126",
-    en: { name: "Dazing", desc: "Eyes drift up slowly, long breath, zoning out" },
+    desc: "\u76EE\u5149\u7F13\u6162\u4E0A\u7FFB\uFF0C\u547C\u5438\u7EF5\u957F\uFF0C\u77ED\u6682\u5931\u7126",
+    en: { name: "Dazing", desc: "Eyes drift up slowly, zoning out" },
     transition: 800,
     gaze: false,
-    pool: [14, 4],
-    poolMs: [5e3, 8e3],
     blinkMs: [8e3, 14e3],
     openness: 0.7,
-    anims: [{ target: "eyes", prop: "lookY", type: "sine", amp: 5, period: 8e3 }]
+    eyes: { both: { lookY: 0.45 } },
+    mouth: { type: "open", width: 0.25, open: 0.2 },
+    anims: [{ target: "eyes", prop: "lookY", type: "sine", amp: 0.35, period: 8e3 }]
   },
   // ===== 2) 情绪反应（12 个） =====
   {
@@ -297,61 +222,60 @@ var EMOTION_SEED = [
     en: { name: "Happy", desc: "Smiling crescent eyes, slight bounce" },
     transition: 360,
     gaze: true,
-    pool: [2, 0],
-    poolMs: [2200, 4e3],
     blinkMs: [3e3, 6e3],
     body: { y: -2, breathe: 0.02, color: "#FFF6E0" },
+    eyes: { both: { squint: 0.6 } },
+    mouth: { type: "happy", width: 0.6 },
     anims: [
       { target: "body", prop: "y", type: "sine", amp: 3, period: 1600 },
-      { target: "eyes", prop: "lookX", type: "glance", amp: 4, period: 3e3 }
+      { target: "eyes", prop: "lookX", type: "glance", amp: 0.25, period: 3e3 }
     ]
   },
   {
     id: "11",
     name: "\u5927\u7B11",
     group: "emotion",
-    desc: "\u7B11\u773C\u5168\u95ED\uFF0C\u8EAB\u4F53\u4E0A\u4E0B\u98A4\u52A8\uFF0C\u6492\u82B1\u5E86\u795D",
+    desc: "\u772F\u773C\u5168\u95ED\uFF0C\u8EAB\u4F53\u4E0A\u4E0B\u98A4\u52A8\uFF0C\u6492\u82B1\u5E86\u795D",
     en: { name: "Laughing", desc: "Eyes fully shut, body shaking, confetti burst" },
     transition: 300,
     gaze: false,
-    pool: [4],
-    poolMs: [1500, 2500],
     blinkMs: null,
-    openness: 0.06,
+    openness: 0.05,
     body: { breathe: 0.03, color: "#FFE3B3", confetti: 1 },
-    anims: [{ target: "body", prop: "y", type: "jitter", amp: 2, speed: 8, decay: 0 }]
+    eyes: { both: { squint: 1, open: 0.08 } },
+    mouth: { type: "happy", width: 0.85, open: 0.4 },
+    anims: [{ target: "body", prop: "y", type: "jitter", amp: 1.8, speed: 8, decay: 0 }]
   },
   {
     id: "12",
     name: "\u5BB3\u7F9E",
     group: "emotion",
-    desc: "\u5C0F\u773C\u73AF\uFF0C\u76EE\u5149\u8EB2\u95EA\u5411\u53F3\u4E0B\uFF0C\u4F53\u8272\u6CDB\u7C89",
-    en: { name: "Shy", desc: "Small eyes, gaze darting away, blushing pink" },
+    desc: "\u76EE\u5149\u8EB2\u95EA\u5411\u53F3\u4E0B\uFF0C\u4F53\u8272\u6CDB\u7C89\uFF0C\u816E\u7EA2",
+    en: { name: "Shy", desc: "Gaze darting away, blushing pink" },
     transition: 600,
     gaze: true,
-    pool: [11],
-    poolMs: [3e3, 5e3],
     blinkMs: [2500, 5e3],
     body: { color: "#F9D7D0", rotate: -3 },
-    eyes: { both: { lookX: 6, lookY: 4 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 2, speed: 0.3, decay: 0 }]
+    eyes: { both: { lookX: 0.45, lookY: 0.4 } },
+    mouth: { type: "smile", width: 0.3 },
+    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 0.18, speed: 0.3, decay: 0 }]
   },
   {
     id: "13",
     name: "\u60CA\u8BB6",
     group: "emotion",
-    desc: "\u773C\u775B\u77AC\u95F4\u5706\u7741\uFF0C\u8EAB\u4F53\u540E\u4EF0\uFF0C\u5B9A\u683C\u4E00\u77AC",
-    en: { name: "Surprised", desc: "Eyes snap wide, body leans back, freezes" },
+    desc: "\u773C\u775B\u77AC\u95F4\u5706\u7741\uFF0C\u5634\u5DF4\u5927\u5F20\uFF0C\u8EAB\u4F53\u540E\u4EF0",
+    en: { name: "Surprised", desc: "Eyes snap wide, mouth open, leans back" },
     transition: 150,
     gaze: true,
-    pool: [12],
-    poolMs: [1500, 2500],
     blinkMs: [1500, 3e3],
+    eyes: { both: { open: 1.25 } },
+    mouth: { type: "o", width: 0.5, open: 0.7 },
     sequence: {
       settle: "hold",
       frames: [
-        { at: 0, eyes: { both: { scaleX: 1.3, scaleY: 1.3 } }, body: { y: -3, scale: 1.04 } },
-        { at: 600, eyes: { both: { scaleX: 1, scaleY: 1 } }, body: { y: 0, scale: 1 } }
+        { at: 0, eyes: { both: { open: 1.3 } }, body: { y: -3, scale: 1.04 }, mouth: { type: "o", width: 0.5, open: 0.8 } },
+        { at: 600, eyes: { both: { open: 1 } }, body: { y: 0, scale: 1 }, mouth: { type: "o", width: 0.4, open: 0.4 } }
       ]
     }
   },
@@ -359,16 +283,15 @@ var EMOTION_SEED = [
     id: "14",
     name: "\u751F\u6C14",
     group: "emotion",
-    desc: "\u6012\u76EE\u4E0A\u538B\uFF0C\u5934\u524D\u503E\uFF0C\u4F53\u8272\u53D8\u7EA2\uFF0C\u547C\u5438\u6025\u4FC3",
-    en: { name: "Angry", desc: "Furrowed eyes, head forward, reddening, fast breath" },
+    desc: "\u772F\u773C\u76B1\u7709\uFF0C\u5934\u524D\u503E\uFF0C\u4F53\u8272\u53D8\u7EA2\uFF0C\u547C\u5438\u6025\u4FC3",
+    en: { name: "Angry", desc: "Narrowed eyes, head forward, reddening, fast breath" },
     transition: 280,
     gaze: true,
-    pool: [7],
-    poolMs: [2e3, 3500],
     blinkMs: [2e3, 4e3],
-    body: { y: 2, rotate: 0, breathe: 0.03, color: "#F4C0B0" },
-    eyes: { both: { lookY: -2 } },
-    anims: [{ target: "body", prop: "y", type: "jitter", amp: 1, speed: 6, decay: 0 }]
+    body: { y: 2, breathe: 0.03, color: "#F4C0B0" },
+    eyes: { both: { squint: 0.55, lookY: -0.2 } },
+    mouth: { type: "flat", width: 0.45, open: 0.1 },
+    anims: [{ target: "body", prop: "y", type: "jitter", amp: 0.8, speed: 6, decay: 0 }]
   },
   {
     id: "15",
@@ -378,45 +301,41 @@ var EMOTION_SEED = [
     en: { name: "Sad", desc: "Drooping eyes, head down, cool grey-blue tone" },
     transition: 700,
     gaze: false,
-    pool: [13],
-    poolMs: [4e3, 7e3],
     blinkMs: [5e3, 9e3],
     openness: 0.7,
     body: { y: 6, rotate: 2, color: "#D8DCE4", breathe: 8e-3 },
-    eyes: { both: { lookY: 3 } },
-    anims: [{ target: "eyes", prop: "lookY", type: "sine", amp: 1.5, period: 5e3 }]
+    eyes: { both: { lookY: 0.3 } },
+    mouth: { type: "sad", width: 0.4 },
+    anims: [{ target: "eyes", prop: "lookY", type: "sine", amp: 0.18, period: 5e3 }]
   },
   {
     id: "16",
     name: "\u5F97\u610F",
     group: "emotion",
-    desc: "\u7B11\u773C\u534A\u95ED\uFF0C\u5934\u5FAE\u4EF0\uFF0C\u5F69\u5E26\u73AF\u7ED5",
-    en: { name: "Smug", desc: "Half-closed smiling eyes, head back, orbiting ribbon" },
+    desc: "\u772F\u773C\u5FAE\u4EF0\uFF0C\u5634\u89D2\u4E0A\u626C\uFF0C\u5F69\u5E26\u73AF\u7ED5",
+    en: { name: "Smug", desc: "Narrow eyes tilted up, smug smile, orbiting ribbon" },
     transition: 500,
     gaze: true,
-    pool: [2],
-    poolMs: [3e3, 5e3],
     blinkMs: [4e3, 8e3],
     body: { y: -3, rotate: -4, color: "#FBE6C2", orbit: 1 },
-    eyes: { both: { lookY: -3 } }
+    eyes: { both: { squint: 0.4, lookY: -0.3 } },
+    mouth: { type: "smile", width: 0.5 }
   },
   {
     id: "17",
     name: "\u671F\u5F85",
     group: "emotion",
-    desc: "\u773C\u73AF\u4E0A\u671B\u5FAE\u7741\uFF0C\u8EAB\u4F53\u524D\u503E\u8F7B\u6643",
-    en: { name: "Expectant", desc: "Eyes looking up, leaning forward, swaying" },
+    desc: "\u76EE\u5149\u4E0A\u671B\u4EAE\u6676\u6676\uFF0C\u8EAB\u4F53\u524D\u503E\u8F7B\u6643",
+    en: { name: "Expectant", desc: "Sparkling eyes looking up, leaning forward" },
     transition: 450,
     gaze: true,
-    pool: [14],
-    poolMs: [2e3, 3500],
     blinkMs: [3e3, 6e3],
-    poolSpeed: 8,
     body: { y: -1, color: "#E8F0E4" },
-    eyes: { both: { lookY: -4 } },
+    eyes: { both: { open: 1.08, lookY: -0.4 } },
+    mouth: { type: "o", width: 0.3, open: 0.25 },
     anims: [
-      { target: "body", prop: "x", type: "sine", amp: 2, period: 2400 },
-      { target: "eyes", prop: "lookX", type: "sine", amp: 2, period: 1800 }
+      { target: "body", prop: "x", type: "sine", amp: 1.8, period: 2400 },
+      { target: "eyes", prop: "lookX", type: "sine", amp: 0.15, period: 1800 }
     ]
   },
   {
@@ -427,54 +346,50 @@ var EMOTION_SEED = [
     en: { name: "Puzzled", desc: "One squint one slanted, head tilted, sidelong gaze" },
     transition: 500,
     gaze: true,
-    pool: [3, 5],
-    poolMs: [2500, 4500],
     blinkMs: [3e3, 6e3],
     body: { rotate: 5 },
-    eyes: { left: { scaleX: 0.9 }, right: { scaleX: 0.7, lookX: 4 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "glance", amp: 3, period: 3600 }]
+    eyes: { left: { squint: 0.2 }, right: { squint: 0.7, lookX: 0.3 } },
+    mouth: { type: "w", width: 0.4 },
+    anims: [{ target: "eyes", prop: "lookX", type: "glance", amp: 0.3, period: 3600 }]
   },
   {
     id: "19",
     name: "\u5BA0\u7231",
     group: "emotion",
-    desc: "\u7B11\u773C\u772F\u6210\u6708\u7259\uFF0C\u4F53\u8272\u6E29\u6696\uFF0C\u76EE\u5149\u67D4\u548C",
-    en: { name: "Adoring", desc: "Crescent smiling eyes, warm tone, soft gaze" },
+    desc: "\u7B11\u773C\u5F2F\u5F2F\uFF0C\u76EE\u5149\u67D4\u548C\uFF0C\u4F53\u8272\u6E29\u6696",
+    en: { name: "Adoring", desc: "Curved smiling eyes, warm tone, soft gaze" },
     transition: 600,
     gaze: true,
-    pool: [2, 11],
-    poolMs: [3e3, 5e3],
     blinkMs: [4e3, 7e3],
     body: { color: "#FBEAD8", breathe: 0.014 },
-    eyes: { both: { lookY: 1 } }
+    eyes: { both: { squint: 0.35, lookY: 0.08 } },
+    mouth: { type: "happy", width: 0.55 }
   },
   {
     id: "20",
     name: "\u6FC0\u52A8",
     group: "emotion",
-    desc: "\u5706\u7741\u773C\u73AF\u5FEB\u901F\u8F6E\u6362\uFF0C\u8EAB\u4F53\u98A4\u6296\uFF0C\u6492\u82B1",
-    en: { name: "Excited", desc: "Wide eyes rotating fast, trembling, confetti" },
+    desc: "\u5706\u7741\u773C\uFF0C\u8EAB\u4F53\u98A4\u6296\uFF0C\u6492\u82B1",
+    en: { name: "Excited", desc: "Wide eyes, trembling, confetti" },
     transition: 200,
     gaze: true,
-    pool: [12, 1],
-    poolMs: [800, 1600],
     blinkMs: [2e3, 4e3],
-    poolSpeed: 12,
     body: { color: "#FDD9C0", confetti: 1, breathe: 0.025 },
-    anims: [{ target: "body", prop: "y", type: "jitter", amp: 1.5, speed: 10, decay: 0 }]
+    eyes: { both: { open: 1.15 } },
+    mouth: { type: "happy", width: 0.7, open: 0.3 },
+    anims: [{ target: "body", prop: "y", type: "jitter", amp: 1.2, speed: 10, decay: 0 }]
   },
   {
     id: "21",
     name: "\u6DE1\u5B9A",
     group: "emotion",
-    desc: "\u5E73\u9759\u5927\u773C\uFF0C\u547C\u5438\u5E73\u7A33\uFF0C\u76EE\u5149\u4E0D\u6E38\u79FB",
-    en: { name: "Calm", desc: "Calm wide eyes, steady breath, no wandering gaze" },
+    desc: "\u5E73\u9759\u773C\uFF0C\u547C\u5438\u5E73\u7A33\uFF0C\u76EE\u5149\u4E0D\u6E38\u79FB",
+    en: { name: "Calm", desc: "Calm eyes, steady breath, no wandering gaze" },
     transition: 600,
     gaze: true,
-    pool: [0],
-    poolMs: [1e4, 16e3],
     blinkMs: [6e3, 12e3],
-    body: { breathe: 0.01, color: "#EDEDEA" }
+    body: { breathe: 0.01, color: "#EDEDEA" },
+    mouth: { type: "smile", width: 0.3 }
   },
   // ===== 3) 代理状态（12 个） =====
   {
@@ -485,68 +400,63 @@ var EMOTION_SEED = [
     en: { name: "Thinking", desc: "Gaze upward, orbiting ribbon overhead, slow breath" },
     transition: 400,
     gaze: true,
-    pool: [14, 0],
-    poolMs: [3e3, 5e3],
     blinkMs: [4e3, 7e3],
     body: { orbit: 1, breathe: 8e-3, color: "#E4E8F0" },
-    eyes: { both: { lookY: -3 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "sine", amp: 1.5, period: 4e3 }]
+    eyes: { both: { lookY: -0.4 } },
+    mouth: { type: "flat", width: 0.25 },
+    anims: [{ target: "eyes", prop: "lookX", type: "sine", amp: 0.12, period: 4e3 }]
   },
   {
     id: "31",
     name: "\u68C0\u7D22",
     group: "agent",
-    desc: "\u7A84\u773C\u73AF\u5FEB\u901F\u5DE6\u53F3\u626B\u8BFB\uFF0C\u76EE\u5149\u9AD8\u9891\u626B\u52A8",
+    desc: "\u772F\u773C\u5FEB\u901F\u5DE6\u53F3\u626B\u89C6",
     en: { name: "Searching", desc: "Narrow eyes scanning rapidly left-right" },
     transition: 250,
     gaze: true,
-    pool: [10],
-    poolMs: [1200, 2e3],
     blinkMs: [3e3, 6e3],
-    poolSpeed: 10,
-    anims: [{ target: "eyes", prop: "lookX", type: "scan", amp: 8, period: 1400 }]
+    eyes: { both: { squint: 0.5 } },
+    mouth: { type: "flat", width: 0.2 },
+    anims: [{ target: "eyes", prop: "lookX", type: "scan", amp: 0.65, period: 1400 }]
   },
   {
     id: "32",
     name: "\u8BFB\u5199",
     group: "agent",
-    desc: "\u772F\u773C\u5411\u4E0B\uFF0C\u76EE\u5149\u968F\u884C\u8F7B\u8F7B\u4E0A\u4E0B\u626B",
+    desc: "\u772F\u773C\u5411\u4E0B\uFF0C\u76EE\u5149\u8F7B\u8F7B\u4E0A\u4E0B\u626B",
     en: { name: "Reading", desc: "Squinting down, eyes tracking up-down gently" },
     transition: 350,
     gaze: true,
-    pool: [3],
-    poolMs: [3e3, 5e3],
     blinkMs: [4e3, 8e3],
-    eyes: { both: { lookY: 5 } },
-    anims: [{ target: "eyes", prop: "lookY", type: "scan", amp: 3, period: 2e3 }]
+    eyes: { both: { lookY: 0.5, squint: 0.3 } },
+    mouth: { type: "flat", width: 0.2 },
+    anims: [{ target: "eyes", prop: "lookY", type: "scan", amp: 0.3, period: 2e3 }]
   },
   {
     id: "33",
     name: "\u751F\u6210",
     group: "agent",
-    desc: "\u5E73\u9759\u773C\u73AF\uFF0C\u76EE\u5149\u5FAE\u5411\u53F3\u4E0B\uFF0C\u547C\u5438\u5E73\u7A33\u6709\u8282\u5F8B",
+    desc: "\u5E73\u9759\u773C\uFF0C\u76EE\u5149\u5FAE\u5411\u53F3\u4E0B\uFF0C\u547C\u5438\u5E73\u7A33\u6709\u8282\u5F8B",
     en: { name: "Generating", desc: "Calm eyes, gaze right-down, rhythmic breath" },
     transition: 300,
     gaze: true,
-    pool: [0],
-    poolMs: [4e3, 7e3],
     blinkMs: [5e3, 9e3],
-    eyes: { both: { lookX: 3, lookY: 2 } },
+    eyes: { both: { lookX: 0.25, lookY: 0.2 } },
+    mouth: { type: "flat", width: 0.2 },
     anims: [{ target: "body", prop: "scale", type: "pulse", amp: 0.012, period: 2400 }]
   },
   {
     id: "34",
     name: "\u6821\u9A8C",
     group: "agent",
-    desc: "\u773C\u73AF\u5FEB\u901F\u7728\u52A8\uFF0C\u76EE\u5149\u9501\u5B9A\uFF0C\u5076\u6709\u5FAE\u6296",
+    desc: "\u773C\u775B\u5FEB\u901F\u7728\u52A8\uFF0C\u76EE\u5149\u9501\u5B9A\uFF0C\u5076\u6709\u5FAE\u6296",
     en: { name: "Verifying", desc: "Rapid blinks, locked gaze, slight jitter" },
     transition: 300,
     gaze: true,
-    pool: [1],
-    poolMs: [2e3, 3500],
     blinkMs: [800, 1600],
-    eyes: { both: { lookY: -1 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 1, speed: 0.6, decay: 0 }]
+    eyes: { both: { lookY: -0.1 } },
+    mouth: { type: "flat", width: 0.2 },
+    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 0.08, speed: 0.6, decay: 0 }]
   },
   {
     id: "35",
@@ -556,12 +466,11 @@ var EMOTION_SEED = [
     en: { name: "Error", desc: "Snap wide, reddening, darting gaze" },
     transition: 180,
     gaze: true,
-    pool: [12, 7],
-    poolMs: [1e3, 1800],
     blinkMs: [1500, 3e3],
-    poolSpeed: 12,
     body: { color: "#F4B8A8", breathe: 0.03 },
-    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 4, speed: 0.8, decay: 0 }]
+    eyes: { both: { open: 1.15 } },
+    mouth: { type: "open", width: 0.4, open: 0.5 },
+    anims: [{ target: "eyes", prop: "lookX", type: "jitter", amp: 0.35, speed: 0.8, decay: 0 }]
   },
   {
     id: "36",
@@ -571,69 +480,64 @@ var EMOTION_SEED = [
     en: { name: "Done", desc: "Smiling eyes, confetti, then back to idle" },
     transition: 300,
     gaze: true,
-    pool: [2],
-    poolMs: [1500, 2500],
     blinkMs: [3e3, 6e3],
     body: { color: "#E0F0D8", confetti: 1 },
+    eyes: { both: { squint: 0.4 } },
+    mouth: { type: "happy", width: 0.6, open: 0.15 },
     sequence: { settle: { next: "02" }, frames: [] }
   },
   {
     id: "37",
     name: "\u7B49\u5F85\u8F93\u5165",
     group: "agent",
-    desc: "\u5E73\u9759\u773C\u73AF\uFF0C\u76EE\u5149\u5C45\u4E2D\uFF0C\u547C\u5438\u5E73\u7F13\uFF0C\u5076\u5C14\u7728\u773C",
+    desc: "\u5E73\u9759\u773C\uFF0C\u76EE\u5149\u5C45\u4E2D\uFF0C\u547C\u5438\u5E73\u7F13\uFF0C\u5076\u5C14\u7728\u773C",
     en: { name: "Awaiting", desc: "Calm centered gaze, slow breath, occasional blink" },
     transition: 500,
     gaze: true,
-    pool: [0],
-    poolMs: [6e3, 1e4],
     blinkMs: [4e3, 8e3],
-    body: { breathe: 0.01 }
+    body: { breathe: 0.01 },
+    mouth: { type: "smile", width: 0.3 }
   },
   {
     id: "38",
     name: "\u8C03\u7528\u5DE5\u5177",
     group: "agent",
-    desc: "\u772F\u773C\u7A84\u73AF\uFF0C\u76EE\u5149\u659C\u5411\uFF0C\u8EAB\u4F53\u5FAE\u524D\u503E",
+    desc: "\u772F\u773C\uFF0C\u76EE\u5149\u659C\u5411\uFF0C\u8EAB\u4F53\u5FAE\u524D\u503E",
     en: { name: "Tool use", desc: "Narrow slanted eyes, leaning forward" },
     transition: 280,
     gaze: true,
-    pool: [10, 5],
-    poolMs: [1800, 3e3],
     blinkMs: [3e3, 6e3],
-    poolSpeed: 8,
     body: { y: 1, rotate: -2 },
-    eyes: { both: { lookX: 4, lookY: -1 } }
+    eyes: { both: { lookX: 0.3, lookY: -0.1, squint: 0.3 } },
+    mouth: { type: "flat", width: 0.3 }
   },
   {
     id: "39",
     name: "\u6DF1\u601D\u8003",
     group: "agent",
-    desc: "\u95ED\u773C\u6210\u7EBF\uFF0C\u5934\u4F4E\u5782\uFF0C\u73AF\u5E26\u73AF\u7ED5\uFF0C\u547C\u5438\u6781\u7F13",
+    desc: "\u95ED\u773C\uFF0C\u5934\u4F4E\u5782\uFF0C\u73AF\u5E26\u73AF\u7ED5\uFF0C\u547C\u5438\u6781\u7F13",
     en: { name: "Deep thought", desc: "Eyes shut, head down, orbiting ribbon, very slow breath" },
     transition: 600,
     gaze: false,
-    pool: [4],
-    poolMs: [5e3, 8e3],
     blinkMs: null,
-    openness: 0.1,
+    openness: 0.02,
     body: { y: 5, rotate: 3, orbit: 1, breathe: 5e-3, color: "#DCE2EC" },
-    eyes: { both: { lookY: 3 } }
+    eyes: { both: { lookY: 0.3 } },
+    mouth: { type: "flat", width: 0.2 }
   },
   {
     id: "40",
     name: "\u7EC4\u7EC7\u8BED\u8A00",
     group: "agent",
-    desc: "\u773C\u73AF\u534A\u5F00\uFF0C\u76EE\u5149\u5FAE\u6E38\u79FB\uFF0C\u547C\u5438\u6709\u8282\u5F8B",
+    desc: "\u773C\u534A\u5F00\uFF0C\u76EE\u5149\u5FAE\u6E38\u79FB\uFF0C\u547C\u5438\u6709\u8282\u5F8B",
     en: { name: "Composing", desc: "Half-open eyes, slight gaze drift, rhythmic breath" },
     transition: 350,
     gaze: true,
-    pool: [8],
-    poolMs: [2500, 4e3],
     blinkMs: [3500, 7e3],
-    eyes: { both: { lookY: 1 } },
+    eyes: { both: { open: 0.6, lookY: 0.08 } },
+    mouth: { type: "flat", width: 0.2 },
     anims: [
-      { target: "eyes", prop: "lookX", type: "sine", amp: 2, period: 3200 },
+      { target: "eyes", prop: "lookX", type: "sine", amp: 0.18, period: 3200 },
       { target: "body", prop: "scale", type: "pulse", amp: 0.01, period: 2e3 }
     ]
   },
@@ -645,11 +549,10 @@ var EMOTION_SEED = [
     en: { name: "Reviewing", desc: "Squinting upward, recollecting, slow breath" },
     transition: 450,
     gaze: true,
-    pool: [3, 14],
-    poolMs: [3e3, 5e3],
     blinkMs: [4e3, 8e3],
-    eyes: { both: { lookY: -4 } },
-    anims: [{ target: "eyes", prop: "lookX", type: "glance", amp: 3, period: 4e3 }]
+    eyes: { both: { lookY: -0.4, squint: 0.2 } },
+    mouth: { type: "flat", width: 0.2 },
+    anims: [{ target: "eyes", prop: "lookX", type: "glance", amp: 0.3, period: 4e3 }]
   }
 ];
 
@@ -659,14 +562,16 @@ function defaultPose() {
   return {
     body: { ...DEFAULT_BODY },
     left: { ...DEFAULT_EYE },
-    right: { ...DEFAULT_EYE }
+    right: { ...DEFAULT_EYE },
+    mouth: { ...DEFAULT_MOUTH }
   };
 }
 function clonePose(p) {
   return {
     body: { ...p.body },
     left: { ...p.left },
-    right: { ...p.right }
+    right: { ...p.right },
+    mouth: { ...p.mouth }
   };
 }
 function el(tag, attrs = {}) {
@@ -675,53 +580,65 @@ function el(tag, attrs = {}) {
   return node;
 }
 function r2(v) {
-  return Math.round(v * 100) / 100;
+  return Math.round(v * 100) / 100 + "";
 }
 function rand(a, b) {
   return a + Math.random() * (b - a);
 }
 var CONFETTI_COLORS = ["#f9705c", "#5b95f0", "#3fbe86", "#f5b13f", "#9a72ee", "#35c3bd"];
 var BallRenderer = class {
-  id;
-  lite;
-  rings;
-  shapeRing;
-  bodyPath;
-  head;
-  eyeL;
-  eyeR;
-  defs;
-  fxBack;
-  fxFront;
-  bodyG;
-  stopA;
-  stopB;
-  stopC;
-  curColor = DEFAULT_BODY.color;
-  curSketch = 0;
-  zzzNodes = null;
-  cheekL;
-  cheekR;
-  baseC;
-  // 彩带
-  trails = [];
-  planes = [];
-  planeG = 4;
-  baseHue = 0;
-  spawnIdx = 0;
-  wasFast = false;
-  prevYaw = 0;
-  prevNow = 0;
-  confPieces = [];
-  silRows = [];
-  silMinY = 1e9;
-  silMaxY = -1e9;
-  // SVG 骨架引用
-  svg;
   constructor(container, opts = {}) {
+    __publicField(this, "id");
+    __publicField(this, "lite");
+    __publicField(this, "shapeRing");
+    // SVG 骨架
+    __publicField(this, "svg");
+    __publicField(this, "defs");
+    __publicField(this, "bodyG");
+    __publicField(this, "fxBack");
+    __publicField(this, "fxFront");
+    __publicField(this, "head");
+    __publicField(this, "stopA");
+    __publicField(this, "stopB");
+    __publicField(this, "stopC");
+    __publicField(this, "curColor", "");
+    // 眼睛 —— 眼白 + 瞳孔 + 高光 × 2
+    __publicField(this, "eyeWhiteL");
+    __publicField(this, "eyeWhiteR");
+    __publicField(this, "pupilL");
+    __publicField(this, "pupilR");
+    __publicField(this, "highlightL");
+    __publicField(this, "highlightR");
+    __publicField(this, "highlightL2");
+    __publicField(this, "highlightR2");
+    // 上眼睑遮罩（用于眯眼/闭眼效果）
+    __publicField(this, "lidL");
+    __publicField(this, "lidR");
+    // 嘴巴
+    __publicField(this, "mouthG");
+    __publicField(this, "mouthPath");
+    // 腮红
+    __publicField(this, "cheekL");
+    __publicField(this, "cheekR");
+    // 彩带
+    __publicField(this, "trails", []);
+    __publicField(this, "planes", []);
+    __publicField(this, "planeG", 4);
+    __publicField(this, "baseHue", 0);
+    __publicField(this, "spawnIdx", 0);
+    __publicField(this, "wasFast", false);
+    __publicField(this, "prevYaw", 0);
+    __publicField(this, "prevNow", 0);
+    // 撒花
+    __publicField(this, "confPieces", []);
+    // 轮廓缓存
+    __publicField(this, "silRows", []);
+    __publicField(this, "silMinY", 1e9);
+    __publicField(this, "silMaxY", -1e9);
+    // zzz
+    __publicField(this, "zzzNodes", null);
     this.id = "eb" + Math.random().toString(36).slice(2, 9);
     this.lite = !!opts.lite;
-    this.rings = genEyeRings();
     const shapeName = opts.shape || "blob";
     if (shapeName === "blob") {
       this.shapeRing = genBlobBody(HEAD_C, HEAD_C, 108, 0.012);
@@ -763,6 +680,14 @@ var BallRenderer = class {
     rim.appendChild(rimA);
     rim.appendChild(rimB);
     defs.appendChild(rim);
+    const clipL = el("clipPath", { id: this.id + "cl" });
+    this.lidL = el("path", { d: "M0 0h220v220H0Z" });
+    clipL.appendChild(this.lidL);
+    defs.appendChild(clipL);
+    const clipR = el("clipPath", { id: this.id + "cr" });
+    this.lidR = el("path", { d: "M0 0h220v220H0Z" });
+    clipR.appendChild(this.lidR);
+    defs.appendChild(clipR);
     svg.appendChild(defs);
     this.fxBack = el("g", { "pointer-events": "none" });
     svg.appendChild(this.fxBack);
@@ -770,8 +695,7 @@ var BallRenderer = class {
     this.head = el("path", {
       d: ringPath(this.shapeRing),
       fill: "url(#" + this.id + "g)",
-      stroke: "none",
-      "stroke-width": "2"
+      stroke: "none"
     });
     this.bodyG.appendChild(this.head);
     const rimLayer = el("path", {
@@ -785,34 +709,103 @@ var BallRenderer = class {
       d: ringPath(this.shapeRing),
       fill: "url(#" + this.id + "g)",
       stroke: "none",
-      opacity: "0.5",
+      opacity: "0.35",
       "pointer-events": "none",
       transform: "translate(0 0) scale(0.92)",
       "transform-origin": "110px 110px"
     });
     gloss.style.mixBlendMode = "overlay";
     this.bodyG.appendChild(gloss);
-    this.eyeL = this.buildEye(0);
-    this.eyeR = this.buildEye(1);
-    this.bodyG.appendChild(this.eyeL.node);
-    this.bodyG.appendChild(this.eyeR.node);
-    this.bodyG.appendChild(this.eyeL.highlight);
-    this.bodyG.appendChild(this.eyeR.highlight);
+    this.eyeWhiteL = el("ellipse", {
+      cx: r2(HEAD_C - 26),
+      cy: r2(HEAD_C + 6),
+      rx: "20",
+      ry: "22",
+      fill: "#FFFFFF",
+      stroke: "none",
+      opacity: "1"
+    });
+    this.eyeWhiteR = el("ellipse", {
+      cx: r2(HEAD_C + 26),
+      cy: r2(HEAD_C + 6),
+      rx: "20",
+      ry: "22",
+      fill: "#FFFFFF",
+      stroke: "none",
+      opacity: "1"
+    });
+    this.bodyG.appendChild(this.eyeWhiteL);
+    this.bodyG.appendChild(this.eyeWhiteR);
+    this.pupilL = el("circle", {
+      cx: r2(HEAD_C - 26),
+      cy: r2(HEAD_C + 6),
+      r: "10",
+      fill: "#1A1A1A",
+      stroke: "none"
+    });
+    this.pupilR = el("circle", {
+      cx: r2(HEAD_C + 26),
+      cy: r2(HEAD_C + 6),
+      r: "10",
+      fill: "#1A1A1A",
+      stroke: "none"
+    });
+    this.bodyG.appendChild(this.pupilL);
+    this.bodyG.appendChild(this.pupilR);
+    this.highlightL = el("ellipse", {
+      rx: "3.2",
+      ry: "4",
+      fill: "rgba(255,255,255,0.95)",
+      stroke: "none",
+      "pointer-events": "none"
+    });
+    this.highlightR = el("ellipse", {
+      rx: "3.2",
+      ry: "4",
+      fill: "rgba(255,255,255,0.95)",
+      stroke: "none",
+      "pointer-events": "none"
+    });
+    this.bodyG.appendChild(this.highlightL);
+    this.bodyG.appendChild(this.highlightR);
+    this.highlightL2 = el("circle", {
+      r: "1.8",
+      fill: "rgba(255,255,255,0.6)",
+      stroke: "none",
+      "pointer-events": "none"
+    });
+    this.highlightR2 = el("circle", {
+      r: "1.8",
+      fill: "rgba(255,255,255,0.6)",
+      stroke: "none",
+      "pointer-events": "none"
+    });
+    this.bodyG.appendChild(this.highlightL2);
+    this.bodyG.appendChild(this.highlightR2);
+    this.mouthG = el("g", { "pointer-events": "none" });
+    this.mouthPath = el("path", {
+      fill: "none",
+      stroke: "#3A2A22",
+      "stroke-width": "2.4",
+      "stroke-linecap": "round"
+    });
+    this.mouthG.appendChild(this.mouthPath);
+    this.bodyG.appendChild(this.mouthG);
     this.cheekL = el("ellipse", {
-      cx: String(HEAD_C - 32),
-      cy: String(HEAD_C + 18),
-      rx: "9",
-      ry: "5",
+      cx: r2(HEAD_C - 36),
+      cy: r2(HEAD_C + 24),
+      rx: "11",
+      ry: "6.5",
       fill: "rgba(244,114,108,0.5)",
       stroke: "none",
       opacity: "0",
       "pointer-events": "none"
     });
     this.cheekR = el("ellipse", {
-      cx: String(HEAD_C + 32),
-      cy: String(HEAD_C + 18),
-      rx: "9",
-      ry: "5",
+      cx: r2(HEAD_C + 36),
+      cy: r2(HEAD_C + 24),
+      rx: "11",
+      ry: "6.5",
       fill: "rgba(244,114,108,0.5)",
       stroke: "none",
       opacity: "0",
@@ -823,7 +816,6 @@ var BallRenderer = class {
     svg.appendChild(this.bodyG);
     this.fxFront = el("g", { "pointer-events": "none" });
     svg.appendChild(this.fxFront);
-    this.baseC = [centroid(this.rings[0].L), centroid(this.rings[0].R)];
     if (!this.lite) {
       this.zzzNodes = [];
       for (let i = 0; i < 3; i++) {
@@ -845,19 +837,6 @@ var BallRenderer = class {
     const c = opts.color || DEFAULT_BODY.color;
     this.setBodyColor(c);
     container.appendChild(svg);
-  }
-  buildEye(k) {
-    const ring = k === 0 ? this.rings[0].L : this.rings[0].R;
-    const node = el("path", { fill: "#1A1A1A", stroke: "none", "stroke-width": "1.6" });
-    node.setAttribute("d", ringPath(ring));
-    const highlight = el("ellipse", {
-      rx: "2.4",
-      ry: "3.2",
-      fill: "rgba(255,255,255,0.85)",
-      stroke: "none",
-      "pointer-events": "none"
-    });
-    return { node, ring, c: centroid(ring), highlight };
   }
   buildSil() {
     const SIL_STEP = 2;
@@ -885,10 +864,6 @@ var BallRenderer = class {
     }
     this.silRows = out;
   }
-  silAt(y) {
-    const r = Math.round((clamp(y, this.silMinY, this.silMaxY) - this.silMinY) / 2);
-    return this.silRows[clamp(r, 0, this.silRows.length - 1)];
-  }
   setBodyColor(color) {
     if (color === this.curColor) return;
     this.curColor = color;
@@ -896,91 +871,108 @@ var BallRenderer = class {
     this.stopB.setAttribute("stop-color", color);
     this.stopC.setAttribute("stop-color", shade(color, -0.25));
   }
-  /** 更新眼睛环（外部弹簧插值后传入） */
-  setEyeRings(L, R) {
-    this.eyeL.ring = L;
-    this.eyeR.ring = R;
-    this.eyeL.c = centroid(L);
-    this.eyeR.c = centroid(R);
-  }
-  /** 单只眼睛应用 pose + 球面投影 */
-  setEye(eye, pose, k, sketch, yaw) {
-    eye.node.setAttribute("d", ringPath(eye.ring));
-    const base = this.baseC[k];
-    const open = clamp(pose.open, 0, 1.2);
-    const sy = clamp(pose.scaleY * open, 0.02, 2.4);
-    const sxBase = pose.scaleX;
-    const halfH = EYE_HALF * sy + 2;
-    let ey0 = HEAD_C + (base[1] - HEAD_C) + pose.y + pose.lookY;
-    ey0 = clamp(ey0, this.silMinY + halfH, this.silMaxY - halfH);
-    const sil = this.silAt(ey0);
-    const cx0 = (sil[0] + sil[1]) / 2;
-    const hw = Math.max((sil[1] - sil[0]) / 2, 12);
-    const eyeCx = eye.c[0];
-    const ox = eyeCx - HEAD_C + pose.x + pose.lookX;
-    const theta = clamp(ox / hw, -1.15, 1.15);
-    const total = theta + (yaw || 0);
-    const cn = Math.cos(total);
-    if (cn <= 0.02) {
-      ;
-      eye.node.style.display = "none";
-      eye.highlight.style.display = "none";
-      return;
+  /** 生成嘴巴 path */
+  buildMouthPath(mouth) {
+    const { type, width, open } = mouth;
+    const cx = HEAD_C;
+    const cy = HEAD_C + 30;
+    const w = 8 + width * 18;
+    const h = 2 + open * 10;
+    if (type === "none" || width <= 0.01) return "";
+    switch (type) {
+      case "smile":
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - h - 4)} ${r2(cx + w)} ${r2(cy)}`;
+      case "happy":
+        if (open > 0.15) {
+          const hh = 4 + open * 8;
+          return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - hh - 3)} ${r2(cx + w)} ${r2(cy)} Q${r2(cx)} ${r2(cy + hh + 1)} ${r2(cx - w)} ${r2(cy)}`;
+        }
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - h - 1)} ${r2(cx + w)} ${r2(cy)}`;
+      case "sad":
+        return `M${r2(cx - w)} ${r2(cy - 2)} Q${r2(cx)} ${r2(cy + h + 2)} ${r2(cx + w)} ${r2(cy - 2)}`;
+      case "open":
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy + h + 2)} ${r2(cx + w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - h - 2)} ${r2(cx - w)} ${r2(cy)}`;
+      case "o":
+        return `M${r2(cx - w * 0.6)} ${r2(cy)} A${r2(w * 0.6)} ${r2(3 + open * 5)} 0 1 0 ${r2(cx + w * 0.6)} ${r2(cy)} A${r2(w * 0.6)} ${r2(3 + open * 5)} 0 1 0 ${r2(cx - w * 0.6)} ${r2(cy)}`;
+      case "w":
+        return `M${r2(cx - w)} ${r2(cy - 2)} Q${r2(cx - w * 0.5)} ${r2(cy + 4)} ${r2(cx)} ${r2(cy - 2)} Q${r2(cx + w * 0.5)} ${r2(cy + 4)} ${r2(cx + w)} ${r2(cy - 2)}`;
+      case "flat":
+        return `M${r2(cx - w)} ${r2(cy)} L${r2(cx + w)} ${r2(cy)}`;
+      case "pout":
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy + 2)} ${r2(cx + w)} ${r2(cy)} Q${r2(cx + w * 0.5)} ${r2(cy - 3)} ${r2(cx)} ${r2(cy - 1)}`;
+      default:
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - 3)} ${r2(cx + w)} ${r2(cy)}`;
     }
-    ;
-    eye.node.style.display = "";
-    const ex = cx0 + hw * Math.sin(total) * 0.985;
-    const dyN = (ey0 - HEAD_C) / 130;
-    const fy = Math.sqrt(1 - dyN * dyN * 0.22);
-    eye.node.setAttribute(
-      "transform",
-      "translate(" + r2(ex) + " " + r2(ey0) + ")" + (pose.rotate ? " rotate(" + r2(pose.rotate) + ")" : "") + " scale(" + r2(sxBase * cn) + " " + r2(sy * fy) + ") translate(" + r2(-eyeCx) + " " + r2(-eye.c[1]) + ")"
-    );
-    const open2 = clamp(pose.open, 0, 1.2);
-    if (open2 < 0.3) {
-      ;
-      eye.highlight.style.display = "none";
+  }
+  /** 设置单只眼睛 */
+  setEye(eyeWhite, pupil, highlight, highlight2, lid, isLeft, pose) {
+    const dir = isLeft ? -1 : 1;
+    const baseX = HEAD_C + dir * 26 + pose.x;
+    const baseY = HEAD_C + 6 + pose.y;
+    const open = clamp(pose.open, 0, 1.5);
+    const squint = clamp(pose.squint, 0, 1);
+    const rx = 20;
+    const ry = 22 * open;
+    const eyeOp = clamp(open, 0, 1);
+    eyeWhite.setAttribute("cx", r2(baseX));
+    eyeWhite.setAttribute("cy", r2(baseY));
+    eyeWhite.setAttribute("rx", r2(rx));
+    eyeWhite.setAttribute("ry", r2(Math.max(ry, 0.5)));
+    eyeWhite.setAttribute("opacity", String(eyeOp));
+    const useLid = squint > 0.05 || open < 0.55;
+    if (useLid) {
+      const cutY = baseY - ry * 0.92 + ry * 1.84 * squint * 0.6 + (open < 0.55 ? ry * (1 - open) * 0.7 : 0);
+      lid.setAttribute("d", `M-30 ${r2(cutY)} H240 V240 H-30 Z`);
+      eyeWhite.style.clipPath = `url(#${this.id + (isLeft ? "cl" : "cr")})`;
     } else {
       ;
-      eye.highlight.style.display = "";
-      const hx = ex - sxBase * cn * 4 + pose.lookX * 0.3;
-      const hy = ey0 - sy * fy * 5 + pose.lookY * 0.3;
-      eye.highlight.setAttribute("cx", r2(hx));
-      eye.highlight.setAttribute("cy", r2(hy));
-      eye.highlight.setAttribute("rx", r2(2.4 * sxBase * cn));
-      eye.highlight.setAttribute("ry", r2(3.2 * sy * fy * open2));
+      eyeWhite.style.clipPath = "";
     }
-    const fill = sketch > 0.5 ? "none" : pose.color;
-    const stroke = sketch > 0.5 ? pose.color : "none";
-    if (fill !== eye.lastFill) {
-      eye.node.setAttribute("fill", fill);
-      eye.lastFill = fill;
-    }
-    if (stroke !== eye.lastStroke) {
-      eye.node.setAttribute("stroke", stroke);
-      eye.lastStroke = stroke;
-    }
+    const lookX = clamp(pose.lookX, -1, 1) * 6;
+    const lookY = clamp(pose.lookY, -1, 1) * 5;
+    const pupilR = 10 * (1 - squint * 0.3);
+    const px = baseX + lookX;
+    const py = baseY + lookY;
+    pupil.setAttribute("cx", r2(px));
+    pupil.setAttribute("cy", r2(py));
+    pupil.setAttribute("r", r2(Math.max(pupilR, 0.5)));
+    pupil.setAttribute("opacity", String(eyeOp));
+    const hx = px - 3.5;
+    const hy = py - 4.5;
+    highlight.setAttribute("cx", r2(hx));
+    highlight.setAttribute("cy", r2(hy));
+    highlight.setAttribute("rx", r2(3.2 * (1 - squint * 0.2)));
+    highlight.setAttribute("ry", r2(4 * (1 - squint * 0.2)));
+    highlight.setAttribute("opacity", String(eyeOp));
+    highlight2.setAttribute("cx", r2(px + 3.5));
+    highlight2.setAttribute("cy", r2(py + 4));
+    highlight2.setAttribute("r", r2(1.8 * (1 - squint * 0.2)));
+    highlight2.setAttribute("opacity", String(eyeOp * 0.6));
   }
-  /**
-   * 每帧应用 pose。
-   * 返回 yaw 供彩带判断。
-   */
   applyPose(pose, yaw = 0) {
     const b = pose.body;
     const now = performance.now();
-    const sketch = 0;
+    const [r, g, bl] = hexToRgb(b.color);
     this.bodyG.setAttribute(
       "transform",
       "translate(" + r2(HEAD_C + b.x) + " " + r2(HEAD_C + b.y) + ") rotate(" + r2(b.rotate || 0) + ") scale(" + r2(b.scale) + ") translate(" + r2(-HEAD_C) + " " + r2(-HEAD_C) + ")"
     );
     this.setBodyColor(b.color);
-    const [r, g, bl] = hexToRgb(b.color);
-    const isWarm = r > g + 10 && r > bl + 10;
+    this.setEye(this.eyeWhiteL, this.pupilL, this.highlightL, this.highlightL2, this.lidL, true, pose.left);
+    this.setEye(this.eyeWhiteR, this.pupilR, this.highlightR, this.highlightR2, this.lidR, false, pose.right);
+    const mouthPath = this.buildMouthPath(pose.mouth);
+    if (mouthPath) {
+      this.mouthPath.setAttribute("d", mouthPath);
+      this.mouthPath.setAttribute("opacity", "1");
+      const isWarm2 = r > g + 10 && r > bl + 10;
+      this.mouthPath.setAttribute("stroke", isWarm2 ? "#3A2A22" : "#2A2A3A");
+    } else {
+      this.mouthPath.setAttribute("opacity", "0");
+    }
+    const isWarm = r > g + 15 && r > bl + 15;
     const cheekOp = isWarm ? 0.55 : 0;
     this.cheekL.setAttribute("opacity", String(cheekOp));
     this.cheekR.setAttribute("opacity", String(cheekOp));
-    this.setEye(this.eyeL, pose.left, 0, sketch, yaw);
-    this.setEye(this.eyeR, pose.right, 1, sketch, yaw);
     if (this.lite) return yaw;
     const dt = this.prevNow ? clamp((now - this.prevNow) / 1e3, 1e-3, 0.05) : 1 / 60;
     this.prevNow = now;
@@ -994,8 +986,8 @@ var BallRenderer = class {
         }
         const zp = (now * 33e-5 + z / 3) % 1;
         const zo = (zp < 0.18 ? zp / 0.18 : 1 - (zp - 0.18) / 0.82) * 0.8 * b.zzz;
-        zn.setAttribute("opacity", zo.toFixed(3));
-        zn.setAttribute("font-size", (12 + zp * 11).toFixed(1));
+        zn.setAttribute("opacity", String(zo.toFixed(3)));
+        zn.setAttribute("font-size", String((12 + zp * 11).toFixed(1)));
         zn.setAttribute(
           "transform",
           "translate(" + r2(180 + zp * 34 + 4 * Math.sin(zp * 9)) + " " + r2(48 - zp * 42) + ") rotate(" + r2(-10 + zp * 14) + ")"
@@ -1005,9 +997,6 @@ var BallRenderer = class {
     this.updateTrails(dt);
     this.updateConfetti(dt);
     return yaw;
-  }
-  /** 设置目光（归一化 [-1,1]） */
-  setGaze(nx, ny) {
   }
   // ============ 彩带 ============
   spawnTrailSpin(yawVel) {
@@ -1098,7 +1087,6 @@ var BallRenderer = class {
     });
   }
   updateTrails(dt) {
-    const now = performance.now();
     for (let i = this.trails.length - 1; i >= 0; i--) {
       const t = this.trails[i];
       const o = t.o;
@@ -1113,16 +1101,15 @@ var BallRenderer = class {
       t.hue += t.hueVel * dt;
       for (let s = 0; s < t.stops.length; s++) {
         const local = t.hue + s / (t.stops.length - 1) * t.hueSpan;
-        const col = this.hslToHex(local % 360, 0.68, 0.55);
-        t.stops[s].setAttribute("stop-color", col);
+        t.stops[s].setAttribute("stop-color", this.hslToHex(local % 360, 0.68, 0.55));
       }
       const a = t.gradEl.getAttribute("id");
       const first = t.hist[0];
       const last = t.hist[t.hist.length - 1] || first;
-      t.gradEl.setAttribute("x1", String(r2(first.x)));
-      t.gradEl.setAttribute("y1", String(r2(first.y)));
-      t.gradEl.setAttribute("x2", String(r2(last.x)));
-      t.gradEl.setAttribute("y2", String(r2(last.y)));
+      t.gradEl.setAttribute("x1", r2(first.x));
+      t.gradEl.setAttribute("y1", r2(first.y));
+      t.gradEl.setAttribute("x2", r2(last.x));
+      t.gradEl.setAttribute("y2", r2(last.y));
       const d = this.trailPath(t.hist, t.r);
       t.front.setAttribute("d", d);
       t.front.setAttribute("opacity", String(t.orbitMode ? 0.85 : Math.max(0, 1 - t.life / 3)));
@@ -1155,7 +1142,8 @@ var BallRenderer = class {
   orbitPoint(o, lam) {
     const hx = o.rad * Math.sin(lam);
     const hy = -o.rad * Math.cos(lam) * Math.sin(o.tilt);
-    const ca = Math.cos(o.roll), sa = Math.sin(o.roll);
+    const ca = Math.cos(o.roll);
+    const sa = Math.sin(o.roll);
     return {
       x: HEAD_C + hx * ca - hy * sa,
       y: HEAD_C + hx * sa + hy * ca,
@@ -1168,10 +1156,7 @@ var BallRenderer = class {
     const k = (n) => (n + h * 12) % 12;
     const a = s * Math.min(l, 1 - l);
     const f = (n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-    return shade(
-      "#" + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join(""),
-      0
-    );
+    return "#" + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
   }
   // ============ 撒花 ============
   burst(n) {
@@ -1198,9 +1183,7 @@ var BallRenderer = class {
       const p = this.confPieces[i];
       p.life += dt;
       if (p.life > p.max) {
-        if (p.node) {
-          p.node.remove();
-        }
+        if (p.node) p.node.remove();
         this.confPieces.splice(i, 1);
         continue;
       }
@@ -1210,11 +1193,7 @@ var BallRenderer = class {
       p.vx *= 0.99;
       const op = Math.max(0, 1 - p.life / p.max);
       if (!p.node) {
-        p.node = el("path", {
-          d: this.starPath(),
-          fill: p.color,
-          opacity: String(op)
-        });
+        p.node = el("path", { d: this.starPath(), fill: p.color, opacity: String(op) });
         this.fxFront.appendChild(p.node);
       }
       p.node.setAttribute("opacity", String(op));
@@ -1224,7 +1203,7 @@ var BallRenderer = class {
   starPath() {
     const pts = [];
     for (let e = 0; e < 10; e++) {
-      const a = -Math.PI / 2 + e * Math.PI / 5;
+      const a = -Math.PI / 2 + e * Math.PI / 10;
       const r = e % 2 === 0 ? 1 : 0.42;
       pts.push((Math.cos(a) * r).toFixed(3) + " " + (Math.sin(a) * r).toFixed(3));
     }
@@ -1236,9 +1215,6 @@ var BallRenderer = class {
 };
 
 // src/engine.ts
-function spring(v0) {
-  return { x: v0, v: 0, t: v0 };
-}
 function animVal(a, t, dt) {
   const p = a.period || 2e3;
   const ph = (a.phase || 0) * p;
@@ -1270,47 +1246,33 @@ function animVal(a, t, dt) {
   return 0;
 }
 var EmotionEngine = class {
-  renderer;
-  emotions = /* @__PURE__ */ new Map();
-  curId;
-  fallbackId;
-  curPose;
-  targetPose;
-  eyeSpringL = [];
-  eyeSpringR = [];
-  bodySpring = {
-    x: spring(0),
-    y: spring(0),
-    scale: spring(1),
-    rotate: spring(0)
-  };
-  rings = genEyeRings();
-  curRingIdx = 0;
-  targetRingIdx = 0;
-  ringT = 1;
-  poolTimer = 0;
-  poolNext = 3e3;
-  blinkTimer = 0;
-  blinkNext = 5e3;
-  blinkPhase = 0;
-  animStartT = 0;
-  transT = 1;
-  transFrom = defaultPose();
-  transTo = defaultPose();
-  sequence = null;
-  seqT = 0;
-  anticsTimer = 0;
-  idleTimer = 0;
-  idleEnabled;
-  gazeX = 0;
-  gazeY = 0;
-  yaw = 0;
-  yawVel = 0;
-  running = false;
-  active = true;
-  lastT = 0;
-  cbs = {};
   constructor(container, opts = {}) {
+    __publicField(this, "renderer");
+    __publicField(this, "emotions", /* @__PURE__ */ new Map());
+    __publicField(this, "curId");
+    __publicField(this, "fallbackId");
+    __publicField(this, "curPose");
+    __publicField(this, "targetPose");
+    __publicField(this, "transT", 1);
+    __publicField(this, "transFrom", defaultPose());
+    __publicField(this, "transTo", defaultPose());
+    __publicField(this, "blinkTimer", 0);
+    __publicField(this, "blinkNext", 5e3);
+    __publicField(this, "blinkPhase", 0);
+    __publicField(this, "animStartT", 0);
+    __publicField(this, "sequence", null);
+    __publicField(this, "seqT", 0);
+    __publicField(this, "anticsTimer", 0);
+    __publicField(this, "idleTimer", 0);
+    __publicField(this, "idleEnabled");
+    __publicField(this, "gazeX", 0);
+    __publicField(this, "gazeY", 0);
+    __publicField(this, "yaw", 0);
+    __publicField(this, "yawVel", 0);
+    __publicField(this, "running", false);
+    __publicField(this, "active", true);
+    __publicField(this, "lastT", 0);
+    __publicField(this, "cbs", {});
     this.renderer = new BallRenderer(container, {
       shape: opts.shape,
       color: opts.color,
@@ -1326,38 +1288,22 @@ var EmotionEngine = class {
     this.curPose = defaultPose();
     this.targetPose = this.computePose(this.curId);
     this.curPose = clonePose(this.targetPose);
-    this.initSprings();
-    this.enterEmotion(this.curId, false);
+    this.transFrom = clonePose(this.curPose);
+    this.transTo = clonePose(this.targetPose);
+    this.transT = 1;
+    this.animStartT = performance.now();
+    const def = this.emotions.get(this.curId);
+    this.blinkNext = def.blinkMs ? this.randRange(def.blinkMs[0], def.blinkMs[1]) : 99999;
+    if (def.body?.confetti) this.renderer.burst(24);
+    if (def.body?.orbit) {
+      this.renderer.spawnOrbit(0);
+      this.renderer.spawnOrbit(1);
+    }
     if (opts.autostart !== false) {
       this.start();
     } else {
-      this.renderer.setEyeRings(this.rings[this.curRingIdx].L, this.rings[this.curRingIdx].R);
       this.renderer.applyPose(this.curPose, 0);
     }
-  }
-  initSprings() {
-    this.eyeSpringL = [];
-    this.eyeSpringR = [];
-    for (const r of this.rings) {
-      const cL = this.ringCentroid(r.L);
-      const cR = this.ringCentroid(r.R);
-      this.eyeSpringL.push({
-        x: spring(cL[0]),
-        y: spring(cL[1])
-      });
-      this.eyeSpringR.push({
-        x: spring(cR[0]),
-        y: spring(cR[1])
-      });
-    }
-  }
-  ringCentroid(ring) {
-    let x = 0, y = 0;
-    for (const p of ring) {
-      x += p[0];
-      y += p[1];
-    }
-    return [x / ring.length, y / ring.length];
   }
   /** 计算某个情绪的基础 pose */
   computePose(id) {
@@ -1374,10 +1320,7 @@ var EmotionEngine = class {
       p.left.open = def.openness;
       p.right.open = def.openness;
     }
-    if (def.pool.length > 0) {
-      this.targetRingIdx = def.pool[0];
-      if (this.ringT >= 1) this.curRingIdx = this.targetRingIdx;
-    }
+    if (def.mouth) Object.assign(p.mouth, def.mouth);
     return p;
   }
   enterEmotion(id, auto) {
@@ -1393,14 +1336,12 @@ var EmotionEngine = class {
     this.transTo = clonePose(this.targetPose);
     this.transT = 0;
     this.animStartT = performance.now();
-    this.poolTimer = 0;
-    this.poolNext = def.poolMs ? this.randRange(def.poolMs[0], def.poolMs[1]) : 99999;
-    this.blinkNext = def.blinkMs ? this.randRange(def.blinkMs[0], def.blinkMs[1]) : 99999;
-    this.blinkTimer = 0;
     this.sequence = def.sequence || null;
     this.seqT = 0;
+    this.anticsTimer = 0;
     this.idleTimer = 0;
-    if (def.body?.ribbons) this.renderer.spawnTrailSpin(4);
+    this.blinkTimer = 0;
+    this.blinkNext = def.blinkMs ? this.randRange(def.blinkMs[0], def.blinkMs[1]) : 99999;
     if (def.body?.confetti) this.renderer.burst(24);
     if (def.body?.orbit) {
       this.renderer.spawnOrbit(0);
@@ -1474,61 +1415,51 @@ var EmotionEngine = class {
       this.curPose.body = this.lerpBody(this.transFrom.body, this.transTo.body, e);
       this.curPose.left = this.lerpEye(this.transFrom.left, this.transTo.left, e);
       this.curPose.right = this.lerpEye(this.transFrom.right, this.transTo.right, e);
+      this.curPose.mouth = this.lerpMouth(this.transFrom.mouth, this.transTo.mouth, e);
     } else {
       this.curPose.body = { ...this.targetPose.body };
       this.curPose.left = { ...this.targetPose.left };
       this.curPose.right = { ...this.targetPose.right };
+      this.curPose.mouth = { ...this.targetPose.mouth };
     }
-    this.poolTimer += dt * 1e3;
-    if (def.pool.length > 1 && this.poolTimer > this.poolNext) {
-      this.poolTimer = 0;
-      this.poolNext = this.randRange(def.poolMs[0], def.poolMs[1]);
-      const others = def.pool.filter((i) => i !== this.targetRingIdx);
-      const next = others[Math.floor(Math.random() * others.length)];
-      this.targetRingIdx = next;
-      this.ringT = 0;
-    }
-    if (this.ringT < 1) {
-      this.ringT = Math.min(1, this.ringT + dt * (def.poolSpeed || 6));
-      const e = this.easeInOut(this.ringT);
-      const L = this.lerpRingPts(this.rings[this.curRingIdx].L, this.rings[this.targetRingIdx].L, e);
-      const R = this.lerpRingPts(this.rings[this.curRingIdx].R, this.rings[this.targetRingIdx].R, e);
-      this.renderer.setEyeRings(L, R);
-      if (this.ringT >= 1) this.curRingIdx = this.targetRingIdx;
-    } else {
-      this.renderer.setEyeRings(this.rings[this.curRingIdx].L, this.rings[this.curRingIdx].R);
-    }
-    const animOff = { eyeX: 0, eyeY: 0, eyeOpen: 0, bodyX: 0, bodyY: 0, bodyScale: 0 };
+    const animOff = { lookX: 0, lookY: 0, open: 0, bodyX: 0, bodyY: 0, bodyScale: 0, mouthOpen: 0, width: 0 };
+    const t = (now - this.animStartT) / 1e3;
     if (def.anims) {
-      const t = (now - this.animStartT) / 1e3;
       for (const a of def.anims) {
         const v = animVal(a, t, dt);
-        if (a.target === "eyes") {
-          if (a.prop === "lookX") animOff.eyeX += v;
-          else if (a.prop === "lookY") animOff.eyeY += v;
-          else if (a.prop === "x") animOff.eyeX += v;
-          else if (a.prop === "y") animOff.eyeY += v;
-          else if (a.prop === "open") animOff.eyeOpen += v;
-        } else if (a.target === "body") {
-          if (a.prop === "x") animOff.bodyX += v;
-          else if (a.prop === "y") animOff.bodyY += v;
-          else if (a.prop === "scale") animOff.bodyScale += v;
+        switch (a.target) {
+          case "eyes":
+            if (a.prop === "lookX") animOff.lookX += v;
+            else if (a.prop === "lookY") animOff.lookY += v;
+            else if (a.prop === "x") animOff.lookX += v * 0.12;
+            else if (a.prop === "y") animOff.lookY += v * 0.12;
+            else if (a.prop === "open") animOff.open += v;
+            break;
+          case "body":
+            if (a.prop === "x") animOff.bodyX += v;
+            else if (a.prop === "y") animOff.bodyY += v;
+            else if (a.prop === "scale") animOff.bodyScale += v;
+            break;
+          case "mouth":
+            if (a.prop === "mouthOpen" || a.prop === "open") animOff.mouthOpen += v;
+            else if (a.prop === "width") animOff.width += v;
+            break;
         }
       }
     }
-    this.curPose.left.lookX = this.targetPose.left.lookX + animOff.eyeX;
-    this.curPose.left.lookY = this.targetPose.left.lookY + animOff.eyeY;
-    this.curPose.right.lookX = this.targetPose.right.lookX + animOff.eyeX;
-    this.curPose.right.lookY = this.targetPose.right.lookY + animOff.eyeY;
+    this.curPose.left.lookX = clamp(this.targetPose.left.lookX + animOff.lookX, -1, 1);
+    this.curPose.left.lookY = clamp(this.targetPose.left.lookY + animOff.lookY, -1, 1);
+    this.curPose.right.lookX = clamp(this.targetPose.right.lookX + animOff.lookX, -1, 1);
+    this.curPose.right.lookY = clamp(this.targetPose.right.lookY + animOff.lookY, -1, 1);
     this.curPose.body.x = this.targetPose.body.x + animOff.bodyX;
     this.curPose.body.y = this.targetPose.body.y + animOff.bodyY;
     const breathe = def.body?.breathe || 0.01;
     this.curPose.body.scale = this.targetPose.body.scale + animOff.bodyScale + Math.sin(now * 15e-4) * breathe;
     if (def.gaze) {
-      this.curPose.left.lookX += this.gazeX * 8;
-      this.curPose.left.lookY += this.gazeY * 5;
-      this.curPose.right.lookX += this.gazeX * 8;
-      this.curPose.right.lookY += this.gazeY * 5;
+      this.curPose.left.lookX = clamp(this.curPose.left.lookX + this.gazeX * 0.4, -1, 1);
+      this.curPose.left.lookY = clamp(this.curPose.left.lookY + this.gazeY * 0.4, -1, 1);
+      this.curPose.right.lookX = clamp(this.curPose.right.lookX + this.gazeX * 0.4, -1, 1);
+      this.curPose.right.lookY = clamp(this.curPose.right.lookY + this.gazeY * 0.4, -1, 1);
     }
     if (def.blinkMs) {
       this.blinkTimer += dt * 1e3;
@@ -1560,14 +1491,13 @@ var EmotionEngine = class {
           if (f.eyes?.left) Object.assign(this.curPose.left, f.eyes.left);
           if (f.eyes?.right) Object.assign(this.curPose.right, f.eyes.right);
           if (f.body) Object.assign(this.curPose.body, f.body);
+          if (f.mouth) Object.assign(this.curPose.mouth, f.mouth);
         }
       }
       const last = frames[frames.length - 1];
       if (last && this.seqT * 1e3 > last.at + 600) {
         const settle = this.sequence.settle;
         if (settle === "base") {
-          this.targetRingIdx = def.pool[0] || 0;
-          this.ringT = 0;
         } else if (settle === "hold") {
         } else if (settle && settle.next) {
           this.enterEmotion(settle.next, true);
@@ -1580,7 +1510,14 @@ var EmotionEngine = class {
       if (this.anticsTimer > this.randRange(9, 18)) {
         this.anticsTimer = 0;
         if (Math.random() < 0.5) this.yawVel = (Math.random() < 0.5 ? -1 : 1) * 6;
-        else this.curPose.body.y -= 20;
+        else {
+          this.curPose.body.y = this.targetPose.body.y - 18;
+          this.curPose.body.scale = this.targetPose.body.scale * 1.04;
+        }
+      }
+      if (this.anticsTimer > 0.5) {
+        this.curPose.body.y = this.targetPose.body.y;
+        this.curPose.body.scale = this.targetPose.body.scale;
       }
     }
     if (this.idleEnabled) {
@@ -1609,9 +1546,9 @@ var EmotionEngine = class {
       rotate: lerp(a.rotate, b.rotate, t),
       color: lerpColor(a.color, b.color, t),
       breathe: lerp(a.breathe, b.breathe, t),
+      zzz: lerp(a.zzz, b.zzz, t),
       ribbons: t > 0.5 ? b.ribbons : a.ribbons,
       confetti: t > 0.5 ? b.confetti : a.confetti,
-      zzz: lerp(a.zzz, b.zzz, t),
       orbit: t > 0.5 ? b.orbit : a.orbit
     };
   }
@@ -1620,21 +1557,18 @@ var EmotionEngine = class {
       ...a,
       x: lerp(a.x, b.x, t),
       y: lerp(a.y, b.y, t),
-      scaleX: lerp(a.scaleX, b.scaleX, t),
-      scaleY: lerp(a.scaleY, b.scaleY, t),
-      rotate: lerp(a.rotate, b.rotate, t),
       open: lerp(a.open, b.open, t),
-      color: lerpColor(a.color, b.color, t),
       lookX: lerp(a.lookX, b.lookX, t),
-      lookY: lerp(a.lookY, b.lookY, t)
+      lookY: lerp(a.lookY, b.lookY, t),
+      squint: lerp(a.squint, b.squint, t)
     };
   }
-  lerpRingPts(a, b, t) {
-    const out = new Array(a.length);
-    for (let i = 0; i < a.length; i++) {
-      out[i] = [lerp(a[i][0], b[i][0], t), lerp(a[i][1], b[i][1], t)];
-    }
-    return out;
+  lerpMouth(a, b, t) {
+    return {
+      type: t > 0.5 ? b.type : a.type,
+      width: lerp(a.width, b.width, t),
+      open: lerp(a.open, b.open, t)
+    };
   }
 };
 
@@ -1743,9 +1677,16 @@ var SYS_PROMPT = `\u4F60\u662F Emotion Ball \u6D4B\u8BD5\u52A9\u624B\u3002\u8BF7
 \u597D\u7684\uFF0C\u6211\u5E2E\u4F60\u770B\u770B\uFF01
 [emotion:10]`;
 var SimpleStore = class {
-  state;
-  listeners = /* @__PURE__ */ new Set();
   constructor() {
+    __publicField(this, "state");
+    __publicField(this, "listeners", /* @__PURE__ */ new Set());
+    __publicField(this, "subscribe", (cb) => {
+      this.listeners.add(cb);
+      return () => {
+        this.listeners.delete(cb);
+      };
+    });
+    __publicField(this, "getSnapshot", () => this.state);
     this.state = {
       aiConfig: { ...DEFAULT_CONFIG },
       messages: [{ role: "system", content: SYS_PROMPT }],
@@ -1797,13 +1738,6 @@ var SimpleStore = class {
       }
     };
   }
-  subscribe = (cb) => {
-    this.listeners.add(cb);
-    return () => {
-      this.listeners.delete(cb);
-    };
-  };
-  getSnapshot = () => this.state;
   emit() {
     this.listeners.forEach((l) => l());
   }
@@ -2480,5 +2414,6 @@ function presetBtn(label, cfg, s) {
   }, label);
 }
 export {
+  EmotionBallView,
   EmotionBallPanel as default
 };

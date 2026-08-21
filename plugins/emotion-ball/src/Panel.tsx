@@ -11,6 +11,7 @@
 
 import React from 'react'
 import { EmotionBallView } from './BallView'
+export { EmotionBallView }
 import {
   useChatStore, sendChatMessage, parseEmotionFromText, stripEmotionTag, groupedEmotions,
 } from './aiChatStore'

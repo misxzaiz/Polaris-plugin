@@ -1,8 +1,8 @@
 {
   "id": "emotion-ball",
   "name": "Emotion Ball",
-  "version": "0.2.0",
-  "description": "32-state SVG emotion ball with spherical eye projection, ribbons, confetti, gaze tracking, and OpenAI-compatible AI chat integration.",
+  "version": "0.3.0",
+  "description": "32-state SVG emotion ball with eye-white+pupil+mouth rendering, ribbons, confetti, gaze tracking, and OpenAI-compatible AI chat integration. v3: cute baby-proportioned eyes, dual highlights, expressive mouth.",
   "enabledByDefault": true,
   "contributes": {
     "views": [

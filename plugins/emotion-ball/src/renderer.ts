@@ -1,21 +1,18 @@
 /**
- * EmotionBall v2 — 渲染层
+ * EmotionBall v3 — 渲染层
  *
  * 原创实现 SVG 球体渲染：
- * - 48 点眼环折线 + 球面投影（经度换算 + 余弦压缩 + 自旋背面隐藏）
- * - 弹簧驱动的眼环形变
- * - 3D 轨道彩带（5-stop 渐变 + 头宽尾细）
- * - 撒花粒子
+ * - 眼白椭圆 + 黑色瞳孔圆 + 白色高光（替代 v2 48 点眼环球面投影）
+ * - 多种嘴巴类型（SVG path 绘制）
+ * - 身体径向渐变（高光偏左上）+ 暗角 + 腮红
+ * - 3D 轨道彩带、撒花粒子、zzz 睡眠粒子（保留 v2 精华）
  *
  * 不复制任何第三方代码，基于计算机图形学公知方法独立实现。
  */
 
-import {
-  HEAD_C, EYE_HALF, TAU, clamp, lerp, lerpRing, centroid, ringPath,
-  genBlobBody, lerpColor, shade, hexToRgb,
-} from './geometry'
-import { genEyeRings, DEFAULT_BODY, DEFAULT_EYE } from './emotions'
-import type { BodyPose, EyePose, EyeRingSet } from './emotions'
+import { HEAD_C, TAU, clamp, lerp, ringPath, genBlobBody, lerpColor, shade, hexToRgb } from './geometry'
+import { DEFAULT_BODY, DEFAULT_EYE, DEFAULT_MOUTH } from './emotions'
+import type { BodyPose, EyePose, MouthPose, MouthType } from './emotions'
 
 const SVGNS = 'http://www.w3.org/2000/svg'
 
@@ -23,6 +20,7 @@ export interface Pose {
   body: BodyPose
   left: EyePose
   right: EyePose
+  mouth: MouthPose
 }
 
 export function defaultPose(): Pose {
@@ -30,6 +28,7 @@ export function defaultPose(): Pose {
     body: { ...DEFAULT_BODY },
     left: { ...DEFAULT_EYE },
     right: { ...DEFAULT_EYE },
+    mouth: { ...DEFAULT_MOUTH },
   }
 }
 
@@ -38,16 +37,8 @@ export function clonePose(p: Pose): Pose {
     body: { ...p.body },
     left: { ...p.left },
     right: { ...p.right },
+    mouth: { ...p.mouth },
   }
-}
-
-interface EyeNode {
-  node: SVGPathElement
-  ring: number[][]
-  c: [number, number]
-  lastFill?: string
-  lastStroke?: string
-  highlight: SVGEllipseElement
 }
 
 /** 创建 SVG 元素 */
@@ -57,15 +48,11 @@ function el(tag: string, attrs: Record<string, string> = {}): SVGElement {
   return node as SVGElement
 }
 
-/** r2 */
-function r2(v: number): number {
-  return Math.round(v * 100) / 100
-}
+/** r2 格式化 */
+function r2(v: number): string { return Math.round(v * 100) / 100 + '' }
 
 /** 随机 [a,b] */
-function rand(a: number, b: number): number {
-  return a + Math.random() * (b - a)
-}
+function rand(a: number, b: number): number { return a + Math.random() * (b - a) }
 
 const CONFETTI_COLORS = ['#f9705c', '#5b95f0', '#3fbe86', '#f5b13f', '#9a72ee', '#35c3bd']
 
@@ -73,36 +60,50 @@ export interface BallOpts {
   shape?: 'blob' | 'wedge' | 'gem'
   color?: string
   eyeColor?: string
-  eyeScale?: number
   lite?: boolean
   label?: string
 }
 
 /**
- * 球体渲染器实例
+ * 球体渲染器 —— v3 眼白+瞳孔+嘴巴方案
  */
 export class BallRenderer {
   private id: string
   private lite: boolean
-  private rings: EyeRingSet[]
   private shapeRing: number[][]
-  private bodyPath: SVGPathElement
-  private head: SVGPathElement
-  private eyeL: EyeNode
-  private eyeR: EyeNode
+
+  // SVG 骨架
+  svg: SVGSVGElement
   private defs: SVGDefsElement
+  private bodyG: SVGGElement
   private fxBack: SVGGElement
   private fxFront: SVGGElement
-  private bodyG: SVGGElement
+  private head: SVGPathElement
   private stopA: SVGStopElement
   private stopB: SVGStopElement
   private stopC: SVGStopElement
-  private curColor = DEFAULT_BODY.color
-  private curSketch = 0
-  private zzzNodes: SVGTextElement[] | null = null
-  private cheekL!: SVGEllipseElement
-  private cheekR!: SVGEllipseElement
-  private baseC: [[number, number], [number, number]]
+  private curColor = ''
+
+  // 眼睛 —— 眼白 + 瞳孔 + 高光 × 2
+  private eyeWhiteL: SVGEllipseElement
+  private eyeWhiteR: SVGEllipseElement
+  private pupilL: SVGCircleElement
+  private pupilR: SVGCircleElement
+  private highlightL: SVGEllipseElement
+  private highlightR: SVGEllipseElement
+  private highlightL2: SVGCircleElement
+  private highlightR2: SVGCircleElement
+  // 上眼睑遮罩（用于眯眼/闭眼效果）
+  private lidL: SVGPathElement
+  private lidR: SVGPathElement
+
+  // 嘴巴
+  private mouthG: SVGGElement
+  private mouthPath: SVGPathElement
+
+  // 腮红
+  private cheekL: SVGEllipseElement
+  private cheekR: SVGEllipseElement
 
   // 彩带
   private trails: any[] = []
@@ -113,18 +114,21 @@ export class BallRenderer {
   private wasFast = false
   private prevYaw = 0
   private prevNow = 0
+
+  // 撒花
   private confPieces: any[] = []
+
+  // 轮廓缓存
   private silRows: number[][] = []
   private silMinY = 1e9
   private silMaxY = -1e9
 
-  // SVG 骨架引用
-  svg: SVGSVGElement
+  // zzz
+  private zzzNodes: SVGTextElement[] | null = null
 
   constructor(container: HTMLElement, opts: BallOpts = {}) {
     this.id = 'eb' + (Math.random().toString(36).slice(2, 9))
     this.lite = !!opts.lite
-    this.rings = genEyeRings()
 
     // 身体轮廓
     const shapeName = opts.shape || 'blob'
@@ -136,7 +140,7 @@ export class BallRenderer {
       this.shapeRing = genBlobBody(HEAD_C, HEAD_C, 100, 0.04)
     }
 
-    // 轮廓采样（每 2px 一行的 [minX, maxX]）
+    // 轮廓采样
     for (const p of this.shapeRing) {
       if (p[1] < this.silMinY) this.silMinY = p[1]
       if (p[1] > this.silMaxY) this.silMaxY = p[1]
@@ -157,7 +161,8 @@ export class BallRenderer {
 
     const defs = el('defs', {}) as unknown as SVGDefsElement
     this.defs = defs
-    // 主体径向渐变（高光偏左上）
+
+    // 主体径向渐变
     const grad = el('radialGradient', { id: this.id + 'g', cx: '38%', cy: '30%', r: '78%' }) as unknown as SVGElement
     this.stopA = el('stop', { offset: '0%' }) as unknown as SVGStopElement
     this.stopB = el('stop', { offset: '55%' }) as unknown as SVGStopElement
@@ -166,7 +171,8 @@ export class BallRenderer {
     grad.appendChild(this.stopB)
     grad.appendChild(this.stopC)
     defs.appendChild(grad)
-    // 边缘暗角渐变（让球体更立体）
+
+    // 边缘暗角
     const rim = el('radialGradient', { id: this.id + 'r', cx: '50%', cy: '50%', r: '50%' }) as unknown as SVGElement
     const rimA = el('stop', { offset: '70%' }) as unknown as SVGStopElement
     const rimB = el('stop', { offset: '100%' }) as unknown as SVGStopElement
@@ -175,33 +181,41 @@ export class BallRenderer {
     rim.appendChild(rimA)
     rim.appendChild(rimB)
     defs.appendChild(rim)
+
+    // 眼睑遮罩裁剪区域
+    const clipL = el('clipPath', { id: this.id + 'cl' }) as unknown as SVGElement
+    this.lidL = el('path', { d: 'M0 0h220v220H0Z' }) as unknown as SVGPathElement
+    clipL.appendChild(this.lidL)
+    defs.appendChild(clipL)
+    const clipR = el('clipPath', { id: this.id + 'cr' }) as unknown as SVGElement
+    this.lidR = el('path', { d: 'M0 0h220v220H0Z' }) as unknown as SVGPathElement
+    clipR.appendChild(this.lidR)
+    defs.appendChild(clipR)
+
     svg.appendChild(defs)
 
     this.fxBack = el('g', { 'pointer-events': 'none' }) as unknown as SVGGElement
     svg.appendChild(this.fxBack)
 
     this.bodyG = el('g', {}) as unknown as SVGGElement
+    // 身体
     this.head = el('path', {
       d: ringPath(this.shapeRing),
       fill: 'url(#' + this.id + 'g)',
       stroke: 'none',
-      'stroke-width': '2',
     }) as unknown as SVGPathElement
     this.bodyG.appendChild(this.head)
-    // 暗角层（边缘加深，立体感）
+    // 暗角层
     const rimLayer = el('path', {
       d: ringPath(this.shapeRing),
-      fill: 'url(#' + this.id + 'r)',
-      stroke: 'none',
+      fill: 'url(#' + this.id + 'r)', stroke: 'none',
       'pointer-events': 'none',
     }) as unknown as SVGPathElement
     this.bodyG.appendChild(rimLayer)
-    // 顶部高光弧（让球更立体）
+    // 高光覆盖层（立体感）
     const gloss = el('path', {
       d: ringPath(this.shapeRing),
-      fill: 'url(#' + this.id + 'g)',
-      stroke: 'none',
-      opacity: '0.5',
+      fill: 'url(#' + this.id + 'g)', stroke: 'none', opacity: '0.35',
       'pointer-events': 'none',
       transform: 'translate(0 0) scale(0.92)',
       'transform-origin': '110px 110px',
@@ -209,22 +223,77 @@ export class BallRenderer {
     ;(gloss.style as any).mixBlendMode = 'overlay'
     this.bodyG.appendChild(gloss)
 
-    // 眼睛
-    this.eyeL = this.buildEye(0)
-    this.eyeR = this.buildEye(1)
-    this.bodyG.appendChild(this.eyeL.node)
-    this.bodyG.appendChild(this.eyeR.node)
-    this.bodyG.appendChild(this.eyeL.highlight)
-    this.bodyG.appendChild(this.eyeR.highlight)
+    // ====== 眼睛（婴儿比例：大、低、圆）======
+    // 眼白
+    this.eyeWhiteL = el('ellipse', {
+      cx: r2(HEAD_C - 26), cy: r2(HEAD_C + 6), rx: '20', ry: '22',
+      fill: '#FFFFFF', stroke: 'none', opacity: '1',
+    }) as unknown as SVGEllipseElement
+    this.eyeWhiteR = el('ellipse', {
+      cx: r2(HEAD_C + 26), cy: r2(HEAD_C + 6), rx: '20', ry: '22',
+      fill: '#FFFFFF', stroke: 'none', opacity: '1',
+    }) as unknown as SVGEllipseElement
+    this.bodyG.appendChild(this.eyeWhiteL)
+    this.bodyG.appendChild(this.eyeWhiteR)
 
-    // 腮红（默认隐藏，害羞/开心类情绪显示）
+    // 瞳孔
+    this.pupilL = el('circle', {
+      cx: r2(HEAD_C - 26), cy: r2(HEAD_C + 6), r: '10',
+      fill: '#1A1A1A', stroke: 'none',
+    }) as unknown as SVGCircleElement
+    this.pupilR = el('circle', {
+      cx: r2(HEAD_C + 26), cy: r2(HEAD_C + 6), r: '10',
+      fill: '#1A1A1A', stroke: 'none',
+    }) as unknown as SVGCircleElement
+    this.bodyG.appendChild(this.pupilL)
+    this.bodyG.appendChild(this.pupilR)
+
+    // 高光（瞳孔左上角，一大一小双高光更萌）
+    this.highlightL = el('ellipse', {
+      rx: '3.2', ry: '4',
+      fill: 'rgba(255,255,255,0.95)', stroke: 'none',
+      'pointer-events': 'none',
+    }) as unknown as SVGEllipseElement
+    this.highlightR = el('ellipse', {
+      rx: '3.2', ry: '4',
+      fill: 'rgba(255,255,255,0.95)', stroke: 'none',
+      'pointer-events': 'none',
+    }) as unknown as SVGEllipseElement
+    this.bodyG.appendChild(this.highlightL)
+    this.bodyG.appendChild(this.highlightR)
+
+    // 次级小高光（瞳孔右下角）
+    this.highlightL2 = el('circle', {
+      r: '1.8',
+      fill: 'rgba(255,255,255,0.6)', stroke: 'none',
+      'pointer-events': 'none',
+    }) as unknown as SVGCircleElement
+    this.highlightR2 = el('circle', {
+      r: '1.8',
+      fill: 'rgba(255,255,255,0.6)', stroke: 'none',
+      'pointer-events': 'none',
+    }) as unknown as SVGCircleElement
+    this.bodyG.appendChild(this.highlightL2)
+    this.bodyG.appendChild(this.highlightR2)
+
+    // ====== 嘴巴 ======
+    this.mouthG = el('g', { 'pointer-events': 'none' }) as unknown as SVGGElement
+    this.mouthPath = el('path', {
+      fill: 'none', stroke: '#3A2A22', 'stroke-width': '2.4', 'stroke-linecap': 'round',
+    }) as unknown as SVGPathElement
+    this.mouthG.appendChild(this.mouthPath)
+    this.bodyG.appendChild(this.mouthG)
+
+    // ====== 腮红 ======
     this.cheekL = el('ellipse', {
-      cx: String(HEAD_C - 32), cy: String(HEAD_C + 18), rx: '9', ry: '5',
+      cx: r2(HEAD_C - 36), cy: r2(HEAD_C + 24),
+      rx: '11', ry: '6.5',
       fill: 'rgba(244,114,108,0.5)', stroke: 'none', opacity: '0',
       'pointer-events': 'none',
     }) as unknown as SVGEllipseElement
     this.cheekR = el('ellipse', {
-      cx: String(HEAD_C + 32), cy: String(HEAD_C + 18), rx: '9', ry: '5',
+      cx: r2(HEAD_C + 36), cy: r2(HEAD_C + 24),
+      rx: '11', ry: '6.5',
       fill: 'rgba(244,114,108,0.5)', stroke: 'none', opacity: '0',
       'pointer-events': 'none',
     }) as unknown as SVGEllipseElement
@@ -235,8 +304,6 @@ export class BallRenderer {
 
     this.fxFront = el('g', { 'pointer-events': 'none' }) as unknown as SVGGElement
     svg.appendChild(this.fxFront)
-
-    this.baseC = [centroid(this.rings[0].L), centroid(this.rings[0].R)]
 
     // zzz 睡眠粒子
     if (!this.lite) {
@@ -258,20 +325,6 @@ export class BallRenderer {
     this.setBodyColor(c)
 
     container.appendChild(svg)
-  }
-
-  private buildEye(k: number): EyeNode {
-    const ring = k === 0 ? this.rings[0].L : this.rings[0].R
-    const node = el('path', { fill: '#1A1A1A', stroke: 'none', 'stroke-width': '1.6' }) as unknown as SVGPathElement
-    node.setAttribute('d', ringPath(ring))
-    // 眼睛高光（白色小椭圆，让眼神灵动）
-    const highlight = el('ellipse', {
-      rx: '2.4', ry: '3.2',
-      fill: 'rgba(255,255,255,0.85)',
-      stroke: 'none',
-      'pointer-events': 'none',
-    }) as unknown as SVGEllipseElement
-    return { node, ring, c: centroid(ring), highlight }
   }
 
   private buildSil() {
@@ -298,11 +351,6 @@ export class BallRenderer {
     this.silRows = out
   }
 
-  private silAt(y: number): number[] {
-    const r = Math.round((clamp(y, this.silMinY, this.silMaxY) - this.silMinY) / 2)
-    return this.silRows[clamp(r, 0, this.silRows.length - 1)]
-  }
-
   setBodyColor(color: string) {
     if (color === this.curColor) return
     this.curColor = color
@@ -311,85 +359,114 @@ export class BallRenderer {
     this.stopC.setAttribute('stop-color', shade(color, -0.25))
   }
 
-  /** 更新眼睛环（外部弹簧插值后传入） */
-  setEyeRings(L: number[][], R: number[][]) {
-    this.eyeL.ring = L
-    this.eyeR.ring = R
-    this.eyeL.c = centroid(L)
-    this.eyeR.c = centroid(R)
+  /** 生成嘴巴 path */
+  private buildMouthPath(mouth: MouthPose): string {
+    const { type, width, open } = mouth
+    const cx = HEAD_C
+    const cy = HEAD_C + 30
+    const w = 8 + width * 18  // 嘴宽 8-26
+    const h = 2 + open * 10   // 嘴高 2-12
+
+    if (type === 'none' || width <= 0.01) return ''
+
+    switch (type) {
+      case 'smile':
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - h - 4)} ${r2(cx + w)} ${r2(cy)}`
+      case 'happy':
+        // 张嘴笑
+        if (open > 0.15) {
+          const hh = 4 + open * 8
+          return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - hh - 3)} ${r2(cx + w)} ${r2(cy)} Q${r2(cx)} ${r2(cy + hh + 1)} ${r2(cx - w)} ${r2(cy)}`
+        }
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - h - 1)} ${r2(cx + w)} ${r2(cy)}`
+      case 'sad':
+        return `M${r2(cx - w)} ${r2(cy - 2)} Q${r2(cx)} ${r2(cy + h + 2)} ${r2(cx + w)} ${r2(cy - 2)}`
+      case 'open':
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy + h + 2)} ${r2(cx + w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - h - 2)} ${r2(cx - w)} ${r2(cy)}`
+      case 'o':
+        return `M${r2(cx - w * 0.6)} ${r2(cy)} A${r2(w * 0.6)} ${r2(3 + open * 5)} 0 1 0 ${r2(cx + w * 0.6)} ${r2(cy)} A${r2(w * 0.6)} ${r2(3 + open * 5)} 0 1 0 ${r2(cx - w * 0.6)} ${r2(cy)}`
+      case 'w':
+        return `M${r2(cx - w)} ${r2(cy - 2)} Q${r2(cx - w * 0.5)} ${r2(cy + 4)} ${r2(cx)} ${r2(cy - 2)} Q${r2(cx + w * 0.5)} ${r2(cy + 4)} ${r2(cx + w)} ${r2(cy - 2)}`
+      case 'flat':
+        return `M${r2(cx - w)} ${r2(cy)} L${r2(cx + w)} ${r2(cy)}`
+      case 'pout':
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy + 2)} ${r2(cx + w)} ${r2(cy)} Q${r2(cx + w * 0.5)} ${r2(cy - 3)} ${r2(cx)} ${r2(cy - 1)}`
+      default:
+        return `M${r2(cx - w)} ${r2(cy)} Q${r2(cx)} ${r2(cy - 3)} ${r2(cx + w)} ${r2(cy)}`
+    }
   }
 
-  /** 单只眼睛应用 pose + 球面投影 */
-  private setEye(eye: EyeNode, pose: EyePose, k: number, sketch: number, yaw: number) {
-    eye.node.setAttribute('d', ringPath(eye.ring))
-    const base = this.baseC[k]
-    const open = clamp(pose.open, 0, 1.2)
-    const sy = clamp(pose.scaleY * open, 0.02, 2.4)
-    const sxBase = pose.scaleX
+  /** 设置单只眼睛 */
+  private setEye(
+    eyeWhite: SVGEllipseElement,
+    pupil: SVGCircleElement,
+    highlight: SVGEllipseElement,
+    highlight2: SVGCircleElement,
+    lid: SVGPathElement,
+    isLeft: boolean,
+    pose: EyePose,
+  ) {
+    const dir = isLeft ? -1 : 1
+    const baseX = HEAD_C + dir * 26 + pose.x
+    const baseY = HEAD_C + 6 + pose.y
 
-    const halfH = EYE_HALF * sy + 2
-    let ey0 = HEAD_C + (base[1] - HEAD_C) + pose.y + pose.lookY
-    ey0 = clamp(ey0, this.silMinY + halfH, this.silMaxY - halfH)
+    const open = clamp(pose.open, 0, 1.5)
+    const squint = clamp(pose.squint, 0, 1)
+    const rx = 20
+    const ry = 22 * open
+    const eyeOp = clamp(open, 0, 1)
 
-    const sil = this.silAt(ey0)
-    const cx0 = (sil[0] + sil[1]) / 2
-    const hw = Math.max((sil[1] - sil[0]) / 2, 12)
+    // 眼白
+    eyeWhite.setAttribute('cx', r2(baseX))
+    eyeWhite.setAttribute('cy', r2(baseY))
+    eyeWhite.setAttribute('rx', r2(rx))
+    eyeWhite.setAttribute('ry', r2(Math.max(ry, 0.5)))
+    eyeWhite.setAttribute('opacity', String(eyeOp))
 
-    // 经度换算 + 自旋偏航 + 余弦压缩
-    // base[0] 是眼环质心 x（左眼≈86，右眼≈134）
-    // 用眼睛自身的质心而非固定 base，更准确
-    const eyeCx = eye.c[0]
-    const ox = (eyeCx - HEAD_C) + pose.x + pose.lookX
-    const theta = clamp(ox / hw, -1.15, 1.15)
-    const total = theta + (yaw || 0)
-    const cn = Math.cos(total)
-    if (cn <= 0.02) {
-      ;(eye.node.style as any).display = 'none'
-      ;(eye.highlight.style as any).display = 'none'
-      return
-    }
-    ;(eye.node.style as any).display = ''
-    const ex = cx0 + hw * Math.sin(total) * 0.985
-    const dyN = (ey0 - HEAD_C) / 130
-    const fy = Math.sqrt(1 - dyN * dyN * 0.22)
-
-    eye.node.setAttribute(
-      'transform',
-      'translate(' + r2(ex) + ' ' + r2(ey0) + ')' +
-        (pose.rotate ? ' rotate(' + r2(pose.rotate) + ')' : '') +
-        ' scale(' + r2(sxBase * cn) + ' ' + r2(sy * fy) + ')' +
-        ' translate(' + r2(-eyeCx) + ' ' + r2(-eye.c[1]) + ')',
-    )
-
-    // 高光：在眼睛左上偏移，随眼睛缩放
-    const open2 = clamp(pose.open, 0, 1.2)
-    if (open2 < 0.3) {
-      ;(eye.highlight.style as any).display = 'none'
+    // 眯眼 / 闭眼：上眼睑遮罩
+    const useLid = squint > 0.05 || open < 0.55
+    if (useLid) {
+      const cutY = baseY - ry * 0.92 + (ry * 1.84) * squint * 0.6 + (open < 0.55 ? ry * (1 - open) * 0.7 : 0)
+      // 裁剪区域：单矩形保留 cutY 下方（避免双路径 union 导致全显）
+      lid.setAttribute('d', `M-30 ${r2(cutY)} H240 V240 H-30 Z`)
+      ;(eyeWhite.style as any).clipPath = `url(#${this.id + (isLeft ? 'cl' : 'cr')})`
     } else {
-      ;(eye.highlight.style as any).display = ''
-      const hx = ex - sxBase * cn * 4 + pose.lookX * 0.3
-      const hy = ey0 - sy * fy * 5 + pose.lookY * 0.3
-      eye.highlight.setAttribute('cx', r2(hx))
-      eye.highlight.setAttribute('cy', r2(hy))
-      eye.highlight.setAttribute('rx', r2(2.4 * sxBase * cn))
-      eye.highlight.setAttribute('ry', r2(3.2 * sy * fy * open2))
+      ;(eyeWhite.style as any).clipPath = ''
     }
 
-    const fill = sketch > 0.5 ? 'none' : pose.color
-    const stroke = sketch > 0.5 ? pose.color : 'none'
-    if (fill !== eye.lastFill) { eye.node.setAttribute('fill', fill); eye.lastFill = fill }
-    if (stroke !== eye.lastStroke) { eye.node.setAttribute('stroke', stroke); eye.lastStroke = stroke }
+    // 瞳孔
+    const lookX = clamp(pose.lookX, -1, 1) * 6
+    const lookY = clamp(pose.lookY, -1, 1) * 5
+    const pupilR = 10 * (1 - squint * 0.3)
+    const px = baseX + lookX
+    const py = baseY + lookY
+    pupil.setAttribute('cx', r2(px))
+    pupil.setAttribute('cy', r2(py))
+    pupil.setAttribute('r', r2(Math.max(pupilR, 0.5)))
+    pupil.setAttribute('opacity', String(eyeOp))
+
+    // 主高光（左上）
+    const hx = px - 3.5
+    const hy = py - 4.5
+    highlight.setAttribute('cx', r2(hx))
+    highlight.setAttribute('cy', r2(hy))
+    highlight.setAttribute('rx', r2(3.2 * (1 - squint * 0.2)))
+    highlight.setAttribute('ry', r2(4 * (1 - squint * 0.2)))
+    highlight.setAttribute('opacity', String(eyeOp))
+
+    // 次级高光（右下，更萌）
+    highlight2.setAttribute('cx', r2(px + 3.5))
+    highlight2.setAttribute('cy', r2(py + 4))
+    highlight2.setAttribute('r', r2(1.8 * (1 - squint * 0.2)))
+    highlight2.setAttribute('opacity', String(eyeOp * 0.6))
   }
 
-  /**
-   * 每帧应用 pose。
-   * 返回 yaw 供彩带判断。
-   */
   applyPose(pose: Pose, yaw = 0): number {
     const b = pose.body
     const now = performance.now()
-    const sketch = 0
+    const [r, g, bl] = hexToRgb(b.color)
 
+    // 身体变换
     this.bodyG.setAttribute(
       'transform',
       'translate(' + r2(HEAD_C + b.x) + ' ' + r2(HEAD_C + b.y) + ')' +
@@ -399,15 +476,27 @@ export class BallRenderer {
     )
     this.setBodyColor(b.color)
 
-    // 腮红：暖色/粉色调体色时显现
-    const [r, g, bl] = hexToRgb(b.color)
-    const isWarm = r > g + 10 && r > bl + 10 // 偏红/粉/橙
+    // 眼睛
+    this.setEye(this.eyeWhiteL, this.pupilL, this.highlightL, this.highlightL2, this.lidL, true, pose.left)
+    this.setEye(this.eyeWhiteR, this.pupilR, this.highlightR, this.highlightR2, this.lidR, false, pose.right)
+
+    // 嘴巴
+    const mouthPath = this.buildMouthPath(pose.mouth)
+    if (mouthPath) {
+      this.mouthPath.setAttribute('d', mouthPath)
+      this.mouthPath.setAttribute('opacity', '1')
+      // 暖色体色用深棕嘴，冷色用深灰
+      const isWarm = r > g + 10 && r > bl + 10
+      this.mouthPath.setAttribute('stroke', isWarm ? '#3A2A22' : '#2A2A3A')
+    } else {
+      this.mouthPath.setAttribute('opacity', '0')
+    }
+
+    // 腮红：偏红/粉/橙时显示
+    const isWarm = r > g + 15 && r > bl + 15
     const cheekOp = isWarm ? 0.55 : 0
     this.cheekL.setAttribute('opacity', String(cheekOp))
     this.cheekR.setAttribute('opacity', String(cheekOp))
-
-    this.setEye(this.eyeL, pose.left, 0, sketch, yaw)
-    this.setEye(this.eyeR, pose.right, 1, sketch, yaw)
 
     if (this.lite) return yaw
 
@@ -422,37 +511,27 @@ export class BallRenderer {
         if (!zOn) { if (zn.getAttribute('opacity') !== '0') zn.setAttribute('opacity', '0'); continue }
         const zp = (now * 0.00033 + z / 3) % 1
         const zo = (zp < 0.18 ? zp / 0.18 : 1 - (zp - 0.18) / 0.82) * 0.8 * b.zzz
-        zn.setAttribute('opacity', zo.toFixed(3))
-        zn.setAttribute('font-size', (12 + zp * 11).toFixed(1))
-        zn.setAttribute(
-          'transform',
+        zn.setAttribute('opacity', String(zo.toFixed(3)))
+        zn.setAttribute('font-size', String((12 + zp * 11).toFixed(1)))
+        zn.setAttribute('transform',
           'translate(' + r2(180 + zp * 34 + 4 * Math.sin(zp * 9)) + ' ' + r2(48 - zp * 42) + ')' +
-            ' rotate(' + r2(-10 + zp * 14) + ')',
-        )
+          ' rotate(' + r2(-10 + zp * 14) + ')')
       }
     }
 
-    // 彩带更新
+    // 彩带
     this.updateTrails(dt)
-    // 撒花更新
+    // 撒花
     this.updateConfetti(dt)
 
     return yaw
-  }
-
-  /** 设置目光（归一化 [-1,1]） */
-  setGaze(nx: number, ny: number) {
-    // 由外部通过 pose.left/right.lookX/lookY 注入，此处仅触发
   }
 
   // ============ 彩带 ============
 
   spawnTrailSpin(yawVel: number) {
     if (Math.abs(yawVel) < 2) return
-    if (!this.wasFast) {
-      this.makePlanes()
-      this.wasFast = true
-    }
+    if (!this.wasFast) { this.makePlanes(); this.wasFast = true }
     this.spawnTrail(this.prevYaw, yawVel > 0 ? 1 : -1)
   }
 
@@ -489,15 +568,11 @@ export class BallRenderer {
     this.createTrail({
       orbit: true,
       o: {
-        lam: rand(0, TAU),
-        lamVel: (Math.random() < 0.5 ? -1 : 1) * rand(1.7, 2.3),
-        tilt: rand(0.1, 0.22),
-        roll: rand(-0.12, 0.12),
-        rad: 124 + idx * 16,
-        radVel: 0, follow: 0.8, carry: 0, arc: rand(2.4, 3.2),
+        lam: rand(0, TAU), lamVel: (Math.random() < 0.5 ? -1 : 1) * rand(1.7, 2.3),
+        tilt: rand(0.1, 0.22), roll: rand(-0.12, 0.12),
+        rad: 124 + idx * 16, radVel: 0, follow: 0.8, carry: 0, arc: rand(2.4, 3.2),
       },
-      r: rand(5.5, 7),
-      hue: rand(0, 360),
+      r: rand(5.5, 7), hue: rand(0, 360),
     })
   }
 
@@ -527,52 +602,34 @@ export class BallRenderer {
   }
 
   private updateTrails(dt: number) {
-    const now = performance.now()
     for (let i = this.trails.length - 1; i >= 0; i--) {
-      const t = this.trails[i]
-      const o = t.o
-      o.lam += o.lamVel * dt
-      o.rad += o.radVel * dt
-      o.lamVel *= 0.99
-      o.radVel *= 0.96
-
+      const t = this.trails[i]; const o = t.o
+      o.lam += o.lamVel * dt; o.rad += o.radVel * dt
+      o.lamVel *= 0.99; o.radVel *= 0.96
       const p = this.orbitPoint(o, o.lam)
       t.hist.unshift(p)
       const maxHist = 22
       if (t.hist.length > maxHist) t.hist.length = maxHist
-
-      // 色相漂移
       t.hue += t.hueVel * dt
       for (let s = 0; s < t.stops.length; s++) {
         const local = t.hue + (s / (t.stops.length - 1)) * t.hueSpan
-        const col = this.hslToHex(local % 360, 0.68, 0.55)
-        t.stops[s].setAttribute('stop-color', col)
+        t.stops[s].setAttribute('stop-color', this.hslToHex(local % 360, 0.68, 0.55))
       }
       const a = t.gradEl.getAttribute('id')!
-      const first = t.hist[0]
-      const last = t.hist[t.hist.length - 1] || first
-      t.gradEl.setAttribute('x1', String(r2(first.x)))
-      t.gradEl.setAttribute('y1', String(r2(first.y)))
-      t.gradEl.setAttribute('x2', String(r2(last.x)))
-      t.gradEl.setAttribute('y2', String(r2(last.y)))
-
-      // 头宽尾细 path
+      const first = t.hist[0]; const last = t.hist[t.hist.length - 1] || first
+      t.gradEl.setAttribute('x1', r2(first.x)); t.gradEl.setAttribute('y1', r2(first.y))
+      t.gradEl.setAttribute('x2', r2(last.x)); t.gradEl.setAttribute('y2', r2(last.y))
       const d = this.trailPath(t.hist, t.r)
       t.front.setAttribute('d', d)
       t.front.setAttribute('opacity', String(t.orbitMode ? 0.85 : Math.max(0, 1 - t.life / 3)))
       t.back.setAttribute('d', d)
       t.back.setAttribute('opacity', String(t.orbitMode ? 0.4 : Math.max(0, 0.5 - t.life / 3)))
-
       if (!t.orbitMode) {
         t.life += dt
         if (t.life > 3 && t.hist.length <= 1) {
-          this.fxBack.removeChild(t.back)
-          this.fxFront.removeChild(t.front)
-          t.gradEl.remove()
+          this.fxBack.removeChild(t.back); this.fxFront.removeChild(t.front); t.gradEl.remove()
           this.trails.splice(i, 1)
-        } else if (t.life > 0.4) {
-          t.hist.pop()
-        }
+        } else if (t.life > 0.4) { t.hist.pop() }
       }
     }
   }
@@ -581,8 +638,7 @@ export class BallRenderer {
     if (hist.length < 2) return ''
     let s = 'M'
     for (let i = 0; i < hist.length; i++) {
-      const p = hist[i]
-      const w = r * (1 - i / hist.length * 0.7)
+      const p = hist[i]; const w = r * (1 - i / hist.length * 0.7)
       s += (i ? 'L' : '') + p.x.toFixed(2) + ' ' + p.y.toFixed(2)
       if (i === 0) s += ' L' + (p.x + w).toFixed(2) + ' ' + p.y.toFixed(2)
     }
@@ -590,14 +646,12 @@ export class BallRenderer {
   }
 
   private orbitPoint(o: any, lam: number) {
-    const hx = o.rad * Math.sin(lam)
-    const hy = -o.rad * Math.cos(lam) * Math.sin(o.tilt)
-    const ca = Math.cos(o.roll), sa = Math.sin(o.roll)
+    const hx = o.rad * Math.sin(lam); const hy = -o.rad * Math.cos(lam) * Math.sin(o.tilt)
+    const ca = Math.cos(o.roll); const sa = Math.sin(o.roll)
     return {
       x: HEAD_C + hx * ca - hy * sa,
       y: HEAD_C + hx * sa + hy * ca,
-      z: Math.cos(lam) * Math.cos(o.tilt),
-      l: lam,
+      z: Math.cos(lam) * Math.cos(o.tilt), l: lam,
     }
   }
 
@@ -606,10 +660,7 @@ export class BallRenderer {
     const k = (n: number) => (n + h * 12) % 12
     const a = s * Math.min(l, 1 - l)
     const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
-    return shade(
-      '#' + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join(''),
-      0,
-    )
+    return '#' + [f(0), f(8), f(4)].map((v) => Math.round(v * 255).toString(16).padStart(2, '0')).join('')
   }
 
   // ============ 撒花 ============
@@ -617,19 +668,14 @@ export class BallRenderer {
   burst(n: number) {
     if (this.lite) return
     for (let i = 0; i < n; i++) {
-      const ang = rand(0, TAU)
-      const spd = rand(40, 110)
+      const ang = rand(0, TAU); const spd = rand(40, 110)
       this.confPieces.push({
         x: HEAD_C + Math.cos(ang) * rand(96, 116),
         y: HEAD_C + Math.sin(ang) * rand(96, 116),
-        vx: Math.cos(ang) * spd,
-        vy: Math.sin(ang) * spd - rand(20, 75),
-        life: 0,
-        max: rand(1.2, 2.4),
+        vx: Math.cos(ang) * spd, vy: Math.sin(ang) * spd - rand(20, 75),
+        life: 0, max: rand(1.2, 2.4),
         color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-        r: rand(3, 5),
-        star: Math.random() < 0.25,
-        node: null as null | SVGPathElement,
+        r: rand(3, 5), star: Math.random() < 0.25, node: null as null | SVGPathElement,
       })
     }
   }
@@ -638,22 +684,11 @@ export class BallRenderer {
     for (let i = this.confPieces.length - 1; i >= 0; i--) {
       const p = this.confPieces[i]
       p.life += dt
-      if (p.life > p.max) {
-        if (p.node) { p.node.remove() }
-        this.confPieces.splice(i, 1)
-        continue
-      }
-      p.x += p.vx * dt
-      p.y += p.vy * dt
-      p.vy += 60 * dt
-      p.vx *= 0.99
+      if (p.life > p.max) { if (p.node) p.node.remove(); this.confPieces.splice(i, 1); continue }
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 60 * dt; p.vx *= 0.99
       const op = Math.max(0, 1 - p.life / p.max)
       if (!p.node) {
-        p.node = el('path', {
-          d: this.starPath(),
-          fill: p.color,
-          opacity: String(op),
-        }) as unknown as SVGPathElement
+        p.node = el('path', { d: this.starPath(), fill: p.color, opacity: String(op) }) as unknown as SVGPathElement
         this.fxFront.appendChild(p.node)
       }
       p.node.setAttribute('opacity', String(op))
@@ -664,7 +699,7 @@ export class BallRenderer {
   private starPath(): string {
     const pts: string[] = []
     for (let e = 0; e < 10; e++) {
-      const a = -Math.PI / 2 + (e * Math.PI) / 5
+      const a = -Math.PI / 2 + (e * Math.PI) / 10
       const r = e % 2 === 0 ? 1 : 0.42
       pts.push((Math.cos(a) * r).toFixed(3) + ' ' + (Math.sin(a) * r).toFixed(3))
     }
