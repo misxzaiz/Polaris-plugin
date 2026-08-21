@@ -949,28 +949,43 @@ var BallRenderer = class {
     highlight2.setAttribute("r", r2(1.8 * (1 - squint * 0.2)));
     highlight2.setAttribute("opacity", String(eyeOp * 0.6));
   }
-  applyPose(pose, yaw = 0) {
+  applyPose(pose, yaw = 0, appearance) {
     const b = pose.body;
     const now = performance.now();
-    const [r, g, bl] = hexToRgb(b.color);
+    const bodyColor = appearance?.bodyColor || b.color;
+    const eyeWhiteColor = appearance?.eyeWhite || "#FFFFFF";
+    const pupilColor = appearance?.pupil || "#1A1A1A";
+    const mouthColor = appearance?.mouth || "#3A2A22";
+    const cheekColor = appearance?.cheek || "rgba(244,114,108,0.5)";
+    const [r, g, bl] = hexToRgb(bodyColor);
     this.bodyG.setAttribute(
       "transform",
       "translate(" + r2(HEAD_C + b.x) + " " + r2(HEAD_C + b.y) + ") rotate(" + r2(b.rotate || 0) + ") scale(" + r2(b.scale) + ") translate(" + r2(-HEAD_C) + " " + r2(-HEAD_C) + ")"
     );
-    this.setBodyColor(b.color);
+    this.setBodyColor(bodyColor);
     this.setEye(this.eyeWhiteL, this.pupilL, this.highlightL, this.highlightL2, this.lidL, true, pose.left);
     this.setEye(this.eyeWhiteR, this.pupilR, this.highlightR, this.highlightR2, this.lidR, false, pose.right);
+    if (appearance?.eyeWhite) {
+      this.eyeWhiteL.setAttribute("fill", eyeWhiteColor);
+      this.eyeWhiteR.setAttribute("fill", eyeWhiteColor);
+    }
+    if (appearance?.pupil) {
+      this.pupilL.setAttribute("fill", pupilColor);
+      this.pupilR.setAttribute("fill", pupilColor);
+    }
     const mouthPath = this.buildMouthPath(pose.mouth);
     if (mouthPath) {
       this.mouthPath.setAttribute("d", mouthPath);
       this.mouthPath.setAttribute("opacity", "1");
       const isWarm2 = r > g + 10 && r > bl + 10;
-      this.mouthPath.setAttribute("stroke", isWarm2 ? "#3A2A22" : "#2A2A3A");
+      this.mouthPath.setAttribute("stroke", appearance?.mouth || (isWarm2 ? "#3A2A22" : "#2A2A3A"));
     } else {
       this.mouthPath.setAttribute("opacity", "0");
     }
     const isWarm = r > g + 15 && r > bl + 15;
     const cheekOp = isWarm ? 0.55 : 0;
+    this.cheekL.setAttribute("fill", cheekColor);
+    this.cheekR.setAttribute("fill", cheekColor);
     this.cheekL.setAttribute("opacity", String(cheekOp));
     this.cheekR.setAttribute("opacity", String(cheekOp));
     if (this.lite) return yaw;
@@ -1267,6 +1282,7 @@ var EmotionEngine = class {
     __publicField(this, "idleEnabled");
     __publicField(this, "gazeX", 0);
     __publicField(this, "gazeY", 0);
+    __publicField(this, "appearance");
     __publicField(this, "yaw", 0);
     __publicField(this, "yawVel", 0);
     __publicField(this, "running", false);
@@ -1285,6 +1301,7 @@ var EmotionEngine = class {
     this.fallbackId = opts.fallbackId || "02";
     this.curId = opts.emotion || "02";
     this.idleEnabled = opts.idle ?? false;
+    this.appearance = opts.appearance;
     this.curPose = defaultPose();
     this.targetPose = this.computePose(this.curId);
     this.curPose = clonePose(this.targetPose);
@@ -1302,7 +1319,7 @@ var EmotionEngine = class {
     if (opts.autostart !== false) {
       this.start();
     } else {
-      this.renderer.applyPose(this.curPose, 0);
+      this.renderer.applyPose(this.curPose, 0, this.appearance);
     }
   }
   /** 计算某个情绪的基础 pose */
@@ -1379,6 +1396,9 @@ var EmotionEngine = class {
   setGaze(nx, ny) {
     this.gazeX = clamp(nx, -1, 1);
     this.gazeY = clamp(ny, -1, 1);
+  }
+  setAppearance(a) {
+    this.appearance = a;
   }
   setActive(v) {
     this.active = v;
@@ -1532,7 +1552,7 @@ var EmotionEngine = class {
     this.yaw += this.yawVel * dt;
     this.yawVel *= 0.92;
     if (Math.abs(this.yawVel) > 2) this.renderer.spawnTrailSpin(this.yawVel);
-    this.renderer.applyPose(this.curPose, this.yaw);
+    this.renderer.applyPose(this.curPose, this.yaw, this.appearance);
   }
   easeInOut(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -1583,6 +1603,7 @@ var EmotionBallView = React.memo(function EmotionBallView2(props) {
     lite = false,
     size = 200,
     gaze = true,
+    appearance,
     onReady,
     onEmotionChange
   } = props;
@@ -1613,10 +1634,11 @@ var EmotionBallView = React.memo(function EmotionBallView2(props) {
     const opts = {
       emotion,
       shape,
-      color: themeColor,
+      color: appearance?.bodyColor || themeColor,
       eyeColor,
       eyeScale,
       lite,
+      appearance,
       autostart: !lite
       // 画廊静态帧省电，主球动画
     };
@@ -1634,6 +1656,9 @@ var EmotionBallView = React.memo(function EmotionBallView2(props) {
   React.useEffect(() => {
     engineRef.current?.setEmotion(emotion);
   }, [emotion]);
+  React.useEffect(() => {
+    engineRef.current?.setAppearance(appearance);
+  }, [appearance]);
   React.useEffect(() => {
     if (!gaze) return;
     const el2 = containerRef.current;
@@ -1655,15 +1680,48 @@ var EmotionBallView = React.memo(function EmotionBallView2(props) {
       cancelAnimationFrame(raf);
     };
   }, [gaze]);
+  const appBg = appearance?.background;
   return React.createElement("div", {
     ref: containerRef,
-    style: { width: size, height: size, display: "flex", alignItems: "center", justifyContent: "center" },
+    style: {
+      width: size,
+      height: size,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      ...appBg ? { background: appBg } : {}
+    },
     "aria-label": "AI emotion ball"
   });
 });
 
 // src/aiChatStore.ts
 import React2 from "react";
+
+// src/types.ts
+var DEFAULT_APPEARANCE = {
+  bodyColor: null,
+  eyeWhite: "#FFFFFF",
+  pupil: "#1A1A1A",
+  mouth: "#3A2A22",
+  cheek: "rgba(244,114,108,0.5)",
+  background: "#121826"
+};
+var BG_PRESETS = [
+  { id: "dark", label: "\u7EAF\u9ED1", value: "#0f1117" },
+  { id: "dark-blue", label: "\u6DF1\u591C\u84DD", value: "#121826" },
+  { id: "dark-green", label: "\u58A8\u7EFF", value: "#0e1a14" },
+  { id: "dark-purple", label: "\u6697\u591C\u7D2B", value: "#14111f" },
+  { id: "warm-dark", label: "\u6696\u6697", value: "#1a1410" },
+  { id: "light", label: "\u7EAF\u767D", value: "#f5f0e8" },
+  { id: "light-cream", label: "\u7C73\u8272", value: "#fbf6ee" },
+  { id: "light-blue", label: "\u6D45\u84DD", value: "#eef3f8" },
+  { id: "gradient-dark", label: "\u6DF1\u8272\u6E10\u53D8", value: "linear-gradient(135deg, #1a1f2e 0%, #0f1117 100%)" },
+  { id: "gradient-warm", label: "\u6696\u6E10\u53D8", value: "linear-gradient(135deg, #2a1f14 0%, #1a1410 100%)" },
+  { id: "gradient-cool", label: "\u51B7\u6E10\u53D8", value: "linear-gradient(135deg, #1a2540 0%, #0f1420 100%)" }
+];
+
+// src/aiChatStore.ts
 var DEFAULT_CONFIG = {
   baseUrl: "https://api.openai.com/v1",
   apiKey: "",
@@ -1689,6 +1747,7 @@ var SimpleStore = class {
     __publicField(this, "getSnapshot", () => this.state);
     this.state = {
       aiConfig: { ...DEFAULT_CONFIG },
+      appearance: { ...DEFAULT_APPEARANCE },
       messages: [{ role: "system", content: SYS_PROMPT }],
       aiStatus: "idle",
       aiError: null,
@@ -1698,6 +1757,10 @@ var SimpleStore = class {
       showHistory: false,
       setAiConfig: (patch) => {
         this.state.aiConfig = { ...this.state.aiConfig, ...patch };
+        this.emit();
+      },
+      setAppearance: (patch) => {
+        this.state.appearance = { ...this.state.appearance, ...patch };
         this.emit();
       },
       addMessage: (m) => {
@@ -2043,6 +2106,46 @@ var STYLES = `
 }
 .ebv2-preset-btn:hover { border-color: rgba(59,130,246,0.3); color: var(--text-primary, #e4e4e7); }
 .ebv2-preset-btn.active { border-color: #60a5fa; background: rgba(59,130,246,0.08); color: #60a5fa; }
+
+/* === \u5916\u89C2\u914D\u7F6E === */
+.ebv2-config-section { margin-bottom: 14px; }
+.ebv2-config-section-title {
+  font-size: 12px; font-weight: 600; color: var(--text-primary, #e4e4e7);
+  padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
+}
+.ebv2-color-field { display: flex; flex-direction: column; gap: 4px; }
+.ebv2-color-row { display: flex; gap: 6px; align-items: center; }
+.ebv2-color-input {
+  width: 32px; height: 28px; border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 4px; padding: 1px; background: var(--background-elevated, rgba(255,255,255,0.03));
+  cursor: pointer; cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><circle cx='6' cy='6' r='5' fill='%23fff' stroke='%23000' stroke-width='1'/></svg>") 6 6, pointer;
+}
+.ebv2-color-input[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+/* \u80CC\u666F\u8272\u9884\u8BBE\u7F51\u683C */
+.ebv2-bg-swatches {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 4px;
+}
+.ebv2-bg-swatch {
+  height: 20px; border-radius: 4px; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.12s;
+}
+.ebv2-bg-swatch:hover { border-color: rgba(120,160,255,0.4); }
+.ebv2-bg-swatch.active { border-color: #7aa2ff; }
+
+/* \u8DDF\u968F/\u56FA\u5B9A toggle */
+.ebv2-toggle-row { display: flex; gap: 0; }
+.ebv2-toggle-btn {
+  font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer;
+  background: var(--background-elevated, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  color: var(--text-muted, #a1a1aa); transition: all 0.12s;
+}
+.ebv2-toggle-btn + .ebv2-toggle-btn { border-left: none; border-radius: 0 4px 4px 0; }
+.ebv2-toggle-btn:first-child { border-radius: 4px 0 0 4px; }
+.ebv2-toggle-btn.active { background: rgba(59,130,246,0.12); border-color: #60a5fa; color: #7aa2ff; font-weight: 500; }
+.ebv2-toggle-btn:hover { color: var(--text-primary, #e4e4e7); }
 `;
 
 // src/Panel.tsx
@@ -2089,6 +2192,7 @@ function EmotionBallPanel() {
         shape,
         size: 180,
         gaze: true,
+        appearance: s.appearance,
         onEmotionChange: (id) => setMainEmotion(id)
       }),
       React3.createElement(
@@ -2346,72 +2450,176 @@ function ChatTab({ onEmotion }) {
     )
   );
 }
-function ConfigTab() {
-  const s = useChatStore();
+function ColorField({ label, value, onChange, color }) {
   return React3.createElement(
     "div",
-    { className: "ebv2-config" },
+    { className: "ebv2-color-field" },
+    React3.createElement("label", { className: "ebv2-config-label" }, label),
     React3.createElement(
       "div",
-      { className: "ebv2-config-field" },
-      React3.createElement("label", { className: "ebv2-config-label" }, "API \u7AEF\u70B9"),
+      { className: "ebv2-color-row" },
+      React3.createElement("input", {
+        type: "color",
+        className: "ebv2-color-input",
+        value: color,
+        onChange: (e) => onChange(e.target.value)
+      }),
       React3.createElement("input", {
         className: "ebv2-config-input",
-        value: s.aiConfig.baseUrl,
-        onChange: (e) => s.setAiConfig({ baseUrl: e.target.value }),
-        placeholder: "https://api.openai.com/v1"
+        value,
+        onChange: (e) => onChange(e.target.value),
+        placeholder: "#hex"
       })
-    ),
-    React3.createElement(
-      "div",
-      { className: "ebv2-config-field" },
-      React3.createElement("label", { className: "ebv2-config-label" }, "API Key"),
-      React3.createElement("input", {
-        className: "ebv2-config-input",
-        type: "password",
-        value: s.aiConfig.apiKey,
-        onChange: (e) => s.setAiConfig({ apiKey: e.target.value }),
-        placeholder: "sk-..."
-      })
-    ),
-    React3.createElement(
-      "div",
-      { className: "ebv2-config-field" },
-      React3.createElement("label", { className: "ebv2-config-label" }, "\u6A21\u578B"),
-      React3.createElement("input", {
-        className: "ebv2-config-input",
-        value: s.aiConfig.model,
-        onChange: (e) => s.setAiConfig({ model: e.target.value }),
-        placeholder: "gpt-4o-mini"
-      })
-    ),
-    React3.createElement(
-      "div",
-      { className: "ebv2-config-hint" },
-      "\u652F\u6301\u4EFB\u4F55 OpenAI \u517C\u5BB9 API\uFF08DeepSeek / Groq / Ollama / \u4E2D\u8F6C\u7AD9\u7B49\uFF09\u3002AI \u9700\u5728\u56DE\u590D\u672B\u5C3E\u8F93\u51FA [emotion:ID] \u6807\u8BB0\u3002"
-    ),
-    React3.createElement(
-      "div",
-      { className: "ebv2-config-presets" },
-      React3.createElement("div", { className: "ebv2-config-preset-title" }, "\u5FEB\u901F\u9009\u62E9"),
-      React3.createElement(
-        "div",
-        { className: "ebv2-config-preset-grid" },
-        presetBtn("OpenAI", { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" }, s),
-        presetBtn("DeepSeek", { baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" }, s),
-        presetBtn("Groq", { baseUrl: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile" }, s),
-        presetBtn("Ollama", { baseUrl: "http://localhost:11434/v1", model: "llama3.2" }, s)
-      )
     )
   );
 }
-function presetBtn(label, cfg, s) {
-  const active = s.aiConfig.baseUrl === cfg.baseUrl && s.aiConfig.model === cfg.model;
-  return React3.createElement("button", {
-    key: label,
-    className: "ebv2-preset-btn " + (active ? "active" : ""),
-    onClick: () => s.setAiConfig(cfg)
-  }, label);
+function ConfigTab() {
+  const s = useChatStore();
+  const app = s.appearance;
+  const setApp = s.setAppearance;
+  const bodyColorFixed = app.bodyColor !== null;
+  const bodyColorInput = bodyColorFixed ? app.bodyColor || "" : "";
+  return React3.createElement(
+    "div",
+    { className: "ebv2-config" },
+    // === AI 配置 ===
+    React3.createElement(
+      "div",
+      { className: "ebv2-config-section" },
+      React3.createElement("div", { className: "ebv2-config-section-title" }, "AI \u63A5\u53E3"),
+      React3.createElement(
+        "div",
+        { className: "ebv2-config-field" },
+        React3.createElement("label", { className: "ebv2-config-label" }, "API \u7AEF\u70B9"),
+        React3.createElement("input", {
+          className: "ebv2-config-input",
+          value: s.aiConfig.baseUrl,
+          onChange: (e) => s.setAiConfig({ baseUrl: e.target.value }),
+          placeholder: "https://api.openai.com/v1"
+        })
+      ),
+      React3.createElement(
+        "div",
+        { className: "ebv2-config-field" },
+        React3.createElement("label", { className: "ebv2-config-label" }, "API Key"),
+        React3.createElement("input", {
+          className: "ebv2-config-input",
+          type: "password",
+          value: s.aiConfig.apiKey,
+          onChange: (e) => s.setAiConfig({ apiKey: e.target.value }),
+          placeholder: "sk-..."
+        })
+      ),
+      React3.createElement(
+        "div",
+        { className: "ebv2-config-field" },
+        React3.createElement("label", { className: "ebv2-config-label" }, "\u6A21\u578B"),
+        React3.createElement("input", {
+          className: "ebv2-config-input",
+          value: s.aiConfig.model,
+          onChange: (e) => s.setAiConfig({ model: e.target.value }),
+          placeholder: "gpt-4o-mini"
+        })
+      ),
+      React3.createElement(
+        "div",
+        { className: "ebv2-config-hint" },
+        "\u652F\u6301\u4EFB\u4F55 OpenAI \u517C\u5BB9 API\uFF08DeepSeek / Groq / Ollama / \u4E2D\u8F6C\u7AD9\u7B49\uFF09\u3002"
+      )
+    ),
+    // === 外观配置 ===
+    React3.createElement(
+      "div",
+      { className: "ebv2-config-section" },
+      React3.createElement("div", { className: "ebv2-config-section-title" }, "\u5916\u89C2"),
+      // 背景色
+      React3.createElement(
+        "div",
+        { className: "ebv2-config-field" },
+        React3.createElement("label", { className: "ebv2-config-label" }, "\u80CC\u666F\u8272"),
+        React3.createElement(
+          "div",
+          { className: "ebv2-color-row" },
+          React3.createElement("input", {
+            type: "color",
+            className: "ebv2-color-input",
+            value: app.background.replace(/^(linear-gradient\([^)]*\)|rgba?\([^)]*\)).*$/, "#121826"),
+            onChange: (e) => setApp({ background: e.target.value })
+          }),
+          React3.createElement("input", {
+            className: "ebv2-config-input",
+            value: app.background,
+            onChange: (e) => setApp({ background: e.target.value }),
+            placeholder: "#hex / transparent / linear-gradient(...)"
+          })
+        ),
+        // 背景色预设网格
+        React3.createElement(
+          "div",
+          { className: "ebv2-bg-swatches" },
+          ...BG_PRESETS.map(
+            (p) => React3.createElement("div", {
+              key: p.id,
+              className: "ebv2-bg-swatch" + (app.background === p.value ? " active" : ""),
+              style: { background: p.value },
+              title: p.label,
+              onClick: () => setApp({ background: p.value })
+            })
+          )
+        )
+      ),
+      // 球体色
+      React3.createElement(
+        "div",
+        { className: "ebv2-config-field" },
+        React3.createElement("label", { className: "ebv2-config-label" }, "\u7403\u4F53\u8272"),
+        React3.createElement(
+          "div",
+          { className: "ebv2-color-row" },
+          React3.createElement(
+            "div",
+            { className: "ebv2-toggle-row" },
+            React3.createElement("span", {
+              className: "ebv2-toggle-btn" + (!bodyColorFixed ? " active" : ""),
+              onClick: () => setApp({ bodyColor: null })
+            }, "\u8DDF\u968F\u60C5\u7EEA"),
+            React3.createElement("span", {
+              className: "ebv2-toggle-btn" + (bodyColorFixed ? " active" : ""),
+              onClick: () => setApp({ bodyColor: bodyColorInput || "#F3F0EA" })
+            }, "\u56FA\u5B9A")
+          ),
+          React3.createElement("input", {
+            type: "color",
+            className: "ebv2-color-input",
+            value: bodyColorFixed ? app.bodyColor || "#F3F0EA" : "#F3F0EA",
+            disabled: !bodyColorFixed,
+            onChange: (e) => setApp({ bodyColor: e.target.value })
+          })
+        )
+      ),
+      // 眼白
+      ColorField({
+        label: "\u773C\u767D",
+        value: app.eyeWhite,
+        color: app.eyeWhite,
+        onChange: (v) => setApp({ eyeWhite: v })
+      }),
+      // 瞳孔
+      ColorField({
+        label: "\u77B3\u5B54",
+        value: app.pupil,
+        color: app.pupil,
+        onChange: (v) => setApp({ pupil: v })
+      }),
+      // 嘴巴
+      ColorField({
+        label: "\u5634\u5DF4",
+        value: app.mouth,
+        color: app.mouth,
+        onChange: (v) => setApp({ mouth: v })
+      })
+    )
+  );
 }
 export {
   EmotionBallView,

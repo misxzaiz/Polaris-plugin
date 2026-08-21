@@ -6,6 +6,7 @@
 
 import React from 'react'
 import { EMOTION_SEED, type EmotionDef } from './emotions'
+import { DEFAULT_APPEARANCE, type AppearanceConfig } from './types'
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system'
@@ -25,6 +26,7 @@ type Listener = () => void
 
 export interface ChatState {
   aiConfig: AiConfig
+  appearance: AppearanceConfig
   messages: ChatMessage[]
   aiStatus: AiStatus
   aiError: string | null
@@ -33,6 +35,7 @@ export interface ChatState {
   autoEmotion: boolean
   showHistory: boolean
   setAiConfig: (patch: Partial<AiConfig>) => void
+  setAppearance: (patch: Partial<AppearanceConfig>) => void
   addMessage: (m: ChatMessage) => void
   clearMessages: () => void
   setAiStatus: (s: AiStatus) => void
@@ -65,6 +68,7 @@ class SimpleStore {
   constructor() {
     this.state = {
       aiConfig: { ...DEFAULT_CONFIG },
+      appearance: { ...DEFAULT_APPEARANCE },
       messages: [{ role: 'system', content: SYS_PROMPT }],
       aiStatus: 'idle',
       aiError: null,
@@ -74,6 +78,10 @@ class SimpleStore {
       showHistory: false,
       setAiConfig: (patch) => {
         this.state.aiConfig = { ...this.state.aiConfig, ...patch }
+        this.emit()
+      },
+      setAppearance: (patch) => {
+        this.state.appearance = { ...this.state.appearance, ...patch }
         this.emit()
       },
       addMessage: (m) => {

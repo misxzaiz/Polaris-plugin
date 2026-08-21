@@ -8,6 +8,7 @@
 
 import React from 'react'
 import { EmotionEngine, type EngineOpts } from './engine'
+import type { AppearanceConfig } from './types'
 
 export interface EmotionBallProps {
   emotion?: string
@@ -19,6 +20,7 @@ export interface EmotionBallProps {
   lite?: boolean
   size?: number
   gaze?: boolean
+  appearance?: AppearanceConfig
   onReady?: (ball: EmotionEngine) => void
   onEmotionChange?: (id: string) => void
 }
@@ -26,7 +28,7 @@ export interface EmotionBallProps {
 export const EmotionBallView = React.memo(function EmotionBallView(props: EmotionBallProps) {
   const {
     emotion = '02', shape = 'blob', color, eyeColor, eyeScale = 1, lite = false,
-    size = 200, gaze = true, onReady, onEmotionChange,
+    size = 200, gaze = true, appearance, onReady, onEmotionChange,
   } = props
 
   const containerRef = React.useRef<HTMLDivElement>(null)
@@ -61,10 +63,11 @@ export const EmotionBallView = React.memo(function EmotionBallView(props: Emotio
     const opts: EngineOpts = {
       emotion,
       shape,
-      color: themeColor,
+      color: appearance?.bodyColor || themeColor,
       eyeColor,
       eyeScale,
       lite,
+      appearance,
       autostart: !lite, // 画廊静态帧省电，主球动画
     }
     const eng = new EmotionEngine(containerRef.current, opts)
@@ -86,6 +89,11 @@ export const EmotionBallView = React.memo(function EmotionBallView(props: Emotio
   React.useEffect(() => {
     engineRef.current?.setEmotion(emotion)
   }, [emotion])
+
+  // 外观配置同步
+  React.useEffect(() => {
+    engineRef.current?.setAppearance(appearance)
+  }, [appearance])
 
   // 鼠标注视
   React.useEffect(() => {
@@ -110,9 +118,18 @@ export const EmotionBallView = React.memo(function EmotionBallView(props: Emotio
     }
   }, [gaze])
 
+  const appBg = appearance?.background
+
   return React.createElement('div', {
     ref: containerRef,
-    style: { width: size, height: size, display: 'flex', alignItems: 'center', justifyContent: 'center' },
+    style: {
+      width: size,
+      height: size,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...(appBg ? { background: appBg } : {}),
+    },
     'aria-label': 'AI emotion ball',
   })
 })

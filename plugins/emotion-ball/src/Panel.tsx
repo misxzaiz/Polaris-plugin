@@ -16,6 +16,7 @@ import {
   useChatStore, sendChatMessage, parseEmotionFromText, stripEmotionTag, groupedEmotions,
 } from './aiChatStore'
 import { EMOTION_SEED } from './emotions'
+import { BG_PRESETS } from './types'
 import { ensurePanelStyles } from './styles'
 
 ensurePanelStyles()
@@ -58,6 +59,7 @@ export default function EmotionBallPanel() {
         shape,
         size: 180,
         gaze: true,
+        appearance: s.appearance,
         onEmotionChange: (id: string) => setMainEmotion(id),
       }),
       React.createElement('div', { className: 'ebv2-stage-info' },
@@ -288,50 +290,162 @@ function ChatTab({ onEmotion }: { onEmotion: (id: string) => void }) {
   )
 }
 
+// ============ 辅助：颜色选择器字段 ============
+
+function ColorField({ label, value, onChange, color }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  color: string
+}) {
+  return React.createElement('div', { className: 'ebv2-color-field' },
+    React.createElement('label', { className: 'ebv2-config-label' }, label),
+    React.createElement('div', { className: 'ebv2-color-row' },
+      React.createElement('input', {
+        type: 'color',
+        className: 'ebv2-color-input',
+        value: color,
+        onChange: (e: any) => onChange(e.target.value),
+      }),
+      React.createElement('input', {
+        className: 'ebv2-config-input',
+        value: value,
+        onChange: (e: any) => onChange(e.target.value),
+        placeholder: '#hex',
+      }),
+    ),
+  )
+}
+
 // ============ 配置 Tab ============
 
 function ConfigTab() {
   const s = useChatStore()
+  const app = s.appearance
+  const setApp = s.setAppearance
+
+  const bodyColorFixed = app.bodyColor !== null
+  const bodyColorInput = bodyColorFixed ? (app.bodyColor || '') : ''
+
   return React.createElement('div', { className: 'ebv2-config' },
-    React.createElement('div', { className: 'ebv2-config-field' },
-      React.createElement('label', { className: 'ebv2-config-label' }, 'API 端点'),
-      React.createElement('input', {
-        className: 'ebv2-config-input',
-        value: s.aiConfig.baseUrl,
-        onChange: (e: any) => s.setAiConfig({ baseUrl: e.target.value }),
-        placeholder: 'https://api.openai.com/v1',
-      }),
-    ),
-    React.createElement('div', { className: 'ebv2-config-field' },
-      React.createElement('label', { className: 'ebv2-config-label' }, 'API Key'),
-      React.createElement('input', {
-        className: 'ebv2-config-input',
-        type: 'password',
-        value: s.aiConfig.apiKey,
-        onChange: (e: any) => s.setAiConfig({ apiKey: e.target.value }),
-        placeholder: 'sk-...',
-      }),
-    ),
-    React.createElement('div', { className: 'ebv2-config-field' },
-      React.createElement('label', { className: 'ebv2-config-label' }, '模型'),
-      React.createElement('input', {
-        className: 'ebv2-config-input',
-        value: s.aiConfig.model,
-        onChange: (e: any) => s.setAiConfig({ model: e.target.value }),
-        placeholder: 'gpt-4o-mini',
-      }),
-    ),
-    React.createElement('div', { className: 'ebv2-config-hint' },
-      '支持任何 OpenAI 兼容 API（DeepSeek / Groq / Ollama / 中转站等）。AI 需在回复末尾输出 [emotion:ID] 标记。'
-    ),
-    React.createElement('div', { className: 'ebv2-config-presets' },
-      React.createElement('div', { className: 'ebv2-config-preset-title' }, '快速选择'),
-      React.createElement('div', { className: 'ebv2-config-preset-grid' },
-        presetBtn('OpenAI', { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' }, s),
-        presetBtn('DeepSeek', { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' }, s),
-        presetBtn('Groq', { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' }, s),
-        presetBtn('Ollama', { baseUrl: 'http://localhost:11434/v1', model: 'llama3.2' }, s),
+    // === AI 配置 ===
+    React.createElement('div', { className: 'ebv2-config-section' },
+      React.createElement('div', { className: 'ebv2-config-section-title' }, 'AI 接口'),
+      React.createElement('div', { className: 'ebv2-config-field' },
+        React.createElement('label', { className: 'ebv2-config-label' }, 'API 端点'),
+        React.createElement('input', {
+          className: 'ebv2-config-input',
+          value: s.aiConfig.baseUrl,
+          onChange: (e: any) => s.setAiConfig({ baseUrl: e.target.value }),
+          placeholder: 'https://api.openai.com/v1',
+        }),
       ),
+      React.createElement('div', { className: 'ebv2-config-field' },
+        React.createElement('label', { className: 'ebv2-config-label' }, 'API Key'),
+        React.createElement('input', {
+          className: 'ebv2-config-input',
+          type: 'password',
+          value: s.aiConfig.apiKey,
+          onChange: (e: any) => s.setAiConfig({ apiKey: e.target.value }),
+          placeholder: 'sk-...',
+        }),
+      ),
+      React.createElement('div', { className: 'ebv2-config-field' },
+        React.createElement('label', { className: 'ebv2-config-label' }, '模型'),
+        React.createElement('input', {
+          className: 'ebv2-config-input',
+          value: s.aiConfig.model,
+          onChange: (e: any) => s.setAiConfig({ model: e.target.value }),
+          placeholder: 'gpt-4o-mini',
+        }),
+      ),
+      React.createElement('div', { className: 'ebv2-config-hint' },
+        '支持任何 OpenAI 兼容 API（DeepSeek / Groq / Ollama / 中转站等）。'
+      ),
+    ),
+
+    // === 外观配置 ===
+    React.createElement('div', { className: 'ebv2-config-section' },
+      React.createElement('div', { className: 'ebv2-config-section-title' }, '外观'),
+
+      // 背景色
+      React.createElement('div', { className: 'ebv2-config-field' },
+        React.createElement('label', { className: 'ebv2-config-label' }, '背景色'),
+        React.createElement('div', { className: 'ebv2-color-row' },
+          React.createElement('input', {
+            type: 'color',
+            className: 'ebv2-color-input',
+            value: app.background.replace(/^(linear-gradient\([^)]*\)|rgba?\([^)]*\)).*$/, '#121826'),
+            onChange: (e: any) => setApp({ background: e.target.value }),
+          }),
+          React.createElement('input', {
+            className: 'ebv2-config-input',
+            value: app.background,
+            onChange: (e: any) => setApp({ background: e.target.value }),
+            placeholder: '#hex / transparent / linear-gradient(...)',
+          }),
+        ),
+        // 背景色预设网格
+        React.createElement('div', { className: 'ebv2-bg-swatches' },
+          ...BG_PRESETS.map((p) =>
+            React.createElement('div', {
+              key: p.id,
+              className: 'ebv2-bg-swatch' + (app.background === p.value ? ' active' : ''),
+              style: { background: p.value },
+              title: p.label,
+              onClick: () => setApp({ background: p.value }),
+            })
+          ),
+        ),
+      ),
+
+      // 球体色
+      React.createElement('div', { className: 'ebv2-config-field' },
+        React.createElement('label', { className: 'ebv2-config-label' }, '球体色'),
+        React.createElement('div', { className: 'ebv2-color-row' },
+          React.createElement('div', { className: 'ebv2-toggle-row' },
+            React.createElement('span', {
+              className: 'ebv2-toggle-btn' + (!bodyColorFixed ? ' active' : ''),
+              onClick: () => setApp({ bodyColor: null }),
+            }, '跟随情绪'),
+            React.createElement('span', {
+              className: 'ebv2-toggle-btn' + (bodyColorFixed ? ' active' : ''),
+              onClick: () => setApp({ bodyColor: bodyColorInput || '#F3F0EA' }),
+            }, '固定'),
+          ),
+          React.createElement('input', {
+            type: 'color',
+            className: 'ebv2-color-input',
+            value: bodyColorFixed ? (app.bodyColor || '#F3F0EA') : '#F3F0EA',
+            disabled: !bodyColorFixed,
+            onChange: (e: any) => setApp({ bodyColor: e.target.value }),
+          }),
+        ),
+      ),
+
+      // 眼白
+      ColorField({
+        label: '眼白',
+        value: app.eyeWhite,
+        color: app.eyeWhite,
+        onChange: (v) => setApp({ eyeWhite: v }),
+      }),
+
+      // 瞳孔
+      ColorField({
+        label: '瞳孔',
+        value: app.pupil,
+        color: app.pupil,
+        onChange: (v) => setApp({ pupil: v }),
+      }),
+
+      // 嘴巴
+      ColorField({
+        label: '嘴巴',
+        value: app.mouth,
+        color: app.mouth,
+        onChange: (v) => setApp({ mouth: v }),
+      }),
     ),
   )
 }

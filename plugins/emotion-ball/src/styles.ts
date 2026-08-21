@@ -232,4 +232,44 @@ const STYLES = `
 }
 .ebv2-preset-btn:hover { border-color: rgba(59,130,246,0.3); color: var(--text-primary, #e4e4e7); }
 .ebv2-preset-btn.active { border-color: #60a5fa; background: rgba(59,130,246,0.08); color: #60a5fa; }
+
+/* === 外观配置 === */
+.ebv2-config-section { margin-bottom: 14px; }
+.ebv2-config-section-title {
+  font-size: 12px; font-weight: 600; color: var(--text-primary, #e4e4e7);
+  padding-bottom: 8px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.06));
+}
+.ebv2-color-field { display: flex; flex-direction: column; gap: 4px; }
+.ebv2-color-row { display: flex; gap: 6px; align-items: center; }
+.ebv2-color-input {
+  width: 32px; height: 28px; border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 4px; padding: 1px; background: var(--background-elevated, rgba(255,255,255,0.03));
+  cursor: pointer; cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><circle cx='6' cy='6' r='5' fill='%23fff' stroke='%23000' stroke-width='1'/></svg>") 6 6, pointer;
+}
+.ebv2-color-input[disabled] { opacity: 0.35; cursor: not-allowed; }
+
+/* 背景色预设网格 */
+.ebv2-bg-swatches {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin-top: 4px;
+}
+.ebv2-bg-swatch {
+  height: 20px; border-radius: 4px; cursor: pointer;
+  border: 2px solid transparent; transition: border-color 0.12s;
+}
+.ebv2-bg-swatch:hover { border-color: rgba(120,160,255,0.4); }
+.ebv2-bg-swatch.active { border-color: #7aa2ff; }
+
+/* 跟随/固定 toggle */
+.ebv2-toggle-row { display: flex; gap: 0; }
+.ebv2-toggle-btn {
+  font-size: 10px; padding: 4px 8px; border-radius: 4px; cursor: pointer;
+  background: var(--background-elevated, rgba(255,255,255,0.03));
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  color: var(--text-muted, #a1a1aa); transition: all 0.12s;
+}
+.ebv2-toggle-btn + .ebv2-toggle-btn { border-left: none; border-radius: 0 4px 4px 0; }
+.ebv2-toggle-btn:first-child { border-radius: 4px 0 0 4px; }
+.ebv2-toggle-btn.active { background: rgba(59,130,246,0.12); border-color: #60a5fa; color: #7aa2ff; font-weight: 500; }
+.ebv2-toggle-btn:hover { color: var(--text-primary, #e4e4e7); }
 `

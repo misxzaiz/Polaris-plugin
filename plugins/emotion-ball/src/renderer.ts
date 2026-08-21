@@ -13,6 +13,7 @@
 import { HEAD_C, TAU, clamp, lerp, ringPath, genBlobBody, lerpColor, shade, hexToRgb } from './geometry'
 import { DEFAULT_BODY, DEFAULT_EYE, DEFAULT_MOUTH } from './emotions'
 import type { BodyPose, EyePose, MouthPose, MouthType } from './emotions'
+import type { AppearanceConfig } from './types'
 
 const SVGNS = 'http://www.w3.org/2000/svg'
 
@@ -461,10 +462,18 @@ export class BallRenderer {
     highlight2.setAttribute('opacity', String(eyeOp * 0.6))
   }
 
-  applyPose(pose: Pose, yaw = 0): number {
+  applyPose(pose: Pose, yaw = 0, appearance?: AppearanceConfig): number {
     const b = pose.body
     const now = performance.now()
-    const [r, g, bl] = hexToRgb(b.color)
+
+    // 外观覆盖：bodyColor 优先于情绪色，eyeWhite/pupil/mouth/cheek 直接覆盖
+    const bodyColor = appearance?.bodyColor || b.color
+    const eyeWhiteColor = appearance?.eyeWhite || '#FFFFFF'
+    const pupilColor = appearance?.pupil || '#1A1A1A'
+    const mouthColor = appearance?.mouth || '#3A2A22'
+    const cheekColor = appearance?.cheek || 'rgba(244,114,108,0.5)'
+
+    const [r, g, bl] = hexToRgb(bodyColor)
 
     // 身体变换
     this.bodyG.setAttribute(
@@ -474,27 +483,40 @@ export class BallRenderer {
         ' scale(' + r2(b.scale) + ')' +
         ' translate(' + r2(-HEAD_C) + ' ' + r2(-HEAD_C) + ')',
     )
-    this.setBodyColor(b.color)
+    this.setBodyColor(bodyColor)
 
     // 眼睛
     this.setEye(this.eyeWhiteL, this.pupilL, this.highlightL, this.highlightL2, this.lidL, true, pose.left)
     this.setEye(this.eyeWhiteR, this.pupilR, this.highlightR, this.highlightR2, this.lidR, false, pose.right)
+
+    // 眼白颜色覆盖
+    if (appearance?.eyeWhite) {
+      this.eyeWhiteL.setAttribute('fill', eyeWhiteColor)
+      this.eyeWhiteR.setAttribute('fill', eyeWhiteColor)
+    }
+    // 瞳孔颜色覆盖
+    if (appearance?.pupil) {
+      this.pupilL.setAttribute('fill', pupilColor)
+      this.pupilR.setAttribute('fill', pupilColor)
+    }
 
     // 嘴巴
     const mouthPath = this.buildMouthPath(pose.mouth)
     if (mouthPath) {
       this.mouthPath.setAttribute('d', mouthPath)
       this.mouthPath.setAttribute('opacity', '1')
-      // 暖色体色用深棕嘴，冷色用深灰
+      // 用户自定义嘴色优先，否则按暖冷色选
       const isWarm = r > g + 10 && r > bl + 10
-      this.mouthPath.setAttribute('stroke', isWarm ? '#3A2A22' : '#2A2A3A')
+      this.mouthPath.setAttribute('stroke', appearance?.mouth || (isWarm ? '#3A2A22' : '#2A2A3A'))
     } else {
       this.mouthPath.setAttribute('opacity', '0')
     }
 
-    // 腮红：偏红/粉/橙时显示
+    // 腮红
     const isWarm = r > g + 15 && r > bl + 15
     const cheekOp = isWarm ? 0.55 : 0
+    this.cheekL.setAttribute('fill', cheekColor)
+    this.cheekR.setAttribute('fill', cheekColor)
     this.cheekL.setAttribute('opacity', String(cheekOp))
     this.cheekR.setAttribute('opacity', String(cheekOp))
 

@@ -11,6 +11,7 @@
 import { BallRenderer, defaultPose, clonePose, type Pose } from './renderer'
 import { EMOTION_SEED } from './emotions'
 import type { EmotionDef, Anim, EyePose, BodyPose, MouthPose } from './emotions'
+import type { AppearanceConfig } from './types'
 import { lerp, lerpColor, clamp, TAU } from './geometry'
 
 /** 6 种动画原语求值 */
@@ -60,6 +61,7 @@ export interface EngineOpts {
   fallbackId?: string
   autostart?: boolean
   label?: string
+  appearance?: AppearanceConfig
 }
 
 export class EmotionEngine {
@@ -83,6 +85,7 @@ export class EmotionEngine {
   private idleEnabled: boolean | { after?: number; to?: string }
   private gazeX = 0
   private gazeY = 0
+  private appearance?: AppearanceConfig
   private yaw = 0
   private yawVel = 0
   private running = false
@@ -106,6 +109,7 @@ export class EmotionEngine {
     this.fallbackId = opts.fallbackId || '02'
     this.curId = opts.emotion || '02'
     this.idleEnabled = opts.idle ?? false
+    this.appearance = opts.appearance
     this.curPose = defaultPose()
     this.targetPose = this.computePose(this.curId)
     this.curPose = clonePose(this.targetPose)
@@ -127,7 +131,7 @@ export class EmotionEngine {
       this.start()
     } else {
       // 静态帧模式：渲染一次初始姿态
-      this.renderer.applyPose(this.curPose, 0)
+      this.renderer.applyPose(this.curPose, 0, this.appearance)
     }
   }
 
@@ -208,6 +212,10 @@ export class EmotionEngine {
   setGaze(nx: number, ny: number) {
     this.gazeX = clamp(nx, -1, 1)
     this.gazeY = clamp(ny, -1, 1)
+  }
+
+  setAppearance(a?: AppearanceConfig) {
+    this.appearance = a
   }
 
   setActive(v: boolean) { this.active = v }
@@ -384,7 +392,7 @@ export class EmotionEngine {
     if (Math.abs(this.yawVel) > 2) this.renderer.spawnTrailSpin(this.yawVel)
 
     // 应用 pose
-    this.renderer.applyPose(this.curPose, this.yaw)
+    this.renderer.applyPose(this.curPose, this.yaw, this.appearance)
   }
 
   private easeInOut(t: number): number {
