@@ -1,0 +1,14 @@
+{
+  "name": "polaris-http",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Polaris HTTP Client — 轻量级 API 请求客户端：多 Tab、智能响应、集合管理、cURL/Postman/OpenAPI 导入、代码生成、AI 协同、定制接口模板",
+  "scripts": {
+    "build": "node build.js",
+    "build:prod": "node build.js --minify"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

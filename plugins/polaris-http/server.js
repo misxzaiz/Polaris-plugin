@@ -1,0 +1,105 @@
+// server.js — Polaris HTTP 代理服务（跨域转发 + 健康检查）
+import http from 'node:http'
+import https from 'node:https'
+
+const PORT = parseInt(process.argv[2] || '9872')
+const HOP_HEADERS = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization', 'te', 'trailers', 'transfer-encoding', 'upgrade'])
+const DROP_REQ_HEADERS = new Set(['host', 'content-length', 'origin', 'x-polaris-target'])
+
+const httpsAgent = new https.Agent({ rejectUnauthorized: false })
+
+function readBody(req) {
+  return new Promise((resolve) => {
+    const chunks = []
+    req.on('data', c => chunks.push(c))
+    req.on('end', () => resolve(Buffer.concat(chunks)))
+    req.on('error', () => resolve(Buffer.alloc(0)))
+  })
+}
+
+function sendJSON(res, code, data) {
+  const payload = Buffer.from(JSON.stringify(data), 'utf-8')
+  res.writeHead(code, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Content-Length': String(payload.length),
+    'Access-Control-Allow-Origin': '*',
+  })
+  res.end(payload)
+}
+
+async function proxyOnce(urlStr, method, headers, body) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(urlStr)
+    const lib = u.protocol === 'https:' ? https : http
+    const h = { ...headers }
+    const hasBody = body && body.length && method !== 'GET' && method !== 'HEAD'
+    if (hasBody) h['content-length'] = String(body.length)
+    const opts = { method, headers: h }
+    if (u.protocol === 'https:') opts.agent = httpsAgent
+    const r = lib.request(u, opts, (resp) => {
+      const chunks = []
+      resp.on('data', c => chunks.push(c))
+      resp.on('end', () => resolve({ statusCode: resp.statusCode, headers: resp.headers, body: Buffer.concat(chunks) }))
+    })
+    r.on('error', reject)
+    if (hasBody) r.write(body)
+    r.end()
+  })
+}
+
+async function handleProxy(req, res) {
+  const target = req.headers['x-polaris-target']
+  if (!target) return sendJSON(res, 400, { error: 'missing X-Polaris-Target header' })
+  const body = await readBody(req)
+  const outHeaders = {}
+  for (const [k, v] of Object.entries(req.headers)) {
+    const lk = k.toLowerCase()
+    if (DROP_REQ_HEADERS.has(lk) || HOP_HEADERS.has(lk)) continue
+    outHeaders[k] = v
+  }
+  let method = req.method, url = target, sendBody = body, result
+  try {
+    for (let hop = 0; hop <= 5; hop++) {
+      result = await proxyOnce(url, method, outHeaders, sendBody)
+      const sc = result.statusCode, loc = result.headers.location
+      if ([301, 302, 303, 307, 308].includes(sc) && loc && hop < 5) {
+        url = new URL(loc, url).toString()
+        if (sc === 303 || ((sc === 301 || sc === 302) && method !== 'GET' && method !== 'HEAD')) { method = 'GET'; sendBody = null; delete outHeaders['content-type']; delete outHeaders['Content-Type'] }
+        continue
+      }
+      break
+    }
+  } catch (e) { return sendJSON(res, 502, { error: 'proxy failed: ' + (e.message || e), target }) }
+  const respHeaders = {}
+  for (const [k, v] of Object.entries(result.headers)) {
+    const lk = k.toLowerCase()
+    if (HOP_HEADERS.has(lk) || lk === 'content-length') continue
+    if (lk.startsWith('access-control-')) continue
+    respHeaders[k] = v
+  }
+  respHeaders['Content-Length'] = String(result.body.length)
+  respHeaders['Access-Control-Allow-Origin'] = '*'
+  respHeaders['X-Polaris-Proxy'] = '1'
+  res.writeHead(result.statusCode, respHeaders)
+  if (req.method === 'HEAD') return res.end()
+  res.end(result.body)
+}
+
+const server = http.createServer((req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS', 'Access-Control-Allow-Headers': '*', 'Access-Control-Max-Age': '86400' })
+    return res.end()
+  }
+  const url = new URL(req.url, 'http://x')
+  if (url.pathname === '/__health') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, service: 'polaris-http-proxy', port: PORT })) }
+  if (url.pathname === '/__proxy') return handleProxy(req, res)
+  res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, message: 'Polaris HTTP Proxy Server' }))
+})
+
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') console.error(`Port ${PORT} already in use.`)
+  else console.error('Server error:', err.message)
+  process.exit(1)
+})
+
+server.listen(PORT, () => console.log(`Polaris HTTP Proxy Server running on port ${PORT}`))

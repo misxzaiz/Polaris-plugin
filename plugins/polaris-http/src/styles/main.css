@@ -1,0 +1,507 @@
+/* polaris-http — 深色 HTTP 调试器样式（RELAY 主题风格） */
+
+.polaris-http-panel {
+  --brand: #4493f8;
+  --brand-soft: rgba(68, 147, 248, .14);
+  --brand-line: rgba(68, 147, 248, .4);
+  --bg: #16181e;
+  --bg2: #1b1f27;
+  --bg3: #22262f;
+  --bg4: #2a2f3a;
+  --ink: #d8dae2;
+  --ink-2: #9aa0ab;
+  --ink-3: #6b7280;
+  --line: #2c313d;
+  --line-2: #353b49;
+  --ok: #3fb950;
+  --warn: #d29922;
+  --err: #f85149;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --mono: "SF Mono", "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+  --radius: 8px;
+  --radius-sm: 6px;
+  font-size: 12.5px;
+}
+
+.polaris-http-panel * { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ===== 骨架 ===== */
+.polaris-http-panel .topbar {
+  display: flex; align-items: center; gap: 8px;
+  height: 42px; padding: 0 10px;
+  background: var(--bg2); border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.polaris-http-panel .brand {
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 700; color: var(--ink); letter-spacing: .2px; white-space: nowrap;
+}
+.polaris-http-panel .brand .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 8px var(--brand); }
+.polaris-http-panel .brand small { font-weight: 400; color: var(--ink-3); font-size: 10px; letter-spacing: 1px; }
+
+.polaris-http-panel .tabbar { display: flex; align-items: center; gap: 4px; flex: 1; overflow-x: auto; min-width: 0; scrollbar-width: thin; }
+.polaris-http-panel .rtab {
+  display: flex; align-items: center; gap: 6px;
+  height: 26px; padding: 0 8px; border-radius: 5px;
+  background: var(--bg3); border: 1px solid transparent; cursor: pointer;
+  white-space: nowrap; color: var(--ink-2); font-size: 12px;
+}
+.polaris-http-panel .rtab:hover { background: var(--bg4); color: var(--ink); }
+.polaris-http-panel .rtab.active { background: var(--brand-soft); border-color: var(--brand-line); color: var(--ink); }
+.polaris-http-panel .rtab .tm { font-weight: 700; font-size: 10.5px; }
+.polaris-http-panel .rtab .dirty { color: var(--warn); font-size: 8px; }
+.polaris-http-panel .rtab .tx { border: none; background: none; color: var(--ink-3); cursor: pointer; font-size: 12px; padding: 0 2px; border-radius: 3px; }
+.polaris-http-panel .rtab .tx:hover { color: var(--err); background: var(--bg4); }
+.polaris-http-panel .tab-add { height: 24px; min-width: 28px; border: 1px dashed var(--line-2); border-radius: 5px; background: none; color: var(--ink-3); cursor: pointer; font-size: 14px; }
+.polaris-http-panel .tab-add:hover { color: var(--brand); border-color: var(--brand-line); }
+
+.polaris-http-panel .spacer { flex: 1; }
+.polaris-http-panel .sp { flex: 1; }
+
+/* 顶部按钮 */
+.polaris-http-panel .env-wrap { position: relative; }
+.polaris-http-panel .env-sel {
+  display: flex; align-items: center; gap: 5px;
+  height: 26px; padding: 0 8px; border-radius: 5px;
+  background: var(--bg3); border: 1px solid var(--line); color: var(--ink-2); cursor: pointer; font-size: 12px;
+}
+.polaris-http-panel .env-sel:hover { border-color: var(--brand-line); color: var(--ink); }
+.polaris-http-panel .env-sel .ehex { color: var(--brand); }
+.polaris-http-panel .env-sel .car { font-size: 9px; color: var(--ink-3); }
+.polaris-http-panel .env-menu {
+  display: none; position: absolute; top: 29px; right: 0; z-index: 100;
+  min-width: 220px; background: var(--bg3); border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4); overflow: hidden; padding: 4px;
+}
+.polaris-http-panel .env-menu.open { display: block; }
+.polaris-http-panel .env-item {
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  width: 100%; padding: 7px 8px; border: none; background: none; color: var(--ink); cursor: pointer;
+  text-align: left; border-radius: 4px; font-size: 12px;
+}
+.polaris-http-panel .env-item:hover { background: var(--brand-soft); }
+.polaris-http-panel .env-item.on { background: var(--brand-soft); }
+.polaris-http-panel .env-item.on span { color: var(--brand); }
+.polaris-http-panel .env-item small { color: var(--ink-3); font-size: 11px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.polaris-http-panel .env-item.manage { border-top: 1px solid var(--line); margin-top: 4px; color: var(--brand); }
+
+.polaris-http-panel .top-act {
+  display: flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 10px; border-radius: 5px;
+  background: var(--bg3); border: 1px solid var(--line); color: var(--ink-2);
+  cursor: pointer; font-size: 12px; white-space: nowrap;
+}
+.polaris-http-panel .top-act:hover { border-color: var(--line-2); color: var(--ink); background: var(--bg4); }
+
+.polaris-http-panel .method-menu {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+  background: var(--bg3); border: 1px solid var(--line-2); border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4); overflow: hidden; min-width: 96px; padding: 3px;
+}
+.polaris-http-panel .method-menu.open { display: block; }
+.polaris-http-panel .method-menu button { display: block; width: 100%; padding: 6px 10px; border: none; background: none; text-align: left; cursor: pointer; border-radius: 4px; font-weight: 700; }
+.polaris-http-panel .method-menu button:hover { background: var(--bg4); }
+
+/* ===== 主区域 ===== */
+.polaris-http-panel .main {
+  display: flex; flex: 1; min-height: 0; min-width: 0;
+}
+.polaris-http-panel .side {
+  width: 210px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg2); border-right: 1px solid var(--line);
+  overflow: hidden;
+}
+.polaris-http-panel .side.side-collapsed { display: none; }
+.polaris-http-panel .side-head {
+  display: flex; align-items: center; gap: 4px;
+  height: 34px; padding: 0 10px; border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.polaris-http-panel .side-head .t { flex: 1; font-size: 10.5px; letter-spacing: 1px; color: var(--ink-3); font-weight: 600; }
+.polaris-http-panel .mini-btn {
+  height: 20px; padding: 0 7px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-2); border-radius: 4px; cursor: pointer; font-size: 11px;
+}
+.polaris-http-panel .mini-btn:hover { color: var(--ink); border-color: var(--line-2); }
+.polaris-http-panel .side-search { padding: 8px 10px; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.polaris-http-panel .side-search input {
+  width: 100%; height: 26px; padding: 0 8px;
+  background: var(--bg3); border: 1px solid var(--line); border-radius: 5px;
+  color: var(--ink); font-size: 12px;
+}
+.polaris-http-panel .side-search input:focus { outline: none; border-color: var(--brand-line); }
+.polaris-http-panel .tree { flex: 1; overflow-y: auto; padding: 4px 0; }
+.polaris-http-panel .tree-empty { padding: 12px; color: var(--ink-3); font-size: 12px; }
+
+.polaris-http-panel .group { margin-bottom: 1px; }
+.polaris-http-panel .group-head {
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 10px; cursor: pointer; color: var(--ink-2);
+  font-size: 12px; user-select: none;
+}
+.polaris-http-panel .group-head:hover { background: var(--bg3); color: var(--ink); }
+.polaris-http-panel .group-head .caret { font-size: 9px; color: var(--ink-3); transition: transform .15s; }
+.polaris-http-panel .group.collapsed .caret { transform: rotate(-90deg); }
+.polaris-http-panel .group-head .gname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.polaris-http-panel .group-head .gcount { font-size: 10.5px; color: var(--ink-3); }
+.polaris-http-panel .group.collapsed .reqs { display: none; }
+.polaris-http-panel .req-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px 5px 22px; cursor: pointer; border-radius: 0;
+  color: var(--ink-2); font-size: 12px;
+}
+.polaris-http-panel .req-item:hover { background: var(--bg3); color: var(--ink); }
+.polaris-http-panel .req-item.active { background: var(--brand-soft); color: var(--ink); }
+.polaris-http-panel .req-item .mb { font-size: 9.5px; font-weight: 700; letter-spacing: .3px; min-width: 38px; }
+.polaris-http-panel .req-item .rn { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.polaris-http-panel .work { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+/* ===== 请求栏 ===== */
+.polaris-http-panel .reqbar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 10px; background: var(--bg2); border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+.polaris-http-panel .method-wrap { position: relative; }
+.polaris-http-panel .method-sel {
+  display: flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 10px; border-radius: 6px;
+  background: var(--bg3); border: 1px solid var(--line); color: var(--ink);
+  cursor: pointer; font-weight: 700; font-size: 12.5px; min-width: 74px;
+}
+.polaris-http-panel .method-sel:hover { border-color: var(--line-2); }
+.polaris-http-panel .method-sel .car { font-size: 9px; color: var(--ink-3); margin-left: 2px; }
+.polaris-http-panel .url-wrap { flex: 1; position: relative; min-width: 0; }
+.polaris-http-panel .url-input {
+  width: 100%; height: 30px; padding: 0 10px;
+  background: var(--bg3); border: 1px solid var(--line); border-radius: 6px;
+  color: var(--ink); font-size: 12.5px; font-family: var(--mono);
+}
+.polaris-http-panel .url-input:focus { outline: none; border-color: var(--brand-line); }
+.polaris-http-panel .url-resolved {
+  display: none; margin-top: 4px; font-size: 11px; color: var(--ink-3);
+  font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.polaris-http-panel .url-resolved b { color: var(--brand); }
+
+.polaris-http-panel .btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 14px; border-radius: 6px;
+  background: var(--bg3); border: 1px solid var(--line); color: var(--ink);
+  cursor: pointer; font-size: 12.5px; white-space: nowrap;
+}
+.polaris-http-panel .btn:hover { border-color: var(--line-2); background: var(--bg4); }
+.polaris-http-panel .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 600; }
+.polaris-http-panel .btn.primary:hover { background: #3a86e8; }
+.polaris-http-panel .btn.primary:disabled { opacity: .55; cursor: default; }
+.polaris-http-panel .btn.icon { padding: 0 9px; }
+.polaris-http-panel .btn.ghost { background: none; }
+.polaris-http-panel .btn.danger { color: var(--err); border-color: var(--line-2); }
+.polaris-http-panel .btn.danger:hover { background: rgba(248,81,73,.1); }
+.polaris-http-panel .btn .k { font-size: 10px; color: var(--ink-3); font-family: var(--mono); border: 1px solid var(--line-2); border-radius: 3px; padding: 1px 4px; }
+.polaris-http-panel .btn.primary .k { color: rgba(255,255,255,.75); border-color: rgba(255,255,255,.3); }
+
+/* ===== split 容器（G 布局：flex column；H 布局：flex row）===== */
+.polaris-http-panel .split {
+  flex: 1; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column; position: relative;
+}
+.polaris-http-panel .split.h { flex-direction: row; }
+.polaris-http-panel .split .req-region {
+  flex: 0 0 auto;
+  height: var(--reqH, 220px);
+  display: flex; flex-direction: column; min-height: 0;
+  border-bottom: 1px solid var(--line); background: var(--bg);
+}
+.polaris-http-panel .split.h .req-region {
+  height: auto; width: var(--reqW, 480px);
+  border-bottom: none; border-right: 1px solid var(--line);
+}
+.polaris-http-panel .split .res-region {
+  display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  position: relative; background: var(--bg);
+}
+.polaris-http-panel .split.h .res-region { flex: 1; }
+.polaris-http-panel .divider {
+  flex: 0 0 3px; background: var(--line); cursor: row-resize; position: relative; z-index: 2;
+}
+.polaris-http-panel .split.h .divider { flex: none; width: 3px; cursor: col-resize; }
+.polaris-http-panel .divider:hover { background: var(--brand-line); }
+
+/* 子标签页 */
+.polaris-http-panel .subtabs {
+  display: flex; align-items: center; gap: 2px;
+  height: 32px; padding: 0 8px; border-bottom: 1px solid var(--line);
+  flex-shrink: 0; overflow-x: auto;
+}
+.polaris-http-panel .subtab {
+  height: 24px; padding: 0 10px; border: none; background: none;
+  color: var(--ink-3); cursor: pointer; font-size: 12px;
+  border-bottom: 2px solid transparent;
+}
+.polaris-http-panel .subtab:hover { color: var(--ink-2); }
+.polaris-http-panel .subtab.active { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+.polaris-http-panel .subtab.disabled { opacity: .35; cursor: default; }
+
+.polaris-http-panel .pane { flex: 1; overflow: auto; min-height: 0; position: relative; }
+
+/* ===== KV 行 ===== */
+.polaris-http-panel .kv { padding: 6px 8px; }
+.polaris-http-panel .kv-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.polaris-http-panel .kv-row:last-child { margin-bottom: 0; }
+.polaris-http-panel .kv-row.blank input { background: transparent; }
+.polaris-http-panel .kv-row label.ck { display: flex; align-items: center; width: 16px; flex-shrink: 0; }
+.polaris-http-panel .kv-row input[type="checkbox"] { accent-color: var(--brand); }
+.polaris-http-panel .kv-row input.k, .polaris-http-panel .kv-row input.v {
+  height: 26px; padding: 0 8px;
+  background: var(--bg3); border: 1px solid var(--line); border-radius: 5px;
+  color: var(--ink); font-size: 12px;
+}
+.polaris-http-panel .kv-row input.k { width: 38%; font-family: var(--mono); }
+.polaris-http-panel .kv-row input.v { flex: 1; font-family: var(--mono); }
+.polaris-http-panel .kv-row input:focus { outline: none; border-color: var(--brand-line); }
+.polaris-http-panel .kv-row input.k::placeholder, .polaris-http-panel .kv-row input.v::placeholder { color: var(--ink-3); }
+.polaris-http-panel .kv-row .rm {
+  width: 22px; height: 22px; border: none; background: none;
+  color: var(--ink-3); cursor: pointer; border-radius: 4px; font-size: 12px; flex-shrink: 0;
+}
+.polaris-http-panel .kv-row .rm:hover { color: var(--err); background: rgba(248,81,73,.1); }
+
+.polaris-http-panel .suggest { display: flex; flex-wrap: wrap; gap: 5px; padding: 4px 8px 8px; border-top: 1px dashed var(--line); margin-top: 6px; }
+.polaris-http-panel .suggest .lbl { color: var(--ink-3); font-size: 10.5px; padding-top: 3px; width: 100%; }
+.polaris-http-panel .chip {
+  height: 22px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--line);
+  background: var(--bg3); color: var(--ink-2); cursor: pointer; font-size: 11px;
+}
+.polaris-http-panel .chip:hover { border-color: var(--brand-line); color: var(--brand); }
+
+/* ===== Body 编辑 ===== */
+.polaris-http-panel .body-bar { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 8px; border-bottom: 1px solid var(--line); }
+.polaris-http-panel .body-bar .seg { display: flex; gap: 2px; background: var(--bg3); border-radius: 5px; padding: 2px; }
+.polaris-http-panel .body-bar .seg button { height: 24px; padding: 0 10px; border: none; background: none; color: var(--ink-3); cursor: pointer; font-size: 12px; border-radius: 4px; }
+.polaris-http-panel .body-bar .seg button.on { background: var(--brand); color: #fff; font-weight: 600; }
+.polaris-http-panel .body-bar button.tool {
+  height: 24px; padding: 0 8px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-2); border-radius: 4px; cursor: pointer; font-size: 11px;
+}
+.polaris-http-panel .body-bar button.tool:hover { border-color: var(--brand-line); color: var(--brand); }
+.polaris-http-panel .body-none { padding: 14px; color: var(--ink-3); font-size: 12px; }
+
+.polaris-http-panel textarea.code {
+  font-family: var(--mono); background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 6px;
+}
+
+/* ===== 响应 ===== */
+.polaris-http-panel .res-status {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 10px; background: var(--bg2); border-bottom: 1px solid var(--line);
+  flex-shrink: 0; font-size: 12px;
+}
+.polaris-http-panel .status-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 700; font-family: var(--mono);
+}
+.polaris-http-panel .status-chip .dotc { width: 7px; height: 7px; border-radius: 50%; }
+.polaris-http-panel .status-chip.s2 .dotc { background: var(--ok); }
+.polaris-http-panel .status-chip.s3 .dotc { background: var(--warn); }
+.polaris-http-panel .status-chip.s4 .dotc { background: var(--err); }
+.polaris-http-panel .status-chip.s5 .dotc { background: var(--err); }
+.polaris-http-panel .status-chip.s2 { color: var(--ok); }
+.polaris-http-panel .status-chip.s3 { color: var(--warn); }
+.polaris-http-panel .status-chip.s4, .polaris-http-panel .status-chip.s5 { color: var(--err); }
+.polaris-http-panel .res-meta { display: flex; gap: 14px; color: var(--ink-3); font-size: 11.5px; }
+.polaris-http-panel .res-meta b { color: var(--ink-2); font-weight: 600; }
+.polaris-http-panel .res-status .tool {
+  height: 22px; padding: 0 8px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-2); border-radius: 4px; cursor: pointer; font-size: 11px;
+}
+.polaris-http-panel .res-status .tool:hover { border-color: var(--brand-line); color: var(--brand); }
+
+.polaris-http-panel .res-tools {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px; border-bottom: 1px solid var(--line); flex-shrink: 0; flex-wrap: wrap;
+}
+.polaris-http-panel .res-tools .lbl { font-size: 10.5px; color: var(--ink-3); letter-spacing: .5px; }
+.polaris-http-panel .res-tools .path-select {
+  max-width: 220px; height: 24px; background: var(--bg3); border: 1px solid var(--line);
+  border-radius: 4px; color: var(--ink-2); font-size: 11.5px; font-family: var(--mono);
+}
+.polaris-http-panel .res-tools .path-input, .polaris-http-panel .res-tools .filter-input {
+  height: 24px; padding: 0 8px; background: var(--bg3); border: 1px solid var(--line);
+  border-radius: 4px; color: var(--ink); font-size: 11.5px; font-family: var(--mono); min-width: 160px; flex: 1; max-width: 280px;
+}
+.polaris-http-panel .res-tools input:focus, .polaris-http-panel .res-tools select:focus { outline: none; border-color: var(--brand-line); }
+.polaris-http-panel .res-tools .tool {
+  height: 22px; padding: 0 8px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-2); border-radius: 4px; cursor: pointer; font-size: 11px;
+}
+.polaris-http-panel .res-tools .tool:hover { border-color: var(--brand-line); color: var(--brand); }
+
+.polaris-http-panel .res-idle {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; height: 100%; color: var(--ink-3); text-align: center; padding: 20px;
+}
+.polaris-http-panel .res-idle .big { font-size: 18px; font-weight: 700; color: var(--ink-2); letter-spacing: 1px; }
+.polaris-http-panel .res-idle .tips { font-size: 11.5px; line-height: 1.9; text-align: left; background: var(--bg2); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 16px; }
+.polaris-http-panel .res-idle .tips b { color: var(--brand); }
+
+.polaris-http-panel .res-loading { display: flex; align-items: center; justify-content: center; gap: 10px; height: 100%; color: var(--ink-2); }
+.polaris-http-panel .spin { width: 16px; height: 16px; border: 2px solid var(--line-2); border-top-color: var(--brand); border-radius: 50%; animation: pspin .7s linear infinite; }
+@keyframes pspin { to { transform: rotate(360deg); } }
+
+.polaris-http-panel .res-err { display: flex; flex-direction: column; gap: 6px; padding: 20px; color: var(--err); font-size: 12.5px; }
+.polaris-http-panel .res-err .ti { font-weight: 700; font-size: 14px; }
+.polaris-http-panel .res-empty { padding: 16px; color: var(--ink-3); font-size: 12px; }
+
+.polaris-http-panel .raw-view {
+  padding: 10px 12px; font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  color: var(--ink); white-space: pre-wrap; word-break: break-all;
+}
+.polaris-http-panel .prev-frame { width: 100%; height: 100%; border: none; background: #fff; }
+.polaris-http-panel .prev-img-wrap { display: flex; align-items: center; justify-content: center; height: 100%; padding: 12px; }
+.polaris-http-panel .prev-img-wrap img { max-width: 100%; max-height: 100%; border-radius: 6px; }
+.polaris-http-panel .prev-none { padding: 20px; color: var(--ink-3); text-align: center; }
+
+/* ===== JSON 树 ===== */
+.polaris-http-panel .jt { font-family: var(--mono); font-size: 12px; padding: 8px 12px; }
+.polaris-http-panel .jt-row { padding: 1px 0; }
+.polaris-http-panel .jt-row:hover { background: var(--bg2); border-radius: 4px; }
+.polaris-http-panel .jt-k { color: #7dd3fc; }
+.polaris-http-panel .jt-str { color: #a5d6a7; }
+.polaris-http-panel .jt-num { color: #ffd28f; }
+.polaris-http-panel .jt-bool { color: #c792ea; }
+.polaris-http-panel .jt-null { color: var(--ink-3); font-style: italic; }
+.polaris-http-panel .jt-tog { cursor: pointer; color: var(--ink-3); user-select: none; }
+.polaris-http-panel .jt-children { padding-left: 18px; }
+.polaris-http-panel .jt-key { color: var(--ink-2); white-space: nowrap; }
+.polaris-http-panel .jt-mark { background: var(--warn); color: #000; border-radius: 2px; padding: 0 2px; }
+
+/* 表格视图 */
+.polaris-http-panel .tbl-wrap { overflow: auto; padding: 6px; }
+.polaris-http-panel table.dt { border-collapse: collapse; width: 100%; font-size: 12px; }
+.polaris-http-panel table.dt th {
+  text-align: left; padding: 6px 10px; background: var(--bg3); color: var(--ink-2);
+  font-weight: 600; border: 1px solid var(--line); position: sticky; top: 0; z-index: 2;
+  cursor: pointer; white-space: nowrap; user-select: none;
+}
+.polaris-http-panel table.dt th.sort-asc::after { content: ' ▲'; font-size: 9px; }
+.polaris-http-panel table.dt th.sort-desc::after { content: ' ▼'; font-size: 9px; }
+.polaris-http-panel table.dt td { padding: 5px 10px; border: 1px solid var(--line); color: var(--ink-2); vertical-align: top; }
+.polaris-http-panel table.dt td.jt-key { color: var(--ink-2); white-space: nowrap; }
+.polaris-http-panel table.dt tbody tr:nth-child(even) { background: var(--bg2); }
+.polaris-http-panel table.dt tbody tr:hover { background: var(--brand-soft); }
+
+/* ===== 状态栏 ===== */
+.polaris-http-panel .statusbar {
+  display: flex; align-items: center; gap: 10px;
+  height: 22px; padding: 0 10px;
+  background: var(--bg2); border-top: 1px solid var(--line);
+  flex-shrink: 0; font-size: 11px; color: var(--ink-3);
+}
+.polaris-http-panel .statusbar .msg { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.polaris-http-panel .statusbar .msg.ok { color: var(--ok); }
+.polaris-http-panel .statusbar .msg.err { color: var(--err); }
+.polaris-http-panel .statusbar .msg.warn { color: var(--warn); }
+.polaris-http-panel .statusbar .seg-r { display: flex; gap: 12px; }
+.polaris-http-panel .statusbar .seg-r span { white-space: nowrap; }
+.polaris-http-panel .statusbar .seg-r b { color: var(--ink-2); }
+
+/* ===== 模态框 ===== */
+.polaris-http-panel .modal-bg {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,.5); align-items: center; justify-content: center;
+}
+.polaris-http-panel .modal-bg.open { display: flex; }
+.polaris-http-panel .modal {
+  width: 420px; max-width: 92vw; max-height: 82vh; overflow: auto;
+  background: var(--bg2); border: 1px solid var(--line-2); border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.55); padding: 16px;
+}
+.polaris-http-panel .modal.wide { width: 560px; }
+.polaris-http-panel .modal h3 { font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+.polaris-http-panel .modal .sub { font-size: 12px; color: var(--ink-3); margin-bottom: 12px; line-height: 1.6; }
+.polaris-http-panel .modal .field { margin-bottom: 10px; }
+.polaris-http-panel .modal .field label { display: block; font-size: 11px; color: var(--ink-3); margin-bottom: 4px; letter-spacing: .3px; }
+.polaris-http-panel .modal .field input, .polaris-http-panel .modal .field select {
+  width: 100%; height: 28px; padding: 0 8px;
+  background: var(--bg3); border: 1px solid var(--line); border-radius: 5px;
+  color: var(--ink); font-size: 12px;
+}
+.polaris-http-panel .modal .field input:focus, .polaris-http-panel .modal .field select:focus { outline: none; border-color: var(--brand-line); }
+.polaris-http-panel .modal .field textarea.curl-ta {
+  width: 100%; height: 100px; min-height: 80px; padding: 8px;
+  background: var(--bg3); border: 1px solid var(--line); border-radius: 5px;
+  color: var(--ink); font-size: 12px; font-family: var(--mono); resize: vertical;
+}
+.polaris-http-panel .modal .acts { display: flex; align-items: center; gap: 8px; margin-top: 14px; }
+.polaris-http-panel .modal .acts .btn { height: 28px; padding: 0 14px; font-size: 12px; }
+.polaris-http-panel .modal .acts .btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+
+/* env tabs */
+.polaris-http-panel .env-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.polaris-http-panel .env-tab {
+  height: 24px; padding: 0 10px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-2); border-radius: 5px; cursor: pointer; font-size: 12px;
+}
+.polaris-http-panel .env-tab.on { border-color: var(--brand-line); background: var(--brand-soft); color: var(--brand); }
+.polaris-http-panel .env-tab.add { border-style: dashed; color: var(--ink-3); }
+.polaris-http-panel .env-tab.add:hover { color: var(--brand); }
+.polaris-http-panel .env-vars { max-height: 180px; overflow-y: auto; }
+
+/* ===== Toast / 右键菜单 / 提示 ===== */
+.polaris-http-panel .toast {
+  display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+  background: var(--bg3); border: 1px solid var(--line-2); color: var(--ink);
+  padding: 8px 16px; border-radius: 6px; font-size: 12px; z-index: 2000;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.polaris-http-panel .toast.show { display: block; animation: ftshow .15s ease; }
+@keyframes ftshow { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+.polaris-http-panel .ctx-menu {
+  display: none; position: fixed; z-index: 1500; min-width: 140px;
+  background: var(--bg3); border: 1px solid var(--line-2); border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5); padding: 4px; font-size: 12px;
+}
+.polaris-http-panel .ctx-menu .ctx-item {
+  display: block; width: 100%; padding: 6px 8px; border: none; background: none;
+  color: var(--ink); text-align: left; cursor: pointer; border-radius: 4px; font-size: 12px;
+}
+.polaris-http-panel .ctx-menu .ctx-item:hover { background: var(--brand-soft); color: var(--brand); }
+.polaris-http-panel .ctx-menu .ctx-sep { height: 1px; background: var(--line); margin: 4px 0; }
+
+.polaris-http-panel .cell-tip {
+  display: none; position: fixed; z-index: 1600;
+  max-width: 360px; padding: 6px 10px;
+  background: var(--bg3); border: 1px solid var(--brand-line); border-radius: 5px;
+  color: var(--ink); font-size: 12px; font-family: var(--mono);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5); white-space: pre-wrap; word-break: break-all;
+}
+
+/* 代码生成模态框 */
+.polaris-http-panel .code-modal { width: 520px; }
+.polaris-http-panel .code-langs {
+  display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap;
+  background: var(--bg3); border-radius: 6px; padding: 3px;
+}
+.polaris-http-panel .code-langs button {
+  height: 24px; padding: 0 12px; border: none; background: none;
+  color: var(--ink-3); cursor: pointer; font-size: 12px; border-radius: 4px;
+}
+.polaris-http-panel .code-langs button:hover { color: var(--ink); }
+.polaris-http-panel .code-langs button.on { background: var(--brand); color: #fff; font-weight: 600; }
+.polaris-http-panel .code-output {
+  max-height: 340px; overflow: auto; padding: 10px 12px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.6; color: var(--ink);
+  white-space: pre; word-break: break-all; tab-size: 2;
+}
+
+/* 滚动条 */
+.polaris-http-panel ::-webkit-scrollbar { width: 8px; height: 8px; }
+.polaris-http-panel ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
+.polaris-http-panel ::-webkit-scrollbar-thumb:hover { background: var(--ink-3); }
+.polaris-http-panel ::-webkit-scrollbar-track { background: transparent; }

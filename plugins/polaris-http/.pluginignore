@@ -1,0 +1,7 @@
+node_modules
+src
+*.map
+package-lock.json
+build.js
+.gitignore
+*.test.js
