@@ -1,9 +1,9 @@
 {
   "name": "polaris-api",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "Polaris API — 轻量级 AI 加持的 API 请求客户端",
+  "description": "轻量级 API 请求客户端：多 Tab、智能响应、集合管理、AI 协同",
   "scripts": {
     "build": "node build.js",
     "build:prod": "node build.js --minify"

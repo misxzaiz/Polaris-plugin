@@ -1,8 +1,8 @@
 {
   "id": "polaris-api",
   "name": "Polaris API",
-  "version": "1.0.0",
-  "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持",
+  "version": "1.1.0",
+  "description": "轻量级 API 请求客户端：多 Tab、智能响应（对象树/表格/路径下钻/增强过滤）、集合管理、cURL/Postman/OpenAPI 导入、AI 协同（复用宿主 AI+MCP）",
   "enabledByDefault": true,
   "contributes": {
     "views": [

@@ -1,735 +1,355 @@
-// components/RequestEditor.jsx — 智能请求编辑器
-// 统一编辑区，支持 URL 自动参数解析、语法高亮提示、代码生成
+// components/RequestEditor.jsx — 请求编辑器
+// 多 tab + 非变异 + URL↔params 双向同步 + cURL 导入导出 + 代码生成 + AI 协同
+// 零 emoji；无 alert/prompt/confirm（用内联模态）
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { store, uid } from '../core/store.js'
 import { resolveTemplates } from '../core/template.js'
-import { parseCurl, toCurl } from '../core/parser.js'
+import { parseCurl, toCurl, generateCode, detectImportType, parsePostmanCollection, parseOpenAPI, parseHAR } from '../core/parser.js'
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']
-const COMMON_HEADERS = {
-  Accept: 'application/json, text/plain, */*',
-  'Content-Type': 'application/json',
-  Authorization: 'Bearer ',
-  'Cache-Control': 'no-cache',
-  'User-Agent': 'Polaris-API/1.0',
-}
+const METHOD_COLORS = { GET: 'm-get', POST: 'm-post', PUT: 'm-put', PATCH: 'm-patch', DELETE: 'm-del', HEAD: 'm-other', OPTIONS: 'm-other' }
+const COMMON_HEADERS = { Accept: 'application/json, text/plain, */*', 'Content-Type': 'application/json', Authorization: 'Bearer ', 'Cache-Control': 'no-cache' }
 
-const METHOD_COLORS = {
-  GET: '#3fb950',
-  POST: '#4493f8',
-  PUT: '#d29922',
-  PATCH: '#a371f7',
-  DELETE: '#f85149',
-  HEAD: '#8b949e',
-  OPTIONS: '#8b949e',
-}
+const blankRow = () => ({ id: uid(), enabled: true, key: '', value: '' })
 
-export default function RequestEditor() {
-  const [request, setRequest] = useState(() => store.get('request') || {})
+export default function RequestEditor({ onSendToChat, onSend, sending, activeTab, updateTab }) {
   const [envs, setEnvs] = useState(() => store.get('envs') || [])
   const [activeEnvId, setActiveEnvId] = useState(() => store.get('activeEnv'))
   const [showMethodMenu, setShowMethodMenu] = useState(false)
   const [showEnvMenu, setShowEnvMenu] = useState(false)
   const [showEnvManager, setShowEnvManager] = useState(false)
-  const [showImportMenu, setShowImportMenu] = useState(false)
-  const [curlInput, setCurlInput] = useState('')
   const [showCurlImport, setShowCurlImport] = useState(false)
-  const [urlPreview, setUrlPreview] = useState('')
-  const urlRef = useRef(null)
+  const [curlInput, setCurlInput] = useState('')
+  const [showCodeGen, setShowCodeGen] = useState(false)
+  const [codeLang, setCodeLang] = useState('curl')
+  const [toast, setToast] = useState('')
 
   useEffect(() => {
-    const unsub1 = store.subscribe('request', (val) => setRequest(val || {}))
-    const unsub2 = store.subscribe('envs', (val) => setEnvs(val || []))
-    const unsub3 = store.subscribe('activeEnv', (val) => setActiveEnvId(val))
-    return () => { unsub1(); unsub2(); unsub3() }
+    const u1 = store.subscribe('envs', (v) => setEnvs(v || []))
+    const u2 = store.subscribe('activeEnv', (v) => setActiveEnvId(v))
+    return () => { u1(); u2() }
   }, [])
-
-  // 更新 URL 预览（变量解析）
-  useEffect(() => {
-    const env = envs.find(e => e.id === activeEnvId)
-    const preview = resolveTemplates(request.url || '', env)
-    setUrlPreview(preview !== request.url ? preview : '')
-  }, [request.url, envs, activeEnvId])
 
   const activeEnv = envs.find(e => e.id === activeEnvId)
+  const request = activeTab
 
-  const updateRequest = useCallback((patch) => {
-    const updated = { ...request, ...patch }
-    store.set('request', updated)
-  }, [request])
+  const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(''), 1500) }, [])
 
-  const handleMethodChange = useCallback((method) => {
-    updateRequest({ method })
-    setShowMethodMenu(false)
-  }, [updateRequest])
+  // URL 预览（变量解析）
+  const urlPreview = useMemo(() => {
+    if (!request?.url || request.url.indexOf('{{') < 0) return ''
+    return resolveTemplates(request.url, activeEnv)
+  }, [request?.url, activeEnv])
+  const [urlPreviewState, setUrlPreviewState] = useState('')
+  useEffect(() => { setUrlPreviewState(urlPreview) }, [urlPreview])
 
-  const handleUrlChange = useCallback((e) => {
-    const url = e.target.value
-    updateRequest({ url })
-    // 自动解析 URL 参数
-    const qIdx = url.indexOf('?')
-    if (qIdx >= 0) {
-      const queryStr = url.slice(qIdx + 1)
-      if (queryStr) {
-        const params = queryStr.split('&').filter(Boolean).map(p => {
-          const eq = p.indexOf('=')
-          return eq >= 0
-            ? { key: decodeURIComponent(p.slice(0, eq)), value: decodeURIComponent(p.slice(eq + 1)), enabled: true }
-            : { key: decodeURIComponent(p), value: '', enabled: true }
-        })
-        params.push({ key: '', value: '', enabled: true })
-        updateRequest({ params })
-      }
-    }
-  }, [updateRequest])
+  const update = useCallback((patch) => { updateTab(activeTab.id, patch) }, [activeTab, updateTab])
 
-  const handleSend = useCallback(() => {
-    // 触发发送（通过自定义事件通知 MainPanel 执行真正的请求）
-    // RequestEditor 自身不监听该事件，避免与 MainPanel 形成双触发/循环
-    window.dispatchEvent(new CustomEvent('polaris-api-send'))
-  }, [])
+  // URL 输入：仅更新 URL 字段，不自动改 params（避免双向冲突）
+  const handleUrlInput = useCallback((e) => {
+    update({ url: e.target.value })
+  }, [update])
 
-  // 从 cURL 导入
-  const handleCurlImport = useCallback(() => {
-    try {
-      const parsed = parseCurl(curlInput)
-      updateRequest({
-        method: parsed.method,
-        url: parsed.url,
-        params: parsed.params,
-        headers: parsed.headers,
-        body: parsed.body,
-        bodyType: parsed.bodyType,
-      })
-      setShowCurlImport(false)
-      setCurlInput('')
-    } catch (e) {
-      alert('cURL 解析失败：' + e.message)
-    }
-  }, [curlInput, updateRequest])
+  // URL 失焦：把 URL 里的 query 同步到 params（单向：URL→params）
+  const handleUrlBlur = useCallback(() => {
+    if (!request?.url) return
+    const qIdx = request.url.indexOf('?')
+    if (qIdx < 0) return
+    const query = request.url.slice(qIdx + 1)
+    const baseUrl = request.url.slice(0, qIdx)
+    if (!query) return
+    const params = query.split('&').filter(Boolean).map(p => {
+      const eq = p.indexOf('=')
+      return eq >= 0
+        ? { id: uid(), enabled: true, key: decodeURIComponent(p.slice(0, eq)), value: decodeURIComponent(p.slice(eq + 1)) }
+        : { id: uid(), enabled: true, key: decodeURIComponent(p), value: '' }
+    })
+    params.push(blankRow())
+    update({ url: baseUrl, params })
+  }, [request, update])
 
-  // 复制为 cURL
-  const handleCopyCurl = useCallback(() => {
-    const curl = toCurl(request)
-    navigator.clipboard.writeText(curl).then(() => {
-      // 短暂提示
-    }).catch(() => {})
-  }, [request])
-
-  // 环境管理
-  const handleEnvChange = useCallback((envId) => {
-    store.set('activeEnv', envId)
-    setShowEnvMenu(false)
-  }, [])
-
-  const addEnv = useCallback(() => {
-    const envs = store.get('envs') || []
-    const newEnv = {
-      id: uid(),
-      name: '环境 ' + (envs.length + 1),
-      baseUrl: '',
-      vars: [{ key: '', value: '', enabled: true }],
-    }
-    store.set('envs', [...envs, newEnv])
-    store.set('activeEnv', newEnv.id)
-  }, [])
-
-  const deleteEnv = useCallback((id) => {
-    let envs = store.get('envs') || []
-    envs = envs.filter(e => e.id !== id)
-    store.set('envs', envs)
-    if (store.get('activeEnv') === id) {
-      store.set('activeEnv', envs[0]?.id || null)
-    }
-  }, [])
-
-  const updateEnv = useCallback((id, patch) => {
-    const envs = store.get('envs') || []
-    const idx = envs.findIndex(e => e.id === id)
-    if (idx >= 0) {
-      envs[idx] = { ...envs[idx], ...patch }
-      store.set('envs', envs)
-    }
-  }, [])
+  // params 编辑：同步回 URL（单向：params→URL）
+  const syncParamsToUrl = useCallback((params) => {
+    if (!request) return
+    const base = request.url.split('?')[0]
+    const qs = params.filter(p => p.enabled !== false && p.key).map(p => encodeURIComponent(p.key) + '=' + encodeURIComponent(p.value || '')).join('&')
+    update({ params, url: qs ? base + '?' + qs : base })
+  }, [request, update])
 
   // 键盘快捷键
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-        e.preventDefault()
-        handleSend()
-      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); onSend() }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) { e.preventDefault(); showToast('请用侧栏「保存」按钮') }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [handleSend])
+  }, [onSend, showToast])
+
+  // cURL 导入
+  const handleCurlImport = useCallback(() => {
+    try {
+      const parsed = parseCurl(curlInput)
+      update({ method: parsed.method, url: parsed.url, params: parsed.params, headers: parsed.headers, body: parsed.body, bodyType: parsed.bodyType, formBody: parsed.formBody })
+      setShowCurlImport(false); setCurlInput('')
+      showToast('cURL 已导入')
+    } catch (e) { showToast('cURL 解析失败：' + e.message) }
+  }, [curlInput, update, showToast])
+
+  // 复制 cURL
+  const handleCopyCurl = useCallback(() => {
+    const curl = toCurl(request)
+    navigator.clipboard.writeText(curl).then(() => showToast('cURL 已复制')).catch(() => {})
+  }, [request, showToast])
+
+  // 代码生成
+  const generatedCode = useMemo(() => request ? generateCode(request, codeLang) : '', [request, codeLang])
+  const handleCopyCode = useCallback(() => {
+    navigator.clipboard.writeText(generatedCode).then(() => showToast(codeLang + ' 代码已复制')).catch(() => {})
+  }, [generatedCode, codeLang, showToast])
+
+  // AI 协同：生成请求
+  const askAIGenerate = useCallback(() => {
+    if (!onSendToChat) { showToast('AI 不可用'); return }
+    onSendToChat('请根据我的描述生成一个 API 请求（method、URL、headers、body），我会描述需求：')
+    showToast('已发送到聊天，请在主聊天描述需求')
+  }, [onSendToChat, showToast])
+
+  if (!request) return null
 
   return (
-    <div className="api-request-editor">
+    <div className="pa-req-editor" onClick={() => { setShowMethodMenu(false); setShowEnvMenu(false) }}>
       {/* 请求栏 */}
-      <div className="api-req-bar">
-        <div className="api-method-wrap">
-          <button
-            className="api-method-btn"
-            style={{ color: METHOD_COLORS[request.method] || '#8b949e' }}
-            onClick={() => setShowMethodMenu(!showMethodMenu)}
-          >
-            {request.method || 'GET'} ▾
+      <div className="pa-req-bar">
+        <div className="pa-method-wrap" onClick={(e) => e.stopPropagation()}>
+          <button className={'pa-method-btn ' + (METHOD_COLORS[request.method] || 'm-other')} onClick={() => setShowMethodMenu(!showMethodMenu)}>
+            {request.method || 'GET'} <span className="pa-car">▾</span>
           </button>
           {showMethodMenu && (
-            <div className="api-dropdown-menu api-method-menu">
+            <div className="pa-dropdown pa-method-menu">
               {METHODS.map(m => (
-                <button
-                  key={m}
-                  className={'api-dropdown-item' + (m === request.method ? ' active' : '')}
-                  style={{ color: METHOD_COLORS[m] || '#8b949e' }}
-                  onClick={() => handleMethodChange(m)}
-                >
-                  {m}
-                </button>
+                <button key={m} className={'pa-dropdown-item ' + (METHOD_COLORS[m] || 'm-other') + (m === request.method ? ' active' : '')} onClick={() => { update({ method: m }); setShowMethodMenu(false) }}>{m}</button>
               ))}
             </div>
           )}
         </div>
-
-        <div className="api-url-wrap">
-          <input
-            ref={urlRef}
-            className="api-url-input"
-            type="text"
-            placeholder="请求 URL，支持 {{baseUrl}} 和 {{变量}} 模板"
-            value={request.url || ''}
-            onChange={handleUrlChange}
-            spellCheck={false}
-          />
-          {urlPreview && (
-            <div className="api-url-preview">
-              → <span className="api-url-resolved">{urlPreview}</span>
-            </div>
-          )}
+        <div className="pa-url-wrap">
+          <input className="pa-url-input" type="text" placeholder="请求 URL，支持 {{baseUrl}} {{变量}} 模板" value={request.url || ''} onChange={handleUrlInput} onBlur={handleUrlBlur} spellCheck={false} />
+          {urlPreviewState && <div className="pa-url-preview">→ <span className="pa-url-resolved">{urlPreviewState}</span></div>}
         </div>
-
-        <button className="api-btn api-btn-primary" onClick={handleSend}>
-          发送
-          <span className="api-kbd">⌘↵</span>
-        </button>
-
-        <div className="api-more-actions">
-          <button className="api-btn-icon" onClick={() => setShowCurlImport(!showCurlImport)} title="导入 cURL">
-            ⤓
-          </button>
-          <button className="api-btn-icon" onClick={handleCopyCurl} title="复制为 cURL">
-            ⎘
-          </button>
-        </div>
+        <button className="pa-btn pa-btn-primary" onClick={onSend} disabled={sending}>{sending ? '发送中' : '发送'}<span className="pa-kbd">⌘↵</span></button>
+        <button className="pa-btn" onClick={() => setShowCurlImport(!showCurlImport)} title="导入 cURL">cURL</button>
+        <button className="pa-btn-icon" onClick={handleCopyCurl} title="复制为 cURL">复制</button>
+        <button className="pa-btn-icon" onClick={() => setShowCodeGen(!showCodeGen)} title="代码生成">代码</button>
+        {onSendToChat && <button className="pa-btn-icon" onClick={askAIGenerate} title="AI 生成请求">AI</button>}
       </div>
 
-      {/* cURL 导入面板 */}
+      {/* cURL 导入 */}
       {showCurlImport && (
-        <div className="api-curl-import">
-          <textarea
-            className="api-curl-input"
-            placeholder="粘贴 cURL 命令..."
-            value={curlInput}
-            onChange={e => setCurlInput(e.target.value)}
-            rows={3}
-            spellCheck={false}
-          />
-          <div className="api-curl-actions">
-            <button className="api-btn" onClick={() => setShowCurlImport(false)}>取消</button>
-            <button className="api-btn api-btn-primary" onClick={handleCurlImport}>解析并导入</button>
+        <div className="pa-curl-import">
+          <textarea className="pa-curl-input" placeholder="粘贴 cURL 命令..." value={curlInput} onChange={(e) => setCurlInput(e.target.value)} rows={3} spellCheck={false} />
+          <div className="pa-curl-actions">
+            <button className="pa-btn" onClick={() => { setShowCurlImport(false); setCurlInput('') }}>取消</button>
+            <button className="pa-btn pa-btn-primary" onClick={handleCurlImport} disabled={!curlInput.trim()}>解析并导入</button>
           </div>
         </div>
       )}
 
-      {/* 参数/Headers/Body 编辑区 */}
-      <div className="api-req-body">
-        <RequestTabs request={request} updateRequest={updateRequest} />
-      </div>
+      {/* 代码生成 */}
+      {showCodeGen && (
+        <div className="pa-code-gen">
+          <div className="pa-code-lang">
+            {['curl', 'python', 'javascript', 'go', 'rust'].map(l => (
+              <button key={l} className={'pa-code-lang-btn' + (codeLang === l ? ' active' : '')} onClick={() => setCodeLang(l)}>{l}</button>
+            ))}
+            <span className="pa-spacer" />
+            <button className="pa-btn-icon" onClick={handleCopyCode}>复制</button>
+          </div>
+          <pre className="pa-code-out"><code>{generatedCode}</code></pre>
+        </div>
+      )}
+
+      {/* 参数/Headers/Body */}
+      <RequestTabs request={request} update={update} />
 
       {/* 环境切换 */}
-      <div className="api-env-bar">
-        <div className="api-env-selector">
-          <span className="api-env-label">环境：</span>
-          <button className="api-env-btn" onClick={() => setShowEnvMenu(!showEnvMenu)}>
-            {activeEnv?.name || '无环境'} ▾
-          </button>
-          {showEnvMenu && (
-            <div className="api-dropdown-menu api-env-menu">
-              {envs.map(env => (
-                <button
-                  key={env.id}
-                  className={'api-dropdown-item' + (env.id === activeEnvId ? ' active' : '')}
-                  onClick={() => handleEnvChange(env.id)}
-                >
-                  <span className="api-env-dot" />
-                  {env.name}
-                  {env.baseUrl && <span className="api-env-url">{env.baseUrl}</span>}
-                </button>
-              ))}
-              <div className="api-dropdown-divider" />
-              <button className="api-dropdown-item" onClick={() => { setShowEnvMenu(false); setShowEnvManager(true) }}>
-                ⚙ 管理环境
+      <div className="pa-env-bar" onClick={(e) => e.stopPropagation()}>
+        <span className="pa-env-label">环境</span>
+        <button className="pa-env-btn" onClick={() => setShowEnvMenu(!showEnvMenu)}>
+          {activeEnv?.name || '无环境'} <span className="pa-car">▾</span>
+        </button>
+        {showEnvMenu && (
+          <div className="pa-dropdown pa-env-menu">
+            {envs.map(env => (
+              <button key={env.id} className={'pa-dropdown-item' + (env.id === activeEnvId ? ' active' : '')} onClick={() => { store.set('activeEnv', env.id); setShowEnvMenu(false) }}>
+                <span className="pa-env-dot" />{env.name}{env.baseUrl && <span className="pa-env-url">{env.baseUrl}</span>}
               </button>
-            </div>
-          )}
-        </div>
-        {activeEnv?.baseUrl && (
-          <span className="api-env-baseurl">baseUrl: {activeEnv.baseUrl}</span>
+            ))}
+            <div className="pa-dropdown-divider" />
+            <button className="pa-dropdown-item" onClick={() => { setShowEnvMenu(false); setShowEnvManager(true) }}>管理环境</button>
+          </div>
         )}
+        {activeEnv?.baseUrl && <span className="pa-env-baseurl">baseUrl: {activeEnv.baseUrl}</span>}
       </div>
 
-      {/* 环境管理器 */}
-      {showEnvManager && (
-        <EnvManager
-          envs={envs}
-          activeEnvId={activeEnvId}
-          onUpdate={updateEnv}
-          onDelete={deleteEnv}
-          onAdd={addEnv}
-          onClose={() => setShowEnvManager(false)}
-        />
-      )}
+      {showEnvManager && <EnvManager envs={envs} activeEnvId={activeEnvId} onClose={() => setShowEnvManager(false)} />}
+
+      {toast && <div className="pa-toast">{toast}</div>}
     </div>
   )
 }
 
-/* ===================== 内部组件 ===================== */
-
-function RequestTabs({ request, updateRequest }) {
+/* ===================== 请求 Tab 区 ===================== */
+function RequestTabs({ request, update }) {
   const [activeTab, setActiveTab] = useState('params')
-
+  const params = request.params || [blankRow()]
+  const headers = request.headers || [blankRow()]
   const tabs = [
-    { id: 'params', label: '参数', count: request.params?.filter(p => p.enabled !== false && p.key).length || 0 },
-    { id: 'headers', label: 'Headers', count: request.headers?.filter(h => h.enabled !== false && h.key).length || 0 },
-    { id: 'body', label: 'Body', badge: request.bodyType !== 'none' ? '●' : null },
+    { id: 'params', label: '参数', count: params.filter(p => p.enabled !== false && p.key).length },
+    { id: 'headers', label: 'Headers', count: headers.filter(h => h.enabled !== false && h.key).length },
+    { id: 'body', label: 'Body', badge: request.bodyType !== 'none' },
   ]
-
   return (
-    <div className="api-req-tabs">
-      <div className="api-req-tab-bar">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={'api-req-tab' + (activeTab === tab.id ? ' active' : '')}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-            {tab.badge && <span className="api-badge">{tab.badge}</span>}
-            {tab.count > 0 && <span className="api-count">{tab.count}</span>}
+    <div className="pa-req-tabs">
+      <div className="pa-req-tab-bar">
+        {tabs.map(t => (
+          <button key={t.id} className={'pa-req-tab' + (activeTab === t.id ? ' active' : '')} onClick={() => setActiveTab(t.id)}>
+            {t.label}
+            {t.badge && <span className="pa-badge-dot" />}
+            {t.count > 0 && <span className="pa-count">{t.count}</span>}
           </button>
         ))}
       </div>
-      <div className="api-req-tab-content">
-        {activeTab === 'params' && <ParamsEditor params={request.params || []} onChange={(params) => updateRequest({ params })} />}
-        {activeTab === 'headers' && <HeadersEditor headers={request.headers || []} onChange={(headers) => updateRequest({ headers })} />}
-        {activeTab === 'body' && <BodyEditor bodyType={request.bodyType || 'none'} body={request.body || ''} onChange={(patch) => updateRequest(patch)} />}
+      <div className="pa-req-tab-content">
+        {activeTab === 'params' && <KVEditor rows={params} onChange={(rows) => update({ params: rows })} keyPlaceholder="参数名" valuePlaceholder="参数值" />}
+        {activeTab === 'headers' && <KVEditor rows={headers} onChange={(rows) => update({ headers: rows })} keyPlaceholder="Header 名" valuePlaceholder="Header 值" suggestions={COMMON_HEADERS} />}
+        {activeTab === 'body' && <BodyEditor bodyType={request.bodyType || 'none'} body={request.body || ''} formBody={request.formBody} update={update} />}
       </div>
     </div>
   )
 }
 
-function ParamsEditor({ params, onChange }) {
-  const rows = [...params]
-
-  const handleChange = (idx, field, value) => {
-    rows[idx][field] = value
-    onChange(rows)
+/* ===================== KV 编辑器（非变异） ===================== */
+function KVEditor({ rows, onChange, keyPlaceholder, valuePlaceholder, suggestions }) {
+  const [showSuggest, setShowSuggest] = useState(false)
+  const updateRow = (idx, patch) => {
+    const newRows = rows.map((r, i) => i === idx ? { ...r, ...patch } : r)
+    // 自动追加空行
+    if (idx === rows.length - 1 && (patch.key || patch.value)) newRows.push(blankRow())
+    onChange(newRows)
   }
-
-  const handleDelete = (idx) => {
-    rows.splice(idx, 1)
-    onChange(rows)
+  const deleteRow = (idx) => onChange(rows.filter((_, i) => i !== idx))
+  const addRow = (key, value) => {
+    const newRows = [...rows]
+    if (newRows.length && !newRows[newRows.length - 1].key && !newRows[newRows.length - 1].value) newRows.pop()
+    newRows.push({ id: uid(), enabled: true, key, value: value || '' })
+    newRows.push(blankRow())
+    onChange(newRows)
   }
-
-  const handleAdd = () => {
-    rows.push({ key: '', value: '', enabled: true })
-    onChange(rows)
-  }
-
   return (
-    <div className="api-kv-editor">
-      <table className="api-kv-table">
-        <thead>
-          <tr>
-            <th className="api-kv-check"></th>
-            <th className="api-kv-key">参数名</th>
-            <th className="api-kv-value">参数值</th>
-            <th className="api-kv-action"></th>
-          </tr>
-        </thead>
+    <div className="pa-kv">
+      <table className="pa-kv-table">
+        <thead><tr><th className="pa-kv-check"></th><th>{keyPlaceholder}</th><th>{valuePlaceholder}</th><th></th></tr></thead>
         <tbody>
           {rows.map((row, idx) => (
-            <tr key={idx} className={!row.key && !row.value ? 'api-kv-blank' : ''}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={row.enabled !== false}
-                  onChange={e => handleChange(idx, 'enabled', e.target.checked)}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  placeholder="参数名"
-                  value={row.key || ''}
-                  onChange={e => handleChange(idx, 'key', e.target.value)}
-                  spellCheck={false}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  placeholder="参数值"
-                  value={row.value || ''}
-                  onChange={e => handleChange(idx, 'value', e.target.value)}
-                  spellCheck={false}
-                />
-              </td>
-              <td>
-                <button className="api-btn-icon-small" onClick={() => handleDelete(idx)} title="删除">✕</button>
-              </td>
+            <tr key={row.id || idx} className={!row.key && !row.value ? 'pa-kv-blank' : ''}>
+              <td><input type="checkbox" checked={row.enabled !== false} onChange={(e) => updateRow(idx, { enabled: e.target.checked })} /></td>
+              <td><input type="text" placeholder={keyPlaceholder} value={row.key || ''} onChange={(e) => { updateRow(idx, { key: e.target.value }); if (suggestions && e.target.value) setShowSuggest(true) }} spellCheck={false} /></td>
+              <td><input type="text" placeholder={valuePlaceholder} value={row.value || ''} onChange={(e) => updateRow(idx, { value: e.target.value })} spellCheck={false} /></td>
+              <td><button className="pa-btn-icon-small" onClick={() => deleteRow(idx)} title="删除">✕</button></td>
             </tr>
           ))}
         </tbody>
       </table>
-      <button className="api-btn-link" onClick={handleAdd}>+ 添加参数</button>
-    </div>
-  )
-}
-
-function HeadersEditor({ headers, onChange }) {
-  const rows = [...headers]
-  const [showSuggestions, setShowSuggestions] = useState(false)
-
-  const handleChange = (idx, field, value) => {
-    rows[idx][field] = value
-    onChange(rows)
-  }
-
-  const handleDelete = (idx) => {
-    rows.splice(idx, 1)
-    onChange(rows)
-  }
-
-  const handleAdd = (key, value) => {
-    rows.pop() // 移除最后的空白行
-    rows.push({ key, value: value || '', enabled: true })
-    rows.push({ key: '', value: '', enabled: true })
-    onChange(rows)
-  }
-
-  return (
-    <div className="api-kv-editor">
-      <table className="api-kv-table">
-        <thead>
-          <tr>
-            <th className="api-kv-check"></th>
-            <th className="api-kv-key">Header 名</th>
-            <th className="api-kv-value">Header 值</th>
-            <th className="api-kv-action"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, idx) => (
-            <tr key={idx} className={!row.key && !row.value ? 'api-kv-blank' : ''}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={row.enabled !== false}
-                  onChange={e => handleChange(idx, 'enabled', e.target.checked)}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  placeholder="Header 名"
-                  value={row.key || ''}
-                  onChange={e => {
-                    handleChange(idx, 'key', e.target.value)
-                    // 显示常用 header 建议
-                    if (e.target.value && !e.target.value.includes(':')) setShowSuggestions(true)
-                    else setShowSuggestions(false)
-                  }}
-                  spellCheck={false}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  placeholder="Header 值"
-                  value={row.value || ''}
-                  onChange={e => handleChange(idx, 'value', e.target.value)}
-                  spellCheck={false}
-                />
-              </td>
-              <td>
-                <button className="api-btn-icon-small" onClick={() => handleDelete(idx)} title="删除">✕</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {showSuggestions && (
-        <div className="api-header-suggestions">
-          {Object.keys(COMMON_HEADERS).map(h => (
-            <button key={h} className="api-chip" onClick={() => handleAdd(h, COMMON_HEADERS[h])}>
-              {h}
-            </button>
+      {suggestions && showSuggest && (
+        <div className="pa-suggestions">
+          {Object.keys(suggestions).filter(h => !rows.some(r => r.key === h)).map(h => (
+            <button key={h} className="pa-chip" onClick={() => { addRow(h, suggestions[h]); setShowSuggest(false) }}>{h}</button>
           ))}
         </div>
       )}
-      <button className="api-btn-link" onClick={() => handleAdd('', '')}>+ 添加 Header</button>
+      <button className="pa-btn-link" onClick={() => onChange([...rows, blankRow()])}>+ 添加</button>
     </div>
   )
 }
 
-function BodyEditor({ bodyType, body, onChange }) {
-  const types = [
-    { id: 'none', label: '无' },
-    { id: 'json', label: 'JSON' },
-    { id: 'text', label: '文本' },
-    { id: 'form', label: 'Form' },
-    { id: 'xml', label: 'XML' },
-  ]
-
-  const handleFormat = () => {
-    if (bodyType === 'json') {
-      try {
-        const formatted = JSON.stringify(JSON.parse(body), null, 2)
-        onChange({ body: formatted })
-      } catch (e) {
-        // JSON 无效，不格式化
-      }
-    }
+/* ===================== Body 编辑器 ===================== */
+function BodyEditor({ bodyType, body, formBody, update }) {
+  const types = [['none', '无'], ['json', 'JSON'], ['text', '文本'], ['form', 'Form'], ['xml', 'XML']]
+  const formatJSON = () => {
+    if (bodyType === 'json') { try { update({ body: JSON.stringify(JSON.parse(body), null, 2) }) } catch (e) {} }
   }
-
   const handleTab = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault()
       const ta = e.target
-      const start = ta.selectionStart
-      const end = ta.selectionEnd
+      const s = ta.selectionStart, en = ta.selectionEnd
       const val = ta.value
-      ta.value = val.slice(0, start) + '  ' + val.slice(end)
-      ta.selectionStart = ta.selectionEnd = start + 2
-      onChange({ body: ta.value })
+      ta.value = val.slice(0, s) + '  ' + val.slice(en)
+      ta.selectionStart = ta.selectionEnd = s + 2
+      update({ body: ta.value })
     }
   }
-
   return (
-    <div className="api-body-editor">
-      <div className="api-body-type-bar">
-        {types.map(t => (
-          <button
-            key={t.id}
-            className={'api-body-type-btn' + (bodyType === t.id ? ' active' : '')}
-            onClick={() => onChange({ bodyType: t.id })}
-          >
-            {t.label}
-          </button>
-        ))}
-        {bodyType === 'json' && (
-          <button className="api-btn-icon" onClick={handleFormat} title="格式化 JSON">
-            ⟳
-          </button>
-        )}
+    <div className="pa-body-editor">
+      <div className="pa-body-type-bar">
+        {types.map(([v, l]) => <button key={v} className={'pa-body-type-btn' + (bodyType === v ? ' active' : '')} onClick={() => update({ bodyType: v })}>{l}</button>)}
+        {bodyType === 'json' && <button className="pa-btn-icon" onClick={formatJSON} title="格式化 JSON">格式化</button>}
       </div>
-
-      {bodyType === 'none' && (
-        <div className="api-body-empty">该请求没有 Body。选择 JSON / 文本 / Form 以编辑请求体。</div>
-      )}
-
-      {bodyType === 'form' && (
-        <FormEditor body={body} onChange={(body) => onChange({ body })} />
-      )}
-
+      {bodyType === 'none' && <div className="pa-body-empty">该请求没有 Body。选择 JSON / 文本 / Form / XML 以编辑。</div>}
+      {bodyType === 'form' && <KVEditor rows={Array.isArray(formBody) ? formBody : [blankRow()]} onChange={(rows) => update({ formBody: rows })} keyPlaceholder="字段名" valuePlaceholder="字段值" />}
       {(bodyType === 'json' || bodyType === 'text' || bodyType === 'xml') && (
-        <textarea
-          className="api-body-textarea"
-          placeholder={bodyType === 'json' ? '{\n  "key": "value"\n}' : '原始请求体…'}
-          value={typeof body === 'string' ? body : ''}
-          onChange={e => onChange({ body: e.target.value })}
-          onKeyDown={handleTab}
-          spellCheck={false}
-        />
+        <textarea className="pa-body-textarea" placeholder={bodyType === 'json' ? '{\n  "key": "value"\n}' : '原始请求体...'} value={typeof body === 'string' ? body : ''} onChange={(e) => update({ body: e.target.value })} onKeyDown={handleTab} spellCheck={false} />
       )}
     </div>
   )
 }
 
-function FormEditor({ body, onChange }) {
-  const rows = Array.isArray(body) ? body : [{ key: '', value: '', enabled: true }]
-
-  const handleChange = (idx, field, value) => {
-    if (Array.isArray(body)) {
-      const newBody = [...body]
-      newBody[idx][field] = value
-      onChange(newBody)
-    }
-  }
-
-  const handleAdd = () => {
-    if (Array.isArray(body)) {
-      onChange([...body, { key: '', value: '', enabled: true }])
-    }
-  }
-
-  return (
-    <div className="api-kv-editor">
-      <table className="api-kv-table">
-        <thead>
-          <tr>
-            <th className="api-kv-check"></th>
-            <th className="api-kv-key">字段名</th>
-            <th className="api-kv-value">字段值</th>
-            <th className="api-kv-action"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, idx) => (
-            <tr key={idx}>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={row.enabled !== false}
-                  onChange={e => handleChange(idx, 'enabled', e.target.checked)}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  placeholder="字段名"
-                  value={row.key || ''}
-                  onChange={e => handleChange(idx, 'key', e.target.value)}
-                  spellCheck={false}
-                />
-              </td>
-              <td>
-                <input
-                  type="text"
-                  placeholder="字段值"
-                  value={row.value || ''}
-                  onChange={e => handleChange(idx, 'value', e.target.value)}
-                  spellCheck={false}
-                />
-              </td>
-              <td>
-                <button className="api-btn-icon-small" onClick={() => {
-                  if (Array.isArray(body)) {
-                    const newBody = body.filter((_, i) => i !== idx)
-                    onChange(newBody.length ? newBody : [{ key: '', value: '', enabled: true }])
-                  }
-                }}>✕</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <button className="api-btn-link" onClick={handleAdd}>+ 添加字段</button>
-    </div>
-  )
-}
-
-function EnvManager({ envs, activeEnvId, onUpdate, onDelete, onAdd, onClose }) {
+/* ===================== 环境管理器（模态） ===================== */
+function EnvManager({ envs, activeEnvId, onClose }) {
   const [editId, setEditId] = useState(activeEnvId || envs[0]?.id)
   const editEnv = envs.find(e => e.id === editId)
-
+  const updateEnv = (id, patch) => {
+    const newEnvs = envs.map(e => e.id === id ? { ...e, ...patch } : e)
+    store.set('envs', newEnvs)
+  }
+  const addEnv = () => {
+    const ne = { id: uid(), name: '环境 ' + (envs.length + 1), baseUrl: '', vars: [blankRow()] }
+    store.set('envs', [...envs, ne])
+    store.set('activeEnv', ne.id)
+    setEditId(ne.id)
+  }
+  const deleteEnv = (id) => {
+    const newEnvs = envs.filter(e => e.id !== id)
+    store.set('envs', newEnvs)
+    if (activeEnvId === id) store.set('activeEnv', newEnvs[0]?.id || null)
+    if (editId === id) setEditId(newEnvs[0]?.id)
+  }
   return (
-    <div className="api-modal-overlay" onClick={onClose}>
-      <div className="api-modal api-env-manager" onClick={e => e.stopPropagation()}>
-        <div className="api-modal-header">
-          <h3>环境与变量管理</h3>
-          <button className="api-btn-icon" onClick={onClose}>✕</button>
-        </div>
-        <div className="api-modal-body">
-          <div className="api-env-list">
+    <div className="pa-modal-overlay" onClick={onClose}>
+      <div className="pa-modal pa-env-manager" onClick={(e) => e.stopPropagation()}>
+        <div className="pa-modal-header"><h3>环境与变量</h3><button className="pa-btn-icon" onClick={onClose}>✕</button></div>
+        <div className="pa-modal-body">
+          <div className="pa-env-list">
             {envs.map(env => (
-              <div
-                key={env.id}
-                className={'api-env-list-item' + (env.id === editId ? ' active' : '')}
-                onClick={() => setEditId(env.id)}
-              >
-                <span className="api-env-dot" />
-                <span className="api-env-name">{env.name}</span>
-                {env.id === activeEnvId && <span className="api-env-active">●</span>}
-                <button className="api-btn-icon-small" onClick={(e) => { e.stopPropagation(); onDelete(env.id) }}>✕</button>
+              <div key={env.id} className={'pa-env-list-item' + (env.id === editId ? ' active' : '')} onClick={() => setEditId(env.id)}>
+                <span className="pa-env-dot" />{env.name}{env.id === activeEnvId && <span className="pa-env-active">●</span>}
+                <button className="pa-btn-icon-small" onClick={(e) => { e.stopPropagation(); deleteEnv(env.id) }}>✕</button>
               </div>
             ))}
-            <button className="api-btn-link" onClick={onAdd}>+ 新建环境</button>
+            <button className="pa-btn-link" onClick={addEnv}>+ 新建环境</button>
           </div>
           {editEnv && (
-            <div className="api-env-form">
-              <div className="api-field">
-                <label>环境名称</label>
-                <input
-                  type="text"
-                  value={editEnv.name}
-                  onChange={e => onUpdate(editEnv.id, { name: e.target.value })}
-                />
+            <div className="pa-env-form">
+              <div className="pa-field"><label>环境名称</label><input type="text" value={editEnv.name} onChange={(e) => updateEnv(editEnv.id, { name: e.target.value })} /></div>
+              <div className="pa-field"><label>baseUrl（IP + 端口）</label><input type="text" placeholder="http://127.0.0.1:8080" value={editEnv.baseUrl || ''} onChange={(e) => updateEnv(editEnv.id, { baseUrl: e.target.value })} /></div>
+              <div className="pa-field"><label>变量</label>
+                <div className="pa-env-vars">
+                  <KVEditor rows={editEnv.vars || [blankRow()]} onChange={(rows) => updateEnv(editEnv.id, { vars: rows })} keyPlaceholder="变量名" valuePlaceholder="值" />
+                </div>
               </div>
-              <div className="api-field">
-                <label>baseUrl（IP + 端口）</label>
-                <input
-                  type="text"
-                  placeholder="http://127.0.0.1:8080"
-                  value={editEnv.baseUrl || ''}
-                  onChange={e => onUpdate(editEnv.id, { baseUrl: e.target.value })}
-                />
-              </div>
-              <div className="api-field">
-                <label>变量</label>
-                {(editEnv.vars || []).map((v, idx) => (
-                  <div key={idx} className="api-env-var-row">
-                    <input
-                      type="checkbox"
-                      checked={v.enabled !== false}
-                      onChange={e => {
-                        const vars = [...(editEnv.vars || [])]
-                        vars[idx] = { ...vars[idx], enabled: e.target.checked }
-                        onUpdate(editEnv.id, { vars })
-                      }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="变量名"
-                      value={v.key || ''}
-                      onChange={e => {
-                        const vars = [...(editEnv.vars || [])]
-                        vars[idx] = { ...vars[idx], key: e.target.value }
-                        onUpdate(editEnv.id, { vars })
-                      }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="变量值"
-                      value={v.value || ''}
-                      onChange={e => {
-                        const vars = [...(editEnv.vars || [])]
-                        vars[idx] = { ...vars[idx], value: e.target.value }
-                        onUpdate(editEnv.id, { vars })
-                      }}
-                    />
-                    <button className="api-btn-icon-small" onClick={() => {
-                      const vars = (editEnv.vars || []).filter((_, i) => i !== idx)
-                      onUpdate(editEnv.id, { vars: vars.length ? vars : [{ key: '', value: '', enabled: true }] })
-                    }}>✕</button>
-                  </div>
-                ))}
-                <button className="api-btn-link" onClick={() => {
-                  const vars = [...(editEnv.vars || []), { key: '', value: '', enabled: true }]
-                  onUpdate(editEnv.id, { vars })
-                }}>+ 添加变量</button>
-              </div>
-              <div className="api-field">
-                <button
-                  className={'api-btn' + (editEnv.id === activeEnvId ? ' api-btn-primary' : '')}
-                  onClick={() => store.set('activeEnv', editEnv.id)}
-                >
-                  {editEnv.id === activeEnvId ? '✓ 当前环境' : '设为当前环境'}
-                </button>
-              </div>
+              <button className={'pa-btn' + (editEnv.id === activeEnvId ? ' pa-btn-primary' : '')} onClick={() => store.set('activeEnv', editEnv.id)}>{editEnv.id === activeEnvId ? '当前环境' : '设为当前'}</button>
             </div>
           )}
         </div>

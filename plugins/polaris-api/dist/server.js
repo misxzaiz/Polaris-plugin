@@ -88,7 +88,9 @@ async function handleProxy(req, res) {
   const respHeaders = {}
   for (const [k, v] of Object.entries(result.headers)) {
     const lk = k.toLowerCase()
+    // 过滤 hop-by-hop、content-length、set-cookie 以及上游的 CORS 头（避免 ACAO 重复）
     if (HOP_HEADERS.has(lk) || lk === 'content-length' || lk === 'set-cookie') continue
+    if (lk === 'access-control-allow-origin' || lk === 'access-control-allow-methods' || lk === 'access-control-allow-headers' || lk === 'access-control-expose-headers' || lk === 'access-control-allow-credentials' || lk === 'access-control-max-age') continue
     respHeaders[k] = v
   }
   respHeaders['Content-Length'] = String(result.body.length)
