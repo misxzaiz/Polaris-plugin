@@ -1,0 +1,14 @@
+{
+  "name": "polaris-api-client",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Polaris API Client — 专业 HTTP 请求调试客户端",
+  "scripts": {
+    "build": "node build.js",
+    "build:prod": "node build.js --minify"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

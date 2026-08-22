@@ -540,6 +540,36 @@
       },
       "screenshots": [],
       "readme": "# Polaris HTTP\n\n轻量级 HTTP 请求调试客户端，基于 RELAY DevKit 架构 + polaris-api 代码生成 + invoke 模板系统。\n\n## 功能\n\n- **多 Tab**：新建/关闭/重命名，脏标记提示\n- **请求编辑**：Method 选择、URL 输入（回车发送）、Params/Headers/Body 三标签页，常用 Header 建议\n- **智能响应**：对象树/表格/原始/预览/Headers 五种视图、路径下钻、增强过滤\n- **集合管理**：分组保存/搜索/载入\n- **环境变量**：{{baseUrl}}/{{变量}} 解析、环境管理器\n- **全局 Headers**：持久化，自动合并到所有请求\n- **cURL 导入**：粘贴 curl 命令一键解析\n- **代码生成**：5 语言（cURL/Python/JS/Go/Rust）模态框展示+复制\n- **AI 协同**：通过 onSendToChat 将请求+响应上下文发往宿主 AI\n- **跨域代理**：本地 Node 转发服务（端口 9872），5 跳重定向\n- **布局切换**：左右/上下（split 方向），拖拽分栏调整大小\n- **快捷键**：⌘/Ctrl+Enter 发送\n- **零原生对话框**：全部自定义模态框\n- **数据持久化**：localStorage 分键存储"
+    },
+    {
+      "id": "polaris-api-client",
+      "name": "Polaris API Client",
+      "version": "1.0.0",
+      "description": "专业 HTTP 请求客户端：多Tab、环境变量、集合管理、cURL导入导出、跨域代理、智能响应（对象树/表格/路径下钻/增强过滤）、模板接口、服务器选择器、Auth认证、全局Headers、代码生成、AI协同、动态变量",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "http",
+        "rest",
+        "api-client",
+        "dev-tools",
+        "panel",
+        "service"
+      ],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api-client",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/polaris-api-client.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/update.json",
+      "sha256": "f79cc6f5e58dc3e8e842497ab8183607e6bf6560ffbd989d2c61c7c8393bbcdd",
+      "permissions": {
+        "workspaceRead": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Polaris API Client\n\n基于 RELAY 架构，专注 API 请求调试。\n\n## 功能\n- 多 Tab、环境变量（{{baseUrl}}/{{var}}/{{}}）、集合管理\n- 模式切换（通用HTTP/定制接口模板）、模板系统（动态表单+Body⇄Form双向同步）\n- 服务器选择器、Auth 认证（Bearer/Basic）、全局 Headers\n- 智能响应（对象树/表格/路径下钻/增强过滤）\n- 响应双视图（业务数据自动下钻/完整响应）、字号/展开/全屏\n- cURL 导入导出、代码生成（5语言）、AI 协同\n- 跨域代理、集合导入导出、零原生对话框"
     }
   ]
 }
