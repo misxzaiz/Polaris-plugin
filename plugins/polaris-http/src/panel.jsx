@@ -1,5 +1,4 @@
-// src/panel.jsx — Polaris HTTP 面板入口
-// 基于 RELAY 架构：SPA_HTML 骨架 + initApi 初始化
+// src/panel.jsx — Polaris HTTP 面板入口（v2 原型风格）
 import { useEffect, useRef } from 'react'
 import mainCss from './styles/main.css'
 import { setRoot } from './core/dom.js'
@@ -11,13 +10,12 @@ const SPA_HTML = `
   <div class="tabbar" id="tabbar"></div>
   <div class="spacer"></div>
   <div class="env-wrap">
-    <button class="env-sel" id="envSel"><span class="ehex">⬡</span><span id="envName">无环境</span><span class="car">▾</span></button>
+    <button class="env-sel" id="envSel"><span class="dot"></span><span id="envName">无环境</span><span class="car">▾</span></button>
     <div class="env-menu" id="envMenu"></div>
   </div>
   <button class="top-act" id="curlImportBtn" title="粘贴 cURL 导入为请求">导入 cURL</button>
   <button class="top-act" id="layoutBtn" title="切换 上下/左右 布局">⇅ 上下</button>
   <button class="top-act" id="proxyBtn" title="跨域代理">代理:关</button>
-  <button class="top-act" id="codeGenBtn" title="复制为代码">⌘ 代码</button>
 </header>
 
 <div class="main" id="main">
@@ -32,6 +30,22 @@ const SPA_HTML = `
   </aside>
 
   <section class="work">
+    <!-- 模式切换栏 + 服务器选择器 -->
+    <div class="mode-bar" id="modeBar">
+      <button class="mode-btn active" data-mode="http">通用 HTTP 请求</button>
+      <button class="mode-btn" data-mode="custom">定制接口模板</button>
+      <span class="sp"></span>
+      <span class="mode-lbl">服务器:</span>
+      <select class="mode-select" id="serverSelect" onchange="window.__onServerChange(this)">
+        <option value="">无</option>
+      </select>
+      <div class="server-badge" id="serverBadge" style="display:none">
+        <span id="serverBadgeText"></span>
+        <button class="btn icon" style="height:20px;font-size:9px;padding:0 6px" onclick="window.__replaceServerUrl()">替换</button>
+      </div>
+    </div>
+
+    <!-- 编辑区 -->
     <div class="reqbar">
       <div class="method-wrap">
         <button class="method-sel" id="methodSel"><span id="methodLabel">GET</span><span class="car">▾</span></button>
@@ -43,7 +57,43 @@ const SPA_HTML = `
       </div>
       <button class="btn primary" id="sendBtn">发送 <span class="k">⌘↵</span></button>
       <button class="btn icon ghost" id="curlBtn" title="复制为 cURL">cURL</button>
+      <button class="btn icon ghost" id="codeGenBtn" title="代码生成">⌘</button>
       <button class="btn icon ghost" id="aiBtn" title="AI 分析">AI</button>
+    </div>
+
+    <!-- 定制模板面板 -->
+    <div class="custom-panel" id="customPanel" style="display:none">
+      <div class="custom-bar">
+        <span class="mode-lbl">选择模板:</span>
+        <select class="mode-select" id="templateSelect" onchange="window.__onTemplateSelect(this)">
+          <option value="">请选择...</option>
+        </select>
+        <button class="top-act" style="height:22px;font-size:10px" onclick="window.__saveTemplate()">保存当前</button>
+      </div>
+      <div class="template-form" id="templateForm" style="display:none">
+        <div class="tf-title">接口字段</div>
+        <div class="tf-grid" id="templateFields"></div>
+      </div>
+      <div class="custom-hint" id="customHint" style="display:none">📋 当前为定制接口模式，表单修改自动同步到 Body</div>
+    </div>
+
+    <!-- 代码生成内联面板 -->
+    <div class="codegen-inline" id="codeGenPanel" style="display:none">
+      <div class="codegen-hd">
+        <span>代码生成</span>
+        <span class="sp"></span>
+        <div class="codegen-langs">
+          <button class="lang-btn active" data-lang="curl">cURL</button>
+          <button class="lang-btn" data-lang="python">Python</button>
+          <button class="lang-btn" data-lang="js">JS</button>
+          <button class="lang-btn" data-lang="go">Go</button>
+          <button class="lang-btn" data-lang="rust">Rust</button>
+        </div>
+      </div>
+      <div class="codegen-bd">
+        <pre id="codeOutput">curl -X GET 'https://api.example.com'</pre>
+        <button class="codegen-copy" onclick="window.__copyCode()">复制</button>
+      </div>
     </div>
 
     <div class="split" id="split">
@@ -52,23 +102,46 @@ const SPA_HTML = `
           <button class="subtab active" data-rt="params">Params</button>
           <button class="subtab" data-rt="headers">Headers</button>
           <button class="subtab" data-rt="body">Body</button>
+          <button class="subtab" data-rt="auth">Auth</button>
+          <button class="subtab" data-rt="global">全局H</button>
         </div>
         <div class="pane" id="reqPane"></div>
       </div>
 
       <div class="divider" id="divider" title="拖动调整大小"></div>
 
-      <div class="res-region">
+      <div class="res-region" id="resRegion">
+        <!-- 响应状态 -->
         <div class="res-status" id="resStatus" style="display:none"></div>
-        <div class="subtabs" id="resSubtabs" style="display:none">
-          <button class="subtab" data-rv="object">对象</button>
-          <button class="subtab" data-rv="table">表格</button>
-          <button class="subtab" data-rv="raw">原始</button>
-          <button class="subtab" data-rv="preview">预览</button>
-          <button class="subtab" data-rv="headers">Headers</button>
+        <!-- 响应双视图标签 -->
+        <div class="res-tabs" id="resTabs" style="display:none">
+          <button class="res-tab active" data-rt="data">业务数据</button>
+          <button class="res-tab" data-rt="full">完整响应</button>
+          <div class="res-tab-acts">
+            <span class="mode-lbl">字体:</span>
+            <select class="font-sel" id="resFontSel" onchange="window.__changeFont(this.value)">
+              <option value="12">12</option><option value="13" selected>13</option><option value="14">14</option><option value="16">16</option><option value="18">18</option>
+            </select>
+            <button class="tbtn" onclick="window.__expandLevel(2)">展开2层</button>
+            <button class="tbtn" onclick="window.__expandLevel(3)">展开3层</button>
+            <button class="tbtn" onclick="window.__collapseAll()">折叠</button>
+            <button class="tbtn" onclick="window.__toggleFullscreen()">全屏</button>
+          </div>
         </div>
-        <div class="res-tools" id="resTools" style="display:none"></div>
-        <div class="pane" id="resPane">
+        <!-- 响应视图切换 -->
+        <div class="res-toolbar" id="resTools" style="display:none">
+          <div class="res-views" id="resViews">
+            <button class="rv" data-rv="object">对象</button>
+            <button class="rv" data-rv="table">表格</button>
+            <button class="rv" data-rv="raw">原始</button>
+            <button class="rv" data-rv="headers">Headers</button>
+          </div>
+          <span class="sp"></span>
+          <input class="path-input" placeholder="路径 data.items" id="resPathInput" oninput="window.__setPath(this.value)" />
+          <input class="filter-input" placeholder="过滤 name:值" id="resFilterInput" oninput="window.__setFilter(this.value)" />
+          <button class="tbtn" id="prettyBtn" onclick="window.__togglePretty()">美化</button>
+        </div>
+        <div class="pane" id="resPane" style="font-size:13px">
           <div class="res-idle">
             <div class="big">准备就绪</div>
             输入 URL 点「发送」，或从左侧集合载入一个请求。
@@ -87,7 +160,7 @@ const SPA_HTML = `
 
 <footer class="statusbar">
   <span class="msg" id="statusMsg">就绪</span>
-  <span class="seg-r"><span>TABS <b id="stTabs">0</b></span><span>SAVED <b id="stSaved">0</b></span></span>
+  <span class="seg-r"><span>TABS <b id="stTabs">0</b></span><span>SAVED <b id="stSaved">0</b></span><span id="layoutStatus">布局: 左右</span><span id="proxyStatus">代理: 关</span></span>
 </footer>
 
 <input type="file" id="fileInput" accept="application/json,.json" style="display:none" />
@@ -105,10 +178,8 @@ export default function PolarisHttpPanel({ pluginId, onSendToChat }) {
     const container = containerRef.current
     if (!container || initializedRef.current) return
 
-    // 1. 注入 SPA HTML 骨架
     container.innerHTML = SPA_HTML
 
-    // 2. 注入 CSS
     try {
       const style = document.createElement('style')
       style.setAttribute('data-polaris-http', '')
@@ -118,17 +189,11 @@ export default function PolarisHttpPanel({ pluginId, onSendToChat }) {
       console.warn('[Polaris HTTP] CSS injection failed:', e)
     }
 
-    // 3. 设置 DOM 作用域
     setRoot(container)
-
-    // 4. 设置面板模式
     setApiPanelMode(true, 'http://127.0.0.1:9872')
-
-    // 5. 初始化 API 工具（包含所有事件绑定）
     initApi({ onSendToChat })
 
     initializedRef.current = true
-
     return () => {
       container.innerHTML = ''
       setRoot(document)
@@ -141,10 +206,8 @@ export default function PolarisHttpPanel({ pluginId, onSendToChat }) {
       ref={containerRef}
       className="polaris-http-panel"
       style={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
+        width: '100%', height: '100%',
+        display: 'flex', flexDirection: 'column',
         overflow: 'hidden',
         background: 'var(--bg, #16181e)',
         color: 'var(--ink, #d8dae2)',

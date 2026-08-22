@@ -500,6 +500,180 @@
   white-space: pre; word-break: break-all; tab-size: 2;
 }
 
+/* 模式切换栏 */
+.polaris-http-panel .mode-bar {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  padding: 5px 10px; border-bottom: 1px solid var(--line); background: var(--bg2);
+}
+.polaris-http-panel .mode-btn {
+  height: 24px; padding: 0 10px; border: 1px solid var(--line); background: transparent;
+  color: var(--ink-3); cursor: pointer; font-size: 11px; border-radius: 4px;
+}
+.polaris-http-panel .mode-btn:hover { color: var(--ink); background: var(--bg3); }
+.polaris-http-panel .mode-btn.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
+.polaris-http-panel .mode-lbl { font-size: 11px; color: var(--ink-3); white-space: nowrap; }
+.polaris-http-panel .mode-select {
+  height: 24px; padding: 0 6px; background: var(--bg3); border: 1px solid var(--line);
+  border-radius: 4px; color: var(--ink-2); font-size: 11px; max-width: 260px;
+}
+
+/* 服务器徽章 */
+.polaris-http-panel .server-badge {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+  padding: 3px 8px; border-radius: 4px; background: rgba(68,147,248,.1);
+  border: 1px solid rgba(68,147,248,.2); font-size: 10px; color: var(--brand);
+}
+
+/* 定制模板面板 */
+.polaris-http-panel .custom-panel {
+  border-bottom: 1px solid var(--line); background: var(--bg2); flex-shrink: 0;
+}
+.polaris-http-panel .custom-bar {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+}
+.polaris-http-panel .template-form {
+  border-top: 1px dashed var(--line); padding: 8px 10px;
+}
+.polaris-http-panel .tf-title {
+  font-size: 10px; color: var(--ink-3); margin-bottom: 6px; letter-spacing: .5px;
+}
+.polaris-http-panel .tf-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 200px; overflow: auto;
+}
+.polaris-http-panel .tf-field { margin-bottom: 4px; }
+.polaris-http-panel .tf-field label {
+  display: block; font-size: 10px; color: var(--ink-2); margin-bottom: 2px;
+}
+.polaris-http-panel .tf-field .tf-req { color: var(--err); }
+.polaris-http-panel .tf-field .tf-extra { color: var(--warn); font-size: 9px; }
+.polaris-http-panel .tf-field input,
+.polaris-http-panel .tf-field textarea, .polaris-http-panel .tf-field select {
+  width: 100%; padding: 4px 6px; border-radius: 3px; border: 1px solid var(--line);
+  background: var(--bg3); color: var(--ink); font-size: 11px; outline: none;
+}
+.polaris-http-panel .tf-field input:focus,
+.polaris-http-panel .tf-field textarea:focus { border-color: var(--brand-line); }
+.polaris-http-panel .tf-field textarea { min-height: 36px; resize: vertical; }
+.polaris-http-panel .custom-hint {
+  padding: 4px 10px; font-size: 10px; color: var(--brand); background: var(--brand-soft);
+  border-top: 1px solid var(--brand-line);
+}
+
+/* 内联代码生成 */
+.polaris-http-panel .codegen-inline {
+  border-bottom: 1px solid var(--line); background: var(--bg2); flex-shrink: 0;
+}
+.polaris-http-panel .codegen-hd {
+  display: flex; align-items: center; gap: 6px; padding: 5px 10px;
+  border-bottom: 1px solid var(--line); font-size: 11px;
+}
+.polaris-http-panel .codegen-langs { display: flex; gap: 3px; }
+.polaris-http-panel .lang-btn {
+  height: 22px; padding: 0 8px; border: 1px solid var(--line); background: transparent;
+  color: var(--ink-3); cursor: pointer; font-size: 10px; border-radius: 3px;
+}
+.polaris-http-panel .lang-btn:hover { color: var(--ink); border-color: var(--line-2); }
+.polaris-http-panel .lang-btn.active { color: var(--brand); border-color: var(--brand); background: var(--brand-soft); }
+.polaris-http-panel .codegen-bd { position: relative; }
+.polaris-http-panel .codegen-bd pre {
+  padding: 10px; margin: 0; font-family: var(--mono); font-size: 11px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-all; max-height: 120px; overflow: auto; color: var(--ink);
+}
+.polaris-http-panel .codegen-copy {
+  position: absolute; top: 6px; right: 6px; font-size: 10px; padding: 2px 8px;
+  border-radius: 3px; border: 1px solid var(--line); cursor: pointer;
+  color: var(--ink-3); background: var(--bg3);
+}
+.polaris-http-panel .codegen-copy:hover { color: var(--ink); background: var(--bg4); }
+
+/* Auth 面板 */
+.polaris-http-panel .auth-panel { padding: 8px 10px; }
+.polaris-http-panel .auth-panel .seg {
+  display: flex; gap: 2px; background: var(--bg3); border-radius: 5px; padding: 2px; margin-bottom: 8px;
+}
+.polaris-http-panel .auth-panel .seg button {
+  height: 24px; padding: 0 10px; border: none; background: none;
+  color: var(--ink-3); cursor: pointer; font-size: 11px; border-radius: 4px;
+}
+.polaris-http-panel .auth-panel .seg button.on { background: var(--brand); color: #fff; font-weight: 600; }
+.polaris-http-panel .auth-field { margin-bottom: 6px; }
+.polaris-http-panel .auth-field label {
+  display: block; font-size: 10px; color: var(--ink-3); margin-bottom: 2px;
+}
+.polaris-http-panel .auth-field input {
+  width: 100%; height: 28px; padding: 0 8px; border-radius: 4px;
+  border: 1px solid var(--line); background: var(--bg3); color: var(--ink); font-size: 12px; outline: none;
+}
+.polaris-http-panel .auth-field input:focus { border-color: var(--brand-line); }
+.polaris-http-panel .auth-hint { font-size: 10px; color: var(--ink-3); padding: 4px 0; }
+
+/* 全局 Headers 内联提示 */
+.polaris-http-panel .gh-hint {
+  font-size: 10px; color: var(--ink-3); padding: 6px 8px; border-bottom: 1px dashed var(--line);
+}
+
+/* 响应双视图标签 */
+.polaris-http-panel .res-tabs {
+  display: flex; align-items: center; border-bottom: 1px solid var(--line); flex-shrink: 0;
+  padding: 0 10px; background: var(--bg2);
+}
+.polaris-http-panel .res-tab {
+  height: 28px; padding: 0 12px; border: none; background: none;
+  color: var(--ink-3); cursor: pointer; font-size: 11px; border-bottom: 2px solid transparent;
+}
+.polaris-http-panel .res-tab:hover { color: var(--ink-2); }
+.polaris-http-panel .res-tab.active { color: var(--brand); border-bottom-color: var(--brand); }
+.polaris-http-panel .res-tab-acts {
+  display: flex; align-items: center; gap: 4px; margin-left: auto; padding: 3px 0;
+}
+.polaris-http-panel .res-tab-acts .tbtn {
+  height: 20px; padding: 0 8px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-3); cursor: pointer; font-size: 10px; border-radius: 3px;
+}
+.polaris-http-panel .res-tab-acts .tbtn:hover { color: var(--ink); border-color: var(--line-2); }
+.polaris-http-panel .font-sel {
+  height: 20px; padding: 0 4px; border-radius: 3px; border: 1px solid var(--line);
+  background: var(--bg3); color: var(--ink-2); font-size: 10px;
+}
+
+/* 响应工具栏 */
+.polaris-http-panel .res-toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+  border-bottom: 1px solid var(--line); flex-shrink: 0; flex-wrap: wrap;
+}
+.polaris-http-panel .res-views {
+  display: flex; border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+}
+.polaris-http-panel .res-views .rv {
+  padding: 3px 10px; font-size: 11px; color: var(--ink-3);
+  border-right: 1px solid var(--line); cursor: pointer; background: transparent;
+}
+.polaris-http-panel .res-views .rv:last-child { border-right: none; }
+.polaris-http-panel .res-views .rv:hover { color: var(--ink); background: var(--bg3); }
+.polaris-http-panel .res-views .rv.active { color: var(--brand); background: var(--brand-soft); }
+.polaris-http-panel .res-views .rv.disabled { opacity: .35; cursor: default; }
+.polaris-http-panel .path-input, .polaris-http-panel .filter-input {
+  height: 22px; padding: 0 8px; background: var(--bg3); border: 1px solid var(--line);
+  border-radius: 4px; color: var(--ink); font-size: 11px; font-family: var(--mono);
+  min-width: 120px; flex: 1; max-width: 200px;
+}
+.polaris-http-panel .path-input:focus, .polaris-http-panel .filter-input:focus { outline: none; border-color: var(--brand-line); }
+.polaris-http-panel .res-toolbar .tbtn {
+  height: 22px; padding: 0 8px; border: 1px solid var(--line); background: var(--bg3);
+  color: var(--ink-3); cursor: pointer; font-size: 10px; border-radius: 3px;
+}
+.polaris-http-panel .res-toolbar .tbtn:hover { color: var(--ink); border-color: var(--line-2); }
+
+/* 服务器管理 */
+.polaris-http-panel .srv-row {
+  display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--line);
+}
+.polaris-http-panel .srv-input {
+  height: 26px; padding: 0 6px; background: var(--bg3); border: 1px solid var(--line);
+  border-radius: 4px; color: var(--ink); font-size: 11px; outline: none;
+}
+.polaris-http-panel .srv-input:focus { border-color: var(--brand-line); }
+
 /* 滚动条 */
 .polaris-http-panel ::-webkit-scrollbar { width: 8px; height: 8px; }
 .polaris-http-panel ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }

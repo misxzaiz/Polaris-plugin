@@ -1,25 +1,30 @@
-// tools/api.js — API 请求客户端核心（RELAY 架构 + polaris-api 代码生成 + invoke 模板）
+// tools/api.js — API 请求客户端核心（v2 原型风格：模板/服务器/Auth/内联代码生成/响应双视图）
 import { $, $$, uid, esc, el, METHODS, methodColor, bytes, ms, setStatus, copy, blankRow, renderKVRows } from '../core/dom.js'
 import { store, clone } from '../core/store.js'
 import { sendRequest, resolveVars, tryJSON, formatBytes, formatMs } from '../core/http.js'
 import { toCurl, generateCode, parseCurl } from '../core/parser.js'
-import { getByPath, collectPaths, parseFilter, astHighlightTerms, rowMatchesAST, cellMeta, fmtDate, fileName, tableCandidates, responseFields, renderJSONTree, renderTableView } from '../core/json-view.js'
-// router.js not used — all routing is inline
+import { getByPath, collectPaths, renderJSONTree, renderTableView } from '../core/json-view.js'
 
 // ===== 状态持久化 =====
-const LS_TABS = 'polaris.http.tabs.v2', LS_COL = 'polaris.http.collections.v2', LS_ENV = 'polaris.http.envs.v2', LS_UI = 'polaris.http.ui.v2'
+const LS_TABS = 'polaris.http.tabs.v2', LS_COL = 'polaris.http.collections.v2', LS_ENV = 'polaris.http.envs.v2', LS_UI = 'polaris.http.ui.v2', LS_SRV = 'polaris.http.servers.v2', LS_TMPL = 'polaris.http.templates.v2'
 let state = { tabs: [], activeTab: null, collections: [], envs: [], activeEnv: null }
-let ui = { sideCollapsed: false, layout: 'h', reqW: 480, reqH: 220, proxyOn: false, resFont: 13 }
+let ui = { sideCollapsed: false, layout: 'h', reqW: 480, reqH: 220, proxyOn: false, resFont: 13, resTab: 'data', fullscreen: false, mode: 'http', curLang: 'curl' }
+let servers = []
+let templates = []
 let _panelMode = false, _proxyBase = 'http://127.0.0.1:9872'
 export function setApiPanelMode(on, proxyBase) { _panelMode = !!on; if (proxyBase) _proxyBase = proxyBase; if (on) { ui.proxyOn = true; persist() } }
+// 模板 body↔form 同步锁
+let _syncingForm = false
 
 function newTab(seed) {
   return Object.assign({
     id: uid(), name: '未命名请求', savedId: null, dirty: false,
     method: 'GET', url: '', params: [blankRow()], headers: [blankRow()],
     bodyType: 'none', body: '', formBody: [blankRow()],
+    authType: 'bearer', authToken: '', authUsername: '', authPassword: '',
     reqTab: 'params', respView: 'object', respPath: '', respFilter: '', tableSel: null,
     pretty: true, response: null,
+    _templateId: null, _formData: null,
   }, seed || {})
 }
 const activeTab = () => state.tabs.find(t => t.id === state.activeTab)
@@ -31,6 +36,8 @@ export function persist() {
     localStorage.setItem(LS_COL, JSON.stringify(state.collections))
     localStorage.setItem(LS_ENV, JSON.stringify({ envs: state.envs, activeEnv: state.activeEnv }))
     localStorage.setItem(LS_UI, JSON.stringify(ui))
+    localStorage.setItem(LS_SRV, JSON.stringify(servers))
+    localStorage.setItem(LS_TMPL, JSON.stringify(templates))
   } catch (e) { setStatus('本地保存失败', 'err') }
 }
 
@@ -39,6 +46,8 @@ function load() {
   try { const c = JSON.parse(localStorage.getItem(LS_COL) || 'null'); if (Array.isArray(c)) state.collections = c } catch (e) { }
   try { const en = JSON.parse(localStorage.getItem(LS_ENV) || 'null'); if (en) { state.envs = en.envs || []; state.activeEnv = en.activeEnv || null } } catch (e) { }
   try { const u = JSON.parse(localStorage.getItem(LS_UI) || 'null'); if (u) ui = Object.assign(ui, u) } catch (e) { }
+  try { const s = JSON.parse(localStorage.getItem(LS_SRV) || 'null'); if (Array.isArray(s)) servers = s } catch (e) { }
+  try { const t = JSON.parse(localStorage.getItem(LS_TMPL) || 'null'); if (Array.isArray(t)) templates = t } catch (e) { }
   if (!state.collections.length || !state.envs.length) seed()
   if (!state.tabs.length) { const t = newTab(); state.tabs = [t]; state.activeTab = t.id }
   if (!activeTab()) state.activeTab = state.tabs[0].id
@@ -58,6 +67,19 @@ function seed() {
         sreq('新建 Post', 'POST', '{{baseUrl}}/posts', { bodyType: 'json', body: JSON.stringify({ title: 'hello', body: 'world', userId: 1 }, null, 2), headers: [blankRow()] }),
       ]
     }]
+  }
+  if (!servers.length) {
+    servers = [
+      { id: uid(), name: '生产环境', url: 'https://api.example.com' },
+      { id: uid(), name: '测试环境', url: 'https://test-api.example.com' },
+      { id: uid(), name: '本地开发', url: 'http://localhost:8080' },
+    ]
+  }
+  if (!templates.length) {
+    templates = [
+      { id: uid(), name: '创建用户', method: 'POST', url: '/api/users', bodyType: 'json', bodyFields: [{ name: 'name', label: '用户名', type: 'text', required: true }, { name: 'email', label: '邮箱', type: 'text', required: true }, { name: 'age', label: '年龄', type: 'number', required: false }] },
+      { id: uid(), name: '查询用户', method: 'GET', url: '/api/users/{id}', bodyType: 'none', bodyFields: [{ name: 'id', label: '用户 ID', type: 'number', required: true }] },
+    ]
   }
 }
 function sreq(name, method, url, extra) { return Object.assign({ id: uid(), name, method, url, params: [blankRow()], headers: [blankRow()], bodyType: 'none', body: '', formBody: [blankRow()] }, extra || {}) }
@@ -81,9 +103,6 @@ function renderEnv() {
   const mng = el('button', 'env-item manage', '<span>管理环境...</span>')
   mng.onclick = () => { $('#envMenu').classList.remove('open'); openEnvManager() }
   menu.appendChild(mng)
-  const gbl = el('button', 'env-item manage', '<span>全局 Headers...</span>')
-  gbl.onclick = () => { $('#envMenu').classList.remove('open'); openGlobalHeaders() }
-  menu.appendChild(gbl)
 }
 
 function openEnvManager() {
@@ -98,11 +117,11 @@ function openEnvManager() {
     tabs.appendChild(add); m.appendChild(tabs)
     if (env) {
       const f1 = el('div', 'field'); f1.innerHTML = '<label>环境名称</label>'; const i1 = el('input'); i1.value = env.name; i1.oninput = () => env.name = i1.value; f1.appendChild(i1); m.appendChild(f1)
-      const f2 = el('div', 'field'); f2.innerHTML = '<label>baseUrl（IP + 端口）</label>'; const i2 = el('input'); i2.placeholder = 'http://127.0.0.1:8080'; i2.value = env.baseUrl || ''; i2.oninput = () => env.baseUrl = i2.value; f2.appendChild(i2); m.appendChild(f2)
+      const f2 = el('div', 'field'); f2.innerHTML = '<label>baseUrl</label>'; const i2 = el('input'); i2.placeholder = 'http://127.0.0.1:8080'; i2.value = env.baseUrl || ''; i2.oninput = () => env.baseUrl = i2.value; f2.appendChild(i2); m.appendChild(f2)
       const f3 = el('div', 'field'); f3.innerHTML = '<label>变量</label>'; const host = el('div', 'env-vars'); if (!env.vars) env.vars = [blankRow()]; host.appendChild(renderKVRows(env.vars, { kPlace: '变量名', vPlace: '值', onChange: () => { persist() } })); f3.appendChild(host); m.appendChild(f3)
     }
     const acts = el('div', 'acts');
-    if (env) { const del = el('button', 'btn ghost danger', '删除'); del.onclick = () => { confirmModal('删除环境「' + env.name + '」？此操作不可撤销。', ok2 => { if (ok2) { state.envs = state.envs.filter(e => e.id !== env.id); if (state.activeEnv === env.id) state.activeEnv = state.envs[0] ? state.envs[0].id : null; selId = state.envs[0] && state.envs[0].id; render() } }) }; acts.appendChild(del) }
+    if (env) { const del = el('button', 'btn ghost danger', '删除'); del.onclick = () => { confirmModal('删除环境「' + env.name + '」？', ok2 => { if (ok2) { state.envs = state.envs.filter(e => e.id !== env.id); if (state.activeEnv === env.id) state.activeEnv = state.envs[0] ? state.envs[0].id : null; selId = state.envs[0] && state.envs[0].id; render() } }) }; acts.appendChild(del) }
     const sp = el('div'); sp.style.flex = '1'; acts.appendChild(sp)
     if (env) { const use = el('button', 'btn', env.id === state.activeEnv ? '✓ 当前环境' : '设为当前'); use.onclick = () => { state.activeEnv = selId; persist(); renderEnv(); updateUrlPreview(); render() }; acts.appendChild(use) }
     const done = el('button', 'btn primary', '完成'); done.onclick = close; acts.appendChild(done)
@@ -113,28 +132,226 @@ function openEnvManager() {
   render()
 }
 
-// ===== 全局 Headers =====
-function openGlobalHeaders() {
-  const bg = $('#modalBg'); const m = el('div', 'modal wide')
-  const headers = store.get('globalHeaders') || []
-  function render() {
-    m.innerHTML = '<h3>全局 Headers</h3><div class="sub">全局请求头将自动附加到每一个请求。若请求中已存在同名 Header，由全局自动添加。</div>'
-    const host = el('div'); host.style.cssText = 'max-height:340px;overflow:auto'
-    const rows = clone(headers)
-    if (!rows.length || rows[rows.length-1].key || rows[rows.length-1].value) rows.push(blankRow())
-    host.appendChild(renderKVRows(rows, { kPlace: 'Header 名', vPlace: 'Header 值', onChange: () => {
-      const cleaned = rows.filter(r => r.key)
-      store.set('globalHeaders', cleaned)
-    } }))
-    m.appendChild(host)
-    const acts = el('div', 'acts'); const sp = el('div'); sp.style.flex = '1'
-    const done = el('button', 'btn primary', '完成'); done.onclick = close
-    acts.append(sp, done); m.appendChild(acts)
+// ===== 服务器选择器 =====
+function renderServers() {
+  const sel = $('#serverSelect'); if (!sel) return
+  sel.innerHTML = '<option value="">无</option>'
+  servers.forEach(s => { const o = el('option'); o.value = s.id; o.textContent = s.name + ' (' + s.url + ')'; sel.appendChild(o) })
+  const add = el('option'); add.value = '__manage'; add.textContent = '⚙ 管理服务器...'; sel.appendChild(add)
+}
+
+function onServerChange(sel) {
+  if (sel.value === '__manage') { sel.value = ''; openServerManager(); return }
+  const badge = $('#serverBadge'), text = $('#serverBadgeText')
+  if (sel.value) {
+    const srv = servers.find(s => s.id === sel.value)
+    if (srv) {
+      text.textContent = srv.name + ': ' + srv.url
+      badge.style.display = 'flex'
+      // 替换 URL 域名
+      const t = activeTab()
+      if (t && t.url) {
+        try {
+          const u = new URL(t.url.indexOf('{{') >= 0 ? t.url.replace(/\{\{[^}]+\}\}/g, 'x') : t.url)
+          const newUrl = srv.url + u.pathname + u.search + u.hash
+          t.url = newUrl; $('#url').value = newUrl; markDirty(t); updateUrlPreview(); persist()
+        } catch (e) { /* ignore */ }
+      }
+    }
+  } else { badge.style.display = 'none' }
+}
+
+function replaceServerUrl() {
+  const sel = $('#serverSelect'); if (!sel.value) return
+  const srv = servers.find(s => s.id === sel.value); if (!srv) return
+  const t = activeTab(); if (!t || !t.url) return
+  try {
+    const u = new URL(t.url.indexOf('{{') >= 0 ? t.url.replace(/\{\{[^}]+\}\}/g, 'x') : t.url)
+    const newUrl = srv.url + u.pathname + u.search + u.hash
+    t.url = newUrl; $('#url').value = newUrl; markDirty(t); updateUrlPreview(); persist()
+    setStatus('已替换服务器 URL', 'ok')
+  } catch (e) { setStatus('URL 无效', 'warn') }
+}
+
+function openServerManager() {
+  const bg = $('#modalBg'); const m = el('div', 'modal')
+  m.innerHTML = '<h3>管理服务器</h3><div class="sub">服务器列表用于快速替换 URL 域名。</div>'
+  const list = el('div'); list.style.cssText = 'max-height:240px;overflow:auto'
+  function renderList() {
+    list.innerHTML = ''
+    servers.forEach((s, i) => {
+      const row = el('div', 'srv-row')
+      row.innerHTML = '<input class="srv-input" value="' + esc(s.name) + '" placeholder="名称" /><input class="srv-input" value="' + esc(s.url) + '" placeholder="https://..." style="flex:1" />' +
+        '<button class="btn icon ghost" style="font-size:14px;color:var(--err)" onclick="window.__delSrv(' + i + ')">×</button>'
+      const ni = row.querySelectorAll('input')[0], ui = row.querySelectorAll('input')[1]
+      ni.oninput = () => { s.name = ni.value; persist() }
+      ui.oninput = () => { s.url = ui.value; persist() }
+      list.appendChild(row)
+    })
   }
-  function close() { bg.classList.remove('open'); bg.innerHTML = '' }
+  renderList()
+  m.appendChild(list)
+  const acts = el('div', 'acts'); const sp = el('div'); sp.style.flex = '1'
+  const add = el('button', 'btn', '+ 添加服务器'); add.onclick = () => { servers.push({ id: uid(), name: '新服务器', url: 'https://' }); renderList(); persist() }
+  const done = el('button', 'btn primary', '完成'); done.onclick = close
+  acts.append(add, sp, done); m.appendChild(acts)
   bg.innerHTML = ''; bg.appendChild(m); bg.classList.add('open')
   bg.onclick = e => { if (e.target === bg) close() }
-  render()
+  window.__delSrv = (i) => { servers.splice(i, 1); renderList(); persist(); renderServers() }
+  function close() { bg.classList.remove('open'); bg.innerHTML = ''; renderServers() }
+}
+
+// ===== 模板系统 =====
+function renderTemplates() {
+  const sel = $('#templateSelect'); if (!sel) return
+  sel.innerHTML = '<option value="">请选择...</option>'
+  templates.forEach(t => { const o = el('option'); o.value = t.id; o.textContent = t.name + ' (' + t.method + ' ' + t.url + ')'; sel.appendChild(o) })
+}
+
+function onTemplateSelect(sel) {
+  const t = activeTab(); if (!t) return
+  if (!sel.value) { $('#templateForm').style.display = 'none'; $('#customHint').style.display = 'none'; return }
+  const tmpl = templates.find(x => x.id === sel.value)
+  if (!tmpl) return
+  // 保存当前 form 数据再切换
+  if (t._templateId && t._formData) { /* snapshot kept in _formData */ }
+  t._templateId = tmpl.id
+  t.method = tmpl.method; t.url = tmpl.url; t.bodyType = tmpl.bodyType || 'none'
+  // 生成表单
+  generateTemplateForm(tmpl, t._formData || {})
+  $('#customHint').style.display = 'block'
+  markDirty(t); persist(); renderRequestBar(); renderReqEditor()
+}
+
+function saveTemplate() {
+  const t = activeTab(); if (!t) return
+  promptModal('保存模板', '输入模板名称：', t.name + ' 模板', name => {
+    if (!name) return
+    const fields = []
+    if (t.bodyType === 'json' && t.body) {
+      try { Object.keys(JSON.parse(t.body)).forEach(k => fields.push({ name: k, label: k, type: 'text', required: false })) } catch (e) { /* ignore */ }
+    }
+    const tmpl = { id: uid(), name, method: t.method, url: t.url, bodyType: t.bodyType, bodyFields: fields.length ? fields : [{ name: 'param', label: '参数', type: 'text', required: false }] }
+    templates.push(tmpl); persist(); renderTemplates(); setStatus('已保存模板「' + name + '」', 'ok')
+  })
+}
+
+function generateTemplateForm(tmpl, savedData) {
+  const form = $('#templateFields'); if (!form) return
+  form.innerHTML = ''
+  // 找出所有提前定义的 bodyFields 和 body 中额外字段
+  const allFields = tmpl.bodyFields || []
+  const extraKeys = new Set()
+  if (tmpl.bodyType === 'json') {
+    const t = activeTab()
+    if (t && t.body) {
+      try {
+        const parsed = JSON.parse(t.body)
+        Object.keys(parsed).forEach(k => { if (!allFields.find(f => f.name === k)) extraKeys.add(k) })
+      } catch (e) { /* ignore */ }
+    }
+  }
+  allFields.forEach(f => {
+    const div = el('div', 'tf-field')
+    const val = savedData[f.name] || ''
+    const req = f.required ? ' <span class="tf-req">*</span>' : ''
+    div.innerHTML = '<label>' + esc(f.label) + req + '</label>'
+    if (f.type === 'json') { const ta = el('textarea'); ta.placeholder = f.name; ta.value = val; ta.oninput = () => syncFormToBody(); div.appendChild(ta) }
+    else if (f.type === 'number') { const inp = el('input'); inp.type = 'number'; inp.placeholder = f.name; inp.value = val; inp.oninput = () => syncFormToBody(); div.appendChild(inp) }
+    else if (f.type === 'checkbox') { const lb = el('label'); const cb = el('input'); cb.type = 'checkbox'; cb.checked = val === true || val === 'true'; cb.onchange = () => syncFormToBody(); lb.appendChild(cb); lb.appendChild(document.createTextNode(' ' + esc(f.label))); div.appendChild(lb) }
+    else { const inp = el('input'); inp.type = 'text'; inp.placeholder = f.name; inp.value = val; inp.oninput = () => syncFormToBody(); div.appendChild(inp) }
+    form.appendChild(div)
+  })
+  extraKeys.forEach(k => {
+    const div = el('div', 'tf-field')
+    div.innerHTML = '<label>' + esc(k) + ' <span class="tf-extra">(额外)</span></label>'
+    const inp = el('input'); inp.type = 'text'; inp.placeholder = k; inp.value = savedData[k] || ''
+    inp.oninput = () => syncFormToBody(); div.appendChild(inp)
+    form.appendChild(div)
+  })
+  $('#templateForm').style.display = 'block'
+}
+
+function syncFormToBody() {
+  if (_syncingForm) return
+  const t = activeTab(); if (!t) return
+  const tmpl = templates.find(x => x.id === t._templateId); if (!tmpl) return
+  const fields = tmpl.bodyFields || []
+  const data = {}
+  fields.forEach(f => {
+    const inp = document.getElementById('tf-' + f.name) || $('#templateFields').querySelector('input[placeholder="' + f.name + '"],textarea[placeholder="' + f.name + '"]')
+    if (inp) {
+      if (f.type === 'number') data[f.name] = inp.value ? Number(inp.value) : null
+      else if (f.type === 'checkbox') data[f.name] = inp.checked
+      else data[f.name] = inp.value
+    }
+  })
+  // 额外字段
+  $$('#templateFields .tf-field').forEach(fd => {
+    const lbl = fd.querySelector('label')
+    const inp = fd.querySelector('input,textarea')
+    if (lbl && inp && lbl.textContent.includes('(额外)')) {
+      const key = lbl.textContent.replace(/\s*\(额外\)\s*/, '').trim()
+      if (key && !fields.find(f => f.name === key)) data[key] = inp.value
+    }
+  })
+  t._formData = data
+  if (t.bodyType === 'json') {
+    t.body = JSON.stringify(data, null, 2)
+    _syncingForm = true
+    renderReqEditor()
+    _syncingForm = false
+  }
+  markDirty(t); persist()
+}
+
+// ===== 全局 Headers =====
+function getGlobalHeaders() { return store.get('globalHeaders') || [] }
+
+function renderGlobalHeadersPane() {
+  const t = activeTab(); if (!t || t.reqTab !== 'global') return
+  const pane = $('#reqPane'); pane.innerHTML = ''
+  const wrap = el('div')
+  const hint = el('div', 'gh-hint', '全局 Headers 自动合并到所有请求。若请求中已有同名 Header，以请求为准。')
+  wrap.appendChild(hint)
+  const headers = getGlobalHeaders()
+  const rows = clone(headers)
+  if (!rows.length || rows[rows.length - 1].key || rows[rows.length - 1].value) rows.push(blankRow())
+  wrap.appendChild(renderKVRows(rows, { kPlace: 'Header 名', vPlace: 'Header 值', onChange: () => {
+    const cleaned = rows.filter(r => r.key)
+    store.set('globalHeaders', cleaned)
+  } }))
+  pane.appendChild(wrap)
+}
+
+// ===== Auth 标签页 =====
+function renderAuthPane() {
+  const t = activeTab(); if (!t || t.reqTab !== 'auth') return
+  const pane = $('#reqPane'); pane.innerHTML = ''
+  const wrap = el('div', 'auth-panel')
+  const seg = el('div', 'seg')
+  ;[['bearer', 'Bearer Token'], ['basic', 'Basic Auth']].forEach(([v, l]) => {
+    const b = el('button', t.authType === v ? 'on' : '', l); b.onclick = () => { t.authType = v; markDirty(t); persist(); renderAuthPane() }; seg.appendChild(b)
+  })
+  wrap.appendChild(seg)
+  if (t.authType === 'bearer') {
+    const f = el('div', 'auth-field'); f.innerHTML = '<label>Token</label>'
+    const inp = el('input'); inp.type = 'password'; inp.value = t.authToken || ''; inp.placeholder = 'eyJhbGciOiJIUzI1NiIs...'
+    inp.onfocus = () => inp.type = 'text'; inp.onblur = () => { if (!inp.value) inp.type = 'password' }
+    inp.oninput = () => { t.authToken = inp.value; markDirty(t); persist() }
+    f.appendChild(inp); wrap.appendChild(f)
+  } else {
+    const f1 = el('div', 'auth-field'); f1.innerHTML = '<label>用户名</label>'
+    const i1 = el('input'); i1.type = 'text'; i1.value = t.authUsername || ''; i1.placeholder = 'admin'
+    i1.oninput = () => { t.authUsername = i1.value; markDirty(t); persist() }; f1.appendChild(i1); wrap.appendChild(f1)
+    const f2 = el('div', 'auth-field'); f2.innerHTML = '<label>密码</label>'
+    const i2 = el('input'); i2.type = 'password'; i2.value = t.authPassword || ''
+    i2.onfocus = () => i2.type = 'text'; i2.onblur = () => { if (!i2.value) i2.type = 'password' }
+    i2.oninput = () => { t.authPassword = i2.value; markDirty(t); persist() }; f2.appendChild(i2); wrap.appendChild(f2)
+  }
+  const hint = el('div', 'auth-hint', '自动填充到 Authorization 头')
+  wrap.appendChild(hint)
+  pane.appendChild(wrap)
 }
 
 // ===== URL 预览 =====
@@ -195,7 +412,6 @@ function renderReqEditor() {
   } else if (t.reqTab === 'headers') {
     const wrap = el('div')
     wrap.appendChild(renderKVRows(t.headers, { kPlace: 'Header 名', vPlace: 'Header 值', onChange: () => { markDirty(t); persist() } }))
-    // Header suggestions
     const suggest = el('div', 'suggest')
     const COMMON = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' }
     Object.entries(COMMON).forEach(([k, v]) => {
@@ -207,6 +423,10 @@ function renderReqEditor() {
     pane.appendChild(wrap)
   } else if (t.reqTab === 'body') {
     renderBodyEditor(pane, t)
+  } else if (t.reqTab === 'auth') {
+    renderAuthPane()
+  } else if (t.reqTab === 'global') {
+    renderGlobalHeadersPane()
   }
 }
 
@@ -222,7 +442,7 @@ function renderBodyEditor(pane, t) {
   else if (t.bodyType === 'form') { const host = el('div'); host.style.cssText = 'height:calc(100% - 49px);overflow:auto'; host.appendChild(renderKVRows(t.formBody || [blankRow()], { kPlace: '字段名', vPlace: '字段值', onChange: () => { markDirty(t); persist() } })); pane.appendChild(host) }
   else {
     const ta = el('textarea', 'code'); ta.spellcheck = false; ta.placeholder = t.bodyType === 'json' ? '{\n  "key": "value"\n}' : '原始请求体…'; ta.value = t.body; ta.style.cssText = 'width:100%;min-height:80px;padding:10px;border-radius:4px;background:var(--bg);border:1px solid var(--line);font-size:12px;color:var(--ink);resize:vertical;tab-size:2'
-    ta.addEventListener('input', () => { t.body = ta.value; markDirty(t); persist() })
+    ta.addEventListener('input', () => { t.body = ta.value; markDirty(t); persist(); if (!_syncingForm) { t._formData = null } })
     ta.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart, en = ta.selectionEnd; ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en); ta.selectionStart = ta.selectionEnd = s + 2; t.body = ta.value } })
     pane.appendChild(ta)
   }
@@ -244,16 +464,19 @@ async function send() {
   let url = resolveVars(t.url.trim(), curEnv())
   if (!url) { setStatus('请先输入 URL', 'warn'); $('#url').focus(); return }
   if (!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url = 'https://' + url
-  // 去掉 URL 已有 query
   const qIdx = url.indexOf('?')
   let baseUrl = qIdx >= 0 ? url.slice(0, qIdx) : url
   const method = (t.method || 'GET').toUpperCase()
   const headers = {}
   if (t.headers) t.headers.filter(h => h.enabled !== false && h.key).forEach(h => headers[resolveVars(h.key, curEnv())] = resolveVars(h.value, curEnv()))
   // 全局 Headers
-  const globalHeaders = store.get('globalHeaders') || []
+  const globalHeaders = getGlobalHeaders()
   globalHeaders.filter(h => h.enabled !== false && h.key).forEach(h => { if (!Object.keys(headers).some(k => k.toLowerCase() === h.key.toLowerCase())) headers[h.key] = h.value })
-
+  // Auth
+  if (t.authType === 'bearer' && t.authToken && !Object.keys(headers).some(k => k.toLowerCase() === 'authorization')) headers['Authorization'] = 'Bearer ' + t.authToken
+  else if (t.authType === 'basic' && t.authUsername && t.authPassword && !Object.keys(headers).some(k => k.toLowerCase() === 'authorization')) {
+    headers['Authorization'] = 'Basic ' + btoa(t.authUsername + ':' + t.authPassword)
+  }
   if (t.params) {
     const qs = t.params.filter(p => p.enabled !== false && p.key).map(p => encodeURIComponent(resolveVars(p.key, curEnv())) + '=' + encodeURIComponent(resolveVars(p.value || '', curEnv()))).join('&')
     if (qs) baseUrl += '?' + qs
@@ -266,13 +489,13 @@ async function send() {
   }
 
   const btn = $('#sendBtn'); btn.disabled = true; btn.innerHTML = '发送中…'
-  $('#resStatus').style.display = 'none'; $('#resPane').innerHTML = '<div class="res-loading"><span class="spin"></span> 请求发送中…</div>'
+  $('#resStatus').style.display = 'none'; $('#resTabs').style.display = 'none'; $('#resTools').style.display = 'none'
+  $('#resPane').innerHTML = '<div class="res-loading"><span class="spin"></span> 请求发送中…</div>'
   setStatus(method + ' ' + baseUrl + (ui.proxyOn ? ' · 经代理' : '') + ' …')
   let fetchUrl = baseUrl, fetchHeaders = headers
   if (ui.proxyOn) { fetchHeaders = Object.assign({}, headers, { 'X-Polaris-Target': baseUrl }); fetchUrl = _panelMode ? _proxyBase + '/__proxy' : '/__proxy' }
   const t0 = performance.now()
   try {
-    // 释放上一次的 blob URL，避免内存泄漏
     if (t.response && t.response.blobUrl) { try { URL.revokeObjectURL(t.response.blobUrl) } catch (e) {} }
     const res = await fetch(fetchUrl, { method, headers: fetchHeaders, body, redirect: 'follow' })
     const blob = await res.blob(); const t1 = performance.now()
@@ -286,7 +509,7 @@ async function send() {
       parsed: parsed.ok ? parsed.value : undefined,
     }
     t.respPath = ''; t.respFilter = ''; t.tableSel = null
-    t.respView = parsed.ok ? (Array.isArray(parsed.value) ? 'table' : 'object') : /text\/html/i.test(ct) ? 'preview' : (isBin && /^image\//i.test(ct)) ? 'preview' : 'raw'
+    t.respView = parsed.ok ? (Array.isArray(parsed.value) ? 'table' : 'object') : /text\/html/i.test(ct) ? 'raw' : 'raw'
     renderResponse()
     setStatus(method + ' ' + res.status + ' ' + res.statusText + ' · ' + ms(t1 - t0) + ' · ' + bytes(blob.size), res.ok ? 'ok' : 'warn')
   } catch (err) {
@@ -299,6 +522,14 @@ async function send() {
 function getDrilled(t) {
   const r = t.response; const root = r && !r.error ? r.parsed : undefined
   let data = root
+  // 业务数据视图：自动下钻到常见根路径
+  if (ui.resTab === 'data' && root !== undefined) {
+    for (const key of ['data', 'result', 'response', 'results', 'items', 'list']) {
+      if (root && typeof root === 'object' && !Array.isArray(root) && key in root) {
+        const g = getByPath(root, key); if (g.ok) { data = g.value; break }
+      }
+    }
+  }
   if (t.respPath && root !== undefined) { const g = getByPath(root, t.respPath); if (g.ok) data = g.value; else data = undefined }
   const hasJSON = data !== undefined
   const canTable = hasJSON && (Array.isArray(data) || (data && typeof data === 'object'))
@@ -308,49 +539,41 @@ function getDrilled(t) {
 export function renderRespBody() {
   const t = activeTab(); if (!t || !t.response || t.response.error) return
   const d = getDrilled(t)
-  const caps = { table: d.canTable, object: d.hasJSON, raw: true, preview: !t.respPath && (/text\/html/i.test(t.response.contentType) || /^image\//i.test(t.response.contentType)), headers: true }
+  const caps = { table: d.canTable, object: d.hasJSON, raw: true, headers: true }
   if (!caps[t.respView]) t.respView = d.hasJSON ? 'object' : 'raw'
-  $$('#resSubtabs .subtab').forEach(b => { const v = b.dataset.rv; b.classList.toggle('active', v === t.respView); b.classList.toggle('disabled', !caps[v]) })
+  $$('#resViews .rv').forEach(b => { const v = b.dataset.rv; b.classList.toggle('active', v === t.respView); b.classList.toggle('disabled', !caps[v]) })
   const pane = $('#resPane')
   if (t.respView === 'raw') pane.innerHTML = '<pre class="raw-view">' + esc(t.response.text || '') + '</pre>'
   else if (t.respView === 'object') pane.innerHTML = renderJSONTree(d.data, { pretty: t.pretty })
   else if (t.respView === 'table') pane.innerHTML = renderTableView(d.data, { pretty: t.pretty })
-  else if (t.respView === 'preview') pane.innerHTML = renderPreview(t.response)
   else if (t.respView === 'headers') pane.innerHTML = renderHeadersView(t.response.headers)
+  // 应用字号
+  pane.style.fontSize = ui.resFont + 'px'
 }
 
 function renderResponse() {
   const t = activeTab(); const r = t.response
-  const pane = $('#resPane'), sub = $('#resSubtabs'), sb = $('#resStatus'), tools = $('#resTools')
-  if (!r) { sub.style.display = 'none'; sb.style.display = 'none'; tools.style.display = 'none'; pane.innerHTML = '<div class="res-idle"><div class="big">准备就绪</div><div class="tips">输入 URL 点「发送」，或从左侧集合载入一个请求。<br>· 多 tab：顶部 ＋ 新建，双击标签可重命名<br>· 环境变量：右上角切换，URL 里用 {{baseUrl}}<br>· 导入 cURL：右上角粘贴 curl 命令一键解析<br>· 跨域：顶栏「代理」开启后经本地后端转发</div></div>'; return }
-  if (r.error) { sub.style.display = 'none'; sb.style.display = 'none'; tools.style.display = 'none'; pane.innerHTML = '<div class="res-err"><div class="ti">请求失败</div><div>' + esc(r.error) + '</div></div>'; return }
+  const pane = $('#resPane'), tabs = $('#resTabs'), sb = $('#resStatus'), tools = $('#resTools')
+  if (!r) { tabs.style.display = 'none'; sb.style.display = 'none'; tools.style.display = 'none'; pane.innerHTML = '<div class="res-idle"><div class="big">准备就绪</div><div class="tips">输入 URL 点「发送」，或从左侧集合载入一个请求。<br>· 多 tab：顶部 ＋ 新建，双击标签可重命名<br>· 环境变量：右上角切换，URL 里用 {{baseUrl}}<br>· 导入 cURL：右上角粘贴 curl 命令一键解析<br>· 跨域：顶栏「代理」开启后经本地后端转发</div></div>'; return }
+  if (r.error) { tabs.style.display = 'none'; sb.style.display = 'none'; tools.style.display = 'none'; pane.innerHTML = '<div class="res-err"><div class="ti">请求失败</div><div>' + esc(r.error) + '</div></div>'; return }
   sb.style.display = 'flex'
+  tabs.style.display = 'flex'
   const cls = r.status >= 500 ? 's5' : r.status >= 400 ? 's4' : r.status >= 300 ? 's3' : 's2'
   sb.innerHTML = '<span class="status-chip ' + cls + '"><span class="dotc"></span>' + r.status + ' ' + esc(r.statusText) + '</span>' +
     '<span class="res-meta"><span>耗时 <b>' + ms(r.timeMs) + '</b></span><span>大小 <b>' + bytes(r.size) + '</b></span>' + (r.contentType ? '<span>类型 <b>' + esc(r.contentType.split(';')[0]) + '</b></span>' : '') + '</span>' +
     '<span class="sp"></span>' +
     '<button class="tool" onclick="window.__copyRes()">⧉ 复制</button>' +
     '<button class="tool" onclick="window.__dlRes()">↓ 下载</button>' +
+    '<button class="tool" onclick="window.__exportCurl()">导出 cURL</button>' +
     '<button class="tool" onclick="window.__askAI()">✦ AI</button>'
-  sub.style.display = 'flex'
+  tools.style.display = 'flex'
   const baseHasJSON = r.parsed !== undefined
   if (baseHasJSON) {
-    tools.style.display = 'flex'
     const pths = collectPaths(r.parsed)
-    tools.innerHTML = '<span class="lbl">路径</span><select class="path-select" onchange="window.__setPath(this.value)"><option value="">(根)</option>' + pths.map(p => '<option value="' + esc(p.path) + '"' + (p.path === t.respPath ? ' selected' : '') + '>' + esc(p.path || '(根)') + '</option>').join('') + '</select>' +
-      '<input class="path-input" placeholder="如 data.items[0].name" value="' + esc(t.respPath || '') + '" oninput="window.__setPath(this.value)" />' +
-      '<input class="filter-input" placeholder="过滤 name:值 id>1" value="' + esc(t.respFilter || '') + '" oninput="window.__setFilter(this.value)" />' +
-      '<button class="tool" onclick="window.__togglePretty()">' + (t.pretty ? '✦ 美化' : '✦ 原始') + '</button>' +
-      '<button class="tool" onclick="window.__expandAll()">⊞ 展开</button>' +
-      '<button class="tool" onclick="window.__collapseAll()">⊟ 折叠</button>'
-  } else { tools.style.display = 'none' }
+    const pathHtml = '<select class="path-select" onchange="window.__setPath(this.value)"><option value="">(根)</option>' + pths.map(p => '<option value="' + esc(p.path) + '"' + (p.path === t.respPath ? ' selected' : '') + '>' + esc(p.path || '(根)') + '</option>').join('') + '</select>'
+    // 已放在 res-toolbar 中
+  }
   renderRespBody()
-}
-
-function renderPreview(r) {
-  if (r.isBinary && r.blobUrl) { if (/^image\//i.test(r.contentType)) return '<div class="prev-img-wrap"><img src="' + r.blobUrl + '" /></div>'; return '<div class="prev-none">二进制响应</div>' }
-  if (/text\/html/i.test(r.contentType)) return '<iframe class="prev-frame" sandbox="" srcdoc="' + esc(r.text) + '"></iframe>'
-  return '<div class="prev-none">无可预览内容</div>'
 }
 
 function renderHeadersView(headers) {
@@ -360,6 +583,11 @@ function renderHeadersView(headers) {
   html += '</tbody></table></div>'
   return html
 }
+
+// ===== 响应工具函数 =====
+function changeFont(v) { ui.resFont = parseInt(v); persist(); const p = $('#resPane'); if (p) p.style.fontSize = v + 'px' }
+function expandLevel(n) { $$('.jt-children').forEach(c => { c.style.display = 'block'; if (c.previousElementSibling) { const tog = c.previousElementSibling.querySelector('.jt-tog'); if (tog) tog.textContent = '▾' } }); setStatus('已展开', 'ok') }
+function toggleFullscreen() { ui.fullscreen = !ui.fullscreen; const r = $('#resRegion') || $('#resPane')?.closest('.res-region'); if (r) { r.style.position = ui.fullscreen ? 'fixed' : ''; r.style.inset = ui.fullscreen ? '0' : ''; r.style.zIndex = ui.fullscreen ? '100' : ''; r.style.background = ui.fullscreen ? 'var(--bg)' : ''; setStatus(ui.fullscreen ? '全屏模式' : '退出全屏', 'ok') } }
 
 // ===== Tab 操作 =====
 function markDirty(t) { if (!t.dirty) { t.dirty = true; renderTabs() } }
@@ -439,12 +667,14 @@ function snapshot(t) { return { method: t.method, url: t.url, params: clone(t.pa
 function findSaved(id) { for (const g of state.collections) { const r = g.requests.find(x => x.id === id); if (r) return { g, r } } return null }
 function shortUrl(u) { try { const x = new URL(/^[a-z]+:\/\//i.test(u) ? u : 'https://' + u.replace(/^\{\{[^}]+\}\}/, 'http://x')); return (x.pathname && x.pathname.length > 1) ? x.pathname : x.hostname } catch (e) { return String(u).slice(0, 28) } }
 
-// ===== cURL 导入 =====
+// ===== cURL 导入/导出 =====
 function openCurlImport() {
   const bg = $('#modalBg'); const m = el('div', 'modal')
   m.innerHTML = '<h3>导入 cURL</h3><div class="sub">粘贴一条 curl 命令，解析为新的请求 tab。</div>'
   const f = el('div', 'field'); f.innerHTML = '<label>cURL 命令</label>'; const ta = el('textarea', 'curl-ta'); ta.placeholder = "curl 'https://api.example.com/users' -H 'Authorization: Bearer xxx'"
   f.appendChild(ta); m.appendChild(f)
+  const overwrite = el('div', 'field'); overwrite.innerHTML = '<label><input type="checkbox" id="curlOverwrite" checked /> 覆盖现有参数</label>'
+  m.appendChild(overwrite)
   const acts = el('div', 'acts'); const sp = el('div'); sp.style.flex = '1'
   const c = el('button', 'btn ghost', '取消'); c.onclick = close
   const ok = el('button', 'btn primary', '解析并新建')
@@ -461,6 +691,12 @@ function openCurlImport() {
   function close() { bg.classList.remove('open'); bg.innerHTML = '' }
 }
 
+function exportCurl() {
+  const t = activeTab(); if (!t || !t.url) { setStatus('请先填写 URL', 'warn'); return }
+  const curl = toCurl(t, curEnv())
+  copy(curl, 'cURL 已复制')
+}
+
 // ===== AI 分析 =====
 function askAI() {
   const t = activeTab(); const r = t.response
@@ -471,32 +707,34 @@ function askAI() {
   onSendToChat(prompt)
 }
 
-// ===== 代码生成 =====
-function openCodeGenModal() {
-  const t = activeTab(); if (!t || !t.url) { setStatus('请先填写 URL', 'warn'); return }
-  const bg = $('#modalBg'); const m = el('div', 'modal code-modal')
-  const LANGUAGES = [['curl', 'cURL'], ['python', 'Python'], ['js', 'JavaScript'], ['go', 'Go'], ['rust', 'Rust']]
-  let lang = 'python'
-  function render() {
-    m.innerHTML = '<h3>代码生成</h3><div class="sub">基于当前请求生成代码段，点击复制。</div>'
-    const seg = el('div', 'code-langs')
-    LANGUAGES.forEach(([v, l]) => { const b = el('button', lang === v ? 'on' : '', l); b.onclick = () => { lang = v; render() }; seg.appendChild(b) })
-    m.appendChild(seg)
-    const pre = el('pre', 'code-output')
-    try { const code = generateCode(t, lang, curEnv()); pre.textContent = code } catch (e) { pre.textContent = '代码生成失败：' + e.message }
-    m.appendChild(pre)
-    const acts = el('div', 'acts'); const sp = el('div'); sp.style.flex = '1'
-    const cp = el('button', 'btn primary', '复制代码'); cp.onclick = () => { copy(pre.textContent, '代码已复制'); close() }
-    const done = el('button', 'btn ghost', '关闭'); done.onclick = close
-    acts.append(sp, cp, done); m.appendChild(acts)
-  }
-  function close() { bg.classList.remove('open'); bg.innerHTML = '' }
-  bg.innerHTML = ''; bg.appendChild(m); bg.classList.add('open')
-  bg.onclick = e => { if (e.target === bg) close() }
-  render()
+// ===== 内联代码生成 =====
+function toggleCodeGen() {
+  const panel = $('#codeGenPanel'); if (!panel) return
+  const open = panel.style.display !== 'block'
+  panel.style.display = open ? 'block' : 'none'
+  if (open) generateCodeGen()
 }
 
-// ===== 自定义模态对话框（零原生 dialog）=====
+function generateCodeGen() {
+  const t = activeTab(); if (!t || !t.url) { $('#codeOutput').textContent = '请先填写 URL'; return }
+  try {
+    const code = generateCode(t, ui.curLang || 'curl', curEnv())
+    $('#codeOutput').textContent = code || '代码生成失败'
+  } catch (e) { $('#codeOutput').textContent = '代码生成失败：' + e.message }
+}
+
+function switchLang(btn, lang) {
+  ui.curLang = lang; persist()
+  $$('#codeGenPanel .lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang))
+  generateCodeGen()
+}
+
+function copyCode() {
+  const code = $('#codeOutput')?.textContent
+  if (code) copy(code, '代码已复制')
+}
+
+// ===== 自定义模态对话框 =====
 function confirmModal(msg, onOk) {
   const bg = $('#modalBg'); const m = el('div', 'modal')
   m.innerHTML = '<h3>确认</h3><div class="sub">' + esc(msg) + '</div>'
@@ -540,7 +778,7 @@ function openModal(title, sub, fields, onOk) {
   function close() { bg.classList.remove('open'); bg.innerHTML = '' }
 }
 
-// ===== 全局窗口函数（供 DOM onclick 引用）=====
+// ===== 全局窗口函数 =====
 function setupGlobal() {
   window.__copyRes = () => { const t = activeTab(); const d = getDrilled(t); copy(d.hasJSON ? JSON.stringify(d.data, null, 2) : (t.response.text || ''), '已复制') }
   window.__dlRes = () => {
@@ -568,6 +806,15 @@ function setupGlobal() {
     menu.style.left = (e.clientX + 10) + 'px'; menu.style.top = (e.clientY + 10) + 'px'
     document.addEventListener('click', () => { menu.style.display = 'none' }, { once: true })
   }
+  window.__onServerChange = (sel) => onServerChange(sel)
+  window.__replaceServerUrl = () => replaceServerUrl()
+  window.__onTemplateSelect = (sel) => onTemplateSelect(sel)
+  window.__saveTemplate = () => saveTemplate()
+  window.__copyCode = () => copyCode()
+  window.__changeFont = (v) => changeFont(v)
+  window.__expandLevel = (n) => expandLevel(n)
+  window.__toggleFullscreen = () => toggleFullscreen()
+  window.__exportCurl = () => exportCurl()
 }
 
 // ===== 事件绑定 =====
@@ -577,23 +824,41 @@ export function initApi(options = {}) {
   bindMethodMenu(); bindTopEvents(); bindMainEvents(); setupGlobal()
   load()
   applyLayout(); applyProxyBtn()
+  renderServers(); renderTemplates()
   renderAll()
 }
 
-// 绑定主工作区按钮：发送 / 布局 / 代理 / 导入 cURL / 代码 / AI / 集合保存 / 新建分组 / 分栏拖拽 / 子标签页
 function bindMainEvents() {
   const sendBtn = $('#sendBtn'); if (sendBtn) sendBtn.onclick = () => send()
   const layoutBtn = $('#layoutBtn'); if (layoutBtn) layoutBtn.onclick = () => { ui.layout = ui.layout === 'h' ? 'v' : 'h'; persist(); applyLayout(); setStatus('布局已切换为 ' + (ui.layout === 'h' ? '左右' : '上下'), 'ok') }
   const proxyBtn = $('#proxyBtn'); if (proxyBtn) proxyBtn.onclick = () => { ui.proxyOn = !ui.proxyOn; persist(); applyProxyBtn(); setStatus(ui.proxyOn ? '已开启跨域代理' : '已关闭跨域代理', 'ok') }
   const curlImport = $('#curlImportBtn'); if (curlImport) curlImport.onclick = () => openCurlImport()
-  const codeGen = $('#codeGenBtn'); if (codeGen) codeGen.onclick = () => openCodeGenModal()
+  const curlBtn = $('#curlBtn'); if (curlBtn) curlBtn.onclick = () => exportCurl()
+  const codeGen = $('#codeGenBtn'); if (codeGen) codeGen.onclick = () => toggleCodeGen()
   const aiBtn = $('#aiBtn'); if (aiBtn) aiBtn.onclick = () => askAI()
   const saveBtn = $('#saveBtn'); if (saveBtn) saveBtn.onclick = () => saveCurrent()
   const newGroup = $('#newGroup'); if (newGroup) newGroup.onclick = () => { promptModal('新建分组', '输入新分组名称：', '新分组', gn => { if (gn) { const g = { id: uid(), name: gn, collapsed: false, requests: [] }; state.collections.push(g); persist(); renderSidebar(); setStatus('已创建分组「' + gn + '」', 'ok') } }) }
   const search = $('#search'); if (search) search.oninput = () => renderSidebar()
+  // 模式切换
+  $$('#modeBar .mode-btn').forEach(b => b.onclick = () => {
+    $$('#modeBar .mode-btn').forEach(x => x.classList.remove('active')); b.classList.add('active')
+    ui.mode = b.dataset.mode; persist()
+    $('#customPanel').style.display = ui.mode === 'custom' ? 'block' : 'none'
+    if (ui.mode === 'custom') $('#customHint').style.display = 'block'
+  })
   // 子标签页切换
   $$('#reqSubtabs .subtab').forEach(b => b.onclick = () => { const t = activeTab(); if (t) { t.reqTab = b.dataset.rt; persist(); renderReqEditor() } })
-  $$('#resSubtabs .subtab').forEach(b => b.onclick = () => { const t = activeTab(); if (t && t.response) { t.respView = b.dataset.rv; renderRespBody() } })
+  $$('#resViews .rv').forEach(b => b.onclick = () => { const t = activeTab(); if (t && t.response) { t.respView = b.dataset.rv; renderRespBody() } })
+  // 响应双视图切换
+  $$('#resTabs .res-tab').forEach(b => {
+    if (b.dataset.rt) b.onclick = () => {
+      $$('#resTabs .res-tab').forEach(x => x.classList.remove('active')); b.classList.add('active')
+      ui.resTab = b.dataset.rt; persist()
+      if (activeTab()?.response) renderRespBody()
+    }
+  })
+  // 代码生成语言切换
+  $$('#codeGenPanel .lang-btn').forEach(b => b.onclick = () => switchLang(b, b.dataset.lang))
   // 分栏拖拽
   const divider = $('#divider'); if (divider) divider.onmousedown = e => {
     e.preventDefault()
@@ -610,16 +875,14 @@ function bindMainEvents() {
     const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); if (moved) persist() }
     document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp)
   }
-  // 右键菜单关闭
   document.addEventListener('click', () => { const m = $('#ctxMenu'); if (m) m.style.display = 'none' })
-  // URL 输入框：回车发送 + 实时保存
   const urlIn = $('#url'); if (urlIn) {
     urlIn.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); send() } }
     urlIn.oninput = () => { const t = activeTab(); const v = urlIn.value; t.url = v; updateUrlPreview(); markDirty(t); persist() }
   }
-  // 全局 ⌘/Ctrl+Enter 发送
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); send() }
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); const t = activeTab(); if (t && t.bodyType === 'json') { try { t.body = JSON.stringify(JSON.parse(t.body), null, 2); renderReqEditor(); persist(); setStatus('JSON 已格式化', 'ok') } catch (e) { /* ignore */ } } }
   })
 }
 
@@ -632,13 +895,14 @@ function applyLayout() {
   split.style.setProperty('--reqH', (ui.reqH || defH) + 'px')
   split.style.setProperty('--reqW', (ui.reqW || defW) + 'px')
   const lb = $('#layoutBtn'); if (lb) lb.innerHTML = ui.layout === 'h' ? '⇅ 上下' : '⇄ 左右'
+  const ls = $('#layoutStatus'); if (ls) ls.textContent = '布局: ' + (ui.layout === 'h' ? '左右' : '上下')
 }
 
 function applyProxyBtn() {
   const b = $('#proxyBtn'); if (!b) return
-  b.innerHTML = ui.proxyOn ? '🛡 代理: 开' : '🛡 代理: 关'
+  b.innerHTML = ui.proxyOn ? '代理: 开' : '代理: 关'
   b.style.color = ui.proxyOn ? 'var(--brand)' : ''
+  const ps = $('#proxyStatus'); if (ps) ps.textContent = '代理: ' + (ui.proxyOn ? '开' : '关')
 }
 
-// ===== 导出 =====
 export function getApiState() { return state }
