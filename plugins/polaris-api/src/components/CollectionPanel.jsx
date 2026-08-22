@@ -70,10 +70,11 @@ export default function CollectionPanel({ tabs, activeTabId, onOpenSaved, onNewT
     rd.onload = () => {
       try {
         const d = JSON.parse(rd.result)
-        const cols = Array.isArray(d) ? d : d.collections
-        if (Array.isArray(cols)) {
-          cols.forEach(g => { g.id = uid(); (g.requests || []).forEach(r => r.id = r.id || uid()) })
-          store.set('collections', (store.get('collections') || []).concat(cols))
+        const importedCols = Array.isArray(d) ? d : d.collections
+        if (Array.isArray(importedCols)) {
+          const cols = store.get('collections') || []
+          importedCols.forEach(g => { g.id = uid(); (g.requests || []).forEach(r => r.id = r.id || uid()) })
+          store.set('collections', [...cols, ...importedCols])
         }
       } catch (err) {}
       e.target.value = ''

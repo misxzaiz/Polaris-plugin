@@ -31,7 +31,13 @@ export default function ResponseViewer({ onSendToChat, request }) {
     }
   }, [response])
 
-  // 路径下钻数据
+  // 路径下钻菜单外部点击关闭
+  useEffect(() => {
+    if (!showPathMenu) return
+    const handler = () => setShowPathMenu(false)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [showPathMenu])
   const drilled = useMemo(() => {
     if (!response || response.error) return { data: undefined, hasJSON: false, canTable: false, canPreview: false }
     const root = response.parsed !== undefined ? response.parsed : undefined
