@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "minAppVersion": "1.0.0",
   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/polaris-api-client.zip",
   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/update.json",
-  "changelog": "v1.0.0 初始版本：基于 RELAY 架构，专注 API 请求调试。多 Tab、环境变量、集合管理、cURL 导入导出、跨域代理、智能响应（对象树/表格/路径下钻/增强过滤）、模板接口、服务器选择器、Auth 认证、全局 Headers、代码生成（5 语言）、AI 协同、动态变量、响应双视图/字号/展开/全屏"
+  "changelog": "v1.0.1 修复：cURL 导入 header 字段兼容、代理头同步、parser.js 双字段模式(k/v+key/value)兼容、服务标识更新"
 }

@@ -1,6 +1,6 @@
 {
   "name": "polaris-api-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "description": "Polaris API Client — 专业 HTTP 请求调试客户端",

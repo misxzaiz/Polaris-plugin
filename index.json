@@ -544,7 +544,7 @@
     {
       "id": "polaris-api-client",
       "name": "Polaris API Client",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "专业 HTTP 请求客户端：多Tab、环境变量、集合管理、cURL导入导出、跨域代理、智能响应（对象树/表格/路径下钻/增强过滤）、模板接口、服务器选择器、Auth认证、全局Headers、代码生成、AI协同、动态变量",
       "author": "Polaris",
       "category": "dev",
@@ -562,7 +562,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/polaris-api-client.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/update.json",
-      "sha256": "26c1ded074e93c2f7cc6820d287705e95953d9577a85328e8a455cd4ac50a6d2",
+      "sha256": "b85f60d281bfb7a72f2ce82e0e124d88825ff7065d4b81cbaea2495072ee8220",
       "permissions": {
         "workspaceRead": true,
         "network": true,
