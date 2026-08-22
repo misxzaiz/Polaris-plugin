@@ -10,7 +10,7 @@
         "id": "polaris-http.panel",
         "area": "activityBar",
         "panelType": "polarisHttp",
-        "icon": "Activity",
+        "icon": "Terminal",
         "labelKey": "plugins.polarisHttp",
         "labelDefault": "HTTP",
         "order": 86
