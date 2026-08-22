@@ -1,7 +1,7 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minAppVersion": "1.0.0",
   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/polaris-http.zip",
   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/update.json",
-  "changelog": "v1.0.0 初始版本：多 Tab、智能响应（对象树/表格/路径下钻/增强过滤）、集合管理、cURL/Postman/OpenAPI 导入、代码生成（5 语言）、AI 协同、跨域代理、环境变量、全局 Headers、零原生对话框"
+  "changelog": "v1.1.0 全面重构：模式切换（通用HTTP/定制模板）、服务器选择器+徽章替换、Auth 标签页（Bearer/Basic）、全局Headers内联标签页、内联代码生成面板、响应双视图（业务数据/完整响应）、响应字号/展开层数/全屏、cURL导出、模板系统（动态表单+Body⇄Form双向同步）、Ctrl+S 格式化快捷键"
 }
