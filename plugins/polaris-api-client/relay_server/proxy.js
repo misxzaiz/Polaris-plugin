@@ -6,7 +6,7 @@ import https from 'node:https';
 
 const HOP = new Set(['connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
   'te', 'trailers', 'transfer-encoding', 'upgrade']);
-const DROP_REQ = new Set(['host', 'content-length', 'origin', 'x-relay-target']);
+const DROP_REQ = new Set(['host', 'content-length', 'origin', 'x-polaris-target']);
 const httpsAgent = new https.Agent({ rejectUnauthorized: false }); // 调试代理：放过自签/内网证书
 
 function readBody(req) {
@@ -47,10 +47,10 @@ function once(urlStr, method, headers, body) {
 }
 
 export async function proxyHandler(req, res) {
-  // 目标：优先 X-Relay-Target 头，其次 ?url=
-  let target = req.headers['x-relay-target'];
+  // 目标：优先 X-Polaris-Target 头，其次 ?url=
+  let target = req.headers['x-polaris-target'];
   if (!target) target = new URL(req.url, 'http://x').searchParams.get('url');
-  if (!target) return sendErr(res, 400, 'missing X-Relay-Target header or ?url=');
+  if (!target) return sendErr(res, 400, 'missing X-Polaris-Target header or ?url=');
 
   const body = await readBody(req);
   const out = {};

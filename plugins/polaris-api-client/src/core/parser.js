@@ -72,12 +72,12 @@ export function toCurl(request, env) {
   if (!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url = 'https://' + url
   const parts = ['curl -X ' + request.method + ' ' + Q(url)]
   const headers = {}
-  if (request.headers) request.headers.filter(h => h.enabled !== false && h.key).forEach(h => headers[rv(h.key)] = rv(h.value))
+  if (request.headers) request.headers.filter(h => (h.enabled !== false || h.on !== false) && (h.key || h.k)).forEach(h => headers[rv(h.key || h.k)] = rv(h.value || h.v || ''))
   let body = null
   if (!['GET', 'HEAD'].includes(request.method)) {
     if (request.bodyType === 'json') { body = rv(request.body || ''); if (!Object.keys(headers).some(h => h.toLowerCase() === 'content-type')) headers['Content-Type'] = 'application/json' }
     else if (request.bodyType === 'text') body = rv(request.body || '')
-    else if (request.bodyType === 'form' && Array.isArray(request.formBody)) body = request.formBody.filter(f => f.enabled !== false && f.key).map(f => encodeURIComponent(rv(f.key)) + '=' + encodeURIComponent(rv(f.value || ''))).join('&')
+    else if (request.bodyType === 'form' && Array.isArray(request.formBody)) body = request.formBody.filter(f => (f.enabled !== false || f.on !== false) && (f.key || f.k)).map(f => encodeURIComponent(rv(f.key || f.k)) + '=' + encodeURIComponent(rv((f.value || f.v || '')))).join('&')
   }
   Object.entries(headers).forEach(([k, v]) => parts.push('-H ' + Q(k + ': ' + v)))
   if (body) parts.push('--data-raw ' + Q(body))
@@ -89,7 +89,7 @@ export function generateCode(request, language, env) {
   let url = rv(request.url || '')
   if (!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url = 'https://' + url
   const headers = {}
-  if (request.headers) request.headers.filter(h => h.enabled !== false && h.key).forEach(h => headers[rv(h.key)] = rv(h.value))
+  if (request.headers) request.headers.filter(h => (h.enabled !== false || h.on !== false) && (h.key || h.k)).forEach(h => headers[rv(h.key || h.k)] = rv(h.value || h.v || ''))
   const method = (request.method || 'GET').toUpperCase()
   let body = null
   if (!['GET', 'HEAD'].includes(method)) {

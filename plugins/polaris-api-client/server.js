@@ -14,7 +14,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`RELAY server (static + /__proxy + /__db) → http://localhost:${PORT}`);
+  console.log(`Polaris API Client proxy → http://localhost:${PORT}`);
   console.log(`   远程访问 → http://<本机IP>:${PORT}   （放行防火墙 / 安全组）`);
 });
 process.on('SIGINT', () => server.close(() => process.exit(0)));

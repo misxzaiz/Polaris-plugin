@@ -707,7 +707,7 @@ function openCurlImport() {
     try {
       const p = parseCurl(txt); if (!p.url) { setStatus('未能解析出 URL', 'err'); return }
       const nt = newTab({ name: 'cURL: ' + shortUrl(p.url), method: p.method, url: p.url, bodyType: p.bodyType, body: p.body,
-        headers: (p.headers.length ? p.headers.map(h => ({ id: uid(), on: true, k: h.k, v: h.v })) : []).concat([blankRow()]) })
+        headers: (p.headers.length ? p.headers.map(h => ({ id: uid(), on: true, k: h.key || h.k, v: h.value || h.v })) : []).concat([blankRow()]) })
       syncUrlToParams(nt); nt.dirty = true; state.tabs.push(nt); state.activeTab = nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：' + p.method + ' ' + p.url, 'ok')
     } catch (e) { setStatus('cURL 解析失败：' + e.message, 'err') }
   }
