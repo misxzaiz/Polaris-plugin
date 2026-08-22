@@ -56,8 +56,14 @@ export default function AIChat() {
     const controller = new AbortController()
     abortRef.current = controller
 
+    // 注入代理基础地址，供 AI 请求经 polaris-api-proxy 转发时使用
+    const activeCfg = getActiveConfig()
+    if (activeCfg && activeCfg.proxy) {
+      activeCfg.proxyBase = 'http://127.0.0.1:9870'
+    }
+
     await chat({
-      config: getActiveConfig(),
+      config: activeCfg,
       messages: [
         { role: 'system', content: systemPrompt },
         ...chatMessages,
@@ -251,6 +257,15 @@ function AIConfigPanel({ onClose }) {
     return () => unsub()
   }, [])
 
+  // 统一字段更新：即时落 store，避免局部 state 与 store 失同步导致丢数据
+  const updateField = useCallback((cfgId, field, value) => {
+    const all = store.get('ai.configs') || []
+    const idx = all.findIndex(c => c.id === cfgId)
+    if (idx < 0) return
+    all[idx] = { ...all[idx], [field]: value }
+    store.set('ai.configs', all)
+  }, [])
+
   const addConfig = useCallback(() => {
     const newCfg = {
       id: uid(),
@@ -268,16 +283,6 @@ function AIConfigPanel({ onClose }) {
     setEditId(newCfg.id)
   }, [])
 
-  const saveConfig = useCallback(() => {
-    if (!editConfig) return
-    const configs = store.get('ai.configs') || []
-    const idx = configs.findIndex(c => c.id === editConfig.id)
-    if (idx >= 0) {
-      configs[idx] = { ...editConfig }
-      store.set('ai.configs', configs)
-    }
-  }, [editConfig])
-
   const deleteConfig = useCallback((id) => {
     let configs = store.get('ai.configs') || []
     configs = configs.filter(c => c.id !== id)
@@ -285,20 +290,28 @@ function AIConfigPanel({ onClose }) {
     if (store.get('ai.activeConfig') === id) {
       store.set('ai.activeConfig', configs[0]?.id || null)
     }
-  }, [])
+    if (editId === id) setEditId(null)
+  }, [editId])
 
   const testConnection = useCallback(async () => {
     if (!editConfig) return
-    const { endpoint, apiKey, model } = editConfig
+    const { endpoint, apiKey, model, proxy } = editConfig
     if (!endpoint || !apiKey) {
       alert('请先填写 Endpoint 和 API Key')
       return
     }
     try {
       const url = (endpoint.replace(/\/+$/, '') + '/chat/completions')
-      const resp = await fetch(url, {
+      const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }
+      let fetchUrl = url
+      // 测试连接也支持经代理转发
+      if (proxy) {
+        headers['X-Polaris-Target'] = url
+        fetchUrl = 'http://127.0.0.1:9870/__proxy'
+      }
+      const resp = await fetch(fetchUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+        headers,
         body: JSON.stringify({ model: model || 'gpt-3.5-turbo', messages: [{ role: 'user', content: 'hi' }], max_tokens: 5 }),
       })
       if (resp.ok) {
@@ -337,47 +350,27 @@ function AIConfigPanel({ onClose }) {
           <div className="api-ai-config-form">
             <div className="api-field">
               <label>名称</label>
-              <input type="text" value={editConfig.name} onChange={e => {
-                const cfg = { ...editConfig, name: e.target.value }
-                setEditId(cfg.id)
-                // 直接更新 store
-                const configs = store.get('ai.configs') || []
-                const idx = configs.findIndex(c => c.id === cfg.id)
-                if (idx >= 0) {
-                  configs[idx] = cfg
-                  store.set('ai.configs', configs)
-                }
-              }} />
+              <input type="text" value={editConfig.name} onChange={e => updateField(editConfig.id, 'name', e.target.value)} />
             </div>
             <div className="api-field">
               <label>Endpoint (Base URL)</label>
-              <input type="text" placeholder="https://api.deepseek.com/v1" value={editConfig.endpoint} onChange={e => {
-                setEditConfig({ ...editConfig, endpoint: e.target.value })
-              }} />
+              <input type="text" placeholder="https://api.deepseek.com/v1" value={editConfig.endpoint} onChange={e => updateField(editConfig.id, 'endpoint', e.target.value)} />
             </div>
             <div className="api-field">
               <label>API Key</label>
-              <input type="password" placeholder="sk-xxx" value={editConfig.apiKey} onChange={e => {
-                setEditConfig({ ...editConfig, apiKey: e.target.value })
-              }} />
+              <input type="password" placeholder="sk-xxx" value={editConfig.apiKey} onChange={e => updateField(editConfig.id, 'apiKey', e.target.value)} />
             </div>
             <div className="api-field">
               <label>模型</label>
-              <input type="text" placeholder="deepseek-chat" value={editConfig.model} onChange={e => {
-                setEditConfig({ ...editConfig, model: e.target.value })
-              }} />
+              <input type="text" placeholder="deepseek-chat" value={editConfig.model} onChange={e => updateField(editConfig.id, 'model', e.target.value)} />
             </div>
             <div className="api-field">
               <label>温度: {editConfig.temperature}</label>
-              <input type="range" min="0" max="2" step="0.1" value={editConfig.temperature} onChange={e => {
-                setEditConfig({ ...editConfig, temperature: parseFloat(e.target.value) })
-              }} />
+              <input type="range" min="0" max="2" step="0.1" value={editConfig.temperature} onChange={e => updateField(editConfig.id, 'temperature', parseFloat(e.target.value))} />
             </div>
             <div className="api-field">
               <label>
-                <input type="checkbox" checked={editConfig.proxy || false} onChange={e => {
-                  setEditConfig({ ...editConfig, proxy: e.target.checked })
-                }} />
+                <input type="checkbox" checked={editConfig.proxy || false} onChange={e => updateField(editConfig.id, 'proxy', e.target.checked)} />
                 经代理转发（绕过 CORS）
               </label>
             </div>
@@ -385,13 +378,14 @@ function AIConfigPanel({ onClose }) {
               <button className="api-btn" onClick={() => deleteConfig(editConfig.id)}>删除</button>
               <span className="api-ai-spacer" />
               <button className="api-btn" onClick={testConnection}>测试连接</button>
-              <button className="api-btn api-btn-primary" onClick={() => {
-                saveConfig()
-                store.set('ai.activeConfig', editConfig.id)
-              }}>
-                保存
+              <button
+                className={'api-btn' + (editConfig.id === activeId ? ' api-btn-primary' : '')}
+                onClick={() => store.set('ai.activeConfig', editConfig.id)}
+              >
+                {editConfig.id === activeId ? '✓ 当前使用' : '设为当前'}
               </button>
             </div>
+            <div className="api-ai-config-hint">改动自动保存</div>
           </div>
         )}
         {!editConfig && !configs.length && (

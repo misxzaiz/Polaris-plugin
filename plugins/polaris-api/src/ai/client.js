@@ -60,9 +60,16 @@ export async function chat(opts) {
         'Authorization': 'Bearer ' + config.apiKey,
       }
       let fetchUrl = url
+      // 代理模式：经 polaris-api-proxy 转发，绕过浏览器 CORS
+      // proxyBase 形如 http://127.0.0.1:9870，由调用方注入
       if (config.proxy) {
+        const proxyBase = (config.proxyBase || '').replace(/\/+$/, '')
+        if (!proxyBase) {
+          if (onError) onError('代理服务未启动，请先开启顶栏「代理」或关闭 AI 配置中的「经代理转发」')
+          return
+        }
         headers['X-Polaris-Target'] = url
-        fetchUrl = '/__proxy'
+        fetchUrl = proxyBase + '/__proxy'
       }
 
       const resp = await fetch(fetchUrl, {

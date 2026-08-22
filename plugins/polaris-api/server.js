@@ -128,6 +128,15 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ ok: true, message: 'Polaris API Proxy Server' }))
 })
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} already in use. polaris-api-proxy exiting.`)
+  } else {
+    console.error('Server error:', err.message)
+  }
+  process.exit(1)
+})
+
 server.listen(PORT, () => {
   console.log(`Polaris API Proxy Server running on port ${PORT}`)
 })

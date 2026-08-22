@@ -85,7 +85,8 @@ export default function RequestEditor() {
   }, [updateRequest])
 
   const handleSend = useCallback(() => {
-    // 触发发送（通过自定义事件通知父组件）
+    // 触发发送（通过自定义事件通知 MainPanel 执行真正的请求）
+    // RequestEditor 自身不监听该事件，避免与 MainPanel 形成双触发/循环
     window.dispatchEvent(new CustomEvent('polaris-api-send'))
   }, [])
 
@@ -162,13 +163,6 @@ export default function RequestEditor() {
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [handleSend])
-
-  // 监听自定义发送事件
-  useEffect(() => {
-    const handler = () => handleSend()
-    window.addEventListener('polaris-api-send', handler)
-    return () => window.removeEventListener('polaris-api-send', handler)
   }, [handleSend])
 
   return (

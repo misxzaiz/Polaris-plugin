@@ -482,7 +482,7 @@
       "readme": ""
     },
     {
-      "id": "polaris.api",
+      "id": "polaris-api",
       "name": "Polaris API",
       "version": "1.0.0",
       "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持、AI 辅助调试",
@@ -495,7 +495,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/polaris-api.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
-      "sha256": "84457b921ecece31af91b6d3b8a9f6bfa282fb392112e04ae0beb9e80e5964a5",
+      "sha256": "9360261d46e3795de3b7b656734780ceacb7c846d8752c8584ab0262257dd8a8",
       "permissions": {
         "aiToolAccess": true,
         "network": true,

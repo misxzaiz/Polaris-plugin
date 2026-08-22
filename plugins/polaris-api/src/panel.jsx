@@ -5,29 +5,28 @@ import { useEffect, useRef } from 'react'
 import mainCss from './styles/main.css'
 import MainPanel from './components/MainPanel.jsx'
 
+const STYLE_ID = 'polaris-api-plugin-style'
+
 export default function PolarisApiPanel({ pluginId, onSendToChat }) {
   const containerRef = useRef(null)
-  const initializedRef = useRef(false)
 
   useEffect(() => {
-    const container = containerRef.current
-    if (!container || initializedRef.current) return
-
-    // 注入 CSS
-    try {
-      const style = document.createElement('style')
+    // CSS 注入到 document.head（幂等，避免重复注入/清空 React DOM）
+    let style = document.getElementById(STYLE_ID)
+    if (!style) {
+      style = document.createElement('style')
+      style.id = STYLE_ID
       style.setAttribute('data-polaris-api', '')
       style.textContent = mainCss
-      container.prepend(style)
-    } catch (e) {
-      // CSS 注入失败不阻塞功能
+      document.head.appendChild(style)
     }
 
-    initializedRef.current = true
-
     return () => {
-      container.innerHTML = ''
-      initializedRef.current = false
+      // 仅在容器卸载时移除样式；多实例共享同一 style 标签
+      const el = document.getElementById(STYLE_ID)
+      if (el && !document.querySelector('.polaris-api-panel')) {
+        el.remove()
+      }
     }
   }, [])
 
