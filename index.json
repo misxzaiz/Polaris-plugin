@@ -488,14 +488,20 @@
       "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持、AI 辅助调试",
       "author": "Polaris",
       "category": "dev",
-      "tags": ["api", "rest", "http", "ai", "panel"],
+      "tags": [
+        "api",
+        "rest",
+        "http",
+        "ai",
+        "panel"
+      ],
       "icon": "Beaker",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/polaris-api.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
-      "sha256": "9360261d46e3795de3b7b656734780ceacb7c846d8752c8584ab0262257dd8a8",
+      "sha256": "d3f19ad092da8ed221ffdf7178fd2eca279aa04474d424cc24ffe85d082d8b5d",
       "permissions": {
         "aiToolAccess": true,
         "network": true,
