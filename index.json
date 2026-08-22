@@ -501,7 +501,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/polaris-api.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
-      "sha256": "72223181d52ab4fc9597220ed375c88105c1ed6cc93b2e48e59830b2a0237452",
+      "sha256": "41521663849861fedca71973df9e4529fe10f0b7c12d3dfa07570c84a8055c46",
       "permissions": {
         "aiToolAccess": true,
         "network": true,
