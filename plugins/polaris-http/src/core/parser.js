@@ -4,7 +4,7 @@ export function parseCurl(text) {
   const toks = tokenizeCurl(text.trim())
   if (toks[0] === 'curl') toks.shift()
   const headers = []
-  let method = 'GET', url = ''
+  let method = null, url = ''
   const dataArgs = []
   let getFlag = false
   for (let i = 0; i < toks.length; i++) {

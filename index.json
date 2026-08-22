@@ -513,7 +513,7 @@
     {
       "id": "polaris-http",
       "name": "Polaris HTTP",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "description": "轻量级 HTTP 客户端：多Tab、模式切换（通用/模板）、服务器选择、Auth、全局Headers、智能响应（对象树/表格/下钻/过滤）、集合、cURL导入导出、代码生成（5语言）、AI协同、跨域代理、环境变量",
       "author": "Polaris",
       "category": "dev",
@@ -532,7 +532,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/polaris-http.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/update.json",
-      "sha256": "467836aea8a4055d17ce12e6080486716e58d41572fc68a48049f73066130544",
+      "sha256": "1f197f6fb06ed77e3faa4920b876400e4a01ab03f3bfc8334982f192fb62cb43",
       "permissions": {
         "workspaceRead": true,
         "network": true,

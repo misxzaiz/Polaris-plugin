@@ -1,7 +1,7 @@
 {
   "id": "polaris-http",
   "name": "Polaris HTTP",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "轻量级 API 请求客户端：多 Tab、智能响应（对象树/表格/路径下钻/增强过滤）、集合管理、cURL/Postman/OpenAPI 导入、代码生成、AI 协同、定制接口模板",
   "enabledByDefault": true,
   "contributes": {
