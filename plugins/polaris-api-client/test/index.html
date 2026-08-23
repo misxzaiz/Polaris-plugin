@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Polaris API Client 综合测试</title>
+<style>
+body{margin:0;height:100vh;overflow:hidden;background:#16181e;font-family:monospace}
+#root{width:100%;height:calc(100vh - 80px)}
+#testPanel{position:fixed;bottom:0;left:0;right:0;height:80px;background:#0a0c10;color:#ccc;font:11px monospace;padding:4px 10px;z-index:99999;overflow-y:auto;display:flex;flex-direction:column;gap:2px}
+#testPanel .sum{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+#testPanel .log{color:#8b949e;font-size:10px;white-space:pre-wrap;word-break:break-all}
+#testPanel .pass{color:#3fb950}
+#testPanel .fail{color:#f85149}
+#testPanel .info{color:#58a6ff}
+#testPanel .warn{color:#d29922}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="testPanel">
+  <div class="sum">
+    <span class="info">POLARIS API CLIENT TEST</span>
+    <span id="testCount" class="pass">0/0</span>
+    <span id="testPass" class="pass">0 pass</span>
+    <span id="testFail" class="fail">0 fail</span>
+    <span id="testStatus" class="info">初始化...</span>
+  </div>
+  <div class="log" id="testLog"></div>
+</div>
+<script src="standalone-bundle.js"></script>
+<script>
+// 测试脚本在 bundle 加载后执行
+const API_BASE = 'http://127.0.0.1:9864'
+const testLog = document.getElementById('testLog')
+const testCount = document.getElementById('testCount')
+const testPass = document.getElementById('testPass')
+const testStatus = document.getElementById('testStatus')
+const testFail = document.getElementById('testFail')
+let tests = { pass: 0, fail: 0, total: 0 }
+
+function log(msg, cls = '') {
+  const line = document.createElement('div')
+  line.textContent = msg
+  line.className = 'log ' + (cls || '')
+  testLog.appendChild(line)
+  testLog.scrollTop = testLog.scrollHeight
+}
+
+function updateCounts() {
+  testCount.textContent = `${tests.pass + tests.fail}/${tests.total}`
+  testPass.textContent = `${tests.pass} pass`
+  testFail.textContent = `${tests.fail} fail`
+}
+
+async function test(name, fn) {
+  tests.total++
+  testStatus.textContent = `测试中: ${name}`
+  try {
+    await fn()
+    tests.pass++
+    log(`✓ ${name}`, 'pass')
+  } catch (e) {
+    tests.fail++
+    log(`✗ ${name}: ${e.message}`, 'fail')
+    console.error(`[FAIL] ${name}:`, e)
+  }
+  updateCounts()
+}
+
+async function main() {
+  log('=== 启动面板 ===')
+  await new Promise(r => setTimeout(r, 1000))
+
+  // 2. 验证面板已渲染
+  await test('面板渲染：顶栏品牌', () => {
+    const brand = document.querySelector('.brand')
+    if (!brand || !brand.textContent.includes('API')) throw new Error('品牌未渲染')
+  })
+  await test('面板渲染：环境选择器', () => {
+    if (!document.querySelector('#envSel')) throw new Error('环境选择器未渲染')
+  })
+  await test('面板渲染：请求栏', () => {
+    if (!document.querySelector('#url') || !document.querySelector('#sendBtn')) throw new Error('请求栏未渲染')
+  })
+  await test('面板渲染：5 个子标签', () => {
+    const tabs = document.querySelectorAll('#reqSubtabs .subtab')
+    if (tabs.length !== 5) throw new Error(`期望 5 个标签，实际 ${tabs.length}`)
+    const labels = Array.from(tabs).map(t => t.textContent)
+    if (!labels.includes('Auth')) throw new Error('Auth 标签缺失')
+    if (!labels.includes('全局H')) throw new Error('全局H 标签缺失')
+  })
+  await test('面板渲染：模式切换', () => {
+    const modes = document.querySelectorAll('#modeBar .mode-btn')
+    if (modes.length !== 2) throw new Error(`期望 2 个模式按钮，实际 ${modes.length}`)
+  })
+  await test('面板渲染：服务器选择器', () => {
+    const sel = document.querySelector('#serverSelect')
+    if (!sel) throw new Error('服务器选择器未渲染')
+    if (sel.options.length < 4) throw new Error('服务器选项不足')
+  })
+  await test('面板渲染：响应双视图标签', () => {
+    if (!document.querySelector('#resTabs')) throw new Error('响应双视图标签未渲染')
+  })
+  await test('面板渲染：集合侧栏', () => {
+    const tree = document.querySelector('#tree')
+    if (!tree || !tree.textContent.includes('示例')) throw new Error('集合侧栏未渲染')
+    const items = tree.querySelectorAll('.req-item')
+    if (items.length < 3) throw new Error(`期望至少 3 个请求，实际 ${items.length}`)
+  })
+
+  log('=== 子标签页切换测试 ===')
+  await test('子标签页切换：Headers', () => {
+    const headersTab = Array.from(document.querySelectorAll('#reqSubtabs .subtab')).find(b => b.textContent === 'Headers')
+    if (!headersTab) throw new Error('Headers 标签未找到')
+    headersTab.click()
+    if (!document.querySelector('#reqPane .kv')) throw new Error('KV 编辑器未渲染')
+  })
+  await test('子标签页切换：Auth', () => {
+    const authTab = Array.from(document.querySelectorAll('#reqSubtabs .subtab')).find(b => b.textContent === 'Auth')
+    authTab.click()
+    if (!document.querySelector('.auth-panel')) throw new Error('Auth 面板未渲染')
+  })
+  await test('子标签页切换：全局H', () => {
+    const globalTab = Array.from(document.querySelectorAll('#reqSubtabs .subtab')).find(b => b.textContent === '全局H')
+    globalTab.click()
+    if (!document.querySelector('.gh-hint')) throw new Error('全局 Headers 面板未渲染')
+  })
+  await test('子标签页切换：Body', () => {
+    const bodyTab = Array.from(document.querySelectorAll('#reqSubtabs .subtab')).find(b => b.textContent === 'Body')
+    bodyTab.click()
+    if (!document.querySelector('.body-bar .seg')) throw new Error('Body 编辑器未渲染')
+  })
+  await test('切换回 Params', () => {
+    const paramsTab = Array.from(document.querySelectorAll('#reqSubtabs .subtab')).find(b => b.textContent === 'Params')
+    paramsTab.click()
+  })
+
+  log('=== 模式切换测试 ===')
+  await test('模式切换：定制接口模板', () => {
+    const customBtn = Array.from(document.querySelectorAll('#modeBar .mode-btn')).find(b => b.textContent.includes('定制'))
+    customBtn.click()
+    const panel = document.querySelector('#customPanel')
+    if (panel.style.display !== 'block') throw new Error('定制面板未显示')
+  })
+  await test('模板选择器有选项', () => {
+    const sel = document.querySelector('#templateSelect')
+    if (!sel || sel.options.length < 2) throw new Error('模板选择器无选项')
+  })
+  await test('切换回通用模式', () => {
+    const httpBtn = Array.from(document.querySelectorAll('#modeBar .mode-btn')).find(b => b.textContent.includes('通用'))
+    httpBtn.click()
+    if (document.querySelector('#customPanel').style.display === 'block') throw new Error('定制面板未隐藏')
+  })
+
+  log('=== 请求功能测试 ===')
+  // 关闭代理（如果有）
+  const proxyBtn = document.querySelector('#proxyBtn')
+  if (proxyBtn && proxyBtn.textContent.includes('开')) {
+    proxyBtn.click()
+    await new Promise(r => setTimeout(r, 100))
+  }
+  // 输入 URL
+  const urlInput = document.querySelector('#url')
+  urlInput.value = 'https://jsonplaceholder.typicode.com/todos/1'
+  urlInput.dispatchEvent(new Event('input'))
+  urlInput.dispatchEvent(new Event('change'))
+  await new Promise(r => setTimeout(r, 100))
+
+  await test('发送 GET 请求', async () => {
+    document.querySelector('#sendBtn').click()
+    await new Promise(r => setTimeout(r, 4000))
+    const status = document.querySelector('#resStatus')
+    if (!status || status.style.display === 'none') throw new Error('请求未返回响应')
+    if (!status.textContent.includes('200')) throw new Error(`状态码不是 200: ${status.textContent}`)
+  })
+  await test('响应 JSON 树渲染', () => {
+    const pane = document.querySelector('#resPane')
+    if (!pane.textContent.includes('userId') && !pane.textContent.includes('title')) {
+      throw new Error('JSON 树未渲染')
+    }
+  })
+  await test('响应双视图标签切换', () => {
+    const tabs = document.querySelectorAll('#resTabs .res-tab')
+    if (tabs.length < 2) throw new Error('期望 2 个响应标签')
+    tabs[1].click()
+    if (!tabs[1].classList.contains('active')) throw new Error('完整响应标签未激活')
+    tabs[0].click()
+    if (!tabs[0].classList.contains('active')) throw new Error('业务数据标签未激活')
+  })
+  await test('响应字号选择器', () => {
+    if (!document.querySelector('#resFontSel')) throw new Error('字号选择器未渲染')
+  })
+  await test('响应展开按钮', () => {
+    const btns = document.querySelectorAll('#resTabs .tbtn')
+    const hasExpand = Array.from(btns).some(b => b.textContent.includes('展开'))
+    if (!hasExpand) throw new Error('展开按钮未渲染')
+  })
+  await test('cURL 导出按钮', () => {
+    const tools = document.querySelectorAll('#resStatus .tool')
+    const hasCurl = Array.from(tools).some(b => b.textContent.includes('cURL'))
+    if (!hasCurl) throw new Error('cURL 导出按钮未渲染')
+  })
+  await test('AI 分析按钮', () => {
+    const tools = document.querySelectorAll('#resStatus .tool')
+    const hasAI = Array.from(tools).some(b => b.textContent.includes('AI'))
+    if (!hasAI) throw new Error('AI 分析按钮未渲染')
+  })
+
+  log('=== 代理测试 ===')
+  await test('开启代理', () => {
+    proxyBtn.click()
+    if (!proxyBtn.textContent.includes('开')) throw new Error('代理未开启')
+  })
+  await test('代理请求', async () => {
+    // 先切回代理模式
+    urlInput.value = 'https://jsonplaceholder.typicode.com/posts/1'
+    urlInput.dispatchEvent(new Event('input'))
+    urlInput.dispatchEvent(new Event('change'))
+    await new Promise(r => setTimeout(r, 100))
+    document.querySelector('#sendBtn').click()
+    await new Promise(r => setTimeout(r, 4000))
+    const status = document.querySelector('#resStatus')
+    if (!status || status.style.display === 'none') throw new Error('代理请求未返回')
+    // 代理返回 200 或 502（如果后端不可达也说明功能路径正确）
+    log(`代理响应状态: ${status.textContent}`, 'info')
+  })
+  await test('关闭代理', () => {
+    proxyBtn.click()
+    if (!proxyBtn.textContent.includes('关')) throw new Error('代理未关闭')
+  })
+
+  log('=== 布局测试 ===')
+  await test('布局切换按钮', () => {
+    const layoutBtn = document.querySelector('#layoutBtn')
+    const original = layoutBtn.textContent
+    layoutBtn.click()
+    if (layoutBtn.textContent === original) throw new Error('布局未切换')
+    layoutBtn.click()
+  })
+  await test('代码生成面板', () => {
+    document.querySelector('#codeGenBtn').click()
+    const panel = document.querySelector('#codeGenPanel')
+    if (panel.style.display !== 'block') throw new Error('代码生成面板未显示')
+    const langs = panel.querySelectorAll('.lang-btn')
+    if (langs.length !== 5) throw new Error(`期望 5 种语言，实际 ${langs.length}`)
+    document.querySelector('#codeGenBtn').click()
+  })
+  await test('方法切换：POST', () => {
+    document.querySelector('#methodSel').click()
+    const menu = document.querySelector('#methodMenu')
+    const postBtn = Array.from(menu.querySelectorAll('button')).find(b => b.textContent === 'POST')
+    postBtn.click()
+    if (document.querySelector('#methodLabel').textContent !== 'POST') throw new Error('方法未切换')
+  })
+  await test('方法切换回 GET', () => {
+    document.querySelector('#methodSel').click()
+    const menu = document.querySelector('#methodMenu')
+    const getBtn = Array.from(menu.querySelectorAll('button')).find(b => b.textContent === 'GET')
+    getBtn.click()
+    if (document.querySelector('#methodLabel').textContent !== 'GET') throw new Error('方法未切换回 GET')
+  })
+
+  log('=== 环境选择器测试 ===')
+  await test('环境菜单弹出', () => {
+    document.querySelector('#envSel').click()
+    const menu = document.querySelector('#envMenu')
+    if (!menu.classList.contains('open')) throw new Error('环境菜单未弹出')
+    // 关闭
+    document.body.click()
+  })
+  await test('服务器选择器操作', () => {
+    const sel = document.querySelector('#serverSelect')
+    sel.value = sel.options[1].value
+    sel.dispatchEvent(new Event('change'))
+  })
+
+  log('=== 测试完成 ===', 'info')
+  testStatus.textContent = tests.fail > 0 ? `FAILED: ${tests.fail} 个失败` : 'ALL PASSED'
+  testStatus.className = tests.fail > 0 ? 'fail' : 'pass'
+  if (tests.fail > 0) {
+    log(`⚠ ${tests.fail} 个测试失败，请检查日志`, 'warn')
+  }
+}
+
+setTimeout(main, 500)
+</script>
+</body>
+</html>

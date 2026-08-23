@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Polaris HTTP Client v2 — 修正版三方整合原型</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#16181e;color:#d8dae2;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:13px}
+body{overflow:hidden}
+:root{--bg:#16181e;--bg2:#1a1c24;--surface:#1e2028;--s2:#252830;--s3:#2c2f3a;--line:rgba(255,255,255,.10);--line2:rgba(255,255,255,.18);--ink:#d8dae2;--dim:#a8acba;--dimmer:#6e7282;--brand:#ff7a59;--brand-hi:#ff926f;--brand-ink:#1c0c06;--m-get:#3fb950;--m-post:#4493f8;--m-put:#d29922;--m-patch:#a371f7;--m-del:#f85149;--m-other:#8b949e;--ok:#3fb950;--warn:#d29922;--err:#f85149;--j-key:#79c0ff;--j-str:#a5d6a4;--j-num:#ffab70;--j-bool:#d2a8ff;--j-null:#8b949e;--topbar:40px;--statusbar:24px}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.16)}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:6px;height:var(--topbar);padding:0 10px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);flex:none;flex:none}
+.brand{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13px;flex:none;cursor:pointer}
+.brand-dot{width:7px;height:7px;border-radius:1px;background:var(--brand);box-shadow:0 0 10px var(--brand);transform:rotate(45deg)}
+.tabs{display:flex;align-items:center;gap:1px;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden}
+.tabs::-webkit-scrollbar{height:0}
+.rtab{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px 4px 0 0;font-size:11px;color:var(--dim);white-space:nowrap;flex:none;max-width:160px;border-bottom:2px solid transparent;cursor:pointer;transition:.12s}
+.rtab:hover{background:var(--surface);color:var(--ink)}
+.rtab.active{background:var(--s2);color:var(--ink);border-bottom-color:var(--brand)}
+.tm{font-weight:700;font-size:9px}
+.tm.c-get{color:var(--m-get)}.tm.c-post{color:var(--m-post)}.tm.c-put{color:var(--m-put)}.tm.c-patch{color:var(--m-patch)}.tm.c-del{color:var(--m-del)}
+.tn{overflow:hidden;text-overflow:ellipsis;flex:1}
+.dirty{color:var(--warn);font-size:8px}
+.tx{color:var(--dimmer);font-size:14px;padding:0 2px;cursor:pointer;border:none;background:transparent;display:flex;align-items:center}
+.tx:hover{color:var(--err)}
+.tab-add{color:var(--dim);font-size:16px;padding:4px 8px;cursor:pointer;flex:none;border:none;background:transparent;display:flex;align-items:center}
+.tab-add:hover{color:var(--brand)}
+.sp{flex:1}
+.btn{display:inline-flex;align-items:center;gap:5px;height:28px;padding:0 12px;border-radius:4px;border:1px solid var(--line);font-size:11.5px;color:var(--dim);cursor:pointer;background:transparent;white-space:nowrap;transition:.12s}
+.btn:hover{color:var(--ink);border-color:var(--line2);background:var(--surface)}
+.btn.primary{color:var(--brand-ink);background:var(--brand);border-color:var(--brand);font-weight:600}
+.btn.primary:hover{background:var(--brand-hi)}
+.btn.primary.sending{opacity:.7;pointer-events:none}
+.btn.active{color:var(--brand);border-color:var(--brand)}
+.btn.icon{width:28px;padding:0;justify-content:center;font-size:12px}
+.kbd{font-size:9px;padding:1px 4px;border-radius:3px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);margin-left:4px}
+.env-sel{display:flex;align-items:center;gap:4px;padding:4px 10px;border-radius:4px;border:1px solid var(--line);font-size:11px;color:var(--ink);cursor:pointer;background:var(--surface);position:relative}
+.env-sel:hover{border-color:var(--line2)}
+.env-sel .dot{width:6px;height:6px;border-radius:50%;background:var(--brand);flex:none}
+.env-sel .base{color:var(--dimmer);font-size:10px;margin-left:4px;max-width:100px;overflow:hidden;text-overflow:ellipsis}
+.env-menu{position:absolute;top:100%;right:0;z-index:200;min-width:220px;background:var(--s2);border:1px solid var(--line2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:4px;margin-top:4px;display:none}
+.env-menu.open{display:block}
+.env-item{display:block;width:100%;text-align:left;padding:6px 10px;border-radius:4px;font-size:11px;cursor:pointer;color:var(--dim);border:none;background:transparent}
+.env-item:hover{background:var(--s3);color:var(--ink)}
+.env-item.on{color:var(--brand);font-weight:600}
+.env-item small{display:block;font-size:9px;color:var(--dimmer)}
+.env-div{height:1px;background:var(--line);margin:4px 0}
+.main{flex:1;min-height:0;display:flex}
+.side{width:200px;min-width:200px;border-right:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden;transition:all .2s}
+.side.collapsed{display:none}
+.side-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--line);flex:none}
+.side-head .t{font-size:10px;color:var(--dimmer);letter-spacing:.06em;flex:1}
+.mbtn{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:12px;color:var(--dimmer);cursor:pointer;border:none;background:transparent}
+.mbtn:hover{color:var(--ink);background:var(--surface)}
+.work{flex:1;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+/* ===== 关键修正：split 容器 ===== */
+.split{flex:1;display:flex;flex-direction:column;min-height:0;min-width:0}
+.split.h{flex-direction:row}
+.split:not(.h) .req-region{height:var(--reqH,220px);overflow:auto}
+.split.h .req-region{width:var(--reqW,480px);overflow:auto;border-right:1px solid var(--line)}
+.split:not(.h) .divider{height:6px;cursor:row-resize}
+.split.h .divider{width:6px;cursor:col-resize}
+.divider{background:var(--s2);flex:none;position:relative;transition:.1s}
+.divider::after{content:'⋯';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--dimmer);font-size:10px;opacity:0;transition:.1s}
+.divider:hover::after{opacity:1}
+.divider:hover{background:var(--brand)}
+.res-region{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.req-region{padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.req-bar{display:flex;align-items:center;gap:6px}
+.method-wrap{position:relative;flex:none}
+.method-btn{width:72px;height:30px;border-radius:4px;border:1px solid var(--line);font-weight:700;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;background:transparent}
+.method-btn.c-get{color:var(--m-get)}.method-btn.c-post{color:var(--m-post)}.method-btn.c-put{color:var(--m-put)}.method-btn.c-patch{color:var(--m-patch)}.method-btn.c-del{color:var(--m-del)}
+.method-btn:hover{border-color:var(--line2);background:var(--surface)}
+.method-menu{position:absolute;top:100%;left:0;z-index:200;min-width:100px;background:var(--s2);border:1px solid var(--line2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:4px;margin-top:2px;display:none}
+.method-menu.open{display:block}
+.m-item{display:block;width:100%;text-align:left;padding:5px 10px;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;border:none;background:transparent}
+.m-item:hover{background:var(--s3)}
+.url-wrap{flex:1;position:relative}
+.url-in{width:100%;height:30px;padding:0 10px;border-radius:4px;border:1px solid var(--line);background:var(--surface);font-size:12px;color:var(--ink);outline:none}
+.url-in:focus{border-color:var(--brand)}
+.url-prev{margin-top:2px;font-size:10px;color:var(--dim);display:none}
+.url-prev.show{display:block}
+.url-prev b{color:var(--ok)}
+.mode-bar{display:flex;gap:6px;padding:5px 10px;border-bottom:1px solid var(--line);background:var(--surface);flex:none;align-items:center}
+.mode-btn{font-size:10px;padding:3px 10px;border-radius:4px;border:1px solid var(--line);cursor:pointer;color:var(--dim);background:transparent}
+.mode-btn:hover{color:var(--ink);background:var(--s2)}
+.mode-btn.active{color:var(--brand);border-color:var(--brand);background:rgba(255,122,89,.1)}
+.server-badge{display:none;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;background:rgba(68,147,248,.1);border:1px solid rgba(68,147,248,.2);font-size:10px;color:var(--m-post);margin-top:2px}
+.server-badge.show{display:flex}
+.subtabs{display:flex;border-bottom:1px solid var(--line);margin-top:2px;flex:none}
+.subtab{padding:5px 12px;font-size:11px;color:var(--dim);border-bottom:2px solid transparent;cursor:pointer;display:flex;align-items:center;gap:4px;background:transparent;border-top:none;border-left:none;border-right:none}
+.subtab:hover{color:var(--ink)}
+.subtab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.badge{font-size:9px;padding:0 5px;border-radius:8px;background:var(--s3);color:var(--dimmer)}
+.pane{display:none;padding:4px 0}
+.pane.active{display:block}
+.kv{font-size:11px}
+.kv table{width:100%;border-collapse:collapse}
+.kv th{text-align:left;font-size:10px;font-weight:500;color:var(--dimmer);padding:3px 6px;border-bottom:1px solid var(--line);text-transform:uppercase;letter-spacing:.06em}
+.kv td{padding:2px 4px;border-bottom:1px solid rgba(255,255,255,.04)}
+.kv input[type=text]{width:100%;padding:4px 6px;border-radius:3px;background:transparent;border:none;color:var(--ink);font-size:11px;outline:none}
+.kv input[type=text]:focus{background:var(--surface)}
+.kv input[type=checkbox]{accent-color:var(--brand)}
+.kv-blank td{border-bottom-color:transparent}
+.kv-blank input{opacity:.4}
+.kv-x{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:10px;color:var(--dimmer);cursor:pointer;border:none;background:transparent;opacity:0}
+tr:hover .kv-x{opacity:1}
+.kv-x:hover{color:var(--err);background:rgba(248,81,73,.1)}
+.kv-add{font-size:11px;color:var(--brand);padding:4px 0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;background:transparent;border:none}
+.kv-add:hover{color:var(--brand-hi)}
+.suggest{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0}
+.chip{font-size:10px;padding:3px 8px;border-radius:10px;border:1px solid var(--line);color:var(--dim);cursor:pointer;background:transparent}
+.chip:hover{color:var(--ink);border-color:var(--line2);background:var(--surface)}
+.body-bar{display:flex;gap:4px;margin-bottom:4px;align-items:center}
+.body-type{font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--line);cursor:pointer;color:var(--dim);background:transparent}
+.body-type:hover{color:var(--ink);background:var(--surface)}
+.body-type.active{color:var(--brand);border-color:var(--brand)}
+.body-textarea{width:100%;min-height:80px;padding:10px;border-radius:4px;background:var(--bg);border:1px solid var(--line);font-size:12px;color:var(--ink);resize:vertical;outline:none;font-family:inherit;tab-size:2}
+.body-textarea:focus{border-color:var(--brand)}
+.body-empty{padding:16px;text-align:center;color:var(--dimmer);font-size:11px}
+.body-tool{font-size:11px;padding:4px 10px;border-radius:4px;border:1px solid var(--line);cursor:pointer;color:var(--dim);background:transparent}
+.body-tool:hover{color:var(--ink);background:var(--surface)}
+.auth-panel{padding:6px 0}
+.auth-field{margin-bottom:8px}
+.auth-field label{display:block;font-size:10px;color:var(--dimmer);margin-bottom:3px}
+.auth-field input{width:100%;padding:5px 8px;border-radius:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:11px;outline:none}
+.auth-field input:focus{border-color:var(--brand)}
+.auth-hint{font-size:10px;color:var(--dimmer);padding:4px 0}
+.codegen{border:1px solid var(--line);border-radius:4px;margin-top:4px}
+.codegen-head{display:flex;align-items:center;gap:4px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:11px;background:var(--surface)}
+.lang-btn{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--line);cursor:pointer;color:var(--dim);background:transparent}
+.lang-btn:hover{color:var(--ink)}
+.lang-btn.active{color:var(--brand);border-color:var(--brand);background:rgba(255,122,89,.1)}
+.codegen-body{position:relative}
+.codegen-body pre{padding:10px;font-size:11px;line-height:1.5;white-space:pre-wrap;word-break:break-all;margin:0;max-height:140px;overflow:auto}
+.codegen-copy{position:absolute;top:6px;right:6px;font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--line);cursor:pointer;color:var(--dimmer);background:var(--s2)}
+.codegen-copy:hover{color:var(--ink)}
+.template-form{padding:6px;border:1px solid var(--line);border-radius:4px;margin-top:4px;background:var(--surface);display:none}
+.template-form.show{display:block}
+.tf-title{font-size:10px;color:var(--dimmer);margin-bottom:6px;letter-spacing:.04em}
+.tf-field{margin-bottom:5px}
+.tf-field label{display:block;font-size:10px;color:var(--dim);margin-bottom:2px}
+.tf-field input{width:100%;padding:4px 6px;border-radius:3px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:11px;outline:none}
+.tf-field input:focus{border-color:var(--brand)}
+.tf-field textarea{width:100%;min-height:40px;padding:4px 6px;border-radius:3px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:11px;outline:none;font-family:inherit;resize:vertical}
+.tf-field textarea:focus{border-color:var(--brand)}
+.tf-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+/* ===== 响应区（invoke 完整功能） ===== */
+.res-tabs{display:flex;align-items:center;border-bottom:1px solid var(--line);flex:none;padding:0 10px}
+.res-tab{font-size:11px;padding:5px 12px;color:var(--dim);border-bottom:2px solid transparent;cursor:pointer;background:transparent;border-top:none;border-left:none;border-right:none}
+.res-tab:hover{color:var(--ink)}
+.res-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+.res-tab-acts{display:flex;gap:4px;margin-left:auto;padding:4px 0}
+.res-tab-acts .tbtn{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--line);cursor:pointer;color:var(--dim);background:transparent}
+.res-tab-acts .tbtn:hover{color:var(--ink);border-color:var(--line2)}
+.res-toolbar{display:flex;align-items:center;gap:8px;padding:5px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap;flex:none}
+.res-views{display:flex;border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.rv{padding:4px 10px;font-size:11px;color:var(--dim);border-right:1px solid var(--line);cursor:pointer;background:transparent}
+.rv:last-child{border-right:none}
+.rv:hover{color:var(--ink);background:var(--surface)}
+.rv.active{color:var(--brand);background:var(--s2)}
+.res-body{flex:1;overflow:auto;padding:8px 10px;font-size:var(--res-font,13px)}
+.res-status{display:flex;align-items:center;gap:10px;padding:6px 10px;border-bottom:1px solid var(--line);font-size:11px;flex:none}
+.status-chip{display:flex;align-items:center;gap:6px;font-weight:600}
+.status-chip .dotc{width:8px;height:8px;border-radius:50%}
+.s2 .dotc,.s2{color:var(--ok)}.s2 .dotc{background:var(--ok)}
+.s4 .dotc,.s4{color:var(--warn)}.s4 .dotc{background:var(--warn)}
+.s5 .dotc,.s5{color:var(--err)}.s5 .dotc{background:var(--err)}
+.res-meta{display:flex;gap:14px;color:var(--dimmer);font-size:10px}
+.res-meta b{color:var(--dim);font-weight:500}
+.jt{font-size:12px;line-height:1.8}
+.jt-key{color:var(--j-key)}
+.jt-str{color:var(--j-str)}
+.jt-num{color:var(--j-num)}
+.jt-bool{color:var(--j-bool)}
+.jt-null{color:var(--j-null);font-style:italic}
+.jt-node{margin-left:14px}
+.jt-tog{cursor:pointer;color:var(--dim);user-select:none}
+.jt-row{display:flex;align-items:center;gap:4px}
+.jt-row.expandable{cursor:pointer}
+.jt-prev{color:var(--dimmer);font-size:10px}
+.jt-children{margin-left:14px;border-left:1px solid var(--line);padding-left:10px}
+.tbl-wrap{overflow:auto}
+table.dt{width:100%;border-collapse:collapse;font-size:11px}
+table.dt th{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line2);color:var(--dim);font-size:10px;font-weight:500;position:sticky;top:0;background:var(--bg);white-space:nowrap;user-select:none}
+table.dt th.sortable{cursor:pointer}
+table.dt th.sortable:hover{color:var(--ink)}
+table.dt td{padding:4px 8px;border-bottom:1px solid rgba(255,255,255,.05);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+table.dt tr:hover td{background:var(--surface)}
+.idx{color:var(--dimmer);font-size:10px;width:36px;text-align:right}
+.col-grip{display:inline-block;width:4px;height:12px;margin-left:3px;cursor:col-resize;vertical-align:middle;background:var(--s3);border-radius:2px}
+.col-grip:hover{background:var(--brand)}
+.col-picker{display:flex;align-items:center;gap:4px;padding:4px 0;flex-wrap:wrap}
+.col-chip{font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid var(--line);cursor:pointer;color:var(--dimmer);background:transparent}
+.col-chip.on{color:var(--ink);border-color:var(--line2)}
+.col-chip:hover{color:var(--ink);background:var(--surface)}
+.tbl-note{font-size:10px;color:var(--dimmer);padding:6px 0}
+.raw-view{font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;padding:8px;background:var(--bg);border-radius:4px}
+.ctx-menu{position:fixed;background:var(--s2);border:1px solid var(--line2);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.5);padding:4px;z-index:9999;font-size:11px;min-width:120px;display:none}
+.ctx-item{padding:5px 12px;border-radius:4px;cursor:pointer;color:var(--dim);border:none;background:transparent;display:block;width:100%;text-align:left}
+.ctx-item:hover{background:var(--s3);color:var(--ink)}
+.ctx-sep{height:1px;background:var(--line);margin:3px 0}
+.cell-tip{position:fixed;background:var(--s2);border:1px solid var(--line2);border-radius:4px;padding:5px 8px;font-size:10px;color:var(--ink);max-width:320px;z-index:9000;box-shadow:0 4px 12px rgba(0,0,0,.4);pointer-events:none;display:none}
+.cell-tip.show{display:block}
+.statusbar{display:flex;align-items:center;height:var(--statusbar);padding:0 10px;border-top:1px solid var(--line);font-size:10px;color:var(--dimmer);flex:none}
+.statusbar b{color:var(--dim)}
+.toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--line2);border-radius:6px;padding:6px 14px;font-size:11px;color:var(--ink);z-index:5000;box-shadow:0 4px 12px rgba(0,0,0,.4);display:none}
+.toast.show{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<span class="brand" onclick="toast('Polaris HTTP Client v2')"><span class="brand-dot"></span>Polaris HTTP</span>
+<div class="tabs" id="tabContainer">
+<div class="rtab active"><span class="tm c-get">GET</span><span class="tn">用户列表</span><button class="tx" onclick="event.stopPropagation();closeTab(this)">×</button></div>
+<div class="rtab"><span class="tm c-post">POST</span><span class="tn">新建订单</span><span class="dirty">●</span><button class="tx" onclick="event.stopPropagation();closeTab(this)">×</button></div>
+<button class="tab-add" onclick="addTab()">+</button>
+</div>
+<span class="sp"></span>
+<div class="env-sel" id="envSel" onclick="event.stopPropagation();toggleEnv()">
+<span class="dot"></span><span id="envName">生产环境</span><span class="base" id="envBase">api.example.com</span><span class="car">▾</span>
+<div class="env-menu" id="envMenu" onclick="event.stopPropagation()">
+<button class="env-item on" data-env='{"name":"生产环境","base":"api.example.com"}' onclick="setEnv(this)">生产环境<small>api.example.com</small></button>
+<button class="env-item" data-env='{"name":"测试环境","base":"test-api.example.com"}' onclick="setEnv(this)">测试环境<small>test-api.example.com</small></button>
+<button class="env-item" data-env='{"name":"本地开发","base":"localhost:8080"}' onclick="setEnv(this)">本地开发<small>localhost:8080</small></button>
+<div class="env-div"></div>
+<button class="env-item" onclick="toast('环境管理模态')">管理环境...</button>
+</div>
+</div>
+<button class="btn" onclick="toast('cURL 导入面板')">导入 cURL</button>
+<button class="btn" id="layoutBtn" onclick="toggleLayout()">上下</button>
+<button class="btn" id="proxyBtn" onclick="toggleProxy()">代理:关</button>
+</header>
+
+<div class="main" id="mainArea">
+<!-- 侧栏独立 -->
+<aside class="side" id="sidebar">
+<div class="side-head"><span class="t">集合</span><button class="mbtn" onclick="toast('新建分组')">＋</button><button class="mbtn" onclick="toast('导入')">↧</button><button class="mbtn" onclick="toast('导出')">↥</button></div>
+<div class="tree" style="flex:1;overflow:auto;padding:4px 0"><div style="padding:12px;font-size:11px;color:var(--dimmer);text-align:center">集合与历史<br/><br/>保存的请求会出现在这里</div></div>
+<div class="side-head" style="border-top:1px solid var(--line)"><span class="t">工具</span></div>
+<div style="padding:6px">
+<button class="btn" style="width:100%;margin-bottom:4px;font-size:10px;height:24px;justify-content:flex-start" onclick="toast('JSON 可视化工具')">JSON 可视化</button>
+<button class="btn" style="width:100%;margin-bottom:4px;font-size:10px;height:24px;justify-content:flex-start" onclick="toast('SQL 格式化工具')">SQL 格式化</button>
+<button class="btn" style="width:100%;margin-bottom:4px;font-size:10px;height:24px;justify-content:flex-start" onclick="toast('模板管理页面')">模板管理</button>
+<button class="btn" style="width:100%;font-size:10px;height:24px;justify-content:flex-start" onclick="toast('设置页面')">设置</button>
+</div>
+</aside>
+
+<!-- 主工作区包含 split 容器 -->
+<div class="work">
+<div class="mode-bar">
+<button class="mode-btn active" onclick="switchMode(this,'http')">通用 HTTP 请求</button>
+<button class="mode-btn" onclick="switchMode(this,'custom')">定制接口模板</button>
+<span class="sp"></span>
+<span style="font-size:10px;color:var(--dimmer)">服务器:</span>
+<select class="tool-in" style="font-size:10px;padding:2px 6px" onchange="onServerChange(this)">
+<option value="">无</option>
+<option value="prod">生产环境 api.example.com</option>
+<option value="test">测试环境 test-api.example.com</option>
+</select>
+</div>
+
+<!-- split 容器：控制请求/响应分栏方向 -->
+<div class="split" id="split">
+<!-- 请求区 -->
+<div class="req-region" id="reqRegion">
+<div class="req-bar">
+<div class="method-wrap"><button class="method-btn c-get" id="methodBtn" onclick="toggleMethod()">GET ▾</button><div class="method-menu" id="methodMenu"><button class="m-item" style="color:var(--m-get)" onclick="setMethod('GET')">GET</button><button class="m-item" style="color:var(--m-post)" onclick="setMethod('POST')">POST</button><button class="m-item" style="color:var(--m-put)" onclick="setMethod('PUT')">PUT</button><button class="m-item" style="color:var(--m-patch)" onclick="setMethod('PATCH')">PATCH</button><button class="m-item" style="color:var(--m-del)" onclick="setMethod('DELETE')">DELETE</button></div></div>
+<div class="url-wrap"><input class="url-in" id="urlInput" value="{{baseUrl}}/users" oninput="updateUrlPreview()" /><div class="url-prev" id="urlPrev"></div></div>
+<button class="btn primary" onclick="sendRequest()">发送<span class="kbd">⌘↵</span></button>
+<button class="btn icon" onclick="copyCurl()">cURL</button>
+<button class="btn icon" onclick="toggleCodeGen()">⌘</button>
+<button class="btn icon" onclick="toast('AI 生成请求已发送')">AI</button>
+</div>
+<!-- 服务器徽章 -->
+<div class="server-badge" id="serverBadge"><span id="serverBadgeText"></span><button class="btn icon" style="height:20px;font-size:9px;padding:0 6px" onclick="replaceServerUrl()">替换</button></div>
+<!-- 定制模板区 -->
+<div id="customPanel" style="display:none"><div style="display:flex;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)"><span style="font-size:10px;color:var(--dimmer)">选择模板:</span><select class="tool-in" style="font-size:10px;padding:2px 6px" onchange="onTemplateSelect(this)"><option value="">请选择...</option><option value="createUser">创建用户 (POST /api/users)</option><option value="getUser">查询用户 (GET /api/users/{id})</option></select></div><div class="template-form" id="templateForm"><div class="tf-title">表单字段</div><div class="tf-grid" id="templateFields"></div></div></div>
+<!-- 代码生成 -->
+<div class="codegen" id="codeGenPanel" style="display:none"><div class="codegen-head"><span>代码生成</span><span class="sp"></span><div class="codegen-lang"><button class="lang-btn active" onclick="switchLang(this,'curl')">cURL</button><button class="lang-btn" onclick="switchLang(this,'python')">Python</button><button class="lang-btn" onclick="switchLang(this,'js')">JS</button><button class="lang-btn" onclick="switchLang(this,'go')">Go</button><button class="lang-btn" onclick="switchLang(this,'rust')">Rust</button></div></div><div class="codegen-body"><pre id="codeOutput">curl -X GET 'https://api.example.com/users' \&#10;  -H 'Accept: application/json'</pre><button class="codegen-copy" onclick="copyCode()">复制</button></div></div>
+<div class="subtabs">
+<button class="subtab active" onclick="showPane(this,'params')">Params</button>
+<button class="subtab" onclick="showPane(this,'headers')">Headers</button>
+<button class="subtab" onclick="showPane(this,'body')">Body</button>
+<button class="subtab" onclick="showPane(this,'auth')">Auth</button>
+<button class="subtab" onclick="showPane(this,'global')">全局H</button>
+</div>
+<div class="pane active" id="paneParams"><div class="kv"><table><thead><tr><th width="28"></th><th>参数名</th><th>参数值</th><th width="24"></th></tr></thead><tbody><tr class="kv-blank"><td><input type="checkbox" checked></td><td><input placeholder="参数名"></td><td><input placeholder="参数值"></td><td><button class="kv-x">✕</button></td></tr></tbody></table><button class="kv-add">+ 添加</button></div></div>
+<div class="pane" id="paneHeaders"><div class="kv"><table><thead><tr><th width="28"></th><th>Header 名</th><th>Header 值</th><th width="24"></th></tr></thead><tbody><tr><td><input type="checkbox" checked></td><td><input value="Accept"></td><td><input value="application/json"></td><td><button class="kv-x">✕</button></td></tr><tr class="kv-blank"><td><input type="checkbox" checked></td><td><input placeholder="Header 名"></td><td><input placeholder="Header 值"></td><td><button class="kv-x">✕</button></td></tr></tbody></table><div class="suggest"><button class="chip" onclick="addHeader('Content-Type','application/json')">Content-Type</button></div><button class="kv-add">+ 添加</button></div></div>
+<div class="pane" id="paneBody"><div class="body-bar"><button class="body-type active" onclick="setBodyType(this,'none')">无</button><button class="body-type" onclick="setBodyType(this,'json')">JSON</button><button class="body-type" onclick="setBodyType(this,'text')">文本</button><span class="sp"></span><button class="body-tool" onclick="formatJSON()">格式化</button></div><div id="bodyContent"><div class="body-empty">该请求没有 Body</div></div></div>
+<div class="pane" id="paneAuth"><div class="auth-panel" style="padding:6px 0"><div style="margin-bottom:8px;display:flex;gap:4px"><button class="body-type active">Bearer Token</button><button class="body-type">Basic Auth</button></div><div class="auth-field"><label>Token</label><input type="password" value="eyJhbGciOiJIUzI1NiIs..." onfocus="this.type='text'" onblur="this.type='password'" /></div><div class="auth-hint">自动填充到 Authorization 头</div></div></div>
+<div class="pane" id="paneGlobal"><div class="kv" style="padding:4px 0"><p style="font-size:10px;color:var(--dimmer);margin-bottom:6px">全局 Headers 自动合并到所有请求</p><table><thead><tr><th width="28"></th><th>Header 名</th><th>Header 值</th><th width="24"></th></tr></thead><tbody><tr><td><input type="checkbox" checked></td><td><input value="User-Agent"></td><td><input value="Polaris-Http/1.0"></td><td><button class="kv-x">✕</button></td></tr><tr class="kv-blank"><td><input type="checkbox" checked></td><td><input placeholder="Header 名"></td><td><input placeholder="Header 值"></td><td><button class="kv-x">✕</button></td></tr></tbody></table><button class="kv-add">+ 添加</button></div></div>
+</div>
+
+<!-- 分隔条 -->
+<div class="divider" id="divider" onmousedown="startDrag(event)"></div>
+
+<!-- 响应区 -->
+<div class="res-region" id="resRegion">
+<div class="res-status">
+<span class="status-chip s2"><span class="dotc"></span>200 OK</span>
+<span class="res-meta"><span>耗时 <b>128 ms</b></span><span>大小 <b>2.4 KB</b></span><span>类型 <b>application/json</b></span></span>
+<span class="sp"></span>
+<button class="btn icon" onclick="toast('已复制')">复制</button>
+<button class="btn icon" onclick="toast('已下载')">下载</button>
+<button class="btn icon" onclick="toast('导出 cURL')">导出</button>
+<button class="btn icon" onclick="toggleFullscreen()">全屏</button>
+</div>
+<!-- 响应 Tab（invoke 双视图） -->
+<div class="res-tabs">
+<button class="res-tab active" onclick="switchResTab(this,'data')">业务数据</button>
+<button class="res-tab" onclick="switchResTab(this,'full')">完整响应</button>
+<div class="res-tab-acts">
+<span style="font-size:10px;color:var(--dimmer);margin-right:4px">字体:</span>
+<select style="font-size:10px;padding:1px 4px;border-radius:3px;border:1px solid var(--line);background:var(--surface);color:var(--dim)" onchange="changeFont(this.value)">
+<option value="12">12</option><option value="13" selected>13</option><option value="14">14</option><option value="16">16</option><option value="18">18</option>
+</select>
+<button class="tbtn" onclick="expandLevel(2)">展开2层</button>
+<button class="tbtn" onclick="expandLevel(3)">展开3层</button>
+<button class="tbtn" onclick="collapseAll()">折叠</button>
+</div>
+</div>
+<div class="res-toolbar">
+<div class="res-views"><button class="rv active" onclick="switchResView(this,'table')">表格</button><button class="rv" onclick="switchResView(this,'object')">对象</button><button class="rv" onclick="switchResView(this,'raw')">原始</button><button class="rv" onclick="switchResView(this,'headers')">Headers</button></div>
+<span class="sp"></span>
+<input class="tool-in" placeholder="过滤 name:值" style="width:140px" />
+<button class="btn icon active" onclick="this.classList.toggle('active')">美化</button>
+</div>
+<div class="res-body" id="resBody" style="font-size:13px">
+<div class="jt" id="viewData"><div class="jt-row expandable" onclick="toggleJT(this)"><span class="jt-tog">▾</span><span class="jt-prev">{...} 4 键</span></div><div class="jt-children"><div class="jt-row"><span class="jt-key">"id"</span>: <span class="jt-num">1</span></div><div class="jt-row"><span class="jt-key">"name"</span>: <span class="jt-str">"张三"</span></div><div class="jt-row"><span class="jt-key">"email"</span>: <span class="jt-str">"zhangsan@example.com"</span></div><div class="jt-row"><span class="jt-key">"created_at"</span>: <span class="jt-str" style="color:var(--m-put)">2026-08-20 14:32</span></div></div></div>
+<div class="raw-view" id="viewFull" style="display:none">{"id":1,"name":"张三","email":"zhangsan@example.com","created_at":"2026-08-20T14:32:00Z"}</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<footer class="statusbar">
+<span id="statusMsg">就绪</span><span class="sp"></span><span>TABS 2</span><span>SAVED 3</span><span id="proxyStatus">代理: 关</span><span id="layoutStatus">布局: 上下</span>
+</footer>
+</div>
+<div class="toast" id="toast"></div>
+<div class="ctx-menu" id="ctxMenu"></div>
+<div class="cell-tip" id="cellTip"></div>
+
+<script>
+let layout='v',proxyOn=false,method='GET',curLang='curl',codeGenOpen=false,sending=false,fullscreen=false
+let env={name:'生产环境',base:'api.example.com'},resFont=13
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1800)}
+// 布局切换：控制请求/响应分栏方向
+function toggleLayout(){
+  layout=layout==='v'?'h':'v'
+  document.getElementById('split').classList.toggle('h',layout==='h')
+  document.getElementById('layoutBtn').textContent=layout==='h'?'左右':'上下'
+  document.getElementById('layoutStatus').textContent='布局: '+(layout==='h'?'左右':'上下')
+  toast('已切换为'+(layout==='h'?'左右':'上下')+'布局')
+  // 重置拖拽光标
+  document.getElementById('divider').style.cursor=layout==='h'?'col-resize':'row-resize'
+}
+function toggleProxy(){proxyOn=!proxyOn;document.getElementById('proxyBtn').textContent='代理:'+(proxyOn?'开':'关');document.getElementById('proxyBtn').classList.toggle('active',proxyOn);document.getElementById('proxyStatus').textContent='代理: '+(proxyOn?'开':'关')}
+function toggleMethod(){document.getElementById('methodMenu').classList.toggle('open')}
+function setMethod(m){method=m;const b=document.getElementById('methodBtn');b.textContent=m+' ▾';b.className='method-btn c-'+m.toLowerCase();document.getElementById('methodMenu').classList.remove('open')}
+document.addEventListener('click',e=>{if(!e.target.closest('.env-sel'))document.getElementById('envMenu').classList.remove('open');if(!e.target.closest('.method-wrap'))document.getElementById('methodMenu').classList.remove('open')})
+function toggleEnv(){document.getElementById('envMenu').classList.toggle('open')}
+function setEnv(el){const d=JSON.parse(el.dataset.env);env=d;document.getElementById('envName').textContent=d.name;document.getElementById('envBase').textContent=d.base;document.querySelectorAll('.env-item.on').forEach(e=>e.classList.remove('on'));el.classList.add('on');document.getElementById('envMenu').classList.remove('open');updateUrlPreview()}
+function updateUrlPreview(){const v=document.getElementById('urlInput').value,p=document.getElementById('urlPrev');if(v.includes('{{baseUrl}}')){p.innerHTML='→ <b>'+v.replace('{{baseUrl}}',env.base)+'</b>';p.classList.add('show')}else p.classList.remove('show')}
+function closeTab(el){const p=el.closest('.rtab');if(document.querySelectorAll('.rtab').length<=1){toast('至少保留一个');return}p.remove();toast('已关闭')}
+function addTab(){const c=document.getElementById('tabContainer'),t=document.createElement('div');t.className='rtab';t.innerHTML='<span class="tm c-get">GET</span><span class="tn">新请求</span><button class="tx" onclick="event.stopPropagation();closeTab(this)">×</button>';c.insertBefore(t,c.querySelector('.tab-add'));toast('已新建')}
+function showPane(btn,id){document.querySelectorAll('.subtab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.getElementById('pane'+id.charAt(0).toUpperCase()+id.slice(1)).classList.add('active')}
+function setBodyType(btn,type){document.querySelectorAll('.body-type').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const ct=document.getElementById('bodyContent');if(type==='none')ct.innerHTML='<div class="body-empty">该请求没有 Body</div>';else if(type==='json')ct.innerHTML='<textarea class="body-textarea">{\n  "title": "新建订单"\n}</textarea>';else ct.innerHTML='<textarea class="body-textarea" placeholder="原始请求体..."></textarea>'}
+function formatJSON(){const ta=document.querySelector('.body-textarea');if(!ta)return;try{ta.value=JSON.stringify(JSON.parse(ta.value),null,2);toast('已格式化')}catch(e){toast('JSON 无效')}}
+function addHeader(k,v){const t=document.querySelector('#paneHeaders tbody'),tr=document.createElement('tr');tr.innerHTML='<td><input type="checkbox" checked></td><td><input value="'+k+'"></td><td><input value="'+v+'"></td><td><button class="kv-x">✕</button></td>';t.insertBefore(tr,t.querySelector('.kv-blank'))}
+function toggleCodeGen(){codeGenOpen=!codeGenOpen;document.getElementById('codeGenPanel').style.display=codeGenOpen?'block':'none'}
+function switchLang(btn,lang){curLang=lang;document.querySelectorAll('.lang-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');const codes={curl:"curl -X GET 'https://api.example.com/users' \\\n  -H 'Accept: application/json'",python:"import requests\n\nurl = 'https://api.example.com/users'\nresponse = requests.get(url)\nprint(response.json())",js:"const r = await fetch('https://api.example.com/users')\nconst data = await r.json()\nconsole.log(data)",go:"package main\nimport \"fmt\"\nfunc main() {\n  fmt.Println(\"GET users\")\n}",rust:"use reqwest;\n#[tokio::main]\nasync fn main() -> Result<()> {\n  let resp = client.get(\"https://api.example.com/users\").send().await?;\n  Ok(())\n}"};document.getElementById('codeOutput').textContent=codes[lang]||''}
+function copyCode(){navigator.clipboard.writeText(document.getElementById('codeOutput').textContent).then(()=>toast('已复制')).catch(()=>toast('复制失败'))}
+function sendRequest(){if(sending)return;sending=true;toast('请求发送中...');setTimeout(()=>{sending=false;toast('200 OK (128 ms)')},900)}
+function copyCurl(){navigator.clipboard.writeText("curl -X GET 'https://api.example.com/users'").then(()=>toast('cURL 已复制'))}
+// 响应
+function switchResTab(btn,id){document.querySelectorAll('.res-tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('viewData').style.display=id==='data'?'block':'none';document.getElementById('viewFull').style.display=id==='full'?'block':'none'}
+function switchResView(btn,id){document.querySelectorAll('.rv').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}
+function toggleJT(el){const tog=el.querySelector('.jt-tog'),ch=el.nextElementSibling;if(ch&&ch.classList.contains('jt-children')){ch.style.display=ch.style.display==='none'?'block':'none';tog.textContent=ch.style.display==='none'?'▸':'▾'}}
+function changeFont(v){resFont=parseInt(v);document.getElementById('resBody').style.fontSize=v+'px'}
+function expandLevel(n){const cs=document.querySelectorAll('.jt-children');cs.forEach(c=>{c.style.display='block';c.previousElementSibling.querySelector('.jt-tog').textContent='▾'});toast('已展开'+n+'层')}
+function collapseAll(){document.querySelectorAll('.jt-children').forEach(c=>{c.style.display='none';c.previousElementSibling.querySelector('.jt-tog').textContent='▸'});toast('已折叠')}
+function toggleFullscreen(){fullscreen=!fullscreen;document.getElementById('resRegion').style.position=fullscreen?'fixed':'';document.getElementById('resRegion').style.inset=fullscreen?'0':'';document.getElementById('resRegion').style.zIndex=fullscreen?'100':'';document.getElementById('resRegion').style.background=fullscreen?'var(--bg)':'';toast(fullscreen?'全屏模式':'退出全屏')}
+// 分隔条拖拽（修正：控制请求/响应分栏）
+function startDrag(e){e.preventDefault();const d=document.getElementById('divider'),isH=layout==='h';(isH?d.style.cursor='col-resize':d.style.cursor='row-resize');const sp=isH?e.clientX:e.clientY;function mv(ev){const delta=(isH?ev.clientX:ev.clientX)-sp;if(isH)document.getElementById('reqRegion').style.width=Math.max(180,Math.min(480+delta,window.innerWidth-400))+'px';else document.getElementById('reqRegion').style.height=Math.max(80,Math.min(220+delta,window.innerHeight-200))+'px'};function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);document.body.style.cursor='';document.body.style.userSelect=''};document.body.style.cursor=isH?'col-resize':'row-resize';document.body.style.userSelect='none';document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up)}
+// 服务器
+function onServerChange(sel){const badge=document.getElementById('serverBadge'),text=document.getElementById('serverBadgeText');if(sel.value){text.textContent='已连接: '+sel.options[sel.selectedIndex].text;badge.classList.add('show')}else badge.classList.remove('show')}
+function replaceServerUrl(){toast('已替换服务器 URL')}
+// 模板
+function switchMode(btn,m){document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.getElementById('customPanel').style.display=m==='custom'?'block':'none'}
+function onTemplateSelect(sel){if(!sel.value){document.getElementById('templateForm').classList.remove('show');return}const t={createUser:{fields:[{name:'name',label:'用户名',type:'text',required:true},{name:'email',label:'邮箱',type:'text',required:true},{name:'age',label:'年龄',type:'number',required:false},{name:'metadata',label:'扩展信息',type:'json',required:false}]},getUser:{fields:[{name:'id',label:'用户 ID',type:'number',required:true}]}}[sel.value];const form=document.getElementById('templateFields');form.innerHTML='';t.fields.forEach(f=>{const div=document.createElement('div');div.className='tf-field';div.innerHTML='<label>'+f.label+(f.required?' <span style="color:var(--err)">*</span>':'')+'</label>';if(f.type==='json')div.innerHTML+='<textarea id="tf-'+f.name+'" placeholder="JSON"></textarea>';else if(f.type==='number')div.innerHTML+='<input type="number" id="tf-'+f.name+'" placeholder="'+f.name+'">';else div.innerHTML+='<input type="text" id="tf-'+f.name+'" placeholder="'+f.name+'">';form.appendChild(div)});document.getElementById('templateForm').classList.add('show');toast('已加载模板')}
+updateUrlPreview()
+</script>
+</body>
+</html>
