@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>3D 通用查看器</title>
+<style>
+/* ── Reset ── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; color: #eee; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+/* ── Container ── */
+#container { width: 100vw; height: 100vh; display: block; }
+
+/* ── Loading ── */
+#loading {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: #1a1a2e; color: #888; font-size: 14px;
+  transition: opacity 0.3s ease;
+}
+#loading .spinner {
+  width: 40px; height: 40px; margin-bottom: 16px;
+  border: 3px solid rgba(255,255,255,0.1); border-top-color: #4a9eff;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+#loading .error { color: #f66; }
+#loading .error .spinner { display: none; }
+#loading.hidden { opacity: 0; pointer-events: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Info ── */
+#info {
+  position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 10;
+  background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);
+  padding: 6px 16px; border-radius: 20px; font-size: 12px; color: #aaa;
+  pointer-events: none; white-space: nowrap; transition: opacity 0.3s;
+}
+#info.hidden { opacity: 0; }
+
+/* ── Toolbar ── */
+#toolbar {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 10;
+  display: flex; gap: 6px; align-items: center;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(12px);
+  padding: 8px 14px; border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+#toolbar button {
+  background: rgba(255,255,255,0.1); border: none; color: #fff;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer;
+  font-size: 12px; transition: all 0.2s; white-space: nowrap;
+}
+#toolbar button:hover { background: rgba(255,255,255,0.2); }
+#toolbar button:active { transform: scale(0.95); }
+#toolbar button.active { background: #4a9eff; }
+#toolbar .separator {
+  width: 1px; height: 24px; background: rgba(255,255,255,0.15); margin: 0 2px;
+}
+#toolbar .mode-indicator {
+  font-size: 11px; padding: 4px 10px; border-radius: 6px;
+  background: rgba(255,255,255,0.05); color: #888; min-width: 40px; text-align: center;
+}
+
+/* ── HUD (Drone 模式) ── */
+#hud {
+  position: fixed; top: 60px; left: 16px; z-index: 10;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+  padding: 10px 14px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.6;
+  color: #aaa; min-width: 160px;
+  opacity: 0; transform: translateY(-8px); transition: all 0.3s ease;
+  pointer-events: none;
+}
+#hud.visible { opacity: 1; transform: translateY(0); }
+#hud .hud-label { color: #666; }
+#hud .hud-value { color: #4ae; }
+#hud .hud-value.alt { color: #6c6; }
+#hud .hud-value.spd { color: #ec6; }
+#hud .hud-hint { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.06); font-size: 10px; color: #555; pointer-events: none; }
+
+/* ── Photo Album ── */
+#album-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none; transition: opacity 0.3s;
+}
+#album-overlay.open { opacity: 1; pointer-events: auto; }
+#album-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+#album-header h2 { font-size: 16px; font-weight: 600; }
+#album-header .actions { display: flex; gap: 8px; }
+#album-header button {
+  background: rgba(255,255,255,0.1); border: none; color: #fff;
+  padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 12px;
+  transition: all 0.2s;
+}
+#album-header button:hover { background: rgba(255,255,255,0.2); }
+#album-header .close-btn { background: rgba(255,80,80,0.2); }
+#album-header .close-btn:hover { background: rgba(255,80,80,0.3); }
+#album-grid {
+  flex: 1; overflow-y: auto; padding: 16px 20px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px; align-content: start;
+}
+#album-grid .photo-card {
+  background: rgba(255,255,255,0.05); border-radius: 10px; overflow: hidden;
+  cursor: pointer; transition: transform 0.2s; position: relative;
+}
+#album-grid .photo-card:hover { transform: scale(1.02); }
+#album-grid .photo-card img {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;
+}
+#album-grid .photo-card .photo-info {
+  padding: 6px 10px; font-size: 10px; color: #888;
+  display: flex; justify-content: space-between;
+}
+#album-grid .photo-card .photo-delete {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(0,0,0,0.5); border: none; color: #f66;
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+  font-size: 14px; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+#album-grid .photo-card:hover .photo-delete { opacity: 1; }
+#album-grid .empty {
+  grid-column: 1 / -1; text-align: center; padding: 60px 20px;
+  color: #555; font-size: 13px;
+}
+
+/* ── Toast ── */
+#toast {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.8); z-index: 50;
+  background: rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+  padding: 20px 32px; border-radius: 16px;
+  font-size: 24px; text-align: center;
+  opacity: 0; pointer-events: none; transition: all 0.3s ease;
+}
+#toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+#toast .toast-label { display: block; font-size: 12px; color: #888; margin-top: 4px; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  #toolbar { padding: 6px 10px; gap: 4px; flex-wrap: wrap; justify-content: center; bottom: 16px; }
+  #toolbar button { padding: 5px 10px; font-size: 11px; }
+  #hud { top: 50px; left: 8px; font-size: 10px; padding: 8px 10px; min-width: 130px; }
+  #album-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <div>加载模型...</div>
+</div>
+
+<!-- Info -->
+<div id="info">🖱 拖拽旋转 · 滚轮缩放 · 右键平移</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div><span class="hud-label">ALT </span><span class="hud-value alt" id="hud-alt">0.0</span><span class="hud-label"> m</span></div>
+  <div><span class="hud-label">SPD </span><span class="hud-value spd" id="hud-spd">0.0</span><span class="hud-label"> m/s</span></div>
+  <div><span class="hud-label">POS </span><span class="hud-value" id="hud-pos">(0.0, 0.0, 0.0)</span></div>
+  <div><span class="hud-label">HDG </span><span class="hud-value" id="hud-hdg">000°</span></div>
+  <div><span class="hud-label">PIT </span><span class="hud-value" id="hud-pit">0°</span></div>
+  <div class="hud-hint">WASD 移动 · Q/E 升降 · 鼠标朝向 · Shift 加速 · <span id="hud-shoot-hint">Space 拍照</span><span id="hud-focus-hint" style="display:none;color:#f66;margin-left:6px;">⚠ 点击画面激活</span></div>
+</div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+  <span class="mode-indicator" id="modeIndicator">Orbit</span>
+  <button id="btnMode" title="Tab 切换模式">🚁 无人机</button>
+  <div class="separator"></div>
+  <button id="btnReset">⟲ 复位</button>
+  <button id="btnWireframe">◇ 线框</button>
+  <button id="btnAutoRotate">⟳ 自转</button>
+  <div class="separator"></div>
+  <button id="btnPhoto" title="Space 拍照">📷 拍照</button>
+  <button id="btnAlbum" title="查看已拍摄照片">🖼 相册 <span id="photoCount" style="opacity:0.5;font-size:10px;margin-left:2px;">0</span></button>
+  <div class="separator"></div>
+  <button id="btnFullscreen" title="全屏">⛶</button>
+</div>
+
+<!-- Photo Toast -->
+<div id="toast">
+  📸
+  <span class="toast-label">已拍摄</span>
+</div>
+
+<!-- Photo Album -->
+<div id="album-overlay">
+  <div id="album-header">
+    <h2>📷 无人机相册</h2>
+    <div class="actions">
+      <button id="btnDownloadAll">⬇ 全部下载</button>
+      <button id="btnClearAlbum">🗑 清空</button>
+      <button class="close-btn" id="btnCloseAlbum">✕ 关闭</button>
+    </div>
+  </div>
+  <div id="album-grid">
+    <div class="empty">暂无照片，切换到无人机模式后按 Space 拍摄</div>
+  </div>
+</div>
+
+<!-- 3D Container -->
+<div id="container"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script>
+// 全局 fallback：如果 import map 加载失败，用 script 标签备选
+window.__threeLoaded = false;
+</script>
+<script type="module">
+// ════════════════════════════════════════════════════════════════
+// 通用 3D 查看器 - 支持 Orbit/Drone 双模式 + 多模型场景组装
+// ════════════════════════════════════════════════════════════════
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+window.__threeLoaded = true;
+
+// ──────────────────────────────────────────────
+// DroneController — 纯 JS 无人机相机控制器
+// 无框架依赖，可被任何 Three.js 场景复用
+// ──────────────────────────────────────────────
+
+class DroneController {
+  /**
+   * @param {THREE.PerspectiveCamera} camera
+   * @param {HTMLElement} domElement
+   * @param {object} options
+   * @param {number} options.maxSpeed - 最大速度 (默认 5)
+   * @param {number} options.acceleration - 响应速率 (默认 6)
+   * @param {number} options.speedBoost - 加速倍率 (默认 2.5)
+   * @param {number} options.minHeight - 最低高度 (默认 0.3)
+   * @param {number} options.maxHeight - 最高高度 (默认 100)
+   * @param {number} options.maxDistance - 距原点最大距离 (默认 50, 0=不限)
+   * @param {number} options.mouseSensitivity - 鼠标灵敏度 (默认 0.002)
+   * @param {function} options.onStateChange - 状态变化回调 (state) => void
+   */
+  constructor(camera, domElement, options = {}) {
+    this.camera = camera;
+    this.domElement = domElement;
+
+    // 参数
+    this.maxSpeed = options.maxSpeed || 5;
+    this.acceleration = options.acceleration || 6;
+    this.speedBoost = options.speedBoost || 2.5;
+    this.minHeight = options.minHeight ?? 0.3;
+    this.maxHeight = options.maxHeight || 100;
+    this.maxDistance = options.maxDistance || 50;
+    this.mouseSensitivity = options.mouseSensitivity || 0.002;
+    this.onStateChange = options.onStateChange || null;
+
+    // 飞行状态
+    this.yaw = 0;
+    this.pitch = 0;
+    this.velocity = new THREE.Vector3(0, 0, 0);
+    this.currentSpeed = 0;
+    this.boostFactor = 1;
+
+    // 键盘状态
+    this.keys = { w: false, a: false, s: false, d: false, q: false, e: false, shift: false };
+
+    // 指针锁定
+    this.isPointerLocked = false;
+    this._boundOnKeyDown = null;
+    this._boundOnKeyUp = null;
+    this._boundOnPointerLockChange = null;
+    this._boundOnPointerLockError = null;
+    this._boundOnClick = null;
+
+    // 初始位置/朝向
+    this._initialPosition = camera.position.clone();
+    this._initialYaw = 0;
+    this._initialPitch = 0;
+
+    // 从相机当前朝向同步到 yaw/pitch
+    this.syncFromCamera();
+
+    this._hasFocus = false; // 用于 HUD 焦点指示
+  }
+
+  // ── 启动 / 停止 ──
+
+  /** 启动键盘/鼠标监听 */
+  enable() {
+    this._boundOnKeyDown = (e) => this._handleKeyDown(e);
+    this._boundOnKeyUp = (e) => this._handleKeyUp(e);
+    this._boundOnPointerLockChange = () => this._handlePointerLockChange();
+    this._boundOnPointerLockError = () => this._handlePointerLockError();
+    this._boundOnClick = () => this._requestPointerLock();
+
+    document.addEventListener('keydown', this._boundOnKeyDown);
+    document.addEventListener('keyup', this._boundOnKeyUp);
+    document.addEventListener('pointerlockchange', this._boundOnPointerLockChange);
+    document.addEventListener('pointerlockerror', this._boundOnPointerLockError);
+    this.domElement.addEventListener('click', this._boundOnClick);
+  }
+
+  /** 停止监听 */
+  disable() {
+    if (this._boundOnKeyDown) document.removeEventListener('keydown', this._boundOnKeyDown);
+    if (this._boundOnKeyUp) document.removeEventListener('keyup', this._boundOnKeyUp);
+    if (this._boundOnPointerLockChange) document.removeEventListener('pointerlockchange', this._boundOnPointerLockChange);
+    if (this._boundOnPointerLockError) document.removeEventListener('pointerlockerror', this._boundOnPointerLockError);
+    if (this._boundOnClick) this.domElement.removeEventListener('click', this._boundOnClick);
+    this._releasePointerLock();
+  }
+
+  // ── 每帧更新 ──
+
+  /**
+   * @param {number} deltaTime - 帧时间差（秒）
+   * @returns {object} 当前状态
+   */
+  update(deltaTime) {
+    // 修复1：使用真实 deltaTime，不硬编码
+    if (!deltaTime || deltaTime > 0.1) deltaTime = 0.016;
+
+    // 计算目标速度
+    const moveDir = new THREE.Vector3(0, 0, 0);
+
+    // 前后 (W/S) — 沿相机朝向
+    if (this.keys.w) moveDir.z -= 1;
+    if (this.keys.s) moveDir.z += 1;
+    // 左右 (A/D) — 水平平移
+    if (this.keys.a) moveDir.x -= 1;
+    if (this.keys.d) moveDir.x += 1;
+    // 升降 (Q/E)
+    if (this.keys.q) moveDir.y -= 1;
+    if (this.keys.e) moveDir.y += 1;
+
+    this.boostFactor = this.keys.shift ? this.speedBoost : 1;
+
+    const isMoving = moveDir.length() > 0;
+    const targetSpeed = isMoving ? this.maxSpeed * this.boostFactor : 0;
+
+    // 指数逼近目标速度（响应快，无突兀跳变）
+    // 在 0.5s 内达到 95% 目标速度，第一帧即有明显响应
+    const lerpRate = 6; // 响应速率
+    const lerpFactor = 1 - Math.pow(0.01, deltaTime * lerpRate);
+    this.currentSpeed += (targetSpeed - this.currentSpeed) * Math.min(1, lerpFactor);
+    if (this.currentSpeed < 0.01) this.currentSpeed = 0;
+
+    if (this.currentSpeed > 0.01) {
+      // 计算方向向量（考虑偏航/俯仰）
+      const euler = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
+      const quat = new THREE.Quaternion().setFromEuler(euler);
+
+      // 局部移动方向 → 世界空间
+      const worldDir = moveDir.clone();
+      if (worldDir.length() > 0) {
+        worldDir.normalize();
+        worldDir.applyQuaternion(quat);
+      }
+
+      // 水平移动（沿世界 XZ 平面，不受俯仰影响）
+      const horizontal = new THREE.Vector3(worldDir.x, 0, worldDir.z);
+      if (horizontal.length() > 0) {
+        horizontal.normalize();
+        this.camera.position.x += horizontal.x * this.currentSpeed * deltaTime;
+        this.camera.position.z += horizontal.z * this.currentSpeed * deltaTime;
+      }
+
+      // 垂直移动
+      if (Math.abs(worldDir.y) > 0.01) {
+        this.camera.position.y += worldDir.y * this.currentSpeed * deltaTime;
+      }
+    } else {
+      this.currentSpeed = 0;
+    }
+
+    // 边界约束
+    this.camera.position.y = Math.max(this.minHeight, Math.min(this.maxHeight, this.camera.position.y));
+    if (this.maxDistance > 0) {
+      const dist = Math.sqrt(this.camera.position.x ** 2 + this.camera.position.z ** 2);
+      if (dist > this.maxDistance) {
+        const ratio = this.maxDistance / dist;
+        this.camera.position.x *= ratio;
+        this.camera.position.z *= ratio;
+      }
+    }
+
+    // 更新相机朝向
+    this._updateCameraOrientation();
+
+    // 返回状态
+    const state = this.getState();
+    if (this.onStateChange) this.onStateChange(state);
+    return state;
+  }
+
+  // ── 状态 ──
+
+  getState() {
+    return {
+      position: this.camera.position.clone(),
+      altitude: this.camera.position.y,
+      speed: this.currentSpeed,
+      yaw: this.yaw,
+      pitch: this.pitch,
+      heading: ((this.yaw * 180 / Math.PI) % 360 + 360) % 360,
+      pitchDeg: this.pitch * 180 / Math.PI,
+      isMoving: this.currentSpeed > 0.01,
+    };
+  }
+
+  getHUDData() {
+    const s = this.getState();
+    return {
+      alt: s.altitude.toFixed(1),
+      spd: s.speed.toFixed(1),
+      pos: `(${s.position.x.toFixed(1)}, ${s.position.y.toFixed(1)}, ${s.position.z.toFixed(1)})`,
+      hdg: String(s.heading.toFixed(0)).padStart(3, '0') + '°',
+      pit: s.pitchDeg.toFixed(0) + '°',
+    };
+  }
+
+  // ── 公共方法 ──
+
+  /** 复位到初始位置 */
+  reset() {
+    this.camera.position.copy(this._initialPosition);
+    this.yaw = this._initialYaw;
+    this.pitch = this._initialPitch;
+    this.currentSpeed = 0;
+    this.velocity.set(0, 0, 0);
+    this._updateCameraOrientation();
+  }
+
+  /** 从相机当前朝向同步到 yaw/pitch */
+  syncFromCamera() {
+    const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+    euler.setFromQuaternion(this.camera.quaternion);
+    this.yaw = euler.y;
+    this.pitch = euler.x;
+  }
+
+  /** 设置新位置 */
+  setPosition(x, y, z) {
+    this.camera.position.set(x, y, z);
+  }
+
+  /** 设置朝向 */
+  setOrientation(yaw, pitch) {
+    this.yaw = yaw;
+    this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, pitch));
+    this._updateCameraOrientation();
+  }
+
+  /** 设置初始位置（在 reset 时还原） */
+  setInitialPosition(position) {
+    this._initialPosition.copy(position);
+  }
+
+  /** 释放指针锁定 */
+  releasePointerLock() {
+    this._releasePointerLock();
+  }
+
+  // ── 内部方法 ──
+
+  _updateCameraOrientation() {
+    const euler = new THREE.Euler(this.pitch, this.yaw, 0, 'YXZ');
+    this.camera.quaternion.setFromEuler(euler);
+  }
+
+  _handleKeyDown(e) {
+    const key = e.key.toLowerCase();
+    if (key === 'w' || key === 'a' || key === 's' || key === 'd' || key === 'q' || key === 'e') {
+      this.keys[key] = true;
+      e.preventDefault();
+    }
+    if (key === 'shift') {
+      this.keys.shift = true;
+      e.preventDefault();
+    }
+  }
+
+  _handleKeyUp(e) {
+    const key = e.key.toLowerCase();
+    if (key === 'w' || key === 'a' || key === 's' || key === 'd' || key === 'q' || key === 'e') {
+      this.keys[key] = false;
+      e.preventDefault();
+    }
+    if (key === 'shift') {
+      this.keys.shift = false;
+      e.preventDefault();
+    }
+  }
+
+  _requestPointerLock() {
+    if (!this.isPointerLocked) {
+      this.domElement.requestPointerLock();
+    }
+  }
+
+  _releasePointerLock() {
+    if (this.isPointerLocked && document.pointerLockElement) {
+      document.exitPointerLock();
+    }
+  }
+
+  _handlePointerLockChange() {
+    this.isPointerLocked = document.pointerLockElement === this.domElement;
+    this._hasFocus = this.isPointerLocked;
+    const hint = document.getElementById('hud-focus-hint');
+    if (hint) hint.style.display = this.isPointerLocked ? 'none' : 'inline';
+    if (this.isPointerLocked) {
+      document.addEventListener('mousemove', this._boundOnMouseMove = (e) => this._handleMouseMove(e));
+    } else {
+      if (this._boundOnMouseMove) {
+        document.removeEventListener('mousemove', this._boundOnMouseMove);
+        this._boundOnMouseMove = null;
+      }
+    }
+  }
+
+  _handlePointerLockError() {
+    this.isPointerLocked = false;
+  }
+
+  _handleMouseMove(e) {
+    if (!this.isPointerLocked) return;
+    this.yaw -= e.movementX * this.mouseSensitivity;
+    this.pitch -= e.movementY * this.mouseSensitivity;
+    this.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.pitch));
+  }
+}
+
+
+// ──────────────────────────────────────────────
+// 查看器主逻辑
+// ──────────────────────────────────────────────
+
+const URL_PARAMS = new URLSearchParams(window.location.search);
+const loadingEl = document.getElementById('loading');
+const container = document.getElementById('container');
+const toolbar = document.getElementById('toolbar');
+const infoEl = document.getElementById('info');
+const hudEl = document.getElementById('hud');
+
+// ── 场景 / 模型 解析 ──
+
+const sceneUrls = URL_PARAMS.getAll('model');
+const sceneJsonUrl = URL_PARAMS.get('scene');
+const defaultMode = URL_PARAMS.get('mode') || 'orbit';
+
+// ── Three.js 场景初始化 ──
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a2e);
+
+// 相机
+const camera = new THREE.PerspectiveCamera(
+  45, container.clientWidth / container.clientHeight, 0.1, 500
+);
+camera.position.set(0, 2, 5);
+
+// 渲染器
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.2;
+container.appendChild(renderer.domElement);
+
+// ── OrbitControls ──
+
+const orbitControls = new OrbitControls(camera, renderer.domElement);
+orbitControls.target.set(0, 0.5, 0);
+orbitControls.enableDamping = true;
+orbitControls.dampingFactor = 0.08;
+orbitControls.minDistance = 1;
+orbitControls.maxDistance = 100;
+orbitControls.update();
+
+// ── DroneController ──
+
+const droneController = new DroneController(camera, renderer.domElement, {
+  maxSpeed: 5,
+  acceleration: 6,
+  speedBoost: 2.5,
+  minHeight: 0.3,
+  maxHeight: 100,
+  maxDistance: 50,
+  mouseSensitivity: 0.002,
+  onStateChange: (state) => updateHUD(),
+});
+
+// ── 光照 ──
+
+function setupDefaultLighting() {
+  scene.add(new THREE.AmbientLight(0x404060, 0.5));
+
+  const mainLight = new THREE.DirectionalLight(0xffeedd, 2.5);
+  mainLight.position.set(4, 6, 3);
+  mainLight.castShadow = true;
+  mainLight.shadow.mapSize.width = 1024;
+  mainLight.shadow.mapSize.height = 1024;
+  scene.add(mainLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.8);
+  fillLight.position.set(-3, 2, -2);
+  scene.add(fillLight);
+
+  const rimLight = new THREE.DirectionalLight(0xffffff, 0.4);
+  rimLight.position.set(0, 1, -5);
+  scene.add(rimLight);
+
+  scene.add(new THREE.HemisphereLight(0x8888ff, 0x444422, 0.6));
+}
+
+function applyLightingConfig(cfg) {
+  // 清除现有光照
+  const lights = [];
+  scene.traverse(child => { if (child.isLight) lights.push(child); });
+  lights.forEach(l => scene.remove(l));
+
+  if (!cfg) { setupDefaultLighting(); return; }
+
+  scene.add(new THREE.AmbientLight(0x404060, cfg.ambient ?? 0.5));
+
+  if (cfg.mainLight) {
+    const ml = new THREE.DirectionalLight(
+      cfg.mainLight.color ? new THREE.Color(cfg.mainLight.color) : 0xffeedd,
+      cfg.mainLight.intensity ?? 2.5
+    );
+    ml.position.set(...(cfg.mainLight.position || [4, 6, 3]));
+    ml.castShadow = true;
+    scene.add(ml);
+  }
+
+  if (cfg.fillLight) {
+    const fl = new THREE.DirectionalLight(
+      cfg.fillLight.color ? new THREE.Color(cfg.fillLight.color) : 0x8888ff,
+      cfg.fillLight.intensity ?? 0.8
+    );
+    fl.position.set(...(cfg.fillLight.position || [-3, 2, -2]));
+    scene.add(fl);
+  }
+}
+
+// ── 地面 ──
+
+let groundHelper = null;
+let shadowGround = null;
+
+function setupDefaultGround() {
+  // 阴影接收地面
+  const groundGeo = new THREE.PlaneGeometry(30, 30);
+  const groundMat = new THREE.ShadowMaterial({ opacity: 0.25 });
+  shadowGround = new THREE.Mesh(groundGeo, groundMat);
+  shadowGround.rotation.x = -Math.PI / 2;
+  shadowGround.position.y = -0.05;
+  shadowGround.receiveShadow = true;
+  scene.add(shadowGround);
+
+  // 网格
+  groundHelper = new THREE.GridHelper(20, 20, 0x6666aa, 0x444466);
+  groundHelper.position.y = -0.04;
+  scene.add(groundHelper);
+}
+
+function clearGround() {
+  if (shadowGround) { scene.remove(shadowGround); shadowGround = null; }
+  if (groundHelper) { scene.remove(groundHelper); groundHelper = null; }
+}
+
+// ── 模型加载 ──
+
+const loader = new GLTFLoader();
+let sceneModels = []; // { object, config }
+let modelBounds = new THREE.Box3();
+let modelCenter = new THREE.Vector3();
+let modelSize = new THREE.Vector3();
+let hasModel = false;
+
+function loadModel(url) {
+  return new Promise((resolve, reject) => {
+    loader.load(
+      url,
+      (gltf) => {
+        const obj = gltf.scene;
+        obj.traverse(child => {
+          if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+        });
+        scene.add(obj);
+        sceneModels.push({ object: obj, config: { url } });
+        resolve(obj);
+      },
+      (xhr) => {
+        if (xhr.total) {
+          const pct = Math.round((xhr.loaded / xhr.total) * 100);
+          loadingEl.innerHTML = `<div class="spinner"></div><div>加载中 ${pct}%</div>`;
+        }
+      },
+      (err) => { reject(err); }
+    );
+  });
+}
+
+function loadModelWithConfig(url, config) {
+  return new Promise((resolve, reject) => {
+    loader.load(
+      url,
+      (gltf) => {
+        const obj = gltf.scene;
+        obj.traverse(child => {
+          if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
+        });
+
+        // 应用配置
+        if (config.position) obj.position.set(...config.position);
+        if (config.scale) obj.scale.setScalar(config.scale);
+        if (config.rotation) obj.rotation.set(...config.rotation.map(r => r * Math.PI / 180));
+        if (config.opacity !== undefined) {
+          obj.traverse(child => {
+            if (child.isMesh && child.material) {
+              child.material.transparent = true;
+              child.material.opacity = config.opacity;
+            }
+          });
+        }
+
+        scene.add(obj);
+        sceneModels.push({ object: obj, config });
+        resolve(obj);
+      },
+      (xhr) => {
+        if (xhr.total) {
+          const pct = Math.round((xhr.loaded / xhr.total) * 100);
+          loadingEl.innerHTML = `<div class="spinner"></div><div>加载中 ${pct}%</div>`;
+        }
+      },
+      (err) => { reject(err); }
+    );
+  });
+}
+
+function fitCameraToScene() {
+  if (!hasModel) return;
+
+  // 计算所有模型合并包围盒
+  const box = new THREE.Box3();
+  sceneModels.forEach(({ object }) => {
+    box.expandByObject(object);
+  });
+
+  modelBounds = box;
+  modelCenter = box.getCenter(new THREE.Vector3());
+  modelSize = box.getSize(new THREE.Vector3());
+
+  const maxDim = Math.max(modelSize.x, modelSize.y, modelSize.z);
+  const minY = box.min.y;
+
+  // 居中模型（修正位置偏移）
+  sceneModels.forEach(({ object }) => {
+    object.position.x -= modelCenter.x;
+    object.position.z -= modelCenter.z;
+  });
+
+  // 更新包围盒
+  modelCenter.set(0, modelSize.y / 2, 0);
+  orbitControls.target.copy(modelCenter);
+
+  // 相机位置
+  const dist = Math.max(maxDim * 2, 3);
+  camera.position.set(0, modelSize.y * 0.6 + 0.5, dist);
+  orbitControls.update();
+
+  // 更新 Drone 初始位置和朝向
+  droneController.setInitialPosition(camera.position.clone());
+  droneController.syncFromCamera();
+
+  // 更新地面
+  const groundSize = Math.max(maxDim * 3, 10);
+  if (shadowGround) {
+    shadowGround.geometry = new THREE.PlaneGeometry(groundSize, groundSize);
+  }
+  if (groundHelper) {
+    scene.remove(groundHelper);
+    groundHelper = new THREE.GridHelper(groundSize, Math.round(groundSize), 0x6666aa, 0x444466);
+    groundHelper.position.y = minY - 0.01;
+    scene.add(groundHelper);
+  }
+
+  // 更新 maxDistance
+  droneController.maxDistance = Math.max(maxDim * 4, 20);
+  orbitControls.maxDistance = Math.max(maxDim * 4, 20);
+}
+
+// ── 场景 JSON 加载 ──
+
+async function loadSceneJson(url) {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const sceneCfg = await resp.json();
+
+    if (sceneCfg.name) {
+      document.title = `3D - ${sceneCfg.name}`;
+    }
+
+    // 环境背景
+    if (sceneCfg.environment) {
+      if (sceneCfg.environment.background) {
+        scene.background = new THREE.Color(sceneCfg.environment.background);
+      }
+      if (sceneCfg.environment.ground !== 'none') {
+        setupDefaultGround();
+      }
+    } else {
+      setupDefaultGround();
+    }
+
+    // 光照
+    if (sceneCfg.lighting) {
+      applyLightingConfig(sceneCfg.lighting);
+    } else {
+      setupDefaultLighting();
+    }
+
+    // 加载模型
+    const modelList = sceneCfg.models || [];
+    if (modelList.length === 0) {
+      throw new Error('场景中无模型');
+    }
+
+    // 解析 URL（相对路径）
+    const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+
+    for (const m of modelList) {
+      let modelUrl = m.url;
+      if (!modelUrl.startsWith('http://') && !modelUrl.startsWith('https://') && !modelUrl.startsWith('data:')) {
+        modelUrl = baseUrl + modelUrl;
+      }
+      try {
+        await loadModelWithConfig(modelUrl, m);
+      } catch (e) {
+        console.warn(`[viewer] 模型加载失败: ${modelUrl}`, e);
+      }
+    }
+
+    hasModel = sceneModels.length > 0;
+    if (hasModel) {
+      fitCameraToScene();
+    }
+
+    // 相机配置
+    if (sceneCfg.camera) {
+      const camCfg = sceneCfg.camera;
+      if (camCfg.defaultPosition) {
+        camera.position.set(...camCfg.defaultPosition);
+        droneController.setInitialPosition(camera.position.clone());
+        droneController.syncFromCamera(); // 修复：同步朝向
+      }
+      if (camCfg.bounds) {
+        if (camCfg.bounds.maxDistance !== undefined) {
+          droneController.maxDistance = camCfg.bounds.maxDistance;
+          orbitControls.maxDistance = camCfg.bounds.maxDistance;
+        }
+        if (camCfg.bounds.minHeight !== undefined) droneController.minHeight = camCfg.bounds.minHeight;
+        if (camCfg.bounds.maxHeight !== undefined) droneController.maxHeight = camCfg.bounds.maxHeight;
+      }
+      // 默认模式
+      if (camCfg.defaultMode === 'drone') {
+        switchToDrone();
+      } else {
+        switchToOrbit();
+      }
+    } else {
+      switchToOrbit();
+    }
+
+    loadingEl.classList.add('hidden');
+    return true;
+  } catch (err) {
+    throw err;
+  }
+}
+
+// ── 加载入口 ──
+
+async function init() {
+  // 先加默认地面和光照
+  setupDefaultGround();
+  setupDefaultLighting();
+
+  try {
+    // 优先加载场景 JSON
+    if (sceneJsonUrl) {
+      await loadSceneJson(sceneJsonUrl);
+      return;
+    }
+
+    // 加载单/多模型
+    if (sceneUrls.length > 0) {
+      for (const url of sceneUrls) {
+        try {
+          await loadModel(url);
+        } catch (e) {
+          console.warn(`[viewer] 模型加载失败: ${url}`, e);
+        }
+      }
+      hasModel = sceneModels.length > 0;
+      if (hasModel) {
+        fitCameraToScene();
+      }
+      // 默认模式
+      if (defaultMode === 'drone') {
+        switchToDrone();
+      } else {
+        switchToOrbit();
+      }
+      loadingEl.classList.add('hidden');
+      return;
+    }
+
+    // 无模型
+    loadingEl.innerHTML = '<div class="error">⚠️ 未指定模型<br><small>URL 参数: ?model=xxx.glb 或 ?scene=xxx.json</small></div>';
+  } catch (err) {
+    loadingEl.innerHTML = `<div class="error">⚠️ 加载失败: ${err.message}</div>`;
+    console.error('[viewer] 加载失败:', err);
+  }
+}
+
+// ── 模式切换 ──
+
+let currentMode = 'orbit';
+let isDroneActive = false;
+
+function switchToOrbit() {
+  currentMode = 'orbit';
+  isDroneActive = false;
+
+  // 启用 OrbitControls
+  orbitControls.enabled = true;
+
+  // 禁用 Drone
+  droneController.disable();
+
+  // 同步 OrbitControls 到当前相机位置
+  orbitControls.target.set(0, modelSize.y / 2 || 0.5, 0);
+
+  // UI
+  document.getElementById('modeIndicator').textContent = 'Orbit';
+  document.getElementById('btnMode').textContent = '🚁 无人机';
+  document.getElementById('btnMode').classList.remove('active');
+  hudEl.classList.remove('visible');
+  infoEl.classList.remove('hidden');
+}
+
+function switchToDrone() {
+  currentMode = 'drone';
+  isDroneActive = true;
+
+  // 禁用 OrbitControls
+  orbitControls.enabled = false;
+
+  // 修复2：从相机当前朝向同步到 DroneController，避免朝向跳转
+  droneController.syncFromCamera();
+
+  // 启用 Drone
+  droneController.enable();
+
+  // UI
+  document.getElementById('modeIndicator').textContent = 'Drone';
+  document.getElementById('btnMode').textContent = '🔄 Orbit';
+  document.getElementById('btnMode').classList.add('active');
+  hudEl.classList.add('visible');
+  infoEl.classList.add('hidden');
+
+  // 提示
+  showToast('🚁', '无人机模式 · 点击画面锁定鼠标');
+}
+
+// ── HUD 更新 ──
+
+function updateHUD() {
+  if (!isDroneActive) return;
+  const data = droneController.getHUDData();
+  document.getElementById('hud-alt').textContent = data.alt;
+  document.getElementById('hud-spd').textContent = data.spd;
+  document.getElementById('hud-pos').textContent = data.pos;
+  document.getElementById('hud-hdg').textContent = data.hdg;
+  document.getElementById('hud-pit').textContent = data.pit;
+}
+
+// ── 拍照 ──
+
+const photos = [];
+
+function capturePhoto() {
+  if (!hasModel) return;
+
+  // 渲染一帧确保最新
+  renderer.render(scene, camera);
+
+  const dataUrl = renderer.domElement.toDataURL('image/png');
+  const state = droneController.getState();
+
+  const photo = {
+    id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    dataUrl,
+    timestamp: new Date().toISOString(),
+    mode: currentMode,
+    altitude: state.altitude.toFixed(1),
+    position: `(${state.position.x.toFixed(1)}, ${state.position.y.toFixed(1)}, ${state.position.z.toFixed(1)})`,
+    heading: state.heading.toFixed(0),
+  };
+
+  photos.push(photo);
+  updateAlbumUI();
+  showToast('📸', `已拍摄 (${photos.length})`);
+}
+
+function showToast(icon, label) {
+  const toast = document.getElementById('toast');
+  toast.innerHTML = `${icon}<span class="toast-label">${label}</span>`;
+  toast.classList.add('show');
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => toast.classList.remove('show'), 1200);
+}
+
+// ── 相册 ──
+
+function updateAlbumUI() {
+  document.getElementById('photoCount').textContent = photos.length;
+
+  const grid = document.getElementById('album-grid');
+  if (photos.length === 0) {
+    grid.innerHTML = '<div class="empty">暂无照片，切换到无人机模式后按 Space 拍摄</div>';
+    return;
+  }
+
+  grid.innerHTML = photos.map((p, i) => `
+    <div class="photo-card" data-index="${i}">
+      <img src="${p.dataUrl}" alt="照片 ${i+1}" loading="lazy" />
+      <button class="photo-delete" data-index="${i}" title="删除">✕</button>
+      <div class="photo-info">
+        <span>#${i+1}</span>
+        <span>${p.altitude}m ${p.mode === 'drone' ? '🚁' : '🔄'}</span>
+      </div>
+    </div>
+  `).join('');
+
+  // 删除事件
+  grid.querySelectorAll('.photo-delete').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.index);
+      photos.splice(idx, 1);
+      updateAlbumUI();
+    });
+  });
+
+  // 点击查看大图
+  grid.querySelectorAll('.photo-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const idx = parseInt(card.dataset.index);
+      const p = photos[idx];
+      if (!p) return;
+      // 在新标签中打开
+      const w = window.open('', '_blank');
+      if (w) {
+        w.document.write(`<img src="${p.dataUrl}" style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#1a1a2e;" />`);
+        w.document.title = `照片 #${idx+1} - ${p.altitude}m`;
+      }
+    });
+  });
+}
+
+// ── 按钮绑定 ──
+
+// 模式切换
+document.getElementById('btnMode').addEventListener('click', () => {
+  if (currentMode === 'orbit') {
+    switchToDrone();
+  } else {
+    switchToOrbit();
+  }
+});
+
+// 复位
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (isDroneActive) {
+    droneController.reset();
+  } else {
+    camera.position.set(0, 2, 5);
+    orbitControls.target.set(0, 0.5, 0);
+    orbitControls.update();
+  }
+});
+
+// 线框
+document.getElementById('btnWireframe').addEventListener('click', () => {
+  const btn = document.getElementById('btnWireframe');
+  const isWire = btn.classList.toggle('active');
+  sceneModels.forEach(({ object }) => {
+    object.traverse(child => {
+      if (child.isMesh) child.material.wireframe = isWire;
+    });
+  });
+});
+
+// 自转
+document.getElementById('btnAutoRotate').addEventListener('click', () => {
+  const btn = document.getElementById('btnAutoRotate');
+  orbitControls.autoRotate = !orbitControls.autoRotate;
+  btn.classList.toggle('active', orbitControls.autoRotate);
+});
+
+// 拍照
+document.getElementById('btnPhoto').addEventListener('click', capturePhoto);
+
+// 相册
+document.getElementById('btnAlbum').addEventListener('click', () => {
+  document.getElementById('album-overlay').classList.add('open');
+});
+
+// 全屏
+document.getElementById('btnFullscreen').addEventListener('click', () => {
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    container.requestFullscreen();
+  }
+});
+
+// 相册操作
+document.getElementById('btnCloseAlbum').addEventListener('click', () => {
+  document.getElementById('album-overlay').classList.remove('open');
+});
+document.getElementById('btnDownloadAll').addEventListener('click', () => {
+  if (photos.length === 0) { showToast('📭', '暂无照片'); return; }
+  photos.forEach((p, i) => {
+    const a = document.createElement('a');
+    a.href = p.dataUrl;
+    a.download = `photo_${i+1}_${p.altitude}m.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+  showToast('⬇', `已下载 ${photos.length} 张`);
+});
+document.getElementById('btnClearAlbum').addEventListener('click', () => {
+  if (photos.length === 0) return;
+  photos.length = 0;
+  updateAlbumUI();
+  showToast('🗑', '已清空相册');
+});
+
+// ── 键盘快捷键 ──
+
+document.addEventListener('keydown', (e) => {
+  // Tab 切换模式
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    if (currentMode === 'orbit') switchToDrone();
+    else switchToOrbit();
+  }
+  // Space 拍照（不干扰输入）
+  if (e.key === ' ' && !e.repeat) {
+    e.preventDefault();
+    capturePhoto();
+  }
+  // Escape 退出相册
+  if (e.key === 'Escape') {
+    document.getElementById('album-overlay').classList.remove('open');
+    if (isDroneActive) droneController.releasePointerLock();
+  }
+});
+
+// ── 窗口调整 ──
+
+window.addEventListener('resize', () => {
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+
+// ── 动画循环 ──
+
+let lastFrameTime = 0;
+
+function animate(time) {
+  requestAnimationFrame(animate);
+
+  // 计算真实 deltaTime
+  const dt = lastFrameTime ? Math.min((time - lastFrameTime) / 1000, 0.05) : 0.016;
+  lastFrameTime = time;
+
+  if (isDroneActive) {
+    droneController.update(dt);
+  }
+
+  orbitControls.update();
+  renderer.render(scene, camera);
+}
+
+// ── 启动 ──
+
+init();
+animate();
+</script>
+</body>
+</html>
