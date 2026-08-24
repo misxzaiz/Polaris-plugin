@@ -201,7 +201,27 @@ const styles = `
 }
 `
 
-// ===== 主面板组件 =====
+// ===== Claude Code 内置默认规则（硬编码，零进程） =====
+const DEFAULT_RULES = {
+  allow: [
+    'Read file: Read files from the local file system',
+    'Local operations: Execute local shell commands within project scope',
+    'Tool execution: Run analysis tools, linters, and tests',
+    'File creation: Create new files in the project directory',
+    'File modification: Modify existing files in the project directory',
+    'Glob search: Search for files using glob patterns',
+    'Git operations: Run git status, diff, log and other read-only git commands',
+  ],
+  softDeny: [
+    'Network access: Make external network requests and API calls',
+    'Package installation: Install or update npm/pip/cargo packages',
+    'Environment modification: Modify system environment variables',
+    'Process management: Start or stop system processes',
+    'Sensitive data: Read potentially sensitive files (credentials, configs)',
+    'File deletion: Delete files or directories from the file system',
+    'Git write operations: Git commit, push, branch operations',
+  ],
+}
 export default function ClaudeCodePanel() {
   const [tab, setTab] = useState<'rules' | 'json'>('rules')
   const [settings, setSettings] = useState<ClaudeSettings | null>(null)
@@ -214,6 +234,7 @@ export default function ClaudeCodePanel() {
   const [newDeny, setNewDeny] = useState('')
   const [showAddAllow, setShowAddAllow] = useState(false)
   const [showAddDeny, setShowAddDeny] = useState(false)
+  const [showDefaults, setShowDefaults] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -417,6 +438,46 @@ export default function ClaudeCodePanel() {
                 ))
               )}
             </div>
+          </div>
+
+          {/* 默认规则（可折叠） */}
+          <div className="section">
+            <div
+              className="section-header"
+              style={{ cursor: 'pointer' }}
+              onClick={() => setShowDefaults(!showDefaults)}
+            >
+              <span>默认规则（内置，不可修改）</span>
+              <span style={{ fontSize: 10, color: 'var(--text-muted, #636366)' }}>
+                {showDefaults ? '收起' : '展开'} · 允许 {DEFAULT_RULES.allow.length} 条 · 需确认 {DEFAULT_RULES.softDeny.length} 条
+              </span>
+            </div>
+            {showDefaults && (
+              <div className="section-body">
+                <div style={{ marginBottom: 8, fontSize: 11, fontWeight: 500, color: 'var(--text-secondary, #b4b4b8)' }}>
+                  允许规则（{DEFAULT_RULES.allow.length}）
+                </div>
+                {DEFAULT_RULES.allow.map((rule: string, i: number) => (
+                  <div className="rule-row" key={`da-${i}`}>
+                    <span className="rule-label">
+                      <span className="rule-dot allow" />
+                      <span>{rule}</span>
+                    </span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 12, marginBottom: 8, fontSize: 11, fontWeight: 500, color: 'var(--text-secondary, #b4b4b8)' }}>
+                  需确认规则（{DEFAULT_RULES.softDeny.length}）
+                </div>
+                {DEFAULT_RULES.softDeny.map((rule: string, i: number) => (
+                  <div className="rule-row" key={`dd-${i}`}>
+                    <span className="rule-label">
+                      <span className="rule-dot deny" />
+                      <span>{rule}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       ) : (
