@@ -35,6 +35,8 @@ interface MarketPlugin {
   permissions?: Record<string, boolean>
   readme?: string
   screenshots?: string[]
+  /** 历史版本列表（可选，由 index.json 的 versions 字段提供） */
+  versions?: Array<{ version: string; downloadUrl: string; sha256?: string }>
 }
 
 interface IndexData {
@@ -86,7 +88,18 @@ async function tauriInvoke<T>(cmd: string, args: Record<string, unknown> = {}): 
 
 interface OpResult { success: boolean; message?: string; error?: string }
 
-async function installPlugin(plugin: MarketPlugin, scope: 'user' | 'project'): Promise<OpResult> {
+async function installPlugin(plugin: MarketPlugin, scope: 'user' | 'project', version?: string): Promise<OpResult> {
+  // 如果指定了版本号，从 versions 中查找对应 downloadUrl
+  if (version && version !== plugin.version && plugin.versions) {
+    const target = plugin.versions.find(v => v.version === version)
+    if (!target?.downloadUrl) return { success: false, error: `未找到插件 ${plugin.id} 的版本 ${version}` }
+    try {
+      return await tauriInvoke<OpResult>('plugin_install_remote', { sourceUrl: target.downloadUrl, scope })
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : String(e) }
+    }
+  }
+  // 默认安装最新版
   if (!plugin.downloadUrl) return { success: false, error: '该插件未提供 downloadUrl' }
   try {
     return await tauriInvoke<OpResult>('plugin_install_remote', { sourceUrl: plugin.downloadUrl, scope })
@@ -173,6 +186,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [category, setCategory] = useState<string>('')
   const [tierFilter, setTierFilter] = useState<PluginTier | 'all'>('all')
   const [selected, setSelected] = useState<MarketPlugin | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [installing, setInstalling] = useState<string | null>(null)
   const [installMsg, setInstallMsg] = useState<string | null>(null)
 
@@ -211,8 +225,9 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
 
   const handleInstall = async (p: MarketPlugin, scope: 'user' | 'project') => {
     setInstalling(p.id); setInstallMsg(null)
-    const r = await installPlugin(p, scope)
-    setInstallMsg(r.success ? `✓ ${p.name} 安装成功${r.message ? '：' + r.message : ''}` : `✗ 安装失败：${r.error ?? '未知错误'}`)
+    const version = selectedVersion && selectedVersion !== p.version ? selectedVersion : undefined
+    const r = await installPlugin(p, scope, version)
+    setInstallMsg(r.success ? `✓ ${p.name} ${version ? 'v' + version : ''} 安装成功${r.message ? '：' + r.message : ''}` : `✗ 安装失败：${r.error ?? '未知错误'}`)
     setInstalling(null)
   }
 
@@ -269,7 +284,8 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
           query={query} setQuery={setQuery}
           category={category} setCategory={setCategory}
           tierFilter={tierFilter} setTierFilter={setTierFilter}
-          selected={selected} setSelected={(p) => { setSelected(p); setInstallMsg(null) }}
+          selected={selected} setSelected={(p) => { setSelected(p); setSelectedVersion(''); setInstallMsg(null) }}
+          selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
           installing={installing} installMsg={installMsg} onInstall={handleInstall} onReload={loadIndex}
         />
       ) : (
@@ -300,6 +316,8 @@ interface MarketViewProps {
   setTierFilter: (s: PluginTier | 'all') => void
   selected: MarketPlugin | null
   setSelected: (p: MarketPlugin | null) => void
+  selectedVersion: string
+  setSelectedVersion: (s: string) => void
   installing: string | null
   installMsg: string | null
   onInstall: (p: MarketPlugin, scope: 'user' | 'project') => void
@@ -309,6 +327,7 @@ interface MarketViewProps {
 function MarketView(props: MarketViewProps) {
   const { index, loading, error, query, setQuery, category, setCategory,
     tierFilter, setTierFilter, selected, setSelected,
+    selectedVersion, setSelectedVersion,
     installing, installMsg, onInstall, onReload } = props
 
   if (loading) return <div style={{ padding: 24, color: '#8E8E93' }}>加载商城索引中…</div>
@@ -421,6 +440,8 @@ function MarketView(props: MarketViewProps) {
         <DetailPanel
           plugin={selected}
           tier={resolveTier(selected)}
+          selectedVersion={selectedVersion}
+          setSelectedVersion={setSelectedVersion}
           installing={installing}
           installMsg={installMsg}
           onClose={() => setSelected(null)}
@@ -493,14 +514,29 @@ function MarketItem({ plugin, tier, selected, onClick }: {
 
 /* ---------- 详情面板 ---------- */
 
-function DetailPanel({ plugin, tier, installing, installMsg, onClose, onInstall }: {
+function DetailPanel({ plugin, tier, selectedVersion, setSelectedVersion, installing, installMsg, onClose, onInstall }: {
   plugin: MarketPlugin
   tier: PluginTier
+  selectedVersion: string
+  setSelectedVersion: (s: string) => void
   installing: string | null
   installMsg: string | null
   onClose: () => void
   onInstall: (p: MarketPlugin, scope: 'user' | 'project') => void
 }) {
+  // 收集可用的版本列表
+  const allVersions = useMemo(() => {
+    const versions = plugin.versions || []
+    // 确保当前最新版也在列表中
+    if (!versions.find(v => v.version === plugin.version)) {
+      return [{ version: plugin.version, downloadUrl: plugin.downloadUrl || '', sha256: plugin.sha256 }, ...versions]
+    }
+    return versions
+  }, [plugin])
+
+  // 当前选中的版本对象
+  const currentVersion = selectedVersion || plugin.version
+
   return (
     <div style={{
       borderTop: '1px solid #3F3F46', padding: 12, background: '#1F1F24',
@@ -532,20 +568,47 @@ function DetailPanel({ plugin, tier, installing, installMsg, onClose, onInstall 
         </div>
       )}
 
+      {/* 版本选择器 */}
+      {allVersions.length > 1 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <label style={{ fontSize: 11, color: '#8E8E93', whiteSpace: 'nowrap' }}>版本：</label>
+          <select
+            value={currentVersion}
+            onChange={e => setSelectedVersion(e.target.value)}
+            style={{
+              flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46',
+              borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none', cursor: 'pointer',
+            }}
+          >
+            {allVersions.map(v => (
+              <option key={v.version} value={v.version}>
+                v{v.version}{v.version === plugin.version ? ' (最新)' : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {plugin.readme && <pre style={s.pre}>{plugin.readme}</pre>}
       {installMsg && <div style={{ fontSize: 11, color: installMsg.startsWith('✓') ? '#10B981' : '#EF4444' }}>{installMsg}</div>}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
         <button onClick={() => onInstall(plugin, 'user')} disabled={installing === plugin.id}
           style={{ ...s.btn, flex: 1, opacity: installing === plugin.id ? 0.6 : 1 }}>
-          {installing === plugin.id ? '安装中…' : '安装到 User'}
+          {installing === plugin.id ? '安装中…' : `安装到 User${currentVersion !== plugin.version ? ' (v' + currentVersion + ')' : ''}`}
         </button>
         <button onClick={() => onInstall(plugin, 'project')} disabled={installing === plugin.id}
-          style={{ ...s.btn, opacity: installing === plugin.id ? 0.6 : 1 }}>安装到 Project</button>
+          style={{ ...s.btn, opacity: installing === plugin.id ? 0.6 : 1 }}>
+          安装到 Project{currentVersion !== plugin.version ? ' (v' + currentVersion + ')' : ''}
+        </button>
       </div>
 
       {plugin.downloadUrl && (
-        <div style={{ fontSize: 9, color: '#6B7280', wordBreak: 'break-all' }}>{plugin.downloadUrl}</div>
+        <div style={{ fontSize: 9, color: '#6B7280', wordBreak: 'break-all' }}>
+          {currentVersion !== plugin.version
+            ? allVersions.find(v => v.version === currentVersion)?.downloadUrl || plugin.downloadUrl
+            : plugin.downloadUrl}
+        </div>
       )}
     </div>
   )

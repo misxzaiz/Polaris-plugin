@@ -53,7 +53,7 @@ for (const p of plugins) {
       repository: 'https://github.com/misxzaiz/Polaris-plugin',
       homepage: 'https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/' + p.id,
       updateUrl: 'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/' + p.id + '/update.json',
-      downloadUrl: 'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/' + p.id + '/' + p.id + '.zip'
+      downloadUrl: 'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.0.0/plugins/' + p.id + '/' + p.id + '.zip'
     }
   }
   fs.writeFileSync(path.join(dir, 'plugin.json'), JSON.stringify(manifest, null, 2))

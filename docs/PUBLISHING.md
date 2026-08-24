@@ -101,7 +101,8 @@ node scripts/validate.js        # 校验 index.json + 所有 plugin.json
 3. 同步 `update.json` 的 `version`，并更新 `origin.downloadUrl` 中的 tag 版本号（如 `@v0.1.2` → `@v0.1.3`）
 4. 重新打包 zip（`pack.js`）
 5. 更新 `index.json` 中该条目的 `version`、`sha256`、`downloadUrl` tag
-6. 提交并打 tag：
+6. **维护 `versions` 数组**：在 `index.json` 该插件的 `versions` 数组头部追加新版本条目（按版本号降序排列），确保旧版本 zip 保留在 CDN 上（通过 git tag）
+7. 提交并打 tag：
 
 ```bash
 git add plugins/<your-plugin>/ index.json
@@ -112,6 +113,7 @@ git push origin main --tags
 
 > ⚠️ 每次发版必须 push 新 tag，否则 downloadUrl 指向旧版本 zip！
 > ⚠️ `plugin.json` 与 `update.json` 的版本号必须同步更新，否则更新检查失败。
+> ⚠️ `versions` 数组中的每个 `downloadUrl` 必须使用对应的 git tag（如 `@v0.1.2`），不可变，否则历史版本安装会失效。
 
 ## 分类建议（category）
 

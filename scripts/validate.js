@@ -35,6 +35,22 @@ for (const p of index.plugins) {
   if (seenIds.has(p.id)) err(`插件 id 重复: ${p.id}`)
   seenIds.add(p.id)
 
+  // 校验 versions 数组
+  if (Array.isArray(p.versions)) {
+    if (p.versions.length === 0) err(`${p.id}: versions 数组不能为空`)
+    const seenVersions = new Set()
+    for (let i = 0; i < p.versions.length; i++) {
+      const v = p.versions[i]
+      if (!v.version || !v.downloadUrl) err(`${p.id}: versions[${i}] 缺少 version 或 downloadUrl`)
+      if (seenVersions.has(v.version)) err(`${p.id}: versions 版本重复: ${v.version}`)
+      seenVersions.add(v.version)
+      // 第一个版本应与顶层 version 一致
+      if (i === 0 && v.version !== p.version) err(`${p.id}: versions[0].version(${v.version}) ≠ index.version(${p.version})`)
+    }
+  } else {
+    err(`${p.id}: 缺少 versions 字段`)
+  }
+
   // 校验对应插件目录：从 manifestUrl 解析（最可靠）
   const dirName = (() => {
     const urlMatch = p.manifestUrl.match(/\/plugins\/([^/]+)\/plugin\.json/)

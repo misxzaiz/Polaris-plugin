@@ -35,6 +35,19 @@
           "downloadUrl": { "type": "string", "format": "uri", "description": "zip 安装包，供 Polaris installRemotePlugin 消费" },
           "updateUrl": { "type": "string", "format": "uri", "description": "指向 update.json（含最新 manifest + downloadUrl），供 Polaris checkPluginUpdate 消费" },
           "sha256": { "type": "string", "description": "zip 包校验和（可选）" },
+          "versions": {
+            "type": "array",
+            "description": "所有历史版本记录（含当前最新版）。按版本号降序排列。每条记录独立指向对应 tag 的 zip 包，确保 CDN 不可变。",
+            "items": {
+              "type": "object",
+              "required": ["version", "downloadUrl"],
+              "properties": {
+                "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+", "description": "版本号，必须与 git tag 一致" },
+                "downloadUrl": { "type": "string", "format": "uri", "description": "该版本的 zip 包 URL（必须用 @vX.Y.Z tag 固定，不可变）" },
+                "sha256": { "type": "string", "description": "该版本的 zip 校验和（可选）" }
+              }
+            }
+          },
           "permissions": { "type": "object" },
           "tier": { "type": "string", "enum": ["production", "beta", "demo"], "description": "质量等级：production 生产可用 / beta 测试阶段 / demo 演示玩具。未设置时默认 demo。" },
           "screenshots": { "type": "array", "items": { "type": "string", "format": "uri" } },

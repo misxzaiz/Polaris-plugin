@@ -3,5 +3,9 @@
   "minAppVersion": "1.0.0",
   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/polaris-api-client.zip",
   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/update.json",
-  "changelog": "v1.0.1 修复：cURL 导入 header 字段兼容、代理头同步、parser.js 双字段模式(k/v+key/value)兼容、服务标识更新"
+  "changelog": "v1.0.1 修复：cURL 导入 header 字段兼容、代理头同步、parser.js 双字段模式(k/v+key/value)兼容、服务标识更新",
+  "id": "polaris-api-client",
+  "origin": {
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/polaris-api-client.zip"
+  }
 }

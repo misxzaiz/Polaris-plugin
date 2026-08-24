@@ -1,8 +1,8 @@
 {
   "id": "polaris.marketplace",
   "name": "Polaris 插件商城",
-  "version": "1.1.0",
-  "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件。提供 ActivityBar 面板与 MCP 工具。",
+  "version": "1.2.0",
+  "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -40,6 +40,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip"
   }
 }

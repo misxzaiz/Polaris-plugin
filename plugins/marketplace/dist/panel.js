@@ -13,7 +13,16 @@ async function tauriInvoke(cmd, args = {}) {
   }
   return internals.invoke(cmd, args);
 }
-async function installPlugin(plugin, scope) {
+async function installPlugin(plugin, scope, version) {
+  if (version && version !== plugin.version && plugin.versions) {
+    const target = plugin.versions.find((v) => v.version === version);
+    if (!target?.downloadUrl) return { success: false, error: `\u672A\u627E\u5230\u63D2\u4EF6 ${plugin.id} \u7684\u7248\u672C ${version}` };
+    try {
+      return await tauriInvoke("plugin_install_remote", { sourceUrl: target.downloadUrl, scope });
+    } catch (e) {
+      return { success: false, error: e instanceof Error ? e.message : String(e) };
+    }
+  }
   if (!plugin.downloadUrl) return { success: false, error: "\u8BE5\u63D2\u4EF6\u672A\u63D0\u4F9B downloadUrl" };
   try {
     return await tauriInvoke("plugin_install_remote", { sourceUrl: plugin.downloadUrl, scope });
@@ -108,6 +117,7 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const [category, setCategory] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
   const [selected, setSelected] = useState(null);
+  const [selectedVersion, setSelectedVersion] = useState("");
   const [installing, setInstalling] = useState(null);
   const [installMsg, setInstallMsg] = useState(null);
   const [installed, setInstalled] = useState([]);
@@ -153,8 +163,9 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const handleInstall = async (p, scope) => {
     setInstalling(p.id);
     setInstallMsg(null);
-    const r = await installPlugin(p, scope);
-    setInstallMsg(r.success ? `\u2713 ${p.name} \u5B89\u88C5\u6210\u529F${r.message ? "\uFF1A" + r.message : ""}` : `\u2717 \u5B89\u88C5\u5931\u8D25\uFF1A${r.error ?? "\u672A\u77E5\u9519\u8BEF"}`);
+    const version = selectedVersion && selectedVersion !== p.version ? selectedVersion : void 0;
+    const r = await installPlugin(p, scope, version);
+    setInstallMsg(r.success ? `\u2713 ${p.name} ${version ? "v" + version : ""} \u5B89\u88C5\u6210\u529F${r.message ? "\uFF1A" + r.message : ""}` : `\u2717 \u5B89\u88C5\u5931\u8D25\uFF1A${r.error ?? "\u672A\u77E5\u9519\u8BEF"}`);
     setInstalling(null);
   };
   const handleUninstall = async (p) => {
@@ -215,8 +226,11 @@ function MarketplacePanel({ pluginId: _pluginId }) {
         selected,
         setSelected: (p) => {
           setSelected(p);
+          setSelectedVersion("");
           setInstallMsg(null);
         },
+        selectedVersion,
+        setSelectedVersion,
         installing,
         installMsg,
         onInstall: handleInstall,
@@ -253,6 +267,8 @@ function MarketView(props) {
     setTierFilter,
     selected,
     setSelected,
+    selectedVersion,
+    setSelectedVersion,
     installing,
     installMsg,
     onInstall,
@@ -360,6 +376,8 @@ function MarketView(props) {
       {
         plugin: selected,
         tier: resolveTier(selected),
+        selectedVersion,
+        setSelectedVersion,
         installing,
         installMsg,
         onClose: () => setSelected(null),
@@ -426,7 +444,15 @@ function MarketItem({ plugin, tier, selected, onClick }) {
     }
   );
 }
-function DetailPanel({ plugin, tier, installing, installMsg, onClose, onInstall }) {
+function DetailPanel({ plugin, tier, selectedVersion, setSelectedVersion, installing, installMsg, onClose, onInstall }) {
+  const allVersions = useMemo(() => {
+    const versions = plugin.versions || [];
+    if (!versions.find((v) => v.version === plugin.version)) {
+      return [{ version: plugin.version, downloadUrl: plugin.downloadUrl || "", sha256: plugin.sha256 }, ...versions];
+    }
+    return versions;
+  }, [plugin]);
+  const currentVersion = selectedVersion || plugin.version;
   return /* @__PURE__ */ jsxs("div", { style: {
     borderTop: "1px solid #3F3F46",
     padding: 12,
@@ -456,6 +482,32 @@ function DetailPanel({ plugin, tier, installing, installMsg, onClose, onInstall 
       /* @__PURE__ */ jsx("div", { style: { fontSize: 10, color: "#8E8E93", marginBottom: 2 }, children: "\u6743\u9650" }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: Object.entries(plugin.permissions).filter(([, v]) => v).map(([k]) => /* @__PURE__ */ jsx("span", { style: { fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "#3F3F46", color: "#F8B4B8" }, children: k }, k)) })
     ] }),
+    allVersions.length > 1 && /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+      /* @__PURE__ */ jsx("label", { style: { fontSize: 11, color: "#8E8E93", whiteSpace: "nowrap" }, children: "\u7248\u672C\uFF1A" }),
+      /* @__PURE__ */ jsx(
+        "select",
+        {
+          value: currentVersion,
+          onChange: (e) => setSelectedVersion(e.target.value),
+          style: {
+            flex: 1,
+            padding: "5px 8px",
+            background: "#25252B",
+            border: "1px solid #3F3F46",
+            borderRadius: 6,
+            color: "#F8F8F8",
+            fontSize: 12,
+            outline: "none",
+            cursor: "pointer"
+          },
+          children: allVersions.map((v) => /* @__PURE__ */ jsxs("option", { value: v.version, children: [
+            "v",
+            v.version,
+            v.version === plugin.version ? " (\u6700\u65B0)" : ""
+          ] }, v.version))
+        }
+      )
+    ] }),
     plugin.readme && /* @__PURE__ */ jsx("pre", { style: s.pre, children: plugin.readme }),
     installMsg && /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: installMsg.startsWith("\u2713") ? "#10B981" : "#EF4444" }, children: installMsg }),
     /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, marginTop: 2 }, children: [
@@ -465,20 +517,23 @@ function DetailPanel({ plugin, tier, installing, installMsg, onClose, onInstall 
           onClick: () => onInstall(plugin, "user"),
           disabled: installing === plugin.id,
           style: { ...s.btn, flex: 1, opacity: installing === plugin.id ? 0.6 : 1 },
-          children: installing === plugin.id ? "\u5B89\u88C5\u4E2D\u2026" : "\u5B89\u88C5\u5230 User"
+          children: installing === plugin.id ? "\u5B89\u88C5\u4E2D\u2026" : `\u5B89\u88C5\u5230 User${currentVersion !== plugin.version ? " (v" + currentVersion + ")" : ""}`
         }
       ),
-      /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsxs(
         "button",
         {
           onClick: () => onInstall(plugin, "project"),
           disabled: installing === plugin.id,
           style: { ...s.btn, opacity: installing === plugin.id ? 0.6 : 1 },
-          children: "\u5B89\u88C5\u5230 Project"
+          children: [
+            "\u5B89\u88C5\u5230 Project",
+            currentVersion !== plugin.version ? " (v" + currentVersion + ")" : ""
+          ]
         }
       )
     ] }),
-    plugin.downloadUrl && /* @__PURE__ */ jsx("div", { style: { fontSize: 9, color: "#6B7280", wordBreak: "break-all" }, children: plugin.downloadUrl })
+    plugin.downloadUrl && /* @__PURE__ */ jsx("div", { style: { fontSize: 9, color: "#6B7280", wordBreak: "break-all" }, children: currentVersion !== plugin.version ? allVersions.find((v) => v.version === currentVersion)?.downloadUrl || plugin.downloadUrl : plugin.downloadUrl })
   ] });
 }
 function InstalledView(props) {
