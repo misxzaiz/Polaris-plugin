@@ -36,6 +36,7 @@
           "updateUrl": { "type": "string", "format": "uri", "description": "指向 update.json（含最新 manifest + downloadUrl），供 Polaris checkPluginUpdate 消费" },
           "sha256": { "type": "string", "description": "zip 包校验和（可选）" },
           "permissions": { "type": "object" },
+          "tier": { "type": "string", "enum": ["production", "beta", "demo"], "description": "质量等级：production 生产可用 / beta 测试阶段 / demo 演示玩具。未设置时默认 demo。" },
           "screenshots": { "type": "array", "items": { "type": "string", "format": "uri" } },
           "readme": { "type": "string" }
         }

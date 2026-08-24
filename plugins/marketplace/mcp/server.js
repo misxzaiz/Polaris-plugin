@@ -136,7 +136,7 @@ async function handleCall(name, args) {
       return hay.includes(q)
     })
     return matches.map(p => ({
-      id: p.id, name: p.name, version: p.version, description: p.description, category: p.category
+      id: p.id, name: p.name, version: p.version, description: p.description, category: p.category, tier: p.tier || 'demo'
     }))
   }
 
@@ -145,7 +145,7 @@ async function handleCall(name, args) {
     let list = cat ? plugins.filter(p => p.category === cat) : plugins
     list = list.slice(0, Number(args.limit) || 50)
     return list.map(p => ({
-      id: p.id, name: p.name, version: p.version, description: p.description, category: p.category
+      id: p.id, name: p.name, version: p.version, description: p.description, category: p.category, tier: p.tier || 'demo'
     }))
   }
 
@@ -154,7 +154,7 @@ async function handleCall(name, args) {
     if (!p) return { error: `未找到插件: ${args.id}` }
     return {
       id: p.id, name: p.name, version: p.version, description: p.description,
-      author: p.author, category: p.category, tags: p.tags, permissions: p.permissions,
+      author: p.author, category: p.category, tags: p.tags, tier: p.tier || 'demo', permissions: p.permissions,
       manifestUrl: p.manifestUrl, downloadUrl: p.downloadUrl, updateUrl: p.updateUrl,
       sha256: p.sha256, readme: p.readme
     }
@@ -164,7 +164,7 @@ async function handleCall(name, args) {
     const p = plugins.find(x => x.id === args.id)
     if (!p) return { error: `未找到插件: ${args.id}` }
     return {
-      id: p.id, name: p.name, version: p.version,
+      id: p.id, name: p.name, version: p.version, tier: p.tier || 'demo',
       downloadUrl: p.downloadUrl,
       scope: args.scope || 'user',
       instruction: `在 Polaris 设置 → 插件 → 远程安装，粘贴此 downloadUrl；或让 AI 调用 installRemotePlugin 完成：${p.downloadUrl}`

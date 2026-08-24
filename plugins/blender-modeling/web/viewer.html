@@ -689,11 +689,14 @@ function clearGround() {
 // ── 模型加载 ──
 
 const loader = new GLTFLoader();
-let sceneModels = []; // { object, config }
+let sceneModels = []; // { object, config, mixer?, animAction?, pathState? }
 let modelBounds = new THREE.Box3();
 let modelCenter = new THREE.Vector3();
 let modelSize = new THREE.Vector3();
 let hasModel = false;
+
+// 动画混合器列表（每帧更新）
+const animationMixers = [];
 
 function loadModel(url) {
   return new Promise((resolve, reject) => {
@@ -705,7 +708,9 @@ function loadModel(url) {
           if (child.isMesh) { child.castShadow = true; child.receiveShadow = true; }
         });
         scene.add(obj);
-        sceneModels.push({ object: obj, config: { url } });
+        sceneModels.push({ object: obj, config: { url }, gltf });
+        // 自动播放动画
+        setupAnimation(obj, gltf, null);
         resolve(obj);
       },
       (xhr) => {
@@ -743,7 +748,18 @@ function loadModelWithConfig(url, config) {
         }
 
         scene.add(obj);
-        sceneModels.push({ object: obj, config });
+        sceneModels.push({ object: obj, config, gltf });
+
+        // 设置动画
+        const animCfg = config.animations || {};
+        const entry = sceneModels[sceneModels.length - 1];
+        setupAnimation(obj, gltf, entry, animCfg);
+
+        // 设置路径行走
+        if (config.path) {
+          setupPathWalking(entry, config.path);
+        }
+
         resolve(obj);
       },
       (xhr) => {
@@ -755,6 +771,133 @@ function loadModelWithConfig(url, config) {
       (err) => { reject(err); }
     );
   });
+}
+
+/**
+ * 为模型设置动画播放
+ */
+function setupAnimation(obj, gltf, entry, animCfg) {
+  if (!gltf.animations || gltf.animations.length === 0) return;
+
+  const mixer = new THREE.AnimationMixer(obj);
+  const action = mixer.clipAction(gltf.animations[0]);
+  const speed = (animCfg && animCfg.speed) || 1.0;
+  action.timeScale = speed;
+
+  if (!animCfg || animCfg.autoPlay !== false) {
+    action.play();
+  }
+
+  const entryRef = entry || sceneModels.find(e => e.object === obj);
+  if (entryRef) {
+    entryRef.mixer = mixer;
+    entryRef.animAction = action;
+  }
+
+  animationMixers.push(mixer);
+  console.log(`[viewer] 动画已启动: ${gltf.animations[0].name || 'unnamed'}, ${gltf.animations.length} 个片段`);
+}
+
+/**
+ * 为模型设置路径行走系统
+ * 实体沿路径点匀速行走，朝向路径方向，自动播放动画
+ */
+function setupPathWalking(entry, pathCfg) {
+  if (!pathCfg.points || pathCfg.points.length < 2) return;
+
+  const points = pathCfg.points.map(p => new THREE.Vector3(p[0], p[1], p[2]));
+  const totalSegments = points.length;
+  const walkSpeed = pathCfg.speed || 0.5;
+  const loop = pathCfg.loop !== false;
+
+  // 计算每段长度和总长度
+  const segLengths = [];
+  let totalLength = 0;
+  for (let i = 0; i < totalSegments; i++) {
+    const next = (i + 1) % totalSegments;
+    const len = points[i].distanceTo(points[next]);
+    segLengths.push(len);
+    totalLength += len;
+  }
+
+  if (totalLength < 0.01) return;
+
+  entry.pathState = {
+    points,
+    segLengths,
+    totalLength,
+    walkSpeed,
+    loop,
+    t: 0, // 0..1 路径进度
+    currentSeg: 0,
+    segOffset: 0,
+    started: true,
+  };
+
+  // 如果没有主动画，确保有动画播放
+  if (!entry.mixer && entry.gltf && entry.gltf.animations && entry.gltf.animations.length > 0) {
+    setupAnimation(entry.object, entry.gltf, entry, { autoPlay: true, speed: 1.0 });
+  }
+
+  console.log(`[viewer] 路径行走已设置: ${totalSegments} 段, ${totalLength.toFixed(2)} 总长, ${walkSpeed} 速度`);
+}
+
+/**
+ * 更新路径行走（每帧调用）
+ */
+function updatePathWalking(dt) {
+  for (const entry of sceneModels) {
+    const ps = entry.pathState;
+    if (!ps || !ps.started) continue;
+
+    // 沿路径前进
+    ps.t += ps.walkSpeed * dt / ps.totalLength;
+    if (ps.t >= 1.0) {
+      if (ps.loop) {
+        ps.t = ps.t % 1.0;
+      } else {
+        ps.t = 1.0;
+        ps.started = false;
+      }
+    }
+
+    // 计算当前位置
+    let targetDist = ps.t * ps.totalLength;
+    let accumulated = 0;
+    let segIdx = 0;
+    for (let i = 0; i < ps.segLengths.length; i++) {
+      if (accumulated + ps.segLengths[i] >= targetDist) {
+        segIdx = i;
+        break;
+      }
+      accumulated += ps.segLengths[i];
+    }
+
+    const segStart = accumulated;
+    const segLen = ps.segLengths[segIdx];
+    const segT = segLen > 0 ? (targetDist - segStart) / segLen : 0;
+    const nextIdx = (segIdx + 1) % ps.points.length;
+
+    const pos = new THREE.Vector3().lerpVectors(ps.points[segIdx], ps.points[nextIdx], segT);
+
+    // 更新模型位置
+    entry.object.position.copy(pos);
+
+    // 计算朝向（面向路径方向）
+    if (segT < 1) {
+      const dir = new THREE.Vector3().subVectors(ps.points[nextIdx], ps.points[segIdx]);
+      if (dir.length() > 0.01) {
+        dir.y = 0;
+        dir.normalize();
+        const quat = new THREE.Quaternion().setFromUnitVectors(
+          new THREE.Vector3(0, 0, -1), dir
+        );
+        entry.object.quaternion.copy(quat);
+      }
+    }
+
+    ps.currentSeg = segIdx;
+  }
 }
 
 function fitCameraToScene() {
@@ -1215,6 +1358,14 @@ function animate(time) {
   if (isDroneActive) {
     droneController.update(dt);
   }
+
+  // 更新动画混合器（走路动画等）
+  for (const mixer of animationMixers) {
+    mixer.update(dt);
+  }
+
+  // 更新路径行走
+  updatePathWalking(dt);
 
   orbitControls.update();
   renderer.render(scene, camera);
