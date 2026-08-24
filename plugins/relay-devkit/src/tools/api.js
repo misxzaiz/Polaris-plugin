@@ -175,6 +175,7 @@ function renderTabs(){
     if(t.dirty) tab.appendChild(el('span','dirty'));
     const x=el('button','tx','×'); x.title='关闭'; x.onclick=e=>{e.stopPropagation();closeTab(t);}; tab.appendChild(x);
     tab.onclick=()=>{ state.activeTab=t.id; renderAll(); persist(); };
+    tab.oncontextmenu=e=>{ e.preventDefault(); e.stopPropagation(); showTabCtxMenu(e,t); };
     tab.querySelector('.tn').ondblclick=e=>{ e.stopPropagation(); const n=prompt('重命名 tab：',t.name); if(n!=null){ t.name=n.trim()||t.name; renderTabs(); persist(); } };
     bar.appendChild(tab);
   });
@@ -409,7 +410,7 @@ function tokenizeCurl(s){
   s=s.replace(/\\\r?\n/g,' ');
   const out=[]; let cur='',q=null,started=false;
   for(let i=0;i<s.length;i++){ const c=s[i];
-    if(q){ if(c===q)q=null; else if(c==='\\'&&q==='"'){cur+=(s[++i]||'');} else cur+=c; }
+    if(q){ if(c==='\\'&&q==='"'){cur+=(s[++i]||'');} else if(c===q)q=null; else cur+=c; }
     else if(c==='"'||c==="'"){q=c;started=true;}
     else if(c===' '||c==='\t'||c==='\n'||c==='\r'){ if(started){out.push(cur);cur='';started=false;} }
     else { cur+=c; started=true; }
@@ -417,7 +418,19 @@ function tokenizeCurl(s){
   if(started) out.push(cur); return out;
 }
 function parseCurl(text){
-  let toks=tokenizeCurl(text.trim()); if(toks[0]==='curl') toks=toks.slice(1);
+  let toks=tokenizeCurl(text.trim());
+  // 剥离 curl / curl.exe 等前缀
+  if(toks.length&&/^curl(\.exe)?$/i.test(toks[0])) toks=toks.slice(1);
+  // 拆分 --flag=value / -X=value 等号写法为独立 token
+  const flat=[];
+  for(const t of toks){
+    if(t.startsWith('--')||(/^-[A-Za-z]/.test(t)&&t.length>2)){
+      const idx=t.indexOf('=');
+      if(idx>0){ flat.push(t.slice(0,idx)); flat.push(t.slice(idx+1)); continue; }
+    }
+    flat.push(t);
+  }
+  toks=flat;
   const headers=[], datas=[]; let method=null,url='',getFlag=false;
   const addH=h=>{ const i=h.indexOf(':'); if(i<0){headers.push({on:true,k:h.trim(),v:''});return;} headers.push({on:true,k:h.slice(0,i).trim(),v:h.slice(i+1).trim()}); };
   for(let i=0;i<toks.length;i++){ let t=toks[i]; const nx=()=>toks[++i];
@@ -427,6 +440,10 @@ function parseCurl(text){
     else if(t.startsWith('-H')&&t.length>2) addH(t.slice(2));
     else if(t==='-d'||t==='--data'||t==='--data-raw'||t==='--data-ascii'||t==='--data-binary'||t==='--data-urlencode') datas.push(nx());
     else if(t.startsWith('-d')&&t.length>2) datas.push(t.slice(2));
+    else if(t==='--json'){
+      datas.push(nx());
+      if(!headers.some(h=>h.k.toLowerCase()==='content-type')) headers.push({on:true,k:'Content-Type',v:'application/json'});
+    }
     else if(t==='-u'||t==='--user'){ try{ headers.push({on:true,k:'Authorization',v:'Basic '+btoa(nx())}); }catch(e){} }
     else if(t==='-b'||t==='--cookie') headers.push({on:true,k:'Cookie',v:nx()});
     else if(t==='-A'||t==='--user-agent') headers.push({on:true,k:'User-Agent',v:nx()});
@@ -449,7 +466,7 @@ function parseCurl(text){
 }
 function openCurlImport(){
   const bg=$('#modalBg'); const m=el('div','modal');
-  m.innerHTML='<h3>导入 cURL</h3><div class="sub">粘贴一条 curl 命令，解析为新的请求 tab（支持 -X -H -d --data-raw -u -b -G 等）。</div>';
+  m.innerHTML='<h3>导入 cURL</h3><div class="sub">粘贴一条 curl 命令，解析为新的请求 tab（支持 -X -H -d --data-raw -u -b -G --json、--flag=value 等号写法、curl.exe 前缀）。</div>';
   const f=el('div','field'); f.innerHTML='<label>cURL 命令</label>'; const ta=el('textarea','curl-ta'); ta.placeholder="curl 'https://api.example.com/users' -H 'Authorization: Bearer xxx' -H 'Content-Type: application/json' --data-raw '{\"a\":1}'"; f.appendChild(ta); m.appendChild(f);
   const acts=el('div','acts'); const sp=el('div'); sp.style.flex='1';
   const c=el('button','btn ghost','取消'); c.onclick=close;
@@ -517,6 +534,55 @@ function closeTab(t){
   if(!state.tabs.length){ const nt=newTab(); state.tabs.push(nt); state.activeTab=nt.id; }
   else if(state.activeTab===t.id) state.activeTab=state.tabs[Math.max(0,i-1)].id;
   renderAll(); persist();
+}
+/* ---- 右键菜单（tab 上右键调出） ---- */
+function closeOthers(t){ state.tabs=state.tabs.filter(x=>x===t); state.activeTab=t.id; renderAll(); persist(); }
+function closeRight(t){ const i=state.tabs.indexOf(t); state.tabs=state.tabs.slice(0,i+1); state.activeTab=t.id; renderAll(); persist(); }
+function closeLeft(t){ const i=state.tabs.indexOf(t); state.tabs=state.tabs.slice(i); state.activeTab=t.id; renderAll(); persist(); }
+let _ctxTab=null; // 右键菜单当前关联的 tab
+let _ctxMenuClose=null; // 关闭函数
+function showTabCtxMenu(e,t){
+  e.preventDefault(); e.stopPropagation();
+  _ctxTab=t;
+  // 关闭旧菜单
+  if(_ctxMenuClose) _ctxMenuClose();
+  const menu=el('div','ctx-menu');
+  menu.style.cssText='position:fixed;z-index:10001;background:var(--bg-2, #1e1f26);border:1px solid var(--line, #2a2b32);border-radius:8px;padding:4px 0;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.4)';
+  menu.style.left=Math.min(e.clientX,innerWidth-180)+'px';
+  menu.style.top=Math.min(e.clientY,innerHeight-8)+'px';
+  document.body.appendChild(menu);
+  // 先挂载再读高度，确保 offsetHeight 正确
+  menu.style.top=Math.min(e.clientY,innerHeight-menu.offsetHeight-8)+'px';
+  const items=[
+    {label:'✕ 关闭',action:()=>{closeTab(t);closeMenu();}},
+    {label:'关闭其他',action:()=>{closeOthers(t);closeMenu();}},
+    {label:'关闭右侧',action:()=>{closeRight(t);closeMenu();}},
+    {label:'关闭左侧',action:()=>{closeLeft(t);closeMenu();}},
+    {sep:true},
+    {label:'✎ 重命名',action:()=>{const n=prompt('重命名 tab：',t.name);if(n!=null){t.name=n.trim()||t.name;renderTabs();persist();}closeMenu();}},
+    {label:'📋 复制 URL',action:()=>{copy(t.url||'','URL 已复制');closeMenu();}},
+    {label:'cURL 复制',action:()=>{copy(toCurl(t),'cURL 已复制');closeMenu();}},
+  ];
+  items.forEach(item=>{
+    if(item.sep){ const hr=el('div'); hr.style.cssText='height:1px;background:var(--line,#2a2b32);margin:4px 0'; menu.appendChild(hr); return; }
+    const b=el('button');
+    b.textContent=item.label;
+    b.style.cssText='display:block;width:100%;padding:6px 14px;text-align:left;font-size:12px;color:var(--ink,#d8dae2);background:none;border:none;cursor:pointer;white-space:nowrap';
+    b.onmouseenter=()=>b.style.background='var(--surface,#262830)';
+    b.onmouseleave=()=>b.style.background='none';
+    b.onclick=item.action;
+    menu.appendChild(b);
+  });
+  function closeMenu(){
+    menu.remove(); _ctxMenuClose=null;
+    document.removeEventListener('keydown',_onKey);
+    document.removeEventListener('mousedown',_onDoc);
+  }
+  _ctxMenuClose=closeMenu;
+  function _onKey(e2){ if(e2.key==='Escape') closeMenu(); }
+  function _onDoc(e2){ if(!menu.contains(e2.target)) closeMenu(); }
+  // 延迟绑定，避免当前右键事件立即触发关闭
+  setTimeout(()=>{ document.addEventListener('keydown',_onKey); document.addEventListener('mousedown',_onDoc); }, 0);
 }
 
 /* ===================== 通用模态 ===================== */
@@ -610,8 +676,8 @@ export function initApi(){
   bindCellTooltip();
   // 加载状态并首渲染
   load();
-  // 面板模式：默认纵向布局，侧栏折叠（窄面板友好）
-  if(_panelMode){ ui.layout='v'; ui.sideCollapsed=true; }
+  // 面板模式：侧栏默认折叠（窄面板友好），但布局偏好保留用户上次选择
+  if(_panelMode && !localStorage.getItem(LS_UI)) ui.sideCollapsed=true;
   const main=$('#main'); if(main) main.classList.toggle('collapsed',ui.sideCollapsed);
   applyLayout();
   applyProxyBtn();
