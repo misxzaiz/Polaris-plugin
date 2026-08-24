@@ -1,0 +1,13 @@
+{
+  "name": "polaris-claude-code",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Polaris Claude Code 管理插件（打包用）",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  }
+}

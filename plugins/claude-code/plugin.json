@@ -1,0 +1,34 @@
+{
+  "id": "polaris.claude-code",
+  "name": "Claude Code",
+  "version": "0.1.0",
+  "description": "管理 Claude Code 配置：权限规则、settings.json 编辑。无状态，零服务进程。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "claude-code.panel",
+        "area": "activityBar",
+        "panelType": "claudeCode",
+        "icon": "Bot",
+        "labelKey": "labels.claudeCode",
+        "labelDefault": "Claude",
+        "order": 75
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/claude-code",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/claude-code/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/claude-code/claude-code.zip"
+  }
+}
