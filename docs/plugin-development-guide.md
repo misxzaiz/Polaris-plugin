@@ -830,9 +830,53 @@ POST /api/execute
 
 SchedulerDaemon 到期后通过 `ExecutorRegistry::execute` 直接执行，不依赖前端。
 
-### 插件自定义执行器（规划）
+### 插件自定义执行器
 
-插件可通过 manifest 声明自定义执行器（`contributes.executors`），注册到 `ExecutorRegistry`，自定义 `executorType` 为 `plugin:<id>:<executor>`。实现方式见后续版本。
+插件可在 `plugin.json` 的 `contributes.executors` 中声明自定义执行器，注册到 `ExecutorRegistry`，自定义 `executorType` 为 `plugin:<plugin_id>:<executor_id>`。
+
+#### 声明方式
+
+```json
+{
+  "contributes": {
+    "executors": [
+      {
+        "id": "my-executor",
+        "name": "自定义执行器",
+        "description": "插件自定义执行器描述",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/executor.js", "{{workspacePath}}"],
+        "paramsSchema": {
+          "type": "object",
+          "properties": {
+            "customArg": { "type": "string", "description": "自定义参数" }
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+- `id` — 执行器 ID（插件命名空间内唯一）
+- `name` — 展示名称，会在定时任务编辑器的「执行器类型」下拉菜单中显示
+- `command` — 执行命令
+- `argsTemplate` — 命令参数模板，支持 `{{pluginDir}}`、`{{workspacePath}}` 等占位符
+- `paramsSchema` — 可选，执行器参数 JSON Schema，描述 `customParams` 的结构，供前端渲染参数表单
+
+#### 引用方式
+
+在定时任务中选择该执行器，或通过 `execute` IPC 直接调用：
+
+```json
+POST /api/execute
+{
+  "executorType": "plugin:polaris.my-plugin:my-executor",
+  "customParams": { "customArg": "value" }
+}
+```
+
+执行器类型标识格式为 `plugin:<plugin_id>:<executor_id>`（自动生成），在 TaskEditor 的下拉菜单中直接选择即可。
 
 ---
 
