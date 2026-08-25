@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-08-25",
+  "updated": "2026-08-26",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -728,6 +728,46 @@
         {
           "version": "1.0.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.0/plugins/polaris-api-client/polaris-api-client.zip"
+        }
+      ]
+    },
+    {
+      "id": "polaris.scheduler",
+      "name": "定时任务",
+      "version": "0.1.0",
+      "description": "定时任务调度器：支持 interval/cron/once 触发，集成 AI 执行能力。零服务进程，全量通过 Polaris IPC 桥接。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "scheduler",
+        "cron",
+        "interval",
+        "panel",
+        "mcp",
+        "automation"
+      ],
+      "icon": "Clock",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-scheduler",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/update.json",
+      "sha256": "ff407f80b522f2b155a05f1c8dedd0775157838802d344871a256994fc57f2eb",
+      "tier": "beta",
+      "permissions": {
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "aiToolAccess": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "# 定时任务调度器\n\n通过 Polaris IPC 桥接的无状态定时任务管理系统。\n\n## 功能\n\n- **多种触发方式**：interval（间隔）、cron（表达式）、once（单次）\n- **AI 执行**：集成 Polaris 通用执行器 ExecutorRegistry，支持 chat/command/http 执行器\n- **零服务进程**：不启动守护进程、不监听端口、不维护数据文件\n- **可视化面板**：ActivityBar 集成面板，任务列表/创建/编辑/启用禁用/手动执行\n- **AI 可调用**：MCP 工具接口，AI 可直接创建/管理定时任务\n\n## 使用方式\n\n安装后活动栏出现「定时任务」图标，点击即可管理任务。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip"
         }
       ]
     }
