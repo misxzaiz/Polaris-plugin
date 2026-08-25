@@ -1,0 +1,46 @@
+{
+  "id": "polaris.scheduler",
+  "name": "定时任务",
+  "version": "0.1.0",
+  "description": "定时任务调度器：支持 interval/cron/once 触发，集成 AI 执行能力。零服务进程，全量通过 Polaris IPC 桥接。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "scheduler.panel",
+        "area": "activityBar",
+        "panelType": "scheduler",
+        "icon": "Clock",
+        "labelKey": "labels.schedulerPanel",
+        "labelDefault": "Scheduler",
+        "order": 50
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "polaris-scheduler",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "aiToolAccess": true,
+    "network": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-scheduler",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip"
+  }
+}

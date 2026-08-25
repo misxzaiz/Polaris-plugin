@@ -1,0 +1,12 @@
+{
+  "name": "polaris-scheduler-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "polaris-scheduler 插件面板（打包用）",
+  "scripts": {
+    "build": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  }
+}

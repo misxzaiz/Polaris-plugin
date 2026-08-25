@@ -1,0 +1,5 @@
+{
+  "version": "0.1.0",
+  "url": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip",
+  "description": "定时任务调度器插件：支持 interval/cron/once 触发，集成 AI 执行能力。"
+}
