@@ -422,7 +422,9 @@ export function registerBuiltinPlugins(): void {
 
 ## 完整示例
 
-参考 `examples/plugins/demo-mcp-plugin/` 目录中的示例插件。
+- **无状态透传插件（推荐）**：参考 [`plugins/polaris-scheduler/`](https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-scheduler) — 包含面板 + MCP 透传 + IPC bridge 通信的完整无状态插件实现
+- **基础 MCP 插件**：参考 `examples/plugins/demo-mcp-plugin/` 目录中的示例插件
+- **服务插件**：参考 `plugins/polaris-git/` — 需要后台 HTTP 服务的插件示例
 
 ## 插件服务管理（Services）
 
@@ -669,6 +671,209 @@ export default function DevKitPanel({ pluginId }) {
 2. **手动测试**：在终端运行 `node server.js 9860`，确认服务正常
 3. **端口冲突**：不指定端口让框架自动分配，避免冲突
 4. **健康检查**：实现 `/__health` 端点返回 `{"status": "ok"}`
+
+---
+
+## 无状态插件模式（推荐）
+
+Polaris 提供一套「无状态透传」插件范式，适用于大部分工具型插件。核心原则：
+
+> **插件零进程原则**：外部插件不启动 MCP 守护进程、不监听额外 HTTP 端口、不维护自有数据目录。数据与状态由 Polaris 核心统一管理，插件只做「桥接层」。
+
+### 适用场景
+
+- 插件功能依赖 Polaris 核心能力（任务调度、待办、需求、对话引擎等）
+- 插件需要一个可视化面板 + AI 可调用的 MCP 工具
+- 插件需要与主机功能实时联动
+
+### 桥接架构
+
+```
+┌──────────────┐      stdio JSON-RPC      ┌──────────────────┐
+│ 面板 Panel   │  ──────────────────────  │   MCP Server    │
+│ (React)      │                          │  (Node 薄层)     │
+└──────┬───────┘                          └────────┬─────────┘
+       │  fetch POST /api/<command>                 │  HTTP POST
+       │  (webview)                                 │  /api/<command>
+       ▼                                            ▼
+┌─────────────────────────────────────────────────────────────┐
+│                  Polaris IPC Bridge (Web Server)            │
+│              /api/scheduler-* /api/execute ...              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+- **面板**：直接 `fetch` Polaris IPC bridge（`POST /api/<command>`），不走 MCP。
+- **MCP Server**：AI 工具调用入口，将 `tools/call` 翻译为 IPC bridge 调用，纯透传。
+- **数据**：全部由 Polaris 核心持久化（如 `tasks.json`），插件不落盘。
+
+### 模板占位符（宿主桥接参数）
+
+除了 MCP server 的模板占位符，无状态透传层还需要知道 Polaris 宿主地址。推荐通过环境变量注入：
+
+```json
+{
+  "contributes": {
+    "mcpServers": [{
+      "id": "my-bridge",
+      "transport": "stdio",
+      "command": "node",
+      "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+    }]
+  }
+}
+```
+
+在 `mcp/server.js` 中读取：
+
+```javascript
+const POLARIS_HOST = process.env.POLARIS_HOST || '127.0.0.1'
+const POLARIS_PORT = parseInt(process.env.POLARIS_PORT || '3000', 10)
+const POLARIS_TOKEN = process.env.POLARIS_TOKEN || ''
+```
+
+> Polaris 应用启动时会将 `POLARIS_HOST` / `POLARIS_PORT` / `POLARIS_TOKEN` 注入 MCP server 的环境变量。无状态薄层仅需透传，不感知数据。
+
+### 面板通过 IPC bridge 通信
+
+面板组件运行在宿主 webview（浏览器环境），直接 `fetch` Polaris IPC bridge：
+
+```tsx
+// 获取 Polaris HTTP 基础地址（宿主注入）
+const POLARIS_URL = (window as any).__POLARIS_WEB_URL__ || 'http://127.0.0.1:3000'
+
+/** 调用 Polaris IPC bridge（下划线命令名 → kebab-case HTTP 路径） */
+async function ipcCall<T>(command: string, args: Record<string, unknown> = {}): Promise<T> {
+  const path = `/api/${command.replace(/_/g, '-')}`
+  const res = await fetch(`${POLARIS_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data.error || `HTTP ${res.status}`)
+  }
+  return res.json()
+}
+```
+
+桌面端（Tauri）可回退到 `window.__TAURI_INTERNALS__.invoke`：
+
+```tsx
+async function tauriInvoke<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
+  const internals = (window as any).__TAURI_INTERNALS__?.invoke
+  if (internals) return internals(cmd, args)
+  throw new Error('需在 Polaris 桌面环境运行')
+}
+
+async function listItems() {
+  try { return await ipcCall('scheduler_list_tasks', {}) }
+  catch (_) { return tauriInvoke('scheduler_list_tasks', {}) }
+}
+```
+
+### 常用 IPC 命令
+
+| 命令 | HTTP 路径 | 说明 |
+|------|-----------|------|
+| `scheduler_list_tasks` | `POST /api/scheduler-list-tasks` | 列出定时任务 |
+| `scheduler_create_task` | `POST /api/scheduler-create-task` | 创建定时任务 |
+| `scheduler_get_status` | `POST /api/scheduler-get-status` | 调度器状态 |
+| `execute` | `POST /api/execute` | 通用执行器入口（见下章） |
+
+---
+
+## 通用执行器 ExecutorRegistry
+
+Polaris 核心提供**通用执行器抽象** `ExecutorRegistry`，任何插件/任何任务类型都可以声明并使用执行器，而不必启动额外进程。
+
+### 内置执行器
+
+| `executorType` | 说明 | 关键参数 |
+|---------------|------|----------|
+| `chat` | AI 对话执行（默认） | `prompt`, `engineId`, `workDir` |
+| `command` | 执行 CLI 命令 | `command`, `args`, `workDir` |
+| `http` | 发起 HTTP 请求 | `url`, `method`, `headers`, `body` |
+
+### 调用 IPC `execute`
+
+```json
+POST /api/execute
+{
+  "executorType": "chat",
+  "prompt": "分析当前项目的依赖树",
+  "engineId": "claude-code",
+  "workDir": "D:\\space\\base\\Polaris",
+  "contextId": "scheduler-task-123"
+}
+```
+
+响应：
+
+```json
+{ "sessionId": "abc-123", "status": "started" }
+```
+
+### 在定时任务中使用
+
+`ScheduledTask` / `CreateTaskParams` 支持 `executor_type` + `executor_params`：
+
+```json
+{
+  "name": "每日代码评审",
+  "triggerType": "cron",
+  "triggerValue": "0 9 * * *",
+  "executorType": "command",
+  "executorParams": { "command": "npm run lint", "workDir": "D:\\space\\base\\Polaris" }
+}
+```
+
+SchedulerDaemon 到期后通过 `ExecutorRegistry::execute` 直接执行，不依赖前端。
+
+### 插件自定义执行器（规划）
+
+插件可通过 manifest 声明自定义执行器（`contributes.executors`），注册到 `ExecutorRegistry`，自定义 `executorType` 为 `plugin:<id>:<executor>`。实现方式见后续版本。
+
+---
+
+## 打包与发布
+
+### 目录结构
+
+```
+my-plugin/
+├── plugin.json            # 插件清单（含 origin 元数据）
+├── mcp/
+│   └── server.js          # 无状态 MCP server
+├── src/
+│   └── Panel.tsx          # 面板 React 源码
+├── dist/
+│   └── panel.js           # esbuild 打包产物（自包含）
+├── update.json            # CDN 更新元数据（与 plugin.json origin 一致）
+└── .pluginignore          # 打包排除（node_modules/src/package*.json）
+```
+
+### 打包面板
+
+```bash
+npx esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic
+```
+
+### 打包 zip
+
+将 `plugin.json` + `dist/` + `mcp/` 压缩为 `my-plugin.zip`（排除 `node_modules`/`src`）。
+
+### 三处 metadata 一致性（关键）
+
+发布新版时，以下三处必须同步：
+
+| 位置 | 字段 |
+|------|------|
+| `plugin.json` | `version`、`origin.updateUrl`、`origin.downloadUrl` |
+| `update.json` | `version`、`origin.downloadUrl` |
+| zip 内的 `plugin.json` | `version`（与根目录一致） |
+
+**`update.json` 内容必须与最新 `plugin.json` 一致**，且版本号必须高于已安装版本才会提示更新。每次发布新版本后，需重新打包 zip 并更新 `index.json` 中的 `version` 与 `sha256`。
 
 ---
 
