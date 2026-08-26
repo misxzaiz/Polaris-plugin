@@ -1,0 +1,52 @@
+{
+  "id": "focus-flow",
+  "name": "心流专注",
+  "version": "0.1.0",
+  "description": "心流专注 FlowFocus —— 反拖延的专注力管理系统。深度专注计时、干扰记录、每日心流热力图与统计，帮助你进入并保持心流状态。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "focus-flow.panel",
+        "area": "activityBar",
+        "panelType": "focus-flow",
+        "icon": "Timer",
+        "labelKey": "labels.focusPanel",
+        "labelDefault": "专注",
+        "order": 78
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "polaris-focus",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "focus-card",
+        "mcpServerId": "polaris-focus",
+        "tools": ["focus_start", "focus_stop", "focus_stats", "focus_log"],
+        "mode": "result",
+        "entry": "./dist/focus-card.js"
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/focus-flow",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/focus-flow/focus-flow.zip"
+  }
+}

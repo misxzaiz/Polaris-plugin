@@ -1,775 +1,813 @@
 {
-  "$schema": "./schemas/index.schema.json",
-  "version": "1.1.0",
-  "updated": "2026-08-26",
-  "marketplace": {
-    "name": "Polaris Plugin Marketplace",
-    "homepage": "https://github.com/misxzaiz/Polaris-plugin",
-    "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
-  },
-  "plugins": [
+ "$schema": "./schemas/index.schema.json",
+ "version": "1.1.0",
+ "updated": "2026-08-27",
+ "marketplace": {
+  "name": "Polaris Plugin Marketplace",
+  "homepage": "https://github.com/misxzaiz/Polaris-plugin",
+  "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
+ },
+ "plugins": [
+  {
+   "id": "polaris.marketplace",
+   "name": "Polaris 插件商城",
+   "version": "1.2.0",
+   "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "marketplace",
+    "panel",
+    "mcp",
+    "installer"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
+   "sha256": "4b07852ad514c060586256f7e48ef0cff49f0db596e6129dbcd6dcaaaf468edd",
+   "tier": "production",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true
+   },
+   "screenshots": [],
+   "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
+   "versions": [
     {
-      "id": "polaris.marketplace",
-      "name": "Polaris 插件商城",
-      "version": "1.2.0",
-      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "marketplace",
-        "panel",
-        "mcp",
-        "installer"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "4b07852ad514c060586256f7e48ef0cff49f0db596e6129dbcd6dcaaaf468edd",
-      "tier": "production",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true
-      },
-      "screenshots": [],
-      "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
-      "versions": [
-        {
-          "version": "1.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip"
-        }
-      ]
-    },
-    {
-      "id": "relay-devkit",
-      "name": "RELAY DevKit",
-      "version": "1.1.0",
-      "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手、跨域代理",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "api-client",
-        "json",
-        "sql",
-        "database",
-        "dev-tools",
-        "panel",
-        "service"
-      ],
-      "icon": "Terminal",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
-      "sha256": "bde4d450e76cc9fc41de03711f011c6714074444f9a0700ff797c6e6f2879e53",
-      "tier": "production",
-      "permissions": {
-        "workspaceRead": true,
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST\n- **AI 助手**：OpenAI 协议，浮窗随时唤出",
-      "versions": [
-        {
-          "version": "1.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip"
-        }
-      ]
-    },
-    {
-      "id": "omp-engine",
-      "name": "Oh My Pi Engine",
-      "version": "1.1.0",
-      "description": "在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。支持流式输出、工具调用、中断、会话恢复。",
-      "author": "Polaris Community",
-      "category": "ai-engine",
-      "tags": [
-        "ai",
-        "engine",
-        "omp",
-        "coding-agent"
-      ],
-      "icon": "Terminal",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
-      "sha256": "152c4ef45e0dce66673da9bfb0d846bdc9ab2c7b9bfdc8905865843890b34526",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "# Oh My Pi Engine\n\n在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。\n\n## 安装前提\n\nOh My Pi 需要单独安装 CLI（macOS/Linux: `curl -fsSL https://omp.sh/install | sh`，Windows PowerShell: `irm https://omp.sh/install.ps1 | iex`）\n\n## 使用\n\n安装插件后，在 Polaris 设置 → AI 引擎中选择「Oh My Pi」即可切换。",
-      "versions": [
-        {
-          "version": "1.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip"
-        }
-      ]
-    },
-    {
-      "id": "omp-engine-adapter",
-      "name": "Oh My Pi Adapter (engine-v1)",
-      "version": "0.1.0",
-      "description": "演示 engine-v1 适配器协议的 OMP 引擎适配器示例。加新引擎只需写一个适配器进程，不改 Polaris 核心。",
-      "author": "Polaris Community",
-      "category": "ai-engine",
-      "tags": [
-        "ai",
-        "engine",
-        "adapter",
-        "demo"
-      ],
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine-adapter",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/update.json",
-      "sha256": "",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# OMP Adapter Demo\n\n演示 engine-v1 适配器协议的 OMP 引擎适配器示例。\n\n安装后可在 Polaris 引擎选择器中选择「OMP Adapter Demo」引擎，\n发消息后会收到 mock 回复（不连接真实 omp）。\n\n## 验证内容\n\n- 引擎注册与选择\n- start_session 协议帧（start_session → assistant_message → session_end）\n- 续聊（continue_session 协议帧）\n- 中断（interrupt 协议帧）\n\n## 插件包结构\n\n```\nplugins/omp-engine-adapter/\n├── plugin.json        # 声明 adapter + engines\n├── engine.js          # 适配器进程入口\n└── update.json        # 更新清单\n```",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris.zen",
-      "name": "禅房",
-      "version": "0.1.3",
-      "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
-      "author": "Polaris",
-      "category": "fun",
-      "tags": [
-        "zen",
-        "panel",
-        "mcp",
-        "relax",
-        "fun"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.3/plugins/zen/zen.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
-      "sha256": "224ff529bee984a2517cd9fd6aa95a6ccbf0c57adc3b9ef697584f34ef9e8fcd",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true,
-        "appConfigRead": true
-      },
-      "screenshots": [],
-      "readme": "# 禅房\n\n一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。\n\n## 功能\n\n- **木鱼**：点击或按空格敲击，连击有反馈，可选择木鱼/钵/磬音色\n- **抽签**：抽一支编程签，看今日运势\n- **答案之书**：默念问题，翻页得到答案，可追问\n- **日记**：小僧记录你的禅修之路\n\nAI 也可以调用小僧：`knock_fish`（敲木鱼）、`draw_fortune`（抽签）、`open_book`（翻答案之书）。",
-      "versions": [
-        {
-          "version": "0.1.3",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.3/plugins/zen/zen.zip"
-        },
-        {
-          "version": "0.1.2",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/zen.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris.blender-modeling",
-      "name": "Blender 3D 建模",
-      "version": "0.2.2",
-      "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。侧通道加载，不占用 AI 上下文。",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "3d",
-        "blender",
-        "modeling",
-        "preview",
-        "mcp",
-        "panel"
-      ],
-      "icon": "Target",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/blender-modeling",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/blender-modeling/blender-modeling.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/update.json",
-      "sha256": "23f286cef0cdaa6fe68d2cbf93b40254714d08284b988bd1054d555f58ade8b5",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true,
-        "workspaceWrite": true,
-        "appConfigRead": true
-      },
-      "screenshots": [],
-      "readme": "# Blender 3D 建模\n\nAI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。\n\n## 功能\n\n- **AI 对话建模**：在聊天中让 AI 帮你建 3D 模型\n- **聊天内嵌预览**：生成结果直接以 Three.js 3D 场景展示\n- **活动栏面板**：快速建模入口、模型管理\n- **木纹纹理**：程序化生成木纹贴图，自动嵌入 GLB\n\n## 使用方式\n\n1. 确保已安装 Blender（4.0+），并处于 PATH 中\n2. 安装插件后，在聊天中发送「帮我建一个木鱼」\n3. AI 自动调用 Blender 建模并展示预览\n\n## 内置脚本\n\n- **muyu**：传统木鱼法器，含底座、木鱼槌、木纹纹理\n- **qbox_character**：Q 版卡通角色（噜噜风格，开发中）\n\n## 环境变量\n\n- `BLENDER_PATH`：指定 blender.exe 路径（可选，默认自动查找）",
-      "versions": [
-        {
-          "version": "0.2.2",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/blender-modeling/blender-modeling.zip"
-        }
-      ]
-    },
-    {
-      "id": "dsh-engine",
-      "name": "DeepSeek Harness Engine",
-      "version": "0.1.0",
-      "description": "将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris：工具链（bash/pwsh/fs）、子代理、工作流、目标、技能、MCP 客户端、用户审批。",
-      "author": "Polaris Community",
-      "category": "ai-engine",
-      "tags": [
-        "ai",
-        "engine",
-        "deepseek",
-        "dsh",
-        "agent",
-        "adapter"
-      ],
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/dsh-engine",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/dsh-engine.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/update.json",
-      "sha256": "",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true,
-        "workspaceWrite": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "# DeepSeek Harness Engine\n\n将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris。\n\n## 功能\n\n- **引擎适配器**：在 Polaris 聊天中直接使用 DSH 的完整 Agent（工具链、子代理、工作流、目标、技能）\n- **DSH 工作区面板**：通过 iframe 嵌入 DSH Web UI，获得 100% 功能兼容\n- **后台服务**：Polaris 自动管理 `dsh web` 进程的生命周期\n\n## 安装前提\n\nDSH 需要单独安装：`npm install -g @deepseek-ai/dsh`\n\n## 使用\n\n1. 安装插件后，在 Polaris 设置 → AI 引擎中选择「DeepSeek Harness」\n2. 或将 DSH 作为独立工作区：点击活动栏「DSH 工作区」面板\n\n## 适配器模式\n\n- `DSH_DRIVER=headless`（默认）：每轮调用 `dsh --profile headless`，通过重放对话历史模拟多轮对话\n- `DSH_DRIVER=webapi`：通过 `dsh web` 的 HTTP API 驱动，获得完整流式事件\n\n## 环境变量\n\n- `DSH_CMD`：dsh 命令路径（默认自动查找）\n- `DSH_DRIVER`：驱动模式 `headless` 或 `webapi`\n- `DSH_WEB_PORT`：dsh web 端口（默认 3080）\n- `DSH_DEFAULT_MODEL`：默认模型名",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/dsh-engine.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.shell-override",
-      "name": "Demo Shell Override",
-      "version": "0.2.0",
-      "description": "演示 toolProviders 扩展点覆盖硬编码工具：接管 SimpleAI 内置 bash 工具。所有 shell 命令执行前记录审计日志，并拦截危险命令。",
-      "author": "Polaris",
-      "category": "demo",
-      "tags": [
-        "demo",
-        "tool-provider",
-        "override",
-        "shell",
-        "mcp"
-      ],
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-shell-override",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/update.json",
-      "sha256": "c8b0c2fa92d7dff995012be3459b2e52cceef8858c22bf59a0b5bde50bcd3784",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true,
-        "workspaceWrite": true
-      },
-      "screenshots": [],
-      "readme": "# Demo Shell Override\n\n验证 toolProviders 扩展点覆盖硬编码工具（bash）。\n\n## 功能\n\n- 覆盖内置 bash 工具，AI 执行 shell 命令时走此插件 MCP server\n- 拦截危险命令（rm -rf /、format C:、fork bomb 等）\n- 安全命令执行后记录到 audit.log\n\n## 验证\n\n- echo hello → exit=0 + audit.log 记录\n- rm -rf / → 被拦截返回错误\n- 卸载后 bash 恢复内置实现",
-      "versions": [
-        {
-          "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.fs-override",
-      "name": "Demo FileSystem Override",
-      "version": "0.1.0",
-      "description": "演示 toolProviders 覆盖 filesystem 能力：接管 SimpleAI 内置文件读写工具。所有文件操作记录审计日志。",
-      "author": "Polaris",
-      "category": "demo",
-      "tags": [
-        "demo",
-        "tool-provider",
-        "override",
-        "filesystem",
-        "mcp"
-      ],
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-fs-override",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/demo-fs-override.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/update.json",
-      "sha256": "4b29b54929ff3b1e0f17e44d22f069b1146a2e4911951acf3ab0f59305531c5e",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true,
-        "workspaceWrite": true
-      },
-      "screenshots": [],
-      "readme": "# Demo FileSystem Override\n\n覆盖 SimpleAI 内置文件系统工具（read_file/write_file/edit_file 等）。所有操作记录到 audit.log，写操作不真正落盘。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/demo-fs-override.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.ui-shadow",
-      "name": "Demo UI Shadow",
-      "version": "0.1.0",
-      "description": "演示 UI Slot shadow 覆盖：替换内置文件面板为自定义版本。",
-      "author": "Polaris",
-      "category": "demo",
-      "tags": [
-        "demo",
-        "ui-slot",
-        "shadow",
-        "panel"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-shadow",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/demo-ui-shadow.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/update.json",
-      "sha256": "2819f7a98cbad07bed9ee59ecc6b30e44f1c8190c8a4898ef83a80c607720bdd",
-      "tier": "demo",
-      "permissions": {
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Demo UI Shadow\n\nshadow 模式覆盖内置文件面板。点击 Files 显示自定义 [demo-shadow] 面板。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/demo-ui-shadow.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.sandbox-shell",
-      "name": "Demo Sandbox Shell",
-      "version": "0.1.0",
-      "description": "演示 toolProviders 覆盖 shell：沙箱化执行（限制工作目录 + 禁止网络命令）",
-      "tags": [
-        "demo",
-        "tool-provider",
-        "shell",
-        "sandbox"
-      ],
-      "author": "Polaris",
-      "category": "demo",
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-sandbox-shell",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/demo-sandbox-shell.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/update.json",
-      "sha256": "824f9abd825370fbe02d1a4dce66f9f87b52e71f215ed7393a02273ea44853b1",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Demo Sandbox Shell\n\n演示 toolProviders 覆盖 shell：沙箱化执行（限制工作目录 + 禁止网络命令）",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/demo-sandbox-shell.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.s3-fs",
-      "name": "Demo S3 FileSystem",
-      "version": "0.1.0",
-      "description": "演示 toolProviders 覆盖 filesystem：模拟 S3 远程文件系统",
-      "tags": [
-        "demo",
-        "tool-provider",
-        "filesystem",
-        "s3"
-      ],
-      "author": "Polaris",
-      "category": "demo",
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-s3-fs",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/demo-s3-fs.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/update.json",
-      "sha256": "cc6cf11575ab7ae5dd9b51439c3361a4bc33c889f51b2837a99590add7dbae30",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Demo S3 FileSystem\n\n演示 toolProviders 覆盖 filesystem：模拟 S3 远程文件系统",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/demo-s3-fs.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.smart-compaction",
-      "name": "Demo Smart SubAgent",
-      "version": "0.1.0",
-      "description": "演示 toolProviders 覆盖 subagent：智能子代理派发（token 计费模拟）",
-      "tags": [
-        "demo",
-        "tool-provider",
-        "subagent"
-      ],
-      "author": "Polaris",
-      "category": "demo",
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-smart-compaction",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/demo-smart-compaction.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/update.json",
-      "sha256": "47e72b3c622eabb3f95747d56c81504a25b9d6e23b3821ce4b8cb2be0b5aeaef",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Demo Smart SubAgent\n\n演示 toolProviders 覆盖 subagent：智能子代理派发（token 计费模拟）",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/demo-smart-compaction.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.dsh-subagent",
-      "name": "Demo DSH SubAgent",
-      "version": "0.1.0",
-      "description": "演示 toolProviders 覆盖 subagent：模拟 DSH spawn/fork provider 接入",
-      "tags": [
-        "demo",
-        "tool-provider",
-        "subagent",
-        "dsh"
-      ],
-      "author": "Polaris",
-      "category": "demo",
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-dsh-subagent",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/demo-dsh-subagent.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/update.json",
-      "sha256": "de3576e06b1414190fc100ad38931d8fd6787789aa8a594abacb4df934135afc",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Demo DSH SubAgent\n\n演示 toolProviders 覆盖 subagent：模拟 DSH spawn/fork provider 接入",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/demo-dsh-subagent.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.ui-chain",
-      "name": "Demo UI Chain",
-      "version": "0.1.0",
-      "description": "演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息",
-      "tags": [
-        "demo",
-        "ui-slot",
-        "chain"
-      ],
-      "author": "Polaris",
-      "category": "demo",
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-chain",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/demo-ui-chain.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/update.json",
-      "sha256": "d47846bc995386017b0e3269d35a799a2e18cadaf0a89b76e8fbf27bb0474f43",
-      "tier": "demo",
-      "permissions": {
-        "aiToolAccess": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Demo UI Chain\n\n演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/demo-ui-chain.zip"
-        }
-      ]
-    },
-    {
-      "id": "demo.style-input",
-      "name": "Demo Style Input",
-      "version": "0.1.0",
-      "description": "演示样式覆盖扩展点：改造聊天输入框样式（圆角/渐变/光晕）。纯 CSS 注入。",
-      "author": "Polaris",
-      "category": "demo",
-      "tags": [
-        "demo",
-        "style",
-        "css",
-        "input"
-      ],
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-style-input",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/demo-style-input.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/update.json",
-      "sha256": "11d8cb6d78f347ab78fd798ef55857dbafbd9c534b1289c736924bfc5379d9f0",
-      "tier": "demo",
-      "permissions": {},
-      "screenshots": [],
-      "readme": "# Demo Style Input\n\n样式覆盖扩展点：改造聊天输入框样式。纯 CSS 注入，无 MCP。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/demo-style-input.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris.git",
-      "name": "Git 工作台",
-      "version": "0.1.0",
-      "description": "完整的 Git 工作台：状态、变更、提交、分支、合并、rebase、历史、blame、远程、stash、.gitignore。提供 activityBar Git 面板 + MCP 工具。",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "git",
-        "panel",
-        "mcp",
-        "vcs"
-      ],
-      "icon": "GitPullRequest",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-git",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/polaris-git.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/update.json",
-      "sha256": "aa61d4998f8b40056d1723b6abfaacc6fa3cd9e6e15b5ea0504a906640be5f57",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/polaris-git.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris-api",
-      "name": "Polaris API",
-      "version": "1.1.0",
-      "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持、AI 辅助调试",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "api",
-        "rest",
-        "http",
-        "ai",
-        "panel"
-      ],
-      "icon": "Beaker",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-v1.1.0/plugins/polaris-api/polaris-api.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
-      "sha256": "41521663849861fedca71973df9e4529fe10f0b7c12d3dfa07570c84a8055c46",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "workspaceRead": true
-      },
-      "screenshots": [],
-      "readme": "# Polaris API\n\n轻量级 AI 加持的 API 请求客户端。\n\n## 功能\n- 智能请求编辑器（URL 自动解析参数、语法提示、常用 Headers 补全）\n- 响应查看器（JSON 树/表格/原始视图、路径下钻、错误诊断）\n- AI 深度集成（自然语言生成请求、错误分析、Mock 数据、代码生成）\n- 集合管理（多级文件夹、搜索、Postman/OpenAPI/HAR 导入）\n- 环境变量（baseUrl + 自定义变量）\n- 跨域代理\n- 代码生成（cURL/Python/JavaScript/Go/Rust）\n- 响应历史记录",
-      "versions": [
-        {
-          "version": "1.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-v1.1.0/plugins/polaris-api/polaris-api.zip"
-        },
-        {
-          "version": "1.0.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-v1.0.0/plugins/polaris-api/polaris-api.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris-http",
-      "name": "Polaris HTTP",
-      "version": "1.2.0",
-      "description": "轻量级 HTTP 客户端：多Tab、模式切换（通用/模板）、服务器选择、Auth、全局Headers、智能响应（对象树/表格/下钻/过滤）、集合、cURL导入导出、代码生成（5语言）、AI协同、跨域代理、环境变量",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "http",
-        "rest",
-        "api-client",
-        "dev-tools",
-        "panel",
-        "service",
-        "ai"
-      ],
-      "icon": "Activity",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-http",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.2.0/plugins/polaris-http/polaris-http.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/update.json",
-      "sha256": "1f197f6fb06ed77e3faa4920b876400e4a01ab03f3bfc8334982f192fb62cb43",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# Polaris HTTP\n\n轻量级 HTTP 请求调试客户端，基于 RELAY DevKit 架构 + polaris-api 代码生成 + invoke 模板系统。\n\n## 功能\n\n- **多 Tab**：新建/关闭/重命名，脏标记提示\n- **请求编辑**：Method 选择、URL 输入（回车发送）、Params/Headers/Body 三标签页，常用 Header 建议\n- **智能响应**：对象树/表格/原始/预览/Headers 五种视图、路径下钻、增强过滤\n- **集合管理**：分组保存/搜索/载入\n- **环境变量**：{{baseUrl}}/{{变量}} 解析、环境管理器\n- **全局 Headers**：持久化，自动合并到所有请求\n- **cURL 导入**：粘贴 curl 命令一键解析\n- **代码生成**：5 语言（cURL/Python/JS/Go/Rust）模态框展示+复制\n- **AI 协同**：通过 onSendToChat 将请求+响应上下文发往宿主 AI\n- **跨域代理**：本地 Node 转发服务（端口 9872），5 跳重定向\n- **布局切换**：左右/上下（split 方向），拖拽分栏调整大小\n- **快捷键**：⌘/Ctrl+Enter 发送\n- **零原生对话框**：全部自定义模态框\n- **数据持久化**：localStorage 分键存储",
-      "versions": [
-        {
-          "version": "1.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.2.0/plugins/polaris-http/polaris-http.zip"
-        },
-        {
-          "version": "1.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.1.0/plugins/polaris-http/polaris-http.zip"
-        },
-        {
-          "version": "1.0.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.0.0/plugins/polaris-http/polaris-http.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris-api-client",
-      "name": "Polaris API Client",
-      "version": "1.0.1",
-      "description": "专业 HTTP 请求客户端：多Tab、环境变量、集合管理、cURL导入导出、跨域代理、智能响应（对象树/表格/路径下钻/增强过滤）、模板接口、服务器选择器、Auth认证、全局Headers、代码生成、AI协同、动态变量",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "http",
-        "rest",
-        "api-client",
-        "dev-tools",
-        "panel",
-        "service"
-      ],
-      "icon": "Terminal",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api-client",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.1/plugins/polaris-api-client/polaris-api-client.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/update.json",
-      "sha256": "b85f60d281bfb7a72f2ce82e0e124d88825ff7065d4b81cbaea2495072ee8220",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# Polaris API Client\n\n基于 RELAY 架构，专注 API 请求调试。\n\n## 功能\n- 多 Tab、环境变量（{{baseUrl}}/{{var}}/{{}}）、集合管理\n- 模式切换（通用HTTP/定制接口模板）、模板系统（动态表单+Body⇄Form双向同步）\n- 服务器选择器、Auth 认证（Bearer/Basic）、全局 Headers\n- 智能响应（对象树/表格/路径下钻/增强过滤）\n- 响应双视图（业务数据自动下钻/完整响应）、字号/展开/全屏\n- cURL 导入导出、代码生成（5语言）、AI 协同\n- 跨域代理、集合导入导出、零原生对话框",
-      "versions": [
-        {
-          "version": "1.0.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.1/plugins/polaris-api-client/polaris-api-client.zip"
-        },
-        {
-          "version": "1.0.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.0/plugins/polaris-api-client/polaris-api-client.zip"
-        }
-      ]
-    },
-    {
-      "id": "polaris.scheduler",
-      "name": "定时任务",
-      "version": "0.1.0",
-      "description": "定时任务调度器：支持 interval/cron/once 触发，集成 AI 执行能力。零服务进程，全量通过 Polaris IPC 桥接。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "scheduler",
-        "cron",
-        "interval",
-        "panel",
-        "mcp",
-        "automation"
-      ],
-      "icon": "Clock",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-scheduler",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/update.json",
-      "sha256": "ff407f80b522f2b155a05f1c8dedd0775157838802d344871a256994fc57f2eb",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "workspaceWrite": true,
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "aiToolAccess": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "# 定时任务调度器\n\n通过 Polaris IPC 桥接的无状态定时任务管理系统。\n\n## 功能\n\n- **多种触发方式**：interval（间隔）、cron（表达式）、once（单次）\n- **AI 执行**：集成 Polaris 通用执行器 ExecutorRegistry，支持 chat/command/http 执行器\n- **零服务进程**：不启动守护进程、不监听端口、不维护数据文件\n- **可视化面板**：ActivityBar 集成面板，任务列表/创建/编辑/启用禁用/手动执行\n- **AI 可调用**：MCP 工具接口，AI 可直接创建/管理定时任务\n\n## 使用方式\n\n安装后活动栏出现「定时任务」图标，点击即可管理任务。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip"
-        }
-      ]
+     "version": "1.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip"
     }
-  ]
+   ]
+  },
+  {
+   "id": "relay-devkit",
+   "name": "RELAY DevKit",
+   "version": "1.1.0",
+   "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手、跨域代理",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "api-client",
+    "json",
+    "sql",
+    "database",
+    "dev-tools",
+    "panel",
+    "service"
+   ],
+   "icon": "Terminal",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
+   "sha256": "bde4d450e76cc9fc41de03711f011c6714074444f9a0700ff797c6e6f2879e53",
+   "tier": "production",
+   "permissions": {
+    "workspaceRead": true,
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST\n- **AI 助手**：OpenAI 协议，浮窗随时唤出",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip"
+    }
+   ]
+  },
+  {
+   "id": "omp-engine",
+   "name": "Oh My Pi Engine",
+   "version": "1.1.0",
+   "description": "在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。支持流式输出、工具调用、中断、会话恢复。",
+   "author": "Polaris Community",
+   "category": "ai-engine",
+   "tags": [
+    "ai",
+    "engine",
+    "omp",
+    "coding-agent"
+   ],
+   "icon": "Terminal",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/update.json",
+   "sha256": "152c4ef45e0dce66673da9bfb0d846bdc9ab2c7b9bfdc8905865843890b34526",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "# Oh My Pi Engine\n\n在 Polaris 中集成 Oh My Pi (omp) AI 编程代理引擎。\n\n## 安装前提\n\nOh My Pi 需要单独安装 CLI（macOS/Linux: `curl -fsSL https://omp.sh/install | sh`，Windows PowerShell: `irm https://omp.sh/install.ps1 | iex`）\n\n## 使用\n\n安装插件后，在 Polaris 设置 → AI 引擎中选择「Oh My Pi」即可切换。",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine/omp-engine.zip"
+    }
+   ]
+  },
+  {
+   "id": "omp-engine-adapter",
+   "name": "Oh My Pi Adapter (engine-v1)",
+   "version": "0.1.0",
+   "description": "演示 engine-v1 适配器协议的 OMP 引擎适配器示例。加新引擎只需写一个适配器进程，不改 Polaris 核心。",
+   "author": "Polaris Community",
+   "category": "ai-engine",
+   "tags": [
+    "ai",
+    "engine",
+    "adapter",
+    "demo"
+   ],
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/omp-engine-adapter",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/update.json",
+   "sha256": "",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# OMP Adapter Demo\n\n演示 engine-v1 适配器协议的 OMP 引擎适配器示例。\n\n安装后可在 Polaris 引擎选择器中选择「OMP Adapter Demo」引擎，\n发消息后会收到 mock 回复（不连接真实 omp）。\n\n## 验证内容\n\n- 引擎注册与选择\n- start_session 协议帧（start_session → assistant_message → session_end）\n- 续聊（continue_session 协议帧）\n- 中断（interrupt 协议帧）\n\n## 插件包结构\n\n```\nplugins/omp-engine-adapter/\n├── plugin.json        # 声明 adapter + engines\n├── engine.js          # 适配器进程入口\n└── update.json        # 更新清单\n```",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris.zen",
+   "name": "禅房",
+   "version": "0.1.3",
+   "description": "一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。",
+   "author": "Polaris",
+   "category": "fun",
+   "tags": [
+    "zen",
+    "panel",
+    "mcp",
+    "relax",
+    "fun"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zen",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.3/plugins/zen/zen.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zen/update.json",
+   "sha256": "224ff529bee984a2517cd9fd6aa95a6ccbf0c57adc3b9ef697584f34ef9e8fcd",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "appConfigRead": true
+   },
+   "screenshots": [],
+   "readme": "# 禅房\n\n一只小僧住在你的代码里。敲木鱼、抽签、翻答案之书，他都在。\n\n## 功能\n\n- **木鱼**：点击或按空格敲击，连击有反馈，可选择木鱼/钵/磬音色\n- **抽签**：抽一支编程签，看今日运势\n- **答案之书**：默念问题，翻页得到答案，可追问\n- **日记**：小僧记录你的禅修之路\n\nAI 也可以调用小僧：`knock_fish`（敲木鱼）、`draw_fortune`（抽签）、`open_book`（翻答案之书）。",
+   "versions": [
+    {
+     "version": "0.1.3",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.3/plugins/zen/zen.zip"
+    },
+    {
+     "version": "0.1.2",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.2/plugins/zen/zen.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris.blender-modeling",
+   "name": "Blender 3D 建模",
+   "version": "0.2.2",
+   "description": "AI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。侧通道加载，不占用 AI 上下文。",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "3d",
+    "blender",
+    "modeling",
+    "preview",
+    "mcp",
+    "panel"
+   ],
+   "icon": "Target",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/blender-modeling",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/blender-modeling/blender-modeling.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/blender-modeling/update.json",
+   "sha256": "23f286cef0cdaa6fe68d2cbf93b40254714d08284b988bd1054d555f58ade8b5",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true
+   },
+   "screenshots": [],
+   "readme": "# Blender 3D 建模\n\nAI 驱动的 3D 建模工具。通过 Blender headless 引擎生成 3D 模型，在聊天中直接预览。\n\n## 功能\n\n- **AI 对话建模**：在聊天中让 AI 帮你建 3D 模型\n- **聊天内嵌预览**：生成结果直接以 Three.js 3D 场景展示\n- **活动栏面板**：快速建模入口、模型管理\n- **木纹纹理**：程序化生成木纹贴图，自动嵌入 GLB\n\n## 使用方式\n\n1. 确保已安装 Blender（4.0+），并处于 PATH 中\n2. 安装插件后，在聊天中发送「帮我建一个木鱼」\n3. AI 自动调用 Blender 建模并展示预览\n\n## 内置脚本\n\n- **muyu**：传统木鱼法器，含底座、木鱼槌、木纹纹理\n- **qbox_character**：Q 版卡通角色（噜噜风格，开发中）\n\n## 环境变量\n\n- `BLENDER_PATH`：指定 blender.exe 路径（可选，默认自动查找）",
+   "versions": [
+    {
+     "version": "0.2.2",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/blender-modeling/blender-modeling.zip"
+    }
+   ]
+  },
+  {
+   "id": "dsh-engine",
+   "name": "DeepSeek Harness Engine",
+   "version": "0.1.0",
+   "description": "将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris：工具链（bash/pwsh/fs）、子代理、工作流、目标、技能、MCP 客户端、用户审批。",
+   "author": "Polaris Community",
+   "category": "ai-engine",
+   "tags": [
+    "ai",
+    "engine",
+    "deepseek",
+    "dsh",
+    "agent",
+    "adapter"
+   ],
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/dsh-engine",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/dsh-engine.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/update.json",
+   "sha256": "",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "# DeepSeek Harness Engine\n\n将 DeepSeek Harness 的完整 Agent 能力集成到 Polaris。\n\n## 功能\n\n- **引擎适配器**：在 Polaris 聊天中直接使用 DSH 的完整 Agent（工具链、子代理、工作流、目标、技能）\n- **DSH 工作区面板**：通过 iframe 嵌入 DSH Web UI，获得 100% 功能兼容\n- **后台服务**：Polaris 自动管理 `dsh web` 进程的生命周期\n\n## 安装前提\n\nDSH 需要单独安装：`npm install -g @deepseek-ai/dsh`\n\n## 使用\n\n1. 安装插件后，在 Polaris 设置 → AI 引擎中选择「DeepSeek Harness」\n2. 或将 DSH 作为独立工作区：点击活动栏「DSH 工作区」面板\n\n## 适配器模式\n\n- `DSH_DRIVER=headless`（默认）：每轮调用 `dsh --profile headless`，通过重放对话历史模拟多轮对话\n- `DSH_DRIVER=webapi`：通过 `dsh web` 的 HTTP API 驱动，获得完整流式事件\n\n## 环境变量\n\n- `DSH_CMD`：dsh 命令路径（默认自动查找）\n- `DSH_DRIVER`：驱动模式 `headless` 或 `webapi`\n- `DSH_WEB_PORT`：dsh web 端口（默认 3080）\n- `DSH_DEFAULT_MODEL`：默认模型名",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dsh-engine/dsh-engine.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.shell-override",
+   "name": "Demo Shell Override",
+   "version": "0.2.0",
+   "description": "演示 toolProviders 扩展点覆盖硬编码工具：接管 SimpleAI 内置 bash 工具。所有 shell 命令执行前记录审计日志，并拦截危险命令。",
+   "author": "Polaris",
+   "category": "demo",
+   "tags": [
+    "demo",
+    "tool-provider",
+    "override",
+    "shell",
+    "mcp"
+   ],
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-shell-override",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/update.json",
+   "sha256": "c8b0c2fa92d7dff995012be3459b2e52cceef8858c22bf59a0b5bde50bcd3784",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+   },
+   "screenshots": [],
+   "readme": "# Demo Shell Override\n\n验证 toolProviders 扩展点覆盖硬编码工具（bash）。\n\n## 功能\n\n- 覆盖内置 bash 工具，AI 执行 shell 命令时走此插件 MCP server\n- 拦截危险命令（rm -rf /、format C:、fork bomb 等）\n- 安全命令执行后记录到 audit.log\n\n## 验证\n\n- echo hello → exit=0 + audit.log 记录\n- rm -rf / → 被拦截返回错误\n- 卸载后 bash 恢复内置实现",
+   "versions": [
+    {
+     "version": "0.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-shell-override/demo-shell-override.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.fs-override",
+   "name": "Demo FileSystem Override",
+   "version": "0.1.0",
+   "description": "演示 toolProviders 覆盖 filesystem 能力：接管 SimpleAI 内置文件读写工具。所有文件操作记录审计日志。",
+   "author": "Polaris",
+   "category": "demo",
+   "tags": [
+    "demo",
+    "tool-provider",
+    "override",
+    "filesystem",
+    "mcp"
+   ],
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-fs-override",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/demo-fs-override.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/update.json",
+   "sha256": "4b29b54929ff3b1e0f17e44d22f069b1146a2e4911951acf3ab0f59305531c5e",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+   },
+   "screenshots": [],
+   "readme": "# Demo FileSystem Override\n\n覆盖 SimpleAI 内置文件系统工具（read_file/write_file/edit_file 等）。所有操作记录到 audit.log，写操作不真正落盘。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-fs-override/demo-fs-override.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.ui-shadow",
+   "name": "Demo UI Shadow",
+   "version": "0.1.0",
+   "description": "演示 UI Slot shadow 覆盖：替换内置文件面板为自定义版本。",
+   "author": "Polaris",
+   "category": "demo",
+   "tags": [
+    "demo",
+    "ui-slot",
+    "shadow",
+    "panel"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-shadow",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/demo-ui-shadow.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/update.json",
+   "sha256": "2819f7a98cbad07bed9ee59ecc6b30e44f1c8190c8a4898ef83a80c607720bdd",
+   "tier": "demo",
+   "permissions": {
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Demo UI Shadow\n\nshadow 模式覆盖内置文件面板。点击 Files 显示自定义 [demo-shadow] 面板。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-shadow/demo-ui-shadow.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.sandbox-shell",
+   "name": "Demo Sandbox Shell",
+   "version": "0.1.0",
+   "description": "演示 toolProviders 覆盖 shell：沙箱化执行（限制工作目录 + 禁止网络命令）",
+   "tags": [
+    "demo",
+    "tool-provider",
+    "shell",
+    "sandbox"
+   ],
+   "author": "Polaris",
+   "category": "demo",
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-sandbox-shell",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/demo-sandbox-shell.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/update.json",
+   "sha256": "824f9abd825370fbe02d1a4dce66f9f87b52e71f215ed7393a02273ea44853b1",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Demo Sandbox Shell\n\n演示 toolProviders 覆盖 shell：沙箱化执行（限制工作目录 + 禁止网络命令）",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-sandbox-shell/demo-sandbox-shell.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.s3-fs",
+   "name": "Demo S3 FileSystem",
+   "version": "0.1.0",
+   "description": "演示 toolProviders 覆盖 filesystem：模拟 S3 远程文件系统",
+   "tags": [
+    "demo",
+    "tool-provider",
+    "filesystem",
+    "s3"
+   ],
+   "author": "Polaris",
+   "category": "demo",
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-s3-fs",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/demo-s3-fs.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/update.json",
+   "sha256": "cc6cf11575ab7ae5dd9b51439c3361a4bc33c889f51b2837a99590add7dbae30",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Demo S3 FileSystem\n\n演示 toolProviders 覆盖 filesystem：模拟 S3 远程文件系统",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-s3-fs/demo-s3-fs.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.smart-compaction",
+   "name": "Demo Smart SubAgent",
+   "version": "0.1.0",
+   "description": "演示 toolProviders 覆盖 subagent：智能子代理派发（token 计费模拟）",
+   "tags": [
+    "demo",
+    "tool-provider",
+    "subagent"
+   ],
+   "author": "Polaris",
+   "category": "demo",
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-smart-compaction",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/demo-smart-compaction.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/update.json",
+   "sha256": "47e72b3c622eabb3f95747d56c81504a25b9d6e23b3821ce4b8cb2be0b5aeaef",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Demo Smart SubAgent\n\n演示 toolProviders 覆盖 subagent：智能子代理派发（token 计费模拟）",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-smart-compaction/demo-smart-compaction.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.dsh-subagent",
+   "name": "Demo DSH SubAgent",
+   "version": "0.1.0",
+   "description": "演示 toolProviders 覆盖 subagent：模拟 DSH spawn/fork provider 接入",
+   "tags": [
+    "demo",
+    "tool-provider",
+    "subagent",
+    "dsh"
+   ],
+   "author": "Polaris",
+   "category": "demo",
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-dsh-subagent",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/demo-dsh-subagent.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/update.json",
+   "sha256": "de3576e06b1414190fc100ad38931d8fd6787789aa8a594abacb4df934135afc",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Demo DSH SubAgent\n\n演示 toolProviders 覆盖 subagent：模拟 DSH spawn/fork provider 接入",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-dsh-subagent/demo-dsh-subagent.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.ui-chain",
+   "name": "Demo UI Chain",
+   "version": "0.1.0",
+   "description": "演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息",
+   "tags": [
+    "demo",
+    "ui-slot",
+    "chain"
+   ],
+   "author": "Polaris",
+   "category": "demo",
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-ui-chain",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/demo-ui-chain.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/update.json",
+   "sha256": "d47846bc995386017b0e3269d35a799a2e18cadaf0a89b76e8fbf27bb0474f43",
+   "tier": "demo",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Demo UI Chain\n\n演示 UI Slot chain 增强：在文件面板旁叠加 Git blame 信息",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-ui-chain/demo-ui-chain.zip"
+    }
+   ]
+  },
+  {
+   "id": "demo.style-input",
+   "name": "Demo Style Input",
+   "version": "0.1.0",
+   "description": "演示样式覆盖扩展点：改造聊天输入框样式（圆角/渐变/光晕）。纯 CSS 注入。",
+   "author": "Polaris",
+   "category": "demo",
+   "tags": [
+    "demo",
+    "style",
+    "css",
+    "input"
+   ],
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/demo-style-input",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/demo-style-input.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/update.json",
+   "sha256": "11d8cb6d78f347ab78fd798ef55857dbafbd9c534b1289c736924bfc5379d9f0",
+   "tier": "demo",
+   "permissions": {},
+   "screenshots": [],
+   "readme": "# Demo Style Input\n\n样式覆盖扩展点：改造聊天输入框样式。纯 CSS 注入，无 MCP。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/demo-style-input/demo-style-input.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris.git",
+   "name": "Git 工作台",
+   "version": "0.1.0",
+   "description": "完整的 Git 工作台：状态、变更、提交、分支、合并、rebase、历史、blame、远程、stash、.gitignore。提供 activityBar Git 面板 + MCP 工具。",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "git",
+    "panel",
+    "mcp",
+    "vcs"
+   ],
+   "icon": "GitPullRequest",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-git",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/polaris-git.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/update.json",
+   "sha256": "aa61d4998f8b40056d1723b6abfaacc6fa3cd9e6e15b5ea0504a906640be5f57",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/polaris-git.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris-api",
+   "name": "Polaris API",
+   "version": "1.1.0",
+   "description": "轻量级 AI 加持的 API 请求客户端：智能请求编辑、响应分析、集合管理、多协议支持、AI 辅助调试",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "api",
+    "rest",
+    "http",
+    "ai",
+    "panel"
+   ],
+   "icon": "Beaker",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-v1.1.0/plugins/polaris-api/polaris-api.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api/update.json",
+   "sha256": "41521663849861fedca71973df9e4529fe10f0b7c12d3dfa07570c84a8055c46",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "workspaceRead": true
+   },
+   "screenshots": [],
+   "readme": "# Polaris API\n\n轻量级 AI 加持的 API 请求客户端。\n\n## 功能\n- 智能请求编辑器（URL 自动解析参数、语法提示、常用 Headers 补全）\n- 响应查看器（JSON 树/表格/原始视图、路径下钻、错误诊断）\n- AI 深度集成（自然语言生成请求、错误分析、Mock 数据、代码生成）\n- 集合管理（多级文件夹、搜索、Postman/OpenAPI/HAR 导入）\n- 环境变量（baseUrl + 自定义变量）\n- 跨域代理\n- 代码生成（cURL/Python/JavaScript/Go/Rust）\n- 响应历史记录",
+   "versions": [
+    {
+     "version": "1.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-v1.1.0/plugins/polaris-api/polaris-api.zip"
+    },
+    {
+     "version": "1.0.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-v1.0.0/plugins/polaris-api/polaris-api.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris-http",
+   "name": "Polaris HTTP",
+   "version": "1.2.0",
+   "description": "轻量级 HTTP 客户端：多Tab、模式切换（通用/模板）、服务器选择、Auth、全局Headers、智能响应（对象树/表格/下钻/过滤）、集合、cURL导入导出、代码生成（5语言）、AI协同、跨域代理、环境变量",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "http",
+    "rest",
+    "api-client",
+    "dev-tools",
+    "panel",
+    "service",
+    "ai"
+   ],
+   "icon": "Activity",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-http",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.2.0/plugins/polaris-http/polaris-http.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-http/update.json",
+   "sha256": "1f197f6fb06ed77e3faa4920b876400e4a01ab03f3bfc8334982f192fb62cb43",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# Polaris HTTP\n\n轻量级 HTTP 请求调试客户端，基于 RELAY DevKit 架构 + polaris-api 代码生成 + invoke 模板系统。\n\n## 功能\n\n- **多 Tab**：新建/关闭/重命名，脏标记提示\n- **请求编辑**：Method 选择、URL 输入（回车发送）、Params/Headers/Body 三标签页，常用 Header 建议\n- **智能响应**：对象树/表格/原始/预览/Headers 五种视图、路径下钻、增强过滤\n- **集合管理**：分组保存/搜索/载入\n- **环境变量**：{{baseUrl}}/{{变量}} 解析、环境管理器\n- **全局 Headers**：持久化，自动合并到所有请求\n- **cURL 导入**：粘贴 curl 命令一键解析\n- **代码生成**：5 语言（cURL/Python/JS/Go/Rust）模态框展示+复制\n- **AI 协同**：通过 onSendToChat 将请求+响应上下文发往宿主 AI\n- **跨域代理**：本地 Node 转发服务（端口 9872），5 跳重定向\n- **布局切换**：左右/上下（split 方向），拖拽分栏调整大小\n- **快捷键**：⌘/Ctrl+Enter 发送\n- **零原生对话框**：全部自定义模态框\n- **数据持久化**：localStorage 分键存储",
+   "versions": [
+    {
+     "version": "1.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.2.0/plugins/polaris-http/polaris-http.zip"
+    },
+    {
+     "version": "1.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.1.0/plugins/polaris-http/polaris-http.zip"
+    },
+    {
+     "version": "1.0.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-http-v1.0.0/plugins/polaris-http/polaris-http.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris-api-client",
+   "name": "Polaris API Client",
+   "version": "1.0.1",
+   "description": "专业 HTTP 请求客户端：多Tab、环境变量、集合管理、cURL导入导出、跨域代理、智能响应（对象树/表格/路径下钻/增强过滤）、模板接口、服务器选择器、Auth认证、全局Headers、代码生成、AI协同、动态变量",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "http",
+    "rest",
+    "api-client",
+    "dev-tools",
+    "panel",
+    "service"
+   ],
+   "icon": "Terminal",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-api-client",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.1/plugins/polaris-api-client/polaris-api-client.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-api-client/update.json",
+   "sha256": "b85f60d281bfb7a72f2ce82e0e124d88825ff7065d4b81cbaea2495072ee8220",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# Polaris API Client\n\n基于 RELAY 架构，专注 API 请求调试。\n\n## 功能\n- 多 Tab、环境变量（{{baseUrl}}/{{var}}/{{}}）、集合管理\n- 模式切换（通用HTTP/定制接口模板）、模板系统（动态表单+Body⇄Form双向同步）\n- 服务器选择器、Auth 认证（Bearer/Basic）、全局 Headers\n- 智能响应（对象树/表格/路径下钻/增强过滤）\n- 响应双视图（业务数据自动下钻/完整响应）、字号/展开/全屏\n- cURL 导入导出、代码生成（5语言）、AI 协同\n- 跨域代理、集合导入导出、零原生对话框",
+   "versions": [
+    {
+     "version": "1.0.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.1/plugins/polaris-api-client/polaris-api-client.zip"
+    },
+    {
+     "version": "1.0.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-api-client-v1.0.0/plugins/polaris-api-client/polaris-api-client.zip"
+    }
+   ]
+  },
+  {
+   "id": "polaris.scheduler",
+   "name": "定时任务",
+   "version": "0.1.0",
+   "description": "定时任务调度器：支持 interval/cron/once 触发，集成 AI 执行能力。零服务进程，全量通过 Polaris IPC 桥接。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "scheduler",
+    "cron",
+    "interval",
+    "panel",
+    "mcp",
+    "automation"
+   ],
+   "icon": "Clock",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/polaris-scheduler",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/update.json",
+   "sha256": "ff407f80b522f2b155a05f1c8dedd0775157838802d344871a256994fc57f2eb",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "aiToolAccess": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "# 定时任务调度器\n\n通过 Polaris IPC 桥接的无状态定时任务管理系统。\n\n## 功能\n\n- **多种触发方式**：interval（间隔）、cron（表达式）、once（单次）\n- **AI 执行**：集成 Polaris 通用执行器 ExecutorRegistry，支持 chat/command/http 执行器\n- **零服务进程**：不启动守护进程、不监听端口、不维护数据文件\n- **可视化面板**：ActivityBar 集成面板，任务列表/创建/编辑/启用禁用/手动执行\n- **AI 可调用**：MCP 工具接口，AI 可直接创建/管理定时任务\n\n## 使用方式\n\n安装后活动栏出现「定时任务」图标，点击即可管理任务。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-scheduler/polaris-scheduler.zip"
+    }
+   ]
+  },
+  {
+   "id": "focus-flow",
+   "name": "心流专注",
+   "version": "0.1.0",
+   "description": "心流专注 FlowFocus —— 反拖延的专注力管理系统。深度专注计时、干扰记录、每日心流热力图与统计，帮助你进入并保持心流状态。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "focus",
+    "pomodoro",
+    "flow",
+    "productivity",
+    "panel",
+    "mcp",
+    "self-management"
+   ],
+   "icon": "Timer",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/focus-flow",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/focus-flow/focus-flow.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/update.json",
+   "sha256": "36cc8f1ac209dfec593b28cda043bd6bf5558265fc080b39bc62e8b28031f9ce",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "workspaceRead": true,
+    "appConfigRead": true
+   },
+   "screenshots": [],
+   "readme": "# 心流专注 FlowFocus\n\n反拖延的专注力管理系统。深度专注计时、干扰记录、每日心流热力图与统计，帮助你进入并保持心流状态。\n\n## 功能\n\n- **专注**：设定任务与目标时长，一键开始心流计时，可暂停/放弃\n- **记录**：每次专注后记录心流程度（1-5）、干扰源与感悟\n- **统计**：今日/本周/累计时长、连续天数、近 7 天热力图、平均心流、干扰源分析\n\nAI 也可以调用 `focus_start` / `focus_stop` / `focus_stats` / `focus_log` 帮你管理专注。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/focus-flow/focus-flow.zip"
+    }
+   ]
+  }
+ ]
 }
