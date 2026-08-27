@@ -787,13 +787,13 @@
     "mcp",
     "self-management"
    ],
-   "icon": "Timer",
+   "icon": "Clock",
    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/focus-flow",
    "repository": "https://github.com/misxzaiz/Polaris-plugin",
    "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/plugin.json",
    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/focus-flow/focus-flow.zip",
    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/update.json",
-   "sha256": "36cc8f1ac209dfec593b28cda043bd6bf5558265fc080b39bc62e8b28031f9ce",
+   "sha256": "5c03da1e6ad7a78f19ce7ce9d6ae89e46ac57efc214a8e98fb52a6bdf8b6e2cd",
    "tier": "beta",
    "permissions": {
     "aiToolAccess": true,

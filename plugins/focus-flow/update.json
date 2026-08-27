@@ -10,7 +10,7 @@
         "id": "focus-flow.panel",
         "area": "activityBar",
         "panelType": "focus-flow",
-        "icon": "Timer",
+        "icon": "Clock",
         "labelKey": "labels.focusPanel",
         "labelDefault": "专注",
         "order": 78
