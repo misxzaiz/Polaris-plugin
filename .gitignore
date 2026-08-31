@@ -10,3 +10,5 @@ plugins/*/.tmp-pack-*
 
 # Blender 建模插件生成目录（测试输出，不提交）
 plugins/blender-modeling/generated/
+plugins/blender-modeling/cache/
+plugins/blender-modeling/scripts/__pycache__/

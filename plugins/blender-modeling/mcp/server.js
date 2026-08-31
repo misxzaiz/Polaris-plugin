@@ -712,7 +712,8 @@ async function runBlenderScript(scriptPath, params, outputName, timeoutMs) {
     proc.stdout.on('data', (data) => { stdout += data.toString() })
     proc.stderr.on('data', (data) => { stderr += data.toString() })
 
-    const effectiveTimeout = Math.min(Math.max(timeoutMs || 90000, 10000), 600000)
+    // 上限 1800s:完整 Cycles bake（4096 主材质 × 8 物体）实测 ~11-13 分钟,600s 会被中途杀掉
+    const effectiveTimeout = Math.min(Math.max(timeoutMs || 90000, 10000), 1800000)
 
     const timeout = setTimeout(() => {
       proc.kill()
@@ -968,10 +969,10 @@ const tools = [
         },
         timeout: {
           type: 'integer',
-          description: 'Blender 执行超时时间（毫秒），默认 90000，范围 10000-600000',
+          description: 'Blender 执行超时时间（毫秒），默认 90000，范围 10000-1800000（完整烘焙类脚本需 >=900000）',
           default: 90000,
           minimum: 10000,
-          maximum: 600000,
+          maximum: 1800000,
         },
       },
       required: ['script'],

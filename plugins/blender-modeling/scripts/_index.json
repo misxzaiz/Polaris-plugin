@@ -1,0 +1,973 @@
+[
+  {
+    "name": "bake_house",
+    "file": "bake_house.py",
+    "isRegistered": false,
+    "description": "管线： 1. 导入白模 GLB（realistic_house.py 产物） 2. 按材质合并为 8 个物体（每物体单材质，bake 语义干净） 3. Smart UV Project 展开 UV 4. 下载 PolyHaven 贴图（Diffuse/Rough/nor_gl，本地缓存 cache/textures/<asset_id>/） 5. Cycles CPU bake：DIFFUSE(COLOR) / ROUGHNESS / NORMAL / AO(samples 提高平滑) → numpy 合成 ORM 6. 顶点色 RGBA：R=苔藓 G=污渍 B=剥落 A=1（three.js",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "white_glb": {
+          "type": "string",
+          "description": "白模 GLB 输入路径（默认 generated/realistic_house.glb）"
+        },
+        "output_path": {
+          "type": "string",
+          "description": "带纹理 GLB 输出路径（MCP 会用 --output 覆盖）"
+        },
+        "resolution_main": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 8192,
+          "description": "主材质 bake 分辨率（brick/plaster/tile）"
+        },
+        "resolution_secondary": {
+          "type": "integer",
+          "minimum": 256,
+          "maximum": 4096,
+          "description": "其余材质 bake 分辨率"
+        },
+        "ao_samples": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128,
+          "description": "AO bake 采样数"
+        },
+        "bake_margin": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 64,
+          "description": "bake 边距[px]"
+        },
+        "skip_bake": {
+          "type": "boolean",
+          "description": "跳过 Cycles bake，直接用 PolyHaven 原图导出（快速验证链路，~1min；完整 bake 实测 ~11-13min，MCP 调用须传 timeout>=1200000）"
+        },
+        "write_masks": {
+          "type": "boolean",
+          "description": "写入顶点色做旧 mask（R=苔藓 G=污渍 B=剥落）"
+        },
+        "seed": {
+          "type": "integer",
+          "description": "做旧噪声种子（可复现）"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "chalk",
+    "file": "chalk.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling - 粉笔（Chalk）建模脚本 =========================================== 用途：生成尽量真实的粉笔 3D 模型 特点：锥形柱体、不规则截面、表面微纹理、真实粉笔材质 输出：GLB 格式 用法： blender --background --python chalk.py -- --output output.glb AI 可修改的参数： - 颜色（白/彩粉笔） - 长度、粗细 - 表面粗糙度、不规则程度",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "number",
+          "default": 1
+        },
+        "base_radius": {
+          "type": "number",
+          "default": 0.12
+        },
+        "tip_radius": {
+          "type": "number",
+          "default": 0.09
+        },
+        "segments": {
+          "type": "number",
+          "default": 24
+        },
+        "ring_count": {
+          "type": "number",
+          "default": 40
+        },
+        "color": {
+          "type": "array",
+          "default": [
+            0.96,
+            0.94,
+            0.9,
+            1
+          ]
+        },
+        "color_variation": {
+          "type": "number",
+          "default": 0.03
+        },
+        "irregularity": {
+          "type": "number",
+          "default": 0.015
+        },
+        "oval_ratio": {
+          "type": "number",
+          "default": 0.97
+        },
+        "bend_amount": {
+          "type": "number",
+          "default": 0.008
+        },
+        "surface_roughness": {
+          "type": "number",
+          "default": 0.6
+        },
+        "texture_scale": {
+          "type": "number",
+          "default": 0.8
+        },
+        "subdivision_levels": {
+          "type": "number",
+          "default": 2
+        },
+        "roughness": {
+          "type": "number",
+          "default": 0.98
+        },
+        "specular": {
+          "type": "number",
+          "default": 0.02
+        },
+        "subsurface": {
+          "type": "number",
+          "default": 0.15
+        },
+        "subsurface_color": {
+          "type": "array",
+          "default": [
+            0.92,
+            0.9,
+            0.85,
+            1
+          ]
+        },
+        "dust_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "dust_amount": {
+          "type": "number",
+          "default": 120
+        },
+        "dust_radius": {
+          "type": "number",
+          "default": 0.003
+        },
+        "wear_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "wear_flatness": {
+          "type": "number",
+          "default": 0.4
+        },
+        "wear_angle": {
+          "type": "number",
+          "default": 0.3
+        },
+        "shade_smooth": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "cow",
+    "file": "cow.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling - 低多边形牛（Cow）建模脚本，含走路骨骼动画 =============================================================== 用途：生成一只带走路动画的低多边形牛（GLB 格式） 特点： - 低多边形风格（LP） - 褐色身体 + 奶白色斑点 - 完整的骨骼走路动画 - 导出时包含 GLTF 动画，可直接在 viewer.html 中播放 输出：GLB 格式（带骨骼动画） 用法： blender --background --python cow.py -- --output output.glb AI 可修改参",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_color": {
+          "type": "string",
+          "default": "#C4843B"
+        },
+        "spot_color": {
+          "type": "string",
+          "default": "#F5E6D0"
+        },
+        "horn_color": {
+          "type": "string",
+          "default": "#4A4A4A"
+        },
+        "eye_color": {
+          "type": "string",
+          "default": "#1A1A1A"
+        },
+        "nose_color": {
+          "type": "string",
+          "default": "#8B6B5A"
+        },
+        "scale": {
+          "type": "number",
+          "default": 1
+        },
+        "animation_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "animation_fps": {
+          "type": "number",
+          "default": 24
+        },
+        "animation_duration": {
+          "type": "number",
+          "default": 1
+        },
+        "subdivision_levels": {
+          "type": "number",
+          "default": 0
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "fish",
+    "file": "fish.py",
+    "isRegistered": false,
+    "description": "fish",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_length": {
+          "type": "number",
+          "default": 1.2
+        },
+        "body_radius": {
+          "type": "number",
+          "default": 0.32
+        },
+        "body_flatten": {
+          "type": "number",
+          "default": 0.55
+        },
+        "body_color": {
+          "type": "array",
+          "default": [
+            0.78,
+            0.68,
+            0.32
+          ]
+        },
+        "belly_color": {
+          "type": "array",
+          "default": [
+            0.95,
+            0.88,
+            0.6
+          ]
+        },
+        "head_radius": {
+          "type": "number",
+          "default": 0.22
+        },
+        "head_flatten": {
+          "type": "number",
+          "default": 0.6
+        },
+        "eye_size": {
+          "type": "number",
+          "default": 0.055
+        },
+        "eye_color": {
+          "type": "array",
+          "default": [
+            0.08,
+            0.08,
+            0.08
+          ]
+        },
+        "eye_offset_x": {
+          "type": "number",
+          "default": 0.42
+        },
+        "eye_offset_y": {
+          "type": "number",
+          "default": 0.18
+        },
+        "tail_fin_size": {
+          "type": "number",
+          "default": 0.22
+        },
+        "tail_fin_length": {
+          "type": "number",
+          "default": 0.18
+        },
+        "tail_fin_color": {
+          "type": "array",
+          "default": [
+            0.75,
+            0.55,
+            0.2
+          ]
+        },
+        "dorsal_fin_height": {
+          "type": "number",
+          "default": 0.16
+        },
+        "dorsal_fin_length": {
+          "type": "number",
+          "default": 0.35
+        },
+        "anal_fin_size": {
+          "type": "number",
+          "default": 0.07
+        },
+        "pectoral_fin_size": {
+          "type": "number",
+          "default": 0.12
+        },
+        "pelvic_fin_size": {
+          "type": "number",
+          "default": 0.09
+        },
+        "fin_color": {
+          "type": "array",
+          "default": [
+            0.62,
+            0.48,
+            0.18
+          ]
+        },
+        "scale_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "scale_rings": {
+          "type": "number",
+          "default": 5
+        },
+        "scale_per_ring": {
+          "type": "number",
+          "default": 8
+        },
+        "scale_size": {
+          "type": "number",
+          "default": 0.02
+        },
+        "scale_color": {
+          "type": "array",
+          "default": [
+            0.85,
+            0.75,
+            0.4
+          ]
+        },
+        "texture_size": {
+          "type": "number",
+          "default": 128
+        },
+        "texture_seed": {
+          "type": "number",
+          "default": 77
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "island",
+    "file": "island.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling - 海岛（Island）建模脚本 =========================================== 用途：生成完整的 3D 海岛模型，包含地形、沙滩、植被、岩石等 特点： - 程序化地形（FBM 噪声驱动高度图） - 沙滩渐变色带 - 棕榈树（树干 + 树冠叶片） - 灌木丛 - 礁石 - 环礁湖水面（半透明） - 低多边形风格，导出体积小 输出：GLB 格式 用法： blender --background --python island.py -- --output output.glb AI 可修改参数：见 params 字典",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "island_radius": {
+          "type": "number",
+          "default": 4
+        },
+        "height_scale": {
+          "type": "number",
+          "default": 1.2
+        },
+        "terrain_octaves": {
+          "type": "number",
+          "default": 5
+        },
+        "terrain_roughness": {
+          "type": "number",
+          "default": 0.5
+        },
+        "sand_color": {
+          "type": "string",
+          "default": "#F5DEB3"
+        },
+        "grass_color": {
+          "type": "string",
+          "default": "#5A8F3E"
+        },
+        "rock_color": {
+          "type": "string",
+          "default": "#6B6B6B"
+        },
+        "water_color": {
+          "type": "string",
+          "default": "#3A8FC4"
+        },
+        "trunk_color": {
+          "type": "string",
+          "default": "#6B4226"
+        },
+        "leaf_color": {
+          "type": "string",
+          "default": "#2D7D2D"
+        },
+        "palm_trees": {
+          "type": "number",
+          "default": 6
+        },
+        "bushes": {
+          "type": "number",
+          "default": 12
+        },
+        "rocks": {
+          "type": "number",
+          "default": 8
+        },
+        "lagoon_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "water_radius": {
+          "type": "number",
+          "default": 5.5
+        },
+        "water_alpha": {
+          "type": "number",
+          "default": 0.6
+        },
+        "terrain_resolution": {
+          "type": "number",
+          "default": 64
+        },
+        "subdivision_levels": {
+          "type": "number",
+          "default": 1
+        },
+        "seed": {
+          "type": "number",
+          "default": 42
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "muyu",
+    "file": "muyu.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling POC - 木鱼建模脚本 v2 ============================================== 用途：验证几何体拼装管线对木质法器的建模 特点：手动构建鱼嘴开口 + 程序化木纹贴图（嵌入 GLB）+ 几何细节增强 v2 改进： - 木纹纹理：Blender 内 Python 生成 512×512 木纹贴图，嵌入 GLB 材质 - 上唇凸起：鱼嘴上端轻微翘起，更真实 - 鱼尾分叉：双瓣鱼尾造型 - 鳞片密度提升：5 圈×16 片 - 敲击位标记：槌接触点微凹（可选） 生成：木鱼（主体 + 开口 + 内腔 + 鳞片 + 鱼尾 + 木鱼槌 ",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_radius": {
+          "type": "number",
+          "default": 0.6
+        },
+        "body_scale_x": {
+          "type": "number",
+          "default": 1.05
+        },
+        "body_scale_y": {
+          "type": "number",
+          "default": 1
+        },
+        "body_scale_z": {
+          "type": "number",
+          "default": 0.92
+        },
+        "body_color": {
+          "type": "array",
+          "default": [
+            0.55,
+            0.35,
+            0.15,
+            1
+          ]
+        },
+        "mouth_x": {
+          "type": "number",
+          "default": 0.28
+        },
+        "mouth_slit_width": {
+          "type": "number",
+          "default": 0.22
+        },
+        "mouth_slit_length": {
+          "type": "number",
+          "default": 0.55
+        },
+        "cavity_color": {
+          "type": "array",
+          "default": [
+            0.18,
+            0.08,
+            0.03,
+            1
+          ]
+        },
+        "scale_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "scale_rings": {
+          "type": "number",
+          "default": 4
+        },
+        "scale_per_ring": {
+          "type": "number",
+          "default": 12
+        },
+        "scale_size": {
+          "type": "number",
+          "default": 0.035
+        },
+        "tail_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "tail_color": {
+          "type": "array",
+          "default": [
+            0.5,
+            0.32,
+            0.14,
+            1
+          ]
+        },
+        "mallet_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "mallet_handle_length": {
+          "type": "number",
+          "default": 0.5
+        },
+        "mallet_handle_radius": {
+          "type": "number",
+          "default": 0.025
+        },
+        "mallet_head_radius": {
+          "type": "number",
+          "default": 0.06
+        },
+        "base_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "base_radius": {
+          "type": "number",
+          "default": 0.5
+        },
+        "base_height": {
+          "type": "number",
+          "default": 0.06
+        },
+        "base_color": {
+          "type": "array",
+          "default": [
+            0.45,
+            0.28,
+            0.12,
+            1
+          ]
+        },
+        "wood_texture_size": {
+          "type": "number",
+          "default": 512
+        },
+        "wood_texture_seed": {
+          "type": "number",
+          "default": 42
+        },
+        "subdivision_levels": {
+          "type": "number",
+          "default": 2
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "muyu_advanced",
+    "file": "muyu_advanced.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling - 真实木鱼 + 敲击动画 ============================================== 用途：生成高保真木鱼 3D 模型，附木鱼槌敲击骨骼动画 特点： - 程序化木纹贴图（512x512，嵌入 GLB） - 缩扁椭球主体 + 鱼嘴窄缝 + 内腔 - 鱼鳞浅浮雕（多圈分布，避开开口/尾部） - 双瓣鱼尾上翘 - 木鱼槌：骨架构建 + 敲击→弹性回弹 GLTF 动画 - 圆形底座 + 金属铆钉装饰 - 三处敲击接触点微凹 - 导出时包含完整 GLTF 动画 输出：GLB 格式（带木纹 + 骨骼动画） 用法： blender --bac",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_radius": {
+          "type": "number",
+          "default": 0.6
+        },
+        "body_flatten": {
+          "type": "number",
+          "default": 0.82
+        },
+        "body_width_stretch": {
+          "type": "number",
+          "default": 1.08
+        },
+        "wood_color": {
+          "type": "string",
+          "default": "#8B5A2B"
+        },
+        "mouth_x": {
+          "type": "number",
+          "default": 0.25
+        },
+        "mouth_slit_width": {
+          "type": "number",
+          "default": 0.2
+        },
+        "mouth_slit_length": {
+          "type": "number",
+          "default": 0.5
+        },
+        "scale_rings": {
+          "type": "number",
+          "default": 5
+        },
+        "scale_per_ring": {
+          "type": "number",
+          "default": 14
+        },
+        "scale_size": {
+          "type": "number",
+          "default": 0.032
+        },
+        "tail_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "tail_size": {
+          "type": "number",
+          "default": 0.16
+        },
+        "tail_lift": {
+          "type": "number",
+          "default": 0.08
+        },
+        "mallet_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "mallet_handle_length": {
+          "type": "number",
+          "default": 0.55
+        },
+        "mallet_handle_radius": {
+          "type": "number",
+          "default": 0.022
+        },
+        "mallet_head_radius": {
+          "type": "number",
+          "default": 0.055
+        },
+        "animation_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "animation_duration": {
+          "type": "number",
+          "default": 1.5
+        },
+        "animation_fps": {
+          "type": "number",
+          "default": 30
+        },
+        "base_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "base_radius": {
+          "type": "number",
+          "default": 0.55
+        },
+        "base_height": {
+          "type": "number",
+          "default": 0.05
+        },
+        "wood_texture_size": {
+          "type": "number",
+          "default": 512
+        },
+        "wood_texture_seed": {
+          "type": "number",
+          "default": 42
+        },
+        "subdivision_levels": {
+          "type": "number",
+          "default": 1
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "patch_aging_vcolor",
+    "file": "patch_aging_vcolor.py",
+    "isRegistered": false,
+    "description": "背景:bake_house.py 曾把 aging mask 写进非 active color 属性,glTF 导出器只导出 active 属性,导致 COLOR_0 全白(mask 失效)。本脚本导入现有 textured GLB, 删除旧颜色属性后按同一套 fbm 公式重写 mask 再导出——几何/贴图不动,~30s。 CLI: blender --background --python patch_aging_vcolor.py -- <in.glb> <out.glb>",
+    "params_schema": null
+  },
+  {
+    "name": "qbox_character",
+    "file": "qbox_character.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling POC - Q版卡通角色建模脚本 =========================================== 用途：验证 Blender headless 管线可行性 生成：Q版小人（圆润、卡通、Toon 材质） 输出：GLB 格式（带骨骼和材质） 用法： blender --background --python qbox_character.py -- --output output.glb AI 可修改的部分（由用户需求驱动）： - params 字典中的颜色/大小/比例 - 几何体添加/删除（尾巴、耳朵、帽子等配饰） - 材质参数（颜色、粗糙度",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_color": {
+          "type": "array",
+          "default": [
+            0.42,
+            0.72,
+            1,
+            1
+          ]
+        },
+        "belly_color": {
+          "type": "array",
+          "default": [
+            0.95,
+            0.95,
+            0.95,
+            1
+          ]
+        },
+        "eye_color": {
+          "type": "array",
+          "default": [
+            0.15,
+            0.15,
+            0.15,
+            1
+          ]
+        },
+        "eye_highlight": {
+          "type": "array",
+          "default": [
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "cheek_color": {
+          "type": "array",
+          "default": [
+            1,
+            0.6,
+            0.6,
+            0.6
+          ]
+        },
+        "accent_color": {
+          "type": "array",
+          "default": [
+            0.2,
+            0.6,
+            0.9,
+            1
+          ]
+        },
+        "head_radius": {
+          "type": "number",
+          "default": 0.55
+        },
+        "head_stretch": {
+          "type": "number",
+          "default": 1
+        },
+        "body_radius": {
+          "type": "number",
+          "default": 0.45
+        },
+        "body_height": {
+          "type": "number",
+          "default": 0.7
+        },
+        "body_stretch_y": {
+          "type": "number",
+          "default": 0.85
+        },
+        "neck_height": {
+          "type": "number",
+          "default": 0.15
+        },
+        "arm_length": {
+          "type": "number",
+          "default": 0.4
+        },
+        "arm_radius": {
+          "type": "number",
+          "default": 0.08
+        },
+        "leg_length": {
+          "type": "number",
+          "default": 0.25
+        },
+        "leg_radius": {
+          "type": "number",
+          "default": 0.1
+        },
+        "foot_radius": {
+          "type": "number",
+          "default": 0.12
+        },
+        "eye_size": {
+          "type": "number",
+          "default": 0.12
+        },
+        "eye_spacing": {
+          "type": "number",
+          "default": 0.2
+        },
+        "mouth_size": {
+          "type": "number",
+          "default": 0.08
+        },
+        "has_tail": {
+          "type": "boolean",
+          "default": false
+        },
+        "has_ears": {
+          "type": "boolean",
+          "default": false
+        },
+        "has_hat": {
+          "type": "boolean",
+          "default": false
+        },
+        "subdivision_levels": {
+          "type": "number",
+          "default": 2
+        },
+        "shade_smooth": {
+          "type": "boolean",
+          "default": true
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "realistic_cow",
+    "file": "realistic_cow.py",
+    "isRegistered": false,
+    "description": "AI 3D Modeling - 写实风格牛（Realistic Cow）建模脚本，含走路骨骼动画 ======================================================================== 用途：生成一只带走路动画的写实风格牛（GLB 格式） 特点： - 细分曲面（Subdivision Surface）→ 光滑有机形态 - 程序化纹理（Noise Texture + Color Ramp）→ 真实毛皮质感 - 更精细的骨骼结构（6 根骨骼，自然步态） - 真实比例解剖（颈部、肩部、臀部隆起、乳房等细节） - 导出时包含 GLTF 动画 ",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "body_color": {
+          "type": "string",
+          "default": "#A0703A"
+        },
+        "belly_color": {
+          "type": "string",
+          "default": "#E0C8A0"
+        },
+        "horn_color": {
+          "type": "string",
+          "default": "#4A4A48"
+        },
+        "eye_color": {
+          "type": "string",
+          "default": "#1A1A1A"
+        },
+        "nose_color": {
+          "type": "string",
+          "default": "#8B6B5A"
+        },
+        "hoof_color": {
+          "type": "string",
+          "default": "#2A2A28"
+        },
+        "udder_color": {
+          "type": "string",
+          "default": "#D4A080"
+        },
+        "scale": {
+          "type": "number",
+          "default": 1
+        },
+        "animation_enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "animation_fps": {
+          "type": "number",
+          "default": 24
+        },
+        "animation_duration": {
+          "type": "number",
+          "default": 1
+        },
+        "subdivision": {
+          "type": "number",
+          "default": 2
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  {
+    "name": "realistic_house",
+    "file": "realistic_house.py",
+    "isRegistered": false,
+    "description": "老房子程序化建模（Realistic Old House）— 阶段1 几何骨架（白模）\r ================================================================\r 按 plans/realistic-modeling-plugin-v1.md 定稿方案：\r - 台基：砖石条基\r - 墙体：清水砖下段 + 抹灰上段，预切面法开洞（inset_region + extrude 内推，零 boolean）\r - 屋顶：双坡硬山顶，椽条 Array → 望板 Solidify → 挂瓦条 → 小青瓦 bmesh 逐片铺设（随机抖动/缺瓦）\r -",
+    "params_schema": {
+      "type": "object",
+      "properties": {
+        "bays": {
+          "type": "number",
+          "default": 3
+        },
+        "bay_width": {
+          "type": "number",
+          "default": 3.6
+        },
+        "depth": {
+          "type": "number",
+          "default": 4.8
+        },
+        "eave_height": {
+          "type": "number",
+          "default": 2.8
+        },
+        "roof_angle": {
+          "type": "number",
+          "default": 27
+        },
+        "eave_overhang": {
+          "type": "number",
+          "default": 0.6
+        },
+        "seed": {
+          "type": "number",
+          "default": 7
+        },
+        "missing_tile_ratio": {
+          "type": "number",
+          "default": 0.02
+        },
+        "white_model": {
+          "type": "boolean",
+          "default": true
+        },
+        "output_path": {
+          "type": "string",
+          "default": "//realistic_house.glb"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+]
