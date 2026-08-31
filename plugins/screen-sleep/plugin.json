@@ -1,0 +1,37 @@
+{
+  "id": "screen-sleep",
+  "name": "Screen Sleep",
+  "version": "0.1.0",
+  "description": "Windows 极简熄屏面板：按一下按钮熄灭显示器，应用程序继续运行。动鼠标或按键可恢复。提供 ActivityBar 面板与 MCP 工具 monitor_off。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "screen-sleep.panel",
+        "area": "activityBar",
+        "panelType": "screen-sleep",
+        "icon": "Clock",
+        "labelKey": "labels.panel",
+        "labelDefault": "Screen Sleep",
+        "order": 80
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "screen-sleep-server",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true
+  }
+}
