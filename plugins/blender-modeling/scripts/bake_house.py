@@ -270,11 +270,17 @@ def bake_pass(obj, mat, pass_type, img, samples, pass_filter=None):
     nt.nodes.remove(node)
 
 
-def save_bake_image(img, path):
+def save_bake_image(img, path, srgb=False):
+    """bake 图存盘。sRGB=True 用于颜色数据(DIFFUSE)：bake 写入的是线性值，
+    须标成 sRGB 存 PNG/内嵌 JPEG，否则 three.js 按 sRGB 读会整体过暗 ~2.2 次方。"""
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    if srgb:
+        img.colorspace_settings.name = 'sRGB'
     img.filepath_raw = path
     img.file_format = 'PNG'
     img.save()
+    if srgb:
+        img.colorspace_settings.name = 'Non-Color'  # 还原,后续 compose_orm 读像素用
 
 
 def compose_orm(ao_img, rough_img, size):
@@ -323,7 +329,14 @@ def fbm_values(x, z, seed, octaves=4):
 
 
 def write_aging_vertex_colors(objs):
-    """顶点色 RGBA：R=苔藓 G=污渍(墙脚) B=剥落(木件) A=1。"""
+    """顶点色 RGBA：R=苔藓 G=污渍(墙脚) B=剥落(木件) A=1。
+
+    必须用 CORNER domain + BYTE_COLOR：
+      - POINT/FLOAT_COLOR 会触发 glTF 导出器 export_all_vertex_colors 的
+        「forced 白色 COLOR_0 兜底 + 真值进 COLOR_1」分支，three.js 只读
+        COLOR_0 → 全白 mask → 做旧混色全开，整栋变土黄。
+      - CORNER/BYTE_COLOR + export_vertex_color='ACTIVE' 才是单 COLOR_0 直通。
+    """
     for obj in objs:
         mesh = obj.data
         n = len(mesh.vertices)
@@ -344,23 +357,38 @@ def write_aging_vertex_colors(objs):
         nz = np.clip(wno[:, 2], 0.0, 1.0)            # 朝上程度（世界空间）
         patch = fbm_values(world[:, 0], world[:, 1], SEED)
 
-        moss = np.clip((nz - 0.55) / 0.45, 0, 1) ** 1.5 * np.clip((patch - 0.42) * 2.5, 0, 1)
-        dirt = np.clip((0.9 - world[:, 2]) / 1.4, 0, 1) * np.clip((patch - 0.3) * 2.0, 0, 1)
+        # 屋面 27° 坡整面 nz≈0.89 都算"朝上"，单靠法线+噪声阈值会整坡全绿。
+        # 真实青苔靠雨水携带孢子向低处聚集 → 叠加物体自身高度衰减（檐口浓/脊部淡，
+        # 平坦地面 span≈0 时退化为常数 1），并把噪声阈值提到 0.52 让斑块只占 ~1/3。
+        z = world[:, 2]
+        z_span = max(float(z.max() - z.min()), 1e-6)
+        h_fac = 1.0 - np.clip((z - z.min()) / z_span, 0, 1)
+        moss = (np.clip((nz - 0.55) / 0.45, 0, 1) ** 1.5
+                * np.clip((patch - 0.52) * 3.0, 0, 1)
+                * (0.25 + 0.75 * h_fac))
+        dirt = np.clip((0.9 - z) / 1.4, 0, 1) * np.clip((patch - 0.3) * 2.0, 0, 1)
         is_wood = obj.name.startswith('wood')
         peel = np.clip((patch - 0.48) * 3.0, 0, 1) if is_wood else np.zeros(n)
 
-        colors = np.empty((n, 4), dtype=np.float32)
-        colors[:, 0] = np.clip(moss * 0.9, 0, 1)
-        colors[:, 1] = np.clip(dirt * 0.8, 0, 1)
-        colors[:, 2] = np.clip(peel, 0, 1)
-        colors[:, 3] = 1.0
+        vert_colors = np.empty((n, 4), dtype=np.float32)
+        vert_colors[:, 0] = np.clip(moss * 0.9, 0, 1)
+        vert_colors[:, 1] = np.clip(dirt * 0.8, 0, 1)
+        vert_colors[:, 2] = np.clip(peel, 0, 1)
+        vert_colors[:, 3] = 1.0
 
-        # glTF 导出器只导出 active color 属性;白模导入时可能自带全白 COLOR_0,
-        # 不删掉的话新建的 aging 属性不是 active,导出的就是全白 mask(做旧失效)
-        for old in list(mesh.color_attributes):
-            mesh.color_attributes.remove(old)
-        attr = mesh.color_attributes.new(name='aging', type='FLOAT_COLOR', domain='POINT')
-        attr.data.foreach_set('color', colors.reshape(-1))
+        # glTF 导出器只导出 active color 属性;导入的 GLB 可能自带 1~2 个旧 color 属性
+        # (全白 COLOR_0 + 上一轮的 aging)。注意不能用 list() 快照迭代删除——
+        # Blender 删除属性时内部索引会变,快照删除会残留最后一个,导致 aging 排第二。
+        while len(mesh.color_attributes) > 0:
+            mesh.color_attributes.remove(mesh.color_attributes[0])
+        attr = mesh.color_attributes.new(name='aging', type='BYTE_COLOR', domain='CORNER')
+        # 顶点值展开到该顶点关联的所有 loop（角域存的是每 loop 一份）
+        loop_total = len(mesh.loops)
+        loop_verts = np.empty(loop_total, dtype=np.int32)
+        mesh.loops.foreach_get('vertex_index', loop_verts)
+        loop_colors = vert_colors[loop_verts]
+        attr.data.foreach_set('color', loop_colors.reshape(-1))
+        mesh.color_attributes.active_color = attr
 
 
 # ---------------------------------------------------------------- main
@@ -415,8 +443,8 @@ def main():
 
             img_orm = compose_orm(img_ao, img_rough, size)
 
-            # 存盘（three.js 调试可复用）
-            save_bake_image(img_diff, os.path.join(BAKE_DIR, f'{mat.name}_diffuse.png'))
+            # 存盘（three.js 调试可复用）；DIFFUSE 是颜色数据按 sRGB 存
+            save_bake_image(img_diff, os.path.join(BAKE_DIR, f'{mat.name}_diffuse.png'), srgb=True)
             save_bake_image(img_norm, os.path.join(BAKE_DIR, f'{mat.name}_normal.png'))
             save_bake_image(img_orm, os.path.join(BAKE_DIR, f'{mat.name}_orm.png'))
 
@@ -464,6 +492,10 @@ def main():
         export_image_format='JPEG',
         export_jpeg_quality=85,
         use_selection=True,
+        # 默认 MATERIAL: 材质节点树不引用顶点色 → aging 被塞进 COLOR_1,
+        # 另生成全白 forced COLOR_0(three.js 读到白 mask → 做旧全开变土黄)。
+        # ACTIVE: aging 直接作为 COLOR_0 单份导出(见 write_aging_vertex_colors 注释)
+        export_vertex_color='ACTIVE',
     )
     size_mb = os.path.getsize(OUTPUT_PATH) / (1024 * 1024)
     print(f'Exported to: {OUTPUT_PATH}')
