@@ -1,7 +1,7 @@
 {
  "$schema": "./schemas/index.schema.json",
  "version": "1.1.0",
- "updated": "2026-08-27",
+ "updated": "2026-09-01",
  "marketplace": {
   "name": "Polaris Plugin Marketplace",
   "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -46,7 +46,7 @@
   {
    "id": "relay-devkit",
    "name": "RELAY DevKit",
-   "version": "1.1.0",
+   "version": "1.2.0",
    "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手、跨域代理",
    "author": "Polaris",
    "category": "dev",
@@ -63,9 +63,9 @@
    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
    "repository": "https://github.com/misxzaiz/Polaris-plugin",
    "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
-   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.2.0/plugins/relay-devkit/relay-devkit.zip",
    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
-   "sha256": "bde4d450e76cc9fc41de03711f011c6714074444f9a0700ff797c6e6f2879e53",
+   "sha256": "7d3e297113f785cb742bc242d26e0c3b4d5ee24e330d975c6bb001ba0e843730",
    "tier": "production",
    "permissions": {
     "workspaceRead": true,
@@ -75,6 +75,10 @@
    "screenshots": [],
    "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST\n- **AI 助手**：OpenAI 协议，浮窗随时唤出",
    "versions": [
+    {
+     "version": "1.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.2.0/plugins/relay-devkit/relay-devkit.zip"
+    },
     {
      "version": "1.1.0",
      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip"

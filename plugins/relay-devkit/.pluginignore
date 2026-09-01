@@ -20,6 +20,8 @@ docs/
 
 # ---- 构建辅助 ----
 dist/panel.js.map
+make-zip.js
+make-zip.cjs
 
 # ---- 历史遗留：Python 实现 ----
 *.py

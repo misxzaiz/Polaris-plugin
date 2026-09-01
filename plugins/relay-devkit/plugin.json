@@ -1,7 +1,7 @@
 {
   "id": "relay-devkit",
   "name": "RELAY DevKit",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。v1.1.0: cURL 解析增强(等号语法/curl.exe/--json)、tab 右键菜单、布局偏好持久化",
   "enabledByDefault": true,
   "contributes": {
