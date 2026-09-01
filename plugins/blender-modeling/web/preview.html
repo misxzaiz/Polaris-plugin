@@ -94,7 +94,7 @@
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x1a1a2e);
 
-    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.01, 100000);
     camera.position.set(0, 1.5, 4);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
@@ -110,8 +110,8 @@
     controls.target.set(0, 0.5, 0);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.minDistance = 1.5;
-    controls.maxDistance = 10;
+    controls.minDistance = 0.5;
+    controls.maxDistance = 500;
     controls.update();
 
     // 光照
@@ -156,20 +156,49 @@
         model = gltf.scene;
         scene.add(model);
 
-        const box = new THREE.Box3().setFromObject(model);
+        // 用顶点精确算包围盒（setFromObject 对 Curve/bevel 几何不可靠）
+        model.updateMatrixWorld(true);
+        const box = new THREE.Box3();
+        model.traverse((child) => {
+          if (child.geometry && child.geometry.attributes && child.geometry.attributes.position) {
+            child.updateWorldMatrix(true, false);
+            const pos = child.geometry.attributes.position;
+            const v3 = new THREE.Vector3();
+            for (let i = 0; i < pos.count; i++) {
+              v3.fromBufferAttribute(pos, i);
+              v3.applyMatrix4(child.matrixWorld);
+              box.expandByPoint(v3);
+            }
+          }
+        });
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
         const minY = box.min.y;
 
+        // 居中 + 落地
         model.position.x -= center.x;
         model.position.z -= center.z;
         model.position.y -= minY;
 
-        if (maxDim > 3) model.scale.setScalar(3 / maxDim);
+        // 大模型缩放到 30 单位（比 3 大些，便于观察细长形态）
+        const targetSize = 30;
+        const scaleFactor = maxDim > targetSize ? targetSize / maxDim : 1;
+        if (maxDim > targetSize) model.scale.setScalar(scaleFactor);
+        model.updateMatrixWorld(true);
+        const normMax = maxDim * scaleFactor;
+        const normH = size.y * scaleFactor;
 
-        controls.target.set(0, size.y / 2, 0);
-        camera.position.set(0, size.y * 0.7, maxDim * 2.2);
+        // 暴露实例供调试/外部操控
+        window.__viewer = { scene, camera, controls, model, box: {size, center, scaleFactor, normMax, normH} };
+
+        controls.target.set(0, normH / 2, 0);
+        // 相机：斜前方上方，距离 = normMax * 1.2（拉近些，细长模型也能看清）
+        const dist = normMax * 1.2;
+        camera.position.set(dist * 0.5, normH * 0.9 + normMax * 0.3, dist);
+        camera.near = 0.01;
+        camera.far = 100000;
+        camera.updateProjectionMatrix();
         controls.update();
 
         model.traverse((child) => {
@@ -196,8 +225,19 @@
 
     // 按钮
     document.getElementById('btnReset').addEventListener('click', () => {
-      camera.position.set(0, 1.5, 4);
-      controls.target.set(0, 0.5, 0);
+      if (model) {
+        const box = new THREE.Box3().setFromObject(model);
+        const size = box.getSize(new THREE.Vector3());
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const scaleFactor = maxDim > 3 ? 3 / maxDim : 1;
+        const normMax = maxDim * scaleFactor;
+        const normH = size.y * scaleFactor;
+        controls.target.set(0, normH / 2, 0);
+        camera.position.set(0, normH * 0.7, normMax * 2.2);
+      } else {
+        camera.position.set(0, 1.5, 4);
+        controls.target.set(0, 0.5, 0);
+      }
       controls.update();
     });
 

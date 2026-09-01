@@ -239,11 +239,11 @@ def terrain_z(x, y):
 
 
 def rope_z(x):
-    """运载索海拔（抛物线悬垂近似）"""
+    """运载索海拔（抛物线悬垂近似）。SAG 为垂跨比（1/45），垂度=SAG*span"""
     t = min(max(x / L, 0.0), 1.0)
     z_lin = line_profile(t)
     span = L
-    return z_lin + SAG * span * span * t * (1 - t) * 4
+    return z_lin + SAG * span * t * (1 - t) * 4
 
 
 # ============================================================
