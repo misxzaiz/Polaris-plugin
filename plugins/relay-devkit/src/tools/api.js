@@ -14,6 +14,11 @@ let _panelMode=false, _proxyBase='http://127.0.0.1:9860';
 export function setApiPanelMode(on,proxyBase){ _panelMode=!!on; if(proxyBase)_proxyBase=proxyBase; if(on)ui.proxyOn=true; }
 
 const blankRow = ()=>({id:uid(),on:true,k:'',v:''});
+
+/* 浏览器 fetch 禁发头（forbidden header names + Sec- 前缀）。
+ * 直连时这些头会被浏览器静默剥离（UI 无感知丢失）；代理模式下改道 X-Relay-H-<原名>，
+ * 由本地中继还原为真实头转发，实现与 Apifox 等原生客户端等效的发送能力。 */
+const BROWSER_STRIP=/^(cookie|cookie2|user-agent|referer|origin|host|date|dnt|set-cookie|te|trailer|transfer-encoding|upgrade|via|proxy-.*|sec-.*|accept-encoding|content-length)$/i;
 function newTab(seed){
   return Object.assign({
     id:uid(), name:'未命名请求', savedId:null, dirty:false,
@@ -265,6 +270,11 @@ async function send(){
   if(!url){ setStatus('请先输入 URL','warn'); $('#url').focus(); return; }
   if(!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url='https://'+url;
   const headers={}; t.headers.filter(r=>r.on&&r.k).forEach(r=>headers[resolveVars(r.k)]=resolveVars(r.v));
+  // 直连模式下含禁发头（如 Cookie）时提示：浏览器会剥离，开代理可由后端完整注入
+  if(!ui.proxyOn){
+    const stripped=Object.keys(headers).filter(k=>BROWSER_STRIP.test(k));
+    if(stripped.length) setStatus('浏览器将剥离 '+stripped.join('/')+' 头（直连无法发送）· 开「🛡 代理」可经后端注入','warn');
+  }
   let body; const method=t.method;
   if(!['GET','HEAD'].includes(method)){
     if(t.bodyType==='json'){ body=resolveVars(t.body); if(!Object.keys(headers).some(h=>h.toLowerCase()==='content-type')) headers['Content-Type']='application/json'; }
@@ -276,7 +286,17 @@ async function send(){
   $('#resPane').innerHTML='<div class="res-loading"><span class="spin"></span> 请求发送中…</div>';
   setStatus(method+' '+url+(ui.proxyOn?' · 经代理':'')+' …');
   let fetchUrl=url, fetchHeaders=headers;
-  if(ui.proxyOn){ fetchHeaders=Object.assign({},headers,{'X-Relay-Target':url}); fetchUrl=_panelMode?_proxyBase+'/__proxy':'/__proxy'; }
+  if(ui.proxyOn){
+    // 浏览器禁发头（Cookie/UA/Referer 等 forbidden headers）改道 X-Relay-H-<原名>，由本地中继还原注入
+    fetchHeaders={};
+    for(const [k,v] of Object.entries(headers)){
+      if(BROWSER_STRIP.test(k)) fetchHeaders['X-Relay-H-'+k]=v;
+      else fetchHeaders[k]=v;
+    }
+    fetchHeaders['X-Relay-Target']=url;
+    fetchUrl=_panelMode?_proxyBase+'/__proxy':'/__proxy';
+    if(_panelMode) fetchHeaders['Access-Control-Request-Headers']||='X-Relay-Target';
+  }
   const t0=performance.now();
   try{
     const res=await fetch(fetchUrl,{method,headers:fetchHeaders,body,redirect:'follow'});
