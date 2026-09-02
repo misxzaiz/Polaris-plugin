@@ -1,0 +1,12 @@
+{
+  "name": "polaris-workspace-manager-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Polaris workspace manager panel plugin",
+  "scripts": {
+    "build": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.1"
+  }
+}

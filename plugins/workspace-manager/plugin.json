@@ -1,0 +1,36 @@
+{
+  "id": "workspace-manager",
+  "name": "Workspace Manager",
+  "version": "0.1.0",
+  "description": "工作区管理面板:分组/置顶/图标/备注/搜索/排序/批量操作,虚拟滚动支撑 100+ 工作区。所有变更委托主应用 workspaceStore,主应用工作区绑定自动同步。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "workspace-manager.panel",
+        "area": "activityBar",
+        "panelType": "workspaceManager",
+        "icon": "CheckSquare",
+        "labelKey": "labels.panel",
+        "labelDefault": "工作区管理",
+        "order": 15
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    }
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true,
+    "appConfigWrite": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/workspace-manager",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip"
+  }
+}
