@@ -858,7 +858,7 @@
     {
       "id": "image-recognition",
       "name": "图片识别",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "智谱 GLM-4V 视觉模型图片识别 MCP 插件。提供 AI 图片识别工具，支持本地图片（base64）和 URL 输入。含 API Key 配置与测试面板。",
       "author": "Polaris",
       "category": "ai",
@@ -873,9 +873,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/image-recognition",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/image-recognition/image-recognition.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.1/plugins/image-recognition/image-recognition.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
-      "sha256": "1521f682f0aa078a7ac580a18744fc65c31df4cea04c030b03c23d3d521c0fe4",
+      "sha256": "6baabe4b7bfbc7ab0b987d8d154d6878331f606863cedb74acf46c14d16a2e7c",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true,
@@ -886,6 +886,10 @@
       "screenshots": [],
       "readme": "# 图片识别\n\n智谱 GLM-4V 视觉模型图片识别 MCP 插件。\n\n## 功能\n\n- **MCP 工具**：`recognize_image`，AI 可直接调用识别图片\n- **配置面板**：API Key / 模型 / 端点配置 + 测试连接\n- **试识别**：拖拽或选择本地图片，实时查看识别结果\n\n## 使用\n\n1. 安装后 ActivityBar 出现「图片识别」图标\n2. 在「配置」页填入智谱 API Key（https://open.bigmodel.cn 获取）\n3. 点击「测试连接」验证 API 可用\n4. AI 可通过 `recognize_image` 工具识别图片，或在「识别」页手动测试\n\n## 支持的模型\n\n| 模型 | 特点 |\n|------|------|\n| glm-4v-flash | 快速，~5s，直接给结论 |\n| glm-4.1v-thinking-flash | 带推理过程，过滤后取 `<answer>` 结论 |",
       "versions": [
+        {
+          "version": "0.1.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.1/plugins/image-recognition/image-recognition.zip"
+        },
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/image-recognition/image-recognition.zip"

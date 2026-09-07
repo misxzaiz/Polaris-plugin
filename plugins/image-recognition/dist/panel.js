@@ -2,34 +2,23 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 var PLUGIN_ID = "image-recognition";
-var POLARIS_URL = window.__POLARIS_WEB_URL__ || "http://127.0.0.1:3000";
 async function tauriInvoke(cmd, args = {}) {
   const internals = window.__TAURI_INTERNALS__;
   if (internals?.invoke) return internals.invoke(cmd, args);
   throw new Error("\u9700\u5728 Polaris \u684C\u9762\u73AF\u5883\u8FD0\u884C");
 }
-async function ipcCall(command, args = {}) {
-  const path = `/api/${command.replace(/_/g, "-")}`;
-  const res = await fetch(`${POLARIS_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(args)
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || `HTTP ${res.status}`);
-  }
-  return res.json();
+async function hostInvoke(cmd, args = {}) {
+  const invoker = window.__POLARIS_HOST_INVOKE__;
+  if (invoker) return invoker(cmd, args);
+  throw new Error("\u5BBF\u4E3B invoke \u4E0D\u53EF\u7528\uFF08\u9700\u5728 Polaris \u5185\u8FD0\u884C\uFF09");
 }
 async function loadConfigApi() {
-  const tryRead = async () => {
-    try {
-      return await ipcCall("plugin_get_config", { pluginId: PLUGIN_ID });
-    } catch (_) {
-      return tauriInvoke("plugin_get_config", { pluginId: PLUGIN_ID });
-    }
-  };
-  const cfg = await tryRead();
+  let cfg;
+  try {
+    cfg = await hostInvoke("plugin_get_config", { pluginId: PLUGIN_ID });
+  } catch (_) {
+    cfg = await tauriInvoke("plugin_get_config", { pluginId: PLUGIN_ID });
+  }
   return {
     apiKey: cfg.apiKey || "",
     model: cfg.model || "glm-4v-flash",
@@ -38,7 +27,7 @@ async function loadConfigApi() {
 }
 async function saveConfigApi(patch) {
   try {
-    await ipcCall("plugin_set_config", { pluginId: PLUGIN_ID, patch });
+    await hostInvoke("plugin_set_config", { pluginId: PLUGIN_ID, patch });
   } catch (_) {
     await tauriInvoke("plugin_set_config", { pluginId: PLUGIN_ID, patch });
   }

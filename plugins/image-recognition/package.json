@@ -1,6 +1,6 @@
 {
   "name": "image-recognition-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "image-recognition 插件面板（打包用）",
   "scripts": {

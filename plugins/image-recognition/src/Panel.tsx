@@ -34,7 +34,6 @@ interface RecognizeResult {
 // ── 通信层 ────────────────────────────────────────────────────────────────────
 
 const PLUGIN_ID = 'image-recognition'
-const POLARIS_URL: string = (window as any).__POLARIS_WEB_URL__ || 'http://127.0.0.1:3000'
 
 /** Tauri invoke（桌面） */
 async function tauriInvoke<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
@@ -45,28 +44,31 @@ async function tauriInvoke<T>(cmd: string, args: Record<string, unknown> = {}): 
   throw new Error('需在 Polaris 桌面环境运行')
 }
 
-/** IPC 调用（Web 模式 fetch，桌面回退 Tauri） */
-async function ipcCall<T>(command: string, args: Record<string, unknown> = {}): Promise<T> {
-  const path = `/api/${command.replace(/_/g, '-')}`
-  const res = await fetch(`${POLARIS_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(args),
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error(data.error || `HTTP ${res.status}`)
-  }
-  return res.json()
+/**
+ * 宿主 invoke（桌面 Tauri IPC + Web/移动端 HTTP 的统一入口）。
+ *
+ * 由 main.tsx 注入（window.__POLARIS_HOST_INVOKE__ = invoke）。
+ * 关键：走 transport 层，httpTransport 会自动按 getServerUrl() 解析目标
+ * 并注入 Authorization: Bearer ${tokenMd5}。
+ * 用裸 fetch + 硬编码 URL 在 app 模式（手机浏览器远程访问，无 Tauri internals）
+ * 下必然 401 Unauthorized。
+ */
+async function hostInvoke<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
+  const invoker = (window as unknown as {
+    __POLARIS_HOST_INVOKE__?: (c: string, a?: Record<string, unknown>) => Promise<T>
+  }).__POLARIS_HOST_INVOKE__
+  if (invoker) return invoker(cmd, args)
+  throw new Error('宿主 invoke 不可用（需在 Polaris 内运行）')
 }
 
-/** 读取插件配置 */
+/** 读取插件配置（宿主 invoke 优先，回退 Tauri） */
 async function loadConfigApi(): Promise<AiConfig> {
-  const tryRead = async (): Promise<Record<string, unknown>> => {
-    try { return await ipcCall('plugin_get_config', { pluginId: PLUGIN_ID }) }
-    catch (_) { return tauriInvoke('plugin_get_config', { pluginId: PLUGIN_ID }) }
+  let cfg: Record<string, unknown>
+  try {
+    cfg = await hostInvoke('plugin_get_config', { pluginId: PLUGIN_ID })
+  } catch (_) {
+    cfg = await tauriInvoke('plugin_get_config', { pluginId: PLUGIN_ID })
   }
-  const cfg = await tryRead()
   return {
     apiKey: (cfg.apiKey as string) || '',
     model: (cfg.model as string) || 'glm-4v-flash',
@@ -76,8 +78,11 @@ async function loadConfigApi(): Promise<AiConfig> {
 
 /** 写入插件配置（字段级 patch） */
 async function saveConfigApi(patch: Partial<AiConfig>): Promise<void> {
-  try { await ipcCall('plugin_set_config', { pluginId: PLUGIN_ID, patch }) }
-  catch (_) { await tauriInvoke('plugin_set_config', { pluginId: PLUGIN_ID, patch }) }
+  try {
+    await hostInvoke('plugin_set_config', { pluginId: PLUGIN_ID, patch })
+  } catch (_) {
+    await tauriInvoke('plugin_set_config', { pluginId: PLUGIN_ID, patch })
+  }
 }
 
 // ── 智谱 API（面板直连，用于测试连接与试识别） ──────────────────────────────

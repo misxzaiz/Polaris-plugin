@@ -22,7 +22,7 @@ const https = require('https');
 const http = require('http');
 
 const SERVER_NAME = 'image-recognition-mcp';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.1.1';
 const PROTOCOL_VERSION = '2024-11-05';
 
 // ── 配置读取 ──────────────────────────────────────────────────────────────────
