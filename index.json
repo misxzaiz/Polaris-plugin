@@ -873,7 +873,7 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/image-recognition",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.1/plugins/image-recognition/image-recognition.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.1/plugins/image-recognition/image-recognition.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
       "sha256": "6baabe4b7bfbc7ab0b987d8d154d6878331f606863cedb74acf46c14d16a2e7c",
       "tier": "beta",
@@ -888,11 +888,11 @@
       "versions": [
         {
           "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.1/plugins/image-recognition/image-recognition.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.1/plugins/image-recognition/image-recognition.zip"
         },
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/image-recognition/image-recognition.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.0/plugins/image-recognition/image-recognition.zip"
         }
       ]
     }
