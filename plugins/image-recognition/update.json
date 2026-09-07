@@ -1,0 +1,72 @@
+{
+  "id": "image-recognition",
+  "name": "图片识别",
+  "version": "0.1.0",
+  "description": "智谱 GLM-4V 视觉模型图片识别 MCP 插件。提供 AI 图片识别工具，支持本地图片（base64）和 URL 输入。含 API Key 配置与测试面板。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "image-recognition.panel",
+        "area": "activityBar",
+        "panelType": "image-recognition",
+        "icon": "Activity",
+        "labelKey": "labels.imageRecognitionPanel",
+        "labelDefault": "图片识别",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "image-recognition",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ],
+    "configSchema": [
+      {
+        "key": "apiKey",
+        "label": "API Key",
+        "type": "string",
+        "default": "",
+        "placeholder": "智谱开放平台 API Key",
+        "help": "在 https://open.bigmodel.cn 控制台获取",
+        "sensitive": true
+      },
+      {
+        "key": "model",
+        "label": "模型",
+        "type": "select",
+        "default": "glm-4v-flash",
+        "options": [
+          { "label": "GLM-4V-Flash（快速）", "value": "glm-4v-flash" },
+          { "label": "GLM-4.1V-Thinking-Flash（推理）", "value": "glm-4.1v-thinking-flash" }
+        ]
+      },
+      {
+        "key": "baseUrl",
+        "label": "API 端点",
+        "type": "string",
+        "default": "https://open.bigmodel.cn/api/paas/v4",
+        "placeholder": "https://open.bigmodel.cn/api/paas/v4"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/image-recognition",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/image-recognition.zip"
+  }
+}

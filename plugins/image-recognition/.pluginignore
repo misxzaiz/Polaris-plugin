@@ -1,0 +1,9 @@
+node_modules/
+src/
+package.json
+package-lock.json
+*.tsx
+*.ts
+.eslintrc*
+.prettierrc*
+.gitignore
