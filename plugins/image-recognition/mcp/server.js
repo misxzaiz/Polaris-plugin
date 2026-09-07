@@ -9,7 +9,10 @@
  *   node server.js [appConfigDir]
  *
  * 配置来源：读取 Polaris config.json 的 plugins["image-recognition"] 命名空间。
+ * 优先读 {{appConfigDir}}，缺失时兜底探测「数据存储」（DataRoot）目录，解决
+ * 桌面 Tauri 注入目录与 ConfigStore 落盘目录不一致导致的配置写读分离。
  * 字段：apiKey（必填）、model（默认 glm-4v-flash）、baseUrl（默认智谱官方端点）。
+ * 每次调用时读取（非启动缓存），面板保存后无需重启即生效。
  *
  * 图片输入两种方式：
  *   1. 本地文件路径 → 读字节流 → base64 → data:image/...;base64, 前缀
@@ -30,35 +33,78 @@ const PROTOCOL_VERSION = '2024-11-05';
 const PLUGIN_ID = 'image-recognition';
 const APP_CONFIG_DIR = process.argv[2] || '';
 
+// 兜底候选目录：除 {{appConfigDir}} 外，再探测 Polaris「数据存储」根目录，
+// 避免桌面 Tauri 注入目录与 ConfigStore 落盘目录不一致导致的「配置写读分离」。
+// 优先级：MCP 注入目录（APP_CONFIG_DIR） > DataRoot 目录 > 默认值。
+const FALLBACK_CANDIDATES = [
+  // 新版 DataRoot：%APPDATA%/Polaris（Windows）
+  path.join(process.env.APPDATA || '', 'Polaris'),
+  // 小写 polaris 目录（历史迁移残留）
+  path.join(process.env.APPDATA || '', 'polaris'),
+].filter(Boolean);
+
+/** 默认配置 */
+function defaultConfig() {
+  return {
+    apiKey: '',
+    model: 'glm-4v-flash',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+  };
+}
+
 /**
- * 从 Polaris config.json 读取插件配置。
+ * 从单个 config.json 读取 plugins[PLUGIN_ID] 命名空间。
+ * @param {string} dir 配置目录
+ * @returns {object|null} 插件配置；文件不存在或解析失败返回 null
+ */
+function readPluginConfigFrom(dir) {
+  if (!dir) return null;
+  try {
+    const cfgPath = path.join(dir, 'config.json');
+    if (!fs.existsSync(cfgPath)) return null;
+    const raw = fs.readFileSync(cfgPath, 'utf8');
+    const root = JSON.parse(raw);
+    return (root.plugins && root.plugins[PLUGIN_ID]) || null;
+  } catch (e) {
+    console.error(`[image-recognition] 读取配置失败 ${dir}: ${e.message}`);
+    return null;
+  }
+}
+
+/**
+ * 从 Polaris config.json 读取插件配置（多候选目录合并）。
  * config.json 结构：{ ..., "plugins": { "image-recognition": { apiKey, model, baseUrl } } }
+ *
+ * 每次调用时读取（非启动缓存），确保面板保存后无需重启 MCP server 即生效。
  *
  * MCP server spawn 时不注入环境变量（session.rs 用空 env），
  * 故通过 {{appConfigDir}} 占位符拿到配置目录，直接读文件。
  */
 function loadConfig() {
-  const defaults = {
-    apiKey: '',
-    model: 'glm-4v-flash',
-    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
-  };
-  if (!APP_CONFIG_DIR) return defaults;
-  try {
-    const cfgPath = path.join(APP_CONFIG_DIR, 'config.json');
-    if (!fs.existsSync(cfgPath)) return defaults;
-    const raw = fs.readFileSync(cfgPath, 'utf8');
-    const root = JSON.parse(raw);
-    const pluginCfg = (root.plugins && root.plugins[PLUGIN_ID]) || {};
-    return {
-      apiKey: pluginCfg.apiKey || defaults.apiKey,
-      model: pluginCfg.model || defaults.model,
-      baseUrl: pluginCfg.baseUrl || defaults.baseUrl,
-    };
-  } catch (e) {
-    console.error(`[image-recognition] 读取配置失败: ${e.message}`);
-    return defaults;
+  const defaults = defaultConfig();
+
+  // 候选目录：按优先级从低到高排列，后面的覆盖前面的（非空值才覆盖）。
+  // DataRoot/历史目录兜底在前，{{appConfigDir}} 注入目录最后，确保注入目录优先；
+  // 但注入目录中的空字符串不会覆盖低优先级目录里的有效值（如某目录残留空 apiKey）。
+  const candidates = [...FALLBACK_CANDIDATES, APP_CONFIG_DIR]
+    .filter((d, i, arr) => d && arr.indexOf(d) === i);
+
+  const found = {};
+  for (const dir of candidates) {
+    const cfg = readPluginConfigFrom(dir);
+    if (!cfg) continue;
+    for (const key of Object.keys(cfg)) {
+      const val = cfg[key];
+      if (typeof val === 'string' && val.trim() !== '') found[key] = val;
+      else if (typeof val !== 'string') found[key] = val;
+    }
   }
+
+  return {
+    apiKey: found.apiKey || defaults.apiKey,
+    model: found.model || defaults.model,
+    baseUrl: found.baseUrl || defaults.baseUrl,
+  };
 }
 
 // ── 图片处理 ──────────────────────────────────────────────────────────────────
