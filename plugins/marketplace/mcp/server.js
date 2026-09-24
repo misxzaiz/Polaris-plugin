@@ -193,7 +193,7 @@ async function handleCall(name, args) {
         id: p.id, name: p.name, version: target.version, tier: p.tier || 'demo',
         downloadUrl: target.downloadUrl,
         scope: args.scope || 'user',
-        instruction: `调用 Polaris 命令 plugin_install_remote，参数 sourceUrl="${target.downloadUrl}"，scope="${args.scope || 'user'}"`
+        instruction: `调用 Polaris 总线 router_dispatch → cap.pluginDiscovery，payload action="install_remote"，sourceUrl="${target.downloadUrl}"，scope="${args.scope || 'user'}"`
       }
     }
 
@@ -217,21 +217,21 @@ async function handleCall(name, args) {
   if (name === 'uninstall_plugin') {
     return {
       installPath: args.installPath,
-      instruction: `调用 Polaris 命令 plugin_uninstall_local，参数 installPath="${args.installPath}"。面板的「已装」标签提供一键卸载。`
+      instruction: `调用 Polaris 总线 router_dispatch → cap.pluginDiscovery，payload action="uninstall_local"，installPath="${args.installPath}"。面板的「已装」标签提供一键卸载。`
     }
   }
 
   if (name === 'check_plugin_update') {
     return {
       installPath: args.installPath,
-      instruction: `调用 Polaris 命令 plugin_check_update，参数 installPath="${args.installPath}"。返回 updateAvailable/latestVersion/downloadUrl。面板「已装」标签提供一键检查。`
+      instruction: `调用 Polaris 总线 router_dispatch → cap.pluginDiscovery，payload action="check_update"，installPath="${args.installPath}"。返回 updateAvailable/latestVersion/downloadUrl。面板「已装」标签提供一键检查。`
     }
   }
 
   if (name === 'apply_plugin_update') {
     return {
       installPath: args.installPath,
-      instruction: `调用 Polaris 命令 plugin_apply_update，参数 installPath="${args.installPath}"。面板「已装」标签提供一键更新。`
+      instruction: `调用 Polaris 总线 router_dispatch → cap.pluginDiscovery，payload action="apply_update"，installPath="${args.installPath}"。面板「已装」标签提供一键更新。`
     }
   }
 

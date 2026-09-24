@@ -13,26 +13,38 @@ async function tauriInvoke(cmd, args = {}) {
   }
   return internals.invoke(cmd, args);
 }
+async function dispatchPluginDiscovery(action, payload) {
+  const res = await tauriInvoke("router_dispatch", {
+    req: {
+      target: "cap.pluginDiscovery",
+      payload: { action, ...payload }
+    }
+  });
+  if (!res.ok) {
+    throw new Error(res.error || `cap.pluginDiscovery ${action} \u5931\u8D25`);
+  }
+  return res.result || {};
+}
 async function installPlugin(plugin, scope, version) {
   if (version && version !== plugin.version && plugin.versions) {
     const target = plugin.versions.find((v) => v.version === version);
     if (!target?.downloadUrl) return { success: false, error: `\u672A\u627E\u5230\u63D2\u4EF6 ${plugin.id} \u7684\u7248\u672C ${version}` };
     try {
-      return await tauriInvoke("plugin_install_remote", { sourceUrl: target.downloadUrl, scope });
+      return await dispatchPluginDiscovery("install_remote", { sourceUrl: target.downloadUrl, scope });
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : String(e) };
     }
   }
   if (!plugin.downloadUrl) return { success: false, error: "\u8BE5\u63D2\u4EF6\u672A\u63D0\u4F9B downloadUrl" };
   try {
-    return await tauriInvoke("plugin_install_remote", { sourceUrl: plugin.downloadUrl, scope });
+    return await dispatchPluginDiscovery("install_remote", { sourceUrl: plugin.downloadUrl, scope });
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 async function discoverInstalled() {
   try {
-    const res = await tauriInvoke("plugin_discover", {});
+    const res = await dispatchPluginDiscovery("discover", {});
     return Array.isArray(res.plugins) ? res.plugins : [];
   } catch (e) {
     throw new Error(e instanceof Error ? e.message : String(e));
@@ -40,14 +52,14 @@ async function discoverInstalled() {
 }
 async function uninstallPlugin(installPath) {
   try {
-    return await tauriInvoke("plugin_uninstall_local", { installPath });
+    return await dispatchPluginDiscovery("uninstall_local", { installPath });
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
 async function checkUpdate(installPath) {
   try {
-    const r = await tauriInvoke("plugin_check_update", { installPath });
+    const r = await dispatchPluginDiscovery("check_update", { installPath });
     return { ...r, pluginId: r.pluginId };
   } catch (e) {
     return { pluginId: "", currentVersion: "", updateAvailable: false, error: e instanceof Error ? e.message : String(e) };
@@ -55,7 +67,7 @@ async function checkUpdate(installPath) {
 }
 async function applyUpdate(installPath) {
   try {
-    return await tauriInvoke("plugin_apply_update", { installPath });
+    return await dispatchPluginDiscovery("apply_update", { installPath });
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }

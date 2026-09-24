@@ -10,6 +10,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
  *
  * 运行环境：宿主 webview，React 由 pluginModuleLoader shim 注入。
  * Tauri invoke 通过 window.__TAURI_INTERNALS__.invoke 调用（零外部依赖）。
+ * 插件管理面统一经 router_dispatch → cap.pluginDiscovery 总线（旧 plugin_* 命令已删除）。
  */
 
 /* ---------- 类型定义 ---------- */
@@ -86,6 +87,37 @@ async function tauriInvoke<T>(cmd: string, args: Record<string, unknown> = {}): 
   return internals.invoke(cmd, args)
 }
 
+/** router_dispatch 返回形态（与 Polaris 后端 commands/router.rs RouterDispatchResponse 对应） */
+interface DispatchResponse {
+  msgId: string
+  ok: boolean
+  result: Record<string, unknown> | null
+  error: string | null
+  trace: string
+}
+
+/**
+ * 经 Polaris 统一总线（router_dispatch → cap.pluginDiscovery）调用插件管理面。
+ * 旧命令 plugin_install_remote / plugin_discover / plugin_uninstall_local /
+ * plugin_check_update / plugin_apply_update 已删除，统一迁移到该总线协议
+ * （见 Polaris src/services/pluginDiscoveryService.ts 同款调用）。
+ */
+async function dispatchPluginDiscovery(
+  action: string,
+  payload: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const res = await tauriInvoke<DispatchResponse>('router_dispatch', {
+    req: {
+      target: 'cap.pluginDiscovery',
+      payload: { action, ...payload },
+    },
+  })
+  if (!res.ok) {
+    throw new Error(res.error || `cap.pluginDiscovery ${action} 失败`)
+  }
+  return res.result || {}
+}
+
 interface OpResult { success: boolean; message?: string; error?: string }
 
 async function installPlugin(plugin: MarketPlugin, scope: 'user' | 'project', version?: string): Promise<OpResult> {
@@ -94,7 +126,7 @@ async function installPlugin(plugin: MarketPlugin, scope: 'user' | 'project', ve
     const target = plugin.versions.find(v => v.version === version)
     if (!target?.downloadUrl) return { success: false, error: `未找到插件 ${plugin.id} 的版本 ${version}` }
     try {
-      return await tauriInvoke<OpResult>('plugin_install_remote', { sourceUrl: target.downloadUrl, scope })
+      return await dispatchPluginDiscovery('install_remote', { sourceUrl: target.downloadUrl, scope }) as unknown as OpResult
     } catch (e) {
       return { success: false, error: e instanceof Error ? e.message : String(e) }
     }
@@ -102,7 +134,7 @@ async function installPlugin(plugin: MarketPlugin, scope: 'user' | 'project', ve
   // 默认安装最新版
   if (!plugin.downloadUrl) return { success: false, error: '该插件未提供 downloadUrl' }
   try {
-    return await tauriInvoke<OpResult>('plugin_install_remote', { sourceUrl: plugin.downloadUrl, scope })
+    return await dispatchPluginDiscovery('install_remote', { sourceUrl: plugin.downloadUrl, scope }) as unknown as OpResult
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) }
   }
@@ -110,7 +142,7 @@ async function installPlugin(plugin: MarketPlugin, scope: 'user' | 'project', ve
 
 async function discoverInstalled(): Promise<InstalledPlugin[]> {
   try {
-    const res = await tauriInvoke<{ plugins: InstalledPlugin[]; errors: unknown[] }>('plugin_discover', {})
+    const res = await dispatchPluginDiscovery('discover', {}) as unknown as { plugins: InstalledPlugin[]; errors: unknown[] }
     return Array.isArray(res.plugins) ? res.plugins : []
   } catch (e) {
     throw new Error(e instanceof Error ? e.message : String(e))
@@ -119,7 +151,7 @@ async function discoverInstalled(): Promise<InstalledPlugin[]> {
 
 async function uninstallPlugin(installPath: string): Promise<OpResult> {
   try {
-    return await tauriInvoke<OpResult>('plugin_uninstall_local', { installPath })
+    return await dispatchPluginDiscovery('uninstall_local', { installPath }) as unknown as OpResult
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) }
   }
@@ -129,7 +161,7 @@ interface UpdateResult { pluginId: string; currentVersion: string; latestVersion
 
 async function checkUpdate(installPath: string): Promise<UpdateResult> {
   try {
-    const r = await tauriInvoke<UpdateResult>('plugin_check_update', { installPath })
+    const r = await dispatchPluginDiscovery('check_update', { installPath }) as unknown as UpdateResult
     return { ...r, pluginId: r.pluginId }
   } catch (e) {
     return { pluginId: '', currentVersion: '', updateAvailable: false, error: e instanceof Error ? e.message : String(e) }
@@ -138,7 +170,7 @@ async function checkUpdate(installPath: string): Promise<UpdateResult> {
 
 async function applyUpdate(installPath: string): Promise<OpResult> {
   try {
-    return await tauriInvoke<OpResult>('plugin_apply_update', { installPath })
+    return await dispatchPluginDiscovery('apply_update', { installPath }) as unknown as OpResult
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) }
   }

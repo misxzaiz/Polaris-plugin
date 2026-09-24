@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-09-07",
+  "updated": "2026-09-25",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -11,7 +11,7 @@
     {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
       "author": "Polaris",
       "category": "productivity",
@@ -25,9 +25,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "4b07852ad514c060586256f7e48ef0cff49f0db596e6129dbcd6dcaaaf468edd",
+      "sha256": "b760f08d5a463ae45ff92693987e94b47ce44c0c6ef9e18d01b04c45f8eaebe2",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true,
@@ -38,8 +38,8 @@
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
       "versions": [
         {
-          "version": "1.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.0/plugins/marketplace/marketplace.zip"
+          "version": "1.2.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip"
         }
       ]
     },
