@@ -1,8 +1,8 @@
 {
   "id": "relay-devkit",
   "name": "RELAY DevKit",
-  "version": "1.3.1",
-  "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。v1.3.1: 直连模式含浏览器禁发头时强制拦截并引导开代理，修复静默剥离致登录失效；cURL 导入自动识别禁发头。v1.3.0: 代理模式禁发头后端注入（Cookie/UA/Referer 经 X-Relay-H-* 还原，cURL 导入发送完整等效）",
+  "version": "1.3.2",
+  "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换、AI 助手。v1.3.2: 修复代理跨域失败——透传时剥离目标服务器自身 CORS 头，消除双 Access-Control-Allow-Origin 冲突，浏览器可正常读取响应。v1.3.1: 直连模式含浏览器禁发头时强制拦截并引导开代理，修复静默剥离致登录失效；cURL 导入自动识别禁发头。v1.3.0: 代理模式禁发头后端注入（Cookie/UA/Referer 经 X-Relay-H-* 还原，cURL 导入发送完整等效）",
   "enabledByDefault": true,
   "contributes": {
     "views": [

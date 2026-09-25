@@ -107,11 +107,18 @@ export async function proxyHandler(req, res) {
   const headers = {};
   for (const [k, v] of Object.entries(result.headers)) {
     const lk = k.toLowerCase();
-    if (HOP.has(lk) || lk === 'content-length' || lk === 'set-cookie') continue;
+    // 跳过 hop-by-hop / 内容长度 / set-cookie / 以及目标自带的 CORS 头——
+    // 目标返回的 access-control-* 是针对"目标服务器"的策略，与中继无关，透传会造成双 ACAO 冲突
+    // （如目标的 Access-Control-Allow-Origin: http://target 与中继追加的 * 并存，浏览器直接拒绝）。
+    // CORS 由中继统一管理（下方统一写入），保证响应只有一个 Access-Control-Allow-Origin。
+    if (HOP.has(lk) || lk === 'content-length' || lk === 'set-cookie' || lk.startsWith('access-control-')) continue;
     headers[k] = v;
   }
   headers['Content-Length'] = String(result.body.length);
+  // 中继统一写 CORS：允许任意来源（调试代理），并放开自定义请求头（如 scm-token / qs-referer 等）
   headers['Access-Control-Allow-Origin'] = '*';
+  headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Relay-Target, X-Relay-H-Cookie, X-Relay-H-Referer, X-Relay-H-User-Agent, X-Relay-H-Sec-*, X-Relay-H-*, scm-token, scm-cid, scm-uid, scm-pc-version, scm-app-version, scm-client-type, scm-s-token, scm-wax-cid, scm-wax-sid, qs-referer, channelCode, Origin, X-Requested-With, Accept, Key, Authorization';
+  headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, PATCH, DELETE, OPTIONS';
   headers['X-Relay-Proxy'] = '1';
   res.writeHead(result.statusCode, headers);
   if (req.method === 'HEAD') return res.end();
