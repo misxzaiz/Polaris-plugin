@@ -270,10 +270,23 @@ async function send(){
   if(!url){ setStatus('请先输入 URL','warn'); $('#url').focus(); return; }
   if(!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url='https://'+url;
   const headers={}; t.headers.filter(r=>r.on&&r.k).forEach(r=>headers[resolveVars(r.k)]=resolveVars(r.v));
-  // 直连模式下含禁发头（如 Cookie）时提示：浏览器会剥离，开代理可由后端完整注入
+  // 直连模式下含禁发头（如 Cookie）时阻断发送：浏览器会静默剥离这些头，发出必失败（目标常返回登录失效/403）。
+  // 引导用户开启「🛡 代理」，由本地后端改道 X-Relay-H-* 还原真实头转发，才等效原生客户端。
   if(!ui.proxyOn){
     const stripped=Object.keys(headers).filter(k=>BROWSER_STRIP.test(k));
-    if(stripped.length) setStatus('浏览器将剥离 '+stripped.join('/')+' 头（直连无法发送）· 开「🛡 代理」可经后端注入','warn');
+    if(stripped.length){
+      const names=stripped.map(k=>`<code>${esc(k)}</code>`).join('、');
+      $('#resSubtabs').style.display='none'; $('#resStatus').style.display='none'; $('#resTools').style.display='none';
+      $('#resPane').innerHTML=`<div class="res-err"><div class="ti">⚠ 请求被拦截：浏览器禁发头</div>`+
+        `<div>当前为<code>直连</code>模式，以下头会被浏览器静默剥离、无法发送：<b>${names}</b>。`+
+        `目标服务器收到缺少这些头的请求，通常会返回<span style="color:var(--warn)">登录失效 / 403 / 跨域错误</span>。</div>`+
+        `<div class="hintbox">👉 点击顶栏 <b>「🛡 代理」</b> 开启跨域代理后重发。代理会由本地后端把 Cookie/UA/Referer 等头完整还原并转发，与 cURL 发送等效。</div>`+
+        `<div style="margin-top:10px;color:var(--dimmer);font-size:11px">被拦截头：${esc(stripped.join(', '))}</div>`+
+        (_panelMode?`<div style="margin-top:6px;color:var(--warn);font-size:11px">面板模式：请确认已运行 <code>node server.js</code> 且代理指向 ${esc(_proxyBase)}</div>`:'')+
+        `</div>`;
+      const btn=$('#sendBtn'); btn.disabled=false; btn.innerHTML='发送 <span class="k">⌘↵</span>';
+      return;
+    }
   }
   let body; const method=t.method;
   if(!['GET','HEAD'].includes(method)){
@@ -496,6 +509,12 @@ function openCurlImport(){
       const nt=newTab({ name:'cURL: '+shortUrl(p.url), method:p.method, url:p.url, bodyType:p.bodyType, body:p.body,
         headers:(p.headers.length?p.headers.map(h=>({id:uid(),on:true,k:h.k,v:h.v})):[]).concat([blankRow()]) });
       syncUrlToParams(nt); nt.dirty=true; state.tabs.push(nt); state.activeTab=nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：'+p.method+' '+p.url,'ok');
+      // 检测禁发头：直连下会被浏览器剥离，主动提醒开代理
+      const fb=p.headers.filter(h=>BROWSER_STRIP.test(h.k));
+      if(fb.length){
+        setStatus('⚠ 导入含浏览器禁发头（'+fb.map(h=>h.k).join(', ')+'）——发送时需开启「🛡 代理」，否则这些头会被剥离','warn');
+        if(!ui.proxyOn) setTimeout(()=>{ const pb=$('#proxyBtn'); if(pb){ pb.classList.add('pulse-hint'); pb.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>pb.classList.remove('pulse-hint'),2400); } },300);
+      }
     }catch(e){ setStatus('cURL 解析失败：'+e.message,'err'); }
   };
   acts.append(c,sp,ok); m.appendChild(acts);

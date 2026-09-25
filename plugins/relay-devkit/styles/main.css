@@ -148,6 +148,9 @@ input,textarea{caret-color:var(--brand)}
 .icon-btn:hover{color:var(--ink);background:var(--surface-2);border-color:var(--line)}
 .top-act{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:var(--r-sm);color:var(--dim);border:1px solid var(--line);font-size:11.5px;letter-spacing:.02em;transition:.15s;white-space:nowrap}
 .top-act:hover{color:var(--ink);background:var(--surface-2);border-color:var(--line-2)}
+/* 禁发头提示：代理按钮脉动引导开代理 */
+.top-act.pulse-hint{animation:relayPulse 1.2s ease-in-out 2;border-color:var(--warn);color:var(--warn)}
+@keyframes relayPulse{0%,100%{transform:scale(1);box-shadow:none}50%{transform:scale(1.06);box-shadow:0 0 0 4px rgba(245,158,11,.22)}}
 .hint{font-size:10.5px;color:var(--dimmer);letter-spacing:.04em;display:flex;gap:14px}
 .hint kbd{font-family:var(--mono);background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--dim);font-size:10px}
 
