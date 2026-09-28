@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-09-25",
+  "updated": "2026-09-28",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -86,6 +86,42 @@
         {
           "version": "1.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip"
+        }
+      ]
+    },
+    {
+      "id": "relay-devkit-api",
+      "name": "RELAY API Client",
+      "version": "1.0.0",
+      "description": "API 客户端（relay-devkit 精简版，仅保留 API 工具）。请求恒经 Polaris 宿主 cap.http 能力转发（零本地服务，无 CORS / 混合内容 / 禁发头限制），AI 亦可通过 bus 总线调用。多 tab、环境变量、cURL 导入、响应表格 / 对象树 / 路径下钻与筛选。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "api-client",
+        "http",
+        "rest",
+        "dev-tools",
+        "panel",
+        "zero-service"
+      ],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit-api",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.0/plugins/relay-devkit-api/relay-devkit-api.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/update.json",
+      "sha256": "8499ba56aff8fc6914c84c1ac73383fd00167b4f9a897d6e1ec691403886b42a",
+      "tier": "beta",
+      "permissions": {
+        "workspaceRead": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "# RELAY API Client\n\nAPI 客户端（relay-devkit 精简版），仅保留 API 工具。\n\n## 功能\n\n- **多 Tab**：新建/关闭/重命名，脏标记提示\n- **请求编辑**：Method、URL（回车发送）、Params/Headers/Body、常用 Header 建议\n- **智能响应**：对象树/表格/路径下钻/增强过滤、多视图切换\n- **集合管理**：分组保存/搜索/载入\n- **环境变量**：{{baseUrl}}/{{变量}} 解析、环境管理器\n- **cURL 导入**：粘贴 curl 命令一键解析\n- **零本地服务**：请求经 Polaris 宿主 cap.http 能力转发，无 CORS/混合内容/禁发头限制，不启动任何 node 进程\n- **AI 可调用**：cap.http 已加入 bus 总线白名单，AI 亦可通过总线发起请求",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.0/plugins/relay-devkit-api/relay-devkit-api.zip"
         }
       ]
     },

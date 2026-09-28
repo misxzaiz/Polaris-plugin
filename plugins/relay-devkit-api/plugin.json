@@ -1,0 +1,34 @@
+{
+  "id": "relay-devkit-api",
+  "name": "RELAY API Client",
+  "version": "1.0.0",
+  "description": "API 客户端（relay-devkit 精简版，仅保留 API 工具）。请求恒经 Polaris 宿主 cap.http 能力转发（零本地服务，无 CORS / 混合内容 / 禁发头限制），AI 亦可通过 bus 总线调用。多 tab、环境变量、cURL 导入、响应表格 / 对象树 / 路径下钻与筛选。v1.0.0: 首个 API-only 版本，移除 node 后端与 JSON/SQL/时间戳/数据库/AI 工具，请求改道宿主 cap.http。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "relay-devkit.panel",
+        "area": "activityBar",
+        "panelType": "relayDevkit",
+        "icon": "Terminal",
+        "labelKey": "plugins.relayDevkit",
+        "labelDefault": "DevKit",
+        "order": 80
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    }
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "network": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit-api",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/relay-devkit-api.zip"
+  }
+}

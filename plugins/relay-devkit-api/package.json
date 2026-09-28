@@ -1,0 +1,14 @@
+{
+  "name": "relay-devkit-api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "RELAY API Client — 仅 API 客户端的零服务 Polaris 插件面板，请求经宿主 cap.http 能力转发。",
+  "scripts": {
+    "build": "node build.js",
+    "build:prod": "node build.js --minify"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}
