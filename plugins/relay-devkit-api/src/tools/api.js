@@ -372,7 +372,7 @@ function renderResponse(){
   if(r.error){ sub.style.display='none'; sb.style.display='none'; tools.style.display='none';
     const corsHint=/Failed to fetch|NetworkError|load failed/i.test(r.error);
     pane.innerHTML=`<div class="res-err"><div class="ti">⚠ 请求失败</div><div>${esc(r.error)}</div>`+
-      (corsHint?`<div class="hintbox"><b>可能原因：</b>跨域 CORS、目标无响应、混合内容(HTTP/HTTPS)、或网络不可达。`+(_panelMode?`<br>面板模式：请求经宿主 cap.http 转发，仍失败多半是目标地址不可达、被 SSRF 拦截（内网/localhost/元数据地址禁发）、或网络不可达。`:(ui.proxyOn?`<br>代理已开启仍失败：多半是目标地址不可达，或后端未运行最新 server.js。`:`<br>👉 点顶栏「🛡 代理」开启本地后端转发，可绕过 CORS 与混合内容限制。`))+`</div>`:'')+
+      (corsHint?`<div class="hintbox"><b>可能原因：</b>跨域 CORS、目标无响应、混合内容(HTTP/HTTPS)、或网络不可达。`+(_panelMode?`<br>面板模式：请求经宿主 cap.http 转发，仍失败多半是目标地址不可达、被 SSRF 拦截（内网/云元数据/内部域名禁发；localhost/127.0.0.1 已放行）、或网络不可达。`:(ui.proxyOn?`<br>代理已开启仍失败：多半是目标地址不可达，或后端未运行最新 server.js。`:`<br>👉 点顶栏「🛡 代理」开启本地后端转发，可绕过 CORS 与混合内容限制。`))+`</div>`:'')+
       `<div style="margin-top:10px;color:var(--dimmer);font-size:11px">耗时 ${ms(r.timeMs)} · ${esc(r.url)}</div></div>`; return; }
   sb.style.display='flex';
   const cls=r.status>=500?'s5':r.status>=400?'s4':r.status>=300?'s3':'s2'; const color=`var(--${cls})`;
