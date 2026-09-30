@@ -16,22 +16,59 @@
 const http = require('http')
 const https = require('https')
 
-const INDEX_URL = process.env.MARKETPLACE_INDEX
-  || 'https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json'
+// 索引多源：jsdelivr CDN 优先（国内可直连），raw.githubusercontent 兜底。
+// jsdelivr 偶发缓存抖动/连接重置，自动重试并回退下一个源。
+// 可通过环境变量 MARKETPLACE_INDEX 覆盖为单一自定义源。
+const INDEX_URLS = process.env.MARKETPLACE_INDEX
+  ? [process.env.MARKETPLACE_INDEX]
+  : [
+      'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/index.json',
+      'https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json'
+    ]
+const INDEX_TIMEOUT = 15000
+const INDEX_RETRIES = 2
 
 function send(msg) { process.stdout.write(JSON.stringify(msg) + '\n') }
 
-function fetchJson(url) {
+function fetchWithTimeout(url, timeout) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : http
-    lib.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
+    const req = lib.get(url, { headers: { 'Accept': 'application/json' } }, (res) => {
       let data = ''
       res.on('data', c => { data += c })
       res.on('end', () => {
+        if (res.statusCode !== 200) {
+          reject(new Error(`HTTP ${res.statusCode}`))
+          return
+        }
         try { resolve(JSON.parse(data)) } catch (e) { reject(new Error('解析 JSON 失败: ' + e.message)) }
       })
-    }).on('error', reject)
+    })
+    req.on('error', reject)
+    req.setTimeout(timeout, () => { req.destroy(new Error('请求超时')) })
   })
+}
+
+function fetchJson(url) {
+  return fetchWithTimeout(url, INDEX_TIMEOUT)
+}
+
+// 依序尝试每个源，每个源失败后重试 INDEX_RETRIES 次，全部失败才报错
+async function fetchIndexMulti() {
+  let lastErr = null
+  for (const url of INDEX_URLS) {
+    for (let attempt = 0; attempt <= INDEX_RETRIES; attempt++) {
+      try {
+        return await fetchJson(url)
+      } catch (e) {
+        lastErr = e
+        if (attempt < INDEX_RETRIES) {
+          await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+        }
+      }
+    }
+  }
+  throw lastErr || new Error('所有索引源均不可用')
 }
 
 let cache = null
@@ -39,7 +76,7 @@ let cacheAt = 0
 async function getIndex() {
   const now = Date.now()
   if (cache && now - cacheAt < 60000) return cache
-  cache = await fetchJson(INDEX_URL)
+  cache = await fetchIndexMulti()
   cacheAt = now
   return cache
 }

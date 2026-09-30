@@ -179,7 +179,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/omp-engine-adapter.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/omp-engine-adapter/update.json",
-      "sha256": "",
+      "sha256": "0db553ab44a0da6c804b4c41b89ff61c37e22e96692e11630940146be3add3a3",
       "tier": "demo",
       "permissions": {
         "aiToolAccess": true,
@@ -835,7 +835,7 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/focus-flow",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/focus-flow/focus-flow.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/focus-flow.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/update.json",
       "sha256": "5c03da1e6ad7a78f19ce7ce9d6ae89e46ac57efc214a8e98fb52a6bdf8b6e2cd",
       "tier": "beta",
@@ -849,7 +849,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/focus-flow/focus-flow.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/focus-flow/focus-flow.zip"
         }
       ]
     },
