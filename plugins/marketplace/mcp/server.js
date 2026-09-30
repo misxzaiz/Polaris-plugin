@@ -16,14 +16,14 @@
 const http = require('http')
 const https = require('https')
 
-// 索引多源：jsdelivr CDN 优先（国内可直连），raw.githubusercontent 兜底。
-// jsdelivr 偶发缓存抖动/连接重置，自动重试并回退下一个源。
+// 索引多源：raw.githubusercontent 优先（最新无 CDN 缓存），jsdelivr 兜底（国内可直连但缓存延迟）。
+// 任一源失败自动重试并回退下一个源。
 // 可通过环境变量 MARKETPLACE_INDEX 覆盖为单一自定义源。
 const INDEX_URLS = process.env.MARKETPLACE_INDEX
   ? [process.env.MARKETPLACE_INDEX]
   : [
-      'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/index.json',
-      'https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json'
+      'https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json',
+      'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/index.json'
     ]
 const INDEX_TIMEOUT = 15000
 const INDEX_RETRIES = 2
