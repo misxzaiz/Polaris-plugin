@@ -1,7 +1,10 @@
 // tools/api.js — API 请求客户端：多 tab、集合/分组、环境变量、cURL 导入导出、跨域代理、响应渲染编排。
 // import 时即绑定 #viewApi 内的事件；initApi() 负责载入状态并首渲染（由 main.js 调用）。
+// 面板模式（宿主 cap.http 可用）：发送走 capHttpRequest 直发目标 URL——禁发头（Cookie/UA/Referer）
+// 直接携带、无 CORS/混合内容限制、二进制 base64 返回；非宿主环境回退原 fetch + /__proxy 代理。
 import { $, $$, uid, esc, el, METHODS, bytes, ms, methodColor, setStatus, copy } from '../core/dom.js';
 import { BINARY, tryJSON } from '../core/http.js';
+import { capHttpRequest, hostCapHttpAvailable } from '../core/cap-http.js';
 import { getByPath, collectPaths, viewRaw, viewObject, viewTable, toggleRawWrap, filterBar } from '../core/json-view.js';
 import { currentView } from '../core/router.js';
 
@@ -11,7 +14,24 @@ let state={ tabs:[], activeTab:null, collections:[], envs:[], activeEnv:null };
 let ui={ sideCollapsed:false, layout:'v', reqH:240, reqW:520, proxyOn:false };
 // 面板模式：代理 URL 改为绝对地址（插件面板无同源后端）
 let _panelMode=false, _proxyBase='http://127.0.0.1:9860';
-export function setApiPanelMode(on,proxyBase){ _panelMode=!!on; if(proxyBase)_proxyBase=proxyBase; if(on)ui.proxyOn=true; }
+export function setApiPanelMode(on,proxyBase){ _panelMode=!!on; if(proxyBase)_proxyBase=proxyBase; if(on&&!canUseCap())ui.proxyOn=true; }
+// 面板模式 + 宿主 cap.http 可用：直发目标，无需本地 /__proxy 中继
+function canUseCap(){ return _panelMode && hostCapHttpAvailable(); }
+
+/* cap.http 返回 base64 二进制 → Blob（供 blobUrl 预览/下载） */
+function b64ToBlob(b64, ct){
+  try{
+    const bin=atob(b64); const u8=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) u8[i]=bin.charCodeAt(i);
+    return new Blob([u8],{type:ct||'application/octet-stream'});
+  }catch(e){ return null; }
+}
+/* 响应字节数估算：base64 解码长度 / 文本 UTF-8 长度 */
+function respSize(ct, body, isBase64){
+  if(!body) return 0;
+  if(isBase64){ const pad=(body.match(/=+$/)||[''])[0].length; return Math.floor(body.length*3/4)-pad; }
+  return new TextEncoder().encode(body).length;
+}
 
 const blankRow = ()=>({id:uid(),on:true,k:'',v:''});
 
@@ -270,9 +290,11 @@ async function send(){
   if(!url){ setStatus('请先输入 URL','warn'); $('#url').focus(); return; }
   if(!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url='https://'+url;
   const headers={}; t.headers.filter(r=>r.on&&r.k).forEach(r=>headers[resolveVars(r.k)]=resolveVars(r.v));
+  const viaCap=canUseCap();
   // 直连模式下含禁发头（如 Cookie）时阻断发送：浏览器会静默剥离这些头，发出必失败（目标常返回登录失效/403）。
   // 引导用户开启「🛡 代理」，由本地后端改道 X-Relay-H-* 还原真实头转发，才等效原生客户端。
-  if(!ui.proxyOn){
+  // cap.http 面板直发无需此限制（宿主 reqwest 直接携带禁发头）。
+  if(!viaCap && !ui.proxyOn){
     const stripped=Object.keys(headers).filter(k=>BROWSER_STRIP.test(k));
     if(stripped.length){
       const names=stripped.map(k=>`<code>${esc(k)}</code>`).join('、');
@@ -297,32 +319,48 @@ async function send(){
   const btn=$('#sendBtn'); btn.disabled=true; btn.innerHTML='发送中…';
   $('#resSubtabs').style.display='none'; $('#resStatus').style.display='none'; $('#resTools').style.display='none';
   $('#resPane').innerHTML='<div class="res-loading"><span class="spin"></span> 请求发送中…</div>';
-  setStatus(method+' '+url+(ui.proxyOn?' · 经代理':'')+' …');
-  let fetchUrl=url, fetchHeaders=headers;
-  if(ui.proxyOn){
-    // 浏览器禁发头（Cookie/UA/Referer 等 forbidden headers）改道 X-Relay-H-<原名>，由本地中继还原注入
-    fetchHeaders={};
-    for(const [k,v] of Object.entries(headers)){
-      if(BROWSER_STRIP.test(k)) fetchHeaders['X-Relay-H-'+k]=v;
-      else fetchHeaders[k]=v;
-    }
-    fetchHeaders['X-Relay-Target']=url;
-    fetchUrl=_panelMode?_proxyBase+'/__proxy':'/__proxy';
-    if(_panelMode) fetchHeaders['Access-Control-Request-Headers']||='X-Relay-Target';
-  }
+  setStatus(method+' '+url+(viaCap?' · 宿主直发':(ui.proxyOn?' · 经代理':''))+' …');
   const t0=performance.now();
   try{
-    const res=await fetch(fetchUrl,{method,headers:fetchHeaders,body,redirect:'follow'});
-    const blob=await res.blob(); const t1=performance.now();
-    const ct=res.headers.get('content-type')||''; const isBin=BINARY.test(ct);
-    let text=''; if(!isBin) text=await blob.text();
-    const resHeaders={}; res.headers.forEach((v,k)=>resHeaders[k]=v);
-    const parsed=tryJSON(text);
-    t.response={ status:res.status,statusText:res.statusText,ok:res.ok,timeMs:t1-t0,size:blob.size,contentType:ct,headers:resHeaders,text,isBinary:isBin,blobUrl:isBin?URL.createObjectURL(blob):null,url, parsed:parsed.ok?parsed.value:undefined };
+    let resp;
+    if(viaCap){
+      // 面板 cap.http 直发：宿主 reqwest 转发目标，携带全部头（含禁发头），无 CORS/混合内容限制。
+      // 响应：文本直传 / 二进制 base64（isBase64:true）→ 转 Blob 供 blobUrl 预览与下载。
+      const r=await capHttpRequest({ method, url, headers, body: body||'', bodyType:t.bodyType||'text', timeoutMs:30000 });
+      const ct=r.contentType||'';
+      const isBin=BINARY.test(ct)||!!r.isBase64;
+      const text=r.body||'';
+      let blobUrl=null;
+      if(isBin&&r.isBase64&&text){ const blob=b64ToBlob(text,ct); if(blob) blobUrl=URL.createObjectURL(blob); }
+      const parsed=isBin?{ok:false}:tryJSON(text);
+      const t1=performance.now();
+      resp={ status:r.status,statusText:r.statusText||'',ok:!!r.ok,timeMs:r.timeMs||(t1-t0),size:respSize(ct,text,r.isBase64)||0,contentType:ct,headers:r.headers||{},text,isBinary:isBin,blobUrl,url, parsed:parsed.ok?parsed.value:undefined };
+    } else {
+      let fetchUrl=url, fetchHeaders=headers;
+      if(ui.proxyOn){
+        // 浏览器禁发头（Cookie/UA/Referer 等 forbidden headers）改道 X-Relay-H-<原名>，由本地中继还原注入
+        fetchHeaders={};
+        for(const [k,v] of Object.entries(headers)){
+          if(BROWSER_STRIP.test(k)) fetchHeaders['X-Relay-H-'+k]=v;
+          else fetchHeaders[k]=v;
+        }
+        fetchHeaders['X-Relay-Target']=url;
+        fetchUrl=_panelMode?_proxyBase+'/__proxy':'/__proxy';
+        if(_panelMode) fetchHeaders['Access-Control-Request-Headers']||='X-Relay-Target';
+      }
+      const res=await fetch(fetchUrl,{method,headers:fetchHeaders,body,redirect:'follow'});
+      const blob=await res.blob(); const t1=performance.now();
+      const ct=res.headers.get('content-type')||''; const isBin=BINARY.test(ct);
+      let text=''; if(!isBin) text=await blob.text();
+      const resHeaders={}; res.headers.forEach((v,k)=>resHeaders[k]=v);
+      const parsed=tryJSON(text);
+      resp={ status:res.status,statusText:res.statusText,ok:res.ok,timeMs:t1-t0,size:blob.size,contentType:ct,headers:resHeaders,text,isBinary:isBin,blobUrl:isBin?URL.createObjectURL(blob):null,url, parsed:parsed.ok?parsed.value:undefined };
+    }
+    t.response=resp;
     t.respPath=''; t.respFilter=''; t.tableSel=null; t.colW={}; t.treeOpen='auto'; t.hiddenCols={}; t.sort={};
-    t.respView = parsed.ok ? (Array.isArray(parsed.value)?'table':'object') : /text\/html/i.test(ct)?'preview' : (isBin&&/^image\//i.test(ct))?'preview':'raw';
+    t.respView = resp.parsed!==undefined ? (Array.isArray(resp.parsed)?'table':'object') : /text\/html/i.test(resp.contentType)?'preview' : (resp.isBinary&&/^image\//i.test(resp.contentType))?'preview':'raw';
     renderResponse();
-    setStatus(method+' '+res.status+' '+res.statusText+' · '+ms(t1-t0)+' · '+bytes(blob.size), res.ok?'ok':'warn');
+    setStatus(method+' '+resp.status+' '+resp.statusText+' · '+ms(resp.timeMs)+' · '+bytes(resp.size), resp.ok?'ok':'warn');
   }catch(err){
     const t1=performance.now(); t.response={error:err.message||String(err),timeMs:t1-t0,url}; renderResponse();
     setStatus('请求失败：'+(err.message||err),'err');
@@ -356,7 +394,7 @@ function renderResponse(){
   if(r.error){ sub.style.display='none'; sb.style.display='none'; tools.style.display='none';
     const corsHint=/Failed to fetch|NetworkError|load failed/i.test(r.error);
     pane.innerHTML=`<div class="res-err"><div class="ti">⚠ 请求失败</div><div>${esc(r.error)}</div>`+
-      (corsHint?`<div class="hintbox"><b>可能原因：</b>跨域 CORS、目标无响应、混合内容(HTTP/HTTPS)、或网络不可达。`+(ui.proxyOn?(_panelMode?`<br>代理已开启（指向 ${esc(_proxyBase)}），请确保已运行 <code>node server.js</code> 启动中继后端。`:`<br>代理已开启仍失败：多半是目标地址不可达，或后端未运行最新 server.js。`):(_panelMode?`<br>👉 点顶栏「🛡 代理」开启中继代理（需先运行 <code>node server.js</code>），可绕过 CORS 限制。`:`<br>👉 点顶栏「🛡 代理」开启本地后端转发，可绕过 CORS 与混合内容限制。`))+`</div>`:'')+
+      (corsHint?`<div class="hintbox"><b>可能原因：</b>${canUseCap()?'目标无响应、DNS 解析失败、连接被拒、TLS 握手失败或超时（cap.http 直发已绕过浏览器 CORS/混合内容限制）。':'跨域 CORS、目标无响应、混合内容(HTTP/HTTPS)、或网络不可达。'}`+(canUseCap()?'':(ui.proxyOn?(_panelMode?`<br>代理已开启（指向 ${esc(_proxyBase)}），请确保已运行 <code>node server.js</code> 启动中继后端。`:`<br>代理已开启仍失败：多半是目标地址不可达，或后端未运行最新 server.js。`):(_panelMode?`<br>👉 点顶栏「🛡 代理」开启中继代理（需先运行 <code>node server.js</code>），可绕过 CORS 限制。`:`<br>👉 点顶栏「🛡 代理」开启本地后端转发，可绕过 CORS 与混合内容限制。`)))+`</div>`:'')+
       `<div style="margin-top:10px;color:var(--dimmer);font-size:11px">耗时 ${ms(r.timeMs)} · ${esc(r.url)}</div></div>`; return; }
   sb.style.display='flex';
   const cls=r.status>=500?'s5':r.status>=400?'s4':r.status>=300?'s3':'s2'; const color=`var(--${cls})`;
@@ -509,8 +547,8 @@ function openCurlImport(){
       const nt=newTab({ name:'cURL: '+shortUrl(p.url), method:p.method, url:p.url, bodyType:p.bodyType, body:p.body,
         headers:(p.headers.length?p.headers.map(h=>({id:uid(),on:true,k:h.k,v:h.v})):[]).concat([blankRow()]) });
       syncUrlToParams(nt); nt.dirty=true; state.tabs.push(nt); state.activeTab=nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：'+p.method+' '+p.url,'ok');
-      // 检测禁发头：直连下会被浏览器剥离，主动提醒开代理
-      const fb=p.headers.filter(h=>BROWSER_STRIP.test(h.k));
+      // 检测禁发头：直连下会被浏览器剥离，主动提醒开代理；cap.http 面板直发天然携带禁发头，无需提醒
+      const fb=canUseCap()?[]:p.headers.filter(h=>BROWSER_STRIP.test(h.k));
       if(fb.length){
         setStatus('⚠ 导入含浏览器禁发头（'+fb.map(h=>h.k).join(', ')+'）——发送时需开启「🛡 代理」，否则这些头会被剥离','warn');
         if(!ui.proxyOn) setTimeout(()=>{ const pb=$('#proxyBtn'); if(pb){ pb.classList.add('pulse-hint'); pb.scrollIntoView({behavior:'smooth',block:'center'}); setTimeout(()=>pb.classList.remove('pulse-hint'),2400); } },300);
@@ -677,10 +715,10 @@ function bindEvents(){
   const ng=$('#newGroup'); if(ng) ng.onclick=()=>{ const n=prompt('新分组名称：','新分组'); if(!n)return; state.collections.push({id:uid(),name:n.trim(),collapsed:false,requests:[]}); persist(); renderSidebar(); };
   const ts=$('#toggleSide'); if(ts) ts.onclick=()=>{ ui.sideCollapsed=!ui.sideCollapsed; $('#main').classList.toggle('collapsed',ui.sideCollapsed); persist(); };
   const lb=$('#layoutBtn'); if(lb) lb.onclick=()=>{ ui.layout = ui.layout==='h'?'v':'h'; applyLayout(); persist(); };
-  const pb=$('#proxyBtn'); if(pb) pb.onclick=()=>{ ui.proxyOn=!ui.proxyOn; applyProxyBtn(); persist(); setStatus(ui.proxyOn?'已开启跨域代理 · 请求经本地后端 /__proxy 转发':'已关闭代理 · 浏览器直连','ok'); };
+  const pb=$('#proxyBtn'); if(pb) pb.onclick=()=>{ if(canUseCap()){ setStatus('面板模式为宿主 cap.http 直发，无需本地代理','ok'); return; } ui.proxyOn=!ui.proxyOn; applyProxyBtn(); persist(); setStatus(ui.proxyOn?'已开启跨域代理 · 请求经本地后端 /__proxy 转发':'已关闭代理 · 浏览器直连','ok'); };
   document.addEventListener('keydown',e=>{ if(currentView()!=='api')return; if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); send(); } if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S')){ e.preventDefault(); saveCurrent(); } });
 }
-function applyProxyBtn(){ const b=$('#proxyBtn'); if(!b)return; b.innerHTML=ui.proxyOn?(_panelMode?'🛡 代理: 开(中继)':'🛡 代理: 开'):'🛡 代理: 关'; b.style.color=ui.proxyOn?'var(--brand)':''; b.style.borderColor=ui.proxyOn?'var(--brand)':''; }
+function applyProxyBtn(){ const b=$('#proxyBtn'); if(!b)return; if(canUseCap()){ b.innerHTML='🛡 宿主直发'; b.style.color='var(--dim)'; b.style.borderColor=''; b.title='面板模式经宿主 cap.http 直发目标，无 CORS/混合内容/禁发头限制'; return; } b.innerHTML=ui.proxyOn?(_panelMode?'🛡 代理: 开(中继)':'🛡 代理: 开'):'🛡 代理: 关'; b.style.color=ui.proxyOn?'var(--brand)':''; b.style.borderColor=ui.proxyOn?'var(--brand)':''; }
 
 /* 分隔条拖拽（适配上下/左右，窄面板友好） */
 function bindDividerDrag(){
@@ -723,6 +761,6 @@ export function initApi(){
   renderAll();
 }
 
-/* ===================== AI 助手导出 ===================== */
+/* ===================== 内部状态导出 ===================== */
 export function getApiState() { return state; }
 export { activeTab as getActiveTab };

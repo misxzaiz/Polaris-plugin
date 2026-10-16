@@ -11,7 +11,6 @@ import { initJsonTool } from './tools/json.js'
 import { initSqlTool } from './tools/sql.js'
 import { initTimeTool } from './tools/time.js'
 import { initDbTool, setDbPanelMode } from './tools/db.js'
-import { initAiTool } from './tools/ai.js'
 
 // SPA HTML 骨架（来自 index.html <body> 内容）
 const SPA_HTML = `
@@ -122,13 +121,11 @@ const SPA_HTML = `
   <div class="view" id="viewSql"></div>
   <div class="view" id="viewTime"></div>
   <div class="view" id="viewDb"></div>
-  <div class="view" id="viewAi"></div>
 </div>
 <input type="file" id="fileInput" accept="application/json,.json" style="display:none" />
 <div class="modal-bg" id="modalBg"></div>
 <div class="toast" id="toast"></div>
 <div class="cell-tip" id="cellTip"></div>
-<div id="aiFloatHost"></div>
 `
 
 export default function RelayDevkitPanel({ pluginId, onSendToChat }) {
@@ -186,10 +183,6 @@ export default function RelayDevkitPanel({ pluginId, onSendToChat }) {
     registerView({
       id: 'db', label: '数据库', icon: '⛁', init: initDbTool,
       card: { name: '数据库', icon: '⛁', accent: '#2dd4bf', desc: 'MySQL（经后端桥接）与 Supabase（浏览器原生 REST）统一一处；表浏览、SQL/过滤查询、全 CRUD 走预览-确认-执行。' }
-    })
-    registerView({
-      id: 'ai', label: 'AI', icon: '✦', init: initAiTool,
-      card: { name: 'AI 助手', icon: '✦', accent: 'var(--m-patch)', desc: '接入 OpenAI 协议 AI，分析 API 错误、优化 SQL、生成查询，浮窗随时唤出。' }
     })
 
     // 7. 设置面板模式（代理自动开启，指向本地中继后端）

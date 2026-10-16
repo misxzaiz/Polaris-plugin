@@ -6,8 +6,6 @@ import { initJsonTool } from './tools/json.js';
 import { initSqlTool } from './tools/sql.js';
 import { initTimeTool } from './tools/time.js';
 import { initDbTool } from './tools/db.js';
-import { initAiTool } from './tools/ai.js';
-import { initAiFloat } from './components/ai-float.js';
 
 // core 的表格渲染（列宽拖拽/多表格切换）回调到 API 的持久化与当前响应重渲染
 configureViewHost({ persist, rerender: renderRespBody });
@@ -24,9 +22,6 @@ registerView({ id:'time', label:'时间戳', icon:'◷', init:initTimeTool,
   card:{ name:'时间戳转换', icon:'◷', accent:'var(--m-patch)', desc:'秒 / 毫秒 / 微秒自动识别，epoch ↔ 本地 / UTC / ISO / 相对时间，双向互转，一键复制。' } });
 registerView({ id:'db', label:'数据库', icon:'⛁', init:initDbTool,
   card:{ name:'数据库', icon:'⛁', accent:'#2dd4bf', desc:'MySQL（经后端桥接）与 Supabase（浏览器原生 REST）统一一处；表浏览、SQL/过滤查询、全 CRUD 走预览-确认-执行。' } });
-registerView({ id:'ai', label:'AI', icon:'✦', init:initAiTool,
-  card:{ name:'AI 助手', icon:'✦', accent:'var(--m-patch)', desc:'接入 OpenAI 协议 AI，分析 API 错误、优化 SQL、生成查询，浮窗随时唤出。' } });
 
 initApi();
 startRouter();
-initAiFloat();
