@@ -33,30 +33,55 @@ function runCapture(cmd, cwd) {
   return execSync(cmd, { cwd, encoding: 'utf-8' }).trim()
 }
 
-/** 简单 glob 匹配：*.map → 任意 .map 后缀；精确名匹配 */
-function matchesIgnore(name, pattern) {
-  if (pattern.startsWith('*.')) {
-    return name.endsWith(pattern.slice(1))
+/**
+ * gitignore 式路径匹配（与 make-zip.cjs 保持一致）：
+ * - 规则含中间路径（如 relay_server/vendor/node_modules/）→ 锚定完整前缀匹配整棵子树；
+ * - 纯段名（如 node_modules/、src/）→ 任一目录段名匹配即排除；
+ * - *.ext / 通配 → glob 匹配（相对路径或段名）。
+ */
+function matchRule(rel, core) {
+  const parts = rel.split('/')
+  const base = parts[parts.length - 1]
+  // 前导 / 表示锚定插件根（如 /package.json 只匹配根，不匹配 vendor 内同名）
+  if (core.startsWith('/')) {
+    return rel === core.slice(1)
   }
-  // 目录排除（src/ 或 src）
-  const dir = pattern.endsWith('/') ? pattern.slice(0, -1) : pattern
-  return name === dir
+  if (core.includes('/')) {
+    return rel === core || rel.startsWith(core + '/')
+  }
+  if (core === rel || core === base) return true
+  if (core.includes('*') || core.includes('?')) {
+    const re = new RegExp('^' + core
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*\*/g, '(.*/)?')
+      .replace(/\*/g, '[^/]*')
+      .replace(/\?/g, '[^/]') + '$')
+    return re.test(rel) || re.test(base)
+  }
+  return parts.some(p => p === core)
 }
 
-/** 收集符合排除规则的文件列表（相对路径） */
+/** 收集符合排除规则的文件列表（相对路径）。gitignore 式顺序判定：最后匹配的规则生效（支持 ! 否定）。 */
 function collectFiles(pluginDir, ignorePatterns) {
   const files = []
+  function excluded(rel) {
+    let decision = false
+    for (const pat of ignorePatterns) {
+      const neg = pat.startsWith('!')
+      const core = (neg ? pat.slice(1) : pat).replace(/\/+$/, '')
+      if (!core) continue
+      if (matchRule(rel, core)) decision = !neg
+    }
+    return decision
+  }
 
   function walk(dir, relativeDir) {
     const names = readdirSync(dir)
     for (const name of names) {
       const full = join(dir, name)
-      const rel = relativeDir ? join(relativeDir, name) : name
+      const rel = (relativeDir ? join(relativeDir, name) : name).replace(/\\/g, '/') // 统一正斜杠
       const stat = statSync(full)
-
-      // 检查是否匹配排除模式
-      if (ignorePatterns.some(p => matchesIgnore(name, p) || matchesIgnore(rel, p))) continue
-
+      if (excluded(rel)) continue
       if (stat.isDirectory()) {
         walk(full, rel)
       } else {
@@ -89,7 +114,11 @@ function sha256sum(filePath) {
   return execSync(`sha256sum "${filePath}"`, { encoding: 'utf-8' }).split(/\s+/)[0]
 }
 
-/** 更新 index.json 中指定插件的 sha256 */
+/**
+ * 更新 index.json 中指定插件的 sha256 + version + downloadUrl + versions。
+ * downloadUrl 形如 https://cdn.jsdelivr.net/gh/<repo>@<tag>/plugins/<id>/<id>.zip
+ * 由 manifest 的 version 生成 tag：<pluginId>-v<version>（与 --push 的 tag 命名保持一致）。
+ */
 function updateIndexJson(pluginId, sha256) {
   const index = JSON.parse(readFileSync(INDEX_JSON, 'utf-8'))
   const plugin = index.plugins.find(p => p.id === pluginId)
@@ -97,9 +126,26 @@ function updateIndexJson(pluginId, sha256) {
     console.error(`   ⚠  index.json 中未找到插件 "${pluginId}"，跳过 sha256 更新`)
     return false
   }
+  const manifestPath = join(PLUGINS_DIR, pluginId, 'plugin.json')
+  let version = plugin.version || '1.0.0'
+  if (existsSync(manifestPath)) {
+    try {
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+      version = manifest.version || version
+    } catch {}
+  }
+  const tagName = `${pluginId}-v${version}`
+  const base = `https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@${tagName}/plugins/${pluginId}/${pluginId}.zip`
+  plugin.version = version
   plugin.sha256 = sha256
+  plugin.downloadUrl = base
+  // versions 数组去重后插到头部（避免重复发布同版本时堆积重复项）
+  plugin.versions = plugin.versions || []
+  plugin.versions = plugin.versions.filter(v => v.version !== version)
+  plugin.versions.unshift({ version, downloadUrl: base })
   writeFileSync(INDEX_JSON, JSON.stringify(index, null, 2) + '\n', 'utf-8')
-  console.log(`   ✓ index.json sha256 已更新为 ${sha256}`)
+  console.log(`   ✓ index.json 已同步: version=${version}, sha256=${sha256}`)
+  console.log(`   ✓ downloadUrl=${base}`)
   return true
 }
 
