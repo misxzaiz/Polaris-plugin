@@ -104,13 +104,13 @@
         "panel",
         "zero-service"
       ],
-      "icon": "Terminal",
+      "icon": "Beaker",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit-api",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.0/plugins/relay-devkit-api/relay-devkit-api.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/update.json",
-      "sha256": "8499ba56aff8fc6914c84c1ac73383fd00167b4f9a897d6e1ec691403886b42a",
+      "sha256": "aabee6b39f92dbf07a27ceb2c7b2ab0ac7f440608865c8582db96a09a39b9d13",
       "tier": "beta",
       "permissions": {
         "workspaceRead": true,

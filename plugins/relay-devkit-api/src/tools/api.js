@@ -1,6 +1,6 @@
 // tools/api.js — API 请求客户端：多 tab、集合/分组、环境变量、cURL 导入导出、跨域代理、响应渲染编排。
 // import 时即绑定 #viewApi 内的事件；initApi() 负责载入状态并首渲染（由 main.js 调用）。
-import { $, $$, uid, esc, el, METHODS, bytes, ms, methodColor, setStatus, copy } from '../core/dom.js';
+import { $, $$, uid, esc, el, METHODS, bytes, ms, methodColor, setStatus, copy, getRoot } from '../core/dom.js';
 import { BINARY, tryJSON } from '../core/http.js';
 import { getByPath, collectPaths, viewRaw, viewObject, viewTable, toggleRawWrap, filterBar } from '../core/json-view.js';
 import { currentView } from '../core/router.js';
@@ -605,7 +605,7 @@ function showTabCtxMenu(e,t){
   menu.style.cssText='position:fixed;z-index:10001;background:var(--bg-2, #1e1f26);border:1px solid var(--line, #2a2b32);border-radius:8px;padding:4px 0;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.4)';
   menu.style.left=Math.min(e.clientX,innerWidth-180)+'px';
   menu.style.top=Math.min(e.clientY,innerHeight-8)+'px';
-  document.body.appendChild(menu);
+  getRoot().appendChild(menu);
   // 先挂载再读高度，确保 offsetHeight 正确
   menu.style.top=Math.min(e.clientY,innerHeight-menu.offsetHeight-8)+'px';
   const items=[

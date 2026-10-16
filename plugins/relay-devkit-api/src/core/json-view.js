@@ -1,6 +1,6 @@
 // core/json-view.js — 共享 JSON 渲染核心：路径下钻、原始高亮、对象树、数据表格（多表格/列宽拖拽/智能单元格）。
 // 被 API 工具与 JSON 工具共用。core 不依赖任何应用代码：表格的「持久化」与「重渲染」通过 configureViewHost 反转注入。
-import { $, el, esc, copy, bytes, fmtDate } from './dom.js';
+import { $, el, esc, copy, bytes, fmtDate, getRoot } from './dom.js';
 
 /* ===== view-host 钩子（控制反转，避免 core→app 反向依赖） ===== */
 let _persist=()=>{}, _rerender=()=>{};
@@ -613,7 +613,7 @@ export function viewTable(data,t){
     item('复制值',()=>copy(val,'已复制'));
     const ci=td.cellIndex,hr=thead.rows[0],thCell=hr&&hr.cells[ci];
     if(thCell&&thCell.dataset.col){ sep(); item('复制列名',()=>copy(thCell.dataset.col,'已复制列名')); }
-    document.body.appendChild(menu);
+    getRoot().appendChild(menu);
     requestAnimationFrame(()=>{document.addEventListener('click',closeCellCtx);document.addEventListener('keydown',cellCtxEsc);});
     const mw=menu.offsetWidth,mh=menu.offsetHeight,vw=innerWidth,vh=innerHeight,pad=6;
     menu.style.left=(e.clientX+mw+pad>vw?Math.max(pad,e.clientX-mw-pad):e.clientX+pad)+'px';

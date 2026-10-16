@@ -10,14 +10,7 @@ import { initApi, persist, renderRespBody, setApiPanelMode } from './tools/api.j
 
 // SPA HTML 骨架（来自 index.html <body> 内容）
 const SPA_HTML = `
-<nav class="navbar" id="navbar">
-  <button class="nav-brand" id="navBrand"><span class="dot"></span>RELAY<small>DEVKIT</small></button>
-  <div class="nav-tabs" id="navTabs"></div>
-  <div class="nav-sp"></div>
-  <span class="nav-hint">零依赖 · 本地开发者工具箱</span>
-</nav>
 <div id="view">
-  <div class="view" id="viewHome"></div>
   <div class="view app" id="viewApi">
   <header class="topbar">
     <button class="icon-btn" id="toggleSide" title="折叠/展开侧栏">☰</button>
@@ -155,11 +148,7 @@ export default function RelayDevkitPanel({ pluginId, onSendToChat }) {
     configureViewHost({ persist, rerender: renderRespBody })
 
     // 6. 注册视图（与 main.js 相同的注册表；relay-devkit-api 仅保留 API 客户端）
-    registerView({ id: 'home', label: '首页', icon: '⌂' })
-    registerView({
-      id: 'api', label: 'API 请求', icon: '⇅',
-      card: { name: 'API 请求', icon: '⇅', accent: 'var(--brand)', desc: '多 tab、环境变量、cURL 导入、宿主 cap.http 跨域转发；响应支持表格 / 对象树 / 路径下钻与筛选。' }
-    })
+    registerView({ id: 'api', label: 'API 请求', icon: '⇅' })
 
     // 7. 设置面板模式：请求恒经宿主 cap.http 转发（零本地服务）
     setApiPanelMode(true)
