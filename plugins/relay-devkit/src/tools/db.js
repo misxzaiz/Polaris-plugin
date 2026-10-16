@@ -1,8 +1,11 @@
 // tools/db.js — 统一数据库工具：MySQL（经 /__db 后端桥接）+ Supabase（浏览器原生 PostgREST）。
 // 读直接执行；写（增/改/删）走「预览 → 确认 → 执行」，UPDATE/DELETE 强制主键条件。
 // 密码可由用户选择「记住」（Base64 编码存 localStorage），否则仅内存。
+// 面板模式：MySQL 桥接与 Supabase 请求均经宿主 cap.http 转发（见 core/cap-http.js），
+// 规避 iframe 混合内容 / CORS / 禁发头限制；非宿主环境回退原 fetch 直连。
 import { $, $$, el, esc, copy, setStatus, store } from '../core/dom.js';
 import { viewTable } from '../core/json-view.js';
+import { capHttpRequest, hostCapHttpAvailable } from '../core/cap-http.js';
 
 const dbstore = store('db');
 const connStore = store('db.conns');
@@ -71,18 +74,42 @@ function relTime(ts){
 }
 
 /* ===================== 后端 / REST 请求 ===================== */
+// 面板模式（宿主 cap.http 可用）：经宿主 cap.http 转发，规避 iframe 混合内容/CORS/禁发头限制。
+// 独立窗口 / 非宿主：回退原 fetch 直连（_dbBase 为空串时同源）。
+function canUseCap() { return _panelMode && hostCapHttpAvailable(); }
 async function dbReq(route, payload){
   let res; const headers={'Content-Type':'application/json'};
   if(dbstate.my.dbToken) headers['X-Relay-DB-Token']=dbstate.my.dbToken;
   const base=_panelMode?_dbBase:'';
-  try{ res=await fetch(base+'/__db/'+route,{method:'POST',headers,body:JSON.stringify(payload)}); }
-  catch(e){ return {ok:false,error:'无法连接本地后端：'+e.message,hint:'确认本地后端正在运行：npm start（node server.js），或 bash serve.sh'}; }
+  const url=base+'/__db/'+route;
+  const body=JSON.stringify(payload);
+  try{
+    if(canUseCap()){
+      const r=await capHttpRequest({method:'POST',url,headers,body,bodyType:'text',timeoutMs:25000});
+      // cap.http 返回 body 为文本，解析为 JSON（与 fetch .json() 对齐）
+      const text=r.body||'';
+      try{ return JSON.parse(text); }catch{ return {ok:false,error:'后端返回非 JSON（HTTP '+r.status+'）'}; }
+    }
+    res=await fetch(url,{method:'POST',headers,body});
+  }catch(e){ return {ok:false,error:'无法连接本地后端：'+e.message,hint:'确认本地后端正在运行：npm start（node server.js），或 bash serve.sh'}; }
   try{ return await res.json(); }
   catch(e){ return {ok:false,error:'后端返回非 JSON（HTTP '+res.status+'）'}; }
 }
 async function sbFetch(pathQuery, opts={}){
   const b=dbstate.sb; const full=b.url.replace(/\/+$/,'')+pathQuery;
   const headers=Object.assign({apikey:b.key,Authorization:'Bearer '+b.key}, opts.headers||{});
+  // 面板模式 + 宿主可用：经 cap.http 直连 PostgREST 绝对 URL（无 CORS 限制，无需本地代理）。
+  // 独立窗口：b.proxy 勾选时走本地 /__proxy 中继（带 X-Relay-Target）。
+  if(canUseCap()){
+    const r=await capHttpRequest({
+      method:opts.method||'GET', url:full,
+      headers, body:opts.body||'',
+    });
+    const txt=r.body||'';
+    const parse=()=>{ try{ return txt?JSON.parse(txt):{}; }catch{ return txt; } };
+    // 构造与 fetch Response 兼容的最小对象
+    return { ok:!!r.ok, status:r.status, json:async()=>parse(), text:async()=>txt };
+  }
   let url=full;
   if(b.proxy){ headers['X-Relay-Target']=full; url=(_panelMode?_dbBase:'')+'/__proxy'; }
   return fetch(url,{method:opts.method||'GET',headers,body:opts.body});
@@ -157,15 +184,16 @@ function renderConn(){
     };
   } else {
     const b=dbstate.sb;
+    const viaCap=canUseCap();
     body.innerHTML=`<div class="db-conn"><div class="db-card">
       <h3>连接 Supabase</h3>
-      <div class="sub">Supabase 提供浏览器原生的 <b>PostgREST</b> 接口，前端直接以 <b>apikey</b> 调用。CORS 受限时可勾选「经本地代理」走 /__proxy 转发。Key 只在内存、不保存。</div>
+      <div class="sub">Supabase 提供浏览器原生的 <b>PostgREST</b> 接口，前端直接以 <b>apikey</b> 调用。${viaCap?'当前为宿主 cap.http 直连模式，无 CORS / 混合内容限制。':'CORS 受限时可勾选「经本地代理」走 /__proxy 转发。'}Key 只在内存、不保存。</div>
       <div class="db-row"><label>Project URL</label><input class="t-in" id="sbUrl" spellcheck="false" value="${esc(b.url)}" placeholder="https://xxxx.supabase.co"></div>
       <div class="db-row"><label>API Key</label><input class="t-in" id="sbKey" type="password" spellcheck="false" value="" placeholder="anon 或 service_role key"></div>
-      <div class="db-row inline"><label></label><label class="ckbox"><input type="checkbox" id="sbProxy" ${b.proxy?'checked':''}> 经本地代理 /__proxy（绕过 CORS）</label></div>
+      ${viaCap?'':'<div class="db-row inline"><label></label><label class="ckbox"><input type="checkbox" id="sbProxy" '+(b.proxy?'checked':'')+'> 经本地代理 /__proxy（绕过 CORS）</label></div>'}
       <div class="db-acts"><button class="t-btn primary" id="sbConn">连接</button></div>
     </div></div>`;
-    $('#sbConn').onclick=async()=>{ const b2=dbstate.sb; b2.url=$('#sbUrl').value.trim(); b2.key=$('#sbKey').value.trim(); b2.proxy=$('#sbProxy').checked; save();
+    $('#sbConn').onclick=async()=>{ const b2=dbstate.sb; b2.url=$('#sbUrl').value.trim(); b2.key=$('#sbKey').value.trim(); b2.proxy=$('#sbProxy')?$('#sbProxy').checked:b2.proxy; save();
       if(!b2.url||!b2.key){ dbMsg('请填写 URL 与 API Key','err'); return; }
       dbMsg('连接中…'); const r=await loadTablesSupabase();
       if(!r.ok){ dbMsg('✗ '+r.error,'err'); setStatus('Supabase 连接失败：'+r.error,'err'); return; }
@@ -273,7 +301,7 @@ async function useDatabase(name){
 async function loadTablesSupabase(){
   let res;
   try{ res=await sbFetch('/rest/v1/'); }
-  catch(e){ return {ok:false,error:'请求失败：'+e.message+'（CORS？可勾选经本地代理）'}; }
+  catch(e){ return {ok:false,error:'请求失败：'+e.message+(canUseCap()?'':'（CORS？可勾选经本地代理）')}; }
   let spec; try{ spec=await res.json(); }catch(e){ return {ok:false,error:'返回非 JSON（HTTP '+res.status+'）'}; }
   if(!res.ok) return {ok:false,error:(spec&&(spec.message||spec.error))||('HTTP '+res.status)};
   const defs=spec.definitions||(spec.components&&spec.components.schemas)||{};
@@ -997,7 +1025,7 @@ async function runRead(){
       if(!res.ok){ renderResult({error:(rows&&(rows.message||rows.hint))||('HTTP '+res.status)}); setStatus('查询失败','err'); return; }
       renderResult({rows:Array.isArray(rows)?rows:[rows],note:'共 '+(Array.isArray(rows)?rows.length:1)+' 行'});
       setStatus('查询成功 · '+(Array.isArray(rows)?rows.length:1)+' 行','ok');
-    }catch(e){ renderResult({error:e.message,hint:'CORS？可在连接时勾选「经本地代理」'}); setStatus('查询失败：'+e.message,'err'); }
+    }catch(e){ renderResult({error:e.message,hint:canUseCap()?null:'CORS？可在连接时勾选「经本地代理」'}); setStatus('查询失败：'+e.message,'err'); }
   }
 }
 function renderLoading(){ const h=$('#dbResult'); if(h)h.innerHTML='<div class="res-loading"><span class="spin"></span> 执行中…</div>'; }

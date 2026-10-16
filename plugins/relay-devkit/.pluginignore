@@ -7,9 +7,20 @@
 _write_ai_context.mjs
 
 # ---- 开发依赖 ----
+# 顶层 node_modules/ 排除；relay_server/vendor/ 内联的运行时依赖（mysql2 离线包）必须保留。
+# /package.json 仅排除插件根清单；vendor 内各依赖包的 package.json（依赖解析必需）保留。
 node_modules/
-package.json
-package-lock.json
+!relay_server/vendor/node_modules/
+/package.json
+/package-lock.json
+
+# ---- vendor 内非运行时文件（类型声明/文档，运行时不需要，压缩体积）----
+*.d.ts
+typings/
+README*
+LICENSE*
+License
+*.md
 
 # ---- 面板源码（构建产物已包含，源码不进包）----
 src/

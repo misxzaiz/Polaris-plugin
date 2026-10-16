@@ -10,6 +10,8 @@ const sessions = new Map();            // token -> {conn, config, database, last
 const utf8strict = new TextDecoder('utf-8', { fatal: true });
 
 // ---- 惰性加载 mysql2/promise（未装则优雅降级，不影响静态/代理） ----
+// 加载顺序：① 插件自带 vendor（relay_server/vendor/mysql2，纯 JS 离线包）→ ② 全局 node_modules。
+// vendor 由打包流程随 zip 分发，装完即用，无需用户 npm i mysql2。
 let _mysql, _tried = false, _provider = null;
 // 驱动注入点：传入返回 mysql2-兼容模块的函数（测试用假驱动 / 将来替代驱动）；传 null 复位为真实惰性加载。
 export function setMysqlProvider(fn) { _provider = fn; _tried = false; _mysql = undefined; }
@@ -17,12 +19,18 @@ async function getMysql() {
   if (_provider) return _provider();
   if (_tried) return _mysql;
   _tried = true;
+  // ① 优先插件自带 vendor（离线）：relay_server/vendor/mysql2 → 直接 import promise 入口
+  const vendorEntry = new URL('./vendor/mysql2/promise.js', import.meta.url).href;
+  try { _mysql = await import(vendorEntry); }
+  catch { _mysql = null; }
+  if (_mysql) return _mysql;
+  // ② 回退全局 node_modules
   try { _mysql = await import('mysql2/promise'); } catch { _mysql = null; }
   return _mysql;
 }
 async function needMysql() {
   const m = await getMysql();
-  if (!m) return { ok: false, error: 'mysql2 未安装', hint: '在服务器执行  npm i mysql2  后重启 server.js（纯 JS，无需编译）' };
+  if (!m) return { ok: false, error: 'mysql2 未安装（vendor 与全局均不可用）', hint: '检查插件包是否完整（relay_server/vendor/mysql2）' };
   return null;
 }
 

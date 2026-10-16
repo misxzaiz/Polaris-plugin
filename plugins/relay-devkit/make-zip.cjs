@@ -12,6 +12,9 @@ const IGNORE = fs.existsSync('.pluginignore')
   ? fs.readFileSync('.pluginignore', 'utf8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'))
   : [];
 
+// gitignore 式规则：按顺序逐条判定，最后匹配的规则生效（支持 ! 否定）。
+// 例：node_modules/ 排除全部，!relay_server/vendor/node_modules/ 豁免 vendor 内依赖树；
+// 之后 *.d.ts 又排除 vendor 内依赖的类型声明（顺序覆盖白名单）。
 function matchGlob(str, pat) {
   const re = new RegExp('^' + pat
     .replace(/[.+^${}()|[\]\\]/g, '\\$&')
@@ -21,23 +24,40 @@ function matchGlob(str, pat) {
   return re.test(str);
 }
 
-function ignored(rel) {
+/**
+ * gitignore 式单条判定：rel 是否命中 pat（pat 已去尾斜杠）。
+ * - 含中间路径（如 relay_server/vendor/node_modules）→ 锚定完整前缀匹配整棵子树；
+ * - 纯段名（如 node_modules、src）→ 任一目录段名匹配即命中（子树排除）；
+ * - 含通配（*.d.ts 等）→ glob 匹配相对路径或段名。
+ */
+function ruleMatch(rel, core) {
   const parts = rel.split('/');
   const base = parts[parts.length - 1];
-  for (const pat of IGNORE) {
-    if (pat.endsWith('/')) {
-      const d = pat.slice(0, -1);
-      for (const p of parts) if (matchGlob(p, d)) return true;
-      continue;
-    }
-    if (pat === base || pat === rel) return true;
-    if (pat.includes('*') || pat.includes('?')) {
-      if (matchGlob(rel, pat) || matchGlob(base, pat)) return true;
-      continue;
-    }
-    for (const p of parts) if (p === pat) return true;
+  // 前导 / 表示锚定插件根（如 /package.json 只匹配根，不匹配 vendor 内同名）
+  if (core.startsWith('/')) {
+    const anchored = core.slice(1);
+    return rel === anchored;
   }
-  return false;
+  if (core.includes('/')) {
+    return rel === core || rel.startsWith(core + '/');
+  }
+  if (rel === core || base === core) return true;
+  if (core.includes('*') || core.includes('?')) {
+    if (matchGlob(rel, core) || matchGlob(base, core)) return true;
+    return false;
+  }
+  return parts.some(p => p === core);
+}
+
+function ignored(rel) {
+  let decision = false;
+  for (const pat of IGNORE) {
+    const neg = pat.startsWith('!');
+    const core = (neg ? pat.slice(1) : pat).replace(/\/+$/, '');
+    if (!core) continue;
+    if (ruleMatch(rel, core)) decision = !neg;   // 最后匹配者生效
+  }
+  return decision;
 }
 
 function crc32(data) {
