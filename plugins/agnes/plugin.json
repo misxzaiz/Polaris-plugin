@@ -1,0 +1,92 @@
+{
+  "id": "agnes",
+  "name": "Agnes 多模态",
+  "version": "0.1.0",
+  "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "agnes.panel",
+        "area": "activityBar",
+        "panelType": "agnes",
+        "icon": "Film",
+        "labelKey": "labels.agnesPanel",
+        "labelDefault": "Agnes",
+        "order": 50
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "agnes-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ],
+    "chatCards": [
+      {
+        "id": "media-card",
+        "mcpServerId": "agnes-mcp",
+        "tools": ["generate_image", "generate_video", "query_video"],
+        "mode": "result",
+        "entry": "./dist/panel.js"
+      }
+    ],
+    "configSchema": [
+      {
+        "key": "apiKey",
+        "label": "API Key",
+        "type": "string",
+        "default": "",
+        "placeholder": "Agnes API Key",
+        "help": "在 Agnes 开放平台获取",
+        "sensitive": true
+      },
+      {
+        "key": "apiBase",
+        "label": "API 端点",
+        "type": "string",
+        "default": "https://apihub.agnes-ai.com",
+        "placeholder": "https://apihub.agnes-ai.com"
+      },
+      {
+        "key": "imageModel",
+        "label": "图片模型",
+        "type": "string",
+        "default": "agnes-image-2.1-flash"
+      },
+      {
+        "key": "videoModel",
+        "label": "视频模型",
+        "type": "string",
+        "default": "agnes-video-v2.0"
+      },
+      {
+        "key": "defaultSize",
+        "label": "默认图片尺寸",
+        "type": "string",
+        "default": "1024x1024"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip"
+  }
+}

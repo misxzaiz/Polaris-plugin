@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-17T15:59:47.506Z",
+  "updated": "2026-10-17T16:36:26.861Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -274,6 +274,35 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.0/plugins/mimo-tts/mimo-tts.zip"
         }
       ]
+    },
+    {
+      "id": "agnes",
+      "name": "Agnes 多模态",
+      "version": "0.1.0",
+      "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片，配置与 MCP server 共用。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "image",
+        "video",
+        "generation",
+        "mcp",
+        "panel"
+      ],
+      "icon": "Film",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
+      "sha256": "c6270f9ef39f258c7a035b9cffcf1f82a25d4188e79c758ab0be1ac5c6f739bb",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "appConfigRead": true,
+        "appConfigWrite": true
+      }
     }
   ]
 }
