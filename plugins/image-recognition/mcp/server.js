@@ -25,7 +25,7 @@ const https = require('https');
 const http = require('http');
 
 const SERVER_NAME = 'image-recognition-mcp';
-const SERVER_VERSION = '0.1.3';
+const SERVER_VERSION = '0.1.4';
 const PROTOCOL_VERSION = '2024-11-05';
 
 // ── 配置读取 ──────────────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ function isUrl(input) {
  * @param {number} maxTokens 最大输出 token
  * @returns {Promise<string>} 识别结果文本
  */
-function callVisionApi(cfg, imageUrl, prompt, maxTokens = 3000) {
+function callVisionApi(cfg, imageUrl, prompt, maxTokens = 4000) {
   return new Promise((resolve, reject) => {
     if (!cfg.apiKey) {
       reject(new Error('未配置 API Key，请在插件面板填入智谱 API Key'));
@@ -337,7 +337,7 @@ async function recognizeBatch(cfg, inputs, prompt, maxTokens) {
 
 /** 钳制输出预算：默认 3000，下限 500，上限 8000。 */
 function clampMaxTokens(value) {
-  return Math.min(Math.max(value || 3000, 500), 8000);
+  return Math.min(Math.max(value || 4000, 1000), 8000);
 }
 
 async function handleRecognizeImage(args) {
@@ -473,7 +473,7 @@ const TOOLS = [
         },
         maxTokens: {
           type: 'number',
-          description: '每张的最大输出 token 数（500-8000，默认 3000）。长文分析建议 3000+，过低会被模型输出预算腰斩',
+          description: '每张的最大输出 token 数（1000-8000，默认 4000）。长文分析建议 4000+，过低会被模型输出预算腰斩，实测 1200 会截断多图汇总',
         },
       },
       additionalProperties: false,
@@ -497,7 +497,7 @@ const TOOLS = [
         },
         maxTokens: {
           type: 'number',
-          description: '每张的最大输出 token 数（500-8000，默认 3000）',
+          description: '每张的最大输出 token 数（1000-8000，默认 4000）。长文分析建议 4000+，过低会被模型输出预算腰斩，实测 1200 会截断多图汇总',
         },
         extensions: {
           type: 'string',
