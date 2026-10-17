@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-16",
+  "updated": "2026-10-17",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -46,8 +46,8 @@
     {
       "id": "relay-devkit",
       "name": "RELAY DevKit",
-      "version": "1.4.0",
-      "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。面板模式宿主 cap.http 直发（禁发头完整携带），移除内置 AI 助手（已独立成插件）",
+      "version": "1.4.1",
+      "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。v1.4.1: CSS 作用域化修复主应用样式污染；pinned tag 支持远程更新",
       "author": "Polaris",
       "category": "dev",
       "tags": [
@@ -63,9 +63,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.0/plugins/relay-devkit/relay-devkit.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.1/plugins/relay-devkit/relay-devkit.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
-      "sha256": "f4e7a21f645e2c015a128a1c3e59f8efb323ceae5c99f1e597a0ffd025b067fd",
+      "sha256": "45eed2094b61cde471ac7dbb69af4b7c09ba2519d529cf05ff7a2455417d5b63",
       "tier": "production",
       "permissions": {
         "workspaceRead": true,
@@ -74,6 +74,10 @@
       "screenshots": [],
       "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理；面板模式宿主 cap.http 直发，携带 Cookie/UA/Referer 等禁发头，免 CORS 限制\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST",
       "versions": [
+        {
+          "version": "1.4.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.1/plugins/relay-devkit/relay-devkit.zip"
+        },
         {
           "version": "1.4.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.0/plugins/relay-devkit/relay-devkit.zip"
