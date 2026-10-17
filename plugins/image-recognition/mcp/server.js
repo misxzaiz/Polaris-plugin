@@ -25,7 +25,7 @@ const https = require('https');
 const http = require('http');
 
 const SERVER_NAME = 'image-recognition-mcp';
-const SERVER_VERSION = '0.1.1';
+const SERVER_VERSION = '0.1.2';
 const PROTOCOL_VERSION = '2024-11-05';
 
 // ── 配置读取 ──────────────────────────────────────────────────────────────────
@@ -152,7 +152,7 @@ function isUrl(input) {
  * @param {number} maxTokens 最大输出 token
  * @returns {Promise<string>} 识别结果文本
  */
-function callVisionApi(cfg, imageUrl, prompt, maxTokens = 1000) {
+function callVisionApi(cfg, imageUrl, prompt, maxTokens = 3000) {
   return new Promise((resolve, reject) => {
     if (!cfg.apiKey) {
       reject(new Error('未配置 API Key，请在插件面板填入智谱 API Key'));
@@ -237,6 +237,25 @@ function extractAnswer(content) {
   return filtered || content;
 }
 
+/**
+ * 保头保尾截断：超长文本保留头部与尾部，中段以省略标记代替。
+ *
+ * 纯头部截断（slice 前 N 字符）会让长文分析的结尾总结/结论全丢；
+ * 保头+保尾保证关键结论即使超长也留在返回文本中，供 AI 完整理解。
+ *
+ * @param {string} text 原始文本
+ * @param {number} headCap 保留的头部字符数
+ * @param {number} tailCap 保留的尾部字符数
+ * @returns {string} 截断后的文本（未超长时原样返回）
+ */
+function truncateHeadTail(text, headCap, tailCap) {
+  if (typeof text !== 'string') return text;
+  if (text.length <= headCap + tailCap) return text;
+  const head = text.slice(0, headCap);
+  const tail = text.slice(text.length - tailCap);
+  return `${head}\n…[truncated, total ${text.length} chars]\n${tail}`;
+}
+
 // ── MCP 工具处理 ──────────────────────────────────────────────────────────────
 
 async function handleRecognizeImage(args) {
@@ -264,10 +283,14 @@ async function handleRecognizeImage(args) {
   }
 
   const prompt = args.prompt || '请识别这张图片，简要描述主要内容。';
-  const maxTokens = Math.min(Math.max(args.maxTokens || 1000, 100), 4000);
+  // 输出预算：默认 3000（长文分析如「逐条指出问题」实测 4000 才完整，3000 为安全下限），
+  // 钳制 500~8000。max_tokens 是模型输出硬预算，传太小会直接腰斩输出。
+  const maxTokens = Math.min(Math.max(args.maxTokens || 3000, 500), 8000);
 
   try {
     const result = await callVisionApi(cfg, imageUrl, prompt, maxTokens);
+    // 保头保尾截断：result 超长时保留开头 + 结尾结论，避免断头截断丢关键总结。
+    const safeResult = truncateHeadTail(result, 6000, 2000);
     return {
       content: [{
         type: 'text',
@@ -275,7 +298,7 @@ async function handleRecognizeImage(args) {
           success: true,
           model: cfg.model,
           prompt,
-          result,
+          result: safeResult,
         }, null, 2),
       }],
     };
@@ -308,7 +331,7 @@ const TOOLS = [
         },
         maxTokens: {
           type: 'number',
-          description: '最大输出 token 数（100-4000，默认 1000）',
+          description: '最大输出 token 数（500-8000，默认 3000）。长文分析建议 3000+，过低会被模型输出预算腰斩',
         },
       },
       additionalProperties: false,
