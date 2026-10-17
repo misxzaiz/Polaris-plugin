@@ -25,7 +25,7 @@ const https = require('https');
 const http = require('http');
 
 const SERVER_NAME = 'image-recognition-mcp';
-const SERVER_VERSION = '0.1.2';
+const SERVER_VERSION = '0.1.3';
 const PROTOCOL_VERSION = '2024-11-05';
 
 // ── 配置读取 ──────────────────────────────────────────────────────────────────
@@ -258,6 +258,88 @@ function truncateHeadTail(text, headCap, tailCap) {
 
 // ── MCP 工具处理 ──────────────────────────────────────────────────────────────
 
+/**
+ * 单张图片转 data URL / URL。
+ * @param {string} input 图片路径或 URL
+ * @returns {string} 可直接传给智谱的 image_url
+ */
+function toImageUrl(input) {
+  if (isUrl(input)) return input;
+  return fileToDataUrl(input);
+}
+
+/**
+ * 识别单张图片，返回结构化结果（保头保尾截断）。
+ * @param {object} cfg 插件配置 { apiKey, model, baseUrl }
+ * @param {string} input 图片路径或 URL
+ * @param {string} prompt 识别指令
+ * @param {number} maxTokens 每张输出预算
+ * @returns {Promise<{ok: boolean, file?: string, result?: string, error?: string}>}
+ */
+async function recognizeOne(cfg, input, prompt, maxTokens) {
+  try {
+    const imageUrl = toImageUrl(input);
+    const result = await callVisionApi(cfg, imageUrl, prompt, maxTokens);
+    const safeResult = truncateHeadTail(result, 6000, 2000);
+    return { ok: true, file: input, result: safeResult };
+  } catch (e) {
+    return { ok: false, file: input, error: e.message };
+  }
+}
+
+/** 目录中可识别的图片扩展名（小写，去点）。 */
+const IMAGE_EXTS = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'];
+
+/**
+ * 扫描目录下图片文件（按文件名排序，稳定输出）。
+ * @param {string} dir 目录绝对路径
+ * @param {string[]} exts 允许的扩展名（小写无点）
+ * @param {boolean} recursive 是否递归子目录
+ * @param {number} limit 最多返回的图片数
+ * @returns {{files: string[], skipped: number}} 图片绝对路径列表 + 因 limit 跳过的数量
+ */
+function scanImageFiles(dir, exts, recursive, limit) {
+  const out = [];
+  let skipped = 0;
+  const walk = (current) => {
+    if (!fs.existsSync(current)) return;
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch (e) {
+      return; // 无权限等跳过
+    }
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+    for (const entry of entries) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        if (recursive) walk(full);
+      } else if (entry.isFile()) {
+        const ext = path.extname(entry.name).slice(1).toLowerCase();
+        if (!exts.includes(ext)) continue;
+        if (out.length >= limit) { skipped++; continue; }
+        out.push(full);
+      }
+    }
+  };
+  walk(dir);
+  return { files: out, skipped };
+}
+
+/** 批量识别（串行，单张失败不中断整批）。 */
+async function recognizeBatch(cfg, inputs, prompt, maxTokens) {
+  const results = [];
+  for (const input of inputs) {
+    results.push(await recognizeOne(cfg, input, prompt, maxTokens));
+  }
+  return results;
+}
+
+/** 钳制输出预算：默认 3000，下限 500，上限 8000。 */
+function clampMaxTokens(value) {
+  return Math.min(Math.max(value || 3000, 500), 8000);
+}
+
 async function handleRecognizeImage(args) {
   const cfg = loadConfig();
   if (!cfg.apiKey) {
@@ -267,47 +349,103 @@ async function handleRecognizeImage(args) {
     };
   }
 
-  const input = args.image;
-  let imageUrl;
-  try {
-    if (isUrl(input)) {
-      imageUrl = input;
-    } else {
-      imageUrl = fileToDataUrl(input);
-    }
-  } catch (e) {
+  // 支持单张 image 字段与多图 images 数组（多图批量逐张识别）。
+  const inputs = args.images && Array.isArray(args.images) && args.images.length > 0
+    ? args.images
+    : (args.image ? [args.image] : []);
+  if (inputs.length === 0) {
     return {
-      content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }],
+      content: [{ type: 'text', text: JSON.stringify({ error: '缺少 image（或 images 数组）参数' }) }],
       isError: true,
     };
   }
 
   const prompt = args.prompt || '请识别这张图片，简要描述主要内容。';
-  // 输出预算：默认 3000（长文分析如「逐条指出问题」实测 4000 才完整，3000 为安全下限），
-  // 钳制 500~8000。max_tokens 是模型输出硬预算，传太小会直接腰斩输出。
-  const maxTokens = Math.min(Math.max(args.maxTokens || 3000, 500), 8000);
+  const maxTokens = clampMaxTokens(args.maxTokens);
 
-  try {
-    const result = await callVisionApi(cfg, imageUrl, prompt, maxTokens);
-    // 保头保尾截断：result 超长时保留开头 + 结尾结论，避免断头截断丢关键总结。
-    const safeResult = truncateHeadTail(result, 6000, 2000);
+  const batch = await recognizeBatch(cfg, inputs, prompt, maxTokens);
+  const okList = batch.filter(r => r.ok);
+  if (batch.length === 1) {
+    const r = batch[0];
     return {
       content: [{
         type: 'text',
-        text: JSON.stringify({
-          success: true,
-          model: cfg.model,
-          prompt,
-          result: safeResult,
-        }, null, 2),
+        text: JSON.stringify(r.ok
+          ? { success: true, model: cfg.model, prompt, result: r.result }
+          : { error: r.error }, null, 2),
       }],
     };
-  } catch (e) {
+  }
+  // 多图：返回逐张结构化结果，单张失败标记 error 不中断。
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        success: okList.length > 0,
+        model: cfg.model,
+        prompt,
+        count: batch.length,
+        okCount: okList.length,
+        results: batch.map(r => ({ file: r.file, status: r.ok ? 'ok' : 'error', ...(r.ok ? { result: r.result } : { error: r.error }) })),
+      }, null, 2),
+    }],
+  };
+}
+
+async function handleRecognizeImageDir(args) {
+  const cfg = loadConfig();
+  if (!cfg.apiKey) {
     return {
-      content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }],
+      content: [{ type: 'text', text: JSON.stringify({ error: '未配置 API Key，请在插件面板的「配置」页填入智谱 API Key' }) }],
       isError: true,
     };
   }
+
+  const dir = args.dir;
+  if (!dir || typeof dir !== 'string' || !fs.existsSync(dir) || !fs.statSync(dir).isDirectory()) {
+    return {
+      content: [{ type: 'text', text: JSON.stringify({ error: `目录不存在或不是文件夹: ${dir || '(空)'}` }) }],
+      isError: true,
+    };
+  }
+
+  const exts = (args.extensions || '.png,.jpg,.jpeg,.webp')
+    .split(',').map(s => s.trim().replace(/^\./, '').toLowerCase()).filter(Boolean);
+  const limit = Math.min(Math.max(args.limit || 8, 1), 50);
+  const recursive = !!args.recursive;
+  const prompt = args.prompt || '请识别这张图片，简要描述主要内容。';
+  const maxTokens = clampMaxTokens(args.maxTokens);
+
+  const { files, skipped } = scanImageFiles(dir, exts, recursive, limit);
+  if (files.length === 0) {
+    return {
+      content: [{ type: 'text', text: JSON.stringify({ error: `目录中没有可识别的图片（${dir}）` }) }],
+      isError: true,
+    };
+  }
+
+  const batch = await recognizeBatch(cfg, files, prompt, maxTokens);
+  const okCount = batch.filter(r => r.ok).length;
+
+  let summary = `已识别 ${dir} 下 ${batch.length} 张图片`;
+  if (skipped > 0) summary += `（另有 ${skipped} 张因 limit=${limit} 未识别）`;
+
+  return {
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        success: okCount > 0,
+        dir,
+        model: cfg.model,
+        prompt,
+        count: batch.length,
+        okCount,
+        skipped,
+        results: batch.map(r => ({ file: r.file, status: r.ok ? 'ok' : 'error', ...(r.ok ? { result: r.result } : { error: r.error }) })),
+        summary,
+      }, null, 2),
+    }],
+  };
 }
 
 // ── 工具定义 ──────────────────────────────────────────────────────────────────
@@ -315,15 +453,19 @@ async function handleRecognizeImage(args) {
 const TOOLS = [
   {
     name: 'recognize_image',
-    description: '使用智谱 GLM-4V 视觉模型识别图片内容。支持本地图片文件路径和 HTTP/HTTPS URL。本地图片自动转 base64 编码上传。',
+    description: '使用智谱 GLM-4V 视觉模型识别图片内容。支持本地图片文件路径、HTTP/HTTPS URL，以及多图数组（images）。本地图片自动转 base64 编码上传。',
     inputSchema: {
       type: 'object',
-      required: ['image'],
       properties: {
         image: {
           type: 'string',
           minLength: 1,
-          description: '图片路径或 URL。本地路径如 C:/photos/cat.jpg；URL 如 https://example.com/image.jpg',
+          description: '单张图片路径或 URL。本地路径如 C:/photos/cat.jpg；URL 如 https://example.com/image.jpg',
+        },
+        images: {
+          type: 'array',
+          items: { type: 'string', minLength: 1 },
+          description: '多张图片路径或 URL 数组（与 image 二选一，传数组时逐张识别并合并结果）',
         },
         prompt: {
           type: 'string',
@@ -331,7 +473,43 @@ const TOOLS = [
         },
         maxTokens: {
           type: 'number',
-          description: '最大输出 token 数（500-8000，默认 3000）。长文分析建议 3000+，过低会被模型输出预算腰斩',
+          description: '每张的最大输出 token 数（500-8000，默认 3000）。长文分析建议 3000+，过低会被模型输出预算腰斩',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'recognize_image_dir',
+    description: '批量识别本地目录下的全部图片（逐张调用 GLM-4V，单张失败不中断整批）。适合检查建模渲染帧、动画静帧等成组图片。',
+    inputSchema: {
+      type: 'object',
+      required: ['dir'],
+      properties: {
+        dir: {
+          type: 'string',
+          minLength: 1,
+          description: '本地目录绝对路径，如 D:/space/base/Polaris/temp/claude-animation-base/out/stills_tw',
+        },
+        prompt: {
+          type: 'string',
+          description: '识别指令，默认「请识别这张图片，简要描述主要内容。」。可自定义如「逐条指出画面问题」',
+        },
+        maxTokens: {
+          type: 'number',
+          description: '每张的最大输出 token 数（500-8000，默认 3000）',
+        },
+        extensions: {
+          type: 'string',
+          description: '逗号分隔的扩展名（默认 .png,.jpg,.jpeg,.webp）',
+        },
+        limit: {
+          type: 'number',
+          description: '最多识别的图片数（1-50，默认 8，防止批量爆炸）',
+        },
+        recursive: {
+          type: 'boolean',
+          description: '是否递归子目录（默认 false）',
         },
       },
       additionalProperties: false,
@@ -375,6 +553,7 @@ async function handleRequest(request) {
         let result;
         switch (name) {
           case 'recognize_image': result = await handleRecognizeImage(args); break;
+          case 'recognize_image_dir': result = await handleRecognizeImageDir(args); break;
           default:
             result = {
               content: [{ type: 'text', text: JSON.stringify({ error: `未知工具: ${name}` }) }],
