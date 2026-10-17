@@ -1,0 +1,13 @@
+node_modules/
+src/
+package.json
+package-lock.json
+*.tsx
+*.ts
+.eslintrc*
+.prettierrc*
+.gitignore
+audio/
+clone_out.txt
+clone_req.json
+.tmp-pack-*/

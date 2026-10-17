@@ -1,0 +1,14 @@
+{
+  "name": "mimo-tts-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "mimo-tts 插件面板与聊天卡片（打包用）",
+  "scripts": {
+    "build:panel": "esbuild src/panel/Panel.tsx --bundle --format=esm --outfile=dist/panel/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:chat-card": "esbuild src/chat-card/ChatCard.tsx --bundle --format=esm --outfile=dist/chat-card/chat-card.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build": "npm run build:panel && npm run build:chat-card"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  }
+}
