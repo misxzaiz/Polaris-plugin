@@ -25,7 +25,10 @@
         "id": "animation-2d-mcp",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{pluginDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{pluginDir}}"
+        ]
       }
     ],
     "services": [
@@ -33,13 +36,18 @@
         "id": "animation-2d-render",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/server.js", "{{port}}", "{{pluginDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/server.js",
+          "{{port}}",
+          "{{pluginDir}}"
+        ],
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
         "autoStart": true,
         "restartOnFailure": true,
         "maxRestarts": 3,
-        "description": "2D 渲染 HTTP 服务（面板触发渲染用）"
+        "description": "2D 渲染 HTTP 服务（面板触发渲染用）",
+        "port": 9862
       }
     ]
   },

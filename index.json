@@ -356,7 +356,7 @@
         "workspaceRead": true,
         "workspaceWrite": true
       },
-      "sha256": "e9bc92023257ebdc73f350eced35f2322e4eba0590ea2eef5c40cf50bed7a05d",
+      "sha256": "0a2019c53b8af8320cda5b3cfaa5a86489907561756befecf2347b5f0fc39e57",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",

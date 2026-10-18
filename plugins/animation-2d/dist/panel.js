@@ -3,12 +3,16 @@ import { useEffect, useState, useCallback } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 var PLUGIN_ID = "animation-2d";
 async function getRenderBase() {
-  const svc = window.__POLARIS_PLUGIN_SERVICES__;
-  if (svc) {
+  const invoke = window.__POLARIS_HOST_INVOKE__;
+  if (invoke) {
     try {
-      const status = await svc.getStatus(PLUGIN_ID, "animation-2d-render");
-      if (status.port) return `http://127.0.0.1:${status.port}`;
-      if (status.state === "running") return "http://127.0.0.1:9862";
+      const res = await invoke("router_dispatch", {
+        req: { target: "cap.pluginServiceManager", payload: { action: "list_status" } }
+      });
+      const svc = (res?.result?.services || res?.services || []).find(
+        (s) => s.pluginId === PLUGIN_ID && s.serviceId === "animation-2d-render"
+      );
+      if (svc?.port) return `http://127.0.0.1:${svc.port}`;
     } catch (_) {
     }
   }

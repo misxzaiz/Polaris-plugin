@@ -34,6 +34,7 @@
         "type": "http",
         "command": "node",
         "argsTemplate": ["{{pluginDir}}/server.js", "{{port}}", "{{pluginDir}}"],
+        "port": 9862,
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
         "autoStart": true,

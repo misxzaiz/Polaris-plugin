@@ -53,8 +53,19 @@ function parseBody(req) {
   });
 }
 
+// CORS：面板（主应用 webview）与渲染服务不同源（dev http://localhost:9827 / 生产 tauri://localhost），
+// 服务仅监听 127.0.0.1，允许任意来源即可（本机回环，无暴露面扩大风险）。
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+
 function json(res, code, data) {
-  res.writeHead(code, { 'Content-Type': 'application/json' });
+  res.writeHead(code, { 'Content-Type': 'application/json', ...corsHeaders() });
   res.end(JSON.stringify(data));
 }
 
@@ -117,6 +128,14 @@ function callVision(imagePath, prompt, maxTokens = 2000) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://127.0.0.1:${PORT}`);
+
+  // CORS 预检：POST + application/json 触发，直接放行
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, corsHeaders());
+    res.end();
+    return;
+  }
+
   try {
     // 健康检查
     if (url.pathname === '/__health') {
@@ -134,7 +153,7 @@ const server = http.createServer(async (req, res) => {
       if (!fs.existsSync(resolved)) return json(res, 404, { error: '文件不存在' });
       const ext = path.extname(resolved).toLowerCase();
       const mime = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' }[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': mime });
+      res.writeHead(200, { 'Content-Type': mime, ...corsHeaders() });
       fs.createReadStream(resolved).pipe(res);
       return;
     }
@@ -155,8 +174,23 @@ const server = http.createServer(async (req, res) => {
       if (!times) return json(res, 400, { error: '缺少 times（逗号分隔的时刻，如 "1.2,3.4"）' });
       const outPath = out || path.join(PLUGIN_DIR, 'out', 'stills');
       const extra = loop ? [`--loop=${loop}`] : [];
+      // 渲染前快照 mtime，只返回本次新增/更新的帧
+      const dir = outPath && fs.existsSync(outPath) && fs.statSync(outPath).isDirectory() ? outPath : path.dirname(outPath);
+      const before = new Map();
+      if (fs.existsSync(dir)) {
+        for (const f of fs.readdirSync(dir)) {
+          if (/\.png$/i.test(f)) {
+            const fp = path.join(dir, f);
+            before.set(fp, fs.statSync(fp).mtimeMs);
+          }
+        }
+      }
       const r = await render([`--stills=${times}`, `--out=${outPath}`], extra);
-      return json(res, 200, { ok: true, out: outPath, log: r.stdout });
+      const files = fs.existsSync(dir)
+        ? fs.readdirSync(dir).filter((f) => /\.png$/i.test(f)).sort().map((f) => path.join(dir, f))
+            .filter((fp) => !before.has(fp) || fs.statSync(fp).mtimeMs > before.get(fp))
+        : [];
+      return json(res, 200, { ok: true, out: files, outDir: dir, log: r.stdout });
     }
 
     if (req.method === 'POST' && url.pathname === '/render/sheet') {

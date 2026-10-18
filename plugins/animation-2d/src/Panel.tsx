@@ -17,19 +17,25 @@ const PLUGIN_ID = 'animation-2d'
 
 // ── 宿主通信 ───────────────────────────────────────────────────────────────────
 
-/** 获取渲染 HTTP 服务地址（Polaris services API 或本地默认）。 */
+/** 宿主注入：__POLARIS_HOST_INVOKE__ = invoke（router_dispatch → cap.pluginServiceManager） */
+type HostInvoke = (cmd: string, args?: Record<string, unknown>) => Promise<{ ok?: boolean; result?: { services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> } } | any>
+
+/** 获取渲染 HTTP 服务地址（优先宿主服务状态，兜底 9862）。 */
 async function getRenderBase(): Promise<string> {
-  const svc = (window as unknown as { __POLARIS_PLUGIN_SERVICES__?: {
-    getStatus: (p: string, s: string) => Promise<{ state: string; port?: number }>
-  } }).__POLARIS_PLUGIN_SERVICES__
-  if (svc) {
+  // 1) 宿主服务管理器：查 animation-2d-render 的真实端口
+  const invoke = (window as unknown as { __POLARIS_HOST_INVOKE__?: HostInvoke }).__POLARIS_HOST_INVOKE__
+  if (invoke) {
     try {
-      const status = await svc.getStatus(PLUGIN_ID, 'animation-2d-render')
-      if (status.port) return `http://127.0.0.1:${status.port}`
-      if (status.state === 'running') return 'http://127.0.0.1:9862'
+      const res = await invoke('router_dispatch', {
+        req: { target: 'cap.pluginServiceManager', payload: { action: 'list_status' } },
+      })
+      const svc = (res?.result?.services || res?.services || []).find(
+        (s: any) => s.pluginId === PLUGIN_ID && s.serviceId === 'animation-2d-render'
+      )
+      if (svc?.port) return `http://127.0.0.1:${svc.port}`
     } catch (_) { /* fallthrough */ }
   }
-  // 兜底：服务固定默认端口（与 plugin.json 的 services 无显式 port，自动分配；此处用于本地调试）
+  // 2) 兜底：本地调试默认端口
   return 'http://127.0.0.1:9862'
 }
 
