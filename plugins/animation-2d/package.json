@@ -1,0 +1,20 @@
+{
+  "name": "animation-2d",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Polaris 2D 手绘动画插件：p5.brush 水墨风渲染引擎（ClaudeAnimationBase 去品牌化）+ MCP 工具 + 活动栏面板",
+  "scripts": {
+    "build": "esbuild src/Panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "sheet": "node render.mjs --sheet=0,1,2,3,4,5 --out=out/sheet.jpg",
+    "video": "node render.mjs --clip --out=out/video.mp4"
+  },
+  "dependencies": {
+    "p5": "^2.3.3",
+    "p5.brush": "^2.2.3",
+    "puppeteer-core": "^25.11.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.23.0"
+  }
+}

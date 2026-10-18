@@ -1,0 +1,14 @@
+node_modules/
+src/Panel.tsx
+*.tsx
+*.ts
+package-lock.json
+.pluginignore
+.gitignore
+out/frames/
+out/video.mp4
+out/clip.mp4
+out/stills/
+out/sheet.jpg
+gpu_probe.mjs
+docs/

@@ -356,16 +356,16 @@
         "workspaceRead": true,
         "workspaceWrite": true
       },
-      "sha256": "80b21ca8cf305db7c79353869755e2e7bc9d14a1ed608b6cde2327d1b9672837",
+      "sha256": "e9bc92023257ebdc73f350eced35f2322e4eba0590ea2eef5c40cf50bed7a05d",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip"
         }
       ]
     }

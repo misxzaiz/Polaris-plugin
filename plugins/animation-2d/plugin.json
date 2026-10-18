@@ -1,0 +1,60 @@
+{
+  "id": "animation-2d",
+  "name": "2D 手绘动画（p5.brush）",
+  "version": "0.1.0",
+  "description": "Polaris 内的 AI 2D 手绘逐帧动画插件（p5.brush 水墨风，基于 ClaudeAnimationBase 去品牌化自研）。AI 可通过 MCP 工具渲染静帧/连续帧/联系方式图/出视频 + GLM-4V 质检；活动栏面板可触发渲染并预览帧。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "animation-2d.panel",
+        "area": "activityBar",
+        "panelType": "animation-2d",
+        "icon": "Film",
+        "labelKey": "labels.animation2dPanel",
+        "labelDefault": "2D 动画",
+        "order": 40
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "animation-2d-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{pluginDir}}"]
+      }
+    ],
+    "services": [
+      {
+        "id": "animation-2d-render",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/server.js", "{{port}}", "{{pluginDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 3,
+        "description": "2D 渲染 HTTP 服务（面板触发渲染用）"
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip"
+  }
+}
