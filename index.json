@@ -372,6 +372,46 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip"
         }
       ]
+    },
+    {
+      "id": "douyin-publish",
+      "name": "抖音自动发布",
+      "version": "0.1.0",
+      "description": "抖音视频自动发布流水线：发布编排（文件登记/原生对话框注入/结果记录，幂等）+ 声音信息收集（ffprobe 音频元数据归档）。配合 Polaris 内置浏览器由 AI 执行发布动作。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "douyin",
+        "publish",
+        "automation",
+        "audio",
+        "mcp",
+        "video"
+      ],
+      "icon": "Upload",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/douyin-publish",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/update.json",
+      "sha256": "74cbdad2bfd0c9481e61c633468156e3e12695e838b620853c7ddad82815211d",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "workspaceRead": true,
+        "workspaceWrite": true
+      },
+      "screenshots": [],
+      "readme": "# 抖音自动发布\n\n抖音视频自动发布流水线的辅助编排层（MCP 工具），配合 Polaris 内置浏览器由 AI 执行完整发布流程。附带**声音信息收集**：ffprobe 提取音频元数据归档。\n\n## 工具\n\n- `douyin_prepare_publish`：登记视频（幂等，sha256 去重）\n- `douyin_pick_file`：注入原生文件对话框（参数化 ps1，实时枚举 hwnd）\n- `douyin_publish_status`：查询/恢复状态（断点续跑）\n- `douyin_record_result`：登记 item_id/url/状态\n- `douyin_collect_audio`：声音信息收集（ffprobe + EBU R128）\n- `douyin_list_published`：发布记录列表\n\n## 声音信息收集\n\n每次发布可附加音频元数据：有无音轨/编码/采样率/时长/分辨率/响度 + 声音来源与音色（audioSource/voiceId），服务配音一致性追踪。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip"
+        }
+      ]
     }
   ]
 }

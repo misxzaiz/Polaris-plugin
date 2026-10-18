@@ -1,0 +1,56 @@
+{
+  "id": "douyin-publish",
+  "name": "抖音自动发布",
+  "version": "0.1.0",
+  "description": "抖音视频自动发布流水线：发布编排（文件登记/原生对话框注入/结果记录，幂等）+ 声音信息收集（ffprobe 音频元数据归档）。配合 Polaris 内置浏览器由 AI 执行发布动作。",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "douyin-publish",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}", "{{pluginDir}}"]
+      }
+    ],
+    "configSchema": [
+      {
+        "key": "ffprobePath",
+        "label": "ffprobe 路径",
+        "type": "string",
+        "default": "ffprobe",
+        "placeholder": "ffprobe（PATH）或绝对路径",
+        "help": "用于声音信息收集；留空自动用 PATH 中的 ffprobe"
+      },
+      {
+        "key": "ffmpegPath",
+        "label": "ffmpeg 路径（可选）",
+        "type": "string",
+        "default": "ffmpeg",
+        "placeholder": "ffmpeg（PATH）或绝对路径",
+        "help": "可选；存在时计算 EBU R128 响度（loudness）"
+      },
+      {
+        "key": "douyinHomeUrl",
+        "label": "抖音创作者上传页",
+        "type": "string",
+        "default": "https://creator.douyin.com/creator-micro/content/upload",
+        "placeholder": "https://creator.douyin.com/creator-micro/content/upload"
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/douyin-publish",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/douyin-publish.zip"
+  }
+}
