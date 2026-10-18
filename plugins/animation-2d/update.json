@@ -1,7 +1,7 @@
 {
   "id": "animation-2d",
   "name": "2D 手绘动画（p5.brush）",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Polaris 内的 AI 2D 手绘逐帧动画插件（p5.brush 水墨风，基于 ClaudeAnimationBase 去品牌化自研）。AI 可通过 MCP 工具渲染静帧/连续帧/联系方式图/出视频 + GLM-4V 质检；活动栏面板可触发渲染并预览帧。",
   "enabledByDefault": true,
   "contributes": {

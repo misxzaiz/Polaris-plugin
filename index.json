@@ -338,7 +338,7 @@
     {
       "id": "animation-2d",
       "name": "2D 手绘动画（p5.brush）",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Polaris 内的 AI 2D 手绘逐帧动画插件（p5.brush 水墨风，基于 ClaudeAnimationBase 去品牌化自研）。AI 可通过 MCP 工具渲染静帧/连续帧/联系方式图/出视频 + GLM-4V 质检；活动栏面板可触发渲染并预览帧。",
       "category": "ai",
       "tags": [
@@ -356,13 +356,17 @@
         "workspaceRead": true,
         "workspaceWrite": true
       },
-      "sha256": "0a2019c53b8af8320cda5b3cfaa5a86489907561756befecf2347b5f0fc39e57",
+      "sha256": "d92b8f6d6dcb384f2c359e163ae244ccc78f72fbfb2a1efc248576050ab29910",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
       "versions": [
+        {
+          "version": "0.1.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip"
+        },
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip"
