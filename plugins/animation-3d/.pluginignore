@@ -1,0 +1,13 @@
+node_modules/
+src/
+package.json
+package-lock.json
+*.tsx
+*.ts
+.pluginignore
+.gitignore
+out/mcp_look_suzanne.png
+out/verify_teapot.png
+out/preview.html
+out/small.jpg
+out/blender_gui.log

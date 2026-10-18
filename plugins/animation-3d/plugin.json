@@ -1,0 +1,29 @@
+{
+  "id": "animation-3d",
+  "name": "3D 建模工作室（Blender）",
+  "version": "0.2.0",
+  "description": "Polaris 内的 AI 3D 建模插件：通过 mcp-for-blender 桥接本地 Blender（socket 9876），AI 可直接执行 bpy 代码建模型、查场景、截图自检。含 Blender 启动脚本与未连接提示。",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "blender",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{pluginDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-3d",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/animation-3d.zip"
+  }
+}

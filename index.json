@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-17T16:36:26.861Z",
+  "updated": "2026-10-17T17:49:23.082Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -303,6 +303,71 @@
         "appConfigRead": true,
         "appConfigWrite": true
       }
+    },
+    {
+      "id": "animation-3d",
+      "name": "3D 建模工作室（Blender）",
+      "version": "0.2.0",
+      "description": "Polaris 内的 AI 3D 建模插件：通过 mcp-for-blender 桥接本地 Blender（socket 9876），AI 可直接执行 bpy 代码建模型、查场景、截图自检。含 Blender 启动脚本与未连接提示。",
+      "category": "ai",
+      "tags": [
+        "3d",
+        "blender",
+        "mcp",
+        "modeling"
+      ],
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "appConfigRead": true,
+        "workspaceRead": true
+      },
+      "sha256": "0342b48816b1f7d539724f884f18f20d8e456ad51449827943c4e3d7d36e2cdc",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-3d",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-3d-v0.2.0/plugins/animation-3d/animation-3d.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/update.json",
+      "versions": [
+        {
+          "version": "0.2.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-3d-v0.2.0/plugins/animation-3d/animation-3d.zip"
+        }
+      ]
+    },
+    {
+      "id": "animation-2d",
+      "name": "2D 手绘动画（p5.brush）",
+      "version": "0.1.0",
+      "description": "Polaris 内的 AI 2D 手绘逐帧动画插件（p5.brush 水墨风，基于 ClaudeAnimationBase 去品牌化自研）。AI 可通过 MCP 工具渲染静帧/连续帧/联系方式图/出视频 + GLM-4V 质检；活动栏面板可触发渲染并预览帧。",
+      "category": "ai",
+      "tags": [
+        "2d",
+        "animation",
+        "p5brush",
+        "mcp",
+        "panel"
+      ],
+      "permissions": {
+        "aiToolAccess": true,
+        "network": true,
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "workspaceRead": true,
+        "workspaceWrite": true
+      },
+      "sha256": "80b21ca8cf305db7c79353869755e2e7bc9d14a1ed608b6cde2327d1b9672837",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip"
+        }
+      ]
     }
   ]
 }
