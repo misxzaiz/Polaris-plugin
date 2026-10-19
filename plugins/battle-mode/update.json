@@ -2,7 +2,7 @@
   "id": "battle-mode",
   "name": "Battle Mode",
   "version": "0.1.0",
-  "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词，把分歧变成发散思考的燃料。MVP 纯前端，战报可一键发到聊天。",
+  "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MCP 工具（battle_setup/roll/prompt/report）让 AI 在对话里直接开战，面板可操作可发战报到聊天。",
   "enabledByDefault": false,
   "contributes": {
     "views": [
