@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-17T17:49:23.082Z",
+  "updated": "2026-10-19 01:28:48",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -410,6 +410,45 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip"
+        }
+      ]
+    },
+    {
+      "id": "battle-mode",
+      "name": "Battle Mode",
+      "version": "0.1.0",
+      "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MCP 工具（battle_setup/roll/prompt/report）让 AI 在对话里直接开战，面板可操作可发战报到聊天。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "battle",
+        "debate",
+        "learning",
+        "panel",
+        "divergent-thinking",
+        "mcp"
+      ],
+      "icon": "Swords",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/battle-mode",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/battle-mode.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/update.json",
+      "sha256": "1efff77a92b56727171194be9b31059dbce24d770616af6c284d9f5f4824dd1c",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "Battle Mode：为学习而战。角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MVP：纯前端战斗台 + MCP 工具（battle_setup 立题、battle_roll 掷骰、battle_prompt 生成主持人/辩手指令、battle_report 战报）——AI 在对话里就能直接开一场对抗式辩论，面板负责可视化与战报持久化。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/battle-mode/battle-mode.zip",
+          "sha256": "1efff77a92b56727171194be9b31059dbce24d770616af6c284d9f5f4824dd1c",
+          "description": "MVP：纯前端战斗台 + MCP 工具（battle_setup/roll/prompt/report），AI 对话内直接开战"
         }
       ]
     }
