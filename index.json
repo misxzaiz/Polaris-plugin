@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-19 01:28:48",
+  "updated": "2026-10-19 19:15:27",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -449,6 +449,46 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/battle-mode/battle-mode.zip",
           "sha256": "a96811c979b9021dec0f6f2a6f88f9b4194d9fb6071cfb4a5a8ab675bd07cc05",
           "description": "MVP：纯前端战斗台 + MCP 工具（battle_setup/roll/prompt/report），AI 对话内直接开战"
+        }
+      ]
+    },
+    {
+      "id": "news-curator",
+      "name": "AI 每日刊物",
+      "version": "0.1.0",
+      "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 语音播报 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "news",
+        "daily",
+        "curation",
+        "panel",
+        "mcp",
+        "voice"
+      ],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/news-curator",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
+      "sha256": "4c6a15e6340ad97dab648e1d2840206990b13545682edea6c736748bf425582c",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "aiToolAccess": true,
+        "network": true
+      },
+      "screenshots": [],
+      "readme": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 语音播报 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip",
+          "sha256": "4c6a15e6340ad97dab648e1d2840206990b13545682edea6c736748bf425582c",
+          "description": "v0.1.0：MVP — 面板（宿主桥通道）+ 9 个 news_* MCP 工具"
         }
       ]
     }

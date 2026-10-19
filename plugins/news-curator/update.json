@@ -1,0 +1,53 @@
+{
+  "id": "news-curator",
+  "name": "AI 每日刊物",
+  "version": "0.1.0",
+  "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 语音播报 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "news-curator.panel",
+        "area": "activityBar",
+        "panelType": "newsCurator",
+        "icon": "BookOpen",
+        "labelKey": "plugins.newsCurator",
+        "labelDefault": "AI 刊物",
+        "order": 68
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "news-curator",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ],
+    "executors": [
+      {
+        "id": "fetch-daily",
+        "name": "生成今日刊物",
+        "description": "生成 AI 每日刊物（AI 用内置浏览器抓源 → news_publish_daily 写入 cap.kv）",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/scripts/fetch-daily.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/news-curator",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip"
+  }
+}
