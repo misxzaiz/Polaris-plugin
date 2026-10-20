@@ -30,7 +30,7 @@ export async function kvSet(key: string, value: unknown): Promise<void> {
   if (!res.ok) throw new Error(res.error || 'kv set 失败')
 }
 
-/** 面板 → 聊天：把问题发给 AI（如"生成今天的日报"） */
+/** 面板 → 聊天：把问题发给 AI（"生成今天的日报"等） */
 let hostSend: ((m: string) => void) | undefined
 export function setHostSend(fn?: (m: string) => void): void {
   hostSend = fn
@@ -152,6 +152,46 @@ export async function loadReviews(month: string): Promise<any[]> {
 export async function loadSourcesLast(): Promise<Record<string, unknown> | null> {
   const s = await kvGet('news.sources.last')
   return s && typeof s === 'object' ? (s as Record<string, unknown>) : null
+}
+
+/** 已合成语音缓存（AI 经 news_save_voice 写入，面板直接播放） */
+export interface VoiceClip {
+  section: string
+  dataUrl?: string
+  url?: string
+  durationSec?: number | null
+  title?: string
+  createdAt?: string
+}
+export async function loadVoice(date: string, section: string): Promise<VoiceClip | null> {
+  const v = await kvGet(`news.voice.${date}.${section}`)
+  return v && typeof v === 'object' ? (v as VoiceClip) : null
+}
+/** 某天已存在的语音章节（用于列表展示哪些已合成，不逐个 get） */
+export async function loadDateKey(date: string): Promise<string[]> {
+  const keys = await kvListKeys()
+  return keys.filter((k) => k.startsWith(`news.voice.${date}.`)).sort()
+}
+/** 枚举 cap.kv 全部键（cap.kv list） */
+export async function kvListKeys(): Promise<string[]> {
+  try {
+    const res = await call<{ ok: boolean; result?: { keys?: string[] }; error?: string }>('router_dispatch', {
+      req: { target: 'cap.kv', payload: { action: 'list' } },
+    })
+    if (!res.ok) throw new Error(res.error || 'kv list 失败')
+    return Array.isArray(res.result?.keys) ? (res.result?.keys as string[]) : []
+  } catch (e) {
+    return []
+  }
+}
+/** 已发布日报的日期（倒序） */
+export async function listDailyDates(): Promise<string[]> {
+  const keys = await kvListKeys()
+  return keys
+    .filter((k) => k.startsWith('news.daily.'))
+    .map((k) => k.slice('news.daily.'.length))
+    .sort()
+    .reverse()
 }
 
 /** 今天 YYYY-MM-DD（本地时区，避免手机/桌面跨时区错位） */

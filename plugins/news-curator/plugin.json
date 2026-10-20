@@ -1,8 +1,8 @@
 {
   "id": "news-curator",
   "name": "AI 每日刊物",
-  "version": "0.1.0",
-  "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 语音播报 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+  "version": "0.2.0",
+  "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
   "enabledByDefault": true,
   "contributes": {
     "views": [

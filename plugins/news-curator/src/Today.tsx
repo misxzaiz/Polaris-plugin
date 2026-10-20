@@ -68,6 +68,7 @@ export default function Today({ goTab }: { goTab: (i: number) => void }) {
           <small>{dateLabel || fmtCnDate(today())}{daily?.totalMinutes ? ` · 约 ${daily.totalMinutes} 分钟` : ''}</small>
         </div>
         <button className="nc-play" onClick={askGenerate} title="生成今天的日报">✦</button>
+        <button className="nc-play" style={{ width: 30, height: 30, fontSize: 13, boxShadow: 'none' }} onClick={load} title="刷新">⟳</button>
       </div>
 
       {/* 阅读进度 */}

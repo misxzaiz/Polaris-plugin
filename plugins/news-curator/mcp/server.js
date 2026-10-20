@@ -22,7 +22,7 @@ const os = require('os');
 const crypto = require('crypto');
 
 const SERVER_NAME = 'news-curator';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.2.0';
 const PROTOCOL_VERSION = '2024-11-05';
 
 // cap.kv 键空间（news.*，与面板共享）
@@ -436,6 +436,52 @@ async function handleBrief(args) {
   }
 }
 
+// news_save_voice：AI 合成音频后把结果存到缓存（面板读 news.voice.<date>.<section> 真播放）
+// 存两种形态：dataUrl（data:audio/...，base64 内联，app/桌面通用）或 url（file 托管）
+async function handleSaveVoice(args) {
+  try {
+    const date = String(args.date || new Date().toISOString().slice(0, 10));
+    const section = String(args.section || 'summary');
+    if (!['summary', 'fund', 'tech', 'news', 'creative', 'learn'].includes(section)) {
+      return text(`section 无效：${section}`, true);
+    }
+    const dataUrl = args.dataUrl ? String(args.dataUrl) : '';
+    const url = args.url ? String(args.url) : '';
+    const durationSec = args.durationSec != null ? Number(args.durationSec) : null;
+    if (!dataUrl && !url) return text('dataUrl 与 url 至少传一个（mimo_tts_synthesize 的返回）', true);
+    const voice = {
+      section,
+      dataUrl,
+      url,
+      durationSec,
+      title: args.title ? String(args.title) : '',
+      createdAt: new Date().toISOString(),
+    };
+    await kvSet(`news.voice.${date}.${section}`, voice);
+    return text(JSON.stringify({ ok: true, key: `news.voice.${date}.${section}`, voice }));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
+// news_list_daily：枚举已发布的日报日期（cap.kv list 过滤 news.daily.* 前缀）
+async function handleListDaily() {
+  try {
+    const res = await polarisIpc('router_dispatch', {
+      req: { target: 'cap.kv', payload: { action: 'list' } },
+    });
+    const keys = Array.isArray(res && res.result && res.result.keys) ? res.result.keys : [];
+    const dates = keys
+      .filter((k) => typeof k === 'string' && k.startsWith('news.daily.'))
+      .map((k) => k.slice('news.daily.'.length))
+      .sort()
+      .reverse();
+    return text(JSON.stringify({ dates }));
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 // ── 工具注册表（8 + 1 撤销 = 9） ────────────────────────────────────────────
 const TOOLS = [
   {
@@ -546,6 +592,29 @@ const TOOLS = [
       },
     },
     handler: handleBrief,
+  },
+  {
+    name: 'news_save_voice',
+    description:
+      'AI 把 mimo_tts_synthesize 合成的章节音频存入面板缓存（news.voice.<date>.<section>），面板「语音」页即可直接 <audio> 播放，无需再走聊天。dataUrl（base64 内联）与 url（file 托管）二选一至少传一个。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'YYYY-MM-DD，缺省今天' },
+        section: { type: 'string', enum: ['summary', 'fund', 'tech', 'news', 'creative', 'learn'] },
+        dataUrl: { type: 'string', description: '音频 data URL（mimo_tts_synthesize 返回，outputMode=base64）' },
+        url: { type: 'string', description: '音频托管 url（mimo_tts_synthesize 返回，outputMode=file）' },
+        title: { type: 'string', description: '章节标题，可选' },
+        durationSec: { type: 'number', description: '音频时长秒，可选' },
+      },
+    },
+    handler: handleSaveVoice,
+  },
+  {
+    name: 'news_list_daily',
+    description: '枚举已发布日报的日期列表（按日期倒序），供面板/历史页回看任意一天。',
+    inputSchema: { type: 'object', properties: {} },
+    handler: handleListDaily,
   },
 ];
 

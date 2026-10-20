@@ -8,6 +8,7 @@ import { setHostSend } from './model'
 import Today from './Today'
 import Learn from './Learn'
 import Voice from './Voice'
+import Archive from './Archive'
 import Mine from './Mine'
 
 const css = `
@@ -185,6 +186,7 @@ const TABS = [
   { id: 'today', label: '今日', icon: '📰' },
   { id: 'learn', label: '学习', icon: '🎓' },
   { id: 'voice', label: '语音', icon: '🎙️' },
+  { id: 'archive', label: '历史', icon: '📚' },
   { id: 'mine', label: '我的', icon: '👤' },
 ]
 
@@ -204,7 +206,8 @@ export default function NewsPanel({ onSendToChat }: { onSendToChat?: (m: string)
         {tab === 0 && <Today goTab={setTab} />}
         {tab === 1 && <Learn />}
         {tab === 2 && <Voice />}
-        {tab === 3 && <Mine />}
+        {tab === 3 && <Archive />}
+        {tab === 4 && <Mine />}
       </div>
       <div className="nc-tabbar">
         {TABS.map((t, i) => (

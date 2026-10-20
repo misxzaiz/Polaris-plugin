@@ -34,13 +34,17 @@ __export(model_exports, {
   fmtCnDate: () => fmtCnDate,
   fmtMin: () => fmtMin,
   kvGet: () => kvGet,
+  kvListKeys: () => kvListKeys,
   kvSet: () => kvSet,
+  listDailyDates: () => listDailyDates,
   loadDaily: () => loadDaily,
+  loadDateKey: () => loadDateKey,
   loadPrefs: () => loadPrefs,
   loadPrefsLog: () => loadPrefsLog,
   loadProgress: () => loadProgress,
   loadReviews: () => loadReviews,
   loadSourcesLast: () => loadSourcesLast,
+  loadVoice: () => loadVoice,
   savePrefs: () => savePrefs,
   saveProgress: () => saveProgress,
   sendToChat: () => sendToChat,
@@ -142,6 +146,29 @@ async function loadSourcesLast() {
   const s = await kvGet("news.sources.last");
   return s && typeof s === "object" ? s : null;
 }
+async function loadVoice(date, section) {
+  const v = await kvGet(`news.voice.${date}.${section}`);
+  return v && typeof v === "object" ? v : null;
+}
+async function loadDateKey(date) {
+  const keys = await kvListKeys();
+  return keys.filter((k) => k.startsWith(`news.voice.${date}.`)).sort();
+}
+async function kvListKeys() {
+  try {
+    const res = await call("router_dispatch", {
+      req: { target: "cap.kv", payload: { action: "list" } }
+    });
+    if (!res.ok) throw new Error(res.error || "kv list \u5931\u8D25");
+    return Array.isArray(res.result?.keys) ? res.result?.keys : [];
+  } catch (e) {
+    return [];
+  }
+}
+async function listDailyDates() {
+  const keys = await kvListKeys();
+  return keys.filter((k) => k.startsWith("news.daily.")).map((k) => k.slice("news.daily.".length)).sort().reverse();
+}
 function today() {
   const d = /* @__PURE__ */ new Date();
   const y = d.getFullYear();
@@ -175,7 +202,7 @@ var init_model = __esm({
 
 // src/Panel.tsx
 init_model();
-import { useEffect as useEffect6, useState as useState6 } from "react";
+import { useEffect as useEffect7, useState as useState7 } from "react";
 
 // src/Today.tsx
 init_model();
@@ -248,7 +275,8 @@ function Today({ goTab }) {
           daily?.totalMinutes ? ` \xB7 \u7EA6 ${daily.totalMinutes} \u5206\u949F` : ""
         ] })
       ] }),
-      /* @__PURE__ */ jsx("button", { className: "nc-play", onClick: askGenerate, title: "\u751F\u6210\u4ECA\u5929\u7684\u65E5\u62A5", children: "\u2726" })
+      /* @__PURE__ */ jsx("button", { className: "nc-play", onClick: askGenerate, title: "\u751F\u6210\u4ECA\u5929\u7684\u65E5\u62A5", children: "\u2726" }),
+      /* @__PURE__ */ jsx("button", { className: "nc-play", style: { width: 30, height: 30, fontSize: 13, boxShadow: "none" }, onClick: load, title: "\u5237\u65B0", children: "\u27F3" })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "nc-prog", children: [
       /* @__PURE__ */ jsxs("div", { className: "nc-prog-h", children: [
@@ -600,15 +628,37 @@ function QuizOp({ label, ok }) {
 
 // src/Voice.tsx
 init_model();
-import { useState as useState4, useEffect as useEffect4 } from "react";
+import { useState as useState4, useEffect as useEffect4, useRef } from "react";
 import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 function Voice() {
   const [daily, setDaily] = useState4(null);
+  const [voices, setVoices] = useState4({});
   const [playing, setPlaying] = useState4(null);
+  const [progress, setProgress] = useState4({});
   const [toast, setToast] = useState4(null);
+  const [generating, setGenerating] = useState4(null);
+  const audioRef = useRef(null);
+  const pollRef = useRef(null);
+  const date = today();
+  const load = async () => {
+    const [d, voiceKeys] = await Promise.all([loadDaily(date), loadDateKey(date)]);
+    setDaily(d);
+    const secs2 = (d?.sections || []).map((s) => s.type);
+    const all = [.../* @__PURE__ */ new Set(["summary", "fund", "tech", "news", "creative", "learn", ...secs2])];
+    const map = {};
+    const present = new Set(voiceKeys.map((k) => k.slice(`news.voice.${date}.`.length)));
+    for (const st of all) {
+      if (!present.has(st)) continue;
+      const v = await loadVoice(date, st).catch(() => null);
+      if (v) map[st] = v;
+    }
+    setVoices(map);
+  };
   useEffect4(() => {
-    loadDaily(today()).then(setDaily).catch(() => {
-    });
+    load();
+    return () => {
+      if (pollRef.current) clearTimeout(pollRef.current);
+    };
   }, []);
   const sections = daily?.sections || [];
   const secs = sections.length ? sections : [
@@ -619,12 +669,76 @@ function Voice() {
     { type: "learn", title: "\u5B66\u4E60\u8BFE\u7A0B" }
   ];
   const SEC_ICON = { summary: "\u25B6", fund: "\u{1F4C8}", tech: "\u{1F9E0}", news: "\u{1F525}", creative: "\u{1F4A1}", learn: "\u{1F393}" };
-  const askVoice = (t) => {
-    setToast(`\u5DF2\u8BF7\u6C42\u64AD\u62A5\u300C${t}\u300D\u2026\uFF08AI \u5408\u6210\u4E2D\uFF09`);
-    sendToChat(`\u5E2E\u6211\u628A\u4ECA\u5929\u65E5\u62A5\u7684\u300C${t}\u300D\u7AE0\u8282\u751F\u6210\u8BED\u97F3\u64AD\u62A5\uFF08\u7528 news_brief + mimo_tts\uFF09`);
-    setTimeout(() => setToast(null), 2200);
+  const toastMsg = (m) => {
+    setToast(m);
+    setTimeout(() => setToast(null), 2600);
   };
-  const toggle = (key) => setPlaying(playing === key ? null : key);
+  const pollVoice = (section, dateStr, tries = 0) => {
+    if (pollRef.current) clearTimeout(pollRef.current);
+    if (tries > 40) {
+      setGenerating(null);
+      toastMsg("\u5408\u6210\u8D85\u65F6\uFF0C\u53EF\u7A0D\u540E\u70B9 \u25B6 \u91CD\u8BD5");
+      return;
+    }
+    pollRef.current = setTimeout(async () => {
+      const v = await loadVoice(dateStr, section).catch(() => null);
+      if (v) {
+        setVoices((prev) => ({ ...prev, [section]: v }));
+        setGenerating(null);
+        toastMsg("\u8BED\u97F3\u5DF2\u751F\u6210\uFF0C\u5F00\u59CB\u64AD\u653E");
+        playSection(section, v);
+      } else {
+        pollVoice(section, dateStr, tries + 1);
+      }
+    }, 2500);
+  };
+  const askVoice = (section, title) => {
+    setGenerating(section);
+    const msg = `\u5E2E\u6211\u628A\u4ECA\u5929\u65E5\u62A5\u7684\u300C${title}\u300D\u7AE0\u8282\u751F\u6210\u8BED\u97F3\u64AD\u62A5\uFF1A\u5148\u7528 news_brief \u62FF\u64AD\u62A5\u7A3F\uFF0C\u518D\u7528 mimo_tts_synthesize \u5408\u6210\u97F3\u9891\uFF08\u7528\u504F\u597D\u91CC\u7684\u97F3\u8272\uFF09\uFF0C\u6700\u540E\u7528 news_save_voice \u628A dataUrl/url \u5B58\u5230\u7F13\u5B58`;
+    sendToChat(msg);
+    toastMsg("\u5DF2\u8BF7\u6C42 AI \u5408\u6210\u8BED\u97F3\u2026");
+    pollVoice(section, date);
+  };
+  const playSection = (section, clip) => {
+    if (!clip) return;
+    const src = clip.dataUrl || clip.url;
+    if (!src) {
+      toastMsg("\u8BE5\u7AE0\u8282\u97F3\u9891\u7F3A\u5931");
+      return;
+    }
+    if (playing === section) {
+      if (audioRef.current && !audioRef.current.paused) audioRef.current.pause();
+      else audioRef.current?.play();
+      return;
+    }
+    setPlaying(section);
+    setTimeout(() => {
+      const a = audioRef.current;
+      if (!a) return;
+      a.src = src;
+      a.onended = () => {
+        setPlaying(null);
+        setProgress((p) => ({ ...p, [section]: { cur: 0, dur: 0 } }));
+      };
+      a.ontimeupdate = () => {
+        if (a.duration) setProgress((p) => ({ ...p, [section]: { cur: a.currentTime, dur: a.duration } }));
+      };
+      void a.play().catch(() => {
+        setPlaying(null);
+        toastMsg("\u64AD\u653E\u5931\u8D25\uFF1A\u97F3\u9891\u4E0D\u53EF\u7528\uFF08\u53EF\u91CD\u65B0\u751F\u6210\uFF09");
+      });
+    }, 50);
+  };
+  const toggle = (section, clip) => {
+    if (!clip) return;
+    playSection(section, clip);
+  };
+  const fmt = (s) => {
+    if (s == null || !isFinite(s)) return "0:00";
+    const m = Math.floor(s / 60);
+    const ss = Math.floor(s % 60);
+    return `${m}:${String(ss).padStart(2, "0")}`;
+  };
   return /* @__PURE__ */ jsxs3("div", { className: "nc-page", children: [
     /* @__PURE__ */ jsxs3("div", { className: "nc-top", children: [
       /* @__PURE__ */ jsx3("div", { className: "nc-logo", style: { background: "linear-gradient(135deg,#1F6FEB,#BC8CFF)" }, children: "\u{1F399}\uFE0F" }),
@@ -633,41 +747,145 @@ function Voice() {
         /* @__PURE__ */ jsx3("small", { children: daily?.totalMinutes ? `\u603B\u65F6\u957F\u7EA6 ${Math.max(8, Math.round(daily.totalMinutes / 4))} \u5206\u949F \xB7 \u8FB9\u8D70\u8FB9\u542C` : "\u9009\u62E9\u7AE0\u8282\u751F\u6210\u8BED\u97F3" })
       ] })
     ] }),
-    !daily && /* @__PURE__ */ jsx3("div", { className: "nc-empty", children: "\u4ECA\u5929\u8FD8\u6CA1\u6709\u65E5\u62A5\u3002\u5148\u70B9\u300C\u4ECA\u65E5\u300D\u9875\u53F3\u4E0A \u2726 \u751F\u6210\u65E5\u62A5\uFF0C\u518D\u56DE\u6765\u751F\u6210\u8BED\u97F3\u3002" }),
-    /* @__PURE__ */ jsx3("div", { className: "nc-feed", children: secs.map((s) => /* @__PURE__ */ jsxs3("div", { className: "nc-voice", children: [
-      /* @__PURE__ */ jsxs3("div", { className: "nc-voice-h", onClick: () => toggle(s.type), children: [
-        /* @__PURE__ */ jsx3("span", { className: "nc-vic", children: playing === s.type ? "\u275A\u275A" : SEC_ICON[s.type] || "\u25B6" }),
-        /* @__PURE__ */ jsxs3("div", { className: "nc-voice-t", children: [
-          /* @__PURE__ */ jsx3("b", { children: s.title }),
-          /* @__PURE__ */ jsx3("small", { children: s.type === "learn" ? "\u53CC\u7EBF\u8BFE\u7A0B" : s.type === "fund" ? "\u81EA\u9009\u57FA\u91D1" : (s.items || []).length + " \u6761" })
-        ] }),
-        /* @__PURE__ */ jsx3("span", { className: "nc-voice-dur", children: (s.items || []).length ? `${Math.max(1, Math.round(s.items.length * 1.2))}:00` : "\u672A\u5408\u6210" }),
-        /* @__PURE__ */ jsx3("button", { className: "nc-btn sm ghost", onClick: (e) => {
-          e.stopPropagation();
-          askVoice(s.title);
-        }, children: "\u2726 \u751F\u6210" })
-      ] }),
-      /* @__PURE__ */ jsx3("div", { className: "nc-voice-prog", children: /* @__PURE__ */ jsx3("i", { style: { width: playing === s.type ? "55%" : "0" } }) })
-    ] }, s.type)) }),
-    playing && /* @__PURE__ */ jsxs3("div", { className: "nc-player", children: [
-      /* @__PURE__ */ jsxs3("div", { className: "nc-player-info", children: [
-        /* @__PURE__ */ jsxs3("b", { children: [
-          secs.find((s) => s.type === playing)?.title,
-          " \xB7 \u64AD\u653E\u4E2D"
-        ] }),
-        /* @__PURE__ */ jsx3("div", { className: "nc-player-bar", children: /* @__PURE__ */ jsx3("i", {}) })
-      ] }),
-      /* @__PURE__ */ jsx3("span", { className: "nc-player-ctrl", onClick: () => toggle(playing), children: "\u23F8" })
+    !daily && /* @__PURE__ */ jsxs3("div", { className: "nc-empty", children: [
+      "\u4ECA\u5929\u8FD8\u6CA1\u6709\u65E5\u62A5\u3002\u5148\u70B9\u300C\u4ECA\u65E5\u300D\u9875\u53F3\u4E0A \u2726 \u751F\u6210\u65E5\u62A5\uFF0C\u518D\u56DE\u6765\u751F\u6210\u8BED\u97F3\u3002",
+      /* @__PURE__ */ jsx3("br", {}),
+      /* @__PURE__ */ jsx3("button", { className: "nc-btn", style: { marginTop: 10 }, onClick: () => sendToChat("\u5E2E\u6211\u751F\u6210\u4ECA\u5929\u7684 AI \u6BCF\u65E5\u520A\u7269\u65E5\u62A5"), children: "\u2726 \u751F\u6210\u65E5\u62A5" })
     ] }),
-    /* @__PURE__ */ jsx3("div", { className: "nc-tip", style: { padding: "4px 16px", fontSize: 11, color: "#5C6678" }, children: '\u{1F4A1} P0 \u8BED\u97F3\u4E3A\u300C\u5355\u7AE0\u64AD\u62A5\u300D\uFF1A\u5728\u5BF9\u8BDD\u91CC\u8BF4"\u751F\u6210\u8BED\u97F3\u65E5\u62A5"\u6216\u70B9\u7AE0\u8282 \u2726\uFF0CAI \u4F1A\u7528 news_brief \u8F6C\u64AD\u62A5\u7A3F + mimo_tts \u5408\u6210\uFF08\u6570\u636E URL \u5185\u8054\uFF0C\u4E0D\u843D\u76D8\uFF09\u3002' }),
+    /* @__PURE__ */ jsx3("div", { className: "nc-feed", children: secs.map((s) => {
+      const clip = voices[s.type] || null;
+      const pg = progress[s.type];
+      const pct = pg && pg.dur ? Math.min(100, pg.cur / pg.dur * 100) : 0;
+      const hasAudio = !!clip;
+      return /* @__PURE__ */ jsxs3("div", { className: `nc-voice ${playing === s.type ? "playing" : ""}`, children: [
+        /* @__PURE__ */ jsxs3("div", { className: "nc-voice-h", onClick: () => hasAudio && toggle(s.type, clip), children: [
+          /* @__PURE__ */ jsx3("span", { className: "nc-vic", children: playing === s.type ? "\u275A\u275A" : hasAudio ? "\u25B6" : SEC_ICON[s.type] || "\u25B6" }),
+          /* @__PURE__ */ jsxs3("div", { className: "nc-voice-t", children: [
+            /* @__PURE__ */ jsx3("b", { children: s.title }),
+            /* @__PURE__ */ jsx3("small", { children: hasAudio ? `\u5DF2\u5408\u6210${clip?.durationSec ? ` \xB7 ${fmt(clip.durationSec)}` : ""}` : s.type === "learn" ? "\u53CC\u7EBF\u8BFE\u7A0B" : s.type === "fund" ? "\u81EA\u9009\u57FA\u91D1" : (s.items || []).length + " \u6761" })
+          ] }),
+          /* @__PURE__ */ jsx3("span", { className: "nc-voice-dur", children: hasAudio ? clip?.durationSec ? `\u23F1 ${fmt(clip.durationSec)}` : "\u53EF\u64AD\u653E" : "\u672A\u5408\u6210" }),
+          !hasAudio && /* @__PURE__ */ jsx3("button", { className: "nc-btn sm ghost", disabled: generating === s.type, onClick: (e) => {
+            e.stopPropagation();
+            askVoice(s.type, s.title);
+          }, children: generating === s.type ? "\u5408\u6210\u4E2D\u2026" : "\u2726 \u751F\u6210" }),
+          hasAudio && playing === s.type && /* @__PURE__ */ jsxs3("span", { className: "nc-voice-dur", children: [
+            fmt(pg?.cur),
+            " / ",
+            fmt(pg?.dur)
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx3("div", { className: "nc-voice-prog", children: /* @__PURE__ */ jsx3("i", { style: { width: `${playing === s.type ? pct : hasAudio ? 100 : 0}%` } }) })
+      ] }, s.type);
+    }) }),
+    /* @__PURE__ */ jsx3("audio", { ref: audioRef, preload: "none" }),
+    /* @__PURE__ */ jsx3("div", { className: "nc-tip", style: { padding: "4px 16px", fontSize: 11, color: "#5C6678" }, children: "\u{1F4A1} \u70B9\u6709\u97F3\u9891\u7684\u7AE0\u8282\u5373\u53EF\u64AD\u653E\uFF1B\u672A\u5408\u6210\u7684\u70B9\u300C\u2726 \u751F\u6210\u300D\uFF0CAI \u4F1A\u7528 mimo_tts \u5408\u6210\u5E76\u7F13\u5B58\uFF08\u684C\u9762/\u624B\u673A\u90FD\u80FD\u64AD\uFF09\u3002" }),
     toast && /* @__PURE__ */ jsx3("div", { className: "nc-toast", children: toast })
+  ] });
+}
+
+// src/Archive.tsx
+init_model();
+import { useState as useState5, useEffect as useEffect5 } from "react";
+import { Fragment as Fragment2, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+var DIR_ICON2 = {
+  fund: "\u{1F4C8}",
+  tech: "\u{1F9E0}",
+  news: "\u{1F525}",
+  creative: "\u{1F4A1}",
+  learn: "\u{1F393}",
+  summary: "\u{1F4F0}"
+};
+function Archive() {
+  const [dates, setDates] = useState5([]);
+  const [sel, setSel] = useState5(null);
+  const [daily, setDaily] = useState5(null);
+  const [voices, setVoices] = useState5(/* @__PURE__ */ new Set());
+  const [loading, setLoading] = useState5(true);
+  const loadDates = async () => {
+    const ds = await listDailyDates();
+    setDates(ds);
+    setSel((s) => s ?? ds[0] ?? null);
+  };
+  useEffect5(() => {
+    loadDates();
+  }, []);
+  useEffect5(() => {
+    if (!sel) {
+      setDaily(null);
+      return;
+    }
+    setLoading(true);
+    Promise.all([loadDaily(sel), loadDateKey(sel)]).then(([d, vk]) => {
+      setDaily(d);
+      setVoices(new Set(vk.map((k) => k.slice(`news.voice.${sel}.`.length))));
+      setLoading(false);
+    });
+  }, [sel]);
+  const sections = daily?.sections || [];
+  return /* @__PURE__ */ jsxs4("div", { className: "nc-page", children: [
+    /* @__PURE__ */ jsxs4("div", { className: "nc-top", children: [
+      /* @__PURE__ */ jsx4("div", { className: "nc-logo", style: { background: "linear-gradient(135deg,#9B6CFF,#58A6FF)" }, children: "\u{1F4DA}" }),
+      /* @__PURE__ */ jsxs4("div", { className: "nc-tt", children: [
+        /* @__PURE__ */ jsx4("b", { children: "\u5386\u53F2\u65E5\u62A5" }),
+        /* @__PURE__ */ jsx4("small", { children: dates.length ? `\u5DF2\u53D1\u5E03 ${dates.length} \u5929` : "\u8FD8\u6CA1\u6709\u5386\u53F2\u65E5\u62A5" })
+      ] })
+    ] }),
+    !dates.length && /* @__PURE__ */ jsx4("div", { className: "nc-empty", children: "\u6682\u65E0\u5386\u53F2\u65E5\u62A5\u3002\u5148\u5728\u300C\u4ECA\u65E5\u300D\u9875\u751F\u6210\u65E5\u62A5\uFF0C\u4E4B\u540E\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002" }),
+    dates.length > 0 && /* @__PURE__ */ jsx4("div", { style: { display: "flex", gap: 6, overflowX: "auto", padding: "0 16px 12px", WebkitOverflowScrolling: "touch" }, children: dates.map((d) => /* @__PURE__ */ jsx4(
+      "button",
+      {
+        onClick: () => setSel(d),
+        className: `nc-st ${sel === d ? "on" : ""}`,
+        style: { flexShrink: 0 },
+        children: d.slice(5)
+      },
+      d
+    )) }),
+    loading && /* @__PURE__ */ jsx4("div", { className: "nc-empty", children: "\u52A0\u8F7D\u4E2D\u2026" }),
+    daily && !loading && /* @__PURE__ */ jsxs4(Fragment2, { children: [
+      /* @__PURE__ */ jsxs4("div", { className: "nc-prog", style: { marginTop: 2 }, children: [
+        /* @__PURE__ */ jsxs4("div", { className: "nc-prog-h", children: [
+          /* @__PURE__ */ jsx4("b", { children: fmtCnDate(sel || "") }),
+          /* @__PURE__ */ jsx4("span", { className: "nc-pct", children: daily.totalMinutes ? `\u7EA6 ${daily.totalMinutes} \u5206\u949F` : "" })
+        ] }),
+        daily.summary && /* @__PURE__ */ jsx4("div", { className: "nc-sub", style: { padding: 0, color: "#8B95A7" }, children: daily.summary })
+      ] }),
+      sections.map((s) => /* @__PURE__ */ jsxs4("div", { children: [
+        /* @__PURE__ */ jsxs4("div", { className: "nc-sec", children: [
+          /* @__PURE__ */ jsx4("span", { className: "nc-bar" }),
+          DIR_ICON2[s.type] || "\u{1F4C4}",
+          " ",
+          s.title || s.type,
+          /* @__PURE__ */ jsx4("span", { className: "nc-hint", children: voices.has(s.type) ? "\u{1F399}\uFE0F \u6709\u8BED\u97F3" : s.items?.length ? `${s.items.length} \u6761` : "" })
+        ] }),
+        /* @__PURE__ */ jsxs4("div", { className: "nc-feed", children: [
+          (s.items || []).slice(0, 4).map((it, i) => /* @__PURE__ */ jsxs4("div", { className: "nc-card", children: [
+            /* @__PURE__ */ jsxs4("div", { className: "nc-card-b", children: [
+              /* @__PURE__ */ jsx4("b", { children: it.title || it.name || "" }),
+              it.meta?.badge && /* @__PURE__ */ jsx4("span", { className: "nc-badge", style: { float: "right" }, children: it.meta.badge })
+            ] }),
+            it.brief && /* @__PURE__ */ jsx4("div", { className: "nc-sub", children: it.brief }),
+            it.meta?.src && /* @__PURE__ */ jsxs4("div", { className: "nc-src", children: [
+              /* @__PURE__ */ jsx4("span", { className: "nc-badge", children: it.meta.src }),
+              it.meta?.sub && /* @__PURE__ */ jsx4("span", { children: it.meta.sub })
+            ] })
+          ] }, i)),
+          (s.items || []).length > 4 && /* @__PURE__ */ jsx4("div", { className: "nc-card", children: /* @__PURE__ */ jsxs4("div", { className: "nc-sub", children: [
+            "\u2026 \u5171 ",
+            (s.items || []).length,
+            " \u6761"
+          ] }) })
+        ] })
+      ] }, s.type))
+    ] })
   ] });
 }
 
 // src/Mine.tsx
 init_model();
-import { useState as useState5, useEffect as useEffect5 } from "react";
-import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+import { useState as useState6, useEffect as useEffect6 } from "react";
+import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
 var DIRECTIONS = [
   { key: "creative", label: "\u521B\u610F\u9879\u76EE", icon: "\u{1F4A1}" },
   { key: "fund", label: "\u57FA\u91D1\u6295\u8D44", icon: "\u{1F4C8}" },
@@ -676,11 +894,11 @@ var DIRECTIONS = [
   { key: "learn", label: "\u5B66\u4E60\uFF08\u4E13\u4E1A+\u901A\u8BC6\uFF09", icon: "\u{1F393}" }
 ];
 function Mine() {
-  const [prefs, setPrefs] = useState5(null);
-  const [log, setLog] = useState5([]);
-  const [progress, setProgress] = useState5(null);
-  const [addCode, setAddCode] = useState5("");
-  const [toast, setToast] = useState5(null);
+  const [prefs, setPrefs] = useState6(null);
+  const [log, setLog] = useState6([]);
+  const [progress, setProgress] = useState6(null);
+  const [addCode, setAddCode] = useState6("");
+  const [toast, setToast] = useState6(null);
   const reload = async () => {
     try {
       const [p, l, prog] = await Promise.all([loadPrefs(), loadPrefsLog(), loadProgress()]);
@@ -691,7 +909,7 @@ function Mine() {
       setToast(`\u52A0\u8F7D\u5931\u8D25\uFF1A${e.message}`);
     }
   };
-  useEffect5(() => {
+  useEffect6(() => {
     reload();
   }, []);
   const toastMsg = (m) => {
@@ -778,64 +996,64 @@ function Mine() {
       toastMsg(`\u64A4\u9500\u5931\u8D25\uFF1A${e.message}`);
     }
   };
-  return /* @__PURE__ */ jsxs4("div", { className: "nc-page", children: [
-    /* @__PURE__ */ jsxs4("div", { className: "nc-top", children: [
-      /* @__PURE__ */ jsx4("div", { className: "nc-logo", style: { background: "linear-gradient(135deg,#3FB950,#58A6FF)" }, children: "\u{1F464}" }),
-      /* @__PURE__ */ jsxs4("div", { className: "nc-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u6211\u7684" }),
-        /* @__PURE__ */ jsx4("small", { children: "\u504F\u597D \xB7 \u57FA\u91D1\u6C60 \xB7 AI \u6539\u52A8\u65E5\u5FD7" })
+  return /* @__PURE__ */ jsxs5("div", { className: "nc-page", children: [
+    /* @__PURE__ */ jsxs5("div", { className: "nc-top", children: [
+      /* @__PURE__ */ jsx5("div", { className: "nc-logo", style: { background: "linear-gradient(135deg,#3FB950,#58A6FF)" }, children: "\u{1F464}" }),
+      /* @__PURE__ */ jsxs5("div", { className: "nc-tt", children: [
+        /* @__PURE__ */ jsx5("b", { children: "\u6211\u7684" }),
+        /* @__PURE__ */ jsx5("small", { children: "\u504F\u597D \xB7 \u57FA\u91D1\u6C60 \xB7 AI \u6539\u52A8\u65E5\u5FD7" })
       ] })
     ] }),
-    !prefs && /* @__PURE__ */ jsx4("div", { className: "nc-empty", children: "\u52A0\u8F7D\u4E2D\u2026" }),
-    prefs && /* @__PURE__ */ jsxs4("div", { className: "nc-feed", children: [
-      /* @__PURE__ */ jsxs4("div", { className: "nc-card", style: { padding: 13 }, children: [
-        /* @__PURE__ */ jsxs4("div", { className: "nc-card-h", children: [
-          /* @__PURE__ */ jsx4("b", { children: "\u5173\u6CE8\u65B9\u5411" }),
-          /* @__PURE__ */ jsx4("span", { className: "nc-hint", children: "\u65E5\u62A5\u5404\u677F\u5757\u6743\u91CD" })
+    !prefs && /* @__PURE__ */ jsx5("div", { className: "nc-empty", children: "\u52A0\u8F7D\u4E2D\u2026" }),
+    prefs && /* @__PURE__ */ jsxs5("div", { className: "nc-feed", children: [
+      /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
+          /* @__PURE__ */ jsx5("b", { children: "\u5173\u6CE8\u65B9\u5411" }),
+          /* @__PURE__ */ jsx5("span", { className: "nc-hint", children: "\u65E5\u62A5\u5404\u677F\u5757\u6743\u91CD" })
         ] }),
-        /* @__PURE__ */ jsx4("div", { className: "nc-dir-list", children: DIRECTIONS.map((d) => /* @__PURE__ */ jsxs4("button", { className: `nc-dir ${prefs.directions[d.key] ? "on" : ""}`, onClick: () => toggleDir(d.key), children: [
-          /* @__PURE__ */ jsx4("span", { children: d.icon }),
+        /* @__PURE__ */ jsx5("div", { className: "nc-dir-list", children: DIRECTIONS.map((d) => /* @__PURE__ */ jsxs5("button", { className: `nc-dir ${prefs.directions[d.key] ? "on" : ""}`, onClick: () => toggleDir(d.key), children: [
+          /* @__PURE__ */ jsx5("span", { children: d.icon }),
           d.label,
-          /* @__PURE__ */ jsx4("span", { className: "nc-dir-sw", children: prefs.directions[d.key] ? "\u2713" : "\u2715" })
+          /* @__PURE__ */ jsx5("span", { className: "nc-dir-sw", children: prefs.directions[d.key] ? "\u2713" : "\u2715" })
         ] }, d.key)) }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-row", style: { marginTop: 10 }, children: [
-          /* @__PURE__ */ jsx4("span", { className: "nc-lbl", children: "\u6BCF\u65E5\u76EE\u6807" }),
-          [60, 90, 120].map((v) => /* @__PURE__ */ jsxs4("button", { className: `nc-btn sm ${prefs.dailyTarget === v ? "" : "ghost"}`, onClick: () => setTarget(v), children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-row", style: { marginTop: 10 }, children: [
+          /* @__PURE__ */ jsx5("span", { className: "nc-lbl", children: "\u6BCF\u65E5\u76EE\u6807" }),
+          [60, 90, 120].map((v) => /* @__PURE__ */ jsxs5("button", { className: `nc-btn sm ${prefs.dailyTarget === v ? "" : "ghost"}`, onClick: () => setTarget(v), children: [
             v,
             " \u5206"
           ] }, v))
         ] }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-row", style: { marginTop: 8 }, children: [
-          /* @__PURE__ */ jsx4("span", { className: "nc-lbl", children: "\u8BED\u97F3\u97F3\u8272" }),
-          ["\u51B0\u7CD6", "\u8309\u8389", "\u82CF\u6253", "\u767D\u6866"].map((v) => /* @__PURE__ */ jsx4("button", { className: `nc-btn sm ${prefs.voice?.voice === v ? "" : "ghost"}`, onClick: () => setVoice(v), children: v }, v))
+        /* @__PURE__ */ jsxs5("div", { className: "nc-row", style: { marginTop: 8 }, children: [
+          /* @__PURE__ */ jsx5("span", { className: "nc-lbl", children: "\u8BED\u97F3\u97F3\u8272" }),
+          ["\u51B0\u7CD6", "\u8309\u8389", "\u82CF\u6253", "\u767D\u6866"].map((v) => /* @__PURE__ */ jsx5("button", { className: `nc-btn sm ${prefs.voice?.voice === v ? "" : "ghost"}`, onClick: () => setVoice(v), children: v }, v))
         ] })
       ] }),
-      /* @__PURE__ */ jsxs4("div", { className: "nc-card", style: { padding: 13 }, children: [
-        /* @__PURE__ */ jsxs4("div", { className: "nc-card-h", children: [
-          /* @__PURE__ */ jsx4("b", { children: "\u57FA\u91D1\u81EA\u9009\u6C60" }),
-          /* @__PURE__ */ jsx4("span", { className: "nc-hint", children: "AI \u6BCF\u65E5\u7814\u5224\u8FD9\u4E9B\u57FA\u91D1" })
+      /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
+          /* @__PURE__ */ jsx5("b", { children: "\u57FA\u91D1\u81EA\u9009\u6C60" }),
+          /* @__PURE__ */ jsx5("span", { className: "nc-hint", children: "AI \u6BCF\u65E5\u7814\u5224\u8FD9\u4E9B\u57FA\u91D1" })
         ] }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-fund-list", children: [
-          prefs.watchlist.map((c) => /* @__PURE__ */ jsxs4("span", { className: "nc-fund-chip", children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-fund-list", children: [
+          prefs.watchlist.map((c) => /* @__PURE__ */ jsxs5("span", { className: "nc-fund-chip", children: [
             c,
-            /* @__PURE__ */ jsx4("b", { onClick: () => removeFund(c), children: "\u2715" })
+            /* @__PURE__ */ jsx5("b", { onClick: () => removeFund(c), children: "\u2715" })
           ] }, c)),
-          !prefs.watchlist.length && /* @__PURE__ */ jsx4("span", { className: "nc-sub", children: "\u7A7A\u6C60\uFF1AAI \u5C06\u53EA\u6309\u6392\u884C\u63A8\u9001" })
+          !prefs.watchlist.length && /* @__PURE__ */ jsx5("span", { className: "nc-sub", children: "\u7A7A\u6C60\uFF1AAI \u5C06\u53EA\u6309\u6392\u884C\u63A8\u9001" })
         ] }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-row", style: { marginTop: 10 }, children: [
-          /* @__PURE__ */ jsx4("input", { className: "nc-inp", placeholder: "6 \u4F4D\u57FA\u91D1\u4EE3\u7801", value: addCode, onChange: (e) => setAddCode(e.target.value), onKeyDown: (e) => e.key === "Enter" && addFund() }),
-          /* @__PURE__ */ jsx4("button", { className: "nc-btn ghost", onClick: addFund, children: "+ \u6DFB\u52A0" }),
-          /* @__PURE__ */ jsx4("button", { className: "nc-btn ghost sm", onClick: resetWatchlist, children: "\u9ED8\u8BA4\u6C60" })
+        /* @__PURE__ */ jsxs5("div", { className: "nc-row", style: { marginTop: 10 }, children: [
+          /* @__PURE__ */ jsx5("input", { className: "nc-inp", placeholder: "6 \u4F4D\u57FA\u91D1\u4EE3\u7801", value: addCode, onChange: (e) => setAddCode(e.target.value), onKeyDown: (e) => e.key === "Enter" && addFund() }),
+          /* @__PURE__ */ jsx5("button", { className: "nc-btn ghost", onClick: addFund, children: "+ \u6DFB\u52A0" }),
+          /* @__PURE__ */ jsx5("button", { className: "nc-btn ghost sm", onClick: resetWatchlist, children: "\u9ED8\u8BA4\u6C60" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs4("div", { className: "nc-card", style: { padding: 13 }, children: [
-        /* @__PURE__ */ jsxs4("div", { className: "nc-card-h", children: [
-          /* @__PURE__ */ jsx4("b", { children: "\u5B66\u4E60\u8BA1\u5212" }),
-          /* @__PURE__ */ jsx4("span", { className: "nc-hint", children: "\u53CC\u7EBF\u9AA8\u67B6" })
+      /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
+          /* @__PURE__ */ jsx5("b", { children: "\u5B66\u4E60\u8BA1\u5212" }),
+          /* @__PURE__ */ jsx5("span", { className: "nc-hint", children: "\u53CC\u7EBF\u9AA8\u67B6" })
         ] }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-row", style: { marginTop: 6 }, children: [
-          /* @__PURE__ */ jsx4("span", { className: "nc-lbl", children: "\u4E13\u4E1A\u7EBF" }),
-          ["L1", "L2", "L3", "L4"].map((v) => /* @__PURE__ */ jsx4("button", { className: `nc-btn sm ${prefs.learn?.proStage === v ? "" : "ghost"}`, onClick: () => {
+        /* @__PURE__ */ jsxs5("div", { className: "nc-row", style: { marginTop: 6 }, children: [
+          /* @__PURE__ */ jsx5("span", { className: "nc-lbl", children: "\u4E13\u4E1A\u7EBF" }),
+          ["L1", "L2", "L3", "L4"].map((v) => /* @__PURE__ */ jsx5("button", { className: `nc-btn sm ${prefs.learn?.proStage === v ? "" : "ghost"}`, onClick: () => {
             if (prefs) {
               const n = { ...prefs, learn: { ...prefs.learn, proStage: v } };
               setPrefs(n);
@@ -844,7 +1062,7 @@ function Mine() {
             }
           }, children: v }, v))
         ] }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-sub", style: { marginTop: 6 }, children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-sub", style: { marginTop: 6 }, children: [
           "\u901A\u8BC6\u6F2B\u6E38\uFF1A24 \u4E3B\u9898\u8F6E\u6362 \xB7 \u6BCF\u5468 ",
           prefs.learn?.weeklyDays || 5,
           " \u5929 \xB7 \u5DF2\u5B8C\u6210 ",
@@ -852,33 +1070,33 @@ function Mine() {
           " \u4E3B\u9898"
         ] })
       ] }),
-      /* @__PURE__ */ jsxs4("div", { className: "nc-card", style: { padding: 13 }, children: [
-        /* @__PURE__ */ jsxs4("div", { className: "nc-card-h", children: [
-          /* @__PURE__ */ jsx4("b", { children: "AI \u6539\u52A8\u65E5\u5FD7" }),
-          /* @__PURE__ */ jsx4("span", { className: "nc-hint", children: "AI \u56DE\u5199\u504F\u597D\u8BB0\u5F55\uFF08\u53EF\u64A4\u9500\uFF09" })
+      /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
+          /* @__PURE__ */ jsx5("b", { children: "AI \u6539\u52A8\u65E5\u5FD7" }),
+          /* @__PURE__ */ jsx5("span", { className: "nc-hint", children: "AI \u56DE\u5199\u504F\u597D\u8BB0\u5F55\uFF08\u53EF\u64A4\u9500\uFF09" })
         ] }),
-        log.length === 0 ? /* @__PURE__ */ jsx4("div", { className: "nc-sub", children: "\u6682\u65E0 AI \u6539\u52A8\u3002AI \u53D1\u73B0\u4F60\u7684\u9605\u8BFB\u4E60\u60EF\u53D8\u5316\u65F6\uFF0C\u4F1A\u5E26 reason \u56DE\u5199\u5E76\u8BB0\u5728\u8FD9\u91CC\u3002" }) : /* @__PURE__ */ jsx4("div", { className: "nc-log-list", children: log.map((e) => /* @__PURE__ */ jsxs4("div", { className: "nc-log-item", children: [
-          /* @__PURE__ */ jsxs4("div", { className: "nc-log-main", children: [
-            /* @__PURE__ */ jsx4("b", { children: e.reason }),
-            /* @__PURE__ */ jsxs4("small", { children: [
+        log.length === 0 ? /* @__PURE__ */ jsx5("div", { className: "nc-sub", children: "\u6682\u65E0 AI \u6539\u52A8\u3002AI \u53D1\u73B0\u4F60\u7684\u9605\u8BFB\u4E60\u60EF\u53D8\u5316\u65F6\uFF0C\u4F1A\u5E26 reason \u56DE\u5199\u5E76\u8BB0\u5728\u8FD9\u91CC\u3002" }) : /* @__PURE__ */ jsx5("div", { className: "nc-log-list", children: log.map((e) => /* @__PURE__ */ jsxs5("div", { className: "nc-log-item", children: [
+          /* @__PURE__ */ jsxs5("div", { className: "nc-log-main", children: [
+            /* @__PURE__ */ jsx5("b", { children: e.reason }),
+            /* @__PURE__ */ jsxs5("small", { children: [
               new Date(e.ts).toLocaleString(),
               " \xB7 ",
               e.what
             ] })
           ] }),
-          /* @__PURE__ */ jsx4("button", { className: "nc-btn sm ghost", onClick: () => undo(e.ts), children: "\u64A4\u9500" })
+          /* @__PURE__ */ jsx5("button", { className: "nc-btn sm ghost", onClick: () => undo(e.ts), children: "\u64A4\u9500" })
         ] }, e.ts)) })
       ] }),
-      /* @__PURE__ */ jsxs4("div", { className: "nc-card", style: { padding: 13 }, children: [
-        /* @__PURE__ */ jsxs4("div", { className: "nc-card-h", children: [
-          /* @__PURE__ */ jsx4("b", { children: "\u5B66\u4E60\u6863\u6848" }),
-          /* @__PURE__ */ jsxs4("span", { className: "nc-hint", children: [
+      /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
+          /* @__PURE__ */ jsx5("b", { children: "\u5B66\u4E60\u6863\u6848" }),
+          /* @__PURE__ */ jsxs5("span", { className: "nc-hint", children: [
             "\u8FDE\u7EED\u6253\u5361 ",
             progress?.streak || 0,
             " \u5929"
           ] })
         ] }),
-        /* @__PURE__ */ jsxs4("div", { className: "nc-sub", children: [
+        /* @__PURE__ */ jsxs5("div", { className: "nc-sub", children: [
           "\u6536\u85CF ",
           progress?.favorites?.length || 0,
           " \u6761 \xB7 \u6700\u8FD1\u9605\u8BFB ",
@@ -889,7 +1107,7 @@ function Mine() {
         ] })
       ] })
     ] }),
-    toast && /* @__PURE__ */ jsx4("div", { className: "nc-toast", children: toast })
+    toast && /* @__PURE__ */ jsx5("div", { className: "nc-toast", children: toast })
   ] });
 }
 async function kvSetLog(full) {
@@ -898,7 +1116,7 @@ async function kvSetLog(full) {
 }
 
 // src/Panel.tsx
-import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
+import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
 var css = `
 .nc-root{position:relative;font:13px/1.55 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#E6EAF2;height:100%;display:flex;flex-direction:column;background:transparent}
 .nc-body{flex:1;overflow-y:auto;padding:0 0 20px}
@@ -1073,33 +1291,35 @@ var TABS = [
   { id: "today", label: "\u4ECA\u65E5", icon: "\u{1F4F0}" },
   { id: "learn", label: "\u5B66\u4E60", icon: "\u{1F393}" },
   { id: "voice", label: "\u8BED\u97F3", icon: "\u{1F399}\uFE0F" },
+  { id: "archive", label: "\u5386\u53F2", icon: "\u{1F4DA}" },
   { id: "mine", label: "\u6211\u7684", icon: "\u{1F464}" }
 ];
 function NewsPanel({ onSendToChat }) {
-  const [tab, setTab] = useState6(0);
-  useEffect6(() => {
+  const [tab, setTab] = useState7(0);
+  useEffect7(() => {
     setHostSend(onSendToChat);
     return () => setHostSend(void 0);
   }, [onSendToChat]);
-  return /* @__PURE__ */ jsxs5("div", { className: "nc-root", children: [
-    /* @__PURE__ */ jsx5("style", { children: css }),
-    /* @__PURE__ */ jsxs5("div", { className: "nc-body", children: [
-      tab === 0 && /* @__PURE__ */ jsx5(Today, { goTab: setTab }),
-      tab === 1 && /* @__PURE__ */ jsx5(Learn, {}),
-      tab === 2 && /* @__PURE__ */ jsx5(Voice, {}),
-      tab === 3 && /* @__PURE__ */ jsx5(Mine, {})
+  return /* @__PURE__ */ jsxs6("div", { className: "nc-root", children: [
+    /* @__PURE__ */ jsx6("style", { children: css }),
+    /* @__PURE__ */ jsxs6("div", { className: "nc-body", children: [
+      tab === 0 && /* @__PURE__ */ jsx6(Today, { goTab: setTab }),
+      tab === 1 && /* @__PURE__ */ jsx6(Learn, {}),
+      tab === 2 && /* @__PURE__ */ jsx6(Voice, {}),
+      tab === 3 && /* @__PURE__ */ jsx6(Archive, {}),
+      tab === 4 && /* @__PURE__ */ jsx6(Mine, {})
     ] }),
-    /* @__PURE__ */ jsx5("div", { className: "nc-tabbar", children: TABS.map((t, i) => /* @__PURE__ */ jsxs5("button", { className: `nc-tab ${tab === i ? "on" : ""}`, onClick: () => setTab(i), children: [
-      /* @__PURE__ */ jsx5("span", { className: "nc-tab-ic", children: t.icon }),
+    /* @__PURE__ */ jsx6("div", { className: "nc-tabbar", children: TABS.map((t, i) => /* @__PURE__ */ jsxs6("button", { className: `nc-tab ${tab === i ? "on" : ""}`, onClick: () => setTab(i), children: [
+      /* @__PURE__ */ jsx6("span", { className: "nc-tab-ic", children: t.icon }),
       t.label
     ] }, t.id)) })
   ] });
 }
 
 // src/index.tsx
-import { jsx as jsx6 } from "react/jsx-runtime";
+import { jsx as jsx7 } from "react/jsx-runtime";
 function NewsCuratorEntry(props) {
-  return /* @__PURE__ */ jsx6(NewsPanel, { ...props });
+  return /* @__PURE__ */ jsx7(NewsPanel, { ...props });
 }
 export {
   NewsCuratorEntry as default
