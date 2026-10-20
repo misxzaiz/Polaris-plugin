@@ -6,9 +6,10 @@
  */
 import { useState, useEffect } from 'react'
 import {
-  loadPrefs, savePrefs, loadPrefsLog, loadProgress, loadReviews, today,
+  loadPrefs, savePrefs, loadPrefsLog, loadProgress, today,
   saveProgress, Prefs, PrefsLogEntry, Progress, DEFAULT_WATCHLIST,
 } from './model'
+import { Skeleton, ErrorState, EmptyState } from './Panel'
 
 const DIRECTIONS: { key: string; label: string; icon: string }[] = [
   { key: 'creative', label: '创意项目', icon: '💡' },
@@ -24,15 +25,23 @@ export default function Mine() {
   const [progress, setProgress] = useState<Progress | null>(null)
   const [addCode, setAddCode] = useState('')
   const [toast, setToast] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
+  const [tab, setTab] = useState<'settings' | 'favorites'>('settings')
 
   const reload = async () => {
+    setLoading(true)
+    setErr(null)
     try {
       const [p, l, prog] = await Promise.all([loadPrefs(), loadPrefsLog(), loadProgress()])
       setPrefs(p)
       setLog(l.filter((e) => !e.undone).slice(-8).reverse())
       setProgress(prog)
     } catch (e: any) {
+      setErr(e.message || String(e))
       setToast(`加载失败：${e.message}`)
+    } finally {
+      setLoading(false)
     }
   }
   useEffect(() => { reload() }, [])
@@ -130,8 +139,36 @@ export default function Mine() {
         <div className="nc-tt"><b>我的</b><small>偏好 · 基金池 · AI 改动日志</small></div>
       </div>
 
-      {!prefs && <div className="nc-empty">加载中…</div>}
-      {prefs && (
+      {/* 设置 / 收藏 子 Tab */}
+      <div className="nc-subtab">
+        <button className={`nc-st ${tab === 'settings' ? 'on' : ''}`} onClick={() => setTab('settings')}>⚙️ 设置</button>
+        <button className={`nc-st ${tab === 'favorites' ? 'on' : ''}`} onClick={() => setTab('favorites')}>⭐ 收藏 {progress?.favorites?.length ? `(${progress.favorites.length})` : ''}</button>
+      </div>
+
+      {err && <ErrorState msg={err} onRetry={reload} />}
+
+      {!err && loading && <Skeleton lines={4} />}
+
+      {!err && !loading && tab === 'favorites' && (
+        <div className="nc-feed">
+          <div className="nc-card" style={{ padding: 13 }}>
+            <div className="nc-card-h"><b>我的收藏</b><span className="nc-hint">AI 会学习你的收藏偏好</span></div>
+            {!progress?.favorites?.length ? (
+              <EmptyState icon="⭐" title="还没有收藏" desc="在「今日」页点卡片右上 ☆ 收藏，AI 会据此调整日报权重。" />
+            ) : (
+              <div className="nc-log-list">
+                {progress.favorites.map((f, i) => (
+                  <div key={i} className="nc-log-item">
+                    <div className="nc-log-main"><b>#{i + 1}</b><small>{f}</small></div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!err && !loading && tab === 'settings' && prefs && (
         <div className="nc-feed">
           {/* 关注方向 */}
           <div className="nc-card" style={{ padding: 13 }}>

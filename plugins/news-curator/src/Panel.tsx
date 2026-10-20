@@ -43,10 +43,9 @@ const css = `
 .nc-sec{display:flex;align-items:center;gap:8px;padding:10px 18px 8px;font-size:14px;font-weight:700}
 .nc-bar{width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,#58A6FF,#BC8CFF);flex-shrink:0}
 .nc-hint{margin-left:auto;font-size:10.5px;color:#5C6678;font-weight:400}
-.nc-feed{display:flex;flex-direction:column;gap:10px;padding:0 16px 18px}
 
 /* 卡片 */
-.nc-card{background:#161B22;border:1px solid #242C3A;border-radius:14px;overflow:hidden}
+.nc-card{background:#161B22;border:1px solid #242C3A;border-radius:14px;overflow:hidden;min-width:0}
 .nc-card-b{padding:12px 14px 0}
 .nc-card-b b{font-size:13px}
 .nc-card-h{padding:0 0 8px;display:flex;align-items:center}
@@ -180,6 +179,29 @@ const css = `
 .nc-tab .nc-tab-ic{font-size:17px}
 .nc-tab.on{color:#fff;background:rgba(88,166,255,.12)}
 .nc-tab.on .nc-tab-ic{color:#58A6FF}
+
+/* 生产级：骨架屏动画 */
+@keyframes nc-sk { 0%{opacity:.5} 50%{opacity:1} 100%{opacity:.5} }
+.nc-sk{background:#242C3A;border-radius:6px;animation:nc-sk 1.4s ease-in-out infinite}
+
+/* 生产级：响应式卡片网格（宿主面板宽度自适应，窄→单列，宽→双列） */
+.nc-feed{display:grid;grid-template-columns:1fr;gap:10px;padding:0 16px 18px}
+.nc-feed.narrow{grid-template-columns:1fr}
+@media (min-width: 560px){ .nc-feed{grid-template-columns:1fr 1fr} }
+@media (min-width: 480px) and (max-width: 559px){ .nc-page{max-width:100%} }
+.nc-sec{grid-column:1/-1}
+.nc-spread{grid-column:1/-1}
+
+/* 生产级：收藏按钮 */
+.nc-fav{background:none;border:none;color:#5C6678;font-size:15px;cursor:pointer;padding:2px 4px;flex-shrink:0;transition:transform .12s}
+.nc-fav:hover{transform:scale(1.2)}
+.nc-fav.on{color:#F0B429}
+
+/* 生产级：本地 toast 增强 + 焦点可见 */
+.nc-toast{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);background:rgba(22,27,35,.96);border:1px solid #242C3A;color:#E6EAF2;padding:8px 14px;border-radius:10px;font-size:11.5px;z-index:99;box-shadow:0 6px 18px #0008;white-space:nowrap;animation:nc-toast-in .18s ease}
+@keyframes nc-toast-in{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.nc-body:focus-visible{outline:none}
+.nc-btn:focus-visible,.nc-tab:focus-visible,.nc-dir:focus-visible,.nc-fav:focus-visible{outline:2px solid rgba(88,166,255,.6);outline-offset:2px}
 `
 
 const TABS = [
@@ -189,6 +211,56 @@ const TABS = [
   { id: 'archive', label: '历史', icon: '📚' },
   { id: 'mine', label: '我的', icon: '👤' },
 ]
+
+/** 骨架屏：页面加载时的占位（不闪屏，符合生产级） */
+export function Skeleton({ lines = 4 }: { lines?: number }) {
+  return (
+    <div className="nc-page" aria-busy="true" role="status" aria-label="加载中">
+      <div className="nc-top">
+        <div className="nc-logo" style={{ opacity: 0.4 }}>…</div>
+        <div className="nc-tt">
+          <div className="nc-sk" style={{ width: 120, height: 16 }} />
+          <div className="nc-sk" style={{ width: 80, height: 11, marginTop: 6 }} />
+        </div>
+      </div>
+      {Array.from({ length: lines }).map((_, i) => (
+        <div key={i} className="nc-card" style={{ margin: '0 16px 10px', padding: 14 }}>
+          <div className="nc-sk" style={{ width: `${60 + (i % 3) * 15}%`, height: 13 }} />
+          <div className="nc-sk" style={{ width: '92%', height: 10, marginTop: 8 }} />
+          <div className="nc-sk" style={{ width: '70%', height: 10, marginTop: 6 }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/** 错误态 + 重试（生产级：网络抖动/宿主未就绪时可恢复） */
+export function ErrorState({ msg, onRetry, hint }: { msg: string; onRetry?: () => void; hint?: string }) {
+  return (
+    <div className="nc-empty" style={{ paddingTop: 40 }}>
+      <div style={{ fontSize: 26, marginBottom: 8 }}>⚠️</div>
+      <div>{msg || '加载失败，请重试'}</div>
+      {hint && <div className="nc-tip" style={{ marginTop: 6 }}>{hint}</div>}
+      {onRetry && (
+        <button className="nc-btn" onClick={onRetry} style={{ marginTop: 14 }}>
+          ⟳ 重试
+        </button>
+      )}
+    </div>
+  )
+}
+
+/** 空态引导（生产级：给用户明确下一步） */
+export function EmptyState({ icon = '📄', title, desc, action }: { icon?: string; title: string; desc?: string; action?: React.ReactNode }) {
+  return (
+    <div className="nc-empty" style={{ paddingTop: 32 }}>
+      <div style={{ fontSize: 30, marginBottom: 10 }}>{icon}</div>
+      <b style={{ color: '#E6EAF2' }}>{title}</b>
+      {desc && <div style={{ marginTop: 6 }}>{desc}</div>}
+      {action && <div style={{ marginTop: 14 }}>{action}</div>}
+    </div>
+  )
+}
 
 export default function NewsPanel({ onSendToChat }: { onSendToChat?: (m: string) => void }) {
   const [tab, setTab] = useState(0)

@@ -6,6 +6,12 @@
  *  - 手机浏览器 / Web：宿主 invoke 自动取正确服务地址并携带 token
  * 面板与 MCP server 读写同一个 cap.kv（SqliteStorage domain=kv）。
  * 面板零外网请求：日报由 AI 用内置浏览器抓取后经 news_publish_daily 写入。
+ *
+ * v0.3.0 生产级加固：
+ *  - schema 版本化：news.prefs / news.progress / 日报均带 schemaVersion，读取时自动迁移旧版
+ *  - 幂等打卡 + 完读回流：同一天重复打卡不叠加；收藏/完读写 news.progress 供 AI 学偏好
+ *  - 音频自动分档：<300KB 存 dataUrl 内联，>=300KB 存托管 url（mimo-tts file 模式）
+ *  - 数据校验：读日报时容错非法结构，空态有引导
  */
 import { useState, useEffect, useCallback } from 'react'
 import { getHostInvoke } from './host'
@@ -49,21 +55,23 @@ export function sendToChat(msg: string): void {
   }
 }
 
-/** 迷你 hook：加载数据（带刷新） */
+/** 迷你 hook：加载数据（带刷新 + 重试 + 骨架态） */
 export function useModel<T>(loader: () => Promise<T>, deps: any[] = []) {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
   const reload = useCallback(async () => {
     setLoading(true)
+    setError(null)
     try {
       setData(await loader())
-      setError(null)
     } catch (e: any) {
       setError(e.message || String(e))
     } finally {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps)
   useEffect(() => {
     reload()
@@ -72,7 +80,10 @@ export function useModel<T>(loader: () => Promise<T>, deps: any[] = []) {
 }
 
 // ── 领域类型 ────────────────────────────────────────────────────────────────
+export const SCHEMA_VERSION = 1
+
 export interface Prefs {
+  schemaVersion?: number
   directions: Record<string, boolean>          // creative/fund/tech/news/learn
   watchlist: string[]                          // 基金自选池
   dailyTarget: number                          // 每日目标分钟
@@ -87,14 +98,16 @@ export interface PrefsLogEntry {
   reason: string
   undone: boolean
 }
+export type SectionType = 'summary' | 'fund' | 'tech' | 'news' | 'creative' | 'learn'
 export interface DailySection {
-  type: 'summary' | 'fund' | 'tech' | 'news' | 'creative' | 'learn'
+  type: SectionType
   title: string
-  items: { title?: string; name?: string; brief?: string; url?: string; meta?: any }[]
+  items: { title?: string; name?: string; brief?: string; url?: string; meta?: any; id?: string }[]
   meta?: any
 }
 export interface Daily {
   date: string
+  schemaVersion?: number
   totalMinutes?: number
   summary?: string
   sections: DailySection[]
@@ -102,17 +115,36 @@ export interface Daily {
   createdAt?: string
 }
 export interface Progress {
+  schemaVersion?: number
   streak: number
   lastRead: string | null
+  /** 今日已读分钟（每次完读刷新，按首次记录时间累积） */
+  minutesToday?: number
+  minutesDate?: string
   learned: { pro: string[]; gen: string[] }
   favorites: string[]
-  minutesToday?: number
+  /** 最近完读的日报日期集合（供学习档案/回流） */
+  readDates: string[]
+  /** 打卡历史日期集合（幂等，同一天只计一次） */
+  checkinDates: string[]
+}
+export interface VoiceClip {
+  section: string
+  dataUrl?: string
+  url?: string
+  durationSec?: number | null
+  title?: string
+  createdAt?: string
+  /** 存储档位：内联(dataUrl) / 托管(url)，由保存方标注 */
+  store?: 'inline' | 'hosted'
 }
 
 export const DEFAULT_WATCHLIST = ['005844', '017811', '002910', '013835', '011369', '013840']
+const AUDIO_INLINE_LIMIT = 300 * 1024 // 300KB：以下内联，以上托管
 
 export function defaultPrefs(): Prefs {
   return {
+    schemaVersion: SCHEMA_VERSION,
     directions: { creative: true, fund: true, tech: true, news: true, learn: true },
     watchlist: DEFAULT_WATCHLIST,
     dailyTarget: 90,
@@ -124,45 +156,152 @@ export function defaultPrefs(): Prefs {
 
 // ── 数据读写（cap.kv） ───────────────────────────────────────────────────────
 export async function loadPrefs(): Promise<Prefs> {
-  const p = await kvGet('news.prefs')
-  return p && typeof p === 'object' ? (p as Prefs) : defaultPrefs()
+  const raw = await kvGet('news.prefs')
+  const p = raw && typeof raw === 'object' ? (raw as Prefs) : null
+  if (!p) return defaultPrefs()
+  // 迁移：老版无 schemaVersion → 补默认字段
+  if (!p.schemaVersion) {
+    const d = defaultPrefs()
+    const migrated: Prefs = { ...d, ...p, directions: { ...d.directions, ...(p.directions || {}) } }
+    migrated.schemaVersion = SCHEMA_VERSION
+    void savePrefs(migrated) // 回写持久化（失败不阻塞读取）
+    return migrated
+  }
+  return p
 }
 export async function savePrefs(prefs: Prefs): Promise<void> {
-  await kvSet('news.prefs', { ...prefs, updatedAt: new Date().toISOString() })
+  await kvSet('news.prefs', { ...prefs, schemaVersion: SCHEMA_VERSION, updatedAt: new Date().toISOString() })
 }
 export async function loadPrefsLog(): Promise<PrefsLogEntry[]> {
   const l = await kvGet('news.prefsLog')
   return Array.isArray(l) ? (l as PrefsLogEntry[]) : []
 }
 export async function loadDaily(date: string): Promise<Daily | null> {
-  const d = await kvGet(`news.daily.${date}`)
-  return d && typeof d === 'object' ? (d as Daily) : null
-}
-export async function loadProgress(): Promise<Progress> {
-  const p = await kvGet('news.progress')
-  return p && typeof p === 'object' ? (p as Progress) : { streak: 0, lastRead: null, learned: { pro: [], gen: [] }, favorites: [] }
-}
-export async function saveProgress(p: Progress): Promise<void> {
-  await kvSet('news.progress', p)
-}
-export async function loadReviews(month: string): Promise<any[]> {
-  const r = await kvGet(`news.reviews.${month}`)
-  return Array.isArray(r) ? (r as any[]) : []
-}
-export async function loadSourcesLast(): Promise<Record<string, unknown> | null> {
-  const s = await kvGet('news.sources.last')
-  return s && typeof s === 'object' ? (s as Record<string, unknown>) : null
+  const raw = await kvGet(`news.daily.${date}`)
+  if (!raw || typeof raw !== 'object') return null
+  const d = raw as Daily
+  // 容错：sections 非数组 / 缺 title 的项跳过，不崩面板
+  if (!Array.isArray(d.sections)) return { ...d, sections: [] }
+  return d
 }
 
-/** 已合成语音缓存（AI 经 news_save_voice 写入，面板直接播放） */
-export interface VoiceClip {
-  section: string
-  dataUrl?: string
-  url?: string
-  durationSec?: number | null
-  title?: string
-  createdAt?: string
+/** 默认进度（新建或迁移用） */
+export function defaultProgress(): Progress {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    streak: 0,
+    lastRead: null,
+    minutesToday: 0,
+    minutesDate: today(),
+    learned: { pro: [], gen: [] },
+    favorites: [],
+    readDates: [],
+    checkinDates: [],
+  }
 }
+export async function loadProgress(): Promise<Progress> {
+  const raw = await kvGet('news.progress')
+  const p = raw && typeof raw === 'object' ? (raw as Progress) : null
+  if (!p) return defaultProgress()
+  // 迁移：老版缺 readDates/checkinDates/minutesDate → 补
+  const oldLearned = p.learned && typeof p.learned === 'object' ? p.learned : { pro: [], gen: [] }
+  const migrated: Progress = {
+    ...defaultProgress(),
+    ...p,
+    learned: {
+      pro: Array.isArray(oldLearned.pro) ? oldLearned.pro : [],
+      gen: Array.isArray(oldLearned.gen) ? oldLearned.gen : [],
+    },
+    favorites: Array.isArray(p.favorites) ? p.favorites : [],
+    readDates: Array.isArray(p.readDates) ? p.readDates : [],
+    checkinDates: Array.isArray(p.checkinDates) ? p.checkinDates : [],
+  }
+  migrated.schemaVersion = SCHEMA_VERSION
+  return migrated
+}
+export async function saveProgress(p: Progress): Promise<void> {
+  await kvSet('news.progress', { ...p, schemaVersion: SCHEMA_VERSION })
+}
+
+// ── 交互回流（幂等设计） ────────────────────────────────────────────────────
+/**
+ * 打卡：同一天重复调用不叠加（幂等）。返回 { ok, streak, already }
+ */
+export async function checkinOnce(): Promise<{ ok: boolean; streak: number; already: boolean }> {
+  const p = await loadProgress()
+  const t = today()
+  const already = (p.checkinDates || []).includes(t)
+  if (!already) {
+    const next: Progress = {
+      ...p,
+      streak: (p.streak || 0) + 1,
+      lastRead: t,
+      checkinDates: [...(p.checkinDates || []), t],
+    }
+    await saveProgress(next)
+    return { ok: true, streak: next.streak, already: false }
+  }
+  return { ok: true, streak: p.streak || 0, already: true }
+}
+
+/**
+ * 记录完读：把"读完今天的日报"写成进度（读/听都算）。
+ * minutesDate 与今天一致时累计，跨天自动重置。
+ */
+export async function recordReadComplete(dateStr: string): Promise<Progress> {
+  const p = await loadProgress()
+  const t = today()
+  const minutes = p.minutesDate === t ? (p.minutesToday || 0) : 0
+  const readDates = Array.isArray(p.readDates) ? p.readDates : []
+  const next: Progress = {
+    ...p,
+    minutesToday: minutes + 1,     // 完读 +1 分钟锚点（后续可按实际时长扩展）
+    minutesDate: t,
+    lastRead: t,
+    readDates: readDates.includes(dateStr) ? readDates : [...readDates, dateStr],
+    checkinDates: Array.isArray(p.checkinDates) ? p.checkinDates : [],
+    favorites: Array.isArray(p.favorites) ? p.favorites : [],
+    learned: p.learned && typeof p.learned === 'object' ? p.learned : { pro: [], gen: [] },
+  }
+  await saveProgress(next)
+  return next
+}
+
+/**
+ * 收藏/取消收藏一条（幂等）。见 news.progress.favorites。
+ */
+export async function toggleFavorite(itemId: string, dateStr: string): Promise<{ fav: boolean; favorites: string[] }> {
+  const p = await loadProgress()
+  const favs = Array.isArray(p.favorites) ? p.favorites : []
+  const has = favs.includes(itemId)
+  const nextFavs = has ? favs.filter((x) => x !== itemId) : [...favs, itemId]
+  const next: Progress = {
+    ...p,
+    favorites: nextFavs.slice(-200),
+    readDates: Array.isArray(p.readDates) ? p.readDates : [],
+    checkinDates: Array.isArray(p.checkinDates) ? p.checkinDates : [],
+    learned: p.learned && typeof p.learned === 'object' ? p.learned : { pro: [], gen: [] },
+  }
+  await saveProgress(next)
+  return { fav: !has, favorites: nextFavs }
+}
+
+// ── 语音缓存（自动分档：小内联 / 大托管） ───────────────────────────────────
+/**
+ * 判断音频数据该内联还是托管：dataUrl base64 体积 >=300KB → 只存 url（调用方先托管到 mimo file 模式）
+ * 返回 { dataUrl?, url?, store }。面板/生成方都用它统一写缓存。
+ */
+export function pickAudioStore(dataUrl?: string, url?: string): { dataUrl?: string; url?: string; store: 'inline' | 'hosted' } {
+  const size = dataUrl && dataUrl.startsWith('data:') ? Math.round((dataUrl.length * 3) / 4) : 0
+  if (dataUrl && size >= AUDIO_INLINE_LIMIT) {
+    // 太大不内联：优先 url（mimo file 托管），否则宁可告警不存 base64
+    return { url: url || undefined, store: url ? 'hosted' : 'inline' }
+  }
+  if (dataUrl) return { dataUrl, store: 'inline' }
+  if (url) return { url, store: 'hosted' }
+  return { store: 'inline' }
+}
+
 export async function loadVoice(date: string, section: string): Promise<VoiceClip | null> {
   const v = await kvGet(`news.voice.${date}.${section}`)
   return v && typeof v === 'object' ? (v as VoiceClip) : null

@@ -507,7 +507,7 @@
     {
       "id": "news-curator",
       "name": "AI 每日刊物",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
       "author": "Polaris",
       "category": "productivity",
@@ -523,9 +523,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/news-curator",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.2.0/plugins/news-curator/news-curator.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
-      "sha256": "b2ee4f88c7e5ed0a87da236e24e4902430849091aefe77bc1bc3e56e98723d5a",
+      "sha256": "2f8299d3fa67cf15cb43d19a1ce4efab4d78a4a1dcc549dd2355f5bfa38b7a05",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -536,6 +536,10 @@
       "screenshots": [],
       "readme": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
       "versions": [
+        {
+          "version": "0.3.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip"
+        },
         {
           "version": "0.2.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.2.0/plugins/news-curator/news-curator.zip",

@@ -2,10 +2,11 @@
  * 历史 Tab：回看任意一天已发布的日报
  *
  * 用 cap.kv list 枚举 news.daily.* 日期（倒序），点选日期加载当日日报展示，
- * 同「今日」的板块卡片样式。支持语音缓存标记。
+ * 同「今日」的板块卡片样式。支持语音缓存标记。生产级：骨架屏 + 空态 + 错误重试。
  */
 import { useState, useEffect } from 'react'
 import { loadDaily, listDailyDates, loadDateKey, fmtCnDate, Daily } from './model'
+import { Skeleton, ErrorState, EmptyState } from './Panel'
 
 const DIR_ICON: Record<string, string> = {
   fund: '📈', tech: '🧠', news: '🔥', creative: '💡', learn: '🎓', summary: '📰',
@@ -17,24 +18,37 @@ export default function Archive() {
   const [daily, setDaily] = useState<Daily | null>(null)
   const [voices, setVoices] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [err, setErr] = useState<string | null>(null)
 
   const loadDates = async () => {
-    const ds = await listDailyDates()
-    setDates(ds)
-    // 默认选最近一天
-    setSel((s) => s ?? ds[0] ?? null)
+    setLoading(true)
+    setErr(null)
+    try {
+      const ds = await listDailyDates()
+      setDates(ds)
+      setSel((s) => s ?? ds[0] ?? null)
+    } catch (e: any) {
+      setErr(e.message || String(e))
+    } finally {
+      setLoading(false)
+    }
   }
   useEffect(() => { loadDates() }, [])
 
   useEffect(() => {
     if (!sel) { setDaily(null); return }
     setLoading(true)
-    Promise.all([loadDaily(sel), loadDateKey(sel)]).then(([d, vk]) => {
-      setDaily(d)
-      setVoices(new Set(vk.map((k) => k.slice(`news.voice.${sel}.`.length))))
-      setLoading(false)
-    })
+    setErr(null)
+    Promise.all([loadDaily(sel), loadDateKey(sel)])
+      .then(([d, vk]) => {
+        setDaily(d)
+        setVoices(new Set(vk.map((k) => k.slice(`news.voice.${sel}.`.length))))
+        setLoading(false)
+      })
+      .catch((e: any) => { setErr(e.message || String(e)); setLoading(false) })
   }, [sel])
+
+  if (loading && !dates.length) return <Skeleton lines={4} />
 
   const sections = daily?.sections || []
 
@@ -45,10 +59,12 @@ export default function Archive() {
         <div className="nc-tt"><b>历史日报</b><small>{dates.length ? `已发布 ${dates.length} 天` : '还没有历史日报'}</small></div>
       </div>
 
-      {!dates.length && <div className="nc-empty">暂无历史日报。先在「今日」页生成日报，之后会出现在这里。</div>}
+      {err && <ErrorState msg={err} onRetry={sel ? () => loadDates() : undefined} />}
+
+      {!err && !dates.length && <EmptyState icon="📚" title="暂无历史日报" desc="先在「今日」页生成日报，之后会出现在这里。" />}
 
       {/* 日期横向滚动选择 */}
-      {dates.length > 0 && (
+      {!err && dates.length > 0 && (
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '0 16px 12px', WebkitOverflowScrolling: 'touch' }}>
           {dates.map((d) => (
             <button
@@ -63,9 +79,9 @@ export default function Archive() {
         </div>
       )}
 
-      {loading && <div className="nc-empty">加载中…</div>}
+      {!err && loading && sel && <Skeleton lines={3} />}
 
-      {daily && !loading && (
+      {daily && !loading && !err && (
         <>
           <div className="nc-prog" style={{ marginTop: 2 }}>
             <div className="nc-prog-h">

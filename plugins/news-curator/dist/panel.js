@@ -29,8 +29,11 @@ var init_host = __esm({
 var model_exports = {};
 __export(model_exports, {
   DEFAULT_WATCHLIST: () => DEFAULT_WATCHLIST,
+  SCHEMA_VERSION: () => SCHEMA_VERSION,
   call: () => call,
+  checkinOnce: () => checkinOnce,
   defaultPrefs: () => defaultPrefs,
+  defaultProgress: () => defaultProgress,
   fmtCnDate: () => fmtCnDate,
   fmtMin: () => fmtMin,
   kvGet: () => kvGet,
@@ -42,14 +45,15 @@ __export(model_exports, {
   loadPrefs: () => loadPrefs,
   loadPrefsLog: () => loadPrefsLog,
   loadProgress: () => loadProgress,
-  loadReviews: () => loadReviews,
-  loadSourcesLast: () => loadSourcesLast,
   loadVoice: () => loadVoice,
+  pickAudioStore: () => pickAudioStore,
+  recordReadComplete: () => recordReadComplete,
   savePrefs: () => savePrefs,
   saveProgress: () => saveProgress,
   sendToChat: () => sendToChat,
   setHostSend: () => setHostSend,
   today: () => today,
+  toggleFavorite: () => toggleFavorite,
   useModel: () => useModel,
   yesterday: () => yesterday
 });
@@ -92,9 +96,9 @@ function useModel(loader, deps = []) {
   const [loading, setLoading] = useState(true);
   const reload = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       setData(await loader());
-      setError(null);
     } catch (e) {
       setError(e.message || String(e));
     } finally {
@@ -108,6 +112,7 @@ function useModel(loader, deps = []) {
 }
 function defaultPrefs() {
   return {
+    schemaVersion: SCHEMA_VERSION,
     directions: { creative: true, fund: true, tech: true, news: true, learn: true },
     watchlist: DEFAULT_WATCHLIST,
     dailyTarget: 90,
@@ -117,34 +122,125 @@ function defaultPrefs() {
   };
 }
 async function loadPrefs() {
-  const p = await kvGet("news.prefs");
-  return p && typeof p === "object" ? p : defaultPrefs();
+  const raw = await kvGet("news.prefs");
+  const p = raw && typeof raw === "object" ? raw : null;
+  if (!p) return defaultPrefs();
+  if (!p.schemaVersion) {
+    const d = defaultPrefs();
+    const migrated = { ...d, ...p, directions: { ...d.directions, ...p.directions || {} } };
+    migrated.schemaVersion = SCHEMA_VERSION;
+    void savePrefs(migrated);
+    return migrated;
+  }
+  return p;
 }
 async function savePrefs(prefs) {
-  await kvSet("news.prefs", { ...prefs, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+  await kvSet("news.prefs", { ...prefs, schemaVersion: SCHEMA_VERSION, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
 }
 async function loadPrefsLog() {
   const l = await kvGet("news.prefsLog");
   return Array.isArray(l) ? l : [];
 }
 async function loadDaily(date) {
-  const d = await kvGet(`news.daily.${date}`);
-  return d && typeof d === "object" ? d : null;
+  const raw = await kvGet(`news.daily.${date}`);
+  if (!raw || typeof raw !== "object") return null;
+  const d = raw;
+  if (!Array.isArray(d.sections)) return { ...d, sections: [] };
+  return d;
+}
+function defaultProgress() {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    streak: 0,
+    lastRead: null,
+    minutesToday: 0,
+    minutesDate: today(),
+    learned: { pro: [], gen: [] },
+    favorites: [],
+    readDates: [],
+    checkinDates: []
+  };
 }
 async function loadProgress() {
-  const p = await kvGet("news.progress");
-  return p && typeof p === "object" ? p : { streak: 0, lastRead: null, learned: { pro: [], gen: [] }, favorites: [] };
+  const raw = await kvGet("news.progress");
+  const p = raw && typeof raw === "object" ? raw : null;
+  if (!p) return defaultProgress();
+  const oldLearned = p.learned && typeof p.learned === "object" ? p.learned : { pro: [], gen: [] };
+  const migrated = {
+    ...defaultProgress(),
+    ...p,
+    learned: {
+      pro: Array.isArray(oldLearned.pro) ? oldLearned.pro : [],
+      gen: Array.isArray(oldLearned.gen) ? oldLearned.gen : []
+    },
+    favorites: Array.isArray(p.favorites) ? p.favorites : [],
+    readDates: Array.isArray(p.readDates) ? p.readDates : [],
+    checkinDates: Array.isArray(p.checkinDates) ? p.checkinDates : []
+  };
+  migrated.schemaVersion = SCHEMA_VERSION;
+  return migrated;
 }
 async function saveProgress(p) {
-  await kvSet("news.progress", p);
+  await kvSet("news.progress", { ...p, schemaVersion: SCHEMA_VERSION });
 }
-async function loadReviews(month) {
-  const r = await kvGet(`news.reviews.${month}`);
-  return Array.isArray(r) ? r : [];
+async function checkinOnce() {
+  const p = await loadProgress();
+  const t = today();
+  const already = (p.checkinDates || []).includes(t);
+  if (!already) {
+    const next = {
+      ...p,
+      streak: (p.streak || 0) + 1,
+      lastRead: t,
+      checkinDates: [...p.checkinDates || [], t]
+    };
+    await saveProgress(next);
+    return { ok: true, streak: next.streak, already: false };
+  }
+  return { ok: true, streak: p.streak || 0, already: true };
 }
-async function loadSourcesLast() {
-  const s = await kvGet("news.sources.last");
-  return s && typeof s === "object" ? s : null;
+async function recordReadComplete(dateStr) {
+  const p = await loadProgress();
+  const t = today();
+  const minutes = p.minutesDate === t ? p.minutesToday || 0 : 0;
+  const readDates = Array.isArray(p.readDates) ? p.readDates : [];
+  const next = {
+    ...p,
+    minutesToday: minutes + 1,
+    // 完读 +1 分钟锚点（后续可按实际时长扩展）
+    minutesDate: t,
+    lastRead: t,
+    readDates: readDates.includes(dateStr) ? readDates : [...readDates, dateStr],
+    checkinDates: Array.isArray(p.checkinDates) ? p.checkinDates : [],
+    favorites: Array.isArray(p.favorites) ? p.favorites : [],
+    learned: p.learned && typeof p.learned === "object" ? p.learned : { pro: [], gen: [] }
+  };
+  await saveProgress(next);
+  return next;
+}
+async function toggleFavorite(itemId, dateStr) {
+  const p = await loadProgress();
+  const favs = Array.isArray(p.favorites) ? p.favorites : [];
+  const has = favs.includes(itemId);
+  const nextFavs = has ? favs.filter((x) => x !== itemId) : [...favs, itemId];
+  const next = {
+    ...p,
+    favorites: nextFavs.slice(-200),
+    readDates: Array.isArray(p.readDates) ? p.readDates : [],
+    checkinDates: Array.isArray(p.checkinDates) ? p.checkinDates : [],
+    learned: p.learned && typeof p.learned === "object" ? p.learned : { pro: [], gen: [] }
+  };
+  await saveProgress(next);
+  return { fav: !has, favorites: nextFavs };
+}
+function pickAudioStore(dataUrl, url) {
+  const size = dataUrl && dataUrl.startsWith("data:") ? Math.round(dataUrl.length * 3 / 4) : 0;
+  if (dataUrl && size >= AUDIO_INLINE_LIMIT) {
+    return { url: url || void 0, store: url ? "hosted" : "inline" };
+  }
+  if (dataUrl) return { dataUrl, store: "inline" };
+  if (url) return { url, store: "hosted" };
+  return { store: "inline" };
 }
 async function loadVoice(date, section) {
   const v = await kvGet(`news.voice.${date}.${section}`);
@@ -190,12 +286,14 @@ function fmtCnDate(dateStr) {
   const wd = ["\u65E5", "\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D"][d.getDay()];
   return `${dateStr} \u5468${wd}`;
 }
-var hostSend, DEFAULT_WATCHLIST, fmtMin;
+var hostSend, SCHEMA_VERSION, DEFAULT_WATCHLIST, AUDIO_INLINE_LIMIT, fmtMin;
 var init_model = __esm({
   "src/model.ts"() {
     "use strict";
     init_host();
+    SCHEMA_VERSION = 1;
     DEFAULT_WATCHLIST = ["005844", "017811", "002910", "013835", "011369", "013840"];
+    AUDIO_INLINE_LIMIT = 300 * 1024;
     fmtMin = (n) => n == null ? "\u2014" : `${n} \u5206\u949F`;
   }
 });
@@ -207,7 +305,7 @@ import { useEffect as useEffect7, useState as useState7 } from "react";
 // src/Today.tsx
 init_model();
 import { useState as useState2, useEffect as useEffect2 } from "react";
-import { jsx, jsxs } from "react/jsx-runtime";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 var DIR_ICON = {
   fund: "\u{1F4C8}",
   tech: "\u{1F9E0}",
@@ -243,7 +341,7 @@ function Today({ goTab }) {
       setDateLabel(label);
       const p = await loadProgress();
       setProgress(p);
-      if (!d) setErr("\u4ECA\u5929\u8FD8\u6CA1\u6709\u65E5\u62A5\u3002\u70B9\u53F3\u4E0A\u300C\u751F\u6210\u65E5\u62A5\u300D\uFF0CAI \u4F1A\u7528\u5185\u7F6E\u6D4F\u89C8\u5668\u6293\u53D6\u5E76\u53D1\u5E03\u3002");
+      if (!d) setErr(null);
     } catch (e) {
       setErr(e.message || String(e));
     } finally {
@@ -253,18 +351,47 @@ function Today({ goTab }) {
   useEffect2(() => {
     load();
   }, []);
-  const checkin = async () => {
-    const p = { ...progress || { streak: 0, lastRead: null }, streak: (progress?.streak || 0) + 1, lastRead: today() };
-    await saveProgress(p);
-    setProgress(p);
-    setToast(`\u2705 \u5DF2\u6253\u5361\uFF0C\u8FDE\u7EED ${p.streak} \u5929`);
+  const toastMsg = (m) => {
+    setToast(m);
     setTimeout(() => setToast(null), 2200);
+  };
+  const checkin = async () => {
+    try {
+      const r = await checkinOnce();
+      const p = await loadProgress();
+      setProgress(p);
+      toastMsg(r.already ? `\u2705 \u4ECA\u5929\u5DF2\u6253\u8FC7\u5361\uFF0C\u8FDE\u7EED ${r.streak} \u5929` : `\u2705 \u6253\u5361\u6210\u529F\uFF0C\u8FDE\u7EED ${r.streak} \u5929`);
+    } catch (e) {
+      toastMsg(`\u6253\u5361\u5931\u8D25\uFF1A${e.message}`);
+    }
+  };
+  const markRead = async (sec2) => {
+    try {
+      const p = await recordReadComplete(today());
+      setProgress(p);
+      toastMsg(`\u5DF2\u8BFB ${p.minutesToday} \u5206\u949F\uFF0CAI \u5DF2\u8BB0\u5F55\u4F60\u7684\u9605\u8BFB`);
+    } catch (e) {
+      toastMsg(`\u8BB0\u5F55\u5931\u8D25\uFF1A${e.message}`);
+    }
+  };
+  const favItem = async (id) => {
+    if (!id) return;
+    try {
+      const r = await toggleFavorite(id, today());
+      toastMsg(r.fav ? "\u2B50 \u5DF2\u6536\u85CF\uFF08AI \u4F1A\u5B66\u4E60\u4F60\u7684\u504F\u597D\uFF09" : "\u5DF2\u53D6\u6D88\u6536\u85CF");
+    } catch (e) {
+      toastMsg(`\u6536\u85CF\u5931\u8D25\uFF1A${e.message}`);
+    }
   };
   const askGenerate = () => {
     sendToChat("\u5E2E\u6211\u751F\u6210\u4ECA\u5929\u7684 AI \u6BCF\u65E5\u520A\u7269\u65E5\u62A5\uFF08\u57FA\u91D1/\u6280\u672F/\u65F6\u4E8B/\u521B\u610F\uFF0C\u6309\u6211\u7684\u504F\u597D\u6765\uFF09");
   };
   const sections = daily?.sections || [];
   const sec = (t) => sections.find((s) => s.type === t);
+  const favSet = new Set(progress?.favorites || []);
+  const totalMin = daily?.totalMinutes || 90;
+  const pct = progress?.minutesToday != null && totalMin > 0 ? Math.min(100, Math.round(progress.minutesToday / totalMin * 100)) : 0;
+  if (loading) return /* @__PURE__ */ jsx(Skeleton, { lines: 5 });
   return /* @__PURE__ */ jsxs("div", { className: "nc-page", children: [
     /* @__PURE__ */ jsxs("div", { className: "nc-top", children: [
       /* @__PURE__ */ jsx("div", { className: "nc-logo", children: "\u{1F4F0}" }),
@@ -278,107 +405,127 @@ function Today({ goTab }) {
       /* @__PURE__ */ jsx("button", { className: "nc-play", onClick: askGenerate, title: "\u751F\u6210\u4ECA\u5929\u7684\u65E5\u62A5", children: "\u2726" }),
       /* @__PURE__ */ jsx("button", { className: "nc-play", style: { width: 30, height: 30, fontSize: 13, boxShadow: "none" }, onClick: load, title: "\u5237\u65B0", children: "\u27F3" })
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: "nc-prog", children: [
-      /* @__PURE__ */ jsxs("div", { className: "nc-prog-h", children: [
-        /* @__PURE__ */ jsx("b", { children: "\u4ECA\u65E5\u9605\u8BFB\u8FDB\u5EA6" }),
-        /* @__PURE__ */ jsx("span", { className: "nc-pct", children: progress?.minutesToday ? `${Math.min(100, Math.round(progress.minutesToday / (daily?.totalMinutes || 90) * 100))}%` : "\u672A\u5F00\u59CB" })
-      ] }),
-      /* @__PURE__ */ jsx("div", { className: "nc-track", children: /* @__PURE__ */ jsx("i", { style: { width: progress?.minutesToday ? `${Math.min(100, Math.round(progress.minutesToday / (daily?.totalMinutes || 90) * 100))}%` : "4%" } }) }),
-      /* @__PURE__ */ jsxs("div", { className: "nc-labels", children: [
-        /* @__PURE__ */ jsx("span", { children: progress?.minutesToday ? `\u5DF2\u8BFB ${progress.minutesToday} \u5206\u949F` : "\u4ECA\u65E5\u672A\u8BFB" }),
-        /* @__PURE__ */ jsxs("span", { children: [
-          "\u76EE\u6807 ",
-          fmtMin(daily?.totalMinutes)
+    !daily && !err && /* @__PURE__ */ jsx(
+      EmptyState,
+      {
+        icon: "\u{1F4F0}",
+        title: "\u4ECA\u5929\u8FD8\u6CA1\u6709\u65E5\u62A5",
+        desc: "AI \u4F1A\u7528\u5185\u7F6E\u6D4F\u89C8\u5668\u6293\u53D6\u57FA\u91D1/\u6280\u672F/\u65F6\u4E8B/\u521B\u610F\uFF0C\u6309\u4F60\u7684\u504F\u597D\u751F\u6210\u3002",
+        action: /* @__PURE__ */ jsx("button", { className: "nc-btn", onClick: askGenerate, children: "\u2726 \u751F\u6210\u4ECA\u5929\u7684\u65E5\u62A5" })
+      }
+    ),
+    err && /* @__PURE__ */ jsx(ErrorState, { msg: err, onRetry: load, hint: "\u68C0\u67E5\u5BBF\u4E3B\u662F\u5426\u5728\u8FD0\u884C\uFF0C\u6216\u7A0D\u540E\u91CD\u8BD5" }),
+    daily && !err && /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsxs("div", { className: "nc-prog", children: [
+        /* @__PURE__ */ jsxs("div", { className: "nc-prog-h", children: [
+          /* @__PURE__ */ jsx("b", { children: "\u4ECA\u65E5\u9605\u8BFB\u8FDB\u5EA6" }),
+          /* @__PURE__ */ jsx("span", { className: "nc-pct", children: progress?.minutesToday ? `${pct}%` : "\u672A\u5F00\u59CB" })
         ] }),
-        /* @__PURE__ */ jsxs("span", { children: [
-          "\u5269 ",
-          Math.max(0, (daily?.totalMinutes || 90) - (progress?.minutesToday || 0)),
-          " \u5206\u949F"
+        /* @__PURE__ */ jsx("div", { className: "nc-track", children: /* @__PURE__ */ jsx("i", { style: { width: progress?.minutesToday ? `${pct}%` : "4%" } }) }),
+        /* @__PURE__ */ jsxs("div", { className: "nc-labels", children: [
+          /* @__PURE__ */ jsx("span", { children: progress?.minutesToday ? `\u5DF2\u8BFB ${progress.minutesToday} \u5206\u949F` : "\u4ECA\u65E5\u672A\u8BFB" }),
+          /* @__PURE__ */ jsxs("span", { children: [
+            "\u76EE\u6807 ",
+            fmtMin(daily?.totalMinutes)
+          ] }),
+          /* @__PURE__ */ jsxs("span", { children: [
+            "\u5269 ",
+            Math.max(0, (daily?.totalMinutes || 90) - (progress?.minutesToday || 0)),
+            " \u5206\u949F"
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "nc-row", style: { marginTop: 8, gap: 8 }, children: [
+          /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: checkin, disabled: (progress?.checkinDates || []).includes(today()), children: (progress?.checkinDates || []).includes(today()) ? "\u2705 \u4ECA\u65E5\u5DF2\u6253\u5361" : `\u{1F525} \u6253\u5361\uFF08\u8FDE ${progress?.streak || 0} \u5929\uFF09` }),
+          /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: () => markRead("all"), children: "\u2705 \u8BFB\u5B8C\u4ECA\u5929" }),
+          /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: () => goTab(2), children: "\u{1F399}\uFE0F \u8BED\u97F3" }),
+          /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: () => goTab(1), children: "\u{1F393} \u5B66\u4E60" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("div", { className: "nc-row", style: { marginTop: 8, gap: 8 }, children: [
-        /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: checkin, disabled: progress?.lastRead === today(), children: progress?.lastRead === today() ? "\u2705 \u4ECA\u65E5\u5DF2\u6253\u5361" : `\u{1F525} \u6253\u5361\uFF08\u8FDE ${progress?.streak || 0} \u5929\uFF09` }),
-        /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: () => goTab(2), children: "\u{1F399}\uFE0F \u8BED\u97F3" }),
-        /* @__PURE__ */ jsx("button", { className: "nc-btn ghost", onClick: () => goTab(1), children: "\u{1F393} \u5B66\u4E60" })
-      ] })
-    ] }),
-    err && /* @__PURE__ */ jsxs("div", { className: "nc-empty", children: [
-      err,
-      /* @__PURE__ */ jsx("br", {}),
-      /* @__PURE__ */ jsx("button", { className: "nc-btn", onClick: askGenerate, style: { marginTop: 10 }, children: "\u2726 \u751F\u6210\u4ECA\u5929\u7684\u65E5\u62A5" })
-    ] }),
-    loading && /* @__PURE__ */ jsx("div", { className: "nc-empty", children: "\u52A0\u8F7D\u4E2D\u2026" }),
-    sections.map((s) => /* @__PURE__ */ jsxs("div", { children: [
+      sections.map((s) => /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsxs("div", { className: "nc-sec", children: [
+          /* @__PURE__ */ jsx("span", { className: "nc-bar" }),
+          DIR_ICON[s.type] || "\u{1F4C4}",
+          " ",
+          s.title || DIR_LABEL[s.type] || s.type,
+          /* @__PURE__ */ jsx("span", { className: "nc-hint", children: s.meta?.minutes ? `${s.meta.minutes} \u5206\u949F` : `${(s.items || []).length} \u6761` })
+        ] }),
+        /* @__PURE__ */ jsxs("div", { className: "nc-feed", children: [
+          (s.items || []).slice(0, s.type === "fund" ? 3 : s.type === "news" ? 3 : 4).map((it, i) => {
+            const id = it.id || `${s.type}-${i}-${it.title || it.name || i}`;
+            return /* @__PURE__ */ jsxs("div", { className: "nc-card", children: [
+              /* @__PURE__ */ jsxs("div", { className: "nc-card-b", children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: `nc-fav ${favSet.has(id) ? "on" : ""}`,
+                    onClick: () => favItem(id),
+                    title: favSet.has(id) ? "\u53D6\u6D88\u6536\u85CF" : "\u6536\u85CF\uFF08AI \u4F1A\u5B66\u4F60\u7684\u504F\u597D\uFF09",
+                    style: { float: "right" },
+                    children: favSet.has(id) ? "\u2605" : "\u2606"
+                  }
+                ),
+                /* @__PURE__ */ jsx("b", { children: it.title || it.name || "" }),
+                it.meta?.badge && /* @__PURE__ */ jsx("span", { className: "nc-badge", style: { float: "right", marginRight: 4 }, children: it.meta.badge }),
+                it.meta?.chg != null && /* @__PURE__ */ jsxs("span", { className: it.meta.chg >= 0 ? "nc-up" : "nc-down", style: { float: "right", marginRight: 4 }, children: [
+                  it.meta.chg >= 0 ? "+" : "",
+                  it.meta.chg,
+                  "%"
+                ] })
+              ] }),
+              it.brief && /* @__PURE__ */ jsx("div", { className: "nc-sub", children: it.brief }),
+              it.meta?.src && /* @__PURE__ */ jsxs("div", { className: "nc-src", children: [
+                /* @__PURE__ */ jsx("span", { className: "nc-badge", children: it.meta.src }),
+                it.meta?.sub && /* @__PURE__ */ jsx("span", { children: it.meta.sub })
+              ] })
+            ] }, id);
+          }),
+          (s.items || []).length > 3 && /* @__PURE__ */ jsx("div", { className: "nc-card", children: /* @__PURE__ */ jsxs("div", { className: "nc-sub", children: [
+            "\u2026 \u5171 ",
+            (s.items || []).length,
+            " \u6761"
+          ] }) })
+        ] })
+      ] }, s.type)),
       /* @__PURE__ */ jsxs("div", { className: "nc-sec", children: [
-        /* @__PURE__ */ jsx("span", { className: "nc-bar" }),
-        DIR_ICON[s.type] || "\u{1F4C4}",
-        " ",
-        s.title || DIR_LABEL[s.type] || s.type,
-        /* @__PURE__ */ jsx("span", { className: "nc-hint", children: s.meta?.minutes ? `${s.meta.minutes} \u5206\u949F` : "" })
+        /* @__PURE__ */ jsx("span", { className: "nc-bar", style: { background: "linear-gradient(180deg,#BC8CFF,#58A6FF)" } }),
+        "\u{1F393} \u4ECA\u65E5\u5B66\u4E60 ",
+        /* @__PURE__ */ jsx("span", { className: "nc-hint", children: "\u53CC\u7EBF\u5E76\u884C" })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "nc-feed", children: [
-        (s.items || []).slice(0, s.type === "fund" ? 3 : s.type === "news" ? 3 : 4).map((it, i) => /* @__PURE__ */ jsxs("div", { className: "nc-card", children: [
-          /* @__PURE__ */ jsxs("div", { className: "nc-card-b", children: [
-            /* @__PURE__ */ jsx("b", { children: it.title || it.name || "" }),
-            it.meta?.badge && /* @__PURE__ */ jsx("span", { className: "nc-badge", style: { float: "right" }, children: it.meta.badge }),
-            it.meta?.chg != null && /* @__PURE__ */ jsxs("span", { className: it.meta.chg >= 0 ? "nc-up" : "nc-down", style: { float: "right" }, children: [
-              it.meta.chg >= 0 ? "+" : "",
-              it.meta.chg,
-              "%"
-            ] })
+        /* @__PURE__ */ jsxs("div", { className: "nc-line", onClick: () => goTab(1), children: [
+          /* @__PURE__ */ jsxs("div", { className: "nc-line-h", children: [
+            /* @__PURE__ */ jsx("span", { className: "nc-lic", style: { background: "linear-gradient(135deg,#1F6FEB,#3F8CFF)" }, children: "\u2615" }),
+            /* @__PURE__ */ jsxs("div", { className: "nc-line-t", children: [
+              /* @__PURE__ */ jsx("b", { children: "\u4E13\u4E1A\u6210\u957F \xB7 Java + AI" }),
+              /* @__PURE__ */ jsx("small", { children: "\u7B2C 2 \u9636\u6BB5\u300CJava \u5E76\u53D1\u8FDB\u9636\u300D" })
+            ] }),
+            /* @__PURE__ */ jsx("span", { className: "nc-pct", children: "L1\u2192L2" })
           ] }),
-          it.brief && /* @__PURE__ */ jsx("div", { className: "nc-sub", children: it.brief }),
-          it.meta?.src && /* @__PURE__ */ jsxs("div", { className: "nc-src", children: [
-            /* @__PURE__ */ jsx("span", { className: "nc-badge", children: it.meta.src }),
-            it.meta?.sub && /* @__PURE__ */ jsx("span", { children: it.meta.sub })
+          /* @__PURE__ */ jsx("div", { className: "nc-line-track", children: /* @__PURE__ */ jsx("i", { style: { width: "44%" } }) }),
+          /* @__PURE__ */ jsxs("div", { className: "nc-tags", children: [
+            /* @__PURE__ */ jsx("span", { children: "\u2615 JVM/\u5E76\u53D1" }),
+            /* @__PURE__ */ jsx("span", { children: "\u{1F6E0} \u5FAE\u670D\u52A1" }),
+            /* @__PURE__ */ jsx("span", { children: "\u{1F916} AI \u5DE5\u7A0B: MCP/Agent" }),
+            /* @__PURE__ */ jsx("span", { children: "\u{1F9E0} AI \u6559\u7EC3" })
           ] })
-        ] }, i)),
-        (s.items || []).length > 3 && /* @__PURE__ */ jsx("div", { className: "nc-card", children: /* @__PURE__ */ jsxs("div", { className: "nc-sub", children: [
-          "\u2026 \u5171 ",
-          (s.items || []).length,
-          " \u6761"
-        ] }) })
-      ] })
-    ] }, s.type)),
-    /* @__PURE__ */ jsxs("div", { className: "nc-sec", children: [
-      /* @__PURE__ */ jsx("span", { className: "nc-bar", style: { background: "linear-gradient(180deg,#BC8CFF,#58A6FF)" } }),
-      "\u{1F393} \u4ECA\u65E5\u5B66\u4E60 ",
-      /* @__PURE__ */ jsx("span", { className: "nc-hint", children: "\u53CC\u7EBF\u5E76\u884C" })
-    ] }),
-    /* @__PURE__ */ jsxs("div", { className: "nc-feed", children: [
-      /* @__PURE__ */ jsxs("div", { className: "nc-line", onClick: () => goTab(1), children: [
-        /* @__PURE__ */ jsxs("div", { className: "nc-line-h", children: [
-          /* @__PURE__ */ jsx("span", { className: "nc-lic", style: { background: "linear-gradient(135deg,#1F6FEB,#3F8CFF)" }, children: "\u2615" }),
-          /* @__PURE__ */ jsxs("div", { className: "nc-line-t", children: [
-            /* @__PURE__ */ jsx("b", { children: "\u4E13\u4E1A\u6210\u957F \xB7 Java + AI" }),
-            /* @__PURE__ */ jsx("small", { children: "\u7B2C 2 \u9636\u6BB5\u300CJava \u5E76\u53D1\u8FDB\u9636\u300D" })
-          ] }),
-          /* @__PURE__ */ jsx("span", { className: "nc-pct", children: "L1\u2192L2" })
         ] }),
-        /* @__PURE__ */ jsx("div", { className: "nc-line-track", children: /* @__PURE__ */ jsx("i", { style: { width: "44%" } }) }),
-        /* @__PURE__ */ jsxs("div", { className: "nc-tags", children: [
-          /* @__PURE__ */ jsx("span", { children: "\u2615 JVM/\u5E76\u53D1" }),
-          /* @__PURE__ */ jsx("span", { children: "\u{1F6E0} \u5FAE\u670D\u52A1" }),
-          /* @__PURE__ */ jsx("span", { children: "\u{1F916} AI \u5DE5\u7A0B: MCP/Agent" }),
-          /* @__PURE__ */ jsx("span", { children: "\u{1F9E0} AI \u6559\u7EC3" })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs("div", { className: "nc-line", style: { borderColor: "rgba(188,140,255,.35)" }, onClick: () => goTab(1), children: [
-        /* @__PURE__ */ jsxs("div", { className: "nc-line-h", children: [
-          /* @__PURE__ */ jsx("span", { className: "nc-lic", style: { background: "linear-gradient(135deg,#BC8CFF,#9B6CFF)" }, children: "\u{1F30D}" }),
-          /* @__PURE__ */ jsxs("div", { className: "nc-line-t", children: [
-            /* @__PURE__ */ jsx("b", { children: "\u901A\u8BC6\u6F2B\u6E38 \xB7 \u5E7F\u9762\u77E5\u8BC6" }),
-            /* @__PURE__ */ jsx("small", { children: "24 \u4E3B\u9898\u8F6E\u6362 \xB7 \u4E0E\u4ECA\u65E5\u65F6\u4E8B\u5F3A\u5173\u8054" })
+        /* @__PURE__ */ jsxs("div", { className: "nc-line", style: { borderColor: "rgba(188,140,255,.35)" }, onClick: () => goTab(1), children: [
+          /* @__PURE__ */ jsxs("div", { className: "nc-line-h", children: [
+            /* @__PURE__ */ jsx("span", { className: "nc-lic", style: { background: "linear-gradient(135deg,#BC8CFF,#9B6CFF)" }, children: "\u{1F30D}" }),
+            /* @__PURE__ */ jsxs("div", { className: "nc-line-t", children: [
+              /* @__PURE__ */ jsx("b", { children: "\u901A\u8BC6\u6F2B\u6E38 \xB7 \u5E7F\u9762\u77E5\u8BC6" }),
+              /* @__PURE__ */ jsx("small", { children: "24 \u4E3B\u9898\u8F6E\u6362 \xB7 \u4E0E\u4ECA\u65E5\u65F6\u4E8B\u5F3A\u5173\u8054" })
+            ] }),
+            /* @__PURE__ */ jsx("span", { className: "nc-pct", style: { color: "#BC8CFF" }, children: "7/24" })
           ] }),
-          /* @__PURE__ */ jsx("span", { className: "nc-pct", style: { color: "#BC8CFF" }, children: "7/24" })
-        ] }),
-        /* @__PURE__ */ jsx("div", { className: "nc-line-track", children: /* @__PURE__ */ jsx("i", { style: { width: "62%", background: "linear-gradient(90deg,#BC8CFF,#58A6FF)" } }) }),
-        /* @__PURE__ */ jsxs("div", { className: "nc-tags", children: [
-          /* @__PURE__ */ jsx("span", { children: "\u{1F4DC} \u5386\u53F2" }),
-          /* @__PURE__ */ jsx("span", { children: "\u{1F4B0} \u7ECF\u6D4E" }),
-          /* @__PURE__ */ jsx("span", { children: "\u{1F52C} \u79D1\u6280" }),
-          /* @__PURE__ */ jsx("span", { children: "\u{1F9E0} \u5FC3\u7406" }),
-          /* @__PURE__ */ jsx("span", { children: "\u2764\uFE0F \u5065\u5EB7" })
+          /* @__PURE__ */ jsx("div", { className: "nc-line-track", children: /* @__PURE__ */ jsx("i", { style: { width: "62%", background: "linear-gradient(90deg,#BC8CFF,#58A6FF)" } }) }),
+          /* @__PURE__ */ jsxs("div", { className: "nc-tags", children: [
+            /* @__PURE__ */ jsx("span", { children: "\u{1F4DC} \u5386\u53F2" }),
+            /* @__PURE__ */ jsx("span", { children: "\u{1F4B0} \u7ECF\u6D4E" }),
+            /* @__PURE__ */ jsx("span", { children: "\u{1F52C} \u79D1\u6280" }),
+            /* @__PURE__ */ jsx("span", { children: "\u{1F9E0} \u5FC3\u7406" }),
+            /* @__PURE__ */ jsx("span", { children: "\u2764\uFE0F \u5065\u5EB7" })
+          ] })
         ] })
       ] })
     ] }),
@@ -389,7 +536,7 @@ function Today({ goTab }) {
 // src/Learn.tsx
 init_model();
 import { useState as useState3, useEffect as useEffect3 } from "react";
-import { Fragment, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+import { Fragment as Fragment2, jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
 var PRO_COURSE = [
   {
     level: "L1",
@@ -474,7 +621,7 @@ function Learn() {
       /* @__PURE__ */ jsx2("button", { className: `nc-st ${tab === "pro" ? "on" : ""}`, onClick: () => setTab("pro"), children: "\u2615 \u4E13\u4E1A\u6210\u957F \xB7 Java+AI" }),
       /* @__PURE__ */ jsx2("button", { className: `nc-st ${tab === "gen" ? "on" : ""}`, onClick: () => setTab("gen"), children: "\u{1F30D} \u901A\u8BC6\u6F2B\u6E38" })
     ] }),
-    tab === "pro" && /* @__PURE__ */ jsxs2(Fragment, { children: [
+    tab === "pro" && /* @__PURE__ */ jsxs2(Fragment2, { children: [
       /* @__PURE__ */ jsxs2("div", { className: "nc-line", style: { margin: "4px 16px 10px" }, children: [
         /* @__PURE__ */ jsxs2("div", { className: "nc-line-h", children: [
           /* @__PURE__ */ jsx2("span", { className: "nc-lic", style: { background: "linear-gradient(135deg,#1F6FEB,#3F8CFF)" }, children: "\u2615" }),
@@ -539,7 +686,7 @@ function Learn() {
         ] })
       ] })
     ] }),
-    tab === "gen" && /* @__PURE__ */ jsxs2(Fragment, { children: [
+    tab === "gen" && /* @__PURE__ */ jsxs2(Fragment2, { children: [
       /* @__PURE__ */ jsxs2("div", { className: "nc-line", style: { margin: "4px 16px 10px", borderColor: "rgba(188,140,255,.35)" }, children: [
         /* @__PURE__ */ jsxs2("div", { className: "nc-line-h", children: [
           /* @__PURE__ */ jsx2("span", { className: "nc-lic", style: { background: "linear-gradient(135deg,#BC8CFF,#9B6CFF)" }, children: "\u{1F30D}" }),
@@ -637,22 +784,32 @@ function Voice() {
   const [progress, setProgress] = useState4({});
   const [toast, setToast] = useState4(null);
   const [generating, setGenerating] = useState4(null);
+  const [loading, setLoading] = useState4(true);
+  const [err, setErr] = useState4(null);
   const audioRef = useRef(null);
   const pollRef = useRef(null);
   const date = today();
   const load = async () => {
-    const [d, voiceKeys] = await Promise.all([loadDaily(date), loadDateKey(date)]);
-    setDaily(d);
-    const secs2 = (d?.sections || []).map((s) => s.type);
-    const all = [.../* @__PURE__ */ new Set(["summary", "fund", "tech", "news", "creative", "learn", ...secs2])];
-    const map = {};
-    const present = new Set(voiceKeys.map((k) => k.slice(`news.voice.${date}.`.length)));
-    for (const st of all) {
-      if (!present.has(st)) continue;
-      const v = await loadVoice(date, st).catch(() => null);
-      if (v) map[st] = v;
+    setLoading(true);
+    setErr(null);
+    try {
+      const [d, voiceKeys] = await Promise.all([loadDaily(date), loadDateKey(date)]);
+      setDaily(d);
+      const secs2 = (d?.sections || []).map((s) => s.type);
+      const all = [.../* @__PURE__ */ new Set(["summary", "fund", "tech", "news", "creative", "learn", ...secs2])];
+      const map = {};
+      const present = new Set(voiceKeys.map((k) => k.slice(`news.voice.${date}.`.length)));
+      for (const st of all) {
+        if (!present.has(st)) continue;
+        const v = await loadVoice(date, st).catch(() => null);
+        if (v) map[st] = v;
+      }
+      setVoices(map);
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setLoading(false);
     }
-    setVoices(map);
   };
   useEffect4(() => {
     load();
@@ -662,11 +819,11 @@ function Voice() {
   }, []);
   const sections = daily?.sections || [];
   const secs = sections.length ? sections : [
-    { type: "summary", title: "\u4ECA\u65E5\u901F\u89C8" },
-    { type: "fund", title: "\u57FA\u91D1\u7814\u5224" },
-    { type: "tech", title: "\u6280\u672F\u8BB2\u89E3" },
-    { type: "news", title: "\u65F6\u4E8B\u6458\u8981" },
-    { type: "learn", title: "\u5B66\u4E60\u8BFE\u7A0B" }
+    { type: "summary", title: "\u4ECA\u65E5\u901F\u89C8", items: [] },
+    { type: "fund", title: "\u57FA\u91D1\u7814\u5224", items: [] },
+    { type: "tech", title: "\u6280\u672F\u8BB2\u89E3", items: [] },
+    { type: "news", title: "\u65F6\u4E8B\u6458\u8981", items: [] },
+    { type: "learn", title: "\u5B66\u4E60\u8BFE\u7A0B", items: [] }
   ];
   const SEC_ICON = { summary: "\u25B6", fund: "\u{1F4C8}", tech: "\u{1F9E0}", news: "\u{1F525}", creative: "\u{1F4A1}", learn: "\u{1F393}" };
   const toastMsg = (m) => {
@@ -694,7 +851,7 @@ function Voice() {
   };
   const askVoice = (section, title) => {
     setGenerating(section);
-    const msg = `\u5E2E\u6211\u628A\u4ECA\u5929\u65E5\u62A5\u7684\u300C${title}\u300D\u7AE0\u8282\u751F\u6210\u8BED\u97F3\u64AD\u62A5\uFF1A\u5148\u7528 news_brief \u62FF\u64AD\u62A5\u7A3F\uFF0C\u518D\u7528 mimo_tts_synthesize \u5408\u6210\u97F3\u9891\uFF08\u7528\u504F\u597D\u91CC\u7684\u97F3\u8272\uFF09\uFF0C\u6700\u540E\u7528 news_save_voice \u628A dataUrl/url \u5B58\u5230\u7F13\u5B58`;
+    const msg = `\u5E2E\u6211\u628A\u4ECA\u5929\u65E5\u62A5\u7684\u300C${title}\u300D\u7AE0\u8282\u751F\u6210\u8BED\u97F3\u64AD\u62A5\uFF1A\u5148\u7528 news_brief \u62FF\u64AD\u62A5\u7A3F\uFF0C\u518D\u7528 mimo_tts_synthesize \u5408\u6210\u97F3\u9891\uFF08\u7528\u504F\u597D\u91CC\u7684\u97F3\u8272\uFF1B\u97F3\u9891\u8F83\u5927\u7684\u8BDD\u7528 outputMode=file \u62FF\u6258\u7BA1 url\uFF09\uFF0C\u6700\u540E\u7528 news_save_voice \u628A dataUrl/url \u5B58\u5230\u7F13\u5B58`;
     sendToChat(msg);
     toastMsg("\u5DF2\u8BF7\u6C42 AI \u5408\u6210\u8BED\u97F3\u2026");
     pollVoice(section, date);
@@ -716,6 +873,10 @@ function Voice() {
       const a = audioRef.current;
       if (!a) return;
       a.src = src;
+      a.onerror = () => {
+        setPlaying(null);
+        toastMsg("\u97F3\u9891\u52A0\u8F7D\u5931\u8D25\uFF0C\u53EF\u80FD\u662F\u6258\u7BA1\u5730\u5740\u5931\u6548\uFF0C\u53EF\u91CD\u65B0\u751F\u6210");
+      };
       a.onended = () => {
         setPlaying(null);
         setProgress((p) => ({ ...p, [section]: { cur: 0, dur: 0 } }));
@@ -739,20 +900,27 @@ function Voice() {
     const ss = Math.floor(s % 60);
     return `${m}:${String(ss).padStart(2, "0")}`;
   };
+  if (loading) return /* @__PURE__ */ jsx3(Skeleton, { lines: 5 });
   return /* @__PURE__ */ jsxs3("div", { className: "nc-page", children: [
     /* @__PURE__ */ jsxs3("div", { className: "nc-top", children: [
       /* @__PURE__ */ jsx3("div", { className: "nc-logo", style: { background: "linear-gradient(135deg,#1F6FEB,#BC8CFF)" }, children: "\u{1F399}\uFE0F" }),
       /* @__PURE__ */ jsxs3("div", { className: "nc-tt", children: [
         /* @__PURE__ */ jsx3("b", { children: "\u4ECA\u65E5\u8BED\u97F3\u64AD\u62A5" }),
         /* @__PURE__ */ jsx3("small", { children: daily?.totalMinutes ? `\u603B\u65F6\u957F\u7EA6 ${Math.max(8, Math.round(daily.totalMinutes / 4))} \u5206\u949F \xB7 \u8FB9\u8D70\u8FB9\u542C` : "\u9009\u62E9\u7AE0\u8282\u751F\u6210\u8BED\u97F3" })
-      ] })
+      ] }),
+      /* @__PURE__ */ jsx3("button", { className: "nc-play", style: { width: 30, height: 30, fontSize: 13, boxShadow: "none" }, onClick: load, title: "\u5237\u65B0", children: "\u27F3" })
     ] }),
-    !daily && /* @__PURE__ */ jsxs3("div", { className: "nc-empty", children: [
-      "\u4ECA\u5929\u8FD8\u6CA1\u6709\u65E5\u62A5\u3002\u5148\u70B9\u300C\u4ECA\u65E5\u300D\u9875\u53F3\u4E0A \u2726 \u751F\u6210\u65E5\u62A5\uFF0C\u518D\u56DE\u6765\u751F\u6210\u8BED\u97F3\u3002",
-      /* @__PURE__ */ jsx3("br", {}),
-      /* @__PURE__ */ jsx3("button", { className: "nc-btn", style: { marginTop: 10 }, onClick: () => sendToChat("\u5E2E\u6211\u751F\u6210\u4ECA\u5929\u7684 AI \u6BCF\u65E5\u520A\u7269\u65E5\u62A5"), children: "\u2726 \u751F\u6210\u65E5\u62A5" })
-    ] }),
-    /* @__PURE__ */ jsx3("div", { className: "nc-feed", children: secs.map((s) => {
+    err && /* @__PURE__ */ jsx3(ErrorState, { msg: err, onRetry: load }),
+    !err && !daily && /* @__PURE__ */ jsx3(
+      EmptyState,
+      {
+        icon: "\u{1F399}\uFE0F",
+        title: "\u4ECA\u5929\u8FD8\u6CA1\u6709\u65E5\u62A5",
+        desc: "\u5148\u751F\u6210\u65E5\u62A5\uFF0C\u518D\u56DE\u6765\u751F\u6210\u8BED\u97F3\u64AD\u62A5\u3002",
+        action: /* @__PURE__ */ jsx3("button", { className: "nc-btn", style: { marginTop: 10 }, onClick: () => sendToChat("\u5E2E\u6211\u751F\u6210\u4ECA\u5929\u7684 AI \u6BCF\u65E5\u520A\u7269\u65E5\u62A5"), children: "\u2726 \u751F\u6210\u65E5\u62A5" })
+      }
+    ),
+    !err && daily && /* @__PURE__ */ jsx3("div", { className: "nc-feed", children: secs.map((s) => {
       const clip = voices[s.type] || null;
       const pg = progress[s.type];
       const pct = pg && pg.dur ? Math.min(100, pg.cur / pg.dur * 100) : 0;
@@ -762,7 +930,7 @@ function Voice() {
           /* @__PURE__ */ jsx3("span", { className: "nc-vic", children: playing === s.type ? "\u275A\u275A" : hasAudio ? "\u25B6" : SEC_ICON[s.type] || "\u25B6" }),
           /* @__PURE__ */ jsxs3("div", { className: "nc-voice-t", children: [
             /* @__PURE__ */ jsx3("b", { children: s.title }),
-            /* @__PURE__ */ jsx3("small", { children: hasAudio ? `\u5DF2\u5408\u6210${clip?.durationSec ? ` \xB7 ${fmt(clip.durationSec)}` : ""}` : s.type === "learn" ? "\u53CC\u7EBF\u8BFE\u7A0B" : s.type === "fund" ? "\u81EA\u9009\u57FA\u91D1" : (s.items || []).length + " \u6761" })
+            /* @__PURE__ */ jsx3("small", { children: hasAudio ? `\u5DF2\u5408\u6210${clip?.durationSec ? ` \xB7 ${fmt(clip.durationSec)}` : ""}${clip?.store === "hosted" ? " \xB7 \u6258\u7BA1" : ""}` : s.type === "learn" ? "\u53CC\u7EBF\u8BFE\u7A0B" : s.type === "fund" ? "\u81EA\u9009\u57FA\u91D1" : (s.items || []).length + " \u6761" })
           ] }),
           /* @__PURE__ */ jsx3("span", { className: "nc-voice-dur", children: hasAudio ? clip?.durationSec ? `\u23F1 ${fmt(clip.durationSec)}` : "\u53EF\u64AD\u653E" : "\u672A\u5408\u6210" }),
           !hasAudio && /* @__PURE__ */ jsx3("button", { className: "nc-btn sm ghost", disabled: generating === s.type, onClick: (e) => {
@@ -779,7 +947,7 @@ function Voice() {
       ] }, s.type);
     }) }),
     /* @__PURE__ */ jsx3("audio", { ref: audioRef, preload: "none" }),
-    /* @__PURE__ */ jsx3("div", { className: "nc-tip", style: { padding: "4px 16px", fontSize: 11, color: "#5C6678" }, children: "\u{1F4A1} \u70B9\u6709\u97F3\u9891\u7684\u7AE0\u8282\u5373\u53EF\u64AD\u653E\uFF1B\u672A\u5408\u6210\u7684\u70B9\u300C\u2726 \u751F\u6210\u300D\uFF0CAI \u4F1A\u7528 mimo_tts \u5408\u6210\u5E76\u7F13\u5B58\uFF08\u684C\u9762/\u624B\u673A\u90FD\u80FD\u64AD\uFF09\u3002" }),
+    /* @__PURE__ */ jsx3("div", { className: "nc-tip", style: { padding: "4px 16px", fontSize: 11, color: "#5C6678" }, children: "\u{1F4A1} \u70B9\u6709\u97F3\u9891\u7684\u7AE0\u8282\u5373\u53EF\u64AD\u653E\uFF1B\u672A\u5408\u6210\u7684\u70B9\u300C\u2726 \u751F\u6210\u300D\uFF0CAI \u4F1A\u7528 mimo_tts \u5408\u6210\u5E76\u7F13\u5B58\uFF08\u5927\u97F3\u9891\u6258\u7BA1\u3001\u5C0F\u97F3\u9891\u5185\u8054\uFF0C\u684C\u9762/\u624B\u673A\u90FD\u80FD\u64AD\uFF09\u3002" }),
     toast && /* @__PURE__ */ jsx3("div", { className: "nc-toast", children: toast })
   ] });
 }
@@ -787,7 +955,7 @@ function Voice() {
 // src/Archive.tsx
 init_model();
 import { useState as useState5, useEffect as useEffect5 } from "react";
-import { Fragment as Fragment2, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+import { Fragment as Fragment3, jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
 var DIR_ICON2 = {
   fund: "\u{1F4C8}",
   tech: "\u{1F9E0}",
@@ -802,10 +970,19 @@ function Archive() {
   const [daily, setDaily] = useState5(null);
   const [voices, setVoices] = useState5(/* @__PURE__ */ new Set());
   const [loading, setLoading] = useState5(true);
+  const [err, setErr] = useState5(null);
   const loadDates = async () => {
-    const ds = await listDailyDates();
-    setDates(ds);
-    setSel((s) => s ?? ds[0] ?? null);
+    setLoading(true);
+    setErr(null);
+    try {
+      const ds = await listDailyDates();
+      setDates(ds);
+      setSel((s) => s ?? ds[0] ?? null);
+    } catch (e) {
+      setErr(e.message || String(e));
+    } finally {
+      setLoading(false);
+    }
   };
   useEffect5(() => {
     loadDates();
@@ -816,12 +993,17 @@ function Archive() {
       return;
     }
     setLoading(true);
+    setErr(null);
     Promise.all([loadDaily(sel), loadDateKey(sel)]).then(([d, vk]) => {
       setDaily(d);
       setVoices(new Set(vk.map((k) => k.slice(`news.voice.${sel}.`.length))));
       setLoading(false);
+    }).catch((e) => {
+      setErr(e.message || String(e));
+      setLoading(false);
     });
   }, [sel]);
+  if (loading && !dates.length) return /* @__PURE__ */ jsx4(Skeleton, { lines: 4 });
   const sections = daily?.sections || [];
   return /* @__PURE__ */ jsxs4("div", { className: "nc-page", children: [
     /* @__PURE__ */ jsxs4("div", { className: "nc-top", children: [
@@ -831,8 +1013,9 @@ function Archive() {
         /* @__PURE__ */ jsx4("small", { children: dates.length ? `\u5DF2\u53D1\u5E03 ${dates.length} \u5929` : "\u8FD8\u6CA1\u6709\u5386\u53F2\u65E5\u62A5" })
       ] })
     ] }),
-    !dates.length && /* @__PURE__ */ jsx4("div", { className: "nc-empty", children: "\u6682\u65E0\u5386\u53F2\u65E5\u62A5\u3002\u5148\u5728\u300C\u4ECA\u65E5\u300D\u9875\u751F\u6210\u65E5\u62A5\uFF0C\u4E4B\u540E\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002" }),
-    dates.length > 0 && /* @__PURE__ */ jsx4("div", { style: { display: "flex", gap: 6, overflowX: "auto", padding: "0 16px 12px", WebkitOverflowScrolling: "touch" }, children: dates.map((d) => /* @__PURE__ */ jsx4(
+    err && /* @__PURE__ */ jsx4(ErrorState, { msg: err, onRetry: sel ? () => loadDates() : void 0 }),
+    !err && !dates.length && /* @__PURE__ */ jsx4(EmptyState, { icon: "\u{1F4DA}", title: "\u6682\u65E0\u5386\u53F2\u65E5\u62A5", desc: "\u5148\u5728\u300C\u4ECA\u65E5\u300D\u9875\u751F\u6210\u65E5\u62A5\uFF0C\u4E4B\u540E\u4F1A\u51FA\u73B0\u5728\u8FD9\u91CC\u3002" }),
+    !err && dates.length > 0 && /* @__PURE__ */ jsx4("div", { style: { display: "flex", gap: 6, overflowX: "auto", padding: "0 16px 12px", WebkitOverflowScrolling: "touch" }, children: dates.map((d) => /* @__PURE__ */ jsx4(
       "button",
       {
         onClick: () => setSel(d),
@@ -842,8 +1025,8 @@ function Archive() {
       },
       d
     )) }),
-    loading && /* @__PURE__ */ jsx4("div", { className: "nc-empty", children: "\u52A0\u8F7D\u4E2D\u2026" }),
-    daily && !loading && /* @__PURE__ */ jsxs4(Fragment2, { children: [
+    !err && loading && sel && /* @__PURE__ */ jsx4(Skeleton, { lines: 3 }),
+    daily && !loading && !err && /* @__PURE__ */ jsxs4(Fragment3, { children: [
       /* @__PURE__ */ jsxs4("div", { className: "nc-prog", style: { marginTop: 2 }, children: [
         /* @__PURE__ */ jsxs4("div", { className: "nc-prog-h", children: [
           /* @__PURE__ */ jsx4("b", { children: fmtCnDate(sel || "") }),
@@ -899,14 +1082,22 @@ function Mine() {
   const [progress, setProgress] = useState6(null);
   const [addCode, setAddCode] = useState6("");
   const [toast, setToast] = useState6(null);
+  const [loading, setLoading] = useState6(true);
+  const [err, setErr] = useState6(null);
+  const [tab, setTab] = useState6("settings");
   const reload = async () => {
+    setLoading(true);
+    setErr(null);
     try {
       const [p, l, prog] = await Promise.all([loadPrefs(), loadPrefsLog(), loadProgress()]);
       setPrefs(p);
       setLog(l.filter((e) => !e.undone).slice(-8).reverse());
       setProgress(prog);
     } catch (e) {
+      setErr(e.message || String(e));
       setToast(`\u52A0\u8F7D\u5931\u8D25\uFF1A${e.message}`);
+    } finally {
+      setLoading(false);
     }
   };
   useEffect6(() => {
@@ -1004,8 +1195,29 @@ function Mine() {
         /* @__PURE__ */ jsx5("small", { children: "\u504F\u597D \xB7 \u57FA\u91D1\u6C60 \xB7 AI \u6539\u52A8\u65E5\u5FD7" })
       ] })
     ] }),
-    !prefs && /* @__PURE__ */ jsx5("div", { className: "nc-empty", children: "\u52A0\u8F7D\u4E2D\u2026" }),
-    prefs && /* @__PURE__ */ jsxs5("div", { className: "nc-feed", children: [
+    /* @__PURE__ */ jsxs5("div", { className: "nc-subtab", children: [
+      /* @__PURE__ */ jsx5("button", { className: `nc-st ${tab === "settings" ? "on" : ""}`, onClick: () => setTab("settings"), children: "\u2699\uFE0F \u8BBE\u7F6E" }),
+      /* @__PURE__ */ jsxs5("button", { className: `nc-st ${tab === "favorites" ? "on" : ""}`, onClick: () => setTab("favorites"), children: [
+        "\u2B50 \u6536\u85CF ",
+        progress?.favorites?.length ? `(${progress.favorites.length})` : ""
+      ] })
+    ] }),
+    err && /* @__PURE__ */ jsx5(ErrorState, { msg: err, onRetry: reload }),
+    !err && loading && /* @__PURE__ */ jsx5(Skeleton, { lines: 4 }),
+    !err && !loading && tab === "favorites" && /* @__PURE__ */ jsx5("div", { className: "nc-feed", children: /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
+      /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
+        /* @__PURE__ */ jsx5("b", { children: "\u6211\u7684\u6536\u85CF" }),
+        /* @__PURE__ */ jsx5("span", { className: "nc-hint", children: "AI \u4F1A\u5B66\u4E60\u4F60\u7684\u6536\u85CF\u504F\u597D" })
+      ] }),
+      !progress?.favorites?.length ? /* @__PURE__ */ jsx5(EmptyState, { icon: "\u2B50", title: "\u8FD8\u6CA1\u6709\u6536\u85CF", desc: "\u5728\u300C\u4ECA\u65E5\u300D\u9875\u70B9\u5361\u7247\u53F3\u4E0A \u2606 \u6536\u85CF\uFF0CAI \u4F1A\u636E\u6B64\u8C03\u6574\u65E5\u62A5\u6743\u91CD\u3002" }) : /* @__PURE__ */ jsx5("div", { className: "nc-log-list", children: progress.favorites.map((f, i) => /* @__PURE__ */ jsx5("div", { className: "nc-log-item", children: /* @__PURE__ */ jsxs5("div", { className: "nc-log-main", children: [
+        /* @__PURE__ */ jsxs5("b", { children: [
+          "#",
+          i + 1
+        ] }),
+        /* @__PURE__ */ jsx5("small", { children: f })
+      ] }) }, i)) })
+    ] }) }),
+    !err && !loading && tab === "settings" && prefs && /* @__PURE__ */ jsxs5("div", { className: "nc-feed", children: [
       /* @__PURE__ */ jsxs5("div", { className: "nc-card", style: { padding: 13 }, children: [
         /* @__PURE__ */ jsxs5("div", { className: "nc-card-h", children: [
           /* @__PURE__ */ jsx5("b", { children: "\u5173\u6CE8\u65B9\u5411" }),
@@ -1149,10 +1361,9 @@ var css = `
 .nc-sec{display:flex;align-items:center;gap:8px;padding:10px 18px 8px;font-size:14px;font-weight:700}
 .nc-bar{width:3px;height:14px;border-radius:2px;background:linear-gradient(180deg,#58A6FF,#BC8CFF);flex-shrink:0}
 .nc-hint{margin-left:auto;font-size:10.5px;color:#5C6678;font-weight:400}
-.nc-feed{display:flex;flex-direction:column;gap:10px;padding:0 16px 18px}
 
 /* \u5361\u7247 */
-.nc-card{background:#161B22;border:1px solid #242C3A;border-radius:14px;overflow:hidden}
+.nc-card{background:#161B22;border:1px solid #242C3A;border-radius:14px;overflow:hidden;min-width:0}
 .nc-card-b{padding:12px 14px 0}
 .nc-card-b b{font-size:13px}
 .nc-card-h{padding:0 0 8px;display:flex;align-items:center}
@@ -1286,6 +1497,29 @@ var css = `
 .nc-tab .nc-tab-ic{font-size:17px}
 .nc-tab.on{color:#fff;background:rgba(88,166,255,.12)}
 .nc-tab.on .nc-tab-ic{color:#58A6FF}
+
+/* \u751F\u4EA7\u7EA7\uFF1A\u9AA8\u67B6\u5C4F\u52A8\u753B */
+@keyframes nc-sk { 0%{opacity:.5} 50%{opacity:1} 100%{opacity:.5} }
+.nc-sk{background:#242C3A;border-radius:6px;animation:nc-sk 1.4s ease-in-out infinite}
+
+/* \u751F\u4EA7\u7EA7\uFF1A\u54CD\u5E94\u5F0F\u5361\u7247\u7F51\u683C\uFF08\u5BBF\u4E3B\u9762\u677F\u5BBD\u5EA6\u81EA\u9002\u5E94\uFF0C\u7A84\u2192\u5355\u5217\uFF0C\u5BBD\u2192\u53CC\u5217\uFF09 */
+.nc-feed{display:grid;grid-template-columns:1fr;gap:10px;padding:0 16px 18px}
+.nc-feed.narrow{grid-template-columns:1fr}
+@media (min-width: 560px){ .nc-feed{grid-template-columns:1fr 1fr} }
+@media (min-width: 480px) and (max-width: 559px){ .nc-page{max-width:100%} }
+.nc-sec{grid-column:1/-1}
+.nc-spread{grid-column:1/-1}
+
+/* \u751F\u4EA7\u7EA7\uFF1A\u6536\u85CF\u6309\u94AE */
+.nc-fav{background:none;border:none;color:#5C6678;font-size:15px;cursor:pointer;padding:2px 4px;flex-shrink:0;transition:transform .12s}
+.nc-fav:hover{transform:scale(1.2)}
+.nc-fav.on{color:#F0B429}
+
+/* \u751F\u4EA7\u7EA7\uFF1A\u672C\u5730 toast \u589E\u5F3A + \u7126\u70B9\u53EF\u89C1 */
+.nc-toast{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);background:rgba(22,27,35,.96);border:1px solid #242C3A;color:#E6EAF2;padding:8px 14px;border-radius:10px;font-size:11.5px;z-index:99;box-shadow:0 6px 18px #0008;white-space:nowrap;animation:nc-toast-in .18s ease}
+@keyframes nc-toast-in{from{opacity:0;transform:translateX(-50%) translateY(6px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.nc-body:focus-visible{outline:none}
+.nc-btn:focus-visible,.nc-tab:focus-visible,.nc-dir:focus-visible,.nc-fav:focus-visible{outline:2px solid rgba(88,166,255,.6);outline-offset:2px}
 `;
 var TABS = [
   { id: "today", label: "\u4ECA\u65E5", icon: "\u{1F4F0}" },
@@ -1294,6 +1528,38 @@ var TABS = [
   { id: "archive", label: "\u5386\u53F2", icon: "\u{1F4DA}" },
   { id: "mine", label: "\u6211\u7684", icon: "\u{1F464}" }
 ];
+function Skeleton({ lines = 4 }) {
+  return /* @__PURE__ */ jsxs6("div", { className: "nc-page", "aria-busy": "true", role: "status", "aria-label": "\u52A0\u8F7D\u4E2D", children: [
+    /* @__PURE__ */ jsxs6("div", { className: "nc-top", children: [
+      /* @__PURE__ */ jsx6("div", { className: "nc-logo", style: { opacity: 0.4 }, children: "\u2026" }),
+      /* @__PURE__ */ jsxs6("div", { className: "nc-tt", children: [
+        /* @__PURE__ */ jsx6("div", { className: "nc-sk", style: { width: 120, height: 16 } }),
+        /* @__PURE__ */ jsx6("div", { className: "nc-sk", style: { width: 80, height: 11, marginTop: 6 } })
+      ] })
+    ] }),
+    Array.from({ length: lines }).map((_, i) => /* @__PURE__ */ jsxs6("div", { className: "nc-card", style: { margin: "0 16px 10px", padding: 14 }, children: [
+      /* @__PURE__ */ jsx6("div", { className: "nc-sk", style: { width: `${60 + i % 3 * 15}%`, height: 13 } }),
+      /* @__PURE__ */ jsx6("div", { className: "nc-sk", style: { width: "92%", height: 10, marginTop: 8 } }),
+      /* @__PURE__ */ jsx6("div", { className: "nc-sk", style: { width: "70%", height: 10, marginTop: 6 } })
+    ] }, i))
+  ] });
+}
+function ErrorState({ msg, onRetry, hint }) {
+  return /* @__PURE__ */ jsxs6("div", { className: "nc-empty", style: { paddingTop: 40 }, children: [
+    /* @__PURE__ */ jsx6("div", { style: { fontSize: 26, marginBottom: 8 }, children: "\u26A0\uFE0F" }),
+    /* @__PURE__ */ jsx6("div", { children: msg || "\u52A0\u8F7D\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5" }),
+    hint && /* @__PURE__ */ jsx6("div", { className: "nc-tip", style: { marginTop: 6 }, children: hint }),
+    onRetry && /* @__PURE__ */ jsx6("button", { className: "nc-btn", onClick: onRetry, style: { marginTop: 14 }, children: "\u27F3 \u91CD\u8BD5" })
+  ] });
+}
+function EmptyState({ icon = "\u{1F4C4}", title, desc, action }) {
+  return /* @__PURE__ */ jsxs6("div", { className: "nc-empty", style: { paddingTop: 32 }, children: [
+    /* @__PURE__ */ jsx6("div", { style: { fontSize: 30, marginBottom: 10 }, children: icon }),
+    /* @__PURE__ */ jsx6("b", { style: { color: "#E6EAF2" }, children: title }),
+    desc && /* @__PURE__ */ jsx6("div", { style: { marginTop: 6 }, children: desc }),
+    action && /* @__PURE__ */ jsx6("div", { style: { marginTop: 14 }, children: action })
+  ] });
+}
 function NewsPanel({ onSendToChat }) {
   const [tab, setTab] = useState7(0);
   useEffect7(() => {

@@ -22,8 +22,13 @@ const os = require('os');
 const crypto = require('crypto');
 
 const SERVER_NAME = 'news-curator';
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '0.3.0';
 const PROTOCOL_VERSION = '2024-11-05';
+const SCHEMA_VERSION = 1;
+const MAX_ITEMS_PER_SECTION = 40;      // 每章节条目上限（防 AI 塞爆单键）
+const MAX_DAILY_SECTIONS = 12;         // 日报章节上限
+const AUDIO_INLINE_LIMIT = 300 * 1024; // 音频 dataUrl 内联上限（字节）；以上建议托管 url
+const DAILY_RETENTION_DAYS = 60;       // 日报保留天数（news_cleanup 默认清理早于此的）
 
 // cap.kv 键空间（news.*，与面板共享）
 const K = {
@@ -36,6 +41,7 @@ const K = {
 // 默认偏好（首启）
 function defaultPrefs() {
   return {
+    schemaVersion: SCHEMA_VERSION,
     directions: {
       creative: true,   // 创意项目
       fund: true,       // 基金投资
@@ -123,47 +129,66 @@ function resolveEndpoint() {
 }
 
 // ── 调用 Polaris IPC Bridge（router_dispatch） ──────────────────────────────
-function polarisIpc(command, args = {}) {
+// 重试策略：最多 3 次，间隔 300/900ms（幂等读可安全重试；写也重试，宿主 IPC 是原子的）
+function polarisIpc(command, args = {}, { retries = 2, retryDelay = 300 } = {}) {
   return new Promise((resolve, reject) => {
-    resolveEndpoint()
-      .then((ep) => {
-        const data = JSON.stringify(args);
-        const headers = {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(data),
-        };
-        if (ep.token) {
-          headers['Authorization'] = `Bearer ${crypto.createHash('md5').update(ep.token).digest('hex')}`;
-        }
-        const options = {
-          hostname: ep.host,
-          port: ep.port,
-          path: `/api/${command.replace(/_/g, '-')}`,
-          method: 'POST',
-          headers,
-          timeout: 30000,
-        };
-        const req = http.request(options, (res) => {
-          let responseData = '';
-          res.on('data', (chunk) => (responseData += chunk));
-          res.on('end', () => {
-            try {
-              resolve(JSON.parse(responseData));
-            } catch (e) {
-              resolve(responseData);
+    const attempt = (n) => {
+      resolveEndpoint()
+        .then((ep) => {
+          const data = JSON.stringify(args);
+          const headers = {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(data),
+          };
+          if (ep.token) {
+            headers['Authorization'] = `Bearer ${crypto.createHash('md5').update(ep.token).digest('hex')}`;
+          }
+          const options = {
+            hostname: ep.host,
+            port: ep.port,
+            path: `/api/${command.replace(/_/g, '-')}`,
+            method: 'POST',
+            headers,
+            timeout: 30000,
+          };
+          const req = http.request(options, (res) => {
+            let responseData = '';
+            res.on('data', (chunk) => (responseData += chunk));
+            res.on('end', () => {
+              try {
+                resolve(JSON.parse(responseData));
+              } catch (e) {
+                resolve(responseData);
+              }
+            });
+          });
+          req.on('error', (e) => {
+            if (n < retries) {
+              setTimeout(() => attempt(n + 1), retryDelay * Math.pow(2, n));
+            } else {
+              reject(new Error(`Polaris IPC ${command} 失败: ${e.message}`));
             }
           });
-        });
-        req.on('error', (e) => reject(new Error(`Polaris IPC ${command} 失败: ${e.message}`)));
-        req.on('timeout', () => {
-          req.destroy();
-          reject(new Error('Polaris IPC timeout'));
-        });
-        req.write(data);
-        req.end();
-      })
-      .catch((e) => reject(e));
+          req.on('timeout', () => {
+            req.destroy();
+            if (n < retries) {
+              setTimeout(() => attempt(n + 1), retryDelay * Math.pow(2, n));
+            } else {
+              reject(new Error('Polaris IPC timeout'));
+            }
+          });
+          req.write(data);
+          req.end();
+        })
+        .catch((e) => reject(e));
+    };
+    attempt(0);
   });
+}
+
+// 轻量日志：写操作 + 失败（MCP 是 stdio，直接 stderr 输出，不污染 stdout 协议）
+function log(level, msg) {
+  process.stderr.write(`[news-curator:${level}] ${new Date().toISOString()} ${msg}\n`);
 }
 
 // ── cap.kv 读写（经 router_dispatch） ────────────────────────────────────────
@@ -234,11 +259,14 @@ async function handleSetPrefs(args) {
     const cur = await readPrefs();
     // 合并（深层合并 directions 与 voice/learn 顶层覆盖）
     const next = { ...cur, ...patch, directions: { ...(cur.directions || {}), ...(patch.directions || {}) } };
+    next.schemaVersion = SCHEMA_VERSION;
     next.updatedAt = new Date().toISOString();
     await kvSet(K.prefs, next);
     const log = await appendPrefsLog({ tool: 'news_set_prefs', what: JSON.stringify(patch), reason });
+    log('info', `news_set_prefs: ${reason.slice(0, 40)}`);
     return text(JSON.stringify({ ok: true, prefs: next, logId: log[log.length - 1].ts }));
   } catch (e) {
+    log('error', `news_set_prefs: ${e.message}`);
     return fail(e);
   }
 }
@@ -345,10 +373,14 @@ function validateDaily(daily) {
   if (!daily || typeof daily !== 'object') return '日报必须是对象';
   if (!daily.date || typeof daily.date !== 'string') return '缺少 date';
   if (!Array.isArray(daily.sections)) return 'sections 必须是数组';
+  if (daily.sections.length === 0) return 'sections 不能为空';
+  if (daily.sections.length > MAX_DAILY_SECTIONS) return `sections 超过上限 ${MAX_DAILY_SECTIONS}`;
   for (const s of daily.sections) {
     if (!s || typeof s !== 'object') return 'section 必须是对象';
     if (!SECTION_TYPES.includes(s.type)) return `未知 section type: ${s.type}`;
     if (!s.title) return 'section 缺少 title';
+    if (!Array.isArray(s.items)) return `section ${s.title} 缺少 items 数组`;
+    if (s.items.length > MAX_ITEMS_PER_SECTION) return `section ${s.title} 条目超过上限 ${MAX_ITEMS_PER_SECTION}`;
   }
   return null;
 }
@@ -360,19 +392,27 @@ async function handlePublishDaily(args) {
     const err = validateDaily(daily);
     if (err) return text(`校验失败：${err}`, true);
     const existing = await kvGet(`news.daily.${daily.date}`).catch(() => null);
-    await kvSet(`news.daily.${daily.date}`, daily);
+    // 失败保护：若已有当天日报且本次校验通过，先备份到 news.daily.<date>.prev（AI 可回退）
+    if (existing && existing.date === daily.date) {
+      await kvSet(`news.daily.${daily.date}.prev`, existing).catch(() => {});
+    }
+    const toStore = { ...daily, schemaVersion: SCHEMA_VERSION, updatedAt: new Date().toISOString() };
+    await kvSet(`news.daily.${daily.date}`, toStore);
     // 更新最近抓取 hash（供 AI 去重）
     if (args.sources && typeof args.sources === 'object') {
       await kvSet(K.sourcesLast, { ...(await kvGet(K.sourcesLast).catch(() => ({}))), ...args.sources, date: daily.date });
     }
+    log('info', `news_publish_daily: ${daily.date} x${daily.sections.length} sections`);
     return text(JSON.stringify({
       ok: true,
       date: daily.date,
       sections: daily.sections.length,
       totalMinutes: daily.totalMinutes || null,
       overwritten: !!existing,
+      prevBackup: !!existing,
     }));
   } catch (e) {
+    log('error', `news_publish_daily: ${e.message}`);
     return fail(e);
   }
 }
@@ -395,21 +435,37 @@ async function handleRecordReview(args) {
     const next = Array.isArray(list) ? list : [];
     next.push(review);
     await kvSet(monthKey, next.slice(-1000));
-    // 同时维护进度摘要（面板读）
+    // 同时维护进度摘要（面板读）——幂等设计
     const progress = await kvGet(K.progress).catch(() => null);
-    const prog = progress && typeof progress === 'object' ? progress : { streak: 0, lastRead: null, learned: { pro: [], gen: [] }, favorites: [] };
+    const prog = progress && typeof progress === 'object' ? progress
+      : { schemaVersion: SCHEMA_VERSION, streak: 0, lastRead: null, learned: { pro: [], gen: [] }, favorites: [], readDates: [], checkinDates: [], minutesToday: 0, minutesDate: date };
+    prog.schemaVersion = SCHEMA_VERSION;
+    if (!Array.isArray(prog.checkinDates)) prog.checkinDates = [];
+    if (!Array.isArray(prog.readDates)) prog.readDates = [];
+    if (!Array.isArray(prog.favorites)) prog.favorites = [];
+    if (!prog.learned || typeof prog.learned !== 'object') prog.learned = { pro: [], gen: [] };
     if (review.kind === 'checkin') {
-      prog.streak = (prog.streak || 0) + 1;
+      // 幂等：同一天只 +1 一次
+      if (!prog.checkinDates.includes(date)) {
+        prog.streak = (prog.streak || 0) + 1;
+        prog.checkinDates.push(date);
+      }
       prog.lastRead = date;
     }
     if (review.kind === 'favorite' && review.itemId) {
-      const favs = Array.isArray(prog.favorites) ? prog.favorites : [];
-      if (!favs.includes(review.itemId)) favs.push(review.itemId);
-      prog.favorites = favs.slice(-100);
+      if (!prog.favorites.includes(review.itemId)) {
+        prog.favorites.push(review.itemId);
+      }
+      prog.favorites = prog.favorites.slice(-200);
+    }
+    if (review.kind === 'read') {
+      if (!prog.readDates.includes(date)) prog.readDates.push(date);
+      prog.readDates = prog.readDates.slice(-90);
     }
     await kvSet(K.progress, prog);
     return text(JSON.stringify({ ok: true, review, progress: prog }));
   } catch (e) {
+    log('error', `news_record_review: ${e.message}`);
     return fail(e);
   }
 }
@@ -438,28 +494,120 @@ async function handleBrief(args) {
 
 // news_save_voice：AI 合成音频后把结果存到缓存（面板读 news.voice.<date>.<section> 真播放）
 // 存两种形态：dataUrl（data:audio/...，base64 内联，app/桌面通用）或 url（file 托管）
+// 分档策略：dataUrl base64 体积 <300KB 内联；>=300KB 只存托管 url（若未给 url 则拒绝并提示）
 async function handleSaveVoice(args) {
   try {
     const date = String(args.date || new Date().toISOString().slice(0, 10));
     const section = String(args.section || 'summary');
-    if (!['summary', 'fund', 'tech', 'news', 'creative', 'learn'].includes(section)) {
+    if (!SECTION_TYPES.includes(section)) {
       return text(`section 无效：${section}`, true);
     }
     const dataUrl = args.dataUrl ? String(args.dataUrl) : '';
     const url = args.url ? String(args.url) : '';
     const durationSec = args.durationSec != null ? Number(args.durationSec) : null;
     if (!dataUrl && !url) return text('dataUrl 与 url 至少传一个（mimo_tts_synthesize 的返回）', true);
+    // 分档：大音频不内联，避免撑爆 cap.kv 单键
+    const size = dataUrl.startsWith('data:') ? Math.round((dataUrl.length * 3) / 4) : 0;
+    let store;
+    if (size >= AUDIO_INLINE_LIMIT) {
+      if (!url) {
+        return text(`音频 ${Math.round(size / 1024)}KB 超过内联上限 ${Math.round(AUDIO_INLINE_LIMIT / 1024)}KB，请用 mimo_tts_synthesize 的 file 模式（outputMode=file）拿托管 url 再存`, true);
+      }
+      store = { url, dataUrl: '', store: 'hosted' };
+    } else if (dataUrl) {
+      store = { dataUrl, url: url || '', store: 'inline' };
+    } else {
+      store = { url, dataUrl: '', store: 'hosted' };
+    }
     const voice = {
       section,
-      dataUrl,
-      url,
+      dataUrl: store.dataUrl,
+      url: store.url,
       durationSec,
       title: args.title ? String(args.title) : '',
+      store: store.store,
       createdAt: new Date().toISOString(),
     };
     await kvSet(`news.voice.${date}.${section}`, voice);
-    return text(JSON.stringify({ ok: true, key: `news.voice.${date}.${section}`, voice }));
+    log('info', `news_save_voice: ${date}.${section} (${store.store}, ${Math.round(size / 1024)}KB)`);
+    return text(JSON.stringify({ ok: true, key: `news.voice.${date}.${section}`, store: store.store, voice }));
   } catch (e) {
+    log('error', `news_save_voice: ${e.message}`);
+    return fail(e);
+  }
+}
+
+// news_cleanup：数据治理 —— 清理过期日报（保留近 N 天）+ 归档语音 + 去掉过期备份
+// 供 AI 定时任务调用（默认保留 60 天），也可由用户手动触发
+async function handleCleanup(args) {
+  try {
+    const keepDays = Number(args.keepDays || DAILY_RETENTION_DAYS);
+    const keyPrefix = String(args.keyPrefix || 'news');
+    const cutoff = Date.now() - keepDays * 24 * 60 * 60 * 1000;
+    const res = await polarisIpc('router_dispatch', {
+      req: { target: 'cap.kv', payload: { action: 'list' } },
+    });
+    const keys = Array.isArray(res && res.result && res.result.keys) ? res.result.keys : [];
+    const dailyKeys = keys.filter((k) => typeof k === 'string' && k.startsWith('news.daily.') && !k.endsWith('.prev'));
+    let removedDaily = 0;
+    let removedVoice = 0;
+    const removed = [];
+    for (const k of dailyKeys) {
+      const date = k.slice('news.daily.'.length);
+      if (date.length !== 10 || isNaN(Date.parse(date))) continue; // 非法键跳过
+      const t = new Date(date + 'T00:00:00').getTime();
+      if (t < cutoff) {
+        await kvSet(k, null).catch(() => {});
+        removed.push(k);
+        removedDaily++;
+      }
+    }
+    // 语音：与日报同策略清理（voice 键前缀）
+    const voicePrefix = `${keyPrefix}.voice.`;
+    for (const k of keys) {
+      if (typeof k !== 'string' || !k.startsWith(voicePrefix)) continue;
+      const rest = k.slice(voicePrefix.length);
+      const date = rest.slice(0, 10);
+      if (date.length !== 10 || isNaN(Date.parse(date))) continue;
+      const t = new Date(date + 'T00:00:00').getTime();
+      if (t < cutoff) {
+        await kvSet(k, null).catch(() => {});
+        removedVoice++;
+      }
+    }
+    // 旧备份（.prev）：只保留最近 7 天
+    const prevKeys = keys.filter((k) => typeof k === 'string' && k.endsWith('.prev'));
+    for (const k of prevKeys) {
+      const t = new Date(k.slice(0, 10) + 'T00:00:00').getTime();
+      if (!isNaN(t) && t < Date.now() - 7 * 24 * 60 * 60 * 1000) {
+        await kvSet(k, null).catch(() => {});
+        removed.push(k);
+      }
+    }
+    log('info', `news_cleanup: removed ${removedDaily} daily, ${removedVoice} voice`);
+    return text(JSON.stringify({ ok: true, keptDays: keepDays, removedDaily, removedVoice, removed: removed.slice(0, 50) }));
+  } catch (e) {
+    log('error', `news_cleanup: ${e.message}`);
+    return fail(e);
+  }
+}
+
+// news_list_voices：枚举某天/全部已合成语音（轻量，不逐个 get 大对象）
+async function handleListVoices(args) {
+  try {
+    const date = String(args.date || '');
+    const res = await polarisIpc('router_dispatch', {
+      req: { target: 'cap.kv', payload: { action: 'list' } },
+    });
+    const keys = Array.isArray(res && res.result && res.result.keys) ? res.result.keys : [];
+    const prefix = date ? `news.voice.${date}.` : 'news.voice.';
+    const voices = keys
+      .filter((k) => typeof k === 'string' && k.startsWith(prefix))
+      .map((k) => k.slice('news.voice.'.length))
+      .sort();
+    return text(JSON.stringify({ date: date || null, voices }));
+  } catch (e) {
+    log('error', `news_list_voices: ${e.message}`);
     return fail(e);
   }
 }
@@ -482,7 +630,7 @@ async function handleListDaily() {
   }
 }
 
-// ── 工具注册表（8 + 1 撤销 = 9） ────────────────────────────────────────────
+// ── 工具注册表（9 + 撤销 = 10 + 治理 2 = 12） ────────────────────────────────
 const TOOLS = [
   {
     name: 'news_get_profile',
@@ -615,6 +763,28 @@ const TOOLS = [
     description: '枚举已发布日报的日期列表（按日期倒序），供面板/历史页回看任意一天。',
     inputSchema: { type: 'object', properties: {} },
     handler: handleListDaily,
+  },
+  {
+    name: 'news_cleanup',
+    description:
+      '数据治理：清理过期日报（默认保留近 60 天，可传 keepDays）、归档语音（同策略）、清掉超过 7 天的旧备份（news.daily.<date>.prev）。供定时任务/手动触发，保持 cap.kv 不膨胀。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        keepDays: { type: 'number', description: '保留天数，默认 60' },
+        keyPrefix: { type: 'string', description: '键前缀，默认 news' },
+      },
+    },
+    handler: handleCleanup,
+  },
+  {
+    name: 'news_list_voices',
+    description: '枚举已合成语音的章节（news.voice.<date>.<section> 键名，轻量）。date 可传指定日期；不传则列全部。',
+    inputSchema: {
+      type: 'object',
+      properties: { date: { type: 'string', description: 'YYYY-MM-DD，缺省列全部日期' } },
+    },
+    handler: handleListVoices,
   },
 ];
 
