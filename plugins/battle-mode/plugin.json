@@ -1,16 +1,16 @@
 {
   "id": "battle-mode",
   "name": "Battle Mode",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MCP 工具（battle_setup/roll/prompt/report）让 AI 在对话里直接开战，面板可操作可发战报到聊天。",
-  "enabledByDefault": false,
+  "enabledByDefault": true,
   "contributes": {
     "views": [
       {
         "id": "battle-mode.panel",
         "area": "activityBar",
         "panelType": "battle-mode",
-        "icon": "Swords",
+        "icon": "Target",
         "labelKey": "labels.battlePanel",
         "labelDefault": "Battle",
         "order": 80

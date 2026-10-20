@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-19 19:15:27",
+  "updated": "2026-10-19 07:49:49",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -302,7 +302,14 @@
         "network": true,
         "appConfigRead": true,
         "appConfigWrite": true
-      }
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip",
+          "sha256": "c6270f9ef39f258c7a035b9cffcf1f82a25d4188e79c758ab0be1ac5c6f739bb"
+        }
+      ]
     },
     {
       "id": "animation-3d",
@@ -416,7 +423,7 @@
     {
       "id": "battle-mode",
       "name": "Battle Mode",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MCP 工具（battle_setup/roll/prompt/report）让 AI 在对话里直接开战，面板可操作可发战报到聊天。",
       "author": "Polaris",
       "category": "productivity",
@@ -432,9 +439,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/battle-mode",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/battle-mode.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/update.json",
-      "sha256": "a96811c979b9021dec0f6f2a6f88f9b4194d9fb6071cfb4a5a8ab675bd07cc05",
+      "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -445,18 +452,63 @@
       "readme": "Battle Mode：为学习而战。角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MVP：纯前端战斗台 + MCP 工具（battle_setup 立题、battle_roll 掷骰、battle_prompt 生成主持人/辩手指令、battle_report 战报）——AI 在对话里就能直接开一场对抗式辩论，面板负责可视化与战报持久化。",
       "versions": [
         {
+          "version": "0.1.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
+          "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
+          "description": "v0.1.1：面板与 MCP 细节修复"
+        },
+        {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/battle-mode/battle-mode.zip",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.0/plugins/battle-mode/battle-mode.zip",
           "sha256": "a96811c979b9021dec0f6f2a6f88f9b4194d9fb6071cfb4a5a8ab675bd07cc05",
           "description": "MVP：纯前端战斗台 + MCP 工具（battle_setup/roll/prompt/report），AI 对话内直接开战"
         }
       ]
     },
     {
+      "id": "capability-runtime",
+      "name": "AI 能力自拓展运行时",
+      "version": "1.0.0",
+      "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "runtime",
+        "capability",
+        "modular",
+        "overlay"
+      ],
+      "icon": "Puzzle",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/capability-runtime",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/update.json",
+      "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
+      "tier": "beta",
+      "permissions": {
+        "workspaceRead": true,
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
+          "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
+          "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。"
+        }
+      ]
+    },
+    {
       "id": "news-curator",
       "name": "AI 每日刊物",
-      "version": "0.1.0",
-      "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 语音播报 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+      "version": "0.2.0",
+      "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
       "author": "Polaris",
       "category": "productivity",
       "tags": [
@@ -471,9 +523,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/news-curator",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.2.0/plugins/news-curator/news-curator.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
-      "sha256": "4c6a15e6340ad97dab648e1d2840206990b13545682edea6c736748bf425582c",
+      "sha256": "b2ee4f88c7e5ed0a87da236e24e4902430849091aefe77bc1bc3e56e98723d5a",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -482,8 +534,14 @@
         "network": true
       },
       "screenshots": [],
-      "readme": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 语音播报 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+      "readme": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
       "versions": [
+        {
+          "version": "0.2.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.2.0/plugins/news-curator/news-curator.zip",
+          "sha256": "b2ee4f88c7e5ed0a87da236e24e4902430849091aefe77bc1bc3e56e98723d5a",
+          "description": "v0.2.0：真实语音播放/合成（mimo-tts 缓存）+ 历史日报页 + news_save_voice/news_list_daily MCP 工具"
+        },
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip",

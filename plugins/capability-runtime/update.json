@@ -1,0 +1,30 @@
+{
+  "id": "capability-runtime",
+  "name": "AI 能力自拓展运行时",
+  "version": "1.0.0",
+  "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "capability-runtime",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}", "{{workspacePath}}", "{{pluginDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/capability-runtime",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/capability-runtime.zip"
+  }
+}
