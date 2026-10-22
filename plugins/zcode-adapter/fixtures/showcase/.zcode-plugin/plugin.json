@@ -1,0 +1,25 @@
+{
+  "name": "my-panel",
+  "version": "0.1.0",
+  "description": "ZCode UI_PLUGIN.md 最小示例（适配器 fixture）",
+  "mcpServers": {
+    "app": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "cwd": "${ZCODE_PROJECT_DIR}",
+      "env": { "ZCODE_WORKSPACE_ROOT": "${ZCODE_PROJECT_DIR}", "ZCODE_PLUGIN_DATA": "${ZCODE_PLUGIN_DATA}" }
+    }
+  },
+  "ui": {
+    "surfaces": [
+      {
+        "id": "editor",
+        "title": { "en": "Editor", "zh-CN": "编辑器" },
+        "server": "app",
+        "resourceUri": "ui://my-panel/editor.html",
+        "availability": "session"
+      }
+    ]
+  }
+}
