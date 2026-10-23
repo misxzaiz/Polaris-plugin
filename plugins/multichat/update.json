@@ -1,8 +1,8 @@
 {
   "id": "multichat",
   "name": "MultiChat",
-  "version": "0.1.0",
-  "description": "多设备会话插件：任意设备同一会话并发使用。Phase 1 = 新建会话 + 继续对话 + 实时流式跨端广播。",
+  "version": "0.2.0",
+  "description": "多设备会话插件：任意设备同一会话并发使用。Phase 2 = 引擎/供应商/模型选择（默认 simple-ai）+ 手机响应式 + 实时流式跨端广播。",
   "enabledByDefault": true,
   "contributes": {
     "views": [

@@ -1,5 +1,5 @@
 // src/Panel.tsx
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 // src/types.ts
 function hostWindow() {
@@ -48,6 +48,7 @@ async function sendChat(req) {
     };
     if (req.engineId) options.engineId = req.engineId;
     if (req.modelProfileId) options.modelProfileId = req.modelProfileId;
+    if (req.model) options.model = req.model;
     const payload = {
       action: req.engineSessionId ? "continue" : "start",
       message: req.text,
@@ -61,6 +62,35 @@ async function sendChat(req) {
     return { ok: true, engineSessionId };
   } catch (e) {
     return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+  }
+}
+async function listEngines() {
+  try {
+    const metas = await invokeHost("get_engine_metadata_list");
+    return Array.isArray(metas) ? metas : [];
+  } catch {
+    return [];
+  }
+}
+async function listProfiles() {
+  try {
+    const config = await capDispatch("cap.config", {
+      action: "get",
+      section: "full"
+    });
+    const profiles = config?.modelProfiles;
+    if (!Array.isArray(profiles)) return [];
+    return profiles.filter((p) => p && typeof p.id === "string" && p.id);
+  } catch {
+    return [];
+  }
+}
+async function listOpencodeModels() {
+  try {
+    const models = await invokeHost("get_opencode_models");
+    return Array.isArray(models) ? models : [];
+  } catch {
+    return [];
   }
 }
 function kvKey(sessionId) {
@@ -88,13 +118,22 @@ async function loadStore() {
     return {
       sessions: Array.isArray(raw?.sessions) ? raw.sessions : [],
       defaults: {
-        engineId: raw?.defaults?.engineId || "claude-code",
+        engineId: raw?.defaults?.engineId || "simple-ai",
         workspaceId: raw?.defaults?.workspaceId || null,
-        modelProfileId: raw?.defaults?.modelProfileId || null
+        modelProfileId: raw?.defaults?.modelProfileId || null,
+        model: raw?.defaults?.model ?? null
       }
     };
   } catch {
-    return { sessions: [], defaults: { engineId: "claude-code", workspaceId: null, modelProfileId: null } };
+    return {
+      sessions: [],
+      defaults: {
+        engineId: "simple-ai",
+        workspaceId: null,
+        modelProfileId: null,
+        model: null
+      }
+    };
   }
 }
 async function saveStore(store) {
@@ -163,6 +202,9 @@ function ensureGlobalListener() {
   }).then((unsub) => {
     unlistenGlobal = unsub;
     return;
+  }).catch((err) => {
+    globalInitPromise = null;
+    throw err;
   });
   return globalInitPromise;
 }
@@ -221,9 +263,10 @@ async function subscribeSession(sessionId, sink) {
 // src/store.ts
 var state = {
   sessions: [],
-  engineId: "claude-code",
+  engineId: "simple-ai",
   workspaceId: null,
   modelProfileId: null,
+  model: null,
   loaded: false,
   loadingError: "",
   /** 打开会话 → 本端消息缓存 */
@@ -231,7 +274,15 @@ var state = {
   /** 发送中（running）的会话 */
   running: /* @__PURE__ */ new Set(),
   /** 订阅管理：sessionId → unsub */
-  subs: /* @__PURE__ */ new Map()
+  subs: /* @__PURE__ */ new Map(),
+  /** 引擎/供应商/模型选择器数据 */
+  catalog: {
+    engines: [],
+    profiles: [],
+    opencodeModels: [],
+    catalogLoaded: false,
+    catalogError: ""
+  }
 };
 var listeners = /* @__PURE__ */ new Set();
 function notify() {
@@ -250,9 +301,10 @@ async function initStore() {
   if (state.loaded) return;
   const store = await loadStore();
   state.sessions = store.sessions;
-  state.engineId = store.defaults.engineId;
+  state.engineId = store.defaults.engineId || "simple-ai";
   state.workspaceId = store.defaults.workspaceId;
   state.modelProfileId = store.defaults.modelProfileId;
+  state.model = store.defaults.model ?? null;
   state.loaded = true;
   for (const s of state.sessions) {
     if (s.status === "running") state.running.add(s.id);
@@ -274,6 +326,85 @@ function getMessages(id) {
 function getEngineId() {
   return state.engineId;
 }
+function getModelProfileId() {
+  return state.modelProfileId;
+}
+function getModel() {
+  return state.model;
+}
+async function loadCatalog() {
+  if (state.catalog.catalogLoaded) return;
+  try {
+    const [engines, profiles] = await Promise.all([listEngines(), listProfiles()]);
+    state.catalog.engines = engines;
+    state.catalog.profiles = profiles;
+    state.catalog.catalogLoaded = true;
+    state.catalog.catalogError = "";
+  } catch (e) {
+    state.catalog.catalogError = e instanceof Error ? e.message : String(e);
+  }
+  notify();
+}
+function getCatalog() {
+  return state.catalog;
+}
+function profilesForEngine(engineId) {
+  const profiles = state.catalog.profiles;
+  if (!profiles.length) return [];
+  return profiles.filter((p) => {
+    const targets = p.target_engines;
+    if (!Array.isArray(targets) || targets.length === 0) return true;
+    return targets.some((t) => {
+      const norm = t.toLowerCase();
+      return engineId === t || engineId.startsWith(norm) || norm.startsWith(engineId.replace("open-code", "opencode"));
+    });
+  });
+}
+function modelsForSelection(engineId, profileId) {
+  const profile = state.catalog.profiles.find((p) => p.id === profileId);
+  const fromProfile = profile ? profile.model_options ?? [] : [];
+  let list = fromProfile.length > 0 ? fromProfile : profile?.model ? [profile.model] : [];
+  if (engineId === "open-code" || engineId === "opencode") {
+    const oc = state.catalog.opencodeModels.map((m) => m.id);
+    list = [.../* @__PURE__ */ new Set([...list, ...oc])];
+  }
+  return list;
+}
+async function setDefaultEngine(engineId) {
+  state.engineId = engineId;
+  state.modelProfileId = null;
+  state.model = null;
+  if ((engineId === "open-code" || engineId === "opencode") && state.catalog.opencodeModels.length === 0) {
+    try {
+      state.catalog.opencodeModels = await listOpencodeModels();
+    } catch {
+    }
+  }
+  await persistDefaults();
+  notify();
+}
+async function setDefaultProfile(profileId) {
+  state.modelProfileId = profileId;
+  state.model = null;
+  await persistDefaults();
+  notify();
+}
+async function setDefaultModel(model) {
+  state.model = model;
+  await persistDefaults();
+  notify();
+}
+async function persistDefaults() {
+  const store = await loadStore();
+  store.defaults = {
+    engineId: state.engineId,
+    workspaceId: state.workspaceId,
+    modelProfileId: state.modelProfileId,
+    model: state.model
+  };
+  await saveStore({ ...store, defaults: store.defaults });
+  state.sessions = store.sessions;
+}
 async function createSession(title) {
   const now = Date.now();
   const meta = {
@@ -282,6 +413,7 @@ async function createSession(title) {
     engineId: state.engineId,
     workspaceId: state.workspaceId,
     modelProfileId: state.modelProfileId,
+    model: state.model,
     status: "idle",
     createdAt: now,
     updatedAt: now,
@@ -366,12 +498,16 @@ async function sendMessage(id, text) {
   }
   state.running.add(id);
   notify();
+  const engineId = session.engineId || state.engineId;
+  const modelProfileId = session.modelProfileId ?? state.modelProfileId;
+  const model = session.model ?? state.model;
   const result = await sendChat({
     pluginSessionId: id,
     text,
-    engineId: session.engineId,
-    workspaceId: session.workspaceId,
-    modelProfileId: session.modelProfileId,
+    engineId,
+    workspaceId: session.workspaceId ?? state.workspaceId,
+    modelProfileId,
+    model,
     engineSessionId: session.engineSessionId
   });
   if (!result.ok) {
@@ -404,15 +540,21 @@ async function persistSessionMeta(id, meta) {
   notify();
 }
 function storeDefaults() {
-  return { engineId: state.engineId, workspaceId: state.workspaceId, modelProfileId: state.modelProfileId };
+  return {
+    engineId: state.engineId,
+    workspaceId: state.workspaceId,
+    modelProfileId: state.modelProfileId,
+    model: state.model
+  };
 }
 async function refreshSessions() {
   const store = await loadStore();
   const runningIds = new Set(state.sessions.filter((s) => s.status === "running").map((s) => s.id));
   state.sessions = store.sessions;
-  state.engineId = store.defaults.engineId;
+  state.engineId = store.defaults.engineId || "simple-ai";
   state.workspaceId = store.defaults.workspaceId;
   state.modelProfileId = store.defaults.modelProfileId;
+  state.model = store.defaults.model ?? null;
   for (const s of state.sessions) {
     if (s.status === "running") state.running.add(s.id);
   }
@@ -421,6 +563,12 @@ async function refreshSessions() {
 
 // src/Panel.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
+var ENGINE_LABEL = {
+  "claude-code": "Claude Code",
+  "simple-ai": "SimpleAI",
+  "open-code": "OpenCode",
+  opencode: "OpenCode"
+};
 function Panel(props) {
   const [, force] = useState(0);
   const rerender = useCallback(() => force((x) => x + 1), []);
@@ -432,6 +580,7 @@ function Panel(props) {
   const [creating, setCreating] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectorOpen, setSelectorOpen] = useState(false);
   useEffect(() => {
     let mounted = true;
     initStore().then(() => {
@@ -442,6 +591,9 @@ function Panel(props) {
         setActiveId(latest.id);
         void openSession(latest.id);
       }
+      void loadCatalog().then(() => {
+        if (mounted) rerender();
+      });
       rerender();
     }).catch((e) => {
       if (mounted) setHostError(e instanceof Error ? e.message : String(e));
@@ -491,12 +643,30 @@ function Panel(props) {
       setRefreshing(false);
     }
   }, []);
+  const catalog = getCatalog();
+  const engineId = getEngineId();
+  const modelProfileId = getModelProfileId();
+  const model = getModel();
+  const engines = useMemo(() => {
+    const list = catalog.engines;
+    if (!list.length) return [];
+    const usable = list.filter((e) => e.available !== false);
+    return usable.length > 0 ? usable : list;
+  }, [catalog.engines]);
+  const profiles = useMemo(() => profilesForEngine(engineId), [catalog.profiles, engineId]);
+  const models = useMemo(
+    () => modelsForSelection(engineId, modelProfileId),
+    [catalog.profiles, catalog.opencodeModels, engineId, modelProfileId]
+  );
+  const activeEngineId = engineId;
+  const activeProfileId = modelProfileId;
+  const activeModel = model;
   const sessions = getSessions();
   const messages = activeId ? getMessages(activeId) : [];
   const active = activeId ? sessions.find((s) => s.id === activeId) : void 0;
   return /* @__PURE__ */ jsxs("div", { className: "mc-panel", children: [
     /* @__PURE__ */ jsxs("div", { className: "mc-header", children: [
-      /* @__PURE__ */ jsx("span", { className: "mc-title", children: "MultiChat \xB7 \u591A\u8BBE\u5907\u4F1A\u8BDD" }),
+      /* @__PURE__ */ jsx("span", { className: "mc-title", children: "MultiChat" }),
       /* @__PURE__ */ jsx("button", { className: "mc-btn", onClick: handleRefresh, title: "\u5237\u65B0\u4F1A\u8BDD\u6E05\u5355\uFF08\u8DE8\u8BBE\u5907\uFF09", children: refreshing ? "\u2026" : "\u27F3" }),
       /* @__PURE__ */ jsx("button", { className: "mc-btn mc-btn-primary", onClick: handleCreate, disabled: creating, children: "\uFF0B \u65B0\u5EFA" })
     ] }),
@@ -525,6 +695,81 @@ function Panel(props) {
         ))
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "mc-main", children: [
+        /* @__PURE__ */ jsxs("div", { className: "mc-selector", children: [
+          /* @__PURE__ */ jsxs(
+            "button",
+            {
+              className: "mc-selector-toggle",
+              onClick: () => setSelectorOpen((v) => !v),
+              title: "\u5F15\u64CE / \u4F9B\u5E94\u5546 / \u6A21\u578B",
+              children: [
+                /* @__PURE__ */ jsx("span", { className: "mc-selector-label", children: "\u2699" }),
+                /* @__PURE__ */ jsxs("span", { className: "mc-selector-value", children: [
+                  engineLabel(activeEngineId),
+                  " ",
+                  activeProfileId ? `\xB7 ${activeProfileId}` : "",
+                  activeModel ? ` \xB7 ${activeModel}` : ""
+                ] }),
+                /* @__PURE__ */ jsx("span", { className: `mc-selector-arrow${selectorOpen ? " open" : ""}`, children: "\u25BE" })
+              ]
+            }
+          ),
+          selectorOpen && /* @__PURE__ */ jsxs("div", { className: "mc-selector-dropdown", children: [
+            /* @__PURE__ */ jsxs("div", { className: "mc-selector-group", children: [
+              /* @__PURE__ */ jsx("div", { className: "mc-selector-group-label", children: "\u5F15\u64CE" }),
+              /* @__PURE__ */ jsxs("div", { className: "mc-selector-options", children: [
+                engines.map((e) => /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: `mc-selector-opt${activeEngineId === e.id ? " active" : ""}`,
+                    onClick: () => void setDefaultEngine(e.id),
+                    children: e.name || ENGINE_LABEL[e.id] || e.id
+                  },
+                  e.id
+                )),
+                engines.length === 0 && /* @__PURE__ */ jsx("div", { className: "mc-hint", children: "\u65E0\u53EF\u9009\u5F15\u64CE" })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "mc-selector-group", children: [
+              /* @__PURE__ */ jsx("div", { className: "mc-selector-group-label", children: "\u4F9B\u5E94\u5546" }),
+              /* @__PURE__ */ jsxs("div", { className: "mc-selector-options", children: [
+                /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: `mc-selector-opt${activeProfileId === null ? " active" : ""}`,
+                    onClick: () => void setDefaultProfile(null),
+                    children: "\u81EA\u52A8\uFF08\u8DDF\u968F\u6FC0\u6D3B\uFF09"
+                  }
+                ),
+                profiles.map((p) => /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: `mc-selector-opt${activeProfileId === p.id ? " active" : ""}`,
+                    onClick: () => void setDefaultProfile(p.id),
+                    children: p.name || p.id
+                  },
+                  p.id
+                )),
+                profiles.length === 0 && /* @__PURE__ */ jsx("div", { className: "mc-hint", children: "\u5F53\u524D\u5F15\u64CE\u65E0\u53EF\u7528\u4F9B\u5E94\u5546" })
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { className: "mc-selector-group", children: [
+              /* @__PURE__ */ jsx("div", { className: "mc-selector-group-label", children: "\u6A21\u578B" }),
+              /* @__PURE__ */ jsxs("div", { className: "mc-selector-options", children: [
+                models.length === 0 && /* @__PURE__ */ jsx("div", { className: "mc-hint", children: "\u672A\u914D\u7F6E\u6A21\u578B\uFF08\u540E\u7AEF\u5C06\u4F7F\u7528 Profile \u9ED8\u8BA4\uFF09" }),
+                models.map((m) => /* @__PURE__ */ jsx(
+                  "button",
+                  {
+                    className: `mc-selector-opt${activeModel === m ? " active" : ""}`,
+                    onClick: () => void setDefaultModel(m),
+                    children: m
+                  },
+                  m
+                ))
+              ] })
+            ] })
+          ] })
+        ] }),
         !active && /* @__PURE__ */ jsx("div", { className: "mc-empty", children: "\u9009\u62E9\u5DE6\u4FA7\u4F1A\u8BDD\uFF0C\u6216\u65B0\u5EFA\u4E00\u4E2A\u5F00\u59CB" }),
         active && messages.length === 0 && /* @__PURE__ */ jsx("div", { className: "mc-empty", children: "\u8FD8\u6CA1\u6709\u6D88\u606F\uFF0C\u8F93\u5165\u4E0B\u65B9\u5185\u5BB9\u53D1\u8D77\u5BF9\u8BDD\u3002" }),
         active && messages.map((m, i) => /* @__PURE__ */ jsxs("div", { className: `mc-msg mc-msg-${m.role}`, children: [
@@ -554,7 +799,7 @@ function Panel(props) {
         /* @__PURE__ */ jsxs("div", { className: "mc-input-row", children: [
           /* @__PURE__ */ jsxs("span", { className: "mc-engine", children: [
             "\u{1F680} ",
-            getEngineId()
+            engineLabel(activeEngineId)
           ] }),
           /* @__PURE__ */ jsx(
             "button",
@@ -572,7 +817,7 @@ function Panel(props) {
         .mc-panel { display:flex; flex-direction:column; height:100%; font-size:12px; color: var(--text, #E4E4E7); background: var(--bg, transparent); overflow:hidden; }
         .mc-header { display:flex; align-items:center; gap:6px; padding:8px 10px; border-bottom:1px solid var(--border, rgba(255,255,255,0.08)); position:sticky; top:0; background:inherit; z-index:1; }
         .mc-title { font-weight:600; font-size:13px; flex:1; }
-        .mc-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border, rgba(255,255,255,0.1)); background:var(--bg-elev, #25252B); color:inherit; cursor:pointer; font-size:11px; }
+        .mc-btn { padding:4px 10px; border-radius:6px; border:1px solid var(--border, rgba(255,255,255,0.1)); background:var(--bg-elev, #25252B); color:inherit; cursor:pointer; font-size:11px; min-height:28px; }
         .mc-btn:hover { filter:brightness(1.15); }
         .mc-btn-primary { background:#3B82F6; border-color:transparent; color:#fff; }
         .mc-btn:disabled { opacity:.5; cursor:default; }
@@ -588,6 +833,23 @@ function Panel(props) {
         @keyframes mc-pulse { 50% { opacity:.3; } }
         .mc-hint { padding:8px; color:var(--text-muted, #8E8E93); font-size:11px; }
         .mc-main { flex:1; display:flex; flex-direction:column; overflow-y:auto; padding:12px; gap:8px; }
+
+        /* \u9009\u62E9\u5668 */
+        .mc-selector { position:relative; z-index:5; }
+        .mc-selector-toggle { display:flex; align-items:center; gap:6px; width:100%; padding:6px 10px; border-radius:6px; border:1px solid var(--border, rgba(255,255,255,0.1)); background:var(--bg-elev, #25252B); color:inherit; cursor:pointer; font-size:11px; }
+        .mc-selector-toggle:hover { border-color:#3B82F6; }
+        .mc-selector-label { font-size:12px; }
+        .mc-selector-value { flex:1; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text, #E4E4E7); }
+        .mc-selector-arrow { color:var(--text-muted, #8E8E93); transition:transform .15s; }
+        .mc-selector-arrow.open { transform:rotate(180deg); }
+        .mc-selector-dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; background:var(--bg-elev, #1E1E24); border:1px solid var(--border, rgba(255,255,255,0.12)); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:10px; box-shadow:0 8px 24px rgba(0,0,0,.35); max-height:60vh; overflow-y:auto; }
+        .mc-selector-group { display:flex; flex-direction:column; gap:4px; }
+        .mc-selector-group-label { font-size:10px; color:var(--text-muted, #8E8E93); text-transform:uppercase; letter-spacing:.05em; }
+        .mc-selector-options { display:flex; flex-wrap:wrap; gap:4px; }
+        .mc-selector-opt { padding:4px 8px; border-radius:4px; border:1px solid var(--border, rgba(255,255,255,0.1)); background:var(--bg, transparent); color:inherit; cursor:pointer; font-size:11px; }
+        .mc-selector-opt:hover { background:var(--bg-elev, rgba(255,255,255,0.05)); }
+        .mc-selector-opt.active { background:rgba(59,130,246,.2); border-color:#3B82F6; color:#fff; }
+
         .mc-msg { display:flex; flex-direction:column; gap:2px; max-width:100%; }
         .mc-msg-role { font-size:10px; color:var(--text-muted, #8E8E93); }
         .mc-msg-text { margin:0; padding:8px 10px; border-radius:8px; background:var(--bg-elev, #25252B); border:1px solid var(--border, rgba(255,255,255,0.06)); white-space:pre-wrap; word-break:break-word; font-family:inherit; font-size:12px; }
@@ -599,8 +861,35 @@ function Panel(props) {
         .mc-engine { font-size:10px; color:var(--text-muted, #8E8E93); }
         .mc-err { color:#EF4444; font-size:11px; }
         .mc-empty { flex:1; display:flex; align-items:center; justify-content:center; color:var(--text-muted, #8E8E93); padding:24px; text-align:center; }
+
+        /* \u624B\u673A\u54CD\u5E94\u5F0F\uFF08\u2264640px\uFF09\uFF1A\u4FA7\u680F\u2192\u9876\u90E8\u6A2A\u5411\u4F1A\u8BDD\u6761\uFF0C\u5168\u5BBD\u5E03\u5C40 */
+        @media (max-width: 640px) {
+          .mc-body { flex-direction:column; }
+          .mc-sidelist {
+            width:100%; min-width:0; max-height:90px; border-right:none;
+            border-bottom:1px solid var(--border, rgba(255,255,255,0.08));
+            display:flex; flex-direction:row; gap:6px; overflow-x:auto; overflow-y:hidden;
+            padding:6px 8px; align-items:stretch;
+          }
+          .mc-sidelist-label { display:none; }
+          .mc-item {
+            flex:0 0 auto; min-width:110px; max-width:150px;
+            border:1px solid var(--border, rgba(255,255,255,0.08)); border-radius:6px;
+            padding:6px 8px; display:flex; flex-direction:column; justify-content:center;
+          }
+          .mc-item.active { border-color:#3B82F6; }
+          .mc-main { padding:10px; }
+          .mc-input { font-size:14px; min-height:48px; }
+          .mc-btn { min-height:32px; padding:6px 12px; }
+          .mc-msg-text { font-size:13px; padding:10px 12px; }
+          .mc-input-area { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+          .mc-header { padding-top: max(8px, env(safe-area-inset-top)); }
+        }
       ` })
   ] });
+}
+function engineLabel(id) {
+  return ENGINE_LABEL[id] || id;
 }
 export {
   Panel as default

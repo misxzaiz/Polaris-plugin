@@ -1,11 +1,12 @@
-# MultiChat —— 多设备会话插件（MVP）
+# MultiChat —— 多设备会话插件
 
-> Phase 1：新建会话 + 继续对话 + 实时流式跨设备广播。**不改造现有 AI 对话架构**。
+> Phase 2：新建会话 + 继续对话 + 实时流式跨设备广播 + **引擎/供应商/模型选择** + 手机响应式。**不改造现有 AI 对话架构**。
 
 ## 这是什么
 
-在任何设备（桌面 / Web 浏览器）打开 MultiChat 插件面板，都能看到并操作**同一组会话**：
-- 发消息 → 复用 `cap.ai.chat` 现有引擎（claude-code / simpleai / pi…）
+在任何设备（桌面 / Web 浏览器 / 手机 APK）打开 MultiChat 插件面板，都能看到并操作**同一组会话**：
+- 发消息 → 复用 `cap.ai.chat` 现有引擎（claude-code / simple-ai / open-code / 插件引擎…）
+- **引擎/供应商/模型选择**（默认 simple-ai，面板顶部选择器；数据源：`get_engine_metadata_list` + `cap.config modelProfiles` + `get_opencode_models`）
 - 实时流式回复 → `chat-event` 全员广播（所有在线设备同时收到增量）
 - 续聊 → `continue` 传引擎会话 id，后端权威恢复上下文（无需自带历史）
 - 会话清单 → `config.json plugins['multichat']`（各端连同一后端天然一致）
@@ -37,6 +38,8 @@
 | 并发纪律 | 单一写者锁：`status=running` 时第二端发送被拒（reason 可见） |
 | 消息持久化 | 会话清单在 config（跨端共享）；每条消息体在本端 cap.kv（谁打开谁加载，实时流走广播） |
 | 引擎会话 id | `start` 返回 → 存 `engineSessionId`；续聊直接 `continue` |
+| 引擎/供应商/模型 | 默认 `simple-ai`；引擎切 `open-code` 时模型列表并入 `get_opencode_models`（免费优先） |
+| 手机响应式 | ≤640px 侧栏→顶部横向会话条，输入区适配 safe-area |
 
 ### 宿主桥（主仓库最小注入）
 
@@ -58,12 +61,12 @@ npm run build        # → dist/panel.js
 2. 设置 → 插件 → Install from directory → 选择 `plugins/multichat`
 3. ActivityBar 出现 **MultiChat** 图标 → 打开面板即可用
 
-## Phase 2 规划（未实施）
+## Phase 3 规划（未实施）
 
-- 工作区 / 模型供应商选择（面板内设置表单 + 发送参数带 workspaceId/modelProfileId）
 - 会话历史搜索 / 归档 / 列表排序
 - `contributes.hooks` 发送前注入上下文
 - 与现有 dialog_index 桥接
+- 双端 UI 会话操作并发 CAS（当前 Phase 1 单写者锁容忍）
 
 ## 已知边界
 

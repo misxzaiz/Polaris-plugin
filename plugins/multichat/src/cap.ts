@@ -4,6 +4,10 @@
  * - cap.ai.chat（router_dispatch_stream / router_dispatch）：start/continue/interrupt
  * - cap.kv（router_dispatch）：本端消息体存储（append-only，纯缓存）
  * - plugin_get_config / plugin_set_config：跨设备会话清单（config.json plugins['multichat']）
+ * - 引擎/供应商/模型数据源（Phase 2）：
+ *   - get_engine_metadata_list：引擎列表
+ *   - cap.config get → modelProfiles：供应商(Profile)列表 + model_options
+ *   - get_opencode_models：opencode 模型列表
  */
 
 import { invokeHost } from './host'
@@ -11,9 +15,12 @@ import {
   KV_PREFIX,
   type CapAiAck,
   type ChatEnvelope,
+  type EngineMeta,
   type McMsg,
   type McSessionMeta,
   type McStoreData,
+  type OpencodeModel,
+  type ProfileInfo,
   type RouterDispatchResponse,
 } from './types'
 
@@ -46,6 +53,7 @@ export async function sendChat(req: {
   engineId?: string
   workspaceId?: string | null
   modelProfileId?: string | null
+  model?: string | null
   // 续聊：同一插件会话已有引擎会话 id 时传，否则走 start
   engineSessionId?: string | null
 }): Promise<{ ok: true; engineSessionId?: string } | { ok: false; reason: string }> {
@@ -56,6 +64,7 @@ export async function sendChat(req: {
     } as Record<string, unknown>
     if (req.engineId) options.engineId = req.engineId
     if (req.modelProfileId) options.modelProfileId = req.modelProfileId
+    if (req.model) options.model = req.model
 
     const payload: Record<string, unknown> = {
       action: req.engineSessionId ? 'continue' : 'start',
@@ -79,6 +88,47 @@ export async function sendChat(req: {
 /** 中断某会话（Phase 1 可选能力） */
 export async function interrupt(sessionId: string, engineId?: string): Promise<unknown> {
   return capDispatch(TARGET, { action: 'interrupt', sessionId, engineId })
+}
+
+// ───────────────────────── 引擎 / 供应商 / 模型数据源（Phase 2） ─────────────────────────
+
+/** 拉取引擎列表（主应用 get_engine_metadata_list）。失败降级为空数组。 */
+export async function listEngines(): Promise<EngineMeta[]> {
+  try {
+    const metas = await invokeHost<EngineMeta[]>('get_engine_metadata_list')
+    return Array.isArray(metas) ? metas : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * 拉取供应商(Profile)列表。
+ * 经 cap.config get full 读取 config.modelProfiles（脱敏后含 model_options / target_engines）。
+ */
+export async function listProfiles(): Promise<ProfileInfo[]> {
+  try {
+    const config = await capDispatch<{ modelProfiles?: ProfileInfo[] }>('cap.config', {
+      action: 'get',
+      section: 'full',
+    })
+    const profiles = config?.modelProfiles
+    if (!Array.isArray(profiles)) return []
+    // 过滤掉缺 id 的脏数据，保留脱敏后的公开字段
+    return profiles.filter((p) => p && typeof p.id === 'string' && p.id)
+  } catch {
+    return []
+  }
+}
+
+/** 拉取 opencode 模型列表（get_opencode_models）。失败降级为空数组。 */
+export async function listOpencodeModels(): Promise<OpencodeModel[]> {
+  try {
+    const models = await invokeHost<OpencodeModel[]>('get_opencode_models')
+    return Array.isArray(models) ? models : []
+  } catch {
+    return []
+  }
 }
 
 // ───────────────────────── cap.kv：本端消息体 ─────────────────────────
@@ -129,13 +179,22 @@ export async function loadStore(): Promise<McStoreData> {
     return {
       sessions: Array.isArray(raw?.sessions) ? raw!.sessions! : [],
       defaults: {
-        engineId: raw?.defaults?.engineId || 'claude-code',
+        engineId: raw?.defaults?.engineId || 'simple-ai',
         workspaceId: raw?.defaults?.workspaceId || null,
         modelProfileId: raw?.defaults?.modelProfileId || null,
+        model: raw?.defaults?.model ?? null,
       },
     }
   } catch {
-    return { sessions: [], defaults: { engineId: 'claude-code', workspaceId: null, modelProfileId: null } }
+    return {
+      sessions: [],
+      defaults: {
+        engineId: 'simple-ai',
+        workspaceId: null,
+        modelProfileId: null,
+        model: null,
+      },
+    }
   }
 }
 

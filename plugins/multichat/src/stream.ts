@@ -7,6 +7,11 @@
  * 插件只消费 contextId 前缀为 'mc-' 的事件 → 与现有 session- 路由零冲突。
  *
  * 单实例：所有会话共用一个 chat-event 订阅，内部按 contextId 分发到各会话。
+ *
+ * 竞态修复（Phase 2）：
+ * - ensureGlobalListener 的 globalInitPromise 若被 reject（如宿主桥暂未就绪），
+ *   先前实现会把 rejected promise 永久缓存 → 后续订阅全部卡死，AI 回复收不到。
+ *   现在失败即清缓存，允许下次订阅重试。
  */
 
 import { listenHost } from './host'
@@ -29,12 +34,6 @@ let sharedListeners: Map<string, Set<SessionHandler>> | null = null
 let unlistenGlobal: (() => void) | null = null
 let globalInitPromise: Promise<void> | null = null
 
-function matchesSession(contextId: string | undefined, sessionId: string): boolean {
-  if (!contextId) return false
-  // 直接前缀匹配：contextId === 'mc-<id>'（背靠背，无额外分层）
-  return contextId === `mc-${sessionId}`
-}
-
 /** 确保全局 chat-event 订阅只建立一次（宿主 listen 通道） */
 function ensureGlobalListener(): Promise<void> {
   if (unlistenGlobal) return Promise.resolve()
@@ -55,6 +54,10 @@ function ensureGlobalListener(): Promise<void> {
   }).then((unsub) => {
     unlistenGlobal = unsub
     return
+  }).catch((err) => {
+    // 关键修复：失败不缓存 rejected promise，允许下次订阅重试
+    globalInitPromise = null
+    throw err
   })
 
   return globalInitPromise
