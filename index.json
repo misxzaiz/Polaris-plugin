@@ -1,13 +1,49 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-19 07:49:49",
+  "updated": "2026-10-23 16:08:00",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
     "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
   },
   "plugins": [
+    {
+      "id": "multichat",
+      "name": "MultiChat",
+      "version": "0.1.0",
+      "description": "多设备会话插件：在任意设备（桌面/Web）打开面板即可操作同一组会话——发消息、看实时流式回复、继续对话。复用 cap.ai.chat 现有引擎，不改造现有对话架构。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "chat",
+        "multi-device",
+        "session",
+        "panel",
+        "streaming"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/multichat",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/update.json",
+      "sha256": "EF971C1C25E512D41FD80CEF72DE1E00FC073D96632F5235A13DBBDB143D917C",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# MultiChat\n\n多设备会话插件：在任意设备打开面板即可操作同一组会话。Phase 1 = 新建会话 + 继续对话 + 实时流式跨设备广播。不改造现有 AI 对话架构。\n\n- 发消息 → 复用 `cap.ai.chat` 现有引擎\n- 实时流式 → `chat-event` 全员广播（所有在线设备同时收到增量）\n- 续聊 → `continue` 传引擎会话 id，后端权威恢复上下文\n- 会话清单 → `config.json plugins['multichat']`（各端连同一后端天然一致）\n\n> 需主应用提供 `__POLARIS_HOST_LISTEN__`（chat-event 订阅通道）。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
+        }
+      ]
+    },
     {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",

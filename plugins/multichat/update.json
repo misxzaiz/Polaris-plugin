@@ -1,0 +1,35 @@
+{
+  "id": "multichat",
+  "name": "MultiChat",
+  "version": "0.1.0",
+  "description": "多设备会话插件：任意设备同一会话并发使用。Phase 1 = 新建会话 + 继续对话 + 实时流式跨端广播。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "multichat.panel",
+        "area": "activityBar",
+        "panelType": "multichat",
+        "icon": "Bot",
+        "labelKey": "labels.multichat",
+        "labelDefault": "MultiChat",
+        "order": 20
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    }
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/multichat",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
+  }
+}
