@@ -32,17 +32,59 @@ async function loadConfig() {
 async function saveConfig(patch) {
   await hostInvoke("plugin_set_config", { pluginId: PLUGIN_ID, patch });
 }
+async function capHttpRequest(opts) {
+  const res = await hostInvoke(
+    "router_dispatch",
+    {
+      req: {
+        target: "cap.http",
+        payload: {
+          action: "request",
+          method: opts.method,
+          url: opts.url,
+          headers: opts.headers || {},
+          body: opts.body || "",
+          bodyType: opts.bodyType || "text",
+          timeoutMs: opts.timeoutMs || 12e4
+        }
+      }
+    }
+  );
+  if (!res || !res.ok) throw new Error(res && res.error || "cap.http \u8F6C\u53D1\u5931\u8D25");
+  const result = res.result || {};
+  return {
+    status: Number(result.status) || 0,
+    ok: !!result.ok,
+    body: String(result.body ?? "")
+  };
+}
 async function callTts(cfg, model, messages, audio) {
   if (!cfg.apiKey) throw new Error("\u672A\u914D\u7F6E API Key\uFF0C\u8BF7\u5148\u5728\u300C\u914D\u7F6E\u300D\u9875\u586B\u5199");
   const baseUrl = (cfg.baseUrl || "https://api.xiaomimimo.com/v1").trim().replace(/\/+$/, "");
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${cfg.apiKey}`
-    },
-    body: JSON.stringify({ model, messages, audio: { format: "wav", ...audio }, stream: false })
-  });
+  const url = `${baseUrl}/chat/completions`;
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${cfg.apiKey}`
+  };
+  const body = JSON.stringify({ model, messages, audio: { format: "wav", ...audio }, stream: false });
+  let fallbackToFetch = false;
+  try {
+    const r = await capHttpRequest({ method: "POST", url, headers, body, bodyType: "json" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data2 = JSON.parse(r.body || "{}");
+    const audioData2 = data2.choices?.[0]?.message?.audio;
+    if (!audioData2?.data) throw new Error("\u54CD\u5E94\u7F3A\u5C11 audio.data");
+    return {
+      audioBase64: audioData2.data,
+      transcript: audioData2.transcript || "",
+      usage: data2.usage
+    };
+  } catch (e) {
+    const msg = String(e?.message || "");
+    fallbackToFetch = !/^HTTP \d+/.test(msg);
+    if (!fallbackToFetch) throw e;
+  }
+  const res = await fetch(url, { method: "POST", headers, body });
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {

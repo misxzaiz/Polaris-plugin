@@ -1,94 +1,130 @@
-import { jsx as t, jsxs as s, Fragment as Ne } from "react/jsx-runtime";
-import { useState as p, useCallback as y, useEffect as re, useRef as _e } from "react";
-const ne = "agnes", Ie = 12, Se = 8, Ce = 5e3, T = [
+import { jsx as r, jsxs as l, Fragment as Ne } from "react/jsx-runtime";
+import { useState as m, useCallback as b, useEffect as ne, useRef as Fe } from "react";
+const oe = "agnes", _e = 12, Ie = 8, Ee = 5e3, V = [
   { label: "约 3 秒", frames: 81, rate: 24, seconds: "3.4" },
   { label: "约 5 秒", frames: 121, rate: 24, seconds: "5.0" },
   { label: "约 10 秒", frames: 241, rate: 24, seconds: "10.0" },
   { label: "约 18 秒", frames: 441, rate: 24, seconds: "18.4" }
-], te = ["1024x1024", "1024x768", "768x1024", "1280x768", "768x1280"];
-async function oe(r, n = {}) {
-  const l = window.__POLARIS_HOST_INVOKE__;
-  if (l) return l(r, n);
-  const i = window.__TAURI_INTERNALS__;
-  if (i?.invoke) return i.invoke(r, n);
+], re = ["1024x1024", "1024x768", "768x1024", "1280x768", "768x1280"];
+async function H(t, n = {}) {
+  const s = window.__POLARIS_HOST_INVOKE__;
+  if (s) return s(t, n);
+  const a = window.__TAURI_INTERNALS__;
+  if (a?.invoke) return a.invoke(t, n);
   throw new Error("宿主 invoke 不可用（需在 Polaris 内运行）");
 }
-async function ie() {
-  const r = await oe("plugin_get_config", { pluginId: ne });
+async function ae() {
+  const t = await H("plugin_get_config", { pluginId: oe });
   return {
-    apiKey: r.apiKey || "",
-    apiBase: r.apiBase || "https://apihub.agnes-ai.com",
-    imageModel: r.imageModel || "agnes-image-2.1-flash",
-    videoModel: r.videoModel || "agnes-video-v2.0",
-    defaultSize: r.defaultSize || "1024x1024"
+    apiKey: t.apiKey || "",
+    apiBase: t.apiBase || "https://apihub.agnes-ai.com",
+    imageModel: t.imageModel || "agnes-image-2.1-flash",
+    videoModel: t.videoModel || "agnes-video-v2.0",
+    defaultSize: t.defaultSize || "1024x1024"
   };
 }
-async function Ee(r) {
-  await oe("plugin_set_config", { pluginId: ne, patch: r });
+async function Ce(t) {
+  await H("plugin_set_config", { pluginId: oe, patch: t });
 }
-function U(r) {
-  return new Promise((n, l) => {
-    const i = new FileReader();
-    i.onload = () => n(i.result), i.onerror = () => l(i.error), i.readAsDataURL(r);
+function U(t) {
+  return new Promise((n, s) => {
+    const a = new FileReader();
+    a.onload = () => n(a.result), a.onerror = () => s(a.error), a.readAsDataURL(t);
   });
 }
-function Be(r, n = "image/png") {
-  return r.startsWith("data:") ? r : `data:${n};base64,${r}`;
+function Be(t, n = "image/png") {
+  return t.startsWith("data:") ? t : `data:${n};base64,${t}`;
 }
-async function H(r, n, l) {
-  const i = `${r.apiBase.replace(/\/+$/, "")}${n}`, o = await fetch(i, {
-    ...l,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${r.apiKey}`,
-      ...l.headers || {}
+async function Me(t) {
+  const n = await H(
+    "router_dispatch",
+    {
+      req: {
+        target: "cap.http",
+        payload: {
+          action: "request",
+          method: t.method,
+          url: t.url,
+          headers: t.headers || {},
+          body: t.body || "",
+          bodyType: t.bodyType || "text",
+          timeoutMs: t.timeoutMs || 12e4
+        }
+      }
     }
-  });
-  if (!o.ok) {
-    const d = await o.text().catch(() => "");
-    throw new Error(`API 返回错误 ${o.status}: ${d.slice(0, 500)}`);
-  }
-  return o.json();
+  );
+  if (!n || !n.ok) throw new Error(n && n.error || "cap.http 转发失败");
+  const s = n.result || {};
+  return {
+    status: Number(s.status) || 0,
+    statusText: String(s.statusText || ""),
+    ok: !!s.ok,
+    body: String(s.body ?? "")
+  };
 }
-async function Me(r, n) {
-  const l = n.size || r.defaultSize, i = n.responseFormat || "url", o = n.images || [], d = { model: r.imageModel, prompt: n.prompt, size: l };
-  o.length > 0 ? d.extra_body = { image: o, response_format: i } : i === "b64_json" ? d.return_base64 = !0 : d.extra_body = { response_format: "url" };
-  const m = (await H(r, "/v1/images/generations", {
+async function K(t, n, s) {
+  const a = `${t.apiBase.replace(/\/+$/, "")}${n}`, o = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${t.apiKey}`,
+    ...s.headers || {}
+  }, d = s.method || "GET", u = s.body ? String(s.body) : "";
+  try {
+    const h = await Me({ method: d, url: a, headers: o, body: u, bodyType: "json" });
+    if (!h.ok)
+      throw new Error(`API 返回错误 ${h.status}: ${String(h.body || "").slice(0, 500)}`);
+    return JSON.parse(h.body || "{}");
+  } catch (h) {
+    if (String(h?.message || "").match(/^API 返回错误/)) throw h;
+  }
+  const p = await fetch(a, {
+    ...s,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${t.apiKey}`, ...s.headers || {} }
+  });
+  if (!p.ok) {
+    const h = await p.text().catch(() => "");
+    throw new Error(`API 返回错误 ${p.status}: ${h.slice(0, 500)}`);
+  }
+  return p.json();
+}
+async function je(t, n) {
+  const s = n.size || t.defaultSize, a = n.responseFormat || "url", o = n.images || [], d = { model: t.imageModel, prompt: n.prompt, size: s };
+  o.length > 0 ? d.extra_body = { image: o, response_format: a } : a === "b64_json" ? d.return_base64 = !0 : d.extra_body = { response_format: "url" };
+  const p = (await K(t, "/v1/images/generations", {
     method: "POST",
     body: JSON.stringify(d)
   })).data?.[0] || {};
   return {
-    url: typeof m.url == "string" ? m.url : null,
-    base64: typeof m.b64_json == "string" ? m.b64_json : null,
+    url: typeof p.url == "string" ? p.url : null,
+    base64: typeof p.b64_json == "string" ? p.b64_json : null,
     mimeType: "image/png",
-    revisedPrompt: typeof m.revised_prompt == "string" ? m.revised_prompt : null,
-    size: l,
-    model: r.imageModel
+    revisedPrompt: typeof p.revised_prompt == "string" ? p.revised_prompt : null,
+    size: s,
+    model: t.imageModel
   };
 }
-function je(r) {
-  const n = Math.min(Math.max(r, 9), 441), l = Math.round((n - 1) / 8);
-  return Math.min(Math.max(8 * l + 1, 9), 441);
+function Pe(t) {
+  const n = Math.min(Math.max(t, 9), 441), s = Math.round((n - 1) / 8);
+  return Math.min(Math.max(8 * s + 1, 9), 441);
 }
-async function Pe(r, n) {
-  const l = n.numFrames || 121, i = je(l), o = {
-    model: r.videoModel,
+async function Ae(t, n) {
+  const s = n.numFrames || 121, a = Pe(s), o = {
+    model: t.videoModel,
     prompt: n.prompt,
     width: 1152,
     height: 768,
-    num_frames: i,
+    num_frames: a,
     frame_rate: n.frameRate || 24
   };
   n.image && (o.image = n.image), n.negativePrompt && (o.negative_prompt = n.negativePrompt), n.seed !== void 0 && (o.seed = n.seed);
   const d = {};
   n.images && n.images.length > 0 && (d.image = n.images), n.mode && (n.mode === "keyframes" ? d.mode = "keyframes" : o.mode = n.mode), Object.keys(d).length > 0 && (o.extra_body = d);
-  const u = await H(r, "/v1/videos", {
+  const u = await K(t, "/v1/videos", {
     method: "POST",
     body: JSON.stringify(o)
-  }), m = typeof u.video_id == "string" && u.video_id ? u.video_id : typeof u.id == "string" ? u.id : "";
-  if (!m) throw new Error("响应缺少 video_id");
+  }), p = typeof u.video_id == "string" && u.video_id ? u.video_id : typeof u.id == "string" ? u.id : "";
+  if (!p) throw new Error("响应缺少 video_id");
   return {
-    videoId: m,
+    videoId: p,
     taskId: typeof u.task_id == "string" ? u.task_id : null,
     status: typeof u.status == "string" ? u.status : "queued",
     progress: typeof u.progress == "number" ? u.progress : 0,
@@ -96,121 +132,121 @@ async function Pe(r, n) {
     size: typeof u.size == "string" ? u.size : null,
     url: null,
     error: null,
-    framesNormalized: l !== i
+    framesNormalized: s !== a
   };
 }
-async function ae(r, n) {
-  const l = encodeURIComponent(n);
-  let i;
+async function ie(t, n) {
+  const s = encodeURIComponent(n);
+  let a;
   try {
-    i = await H(r, `/agnesapi?video_id=${l}`, { method: "GET" });
-  } catch (m) {
-    if (m instanceof Error && m.message.includes("404"))
-      i = { status: "queued", progress: 0 };
+    a = await K(t, `/agnesapi?video_id=${s}`, { method: "GET" });
+  } catch (p) {
+    if (p instanceof Error && p.message.includes("404"))
+      a = { status: "queued", progress: 0 };
     else
-      throw m;
+      throw p;
   }
-  const o = typeof i.status == "string" ? i.status : "unknown", d = typeof i.url == "string" && i.url.trim() ? i.url : null, u = o === "failed" ? typeof i.error == "string" ? i.error : "未知错误" : null;
+  const o = typeof a.status == "string" ? a.status : "unknown", d = typeof a.url == "string" && a.url.trim() ? a.url : null, u = o === "failed" ? typeof a.error == "string" ? a.error : "未知错误" : null;
   return {
     videoId: n,
-    taskId: typeof i.task_id == "string" ? i.task_id : null,
+    taskId: typeof a.task_id == "string" ? a.task_id : null,
     status: o,
-    progress: typeof i.progress == "number" ? i.progress : 0,
-    seconds: typeof i.seconds == "string" ? i.seconds : null,
-    size: typeof i.size == "string" ? i.size : null,
+    progress: typeof a.progress == "number" ? a.progress : 0,
+    seconds: typeof a.seconds == "string" ? a.seconds : null,
+    size: typeof a.size == "string" ? a.size : null,
     url: d,
     error: u,
     framesNormalized: !1
   };
 }
-const a = {
+const i = {
   container: { padding: 14, display: "flex", flexDirection: "column", height: "100%", gap: 10, overflow: "auto" },
   tabs: { display: "flex", gap: 6, borderBottom: "1px solid #3F3F46", paddingBottom: 8 },
-  tab: (r) => ({
+  tab: (t) => ({
     padding: "5px 12px",
     borderRadius: 6,
     fontSize: 12,
     cursor: "pointer",
     border: "1px solid #3F3F46",
-    background: r ? "#3B82F6" : "#2D2D33",
-    color: r ? "#fff" : "#B4B4B8"
+    background: t ? "#3B82F6" : "#2D2D33",
+    color: t ? "#fff" : "#B4B4B8"
   }),
   label: { fontSize: 11, color: "#8E8E93", marginBottom: 4 },
   input: { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #3F3F46", background: "#25252B", color: "#F8F8F8", fontSize: 12, boxSizing: "border-box" },
   textarea: { width: "100%", minHeight: 90, padding: 8, borderRadius: 6, border: "1px solid #3F3F46", background: "#25252B", color: "#F8F8F8", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", resize: "vertical" },
   select: { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #3F3F46", background: "#25252B", color: "#F8F8F8", fontSize: 12 },
-  btn: (r = !1) => ({
+  btn: (t = !1) => ({
     padding: "6px 14px",
     borderRadius: 6,
     fontSize: 12,
     cursor: "pointer",
-    background: r ? "#3B82F6" : "#2D2D33",
-    color: r ? "#fff" : "#B4B4B8",
-    border: r ? "none" : "1px solid #3F3F46"
+    background: t ? "#3B82F6" : "#2D2D33",
+    color: t ? "#fff" : "#B4B4B8",
+    border: t ? "none" : "1px solid #3F3F46"
   }),
   card: { padding: 10, borderRadius: 8, border: "1px solid #3F3F46", background: "#25252B", display: "flex", flexDirection: "column", gap: 8 },
   field: { display: "flex", flexDirection: "column", gap: 4 },
   row: { display: "flex", gap: 8, alignItems: "center" },
   statusOk: { fontSize: 12, color: "#4ADE80", padding: 4 },
   statusErr: { fontSize: 12, color: "#F87171", padding: 4 },
-  chip: (r) => ({
+  chip: (t) => ({
     padding: "4px 10px",
     borderRadius: 999,
     fontSize: 11,
     cursor: "pointer",
     border: "1px solid #3F3F46",
-    background: r ? "#3B82F6" : "#2D2D33",
-    color: r ? "#fff" : "#B4B4B8"
+    background: t ? "#3B82F6" : "#2D2D33",
+    color: t ? "#fff" : "#B4B4B8"
   }),
   thumb: { width: 64, height: 64, borderRadius: 6, objectFit: "cover", border: "1px solid #3F3F46" }
 };
-function g({ label: r, children: n }) {
-  return /* @__PURE__ */ s("div", { style: a.field, children: [
-    /* @__PURE__ */ t("div", { style: a.label, children: r }),
+function g({ label: t, children: n }) {
+  return /* @__PURE__ */ l("div", { style: i.field, children: [
+    /* @__PURE__ */ r("div", { style: i.label, children: t }),
     n
   ] });
 }
-const b = /* @__PURE__ */ new Map();
-function Ae(r) {
-  const n = _e(r);
-  n.current = r;
-  const l = y((i) => {
-    if (b.has(i)) return;
+const w = /* @__PURE__ */ new Map();
+function Re(t) {
+  const n = Fe(t);
+  n.current = t;
+  const s = b((a) => {
+    if (w.has(a)) return;
     const o = async () => {
       if (!document.hidden)
         try {
-          const d = await ie(), u = await ae(d, i);
-          if (n.current(i, u), u.status === "completed" || u.status === "failed") {
-            const m = b.get(i);
-            m && (clearInterval(m), b.delete(i));
+          const d = await ae(), u = await ie(d, a);
+          if (n.current(a, u), u.status === "completed" || u.status === "failed") {
+            const p = w.get(a);
+            p && (clearInterval(p), w.delete(a));
           }
         } catch (d) {
           console.error("[Agnes] poll failed", d);
         }
     };
-    b.set(i, setInterval(o, Ce)), o();
+    w.set(a, setInterval(o, Ee)), o();
   }, []);
-  return re(() => () => {
-    for (const i of b.values()) clearInterval(i);
-    b.clear();
-  }, []), { startPolling: l };
+  return ne(() => () => {
+    for (const a of w.values()) clearInterval(a);
+    w.clear();
+  }, []), { startPolling: s };
 }
-function Re({ pluginId: r, onSendToChat: n }) {
-  const [l, i] = p("image"), [o, d] = p(null), [u, m] = p(!0), [j, F] = p(null), N = y(async () => {
-    m(!0);
+function De({ pluginId: t, onSendToChat: n }) {
+  const [s, a] = m("image"), [o, d] = m(null), [u, p] = m(!0), [h, N] = m(null), F = b(async () => {
+    p(!0);
     try {
-      d(await ie());
+      d(await ae());
     } catch (e) {
-      F({ ok: !1, text: `读取配置失败: ${e}` });
+      N({ ok: !1, text: `读取配置失败: ${e}` });
     } finally {
-      m(!1);
+      p(!1);
     }
   }, []);
-  re(() => {
-    N();
-  }, [N]);
-  const [w, le] = p(""), [_, de] = p("1024x1024"), [I, ce] = p("text"), [S, K] = p([]), [P, ue] = p("url"), [A, pe] = p([]), [C, W] = p(!1), [q, G] = p(""), [k, me] = p(""), [R, ge] = p(1), [h, fe] = p("text"), [z, J] = p(null), [E, X] = p([]), [D, he] = p(""), [B, ye] = p(""), [L, Y] = p([]), [M, Q] = p(!1), [Z, $] = p(""), V = y((e, c) => {
-    Y((f) => f.map(
+  ne(() => {
+    F();
+  }, [F]);
+  const [k, le] = m(""), [_, de] = m("1024x1024"), [I, ce] = m("text"), [E, q] = m([]), [P, ue] = m("url"), [A, pe] = m([]), [C, W] = m(!1), [G, J] = m(""), [S, me] = m(""), [R, ge] = m(1), [y, he] = m("text"), [z, X] = m(null), [B, Y] = m([]), [D, fe] = m(""), [M, ye] = m(""), [L, Q] = m([]), [j, Z] = m(!1), [ee, $] = m(""), T = b((e, c) => {
+    Q((f) => f.map(
       (x) => x.videoId === e ? {
         ...x,
         status: c.status,
@@ -221,56 +257,56 @@ function Re({ pluginId: r, onSendToChat: n }) {
         error: c.error ?? x.error
       } : x
     ));
-  }, []), { startPolling: ee } = Ae(V), v = !!o && !o.apiKey, xe = y(async (e) => {
+  }, []), { startPolling: te } = Re(T), v = !!o && !o.apiKey, be = b(async (e) => {
     if (!e) return;
     const c = await Promise.all(Array.from(e).slice(0, 4).map(U));
-    K((f) => [...f, ...c].slice(0, 4));
-  }, []), ve = y(async () => {
-    if (!(!o || v || !w.trim() || C)) {
-      W(!0), G("");
+    q((f) => [...f, ...c].slice(0, 4));
+  }, []), xe = b(async () => {
+    if (!(!o || v || !k.trim() || C)) {
+      W(!0), J("");
       try {
-        const e = await Me(o, {
-          prompt: w.trim(),
+        const e = await je(o, {
+          prompt: k.trim(),
           size: _,
-          images: I === "image" ? S : void 0,
+          images: I === "image" ? E : void 0,
           responseFormat: P
         }), c = e.url ?? (e.base64 ? Be(e.base64, e.mimeType) : "");
         if (!c) throw new Error("响应缺少 url 或 base64");
         pe((f) => [{
-          prompt: w.trim(),
+          prompt: k.trim(),
           size: _,
           src: c,
           model: e.model,
           createdAt: Date.now()
-        }, ...f].slice(0, Ie));
+        }, ...f].slice(0, _e));
       } catch (e) {
-        G(e instanceof Error ? e.message : String(e));
+        J(e instanceof Error ? e.message : String(e));
       } finally {
         W(!1);
       }
     }
-  }, [o, v, w, C, _, I, S, P]), be = y(async (e) => {
+  }, [o, v, k, C, _, I, E, P]), ve = b(async (e) => {
     if (!e) return;
     const c = await Promise.all(Array.from(e).slice(0, 4).map(U));
-    X((f) => [...f, ...c].slice(0, 4));
-  }, []), we = y(async (e) => {
-    !e || !e[0] || J(await U(e[0]));
-  }, []), ke = y(async () => {
-    if (!(!o || v || !k.trim() || M)) {
-      Q(!0), $("");
+    Y((f) => [...f, ...c].slice(0, 4));
+  }, []), we = b(async (e) => {
+    !e || !e[0] || X(await U(e[0]));
+  }, []), ke = b(async () => {
+    if (!(!o || v || !S.trim() || j)) {
+      Z(!0), $("");
       try {
-        const e = T[R] ?? T[1], c = await Pe(o, {
-          prompt: k.trim(),
+        const e = V[R] ?? V[1], c = await Ae(o, {
+          prompt: S.trim(),
           numFrames: e.frames,
           frameRate: e.rate,
-          image: h === "image" && z ? z : void 0,
-          images: h === "multi" || h === "keyframes" ? E : void 0,
-          mode: h === "image" ? "ti2vid" : h === "keyframes" ? "keyframes" : void 0,
+          image: y === "image" && z ? z : void 0,
+          images: y === "multi" || y === "keyframes" ? B : void 0,
+          mode: y === "image" ? "ti2vid" : y === "keyframes" ? "keyframes" : void 0,
           negativePrompt: D.trim() || void 0,
-          seed: B.trim() ? Number(B) : void 0
+          seed: M.trim() ? Number(M) : void 0
         });
-        c.framesNormalized && $("帧数已自动纠正为合法值 8n+1。"), Y((f) => [{
-          prompt: k.trim(),
+        c.framesNormalized && $("帧数已自动纠正为合法值 8n+1。"), Q((f) => [{
+          prompt: S.trim(),
           videoId: c.videoId,
           status: c.status,
           progress: c.progress,
@@ -279,139 +315,139 @@ function Re({ pluginId: r, onSendToChat: n }) {
           size: null,
           error: null,
           createdAt: Date.now()
-        }, ...f].slice(0, Se)), ee(c.videoId);
+        }, ...f].slice(0, Ie)), te(c.videoId);
       } catch (e) {
         $(e instanceof Error ? e.message : String(e));
       } finally {
-        Q(!1);
+        Z(!1);
       }
     }
-  }, [o, v, k, M, R, h, z, E, D, B, ee]), ze = y(async (e) => {
+  }, [o, v, S, j, R, y, z, B, D, M, te]), Se = b(async (e) => {
     if (o)
       try {
-        const c = await ae(o, e);
-        V(e, c);
+        const c = await ie(o, e);
+        T(e, c);
       } catch (c) {
         console.error("[Agnes] query failed", c);
       }
-  }, [o, V]), Fe = y(async () => {
+  }, [o, T]), ze = b(async () => {
     if (o) {
-      F(null);
+      N(null);
       try {
-        await Ee({
+        await Ce({
           apiKey: o.apiKey,
           apiBase: o.apiBase,
           imageModel: o.imageModel,
           videoModel: o.videoModel,
           defaultSize: o.defaultSize
-        }), F({ ok: !0, text: "配置已保存" }), await N();
+        }), N({ ok: !0, text: "配置已保存" }), await F();
       } catch (e) {
-        F({ ok: !1, text: `保存失败: ${e}` });
+        N({ ok: !1, text: `保存失败: ${e}` });
       }
     }
-  }, [o, N]);
-  return u && !o ? /* @__PURE__ */ t("div", { style: a.container, children: /* @__PURE__ */ s("div", { style: { fontSize: 12, color: "#8E8E93" }, children: [
+  }, [o, F]);
+  return u && !o ? /* @__PURE__ */ r("div", { style: i.container, children: /* @__PURE__ */ l("div", { style: { fontSize: 12, color: "#8E8E93" }, children: [
     "加载配置中…（插件 ",
-    r,
+    t,
     "）"
-  ] }) }) : /* @__PURE__ */ s("div", { style: a.container, children: [
-    /* @__PURE__ */ s("div", { style: a.row, children: [
-      /* @__PURE__ */ t("span", { style: { fontSize: 14, fontWeight: 600, color: "#F8F8F8" }, children: "Agnes 多模态" }),
-      v && /* @__PURE__ */ t("span", { style: { fontSize: 11, color: "#FBBF24" }, children: "未配置 API Key" })
+  ] }) }) : /* @__PURE__ */ l("div", { style: i.container, children: [
+    /* @__PURE__ */ l("div", { style: i.row, children: [
+      /* @__PURE__ */ r("span", { style: { fontSize: 14, fontWeight: 600, color: "#F8F8F8" }, children: "Agnes 多模态" }),
+      v && /* @__PURE__ */ r("span", { style: { fontSize: 11, color: "#FBBF24" }, children: "未配置 API Key" })
     ] }),
-    /* @__PURE__ */ t("div", { style: a.tabs, children: ["image", "video", "settings"].map((e) => /* @__PURE__ */ t("button", { style: a.tab(l === e), onClick: () => i(e), children: { image: "生图", video: "生视频", settings: "设置" }[e] }, e)) }),
-    l === "image" && /* @__PURE__ */ s("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-      /* @__PURE__ */ t(g, { label: "模式", children: /* @__PURE__ */ t("div", { style: a.row, children: ["text", "image"].map((e) => /* @__PURE__ */ t("button", { style: a.chip(I === e), onClick: () => ce(e), children: e === "text" ? "文生图" : "图生图" }, e)) }) }),
-      I === "image" && /* @__PURE__ */ s(g, { label: "输入图（最多 4 张，data URL）", children: [
-        /* @__PURE__ */ t(
+    /* @__PURE__ */ r("div", { style: i.tabs, children: ["image", "video", "settings"].map((e) => /* @__PURE__ */ r("button", { style: i.tab(s === e), onClick: () => a(e), children: { image: "生图", video: "生视频", settings: "设置" }[e] }, e)) }),
+    s === "image" && /* @__PURE__ */ l("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
+      /* @__PURE__ */ r(g, { label: "模式", children: /* @__PURE__ */ r("div", { style: i.row, children: ["text", "image"].map((e) => /* @__PURE__ */ r("button", { style: i.chip(I === e), onClick: () => ce(e), children: e === "text" ? "文生图" : "图生图" }, e)) }) }),
+      I === "image" && /* @__PURE__ */ l(g, { label: "输入图（最多 4 张，data URL）", children: [
+        /* @__PURE__ */ r(
           "input",
           {
-            style: a.input,
+            style: i.input,
             type: "file",
             accept: "image/*",
             multiple: !0,
-            onChange: (e) => xe(e.target.files)
+            onChange: (e) => be(e.target.files)
           }
         ),
-        S.length > 0 && /* @__PURE__ */ t("div", { style: a.row, children: S.map((e, c) => /* @__PURE__ */ t(
+        E.length > 0 && /* @__PURE__ */ r("div", { style: i.row, children: E.map((e, c) => /* @__PURE__ */ r(
           "img",
           {
             src: e,
-            style: a.thumb,
+            style: i.thumb,
             alt: "input",
-            onClick: () => K((f) => f.filter((x, O) => O !== c))
+            onClick: () => q((f) => f.filter((x, O) => O !== c))
           },
           c
         )) })
       ] }),
-      /* @__PURE__ */ t(g, { label: "提示词", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "提示词", children: /* @__PURE__ */ r(
         "textarea",
         {
-          style: a.textarea,
-          value: w,
+          style: i.textarea,
+          value: k,
           placeholder: "描述要生成的图片内容…",
           onChange: (e) => le(e.target.value)
         }
       ) }),
-      /* @__PURE__ */ t(g, { label: "尺寸", children: /* @__PURE__ */ t("select", { style: a.select, value: _, onChange: (e) => de(e.target.value), children: te.map((e) => /* @__PURE__ */ t("option", { value: e, children: e }, e)) }) }),
-      /* @__PURE__ */ t(g, { label: "返回格式", children: /* @__PURE__ */ s("select", { style: a.select, value: P, onChange: (e) => ue(e.target.value), children: [
-        /* @__PURE__ */ t("option", { value: "url", children: "URL（推荐）" }),
-        /* @__PURE__ */ t("option", { value: "b64_json", children: "Base64" })
+      /* @__PURE__ */ r(g, { label: "尺寸", children: /* @__PURE__ */ r("select", { style: i.select, value: _, onChange: (e) => de(e.target.value), children: re.map((e) => /* @__PURE__ */ r("option", { value: e, children: e }, e)) }) }),
+      /* @__PURE__ */ r(g, { label: "返回格式", children: /* @__PURE__ */ l("select", { style: i.select, value: P, onChange: (e) => ue(e.target.value), children: [
+        /* @__PURE__ */ r("option", { value: "url", children: "URL（推荐）" }),
+        /* @__PURE__ */ r("option", { value: "b64_json", children: "Base64" })
       ] }) }),
-      /* @__PURE__ */ t("button", { style: a.btn(!0), onClick: ve, disabled: C || !!v, children: C ? "生成中…" : "生成图片" }),
-      q && /* @__PURE__ */ t("div", { style: a.statusErr, children: q }),
-      A.length > 0 && /* @__PURE__ */ s("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
-        /* @__PURE__ */ s("div", { style: { fontSize: 11, color: "#8E8E93" }, children: [
+      /* @__PURE__ */ r("button", { style: i.btn(!0), onClick: xe, disabled: C || !!v, children: C ? "生成中…" : "生成图片" }),
+      G && /* @__PURE__ */ r("div", { style: i.statusErr, children: G }),
+      A.length > 0 && /* @__PURE__ */ l("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+        /* @__PURE__ */ l("div", { style: { fontSize: 11, color: "#8E8E93" }, children: [
           "历史（",
           A.length,
           "）"
         ] }),
-        A.map((e, c) => /* @__PURE__ */ t("div", { style: a.card, children: /* @__PURE__ */ s("div", { style: a.row, children: [
-          /* @__PURE__ */ t("img", { src: e.src, style: { width: 48, height: 48, borderRadius: 4, objectFit: "cover" }, alt: "result" }),
-          /* @__PURE__ */ s("div", { style: { flex: 1, minWidth: 0 }, children: [
-            /* @__PURE__ */ t("div", { style: { fontSize: 11, color: "#B4B4B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: e.prompt }),
-            /* @__PURE__ */ t("div", { style: { fontSize: 10, color: "#8E8E93" }, children: [e.model, e.size].filter(Boolean).join(" · ") })
+        A.map((e, c) => /* @__PURE__ */ r("div", { style: i.card, children: /* @__PURE__ */ l("div", { style: i.row, children: [
+          /* @__PURE__ */ r("img", { src: e.src, style: { width: 48, height: 48, borderRadius: 4, objectFit: "cover" }, alt: "result" }),
+          /* @__PURE__ */ l("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ r("div", { style: { fontSize: 11, color: "#B4B4B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: e.prompt }),
+            /* @__PURE__ */ r("div", { style: { fontSize: 10, color: "#8E8E93" }, children: [e.model, e.size].filter(Boolean).join(" · ") })
           ] }),
-          /* @__PURE__ */ t("a", { href: e.src, download: `agnes-${c}.png`, style: a.btn(), children: "下载" }),
-          n && /* @__PURE__ */ t("button", { style: a.btn(), onClick: () => n(e.src), children: "发送" })
+          /* @__PURE__ */ r("a", { href: e.src, download: `agnes-${c}.png`, style: i.btn(), children: "下载" }),
+          n && /* @__PURE__ */ r("button", { style: i.btn(), onClick: () => n(e.src), children: "发送" })
         ] }) }, c))
       ] })
     ] }),
-    l === "video" && /* @__PURE__ */ s("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-      /* @__PURE__ */ t(g, { label: "模式", children: /* @__PURE__ */ t("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" }, children: ["text", "image", "multi", "keyframes"].map((e) => /* @__PURE__ */ t("button", { style: a.chip(h === e), onClick: () => fe(e), children: { text: "文生视频", image: "图生视频", multi: "多图", keyframes: "关键帧" }[e] }, e)) }) }),
-      h === "image" && /* @__PURE__ */ s(g, { label: "输入图（单张）", children: [
-        /* @__PURE__ */ t("input", { style: a.input, type: "file", accept: "image/*", onChange: (e) => we(e.target.files) }),
-        z && /* @__PURE__ */ t("img", { src: z, style: a.thumb, alt: "input", onClick: () => J(null) })
+    s === "video" && /* @__PURE__ */ l("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
+      /* @__PURE__ */ r(g, { label: "模式", children: /* @__PURE__ */ r("div", { style: { display: "flex", gap: 6, flexWrap: "wrap" }, children: ["text", "image", "multi", "keyframes"].map((e) => /* @__PURE__ */ r("button", { style: i.chip(y === e), onClick: () => he(e), children: { text: "文生视频", image: "图生视频", multi: "多图", keyframes: "关键帧" }[e] }, e)) }) }),
+      y === "image" && /* @__PURE__ */ l(g, { label: "输入图（单张）", children: [
+        /* @__PURE__ */ r("input", { style: i.input, type: "file", accept: "image/*", onChange: (e) => we(e.target.files) }),
+        z && /* @__PURE__ */ r("img", { src: z, style: i.thumb, alt: "input", onClick: () => X(null) })
       ] }),
-      (h === "multi" || h === "keyframes") && /* @__PURE__ */ s(g, { label: "输入图（2-4 张）", children: [
-        /* @__PURE__ */ t("input", { style: a.input, type: "file", accept: "image/*", multiple: !0, onChange: (e) => be(e.target.files) }),
-        E.length > 0 && /* @__PURE__ */ t("div", { style: a.row, children: E.map((e, c) => /* @__PURE__ */ t(
+      (y === "multi" || y === "keyframes") && /* @__PURE__ */ l(g, { label: "输入图（2-4 张）", children: [
+        /* @__PURE__ */ r("input", { style: i.input, type: "file", accept: "image/*", multiple: !0, onChange: (e) => ve(e.target.files) }),
+        B.length > 0 && /* @__PURE__ */ r("div", { style: i.row, children: B.map((e, c) => /* @__PURE__ */ r(
           "img",
           {
             src: e,
-            style: a.thumb,
+            style: i.thumb,
             alt: "input",
-            onClick: () => X((f) => f.filter((x, O) => O !== c))
+            onClick: () => Y((f) => f.filter((x, O) => O !== c))
           },
           c
         )) })
       ] }),
-      /* @__PURE__ */ t(g, { label: "提示词", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "提示词", children: /* @__PURE__ */ r(
         "textarea",
         {
-          style: a.textarea,
-          value: k,
+          style: i.textarea,
+          value: S,
           placeholder: "描述视频内容、镜头运动、光线…",
           onChange: (e) => me(e.target.value)
         }
       ) }),
-      /* @__PURE__ */ t(g, { label: "时长", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "时长", children: /* @__PURE__ */ r(
         "select",
         {
-          style: a.select,
+          style: i.select,
           value: R,
           onChange: (e) => ge(Number(e.target.value)),
-          children: T.map((e, c) => /* @__PURE__ */ s("option", { value: c, children: [
+          children: V.map((e, c) => /* @__PURE__ */ l("option", { value: c, children: [
             e.label,
             "（",
             e.frames,
@@ -419,42 +455,42 @@ function Re({ pluginId: r, onSendToChat: n }) {
           ] }, e.frames))
         }
       ) }),
-      /* @__PURE__ */ s("details", { children: [
-        /* @__PURE__ */ t("summary", { style: { cursor: "pointer", fontSize: 12, color: "#8E8E93" }, children: "高级" }),
-        /* @__PURE__ */ s("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }, children: [
-          /* @__PURE__ */ t(g, { label: "反向提示词", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ l("details", { children: [
+        /* @__PURE__ */ r("summary", { style: { cursor: "pointer", fontSize: 12, color: "#8E8E93" }, children: "高级" }),
+        /* @__PURE__ */ l("div", { style: { display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }, children: [
+          /* @__PURE__ */ r(g, { label: "反向提示词", children: /* @__PURE__ */ r(
             "textarea",
             {
-              style: a.textarea,
+              style: i.textarea,
               value: D,
               placeholder: "避免的内容…",
-              onChange: (e) => he(e.target.value)
+              onChange: (e) => fe(e.target.value)
             }
           ) }),
-          /* @__PURE__ */ t(g, { label: "随机种子（可选）", children: /* @__PURE__ */ t(
+          /* @__PURE__ */ r(g, { label: "随机种子（可选）", children: /* @__PURE__ */ r(
             "input",
             {
-              style: a.input,
-              value: B,
+              style: i.input,
+              value: M,
               placeholder: "留空随机",
               onChange: (e) => ye(e.target.value)
             }
           ) })
         ] })
       ] }),
-      /* @__PURE__ */ t("button", { style: a.btn(!0), onClick: ke, disabled: M || !!v, children: M ? "创建中…" : "创建视频" }),
-      Z && /* @__PURE__ */ t("div", { style: a.statusErr, children: Z }),
-      L.length > 0 && /* @__PURE__ */ s("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
-        /* @__PURE__ */ s("div", { style: { fontSize: 11, color: "#8E8E93" }, children: [
+      /* @__PURE__ */ r("button", { style: i.btn(!0), onClick: ke, disabled: j || !!v, children: j ? "创建中…" : "创建视频" }),
+      ee && /* @__PURE__ */ r("div", { style: i.statusErr, children: ee }),
+      L.length > 0 && /* @__PURE__ */ l("div", { style: { display: "flex", flexDirection: "column", gap: 8 }, children: [
+        /* @__PURE__ */ l("div", { style: { fontSize: 11, color: "#8E8E93" }, children: [
           "任务（",
           L.length,
           "）"
         ] }),
-        L.map((e) => /* @__PURE__ */ s("div", { style: a.card, children: [
-          /* @__PURE__ */ s("div", { style: a.row, children: [
-            /* @__PURE__ */ t("span", { style: { fontSize: 12, color: "#F8F8F8", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: e.status === "completed" ? "✅ 已完成" : e.status === "failed" ? "❌ 失败" : `⏳ ${e.status}（${e.progress}%）` }),
-            e.url && /* @__PURE__ */ s(Ne, { children: [
-              /* @__PURE__ */ t(
+        L.map((e) => /* @__PURE__ */ l("div", { style: i.card, children: [
+          /* @__PURE__ */ l("div", { style: i.row, children: [
+            /* @__PURE__ */ r("span", { style: { fontSize: 12, color: "#F8F8F8", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: e.status === "completed" ? "✅ 已完成" : e.status === "failed" ? "❌ 失败" : `⏳ ${e.status}（${e.progress}%）` }),
+            e.url && /* @__PURE__ */ l(Ne, { children: [
+              /* @__PURE__ */ r(
                 "a",
                 {
                   href: e.url,
@@ -464,122 +500,122 @@ function Re({ pluginId: r, onSendToChat: n }) {
                   children: "打开"
                 }
               ),
-              /* @__PURE__ */ t("a", { href: e.url, download: `agnes-${e.videoId.slice(0, 12)}.mp4`, style: a.btn(), children: "下载" }),
-              n && /* @__PURE__ */ t("button", { style: a.btn(), onClick: () => n(e.url), children: "发送" })
+              /* @__PURE__ */ r("a", { href: e.url, download: `agnes-${e.videoId.slice(0, 12)}.mp4`, style: i.btn(), children: "下载" }),
+              n && /* @__PURE__ */ r("button", { style: i.btn(), onClick: () => n(e.url), children: "发送" })
             ] })
           ] }),
-          /* @__PURE__ */ t("div", { style: { fontSize: 10, color: "#8E8E93", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: e.prompt || e.videoId }),
-          (e.status === "queued" || e.status === "in_progress") && /* @__PURE__ */ t("div", { style: a.row, children: /* @__PURE__ */ t("button", { style: a.btn(), onClick: () => ze(e.videoId), children: "刷新" }) }),
-          e.error && /* @__PURE__ */ t("div", { style: a.statusErr, children: e.error })
+          /* @__PURE__ */ r("div", { style: { fontSize: 10, color: "#8E8E93", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: e.prompt || e.videoId }),
+          (e.status === "queued" || e.status === "in_progress") && /* @__PURE__ */ r("div", { style: i.row, children: /* @__PURE__ */ r("button", { style: i.btn(), onClick: () => Se(e.videoId), children: "刷新" }) }),
+          e.error && /* @__PURE__ */ r("div", { style: i.statusErr, children: e.error })
         ] }, e.videoId))
       ] })
     ] }),
-    l === "settings" && o && /* @__PURE__ */ s("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
-      /* @__PURE__ */ t(g, { label: "API Key", children: /* @__PURE__ */ t(
+    s === "settings" && o && /* @__PURE__ */ l("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [
+      /* @__PURE__ */ r(g, { label: "API Key", children: /* @__PURE__ */ r(
         "input",
         {
-          style: a.input,
+          style: i.input,
           type: "password",
           value: o.apiKey,
           placeholder: "sk-…",
           onChange: (e) => d({ ...o, apiKey: e.target.value })
         }
       ) }),
-      /* @__PURE__ */ t(g, { label: "API Base URL", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "API Base URL", children: /* @__PURE__ */ r(
         "input",
         {
-          style: a.input,
+          style: i.input,
           value: o.apiBase,
           onChange: (e) => d({ ...o, apiBase: e.target.value })
         }
       ) }),
-      /* @__PURE__ */ t(g, { label: "图片模型", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "图片模型", children: /* @__PURE__ */ r(
         "input",
         {
-          style: a.input,
+          style: i.input,
           value: o.imageModel,
           onChange: (e) => d({ ...o, imageModel: e.target.value })
         }
       ) }),
-      /* @__PURE__ */ t(g, { label: "视频模型", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "视频模型", children: /* @__PURE__ */ r(
         "input",
         {
-          style: a.input,
+          style: i.input,
           value: o.videoModel,
           onChange: (e) => d({ ...o, videoModel: e.target.value })
         }
       ) }),
-      /* @__PURE__ */ t(g, { label: "默认图片尺寸", children: /* @__PURE__ */ t(
+      /* @__PURE__ */ r(g, { label: "默认图片尺寸", children: /* @__PURE__ */ r(
         "select",
         {
-          style: a.select,
+          style: i.select,
           value: o.defaultSize,
           onChange: (e) => d({ ...o, defaultSize: e.target.value }),
-          children: te.map((e) => /* @__PURE__ */ t("option", { value: e, children: e }, e))
+          children: re.map((e) => /* @__PURE__ */ r("option", { value: e, children: e }, e))
         }
       ) }),
-      /* @__PURE__ */ t("div", { style: a.row, children: /* @__PURE__ */ t("button", { style: a.btn(!0), onClick: Fe, children: "保存配置" }) }),
-      j && /* @__PURE__ */ t("div", { style: j.ok ? a.statusOk : a.statusErr, children: j.text }),
-      /* @__PURE__ */ t("div", { style: { fontSize: 10, color: "#71717A", lineHeight: 1.5 }, children: '配置保存在 Polaris config.json 的 plugins["agnes"]；MCP server 与面板共用。 （旧版内置插件的 <appConfigDir>/agnes/config.json 会在首次读取时自动兼容。）' })
+      /* @__PURE__ */ r("div", { style: i.row, children: /* @__PURE__ */ r("button", { style: i.btn(!0), onClick: ze, children: "保存配置" }) }),
+      h && /* @__PURE__ */ r("div", { style: h.ok ? i.statusOk : i.statusErr, children: h.text }),
+      /* @__PURE__ */ r("div", { style: { fontSize: 10, color: "#71717A", lineHeight: 1.5 }, children: '配置保存在 Polaris config.json 的 plugins["agnes"]；MCP server 与面板共用。 （旧版内置插件的 <appConfigDir>/agnes/config.json 会在首次读取时自动兼容。）' })
     ] })
   ] });
 }
-function De(r) {
-  if (typeof r != "object" || r === null) return !1;
-  const n = r;
+function Le(t) {
+  if (typeof t != "object" || t === null) return !1;
+  const n = t;
   return n.type !== "image" && n.type !== "video" ? !1 : n.type === "image" ? typeof n.url == "string" || typeof n.base64 == "string" : !0;
 }
-function Le(r) {
-  let n = r;
+function $e(t) {
+  let n = t;
   if (typeof n == "string")
     try {
-      const l = JSON.parse(n);
-      typeof l == "object" && l !== null && (n = l);
+      const s = JSON.parse(n);
+      typeof s == "object" && s !== null && (n = s);
     } catch {
       return null;
     }
-  return De(n) ? n : null;
+  return Le(n) ? n : null;
 }
-function $e(r) {
-  return r.url ? r.url : r.base64 ? `data:${r.mimeType || "image/png"};base64,${r.base64}` : null;
+function Te(t) {
+  return t.url ? t.url : t.base64 ? `data:${t.mimeType || "image/png"};base64,${t.base64}` : null;
 }
-async function se(r, n) {
+async function se(t, n) {
   try {
-    const i = await (await fetch(r)).blob(), o = URL.createObjectURL(i), d = document.createElement("a");
+    const a = await (await fetch(t)).blob(), o = URL.createObjectURL(a), d = document.createElement("a");
     d.href = o, d.download = n, document.body.appendChild(d), d.click(), d.remove(), URL.revokeObjectURL(o);
   } catch {
-    window.open(r, "_blank", "noopener");
+    window.open(t, "_blank", "noopener");
   }
 }
-function Ve({ data: r, status: n, toolName: l }) {
-  const [i, o] = p(!1), d = Le(r);
-  return d ? d.type === "image" ? /* @__PURE__ */ t(Oe, { d }) : /* @__PURE__ */ t(Te, { d, onToggle: () => o((u) => !u), expanded: i }) : /* @__PURE__ */ t("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated px-3 py-2", children: /* @__PURE__ */ s("header", { className: "flex min-w-0 items-center gap-2", children: [
-    /* @__PURE__ */ t("span", { className: "text-sm", children: "🎨" }),
-    /* @__PURE__ */ s("div", { className: "min-w-0 flex-1", children: [
-      /* @__PURE__ */ t("div", { className: "truncate text-sm font-medium text-text-primary", children: "Agnes 媒体" }),
-      /* @__PURE__ */ s("div", { className: "mt-0.5 truncate text-xs text-text-secondary", children: [
+function Oe({ data: t, status: n, toolName: s }) {
+  const [a, o] = m(!1), d = $e(t);
+  return d ? d.type === "image" ? /* @__PURE__ */ r(Ve, { d }) : /* @__PURE__ */ r(Ue, { d, onToggle: () => o((u) => !u), expanded: a }) : /* @__PURE__ */ r("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated px-3 py-2", children: /* @__PURE__ */ l("header", { className: "flex min-w-0 items-center gap-2", children: [
+    /* @__PURE__ */ r("span", { className: "text-sm", children: "🎨" }),
+    /* @__PURE__ */ l("div", { className: "min-w-0 flex-1", children: [
+      /* @__PURE__ */ r("div", { className: "truncate text-sm font-medium text-text-primary", children: "Agnes 媒体" }),
+      /* @__PURE__ */ l("div", { className: "mt-0.5 truncate text-xs text-text-secondary", children: [
         "数据解析失败（",
-        l,
+        s,
         "）· 状态 ",
         n
       ] })
     ] })
   ] }) });
 }
-function Oe({ d: r }) {
-  const n = $e(r);
+function Ve({ d: t }) {
+  const n = Te(t);
   if (!n)
-    return /* @__PURE__ */ t("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs text-text-secondary", children: "图片数据缺失" });
-  const l = [r.model, r.size].filter(Boolean).join(" · ");
-  return /* @__PURE__ */ s("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated", children: [
-    /* @__PURE__ */ s("header", { className: "flex min-w-0 items-center gap-2 border-b border-border bg-background-surface px-3 py-2", children: [
-      /* @__PURE__ */ t("div", { className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-fuchsia-500/10 text-fuchsia-400", children: /* @__PURE__ */ t("span", { className: "text-sm", children: "🖼️" }) }),
-      /* @__PURE__ */ s("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ t("div", { className: "truncate text-sm font-medium text-text-primary", children: "Agnes 图片" }),
-        l && /* @__PURE__ */ t("div", { className: "mt-0.5 truncate text-[11px] text-text-tertiary", children: l })
+    return /* @__PURE__ */ r("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs text-text-secondary", children: "图片数据缺失" });
+  const s = [t.model, t.size].filter(Boolean).join(" · ");
+  return /* @__PURE__ */ l("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated", children: [
+    /* @__PURE__ */ l("header", { className: "flex min-w-0 items-center gap-2 border-b border-border bg-background-surface px-3 py-2", children: [
+      /* @__PURE__ */ r("div", { className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-fuchsia-500/10 text-fuchsia-400", children: /* @__PURE__ */ r("span", { className: "text-sm", children: "🖼️" }) }),
+      /* @__PURE__ */ l("div", { className: "min-w-0 flex-1", children: [
+        /* @__PURE__ */ r("div", { className: "truncate text-sm font-medium text-text-primary", children: "Agnes 图片" }),
+        s && /* @__PURE__ */ r("div", { className: "mt-0.5 truncate text-[11px] text-text-tertiary", children: s })
       ] }),
-      /* @__PURE__ */ s("div", { className: "ml-auto flex shrink-0 items-center gap-1", children: [
-        /* @__PURE__ */ t(
+      /* @__PURE__ */ l("div", { className: "ml-auto flex shrink-0 items-center gap-1", children: [
+        /* @__PURE__ */ r(
           "a",
           {
             href: n,
@@ -587,119 +623,119 @@ function Oe({ d: r }) {
             rel: "noopener noreferrer",
             className: "inline-flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-background-hover hover:text-text-primary",
             title: "新窗口打开",
-            children: /* @__PURE__ */ s("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ t("path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
-              /* @__PURE__ */ t("polyline", { points: "15 3 21 3 21 9" }),
-              /* @__PURE__ */ t("line", { x1: "10", y1: "14", x2: "21", y2: "3" })
+            children: /* @__PURE__ */ l("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ r("path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
+              /* @__PURE__ */ r("polyline", { points: "15 3 21 3 21 9" }),
+              /* @__PURE__ */ r("line", { x1: "10", y1: "14", x2: "21", y2: "3" })
             ] })
           }
         ),
-        /* @__PURE__ */ t(
+        /* @__PURE__ */ r(
           "button",
           {
             type: "button",
             onClick: () => {
-              const o = r.mimeType?.includes("jpeg") ? "jpg" : "png";
+              const o = t.mimeType?.includes("jpeg") ? "jpg" : "png";
               se(n, `agnes-${Date.now()}.${o}`);
             },
             className: "inline-flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-background-hover hover:text-text-primary",
             title: "下载",
-            children: /* @__PURE__ */ s("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ t("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-              /* @__PURE__ */ t("polyline", { points: "7 10 12 15 17 10" }),
-              /* @__PURE__ */ t("line", { x1: "12", y1: "15", x2: "12", y2: "3" })
+            children: /* @__PURE__ */ l("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ r("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+              /* @__PURE__ */ r("polyline", { points: "7 10 12 15 17 10" }),
+              /* @__PURE__ */ r("line", { x1: "12", y1: "15", x2: "12", y2: "3" })
             ] })
           }
         )
       ] })
     ] }),
-    /* @__PURE__ */ t("div", { className: "flex items-center justify-center bg-background-surface p-2", children: /* @__PURE__ */ t(
+    /* @__PURE__ */ r("div", { className: "flex items-center justify-center bg-background-surface p-2", children: /* @__PURE__ */ r(
       "img",
       {
         src: n,
-        alt: r.prompt || r.revisedPrompt || "Agnes 生成图片",
+        alt: t.prompt || t.revisedPrompt || "Agnes 生成图片",
         className: "max-h-[420px] w-auto max-w-full rounded-md object-contain",
         loading: "lazy"
       }
     ) }),
-    (r.prompt || r.revisedPrompt) && /* @__PURE__ */ t("div", { className: "border-t border-border px-3 py-2 text-[11px] leading-relaxed text-text-secondary", children: r.revisedPrompt || r.prompt })
+    (t.prompt || t.revisedPrompt) && /* @__PURE__ */ r("div", { className: "border-t border-border px-3 py-2 text-[11px] leading-relaxed text-text-secondary", children: t.revisedPrompt || t.prompt })
   ] });
 }
-function Te({ d: r, onToggle: n, expanded: l }) {
-  const i = r.status === "completed" && !!r.url, o = [r.model, r.seconds && `${r.seconds}s`, r.size].filter(Boolean).join(" · "), d = () => {
-    r.url && se(r.url, `agnes-${r.videoId || Date.now()}.mp4`);
+function Ue({ d: t, onToggle: n, expanded: s }) {
+  const a = t.status === "completed" && !!t.url, o = [t.model, t.seconds && `${t.seconds}s`, t.size].filter(Boolean).join(" · "), d = () => {
+    t.url && se(t.url, `agnes-${t.videoId || Date.now()}.mp4`);
   };
-  return /* @__PURE__ */ s("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated", children: [
-    /* @__PURE__ */ s("header", { className: "flex min-w-0 items-center gap-2 border-b border-border bg-background-surface px-3 py-2", children: [
-      /* @__PURE__ */ t("div", { className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-400", children: /* @__PURE__ */ t("span", { className: "text-sm", children: "🎬" }) }),
-      /* @__PURE__ */ s("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ t("div", { className: "truncate text-sm font-medium text-text-primary", children: "Agnes 视频" }),
-        o && /* @__PURE__ */ t("div", { className: "mt-0.5 truncate text-[11px] text-text-tertiary", children: o })
+  return /* @__PURE__ */ l("section", { className: "my-2 w-full overflow-hidden rounded-lg border border-border bg-background-elevated", children: [
+    /* @__PURE__ */ l("header", { className: "flex min-w-0 items-center gap-2 border-b border-border bg-background-surface px-3 py-2", children: [
+      /* @__PURE__ */ r("div", { className: "flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-indigo-500/10 text-indigo-400", children: /* @__PURE__ */ r("span", { className: "text-sm", children: "🎬" }) }),
+      /* @__PURE__ */ l("div", { className: "min-w-0 flex-1", children: [
+        /* @__PURE__ */ r("div", { className: "truncate text-sm font-medium text-text-primary", children: "Agnes 视频" }),
+        o && /* @__PURE__ */ r("div", { className: "mt-0.5 truncate text-[11px] text-text-tertiary", children: o })
       ] }),
-      i && /* @__PURE__ */ s("div", { className: "ml-auto flex shrink-0 items-center gap-1", children: [
-        /* @__PURE__ */ t(
+      a && /* @__PURE__ */ l("div", { className: "ml-auto flex shrink-0 items-center gap-1", children: [
+        /* @__PURE__ */ r(
           "a",
           {
-            href: r.url,
+            href: t.url,
             target: "_blank",
             rel: "noopener noreferrer",
             className: "inline-flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-background-hover hover:text-text-primary",
             title: "新窗口打开",
-            children: /* @__PURE__ */ s("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ t("path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
-              /* @__PURE__ */ t("polyline", { points: "15 3 21 3 21 9" }),
-              /* @__PURE__ */ t("line", { x1: "10", y1: "14", x2: "21", y2: "3" })
+            children: /* @__PURE__ */ l("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ r("path", { d: "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" }),
+              /* @__PURE__ */ r("polyline", { points: "15 3 21 3 21 9" }),
+              /* @__PURE__ */ r("line", { x1: "10", y1: "14", x2: "21", y2: "3" })
             ] })
           }
         ),
-        /* @__PURE__ */ t(
+        /* @__PURE__ */ r(
           "button",
           {
             type: "button",
             onClick: d,
             className: "inline-flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-background-hover hover:text-text-primary",
             title: "下载",
-            children: /* @__PURE__ */ s("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
-              /* @__PURE__ */ t("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-              /* @__PURE__ */ t("polyline", { points: "7 10 12 15 17 10" }),
-              /* @__PURE__ */ t("line", { x1: "12", y1: "15", x2: "12", y2: "3" })
+            children: /* @__PURE__ */ l("svg", { width: "14", height: "14", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round", children: [
+              /* @__PURE__ */ r("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+              /* @__PURE__ */ r("polyline", { points: "7 10 12 15 17 10" }),
+              /* @__PURE__ */ r("line", { x1: "12", y1: "15", x2: "12", y2: "3" })
             ] })
           }
         )
       ] })
     ] }),
-    i ? /* @__PURE__ */ t("div", { className: "bg-black p-2", children: /* @__PURE__ */ t(
+    a ? /* @__PURE__ */ r("div", { className: "bg-black p-2", children: /* @__PURE__ */ r(
       "video",
       {
-        src: r.url,
+        src: t.url,
         controls: !0,
         className: "max-h-[460px] w-full rounded-md",
         preload: "metadata"
       }
-    ) }) : /* @__PURE__ */ s("div", { className: "flex items-center gap-3 bg-background-surface px-3 py-6", children: [
-      /* @__PURE__ */ t("span", { className: "h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" }),
-      /* @__PURE__ */ s("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ t("div", { className: "text-sm text-text-primary", children: r.status === "failed" ? "视频生成失败" : "视频生成中..." }),
-        /* @__PURE__ */ t("div", { className: "mt-0.5 truncate text-[11px] text-text-tertiary", children: r.error ? r.error : r.videoId ? `videoId: ${r.videoId}${typeof r.progress == "number" ? ` · 进度 ${r.progress}%` : ""}` : "等待任务创建" })
+    ) }) : /* @__PURE__ */ l("div", { className: "flex items-center gap-3 bg-background-surface px-3 py-6", children: [
+      /* @__PURE__ */ r("span", { className: "h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" }),
+      /* @__PURE__ */ l("div", { className: "min-w-0 flex-1", children: [
+        /* @__PURE__ */ r("div", { className: "text-sm text-text-primary", children: t.status === "failed" ? "视频生成失败" : "视频生成中..." }),
+        /* @__PURE__ */ r("div", { className: "mt-0.5 truncate text-[11px] text-text-tertiary", children: t.error ? t.error : t.videoId ? `videoId: ${t.videoId}${typeof t.progress == "number" ? ` · 进度 ${t.progress}%` : ""}` : "等待任务创建" })
       ] })
     ] }),
-    r.prompt && /* @__PURE__ */ s(
+    t.prompt && /* @__PURE__ */ l(
       "button",
       {
         type: "button",
         onClick: n,
         className: "flex w-full items-center gap-1 border-t border-border px-3 py-2 text-left text-[11px] leading-relaxed text-text-secondary hover:bg-background-hover",
         children: [
-          /* @__PURE__ */ t("span", { className: "flex-1 truncate", children: l ? r.prompt : r.prompt.length > 90 ? `${r.prompt.slice(0, 90)}…` : r.prompt }),
-          /* @__PURE__ */ t("span", { className: "shrink-0 text-text-tertiary", children: l ? "收起" : "展开" })
+          /* @__PURE__ */ r("span", { className: "flex-1 truncate", children: s ? t.prompt : t.prompt.length > 90 ? `${t.prompt.slice(0, 90)}…` : t.prompt }),
+          /* @__PURE__ */ r("span", { className: "shrink-0 text-text-tertiary", children: s ? "收起" : "展开" })
         ]
       }
     )
   ] });
 }
-function Ke(r) {
-  return r && r.toolName ? /* @__PURE__ */ t(Ve, { ...r }) : /* @__PURE__ */ t(Re, { ...r });
+function qe(t) {
+  return t && t.toolName ? /* @__PURE__ */ r(Oe, { ...t }) : /* @__PURE__ */ r(De, { ...t });
 }
 export {
-  Ke as default
+  qe as default
 };

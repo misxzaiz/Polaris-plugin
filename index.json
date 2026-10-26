@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-23 16:08:00",
+  "updated": "2026-10-26 12:30:00",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -217,8 +217,8 @@
     {
       "id": "image-recognition",
       "name": "图片识别",
-      "version": "0.1.4",
-      "description": "智谱 GLM-4V 视觉模型图片识别 MCP 插件。提供 AI 图片识别工具（单张/批量/目录），支持本地图片（base64）和 URL 输入。含 API Key 配置与测试面板。v0.1.4：maxTokens 默认提至 4000（下限 1000），长文/多图分析结果不再被腰斩截断；商城补充演示截图。v0.1.3：新增 recognize_image_dir 批量识图 + images 多图数组。",
+      "version": "0.1.5",
+      "description": "智谱 GLM-4V 视觉模型图片识别 MCP 插件。提供 AI 图片识别工具（单张/批量/目录），支持本地图片（base64）和 URL 输入。含 API Key 配置与测试面板。v0.1.5：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域访问智谱 API 不再被 CORS 拦截（含测试连接）。v0.1.4：maxTokens 默认提至 4000（下限 1000），长文/多图分析结果不再被腰斩截断；商城补充演示截图。v0.1.3：新增 recognize_image_dir 批量识图 + images 多图数组。",
       "author": "Polaris",
       "category": "ai",
       "tags": [
@@ -232,9 +232,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/image-recognition",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.3/plugins/image-recognition/image-recognition.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
-      "sha256": "16416d2b9303e33a73f9fea4fd2ff55d532db2a2dbb2921a4b44e19e229571c5",
+      "sha256": "88b072f2ff15eee3e23817313325117619e62fb112471c02ee816a96bb55e266",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true,
@@ -248,6 +248,10 @@
       ],
       "readme": "# 图片识别\n\n智谱 GLM-4V 视觉模型图片识别 MCP 插件。\n\n## 功能\n\n- **MCP 工具**：`recognize_image`，AI 可直接调用识别图片\n- **配置面板**：API Key / 模型 / 端点配置 + 测试连接\n- **试识别**：拖拽或选择本地图片，实时查看识别结果\n\n## 使用\n\n1. 安装后 ActivityBar 出现「图片识别」图标\n2. 在「配置」页填入智谱 API Key（https://open.bigmodel.cn 获取）\n3. 点击「测试连接」验证 API 可用\n4. AI 可通过 `recognize_image` 工具识别图片，或在「识别」页手动测试\n\n## 支持的模型\n\n| 模型 | 特点 |\n|------|------|\n| glm-4v-flash | 快速，~5s，直接给结论 |\n| glm-4.1v-thinking-flash | 带推理过程，过滤后取 `<answer>` 结论 |",
       "versions": [
+        {
+          "version": "0.1.5",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip"
+        },
         {
           "version": "0.1.4",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.4/plugins/image-recognition/image-recognition.zip"
@@ -273,8 +277,8 @@
     {
       "id": "mimo-tts",
       "name": "MiMo 语音合成",
-      "version": "0.1.0",
-      "description": "小米 MiMo-V2.5-TTS 系列语音合成（限时免费）：预置音色/文本设计音色/音色克隆。MCP 工具 + 配置面板 + 聊天音频卡片。",
+      "version": "0.1.1",
+      "description": "小米 MiMo-V2.5-TTS 系列语音合成（限时免费）：预置音色/文本设计音色/音色克隆。MCP 工具 + 配置面板 + 聊天音频卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发（面板/Web/移动端跨域不再被 CORS 拦截）；voiceclone 样本上限 10MB + DataURL 校验修复。",
       "author": "Polaris",
       "category": "ai",
       "tags": [
@@ -290,9 +294,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mimo-tts",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.0/plugins/mimo-tts/mimo-tts.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/update.json",
-      "sha256": "58ee2f71b20faa2225fc4c7165c481bd49706080fdfab88ef8a31e893612e3af",
+      "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true,
@@ -306,6 +310,11 @@
       "readme": "# MiMo 语音合成\n\n小米 MiMo-V2.5-TTS 系列语音合成插件（官方限时免费，无需付费额度）。\n\n## 功能\n\n- **MCP 工具**：`mimo_tts_synthesize`（预置音色）、`mimo_tts_voice_design`（文本设计音色）、`mimo_tts_voice_clone`（音色克隆）、`mimo_tts_list_voices`\n- **聊天卡片**：AI 合成后聊天区直接显示音频播放器，可试听/下载\n- **配置面板**：API Key / 端点 / 默认音色配置 + 测试连接\n- **音色工坊**：文本描述设计音色、上传样本克隆音色\n\n## 使用\n\n1. 安装后 ActivityBar 出现「语音合成」图标\n2. 在「配置」页填入小米 MiMo 开放平台 API Key（https://mimo.mi.com 获取）\n3. 点击「测试连接」验证 API 可用\n4. 让 AI 调用 `mimo_tts_synthesize` 合成语音，或在「合成」页手动输入文本试听\n\n## 预置音色\n\n| 音色 | 说明 |\n|------|------|\n| 冰糖 / 茉莉 | 中文女声 |\n| 苏打 / 白桦 | 中文男声 |\n| Mia / Chloe | 英文女声 |\n| Milo / Dean | 英文男声 |\n\n> 提示：官方标注 TTS 限时免费，请以 https://mimo.mi.com 公告为准。",
       "versions": [
         {
+          "version": "0.1.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
+          "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9"
+        },
+        {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.0/plugins/mimo-tts/mimo-tts.zip"
         }
@@ -314,8 +323,8 @@
     {
       "id": "agnes",
       "name": "Agnes 多模态",
-      "version": "0.1.0",
-      "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片，配置与 MCP server 共用。",
+      "version": "0.1.1",
+      "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域不再被 CORS 拦截。",
       "author": "Polaris",
       "category": "ai",
       "tags": [
@@ -329,9 +338,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
-      "sha256": "c6270f9ef39f258c7a035b9cffcf1f82a25d4188e79c758ab0be1ac5c6f739bb",
+      "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true,
@@ -340,6 +349,11 @@
         "appConfigWrite": true
       },
       "versions": [
+        {
+          "version": "0.1.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
+          "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64"
+        },
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip",

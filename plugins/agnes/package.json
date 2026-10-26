@@ -1,7 +1,7 @@
 {
   "name": "plugin-agnes-web",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.1",
   "scripts": {
     "build": "vite build",
     "demo": "vite --config vite.demo.config.ts"

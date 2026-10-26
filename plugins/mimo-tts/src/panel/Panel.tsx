@@ -72,7 +72,7 @@ async function saveConfig(patch: Partial<TtsConfig>): Promise<void> {
   await hostInvoke('plugin_set_config', { pluginId: PLUGIN_ID, patch })
 }
 
-// ── MiMo API 调用（面板直连） ────────────────────────────────────────────────
+// ── MiMo API 调用（面板：cap.http 宿主转发优先，fetch 回退） ────────────────
 
 interface TtsApiResult {
   audioBase64: string
@@ -81,7 +81,52 @@ interface TtsApiResult {
 }
 
 /**
+ * 经宿主 cap.http 发起请求（面板模式）。
+ *
+ * 调用链：hostInvoke('router_dispatch') → RouterBus → cap.http → 宿主 reqwest 转发。
+ * 相比浏览器 fetch 直连：无 CORS / 混合内容限制，可携带禁发头，Web/移动端等价桌面 Tauri IPC。
+ * 仅在宿主桥不可用时回退浏览器 fetch（如纯浏览器调试）。
+ */
+async function capHttpRequest(opts: {
+  method: string
+  url: string
+  headers?: Record<string, string>
+  body?: string
+  bodyType?: 'text' | 'json'
+  timeoutMs?: number
+}): Promise<{ status: number; ok: boolean; body: string }> {
+  const res = await hostInvoke<{ ok: boolean; result?: Record<string, unknown>; error?: string | null }>(
+    'router_dispatch',
+    {
+      req: {
+        target: 'cap.http',
+        payload: {
+          action: 'request',
+          method: opts.method,
+          url: opts.url,
+          headers: opts.headers || {},
+          body: opts.body || '',
+          bodyType: opts.bodyType || 'text',
+          timeoutMs: opts.timeoutMs || 120000,
+        },
+      },
+    },
+  )
+  if (!res || !res.ok) throw new Error((res && res.error) || 'cap.http 转发失败')
+  const result = (res.result || {}) as Record<string, unknown>
+  return {
+    status: Number(result.status) || 0,
+    ok: !!result.ok,
+    body: String(result.body ?? ''),
+  }
+}
+
+/**
  * 调用 MiMo TTS。合成文本放 assistant，风格指令放 user。
+ *
+ * 优先经宿主 cap.http 转发（绕开 CORS）；宿主桥不可用时回退浏览器 fetch。
+ * 说明：音频响应是嵌在 JSON 里的 base64 字符串字段（audio.data），
+ * cap.http 转发返回的 body 就是含该字段的完整 JSON，直接解析即可。
  */
 async function callTts(
   cfg: TtsConfig,
@@ -91,14 +136,33 @@ async function callTts(
 ): Promise<TtsApiResult> {
   if (!cfg.apiKey) throw new Error('未配置 API Key，请先在「配置」页填写')
   const baseUrl = (cfg.baseUrl || 'https://api.xiaomimimo.com/v1').trim().replace(/\/+$/, '')
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify({ model, messages, audio: { format: 'wav', ...audio }, stream: false }),
-  })
+  const url = `${baseUrl}/chat/completions`
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${cfg.apiKey}`,
+  }
+  const body = JSON.stringify({ model, messages, audio: { format: 'wav', ...audio }, stream: false })
+
+  // 通道 1：宿主 cap.http 转发（无 CORS）
+  let fallbackToFetch = false
+  try {
+    const r = await capHttpRequest({ method: 'POST', url, headers, body, bodyType: 'json' })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
+    const data = JSON.parse(r.body || '{}')
+    const audioData = data.choices?.[0]?.message?.audio
+    if (!audioData?.data) throw new Error('响应缺少 audio.data')
+    return {
+      audioBase64: audioData.data,
+      transcript: audioData.transcript || '',
+      usage: data.usage,
+    }
+  } catch (e) {
+    const msg = String(e?.message || '')
+    // 仅宿主 invoke 拒绝 / 转发失败 / 网络错误才回退 fetch；HTTP 业务错误直接抛
+    fallbackToFetch = !/^HTTP \d+/.test(msg)
+    if (!fallbackToFetch) throw e
+  }
+  const res = await fetch(url, { method: 'POST', headers, body })
   if (!res.ok) {
     let msg = `HTTP ${res.status}`
     try {

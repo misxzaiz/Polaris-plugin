@@ -1,8 +1,8 @@
 {
   "id": "mimo-tts",
   "name": "MiMo 语音合成",
-  "version": "0.1.0",
-  "description": "小米 MiMo-V2.5-TTS 系列语音合成（限时免费）：预置音色/文本设计音色/音色克隆。MCP 工具 + 配置面板 + 聊天音频卡片。",
+  "version": "0.1.1",
+  "description": "小米 MiMo-V2.5-TTS 系列语音合成（限时免费）：预置音色/文本设计音色/音色克隆。MCP 工具 + 配置面板 + 聊天音频卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发（面板/Web/移动端跨域不再被 CORS 拦截）；voiceclone 样本上限 10MB + DataURL 校验修复。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -25,7 +25,11 @@
         "id": "mimo-tts",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}", "{{pluginDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}",
+          "{{pluginDir}}"
+        ]
       }
     ],
     "services": [
@@ -33,7 +37,11 @@
         "id": "mimo-tts-audio",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/http-server.js", "{{port}}", "{{pluginDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/http-server.js",
+          "{{port}}",
+          "{{pluginDir}}"
+        ],
         "port": 9861,
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
@@ -47,7 +55,11 @@
       {
         "id": "mimo-tts.result",
         "mcpServerId": "mimo-tts",
-        "tools": ["mimo_tts_synthesize", "mimo_tts_voice_design", "mimo_tts_voice_clone"],
+        "tools": [
+          "mimo_tts_synthesize",
+          "mimo_tts_voice_design",
+          "mimo_tts_voice_clone"
+        ],
         "mode": "result",
         "entry": "./dist/chat-card/chat-card.js"
       }
@@ -75,14 +87,38 @@
         "type": "select",
         "default": "冰糖",
         "options": [
-          { "label": "冰糖（中文女声）", "value": "冰糖" },
-          { "label": "茉莉（中文女声）", "value": "茉莉" },
-          { "label": "苏打（中文男声）", "value": "苏打" },
-          { "label": "白桦（中文男声）", "value": "白桦" },
-          { "label": "Mia（英文女声）", "value": "Mia" },
-          { "label": "Chloe（英文女声）", "value": "Chloe" },
-          { "label": "Milo（英文男声）", "value": "Milo" },
-          { "label": "Dean（英文男声）", "value": "Dean" }
+          {
+            "label": "冰糖（中文女声）",
+            "value": "冰糖"
+          },
+          {
+            "label": "茉莉（中文女声）",
+            "value": "茉莉"
+          },
+          {
+            "label": "苏打（中文男声）",
+            "value": "苏打"
+          },
+          {
+            "label": "白桦（中文男声）",
+            "value": "白桦"
+          },
+          {
+            "label": "Mia（英文女声）",
+            "value": "Mia"
+          },
+          {
+            "label": "Chloe（英文女声）",
+            "value": "Chloe"
+          },
+          {
+            "label": "Milo（英文男声）",
+            "value": "Milo"
+          },
+          {
+            "label": "Dean（英文男声）",
+            "value": "Dean"
+          }
         ]
       },
       {
@@ -91,8 +127,14 @@
         "type": "select",
         "default": "file",
         "options": [
-          { "label": "保存文件并返回路径（推荐，聊天卡片可播放）", "value": "file" },
-          { "label": "返回 base64 内联（短文本/特殊场景）", "value": "base64" }
+          {
+            "label": "保存文件并返回路径（推荐，聊天卡片可播放）",
+            "value": "file"
+          },
+          {
+            "label": "返回 base64 内联（短文本/特殊场景）",
+            "value": "base64"
+          }
         ]
       }
     ]
@@ -109,6 +151,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mimo-tts",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/mimo-tts.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip"
   }
 }

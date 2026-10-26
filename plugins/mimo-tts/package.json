@@ -1,6 +1,6 @@
 {
   "name": "mimo-tts-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "mimo-tts 插件面板与聊天卡片（打包用）",
   "scripts": {

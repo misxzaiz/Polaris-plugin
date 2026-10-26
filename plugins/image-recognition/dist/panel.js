@@ -40,38 +40,89 @@ function fileToDataUrl(file) {
     reader.readAsDataURL(file);
   });
 }
+async function capHttpRequest(opts) {
+  const res = await hostInvoke(
+    "router_dispatch",
+    {
+      req: {
+        target: "cap.http",
+        payload: {
+          action: "request",
+          method: opts.method,
+          url: opts.url,
+          headers: opts.headers || {},
+          body: opts.body || "",
+          bodyType: opts.bodyType || "text",
+          timeoutMs: opts.timeoutMs || 6e4
+        }
+      }
+    }
+  );
+  if (!res || !res.ok) throw new Error(res && res.error || "cap.http \u8F6C\u53D1\u5931\u8D25");
+  const result = res.result || {};
+  return {
+    status: Number(result.status) || 0,
+    statusText: String(result.statusText || ""),
+    ok: !!result.ok,
+    contentType: String(result.contentType || ""),
+    body: String(result.body ?? ""),
+    isBase64: !!result.isBase64
+  };
+}
+function buildVisionBody(cfg, imageUrl, prompt, maxTokens) {
+  return JSON.stringify({
+    model: cfg.model || "glm-4v-flash",
+    messages: [{
+      role: "user",
+      content: [
+        { type: "text", text: prompt },
+        { type: "image_url", image_url: { url: imageUrl } }
+      ]
+    }],
+    temperature: 0.2,
+    stream: false,
+    max_tokens: maxTokens
+  });
+}
 async function callVision(cfg, imageUrl, prompt, maxTokens = 1e3) {
   if (!cfg.apiKey) throw new Error("\u672A\u914D\u7F6E API Key");
   const baseUrl = (cfg.baseUrl || "https://open.bigmodel.cn/api/paas/v4").trim().replace(/\/+$/, "");
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${cfg.apiKey}`
-    },
-    body: JSON.stringify({
-      model: cfg.model || "glm-4v-flash",
-      messages: [{
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          { type: "image_url", image_url: { url: imageUrl } }
-        ]
-      }],
-      temperature: 0.2,
-      stream: false,
-      max_tokens: maxTokens
-    })
-  });
+  const url = `${baseUrl}/chat/completions`;
+  const body = buildVisionBody(cfg, imageUrl, prompt, maxTokens);
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${cfg.apiKey}`
+  };
+  let fallbackToFetch = false;
+  try {
+    const r = await capHttpRequest({ method: "POST", url, headers, body, bodyType: "json" });
+    if (!r.ok) {
+      let detail = String(r.body || "").slice(0, 300);
+      try {
+        const e = JSON.parse(detail);
+        detail = e.error?.message || e.msg || detail;
+      } catch (_) {
+      }
+      throw new Error(`HTTP ${r.status}: ${detail}`);
+    }
+    const data2 = JSON.parse(r.body || "{}");
+    const content2 = data2?.choices?.[0]?.message?.content || "";
+    return extractAnswer(content2);
+  } catch (e) {
+    const msg = String(e?.message || "");
+    fallbackToFetch = !msg.startsWith("HTTP ");
+    if (!fallbackToFetch) throw e;
+  }
+  const res = await fetch(url, { method: "POST", headers, body });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     let detail = text.slice(0, 300);
     try {
-      const e = JSON.parse(text);
-      detail = e.error?.message || e.msg || detail;
+      const parsed = JSON.parse(text);
+      detail = parsed.error?.message || parsed.msg || detail;
     } catch (_) {
     }
-    throw new Error(`HTTP ${res.status}: ${detail}`);
+    throw new Error(`HTTP ${res.status}: ${detail}\uFF08cap.http \u4E0D\u53EF\u7528\uFF0C\u56DE\u9000 fetch\uFF0C\u53EF\u80FD\u53D7 CORS \u9650\u5236\uFF09`);
   }
   const data = await res.json();
   const content = data?.choices?.[0]?.message?.content || "";
@@ -154,22 +205,35 @@ function ConfigTab({ config, updateField, onSave, saveStatus }) {
     const t0 = Date.now();
     try {
       const baseUrl = config.baseUrl.trim().replace(/\/+$/, "");
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${config.apiKey}`
-        },
-        body: JSON.stringify({
-          model: config.model || "glm-4v-flash",
-          messages: [{ role: "user", content: "hi" }],
-          max_tokens: 5,
-          stream: false
-        })
+      const url = `${baseUrl}/chat/completions`;
+      const headers = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${config.apiKey}`
+      };
+      const body = JSON.stringify({
+        model: config.model || "glm-4v-flash",
+        messages: [{ role: "user", content: "hi" }],
+        max_tokens: 5,
+        stream: false
       });
+      let res;
+      let viaCap = true;
+      try {
+        const r = await capHttpRequest({ method: "POST", url, headers, body, bodyType: "json" });
+        res = { ok: r.ok, status: r.status, body: String(r.body || "") };
+      } catch (e) {
+        viaCap = false;
+        const fr = await fetch(url, { method: "POST", headers, body });
+        res = { ok: fr.ok, status: fr.status, body: await fr.text().catch(() => "") };
+      }
       const latency = Date.now() - t0;
+      const suffix = viaCap ? "" : "\uFF08cap.http \u4E0D\u53EF\u7528\uFF0C\u5DF2\u56DE\u9000 fetch\uFF0C\u53EF\u80FD\u53D7 CORS \u9650\u5236\uFF09";
       if (res.ok) {
-        const data = await res.json().catch(() => ({}));
+        let data = {};
+        try {
+          data = JSON.parse(res.body || "{}");
+        } catch (_) {
+        }
         const content = data?.choices?.[0]?.message?.content;
         if (content !== void 0) {
           setTest({ status: "ok", message: `\u2713 \u8FDE\u63A5\u6210\u529F\uFF08${latency}ms\uFF09`, latency });
@@ -177,14 +241,13 @@ function ConfigTab({ config, updateField, onSave, saveStatus }) {
           setTest({ status: "err", message: `\u2717 \u54CD\u5E94\u5F02\u5E38\uFF1A\u672A\u8FD4\u56DE content`, latency });
         }
       } else {
-        const text = await res.text().catch(() => "");
-        let detail = text.slice(0, 200);
+        let detail = res.body.slice(0, 200);
         try {
-          const e = JSON.parse(text);
+          const e = JSON.parse(res.body);
           detail = e.error?.message || e.msg || detail;
         } catch (_) {
         }
-        setTest({ status: "err", message: `\u2717 \u8FDE\u63A5\u5931\u8D25\uFF1AHTTP ${res.status} ${detail}`, latency });
+        setTest({ status: "err", message: `\u2717 \u8FDE\u63A5\u5931\u8D25\uFF1AHTTP ${res.status} ${detail}${suffix}`, latency });
       }
     } catch (e) {
       setTest({ status: "err", message: `\u2717 \u8FDE\u63A5\u5931\u8D25\uFF1A${e instanceof Error ? e.message : e}` });

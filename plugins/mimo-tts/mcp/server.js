@@ -124,11 +124,17 @@ const MIME_BY_EXT = {
   '.wav': 'audio/wav',
 }
 
-/** 本地音频文件 → data URL（voiceclone 样本） */
+/**
+ * 本地音频文件 → data URL（voiceclone 样本）。
+ * 官方 voiceclone 的 audio.voice 要求 DataURL（实测纯 base64 会被拒：
+ * "audio.voice must be a DataURL for voice clone model"）；样本必须可解码，
+ * 损坏的音频会被报 "invalid audio format"。≤10MB（官方限制）。
+ */
 function fileToDataUrl(filePath, fallbackMime = 'audio/wav') {
   if (!fs.existsSync(filePath)) throw new Error(`音频样本文件不存在: ${filePath}`)
-  const mime = MIME_BY_EXT[path.extname(filePath).toLowerCase()] || fallbackMime
   const buf = fs.readFileSync(filePath)
+  if (buf.length > 10 * 1024 * 1024) throw new Error('音频样本超过 10MB 上限')
+  const mime = MIME_BY_EXT[path.extname(filePath).toLowerCase()] || fallbackMime
   return `data:${mime};base64,${buf.toString('base64')}`
 }
 
@@ -143,7 +149,7 @@ function isUrl(input) {
  * - 合成文本必须放 role=assistant 的 content
  * - 风格指令（自然语言）放 role=user 的 content
  * - audio.format = wav（非流式一次性返回 base64）
- * - voice 参数：预置音色名 / data URL（voiceclone）
+ * - voice 参数：预置音色名；voiceclone 时为 data URL 或公网 URL（API 强制要求 DataURL）
  */
 function callTtsApi(cfg, model, messages, audioParams) {
   return new Promise((resolve, reject) => {
@@ -182,7 +188,13 @@ function callTtsApi(cfg, model, messages, audioParams) {
           let errMsg = `HTTP ${res.statusCode}`
           try {
             const errObj = JSON.parse(data)
-            if (errObj.error) errMsg += `: ${typeof errObj.error === 'string' ? errObj.error : (errObj.error.message || JSON.stringify(errObj.error))}`
+            if (errObj.error) {
+              const e = errObj.error
+              const msg = typeof e === 'string' ? e : e.message || JSON.stringify(e)
+              // 上游把具体原因放 error.param（如 "Unknown voice: xxx"），不带上的话只剩无信息量的 "Param Incorrect"
+              const param = e && typeof e.param === 'string' && e.param ? `（${e.param}）` : ''
+              errMsg += `: ${msg}${param}`
+            }
           } catch (_) {
             if (data) errMsg += `: ${data.slice(0, 300)}`
           }
@@ -218,8 +230,11 @@ function callTtsApi(cfg, model, messages, audioParams) {
 }
 
 /** 组装音频输出结果（file / base64 两种模式） */
-function buildAudioResult(cfg, audioBuf, transcript, prefix) {
-  if (cfg.outputMode === 'base64') {
+function buildAudioResult(cfg, audioBuf, transcript, prefix, mode) {
+  // mode：调用方显式传入的 outputMode（如前端按会话选择 base64/file，供移动端内联播放）。
+  // 优先级：显式 mode > 插件配置 cfg.outputMode（缺省时效果与旧版一致，向后兼容）。
+  const outputMode = mode || cfg.outputMode || 'file'
+  if (outputMode === 'base64') {
     return {
       format: 'wav',
       audioDataUrl: `data:audio/wav;base64,${audioBuf.toString('base64')}`,
@@ -274,7 +289,7 @@ async function handleSynthesize(args) {
       format: 'wav',
       voice,
     })
-    const result = buildAudioResult(cfg, audioBuf, transcript, 'tts')
+    const result = buildAudioResult(cfg, audioBuf, transcript, 'tts', args.outputMode)
     return {
       content: [{
         type: 'text',
@@ -329,7 +344,7 @@ async function handleVoiceDesign(args) {
       format: 'wav',
       optimize_text_preview: true,
     })
-    const result = buildAudioResult(cfg, audioBuf, transcript, 'design')
+    const result = buildAudioResult(cfg, audioBuf, transcript, 'design', args.outputMode)
     return {
       content: [{
         type: 'text',
@@ -360,9 +375,9 @@ async function handleVoiceClone(args) {
   }
   const style = (args.style || '').trim()
 
-  let voiceDataUrl
+  let voiceParam
   try {
-    voiceDataUrl = isUrl(sample) ? sample : fileToDataUrl(sample)
+    voiceParam = isUrl(sample) ? sample : fileToDataUrl(sample)
   } catch (e) {
     return { content: [{ type: 'text', text: JSON.stringify({ error: e.message }) }], isError: true }
   }
@@ -374,9 +389,9 @@ async function handleVoiceClone(args) {
   try {
     const { audioBuf, transcript } = await callTtsApi(cfg, 'mimo-v2.5-tts-voiceclone', messages, {
       format: 'wav',
-      voice: voiceDataUrl,
+      voice: voiceParam,
     })
-    const result = buildAudioResult(cfg, audioBuf, transcript, 'clone')
+    const result = buildAudioResult(cfg, audioBuf, transcript, 'clone', args.outputMode)
     return {
       content: [{
         type: 'text',

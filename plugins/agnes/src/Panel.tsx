@@ -129,15 +129,72 @@ interface AgnesVideoTask {
   framesNormalized: boolean
 }
 
+/**
+ * 经宿主 cap.http 发起请求（面板模式）。
+ *
+ * 调用链：hostInvoke('router_dispatch') → RouterBus → cap.http → 宿主 reqwest 转发。
+ * 相比浏览器 fetch 直连：无 CORS / 混合内容限制，可携带禁发头，Web/移动端等价桌面 Tauri IPC。
+ * 仅在宿主桥不可用时回退浏览器 fetch（如纯浏览器调试）。
+ */
+async function capHttpRequest(opts: {
+  method: string
+  url: string
+  headers?: Record<string, string>
+  body?: string
+  bodyType?: 'text' | 'json'
+  timeoutMs?: number
+}): Promise<{ status: number; statusText: string; ok: boolean; body: string }> {
+  const res = await hostInvoke<{ ok: boolean; result?: Record<string, unknown>; error?: string | null }>(
+    'router_dispatch',
+    {
+      req: {
+        target: 'cap.http',
+        payload: {
+          action: 'request',
+          method: opts.method,
+          url: opts.url,
+          headers: opts.headers || {},
+          body: opts.body || '',
+          bodyType: opts.bodyType || 'text',
+          timeoutMs: opts.timeoutMs || 120000,
+        },
+      },
+    },
+  )
+  if (!res || !res.ok) throw new Error((res && res.error) || 'cap.http 转发失败')
+  const result = (res.result || {}) as Record<string, unknown>
+  return {
+    status: Number(result.status) || 0,
+    statusText: String(result.statusText || ''),
+    ok: !!result.ok,
+    body: String(result.body ?? ''),
+  }
+}
+
 async function agnesFetch<T>(cfg: AgnesConfig, apiPath: string, init: RequestInit): Promise<T> {
   const url = `${cfg.apiBase.replace(/\/+$/, '')}${apiPath}`
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${cfg.apiKey}`,
+    ...(init.headers as Record<string, string> | undefined || {}),
+  }
+  const method = init.method || 'GET'
+  const bodyStr = init.body ? String(init.body) : ''
+
+  // 通道 1：宿主 cap.http 转发（无 CORS）
+  try {
+    const r = await capHttpRequest({ method, url, headers, body: bodyStr, bodyType: 'json' })
+    if (!r.ok) {
+      throw new Error(`API 返回错误 ${r.status}: ${String(r.body || '').slice(0, 500)}`)
+    }
+    return JSON.parse(r.body || '{}') as T
+  } catch (e) {
+    // cap.http 能力不可用时回退浏览器 fetch（可能遇 CORS）；HTTP 业务错误直接抛
+    if (String(e?.message || '').match(/^API 返回错误/)) throw e
+  }
   const res = await fetch(url, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cfg.apiKey}`,
-      ...(init.headers || {}),
-    },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${cfg.apiKey}`, ...(init.headers || {}) },
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')

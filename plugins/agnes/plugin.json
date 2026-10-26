@@ -1,8 +1,8 @@
 {
   "id": "agnes",
   "name": "Agnes 多模态",
-  "version": "0.1.0",
-  "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。",
+  "version": "0.1.1",
+  "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域不再被 CORS 拦截。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -35,7 +35,11 @@
       {
         "id": "media-card",
         "mcpServerId": "agnes-mcp",
-        "tools": ["generate_image", "generate_video", "query_video"],
+        "tools": [
+          "generate_image",
+          "generate_video",
+          "query_video"
+        ],
         "mode": "result",
         "entry": "./dist/panel.js"
       }
@@ -87,6 +91,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip"
   }
 }

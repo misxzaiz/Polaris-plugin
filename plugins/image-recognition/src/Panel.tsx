@@ -85,7 +85,7 @@ async function saveConfigApi(patch: Partial<AiConfig>): Promise<void> {
   }
 }
 
-// ── 智谱 API（面板直连，用于测试连接与试识别） ──────────────────────────────
+// ── 智谱 API（面板调用：cap.http 宿主转发优先，fetch 回退） ─────────────────
 
 /** 将 File 转 base64 data URL */
 function fileToDataUrl(file: File): Promise<string> {
@@ -98,37 +98,114 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 /**
+ * 经宿主 cap.http 发起请求（面板模式）。
+ *
+ * 调用链：hostInvoke('router_dispatch') → RouterBus → cap.http → 宿主 reqwest 转发。
+ * 相比浏览器 fetch 直连：
+ *  - 无 CORS / 混合内容限制（面板 webview 跨源访问智谱 API 不再被拦）；
+ *  - 可携带浏览器禁发头（Cookie/UA/Referer 等）；
+ *  - Web / 移动端经宿主桥自动带 token，等价桌面 Tauri IPC。
+ *
+ * @returns {Promise<{status:number,statusText:string,ok:boolean,contentType:string,body:string,isBase64?:boolean}>}
+ */
+async function capHttpRequest(opts: {
+  method: string
+  url: string
+  headers?: Record<string, string>
+  body?: string
+  bodyType?: 'text' | 'json'
+  timeoutMs?: number
+}): Promise<{ status: number; statusText: string; ok: boolean; contentType: string; body: string; isBase64?: boolean }> {
+  const res = await hostInvoke<{ ok: boolean; result?: Record<string, unknown>; error?: string | null }>(
+    'router_dispatch',
+    {
+      req: {
+        target: 'cap.http',
+        payload: {
+          action: 'request',
+          method: opts.method,
+          url: opts.url,
+          headers: opts.headers || {},
+          body: opts.body || '',
+          bodyType: opts.bodyType || 'text',
+          timeoutMs: opts.timeoutMs || 60000,
+        },
+      },
+    },
+  )
+  if (!res || !res.ok) throw new Error((res && res.error) || 'cap.http 转发失败')
+  const result = (res.result || {}) as Record<string, unknown>
+  return {
+    status: Number(result.status) || 0,
+    statusText: String(result.statusText || ''),
+    ok: !!result.ok,
+    contentType: String(result.contentType || ''),
+    body: String(result.body ?? ''),
+    isBase64: !!result.isBase64,
+  }
+}
+
+/** 组装智谱 chat/completions 请求体。 */
+function buildVisionBody(cfg: AiConfig, imageUrl: string, prompt: string, maxTokens: number): string {
+  return JSON.stringify({
+    model: cfg.model || 'glm-4v-flash',
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url: imageUrl } },
+      ],
+    }],
+    temperature: 0.2,
+    stream: false,
+    max_tokens: maxTokens,
+  })
+}
+
+/**
  * 调用智谱 GLM-4V chat/completions。
  * content 必须是数组，同时放 text 和 image_url。
+ *
+ * 优先经宿主 cap.http 转发（绕开 CORS）；宿主桥不可用时回退浏览器 fetch
+ * （如纯浏览器调试面板），并让调用方感知到跨域限制。
  */
 async function callVision(cfg: AiConfig, imageUrl: string, prompt: string, maxTokens = 1000): Promise<string> {
   if (!cfg.apiKey) throw new Error('未配置 API Key')
   const baseUrl = (cfg.baseUrl || 'https://open.bigmodel.cn/api/paas/v4').trim().replace(/\/+$/, '')
-  const res = await fetch(`${baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${cfg.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: cfg.model || 'glm-4v-flash',
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: prompt },
-          { type: 'image_url', image_url: { url: imageUrl } },
-        ],
-      }],
-      temperature: 0.2,
-      stream: false,
-      max_tokens: maxTokens,
-    }),
-  })
+  const url = `${baseUrl}/chat/completions`
+  const body = buildVisionBody(cfg, imageUrl, prompt, maxTokens)
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${cfg.apiKey}`,
+  }
+
+  // 通道 1：宿主 cap.http 转发（无 CORS，推荐）。
+  // 仅在「cap.http 能力不可用」时回退浏览器 fetch；HTTP 业务层错误（401/400 等）
+  // 直接抛出，避免 fetch 二次请求。
+  let fallbackToFetch = false
+  try {
+    const r = await capHttpRequest({ method: 'POST', url, headers, body, bodyType: 'json' })
+    if (!r.ok) {
+      let detail = String(r.body || '').slice(0, 300)
+      try { const e = JSON.parse(detail); detail = e.error?.message || e.msg || detail } catch (_) { /* keep raw */ }
+      throw new Error(`HTTP ${r.status}: ${detail}`)
+    }
+    const data = JSON.parse(r.body || '{}')
+    const content = data?.choices?.[0]?.message?.content || ''
+    return extractAnswer(content)
+  } catch (e) {
+    const msg = String(e?.message || '')
+    // 仅当错误不是 HTTP 业务层错误（即宿主 invoke 拒绝 / 转发失败 / 网络错误）才回退
+    fallbackToFetch = !msg.startsWith('HTTP ')
+    if (!fallbackToFetch) throw e
+  }
+  // cap.http 不可用（非 Polaris 宿主环境）时回退浏览器 fetch（可能遇 CORS）
+  const res = await fetch(url, { method: 'POST', headers, body })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
     let detail = text.slice(0, 300)
-    try { const e = JSON.parse(text); detail = e.error?.message || e.msg || detail } catch (_) { /* keep raw */ }
-    throw new Error(`HTTP ${res.status}: ${detail}`)
+    try { const parsed = JSON.parse(text); detail = parsed.error?.message || parsed.msg || detail } catch (_) { /* keep raw */ }
+    throw new Error(`HTTP ${res.status}: ${detail}（cap.http 不可用，回退 fetch，可能受 CORS 限制）`)
   }
   const data = await res.json()
   const content = data?.choices?.[0]?.message?.content || ''
@@ -229,6 +306,7 @@ function ConfigTab({ config, updateField, onSave, saveStatus }: {
   /**
    * 测试连接：发一次 max_tokens=5 的最小 chat 请求。
    * 成功条件：HTTP 200 + 返回有 content。
+   * 经宿主 cap.http 转发（无 CORS），失败回退 fetch。
    */
   const handleTest = useCallback(async () => {
     if (!config.apiKey) { setTest({ status: 'err', message: '请先填入 API Key' }); return }
@@ -237,22 +315,35 @@ function ConfigTab({ config, updateField, onSave, saveStatus }: {
     try {
       // 最小文本请求（不附图，省 token）验证鉴权
       const baseUrl = config.baseUrl.trim().replace(/\/+$/, '')
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${config.apiKey}`,
-        },
-        body: JSON.stringify({
-          model: config.model || 'glm-4v-flash',
-          messages: [{ role: 'user', content: 'hi' }],
-          max_tokens: 5,
-          stream: false,
-        }),
+      const url = `${baseUrl}/chat/completions`
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.apiKey}`,
+      }
+      const body = JSON.stringify({
+        model: config.model || 'glm-4v-flash',
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 5,
+        stream: false,
       })
+
+      let res: { ok: boolean; status: number; body: string }
+      let viaCap = true
+      try {
+        const r = await capHttpRequest({ method: 'POST', url, headers, body, bodyType: 'json' })
+        res = { ok: r.ok, status: r.status, body: String(r.body || '') }
+      } catch (e) {
+        // cap.http 不可用（非 Polaris 宿主环境）回退 fetch
+        viaCap = false
+        const fr = await fetch(url, { method: 'POST', headers, body })
+        res = { ok: fr.ok, status: fr.status, body: await fr.text().catch(() => '') }
+      }
+
       const latency = Date.now() - t0
+      const suffix = viaCap ? '' : '（cap.http 不可用，已回退 fetch，可能受 CORS 限制）'
       if (res.ok) {
-        const data = await res.json().catch(() => ({}))
+        let data: Record<string, unknown> = {}
+        try { data = JSON.parse(res.body || '{}') } catch (_) { /* 非 JSON */ }
         const content = data?.choices?.[0]?.message?.content
         if (content !== undefined) {
           setTest({ status: 'ok', message: `✓ 连接成功（${latency}ms）`, latency })
@@ -260,10 +351,9 @@ function ConfigTab({ config, updateField, onSave, saveStatus }: {
           setTest({ status: 'err', message: `✗ 响应异常：未返回 content`, latency })
         }
       } else {
-        const text = await res.text().catch(() => '')
-        let detail = text.slice(0, 200)
-        try { const e = JSON.parse(text); detail = e.error?.message || e.msg || detail } catch (_) { /* keep */ }
-        setTest({ status: 'err', message: `✗ 连接失败：HTTP ${res.status} ${detail}`, latency })
+        let detail = res.body.slice(0, 200)
+        try { const e = JSON.parse(res.body); detail = e.error?.message || e.msg || detail } catch (_) { /* keep */ }
+        setTest({ status: 'err', message: `✗ 连接失败：HTTP ${res.status} ${detail}${suffix}`, latency })
       }
     } catch (e) {
       setTest({ status: 'err', message: `✗ 连接失败：${e instanceof Error ? e.message : e}` })
