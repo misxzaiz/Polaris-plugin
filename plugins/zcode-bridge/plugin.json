@@ -1,0 +1,76 @@
+{
+  "id": "opts.zcode-bridge",
+  "name": "ZCode 会话桥接",
+  "version": "0.1.1",
+  "description": "桥接已安装 ZCode 桌面版会话：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话（app-server --stdio 官方协议），会话落盘到 ~/.zcode/cli/db/db.sqlite 后桌面端可见。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "zcode-bridge.panel",
+        "area": "activityBar",
+        "panelType": "zcodeBridge",
+        "icon": "GitPullRequest",
+        "labelKey": "plugins.zcodeBridge",
+        "labelDefault": "ZCode",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "zcode-bridge-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "services": [
+      {
+        "id": "zcode-bridge-http",
+        "type": "http",
+        "command": "node",
+        "port": 9862,
+        "argsTemplate": ["{{pluginDir}}/server.js", "{{port}}", "{{pluginDir}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 3,
+        "description": "ZCode 会话读取服务（面板用）"
+      }
+    ],
+    "engines": [
+      {
+        "id": "zcode",
+        "name": "ZCode (本地桌面)",
+        "description": "桥接已安装 ZCode：在 Polaris 主对话直接使用 ZCode 会话（本地桌面 app-server 协议）",
+        "cli": {
+          "command": "D:/app/polaris-s/plugins/zcode-bridge/mcp/engine-launcher.cmd",
+          "args": [],
+          "installGuide": "ZCode 桌面版已安装于 D:/app/ZCode"
+        },
+        "protocol": "pi-rpc",
+        "sessionFlags": "pi",
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": false,
+          "resume": true
+        }
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "network": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin"
+  }
+}

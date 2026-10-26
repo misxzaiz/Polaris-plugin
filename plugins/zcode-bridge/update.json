@@ -1,0 +1,36 @@
+{
+  "id": "opts.zcode-bridge",
+  "name": "ZCode 会话桥接",
+  "version": "0.1.0",
+  "description": "桥接已安装 ZCode 桌面版会话：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话（app-server --stdio 官方协议），会话落盘到 ~/.zcode/cli/db/db.sqlite 后桌面端可见。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "zcode-bridge.panel",
+        "area": "activityBar",
+        "panelType": "zcodeBridge",
+        "icon": "GitPullRequest",
+        "labelKey": "plugins.zcodeBridge",
+        "labelDefault": "ZCode",
+        "order": 90
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "zcode-bridge-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "network": false
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin"
+  }
+}
