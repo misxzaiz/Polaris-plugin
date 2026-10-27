@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-27 17:33:58",
+  "updated": "2026-10-28 02:55:03",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1054,6 +1054,44 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip"
+        }
+      ]
+    },
+    {
+      "id": "sundial",
+      "name": "日晷",
+      "version": "0.1.0",
+      "description": "个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则（每天/每周几/每月几号/每年）、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（Google 公开日历/课表/排班），抓取全部下沉后台服务原生执行——浏览器同源策略管不到它，跨域根治；数据 cap.kv 三端同读（桌面/手机/Web 打开同一面板看到同一份日程）。纯本地存储，数据不出设备。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "calendar",
+        "schedule",
+        "reminder",
+        "ics",
+        "habit",
+        "countdown",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Clock",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
+      "sha256": "0712c361cca9d568bb1f779f0d915e0c5afa8cb0fb8d375c29441a948928de59",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 日晷（sundial）\n\n个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（抓取下沉后台服务原生执行——跨域根治）；数据 cap.kv 三端同读，纯本地存储。\n\n## 亮点\n- 对话式入口：AI 经 7 个 MCP 工具直接增删改查/打卡/订日历\n- 外部日历：ICS 订阅按间隔同步（ETag 条件请求、SSRF 守卫、VTIMEZONE 换算）\n- 三端同看：桌面面板/手机/Web 打开同一面板看到同一份日程与提醒\n- 零依赖：RRULE/ICS/提醒计算全手写纯函数，64 项离线单测\n\n## 说明\n提醒为应用内触达（面板横幅+提示音+AI 可见）；主应用暂无插件可用的系统通知通道。详见仓库 README 的键空间契约与如实边界。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip"
         }
       ]
     }

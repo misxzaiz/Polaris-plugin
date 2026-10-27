@@ -1,0 +1,56 @@
+{
+  "id": "sundial",
+  "name": "日晷",
+  "version": "0.1.0",
+  "description": "个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则（每天/每周几/每月几号/每年）、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（Google 公开日历/课表/排班），抓取全部下沉后台服务原生执行——浏览器同源策略管不到它，跨域根治；数据 cap.kv 三端同读（桌面/手机/Web 打开同一面板看到同一份日程）。纯本地存储，数据不出设备。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "sundial.panel",
+        "area": "activityBar",
+        "panelType": "sundial",
+        "icon": "Clock",
+        "labelKey": "plugins.sundial",
+        "labelDefault": "日晷",
+        "order": 78
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "sundial-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/sundial.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "ICS 订阅抓取同步 + 提醒投影计算 + 保留清扫（原生 fetch，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "sundial",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/sundial",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip"
+  }
+}
