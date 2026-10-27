@@ -1354,6 +1354,44 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/time-trail.zip"
         }
       ]
+    },
+    {
+      "id": "ask-stove",
+      "name": "问灶",
+      "version": "0.1.0",
+      "description": "把「冰箱里有啥、今晚吃啥、周末买啥」变成可对话的资产：食材库存五分区+临期红榜（过期红/临期黄，一键记吃掉/扔掉）、菜谱库（URL 一键导入——后台服务原生 fetch 根治浏览器跨域并带 SSRF 守卫，也可让 AI 从正文抽取）、本周计划、采购清单（按未来 7 天计划缺料扣在库自动补齐，超市动线六类分组）、浪费透视（吃掉 vs 扔掉、浪费率、12 周趋势）。灶签推荐完全可解释：临期加分、缺料降权、近 7 天做过回避。AI 经 12 个 stove_* MCP 工具口语化管理。数据全走 cap.kv，桌面/手机同源。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "food",
+        "pantry",
+        "recipe",
+        "shopping",
+        "meal-plan",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Beaker",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ask-stove",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/ask-stove.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/update.json",
+      "sha256": "6558cbdd286c9270e4bd8065527f4501af31a3c82118e921c64231b5f5d5f9b8",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 问灶（ask-stove）\n\n把「冰箱里有啥、今晚吃啥、周末买啥」变成可对话的资产。\n\n## 能做什么\n\n- **库存**：食材五分区（冷藏/冷冻/干燥/调味/其他）+ 到期日；临期红榜（过期红、临期黄），一键记「吃掉了/扔掉了」。\n- **灶签**：每天推荐「今天吃什么」，完全可解释——临期食材加分、缺料降权、近 7 天做过的回避，每条带理由，一键「就吃这个」排进今日。\n- **菜谱**：手动添加；或贴 URL 一键导入（后台服务原生 fetch，绕开浏览器跨域；SSRF 守卫只放行公网 http/https）；抓回的正文可「填入表单」或「发给 AI 提取」。\n- **本周计划**：7 天排菜或写备注（外卖/剩菜）。\n- **采购**：「按计划补齐」把未来 7 天计划菜谱的缺料（扣掉在库）自动进清单，按超市动线六类分组，手机上边逛边勾。\n- **浪费透视**：吃掉 vs 扔掉、浪费率、最常扔的食材、12 周趋势——让「下次少买点」有数据支撑。\n\n## 对 AI 说什么\n\n插件带 12 个 `stove_*` MCP 工具，直接在聊天里：\n\n- 「买了两斤排骨一把小葱，周末前吃完」→ AI 解析后调 `stove_pantry_add` 入库（到期日自动算）\n- 「番茄用掉了」→ `stove_pantry_consume`（同义匹配：西红柿=番茄）\n- 「今晚 20 分钟能做啥」→ `stove_suggest` 带理由推荐\n- 「帮我把这个菜谱存下来：<URL>」→ `stove_recipe_import` 服务端抓取 → AI 抽取 → `stove_recipe_save`\n- 「按这周计划补一下购物清单」→ `stove_shopping fill_from_plan`\n- 「我这周扔了多少东西」→ `stove_stats`\n\n## 同名不打架\n\n内置 31 组同义词（番茄=西红柿、土豆=马铃薯、生抽=酱油…），全角/大小写/括注/空白统一归一——「冰箱有西红柿、菜谱写番茄」能对上；消耗、缺料、采购去重全走同一套匹配。\n\n## 数据与安全\n\n- 数据全部在 Polaris 数据根（cap.kv，`stove.*` 键），桌面/手机同源；面板可导出 JSON、一键清空。\n- 插件唯一外联点是后台服务的菜谱抓取：仅公网 http/https（拒绝环回/内网/链路本地/云元数据端口）、8s 超时、2MB 体量上限、正文截断 8KB。\n- 面板零直连外网：数据走宿主 `router_dispatch`，抓取走命令邮箱（`stove.cmd.fetch.*` → 服务先删后做 → `stove.result.*`）。\n\n## 开发\n\n```\nnpm install          # 面板构建依赖（esbuild/tsc）\nnpm run buil…（完整见 plugins/ask-stove/README.md）",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/ask-stove.zip"
+        }
+      ]
     }
   ]
 }

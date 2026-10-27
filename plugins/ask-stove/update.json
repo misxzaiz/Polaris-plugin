@@ -1,0 +1,56 @@
+{
+  "id": "ask-stove",
+  "name": "问灶",
+  "version": "0.1.0",
+  "description": "把「冰箱里有啥、今晚吃啥、周末买啥」变成可对话的资产：食材库存五分区+临期红榜、菜谱库（URL 一键导入，服务端 fetch 根治跨域+SSRF 守卫）、本周计划、采购清单（计划缺料扣在库自动补齐+超市动线分组）、浪费透视；灶签推荐完全可解释。AI 经 12 个 stove_* MCP 工具口语化管理。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "ask-stove.panel",
+        "area": "activityBar",
+        "panelType": "askStove",
+        "icon": "Beaker",
+        "labelKey": "plugins.askStove",
+        "labelDefault": "问灶",
+        "order": 83
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "stove-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/stove.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "菜谱 URL 抓取执行器（唯一外联点，SSRF 守卫）+ 命令邮箱消费 + 孤儿结果清扫"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "ask-stove",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ask-stove",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/ask-stove.zip"
+  }
+}
