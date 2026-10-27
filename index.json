@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-27 05:32:22",
+  "updated": "2026-10-28 00:32:44",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -11,7 +11,7 @@
     {
       "id": "multichat",
       "name": "MultiChat",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "多设备会话插件：在任意设备（桌面/Web）打开面板即可操作同一组会话——发消息、看实时流式回复、继续对话。复用 cap.ai.chat 现有引擎，不改造现有对话架构。",
       "author": "Polaris",
       "category": "ai",
@@ -28,7 +28,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/update.json",
-      "sha256": "EF971C1C25E512D41FD80CEF72DE1E00FC073D96632F5235A13DBBDB143D917C",
+      "sha256": "ccb5f578d3cda3b9c95dd401e0209234a2e0ea3fc4d7349486b3ab3c45a47cf2",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -38,6 +38,10 @@
       "screenshots": [],
       "readme": "# MultiChat\n\n多设备会话插件：在任意设备打开面板即可操作同一组会话。Phase 1 = 新建会话 + 继续对话 + 实时流式跨设备广播。不改造现有 AI 对话架构。\n\n- 发消息 → 复用 `cap.ai.chat` 现有引擎\n- 实时流式 → `chat-event` 全员广播（所有在线设备同时收到增量）\n- 续聊 → `continue` 传引擎会话 id，后端权威恢复上下文\n- 会话清单 → `config.json plugins['multichat']`（各端连同一后端天然一致）\n\n> 需主应用提供 `__POLARIS_HOST_LISTEN__`（chat-event 订阅通道）。",
       "versions": [
+        {
+          "version": "0.2.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
+        },
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
@@ -758,9 +762,46 @@
       ]
     },
     {
+      "id": "feed-radar",
+      "name": "订阅雷达",
+      "version": "0.1.0",
+      "description": "RSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取（ETag 条件请求、退避、礼貌间隔），文章入库 cap.kv 供桌面/手机/Web 三端同读；AI 经 radar_unread/radar_read_article 直接「读报」——看未读、拉正文、做总结。支持分组、星标、OPML 导入导出、保留策略清扫。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "rss",
+        "atom",
+        "reader",
+        "feed",
+        "panel",
+        "mcp"
+      ],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/feed-radar",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/update.json",
+      "sha256": "eb90d94c4be188c3acb89f84883e1c92c61a39a82a9fe9899b988f99324b1672",
+      "tier": "beta",
+      "permissions": {
+        "network": true,
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 订阅雷达 feed-radar\n\nRSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取，文章入库 cap.kv 供桌面 / 手机 / Web 三端同读；AI 经 MCP 工具直接「读报」——看未读、拉正文、做总结。\n\n## 架构（三方一库）\n\n```\n┌─ 面板 Panel.tsx ──┐   ┌─ MCP server.js ──┐\n│  文章流/订阅源/设置 │   │  7 个 radar_* 工具 │\n└────────┬─────────┘   └────────┬─────────┘\n         │  宿主 invoke → router_dispatch → cap.kv（radar.* 键空间）\n         ▼                      ▼\n┌──────────────────────────────────────────┐\n│  service/radar.js —— 唯一抓取/写状态权威    │\n│  ETag 条件请求 · 退避 · 命令信箱 · 保留清扫  │\n└──────────────────┬───────────────────────┘\n                   ▼  原生 fetch（无同源策略）\n              外网 RSS/Atom 与文章正文\n```\n\n- **跨域铁律**：全部外网抓取只发生在后台服务进程（Node 原生 fetch）。面板与 MCP 永不直接 fetch 外网——单一抓取路径，无第二条写法。\n- **单事实库**：面板 / MCP / 服务三方读写同一份 cap.kv `radar.*` 键空间，桌面与手机 Web 看到一致状态。\n- **命令信箱**：面板/MCP → 服务的唯一触发通道是写 `radar.cmd.*` 命令键，服务消费即删（refreshAll / refreshFeed / pull / forget / purge 五种）。\n- **缓存失效信号**：feed.def 的 `rev`（任何写方递增）。面板靠「rev 变化 → 重读该源文章键」做增量加载，另有 90s 一次全量刷兜底。\n- 服务生命周期由宿主 PluginServiceManager 管理（type=http + `/__health`；桥不可达时健康端点仍返回 200，避免误杀重启循环，降级状态见 `radar.meta`）。\n\n## 键空间契约（权威描述，三方一致）\n\n| 键 | 写者 | 内容 |\n|---|---|---|\n| `radar.feed.<fid>` | 面板/MCP 写定义；服务写运行态字段 | 订阅源定义（id 由 URL 的 sha256 前 10 位派生，重复添加幂等） |\n| `radar.article.<fid>.<aid>` | 服务写新条目；面板/MCP 写 read/star 并 bump feed.rev | 文章元数据（aid 由 guid/link 派生，跨重复抓取去重） |\n| `radar.content.<aid>` | 服务写 | 已抓取的正文（ok/text 或 error） |\n| `radar.settings` | 面板/MCP 写，服务读 | 全局设置（pollMin/retentionDays/maxPerFeed/readKeepDays/contentKeepHours） |\n| `radar.meta` | 服务写（60s 心跳） | 服务状态（version/pid/bridge/feeds/unreadSum…） |\n| `radar.cmd.*` | 面板/MCP 写 → 服务消费即删 | 命令信箱（refreshAll.<n> / refreshFeed.<fid> / pull.<aid> / forget.<fid> / purge.<n>） |\n\n`fid = 'f' + sha256(url 小写去空白).slice(0,10)`，`aid = 'a' + sha256(fid|guid或link).slice(0,12)`——面板、MCP、服务用同一份 `shared/sha256.js` 与同一规则，保证键名跨方一致。\n\n## MCP 工具（AI 读报入口）\n\n| 工具 | 用途 |\n|---|---|\n| `radar_add_feed` | 添加订阅源（同一 URL 幂等），可带显示名/分组/独立间隔 |\n| `radar_list_feeds` | 列出全部订阅源（未读数/条数/抓取状态），可过滤 |\n| `radar_remove_feed` | 删源并联动清理其全部文章与正文（星标也删——删除针对整个源） |\n| `radar_refresh` | 触发立即抓取（全部或单源），可等待完成 |\n| `radar_unread` | 读未读/最新文章流（默认最近 3 天未读，可过滤/加长摘要） |\n| `radar_read_article` | 读某篇完整正文（缺失时写 pull 命令触发服务抓取并轮询） |\n| `radar_mark` | 标记已读/未读/星标 |\n\n## 抓取与保留策略\n\n- 条件请求：ETag / If-Modified-Since，源未更新 304 零成本回跳；\n- 礼貌间隔：同一主机两次抓取至少 10s（用户手动刷新 3s）；连续失败指数退避（×2 → 上限 ×4）；\n- 保留清扫：文章天数上限 + 单源条数上限（**星标永留**）、正文按时数清理、孤儿正文回收、过期死命令回收（>1h）。\n\n## 构建 / 测试 / 打包\n\n```bash\nnpm install && npm run typecheck   # 面板类型检查（tsc --noEmit）\nnpm run build                      # 面板 bundle → dist/panel.js（esbuild，external react）\nnode test/run-tests.mjs            # 离线单测（零依赖，不需 Polaris 运行）\nnode test/smoke-real.mjs           # 真实桥冒烟（需本机 Polaris 在跑，自清理）\nnode ../../scripts/pack.js plugins/feed-radar   # 打 zip + sha256\n```\n\n## 已知边界\n\n- 正文抽取是 readability-lite：JS 渲染的空壳页会诚实报错（提示盯它的 RSS/JSON 接口），不臆造内容。\n- 全文抽取 < 400 字符时回退全文去噪兜底（含 `<title>` 文本）。\n- 移动端面板经宿主统一 invoke 通道（自动取服务地址 + Bearer token），与桌面同份数据。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip"
+        }
+      ]
+    },
+    {
       "id": "pocket-ledger",
       "name": "口袋账本",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "description": "对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查。面板四 Tab（记账/明细/统计/设置）+ 分类/月预算（AI 记账即时提醒超支）+ 逐日柱状图 + CSV/JSON 导出。纯本地账本（cap.kv，数据不出设备）：零后台服务、零网络请求，符合插件规范推荐的无状态模式；面板与 AI 经同一计算核心（shared/ledger-core）保证口径一致；桌面与手机 Web 看到同一本账，双端并发记账按账单 id 幂等去重。",
       "author": "Polaris",
       "category": "productivity",
@@ -777,7 +818,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
-      "sha256": "e203b302c41e572837ea09d797191e765099770010c649ecb2bdecb365e3e842",
+      "sha256": "4d844cc19ddc034fc4736c67aabc0ce43cca242f3ebfeb27ed791349290d84fc",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -785,6 +826,10 @@
       "screenshots": [],
       "readme": "# 口袋账本（pocket-ledger）\n\n> 对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查，「这个月哪个分类超预算了」就有答案。\n\n- 面板（ActivityBar → 📋 口袋账本）：记账 / 明细 / 统计 / 设置 四 Tab\n- AI 工具（MCP 5 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账\n- **纯本地**：数据只在 cap.kv（`ledger.*`），零后台服务、零网络请求、不出设备\n\n## 设计取舍（与 page-sentinel 互补）\n",
       "versions": [
+        {
+          "version": "0.2.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
+        },
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
