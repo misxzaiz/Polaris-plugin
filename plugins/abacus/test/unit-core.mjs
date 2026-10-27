@@ -248,7 +248,8 @@ test('aggregate：polaris hostCost 入账时 savings 不估、cacheSavings 只�
     mkEntry({ k: 'a' }),
     mkEntry({ k: 'b', src: 'polaris', sid: 'p1', model: '', provider: 'polaris-host', hostCost: 0.05 }),
   ], DEFAULT_PRICES, {});
-  assert.equal(agg.summary.all.cacheSavings, (900 * (0.06 - 0.006)) / 1e6);
+  // 聚合输出经 round6 舍入到 1e-6（0.0000486 → 0.000049），容差 5e-7
+  assert.ok(Math.abs(agg.summary.all.cacheSavings - (900 * (0.06 - 0.006)) / 1e6) < 5e-7);
   assert.equal(agg.summary.bySrc.polaris.cacheSavings, 0);
 });
 

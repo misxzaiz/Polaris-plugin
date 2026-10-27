@@ -146,7 +146,7 @@ test('scanZcode：合成库逐行归一 / session 软删剔除 / 工具遥测 / 
   const r = sources.scanZcode(dbFile, 0);
   assert.equal(r.error, '');
   assert.equal(r.entries.length, 4);
-  const e1 = r.entries.find((e) => e.k === 'z:s-z1:t1:m1:0');
+  const e1 = r.entries.find((e) => e.k === 'z:s-z1:1:0'); // rowId 取行主键 id，attempt=0
   assert.equal(e1.fin, 2987); // 口径实证行
   assert.equal(e1.title, '重构账房');
   assert.equal(e1.proj, 'Polaris');
@@ -159,9 +159,9 @@ test('scanZcode：合成库逐行归一 / session 软删剔除 / 工具遥测 / 
   assert.equal(r.tools.destructive, 2);
   assert.deepEqual(r.tools.byName[0], { name: 'Read', n: 2, destructive: 0, avgDurMs: 100 });
 
-  // 增量游标：只取 started_at > since
+  // 增量游标：严格大于 since（t2 恰等于 since 被排除；重叠由调用方回拨 1h 保证）
   const r2 = sources.scanZcode(dbFile, now - 7200e3);
-  assert.equal(r2.entries.length, 2);
+  assert.equal(r2.entries.length, 1);
   assert.equal(r2.maxTs, now - 3600e3);
 
   // 只读铁律：扫描不改变库文件

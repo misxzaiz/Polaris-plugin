@@ -298,11 +298,12 @@ var require_abacus_core = __commonJS({
       const tToday = periodStartMs("today", nowMs);
       const t7 = periodStartMs("d7", nowMs);
       const t30 = periodStartMs("d30", nowMs);
-      const dedup = /* @__PURE__ */ new Set();
+      const dedup = /* @__PURE__ */ new Map();
       for (const raw of entries) {
-        if (!raw || !raw.k || dedup.has(raw.k)) continue;
-        dedup.add(raw.k);
-        const e = raw;
+        if (!raw || !raw.k) continue;
+        dedup.set(raw.k, raw);
+      }
+      for (const e of dedup.values()) {
         const priced = priceEntry(e, prices);
         addEntry(all, e, priced);
         addEntry(bySrc[e.src] || (bySrc[e.src] = emptyBucket()), e, priced);

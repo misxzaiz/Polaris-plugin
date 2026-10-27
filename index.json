@@ -1304,7 +1304,7 @@
    "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/plugin.json",
    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip",
    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/update.json",
-   "sha256": "3abaed2f9432a0c25f31e9b56345ad99cc907c807eb84687f6e342c006700d97",
+   "sha256": "31bb35e62d57ca40287589539631b0c3fdb8bdc291175bee49a9dffcc5d0a4db",
    "tier": "beta",
    "permissions": {
     "aiToolAccess": true

@@ -322,11 +322,12 @@ function aggregate(entries, prices, opts) {
   const t7 = periodStartMs('d7', nowMs);
   const t30 = periodStartMs('d30', nowMs);
 
-  const dedup = new Set();
+  const dedup = new Map(); // 同 k 后到者胜（与服务层 Map 覆盖语义一致）
   for (const raw of entries) {
-    if (!raw || !raw.k || dedup.has(raw.k)) continue;
-    dedup.add(raw.k);
-    const e = raw;
+    if (!raw || !raw.k) continue;
+    dedup.set(raw.k, raw);
+  }
+  for (const e of dedup.values()) {
     const priced = priceEntry(e, prices);
 
     addEntry(all, e, priced);
