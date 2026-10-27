@@ -1,0 +1,57 @@
+{
+  "id": "amber",
+  "name": "琥珀",
+  "version": "0.1.0",
+  "description": "网页封藏馆：把任意网页「琥珀化」成永久可读快照——收藏即封存（服务原生抓取根治跨域），抽出干净正文 + 标题/作者/发布时间（打分容器算法，非硬切片），BOM/响应头/meta 三级字符集探测连 GBK 老页面也不乱码；同一 URL 重复封存 = 快照层积（首封时间永留），封存失败永不摧毁旧快照。全文检索（BM25-lite）、金句摘录、标签星标；AI 经 MCP 直接「代你封存/检索/精读/摘录」，原文日后失效，琥珀是唯一遗产。桌面与手机 Web 三端同读。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "amber.panel",
+        "area": "activityBar",
+        "panelType": "amber",
+        "icon": "Globe2",
+        "labelKey": "plugins.amber",
+        "labelDefault": "琥珀",
+        "order": 78
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "amber-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/amber.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "琥珀封存引擎（原生 fetch + 字符集探测 + 打分抽取，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "amber",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/amber",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip"
+  }
+}

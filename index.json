@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28 04:40:00",
+  "updated": "2026-10-28 05:12:00",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1242,6 +1242,43 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip"
+        }
+      ]
+    },
+    {
+      "id": "amber",
+      "name": "琥珀",
+      "version": "0.1.0",
+      "description": "网页封藏馆：把任意网页「琥珀化」成永久可读快照——收藏即封存（服务原生抓取根治跨域），抽出干净正文 + 标题/作者/发布时间（打分容器算法，非硬切片），BOM/响应头/meta 三级字符集探测连 GBK 老页面也不乱码；同一 URL 重复封存 = 快照层积（首封时间永留），封存失败永不摧毁旧快照。全文检索（BM25-lite）、金句摘录、标签星标；AI 经 MCP 直接「代你封存/检索/精读/摘录」，原文日后失效，琥珀是唯一遗产。桌面与手机 Web 三端同读。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "clipper",
+        "readlater",
+        "archive",
+        "search",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Globe2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/amber",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/update.json",
+      "sha256": "220a2019eb25aab666ce579acfa832a7f9a1a8b484f1c3c1ac113b09264efed4",
+      "tier": "beta",
+      "permissions": {
+        "network": true,
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 琥珀 amber —— 网页封藏馆\n\n把任意网页「琥珀化」：一键把 URL 封存成**永久可读快照**。原网页日后失效（404/改版/付费墙），琥珀里的快照是你唯一的遗产。\n\n## 它解决什么问题\n\n- **跨域**：浏览器有同源策略，面板直接 fetch 任何第三方页面都会被拦死。本插件把抓取全部下沉到后台服务（Node 原生 fetch，无同源策略）——这是本插件跨域问题的根治点，与 feed-radar / page-sentinel / bookmark-dig 同一铁律。\n- **永久**：网页会失效、会被改写、会进付费墙。封存快照 = 内容本体入自己的库。\n- **找得回**：BM25-lite 全文检索覆盖封存正文的全部文字（不只是标题），支持中英文。\n- **AI 原生**：聊天里直接让 AI「把这篇存进琥珀」「我收藏的内容里有没有讲 XX 的」「读一下 [id] 给我总结」。\n\n## 与邻居插件的分工\n\n| 插件 | 收的是什么 | 节奏 |\n|---|---|---|\n| feed-radar 订阅雷达 | 「源」（RSS/Atom） | 周期性自动 |\n| page-sentinel 网页哨兵 | 「变化」 | 周期性盯梢 |\n| bookmark-dig 书签考古 | 「书签」 | 一次性体检 |\n| news-curator AI 刊物 | AI 拉给你的 | 每日一期 |\n| **琥珀** | **「页」（用户主动收藏）** | **一次性、存内容本体** |\n\n## 使用\n\n- **面板**：贴 URL → 封存（可带标签）→ 收藏列表 → 阅读视图。阅读时选中正文可「✂ 摘录选中文字」存金句。检索 Tab 全文搜索。手机 Web 同一份 cap.kv 数据。\n- **AI（MCP 7 工具）**：\n  - `amber_save {url, tags?, force?, waitSec?}` 封存（同 URL 幂等，重复=层积重封）\n  - `amber_list {filter?, tag?, host?, status?, limit?}` 翻收藏库\n  - `amber_search {q, limit?, waitSec?}` 全文检索语料库\n  - `amber_read {id|url, maxChars?}` 读封存全文（AI 精读主入口）\n  - `amber_mark {id, read?, star?, tagsAdd?, tagsRemove?}` 状态/标签\n  - `amber_quote {itemId, text, note?}` 存金句；`{itemId?, list:true}` 列摘录\n  - `amber_delete {id|url}` 删除（联动清理）\n\n## 封存质量\n\n- **",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip"
         }
       ]
     }
