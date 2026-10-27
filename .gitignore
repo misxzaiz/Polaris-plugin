@@ -14,3 +14,12 @@ plugins/*/.tmp-pack-*
 plugins/blender-modeling/generated/
 plugins/blender-modeling/cache/
 plugins/blender-modeling/scripts/__pycache__/
+
+# Polaris 会话交接导出（本地工作产物，禁止提交）
+.polaris-handoff/
+
+# animation-2d 渲染输出（mp4/帧检查图，体积大且可再生）
+plugins/animation-2d/out/
+
+# douyin-publish 运行时状态（发布记录，含本机路径与 itemId）
+plugins/douyin-publish/state/
