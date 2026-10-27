@@ -1,0 +1,56 @@
+{
+  "id": "pocket-host",
+  "name": "口袋主机",
+  "version": "0.1.0",
+  "description": "把运行 Polaris 的电脑装进口袋：后台服务持续采样本机 CPU/内存/磁盘/监听端口/进程，面板与 AI（MCP 工具）经 cap.kv 共享同一事实库——手机上打开同一面板，看到的永远是这台主机的实时状态。支持 CPU/内存/磁盘余量阈值告警（边沿触发不轰炸）、进程与端口一键定位、按端口/PID 安全结束进程（执行时重新解析端口归属，防 PID 复用误杀）。服务零外网请求，面板全部数据走宿主 invoke 通道，桌面/Web/手机三端无跨域问题。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "pocket-host.panel",
+        "area": "activityBar",
+        "panelType": "pocketHost",
+        "icon": "Activity",
+        "labelKey": "plugins.pocketHost",
+        "labelDefault": "口袋主机",
+        "order": 73
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "host-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/host.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "主机指标采样服务（本机原生采样，零外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "pocket-host",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-host",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/pocket-host.zip"
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "id": "page-sentinel",
+  "name": "网页哨兵",
+  "version": "0.1.0",
+  "description": "盯网页变化的后台哨兵：价格/库存/放号/考位/GitHub release/文档更新。抓取全部下沉到后台服务原生执行——浏览器有同源策略而它没有，天然解决插件抓外网页面的跨域问题；面板与 AI（MCP 工具）经 cap.kv 共享同一事实库，桌面与手机 Web 看到一致状态。支持 CSS 选择器/正则/JSON 路径/响应头四种抽取与变化/关键词/数值阈值三种告警条件，行级 diff 展示，事件可一键发给 AI 分析。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "page-sentinel.panel",
+        "area": "activityBar",
+        "panelType": "pageSentinel",
+        "icon": "Target",
+        "labelKey": "plugins.pageSentinel",
+        "labelDefault": "网页哨兵",
+        "order": 72
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "sentinel-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/sentinel.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "哨兵抓取/调度服务（原生 fetch，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "page-sentinel",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/page-sentinel",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip"
+  }
+}

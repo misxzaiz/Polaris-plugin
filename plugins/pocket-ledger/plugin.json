@@ -1,0 +1,41 @@
+{
+  "id": "pocket-ledger",
+  "name": "口袋账本",
+  "version": "0.2.0",
+  "description": "对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查。面板四 Tab（记账/明细/统计/设置）+ 分类/月预算（AI 记账即时提醒超支）+ 逐日柱状图 + CSV/JSON 导出 + 附件（小票/截图，点开才取，默认不拉图）+ 「不参与汇总」分类（如工资，统计排除但明细照见）。纯本地账本（cap.kv，数据不出设备）：零后台服务、零网络请求，符合插件规范推荐的无状态模式；面板与 AI 经同一计算核心（shared/ledger-core）保证口径一致；桌面与手机 Web 看到同一本账，双端并发记账按账单 id 幂等去重。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "pocket-ledger.panel",
+        "area": "activityBar",
+        "panelType": "pocketLedger",
+        "icon": "ClipboardList",
+        "labelKey": "plugins.pocketLedger",
+        "labelDefault": "口袋账本",
+        "order": 73
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "pocket-ledger",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-ledger",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
+  }
+}

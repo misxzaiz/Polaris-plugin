@@ -1,0 +1,57 @@
+{
+  "id": "paper-radar",
+  "name": "论文雷达",
+  "version": "0.1.0",
+  "description": "把每天海量的 arXiv 论文变成一份看得完的「今日值得读」。关注主题（LLM Agent / 推理 / 代码生成…），后台服务原生抓取 arXiv API 并按关键词做相关性评分 + 一句话解读生成每日榜单；AI 对话中可直接检索/精读/收藏论文（搜索经 cap.http 宿主转发，无跨域）；面板「今日/收藏/主题」三页签，数据全部落在 cap.kv，桌面与手机 Web 跨端同步。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "paper-radar.panel",
+        "area": "activityBar",
+        "panelType": "paperRadar",
+        "icon": "BookOpen",
+        "labelKey": "plugins.paperRadar",
+        "labelDefault": "论文雷达",
+        "order": 73
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "paper-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/paper-radar.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "论文雷达抓取/调度服务（原生 fetch arXiv，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "paper-radar",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/paper-radar",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/paper-radar.zip"
+  }
+}

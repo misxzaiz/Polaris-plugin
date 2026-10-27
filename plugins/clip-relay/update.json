@@ -1,0 +1,63 @@
+{
+  "id": "clip-relay",
+  "name": "接力板",
+  "version": "0.1.0",
+  "description": "跨设备文本接力板：桌面复制的内容（链接/报错栈/口令/片段），手机上打开 Polaris 一键取用；手机打字也能送到桌面。杀手锏是 MCP 工具 relay_push——聊天里说「把这个链接发到我手机上」，AI 直接推送到所有设备。URL 推送由后台服务抓取网页标题摘要（外网抓取下沉服务原生执行，浏览器同源策略管不到它，跨域问题根治），条目显示真实标题而非裸链接。纯 cap.kv 单事实库，桌面/Web/手机三端一致；含置顶常用片段、未读角标、保留策略自动清理。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "clip-relay.panel",
+        "area": "activityBar",
+        "panelType": "clipRelay",
+        "icon": "ClipboardList",
+        "labelKey": "plugins.clipRelay",
+        "labelDefault": "接力板",
+        "order": 74
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "relay-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/relay.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "URL 标题抓取与保留策略清扫服务（原生 fetch，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "clip-relay",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/clip-relay",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip"
+  }
+}
