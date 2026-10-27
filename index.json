@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-27 17:23:34",
+  "updated": "2026-10-27 17:33:58",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1042,7 +1042,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/update.json",
-      "sha256": "7a7866d09c96486c5aafdf904eb097ceea966c3ac5281b0787c288faeec289f4",
+      "sha256": "7246799a3c5c1f0ccf31b130388f7739dca541980a8587da94e82ed40a8a6936",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,

@@ -1,7 +1,7 @@
 {
   "id": "plugin-forge",
   "name": "插件工坊",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Polaris 插件开发一站式工坊：① 权威平台知识库——把散落在官方文档（部分与代码矛盾）、六个已交付插件与历届踩坑实录里的插件开发知识逐条代码级核实后结构化收编，含跨域治理三层方案、单写者纪律、真实桥冒烟配方、发布三坑；② plugin.json 体检器——按图标白名单/视图区/服务健康检查/发布 URL 等 20+ 条实测规则给出现有清单的错误与修复建议；③ 生产级脚手架——按已验证的连接层样板（自发现桥 kvclient、宿主 invoke、服务 tick 骨架、MCP stdio、冒烟模板）一键生成全套骨架文件，MCP 工具可直接落盘；④ AI 工具 forge_*——AI 收到「帮我创建插件」类请求时先拉平台知识再动手，不再每次重新考古项目。纯本地零服务：知识随插件分发，数据只有 cap.kv 里的 forge.* 设置。",
   "enabledByDefault": true,
   "contributes": {
@@ -25,7 +25,10 @@
         "id": "plugin-forge",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

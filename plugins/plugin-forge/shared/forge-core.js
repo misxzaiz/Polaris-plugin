@@ -266,6 +266,11 @@ function buildScaffold(templates, spec) {
     ICON: spec.icon || 'Beaker',
     ORDER: String(spec.order ?? 80),
     VERSION: '0.1.0',
+    // react import 走占位符：模板正文经 --loader:.txt=text 原样内联进面板 bundle，
+    // 裸的 react import 字面量会被宿主加载器的 import 重写正则误命中（它不识别
+    // 字符串边界），注入的 blob URL 会破坏 bundle 语法（Unexpected identifier 'blob'）。
+    // 占位符在生成期替换，bundle 里不存在可被命中的字节。
+    REACT_SPEC: "'react'",
   };
   const warnings = [];
   const files = [];

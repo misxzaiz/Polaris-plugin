@@ -4,7 +4,11 @@
  * 惯例：Panel.tsx 组装 Tab 与全局状态；每个 Tab 一个文件（此处精简为单文件，
  * 业务长大后按 XxxTab.tsx 拆分）。样式内联，颜色/字号遵守主题 token。
  */
-import React, { useEffect, useState } from 'react'
+// react import 必须走 {{REACT_SPEC}} 占位符（生成期替换为真实 import）：
+// 本模板经 --loader:.txt=text 原样内联进面板 bundle，裸的 react import 字面量
+// 会被宿主加载器的重写正则误命中（它不识别字符串/模板字面量边界），注入的
+// blob URL 会破坏 bundle 语法。不要在此模板里写裸的 react 模块引用。
+import React, { useEffect, useState } from {{REACT_SPEC}}
 import { K, loadMeta, loadSettings, saveSettings, type Meta, type Settings } from './model'
 
 type Tab = 'home' | 'settings'
