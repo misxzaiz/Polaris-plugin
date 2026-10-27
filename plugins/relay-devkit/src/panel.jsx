@@ -217,6 +217,9 @@ export default function RelayDevkitPanel({ pluginId, onSendToChat }) {
         overflow: 'hidden',
         background: 'var(--bg, #16181e)',
         color: 'var(--ink, #d8dae2)',
+        // 建立层叠上下文：把面板内全部 z-index 收进本层，避免逃逸盖住宿主
+        // 浮层（工具切换器 z-popover:50、工作区下拉 z-popover:50、Modal z-modal:70 等）。
+        isolation: 'isolate',
       }}
     />
   )

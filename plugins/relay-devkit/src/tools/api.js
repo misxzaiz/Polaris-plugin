@@ -11,7 +11,7 @@ import { currentView } from '../core/router.js';
 /* ===================== 状态 + 持久化 ===================== */
 const LS_TABS='relay.tabs.v2', LS_COL='relay.collections.v2', LS_ENV='relay.envs.v2', LS_UI='relay.ui.v2';
 let state={ tabs:[], activeTab:null, collections:[], envs:[], activeEnv:null };
-let ui={ sideCollapsed:false, layout:'v', reqH:240, reqW:520, proxyOn:false };
+let ui={ sideCollapsed:false, layout:'v', reqH:240, reqW:520, proxyOn:false, timeoutMs:120000 };
 // 面板模式：代理 URL 改为绝对地址（插件面板无同源后端）
 let _panelMode=false, _proxyBase='http://127.0.0.1:9860';
 export function setApiPanelMode(on,proxyBase){ _panelMode=!!on; if(proxyBase)_proxyBase=proxyBase; if(on&&!canUseCap())ui.proxyOn=true; }
@@ -65,6 +65,8 @@ function load(){
   try{ const c=JSON.parse(localStorage.getItem(LS_COL)||'null'); if(Array.isArray(c)) state.collections=c; }catch(e){}
   try{ const en=JSON.parse(localStorage.getItem(LS_ENV)||'null'); if(en){ state.envs=en.envs||[]; state.activeEnv=en.activeEnv||null; } }catch(e){}
   try{ const u=JSON.parse(localStorage.getItem(LS_UI)||'null'); if(u) ui=Object.assign(ui,u); }catch(e){}
+  // 超时容错：历史存储可能无 timeuxMs 或类型异常，统一回落默认 120s
+  if(typeof ui.timeoutMs!=='number' || !Number.isFinite(ui.timeoutMs) || ui.timeoutMs<0) ui.timeoutMs=120000;
   if(!state.collections.length || !state.envs.length) seed();
   if(!state.tabs.length){ const t=newTab(); state.tabs=[t]; state.activeTab=t.id; }
   if(!activeTab()) state.activeTab=state.tabs[0].id;
@@ -163,6 +165,8 @@ function renderEnv(){
   menu.appendChild(none);
   const mng=el('button','env-item manage','<span>⚙ 管理环境与变量…</span>'); mng.onclick=()=>{ $('#envMenu').classList.remove('open'); openEnvManager(); };
   menu.appendChild(mng);
+  const to=el('button','env-item manage','<span>⏱ 请求超时：'+esc(fmtTimeout(ui.timeoutMs))+'</span>'); to.onclick=()=>{ $('#envMenu').classList.remove('open'); openTimeoutSettings(); };
+  menu.appendChild(to);
 }
 function openEnvManager(){
   const bg=$('#modalBg'); const m=el('div','modal wide');
@@ -191,9 +195,53 @@ function openEnvManager(){
   render();
 }
 
+/* 超时配置：全局默认（持久化 ui.timeoutMs），独立窗口 fetch 路径由 AbortController 执行等价超时 */
+function fmtTimeout(ms){
+  if(ms==null) return '';
+  if(ms<=0) return '无限制';
+  return (ms/1000)+' 秒';
+}
+function timeoutOptions(){
+  return [
+    {label:'无限制（宿主护栏约 900s）', ms:0},
+    {label:'15 秒', ms:15000},
+    {label:'30 秒', ms:30000},
+    {label:'60 秒', ms:60000},
+    {label:'120 秒（默认）', ms:120000},
+    {label:'300 秒', ms:300000},
+  ];
+}
+function openTimeoutSettings(){
+  const bg=$('#modalBg'); const m=el('div','modal');
+  m.innerHTML='<h3>请求超时设置</h3><div class="sub">发送请求最长等待时间。面板模式经宿主 cap.http 直发，受宿主 900s（约 15 分钟）总护栏约束；「无限制」实际等待上限仍为 900s。</div>';
+  const opts=timeoutOptions();
+  const f=el('div','field'); f.innerHTML='<label>超时</label>';
+  const sel=el('select');
+  // 预置选项；若当前值不在预置中，追加一个「自定义」占位显示（不改动用户值，保存时若未改动维持原值）
+  if(!opts.some(o=>o.ms===ui.timeoutMs)){
+    const op=el('option'); op.value=String(ui.timeoutMs); op.textContent='自定义 '+(ui.timeoutMs>0?(ui.timeoutMs/1000)+' 秒':'无限制'); sel.appendChild(op);
+  }
+  opts.forEach(o=>{ const op=el('option'); op.value=o.ms; op.textContent=o.label; sel.appendChild(op); });
+  sel.value=String(ui.timeoutMs);
+  f.appendChild(sel); m.appendChild(f);
+  // 说明当前生效值
+  const cur=el('div','sub'); cur.style.cssText='padding-top:0'; cur.innerHTML='当前值：<b>'+fmtTimeout(ui.timeoutMs)+'</b>';
+  m.appendChild(cur);
+  const acts=el('div','acts'); const sp=el('div'); sp.style.flex='1';
+  const reset=el('button','btn ghost','恢复默认 120s'); reset.title='120 秒';
+  reset.onclick=()=>{ ui.timeoutMs=120000; persist(); renderEnv(); close(); setStatus('请求超时已恢复默认 120 秒','ok'); };
+  const ok=el('button','btn primary','保存'); ok.onclick=()=>{ const v=Number(sel.value); if(v!==ui.timeoutMs){ ui.timeoutMs=v; persist(); setStatus('请求超时已设为 '+fmtTimeout(v),'ok'); } close(); };
+  acts.append(reset,sp,ok); m.appendChild(acts);
+  bg.innerHTML=''; bg.appendChild(m); bg.classList.add('open');
+  bg.onclick=e=>{ if(e.target===bg)close(); };
+  function close(){ bg.classList.remove('open'); bg.innerHTML=''; }
+}
 /* ===================== tab 条 ===================== */
 function renderTabs(){
   const bar=$('#tabbar'); bar.innerHTML='';
+  // 加号钉在左缘（position:sticky），先插入使其位于滚动起点
+  const add=el('button','tab-add','+'); add.title='新建请求 tab'; add.onclick=()=>{ const nt=newTab(); state.tabs.unshift(nt); state.activeTab=nt.id; renderAll(); persist(); };
+  bar.appendChild(add);
   state.tabs.forEach(t=>{
     const tab=el('div','rtab'+(t.id===state.activeTab?' active':''));
     tab.innerHTML=`<span class="tm ${methodColor(t.method)}">${t.method}</span><span class="tn">${esc(t.name)}</span>`;
@@ -204,9 +252,15 @@ function renderTabs(){
     tab.querySelector('.tn').ondblclick=e=>{ e.stopPropagation(); const n=prompt('重命名 tab：',t.name); if(n!=null){ t.name=n.trim()||t.name; renderTabs(); persist(); } };
     bar.appendChild(tab);
   });
-  const add=el('button','tab-add','+'); add.title='新建请求 tab'; add.onclick=()=>{ const nt=newTab(); state.tabs.push(nt); state.activeTab=nt.id; renderAll(); persist(); };
-  bar.appendChild(add);
+  // 新 tab 回到左缘，确保可见（加号 stick 后滚动起点即在窗口最左）
+  bar.scrollLeft=0;
+  updateTabFade();
   $('#stTabs').textContent=state.tabs.length;
+}
+/* 右缘溢出遮罩：有未滚出的 tab 时亮起（隐藏滚动条下的唯一"还有更多"提示） */
+function updateTabFade(){
+  const bar=$('#tabbar'); if(!bar) return;
+  bar.classList.toggle('has-more', bar.scrollLeft+bar.clientWidth < bar.scrollWidth-1);
 }
 
 /* ===================== 请求栏 ===================== */
@@ -286,6 +340,10 @@ function syncUrlToParams(t){
 /* ===================== 发送 ===================== */
 async function send(){
   const t=activeTab();
+  const seq=(t.sendSeq||0)+1;              // 竞态守卫序号：迟到响应不得覆盖新请求/已中断状态
+  t.sendSeq=seq;
+  t.stopped=false;                       // 新发送重置中断标记
+  if(t.abortCtl) t.abortCtl.abort();     // 清理上个 in-flight（若还在）
   let url=resolveVars(t.url.trim());
   if(!url){ setStatus('请先输入 URL','warn'); $('#url').focus(); return; }
   if(!/^[a-zA-Z][a-zA-Z0-9+.\-]*:\/\//.test(url)) url='https://'+url;
@@ -316,17 +374,44 @@ async function send(){
     else if(t.bodyType==='text'){ body=resolveVars(t.body); }
     else if(t.bodyType==='form'){ body=t.formBody.filter(r=>r.on&&r.k).map(r=>encodeURIComponent(resolveVars(r.k))+'='+encodeURIComponent(resolveVars(r.v))).join('&'); if(!Object.keys(headers).some(h=>h.toLowerCase()==='content-type')) headers['Content-Type']='application/x-www-form-urlencoded'; }
   }
-  const btn=$('#sendBtn'); btn.disabled=true; btn.innerHTML='发送中…';
+  // 超时：全局 ui.timeoutMs（默认 120s）；`0` = 无限制（cap.http 传大值绕过宿主默认 15s，fetch 不设 timeout）
+  const tmo = (typeof ui.timeoutMs==='number' && Number.isFinite(ui.timeoutMs)) ? ui.timeoutMs : 120000;
+  const btn=$('#sendBtn');
+  // 发送态：按钮变为可点击的「■ 停止」+ pulse 提示（改掉过去 disabled=true 的死路）
+  btn.classList.add('stop-mode'); btn.disabled=false;
+  btn.innerHTML='<span class="stop-ico"></span> 停止';
+  btn.title='停止请求';
   $('#resSubtabs').style.display='none'; $('#resStatus').style.display='none'; $('#resTools').style.display='none';
-  $('#resPane').innerHTML='<div class="res-loading"><span class="spin"></span> 请求发送中…</div>';
+  $('#resPane').innerHTML='<div class="res-loading"><span class="spin"></span> 请求发送中…<span class="wait-tick" id="waitTick"></span></div>';
   setStatus(method+' '+url+(viaCap?' · 宿主直发':(ui.proxyOn?' · 经代理':''))+' …');
   const t0=performance.now();
+  // 等待计时
+  const tick=setInterval(()=>{ const el=$('#waitTick'); if(el) el.textContent=' · 已等待 '+ms(performance.now()-t0); },1000);
+
+  // 停止处理：只有 seq 匹配（未发生新发送）才生效
+  const doStop=()=>{
+    if(t.sendSeq!==seq) return;               // 已被新请求覆盖，忽略
+    t.sendSeq++;                               // 推进序号，废止在途回调
+    t.stopped=true;
+    clearInterval(tick);
+    if(t.abortCtl){ t.abortCtl.abort(); t.abortCtl=null; }   // fetch/代理路径真实中断
+    btn.classList.remove('stop-mode'); btn.disabled=false; btn.innerHTML='发送 <span class="k">⌘↵</span>'; btn.title='';
+    btn.onclick=send;   // 立即恢复为发送（不等 await 结束），避免再次点击又 cancel
+    $('#resPane').innerHTML=`<div class="res-err"><div class="ti">⏹ 已手动中断</div><div>请求已停止。${viaCap?'<span style="color:var(--dimmer)">宿主 cap.http 请求仍在后台继续，将被宿主护栏（约 900s）兜底终止。</span>':'已取消浏览器请求，连接正常终止。'}</div><div style="margin-top:10px;color:var(--dimmer);font-size:11px">耗时 ${ms(performance.now()-t0)} · ${esc(url)}</div></div>`;
+    setStatus('请求已中断 · '+ms(performance.now()-t0),'err');
+  };
+  btn.onclick = (e)=>{ e.preventDefault(); e.stopPropagation(); doStop(); };   // 发送态 onClick 临时接管
+
+  const abortCtl = (typeof AbortController!=='undefined') ? new AbortController() : null;
+  t.abortCtl=abortCtl;
   try{
     let resp;
     if(viaCap){
       // 面板 cap.http 直发：宿主 reqwest 转发目标，携带全部头（含禁发头），无 CORS/混合内容限制。
       // 响应：文本直传 / 二进制 base64（isBase64:true）→ 转 Blob 供 blobUrl 预览与下载。
-      const r=await capHttpRequest({ method, url, headers, body: body||'', bodyType:t.bodyType||'text', timeoutMs:30000 });
+      // 超时：ui.timeoutMs 显式传给宿主；`0` 用防御大值绕过宿主默认 15s（宿主 900s IPC 护栏仍兜底）。
+      const r=await capHttpRequest({ method, url, headers, body: body||'', bodyType:t.bodyType||'text', timeoutMs: tmo>0?tmo:86400000 });
+      if(t.stopped||t.sendSeq!==seq){ if(r.blobUrl){ /* noop */ } return; }  // 停在途响应丢弃（含 blobUrl 无需回收，未进入渲染）
       const ct=r.contentType||'';
       const isBin=BINARY.test(ct)||!!r.isBase64;
       const text=r.body||'';
@@ -348,7 +433,32 @@ async function send(){
         fetchUrl=_panelMode?_proxyBase+'/__proxy':'/__proxy';
         if(_panelMode) fetchHeaders['Access-Control-Request-Headers']||='X-Relay-Target';
       }
-      const res=await fetch(fetchUrl,{method,headers:fetchHeaders,body,redirect:'follow'});
+      // fetch 路径：AbortController 双职责 —— 手动停止 + 等价超时（tmo>0 时）
+      let timer=null;
+      const onAbort=()=>{ if(timer){ clearTimeout(timer); timer=null; } };
+      const finish=()=>{
+        if(abortCtl) abortCtl.signal.removeEventListener('abort',onAbort);
+        if(timer){ clearTimeout(timer); timer=null; }
+      };
+      if(abortCtl) abortCtl.signal.addEventListener('abort',onAbort);
+      // 超时：`0`/无限则不设 timer（等价超时由前端 setTimeout 驱动，向 abortCtl 发 abort）
+      if(tmo>0 && abortCtl) timer=setTimeout(()=>{ if(abortCtl&&!abortCtl.signal.aborted) abortCtl.abort(); }, tmo);
+      let res;
+      try{
+        res=await fetch(fetchUrl,{method,headers:fetchHeaders,body,redirect:'follow',signal:abortCtl?abortCtl.signal:undefined});
+      }catch(e){
+        finish();
+        if(t.stopped||t.sendSeq!==seq) return;   // 手动停止/被覆盖：丢弃，不发渲染
+        if(e&&e.name==='AbortError'){
+          // 区分主动停止 vs 超时：主动停止已在 doStop 处理（sendSeq++），此时 sendSeq 应已废止；到这说明是超时 timer 触发 abort
+          t.response={ error:'请求超时（超过 '+fmtTimeout(tmo)+' 等待上限）', timeMs: performance.now()-t0, url }; renderResponse();
+          setStatus('请求超时（'+fmtTimeout(tmo)+'）','err');
+          return;
+        }
+        throw e;
+      }
+      finish();
+      if(t.stopped||t.sendSeq!==seq) return;
       const blob=await res.blob(); const t1=performance.now();
       const ct=res.headers.get('content-type')||''; const isBin=BINARY.test(ct);
       let text=''; if(!isBin) text=await blob.text();
@@ -356,15 +466,25 @@ async function send(){
       const parsed=tryJSON(text);
       resp={ status:res.status,statusText:res.statusText,ok:res.ok,timeMs:t1-t0,size:blob.size,contentType:ct,headers:resHeaders,text,isBinary:isBin,blobUrl:isBin?URL.createObjectURL(blob):null,url, parsed:parsed.ok?parsed.value:undefined };
     }
+    if(t.stopped||t.sendSeq!==seq){ if(resp&&resp.blobUrl) URL.revokeObjectURL(resp.blobUrl); return; }  // 在途响应丢弃
     t.response=resp;
     t.respPath=''; t.respFilter=''; t.tableSel=null; t.colW={}; t.treeOpen='auto'; t.hiddenCols={}; t.sort={};
     t.respView = resp.parsed!==undefined ? (Array.isArray(resp.parsed)?'table':'object') : /text\/html/i.test(resp.contentType)?'preview' : (resp.isBinary&&/^image\//i.test(resp.contentType))?'preview':'raw';
     renderResponse();
     setStatus(method+' '+resp.status+' '+resp.statusText+' · '+ms(resp.timeMs)+' · '+bytes(resp.size), resp.ok?'ok':'warn');
   }catch(err){
+    if(t.stopped||t.sendSeq!==seq) return;   // 停止/被覆盖：吞吐异常
     const t1=performance.now(); t.response={error:err.message||String(err),timeMs:t1-t0,url}; renderResponse();
     setStatus('请求失败：'+(err.message||err),'err');
-  }finally{ btn.disabled=false; btn.innerHTML='发送 <span class="k">⌘↵</span>'; }
+  }finally{
+    clearInterval(tick);
+    if(btn.classList.contains('stop-mode')){
+      btn.classList.remove('stop-mode'); btn.disabled=false; btn.innerHTML='发送 <span class="k">⌘↵</span>'; btn.title='';
+    }
+    // 还原 onClick：绑定事件的 sendBtn 由 bindEvents 原生挂载，重启避免残留 stop 接管
+    const sb=$('#sendBtn'); if(sb){ sb.onclick=send; }
+    if(t.abortCtl===abortCtl) t.abortCtl=null;
+  }
 }
 
 /* ===================== 路径下钻（响应态） ===================== */
@@ -546,7 +666,7 @@ function openCurlImport(){
     try{ const p=parseCurl(txt); if(!p.url){ setStatus('未能从命令中解析出 URL','err'); return; }
       const nt=newTab({ name:'cURL: '+shortUrl(p.url), method:p.method, url:p.url, bodyType:p.bodyType, body:p.body,
         headers:(p.headers.length?p.headers.map(h=>({id:uid(),on:true,k:h.k,v:h.v})):[]).concat([blankRow()]) });
-      syncUrlToParams(nt); nt.dirty=true; state.tabs.push(nt); state.activeTab=nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：'+p.method+' '+p.url,'ok');
+      syncUrlToParams(nt); nt.dirty=true; state.tabs.unshift(nt); state.activeTab=nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：'+p.method+' '+p.url,'ok');
       // 检测禁发头：直连下会被浏览器剥离，主动提醒开代理；cap.http 面板直发天然携带禁发头，无需提醒
       const fb=canUseCap()?[]:p.headers.filter(h=>BROWSER_STRIP.test(h.k));
       if(fb.length){
@@ -598,7 +718,7 @@ function openSaved(r){
   const exist=state.tabs.find(t=>t.savedId===r.id); if(exist){ state.activeTab=exist.id; renderAll(); return; }
   const t=newTab({ name:r.name,savedId:r.id,method:r.method,url:r.url, params:JSON.parse(JSON.stringify(r.params||[blankRow()])), headers:JSON.parse(JSON.stringify(r.headers||[blankRow()])), bodyType:r.bodyType||'none',body:r.body||'',formBody:JSON.parse(JSON.stringify(r.formBody||[blankRow()])) });
   if(!t.params.length)t.params=[blankRow()]; if(!t.headers.length)t.headers=[blankRow()]; if(!t.formBody.length)t.formBody=[blankRow()];
-  state.tabs.push(t); state.activeTab=t.id; renderAll(); persist(); setStatus('已载入「'+r.name+'」');
+  state.tabs.unshift(t); state.activeTab=t.id; renderAll(); persist(); setStatus('已载入「'+r.name+'」');
 }
 function deleteSaved(g,r){ if(!confirm('删除已保存的请求「'+r.name+'」？'))return; g.requests=g.requests.filter(x=>x.id!==r.id); state.tabs.forEach(t=>{ if(t.savedId===r.id){t.savedId=null;t.dirty=true;} }); persist(); renderSidebar(); renderTabs(); }
 function renameGroup(g){ const n=prompt('分组名称：',g.name); if(n==null)return; g.name=n.trim()||g.name; persist(); renderSidebar(); }
@@ -608,7 +728,7 @@ function deleteGroup(g){ if(!confirm('删除分组「'+g.name+'」及其中 '+g.
 function closeTab(t){
   if(t.dirty&&(t.url||t.savedId)){ if(!confirm('该 tab 有未保存修改，仍要关闭？'))return; }
   const i=state.tabs.indexOf(t); state.tabs.splice(i,1);
-  if(!state.tabs.length){ const nt=newTab(); state.tabs.push(nt); state.activeTab=nt.id; }
+  if(!state.tabs.length){ const nt=newTab(); state.tabs.unshift(nt); state.activeTab=nt.id; }
   else if(state.activeTab===t.id) state.activeTab=state.tabs[Math.max(0,i-1)].id;
   renderAll(); persist();
 }
@@ -714,6 +834,7 @@ function bindEvents(){
   const srch=$('#search'); if(srch) srch.addEventListener('input',renderSidebar);
   const ng=$('#newGroup'); if(ng) ng.onclick=()=>{ const n=prompt('新分组名称：','新分组'); if(!n)return; state.collections.push({id:uid(),name:n.trim(),collapsed:false,requests:[]}); persist(); renderSidebar(); };
   const ts=$('#toggleSide'); if(ts) ts.onclick=()=>{ ui.sideCollapsed=!ui.sideCollapsed; $('#main').classList.toggle('collapsed',ui.sideCollapsed); persist(); };
+  const tb=$('#tabbar'); if(tb) tb.addEventListener('scroll',updateTabFade);
   const lb=$('#layoutBtn'); if(lb) lb.onclick=()=>{ ui.layout = ui.layout==='h'?'v':'h'; applyLayout(); persist(); };
   const pb=$('#proxyBtn'); if(pb) pb.onclick=()=>{ if(canUseCap()){ setStatus('面板模式为宿主 cap.http 直发，无需本地代理','ok'); return; } ui.proxyOn=!ui.proxyOn; applyProxyBtn(); persist(); setStatus(ui.proxyOn?'已开启跨域代理 · 请求经本地后端 /__proxy 转发':'已关闭代理 · 浏览器直连','ok'); };
   document.addEventListener('keydown',e=>{ if(currentView()!=='api')return; if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); send(); } if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S')){ e.preventDefault(); saveCurrent(); } });

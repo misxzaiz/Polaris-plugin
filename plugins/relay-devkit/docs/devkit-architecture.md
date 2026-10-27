@@ -139,3 +139,25 @@ export function configureViewHost({persist, rerender}){ if(persist)_persist=pers
 > 实测命令：`npm run verify:backend`（无需浏览器/真库——注入假 mysql2 驱动，验 /__db 整链路 + `%s`→`?` 翻译）→ `npm start` 起 Node 后端 → `node relay-verify.js` 跑 e2e。MySQL 连真库需后端 `npm i mysql2` + 可达的 MySQL（连接表单填 host/port/账号密码）；Supabase 需项目 URL+key。
 
 > R2/R3 是把全局脚本转 ESM，模块作用域与全局作用域不能混用，因此**作为一次原子变换**完成、整体过 e2e，而非半模块半内联的中间态。
+
+## 8. 请求超时与手动中断（v1.5.0）
+
+### 8.1 超时策略
+- 发送超时全局可配置：环境菜单 →「⏱ 请求超时」；持久化于 `ui.timeoutMs`（`LS_UI`），默认 **120s**（v1.4.1 以前面板 cap.http 路径硬编码 30s）。
+- 面板 cap.http 直发：`timeoutMs` 显式上送宿主 reqwest。选项含「无限制」（传防御大值 `86400000`，仍受宿主 `DISPATCH_SYNC_TIMEOUT=900s` IPC 护栏兜底——约 15 分钟封顶）。
+- 独立窗口 fetch 路径：无内置超时（浏览器默认 ~300s），前端用 `AbortController` + `setTimeout` 实现等价超时（`tmo>0` 时），与面板档位一致。
+- 宿主 `timeoutMs=0` 无"无限制"语义（reqwest 0.12 瞬败），故用大值而非 0。
+
+### 8.2 手动中断（三路径、三机制）
+| 路径 | 机制 | 真实终止 |
+|---|---|---|
+| 独立窗口 · 浏览器 fetch 直连 | `AbortController.abort()` | ✅ |
+| 面板/独立窗口 · `/__proxy` 中继 | 前端 abort 关闭与中继 TCP 连接 → `proxy.js` 监听 `req/res.on('close')` 销毁上游转发（hop 循环每跳检查 `aborted`） | ✅ |
+| 面板 · cap.http 直发 | **逻辑中断**：前端标记 + UI 复位 + 迟到响应丢弃。宿主 invoke 不可取消、无 in-flight 注册表，宿主请求仍在后台跑完（最长 900s 被 IPC 护栏解除调用方阻塞）——UI 明示降级语义 | ❌（预期） |
+
+### 8.3 竞态防线（迟到响应守卫）
+- 每 tab 维护 `sendSeq`，每次发送自增；异步闭包捕获发送时 seq；写回 UI 前校验 `t.stopped || t.sendSeq !== seq`，不匹配则整段丢弃（含 revoke 二进制 `blobUrl`）。
+- 发送中按钮变为「■ 停止」；`cmd/ctrl+Enter` 发送、`cmd/ctrl+S` 保存逻辑不受影响。
+
+### 8.4 宿主侧升级路径（未实施）
+cap.http 真实终止（B-3 T1）：参考 `cap.bash` 任务表 + kill 范式，dispatcher 维护 `requestId → JoinHandle` 表 + 新增 `{'action':'cancel', requestId}`；同时 `timeout_ms>0` 才设 `client.timeout()` 以支持真·无限制。属 Polaris 主仓改造，另行排期，插件侧预留 requestId 上送位。

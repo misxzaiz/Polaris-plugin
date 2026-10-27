@@ -48,7 +48,8 @@ function extractInjectable(headers) {
 }
 
 // 单次转发；返回 {statusCode, headers, body:Buffer}。3xx 是否跟随由调用方决定。
-function once(urlStr, method, headers, body) {
+// 支持外部中止：onAbort 注册一个"客户端已断开 → 销毁上游连接"的监听器回调。
+function once(urlStr, method, headers, body, registerAbort) {
   return new Promise((resolve, reject) => {
     const u = new URL(urlStr);
     const lib = u.protocol === 'https:' ? https : http;
@@ -59,8 +60,13 @@ function once(urlStr, method, headers, body) {
     if (u.protocol === 'https:') opts.agent = httpsAgent;
     const r = lib.request(u, opts, (resp) => {
       const ch = []; resp.on('data', c => ch.push(c));
-      resp.on('end', () => resolve({ statusCode: resp.statusCode, headers: resp.headers, body: Buffer.concat(ch) }));
+      let settled = false;
+      resp.on('end', () => { settled = true; resolve({ statusCode: resp.statusCode, headers: resp.headers, body: Buffer.concat(ch) }); });
+      // 上游响应流中客户端断开 → 中止读取
+      if (registerAbort) registerAbort(() => { if (!settled) { resp.destroy(); reject(new Error('client disconnected')); } });
     });
+    // 客户端在连接建立前断开 → 销毁请求
+    if (registerAbort) registerAbort(() => { r.destroy(); reject(new Error('client disconnected')); });
     r.on('error', reject);
     if (hasBody) r.write(body);
     r.end();
@@ -86,9 +92,26 @@ export async function proxyHandler(req, res) {
   Object.assign(out, inject);
 
   let method = req.method, url = target, sendBody = body, result;
+  // 客户端断开关联：客户端断开 → 中止上游转发链。允许重复注册；已断开后续注册立即触发。
+  let aborted = false;
+  const abortListeners = [];
+  const registerAbort = (fn) => {
+    if (aborted) { fn(); return; }
+    abortListeners.push(fn);
+  };
+  const fireAbort = () => {
+    if (aborted) return;
+    aborted = true;
+    const list = abortListeners.splice(0);
+    for (const fn of list) try { fn(); } catch (_) {}
+  };
+  req.on('close', fireAbort);
+  res.on('close', fireAbort);
   try {
     for (let hop = 0; hop <= 5; hop++) {
-      result = await once(url, method, out, sendBody);
+      if (aborted) throw new Error('client disconnected');
+      result = await once(url, method, out, sendBody, registerAbort);
+      if (aborted) throw new Error('client disconnected');
       const sc = result.statusCode, loc = result.headers.location;
       if ([301, 302, 303, 307, 308].includes(sc) && loc && hop < 5) {
         url = new URL(loc, url).toString();
@@ -101,6 +124,11 @@ export async function proxyHandler(req, res) {
       break;
     }
   } catch (e) {
+    // 客户端主动断开不算代理错误，直接静默结束（不要把 502 回给已断开/发送中的客户端）
+    if (aborted) {
+      try { res.destroy(); } catch (_) {}
+      return;
+    }
     return sendErr(res, 502, 'proxy fetch failed: ' + (e && e.message || e), target);
   }
 

@@ -24,7 +24,7 @@
 /* 容器查询：独立模式 body 为容器，面板模式 .relay-devkit-panel 为容器。
    @container 基于「容器自身宽度」触发，而非视口，使窄面板自动紧凑布局。 */
 
-.relay-devkit-panel{container-type:inline-size;position:relative}
+.relay-devkit-panel{container-type:inline-size;position:relative;isolation:isolate}
 /* 面板根容器内部布局（避免污染宿主 body） */
 .relay-devkit-panel{background:var(--bg);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;display:flex;flex-direction:column}
 
@@ -212,8 +212,12 @@
 
 /* 工作区 */
 .relay-devkit-panel .work{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
-.relay-devkit-panel .tabbar{display:flex;align-items:stretch;height:var(--tabsbar);min-height:var(--tabsbar);border-bottom:1px solid var(--line);background:var(--bg-2);overflow-x:auto;overflow-y:hidden}
+.relay-devkit-panel .tabbar{display:flex;align-items:stretch;height:var(--tabsbar);min-height:var(--tabsbar);border-bottom:1px solid var(--line);background:var(--bg-2);overflow-x:auto;overflow-y:hidden;position:relative}
 .relay-devkit-panel .tabbar::-webkit-scrollbar{height:0}
+/* 右缘溢出遮罩：隐藏滚动条下"还有更多 tab"的唯一提示（左缘因加号 sticky 钉住，只需右侧） */
+.relay-devkit-panel .tabbar::after{content:'';position:absolute;top:0;bottom:0;right:0;width:26px;pointer-events:none;opacity:0;transition:opacity .18s;
+  background:linear-gradient(270deg,var(--bg-2),transparent);z-index:1}
+.relay-devkit-panel .tabbar.has-more::after{opacity:1}
 .relay-devkit-panel .rtab{display:flex;align-items:center;gap:8px;padding:0 12px;border-right:1px solid var(--line);cursor:pointer;color:var(--dim);transition:.14s;white-space:nowrap;max-width:240px;position:relative;flex:none}
 .relay-devkit-panel .rtab:hover{background:var(--surface);color:var(--ink)}
 .relay-devkit-panel .rtab.active{background:var(--surface-2);color:var(--ink)}
@@ -223,7 +227,7 @@
 .relay-devkit-panel .rtab .dirty{width:6px;height:6px;border-radius:50%;background:var(--brand);flex:none}
 .relay-devkit-panel .rtab .tx{width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;color:var(--dimmer);flex:none}
 .relay-devkit-panel .rtab .tx:hover{color:var(--ink);background:var(--surface-3)}
-.relay-devkit-panel .tab-add{flex:none;width:38px;display:inline-flex;align-items:center;justify-content:center;color:var(--dim);font-size:18px;border-right:1px solid var(--line)}
+.relay-devkit-panel .tab-add{position:sticky;left:0;z-index:2;flex:none;width:38px;display:inline-flex;align-items:center;justify-content:center;color:var(--dim);font-size:18px;border-right:1px solid var(--line);background:var(--bg-2)}
 .relay-devkit-panel .tab-add:hover{color:var(--brand);background:var(--surface)}
 
 .relay-devkit-panel .reqbar{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}
@@ -630,3 +634,11 @@
 .relay-devkit-panel .toast,
 .relay-devkit-panel .db-ctx,
 .relay-devkit-panel .db-ac{position:absolute}
+
+/* ============================================================
+   请求超时设置 + 停止按钮 + 等待计时
+   ============================================================ */
+.relay-devkit-panel .res-loading .wait-tick{font-size:11px;color:var(--dimmer)}
+.relay-devkit-panel .btn.primary.stop-mode{background:var(--err);border-color:var(--err);color:#fff}
+.relay-devkit-panel .btn.primary.stop-mode:hover{background:#e05245;box-shadow:none}
+.relay-devkit-panel .stop-ico{display:inline-block;width:9px;height:9px;border-radius:2px;background:currentColor;margin-right:1px}
