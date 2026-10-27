@@ -1,1286 +1,1322 @@
 {
-  "$schema": "./schemas/index.schema.json",
-  "version": "1.1.0",
-  "updated": "2026-10-28 05:12:00",
-  "marketplace": {
-    "name": "Polaris Plugin Marketplace",
-    "homepage": "https://github.com/misxzaiz/Polaris-plugin",
-    "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
-  },
-  "plugins": [
+ "$schema": "./schemas/index.schema.json",
+ "version": "1.1.0",
+ "updated": "2026-10-27",
+ "marketplace": {
+  "name": "Polaris Plugin Marketplace",
+  "homepage": "https://github.com/misxzaiz/Polaris-plugin",
+  "description": "Polaris 插件中心索引。兼容 Polaris installRemotePlugin / checkPluginUpdate 协议。"
+ },
+ "plugins": [
+  {
+   "id": "multichat",
+   "name": "MultiChat",
+   "version": "0.2.0",
+   "description": "多设备会话插件：在任意设备（桌面/Web）打开面板即可操作同一组会话——发消息、看实时流式回复、继续对话。复用 cap.ai.chat 现有引擎，不改造现有对话架构。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "chat",
+    "multi-device",
+    "session",
+    "panel",
+    "streaming"
+   ],
+   "icon": "Bot",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/multichat",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/update.json",
+   "sha256": "ccb5f578d3cda3b9c95dd401e0209234a2e0ea3fc4d7349486b3ab3c45a47cf2",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# MultiChat\n\n多设备会话插件：在任意设备打开面板即可操作同一组会话。Phase 1 = 新建会话 + 继续对话 + 实时流式跨设备广播。不改造现有 AI 对话架构。\n\n- 发消息 → 复用 `cap.ai.chat` 现有引擎\n- 实时流式 → `chat-event` 全员广播（所有在线设备同时收到增量）\n- 续聊 → `continue` 传引擎会话 id，后端权威恢复上下文\n- 会话清单 → `config.json plugins['multichat']`（各端连同一后端天然一致）\n\n> 需主应用提供 `__POLARIS_HOST_LISTEN__`（chat-event 订阅通道）。",
+   "versions": [
     {
-      "id": "multichat",
-      "name": "MultiChat",
-      "version": "0.2.0",
-      "description": "多设备会话插件：在任意设备（桌面/Web）打开面板即可操作同一组会话——发消息、看实时流式回复、继续对话。复用 cap.ai.chat 现有引擎，不改造现有对话架构。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "chat",
-        "multi-device",
-        "session",
-        "panel",
-        "streaming"
-      ],
-      "icon": "Bot",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/multichat",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/update.json",
-      "sha256": "ccb5f578d3cda3b9c95dd401e0209234a2e0ea3fc4d7349486b3ab3c45a47cf2",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# MultiChat\n\n多设备会话插件：在任意设备打开面板即可操作同一组会话。Phase 1 = 新建会话 + 继续对话 + 实时流式跨设备广播。不改造现有 AI 对话架构。\n\n- 发消息 → 复用 `cap.ai.chat` 现有引擎\n- 实时流式 → `chat-event` 全员广播（所有在线设备同时收到增量）\n- 续聊 → `continue` 传引擎会话 id，后端权威恢复上下文\n- 会话清单 → `config.json plugins['multichat']`（各端连同一后端天然一致）\n\n> 需主应用提供 `__POLARIS_HOST_LISTEN__`（chat-event 订阅通道）。",
-      "versions": [
-        {
-          "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
-        }
-      ]
+     "version": "0.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
     },
     {
-      "id": "polaris.marketplace",
-      "name": "Polaris 插件商城",
-      "version": "1.2.1",
-      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "marketplace",
-        "panel",
-        "mcp",
-        "installer"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "b760f08d5a463ae45ff92693987e94b47ce44c0c6ef9e18d01b04c45f8eaebe2",
-      "tier": "production",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true
-      },
-      "screenshots": [],
-      "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
-      "versions": [
-        {
-          "version": "1.2.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip"
-        }
-      ]
-    },
-    {
-      "id": "relay-devkit",
-      "name": "RELAY DevKit",
-      "version": "1.5.0",
-      "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。v1.5.0: 请求超时可配置（默认 120s，含无限制）；发送中手动停止（fetch/代理真实中断，cap.http 逻辑中断）；/__proxy 客户端断开关联修永久挂起",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "api-client",
-        "json",
-        "sql",
-        "database",
-        "dev-tools",
-        "panel",
-        "service"
-      ],
-      "icon": "Terminal",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.0/plugins/relay-devkit/relay-devkit.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
-      "sha256": "7de52b1b81a21b74e17261d3739fcbf714a3f6ba620515f6c08dca672fa4e1bd",
-      "tier": "production",
-      "permissions": {
-        "workspaceRead": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理；面板模式宿主 cap.http 直发，携带 Cookie/UA/Referer 等禁发头，免 CORS 限制\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST",
-      "versions": [
-        {
-          "version": "1.5.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.0/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.4.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.1/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.4.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.0/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.3.3",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.3.3/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.3.2",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.3.2/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.3.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.3.0/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.2.0/plugins/relay-devkit/relay-devkit.zip"
-        },
-        {
-          "version": "1.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip"
-        }
-      ]
-    },
-    {
-      "id": "relay-devkit-api",
-      "name": "RELAY API Client",
-      "version": "1.0.1",
-      "description": "API 客户端（relay-devkit 精简版，仅保留 API 工具）。请求恒经 Polaris 宿主 cap.http 能力转发（零本地服务，无 CORS / 混合内容 / 禁发头限制），AI 亦可通过 bus 总线调用。多 tab、环境变量、cURL 导入、响应表格 / 对象树 / 路径下钻与筛选。",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "api-client",
-        "http",
-        "rest",
-        "dev-tools",
-        "panel",
-        "zero-service"
-      ],
-      "icon": "Beaker",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit-api",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.1/plugins/relay-devkit-api/relay-devkit-api.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/update.json",
-      "sha256": "aabee6b39f92dbf07a27ceb2c7b2ab0ac7f440608865c8582db96a09a39b9d13",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "# RELAY API Client\n\nAPI 客户端（relay-devkit 精简版），仅保留 API 工具。\n\n## 功能\n\n- **多 Tab**：新建/关闭/重命名，脏标记提示\n- **请求编辑**：Method、URL（回车发送）、Params/Headers/Body、常用 Header 建议\n- **智能响应**：对象树/表格/路径下钻/增强过滤、多视图切换\n- **集合管理**：分组保存/搜索/载入\n- **环境变量**：{{baseUrl}}/{{变量}} 解析、环境管理器\n- **cURL 导入**：粘贴 curl 命令一键解析\n- **零本地服务**：请求经 Polaris 宿主 cap.http 能力转发，无 CORS/混合内容/禁发头限制，不启动任何 node 进程\n- **AI 可调用**：cap.http 已加入 bus 总线白名单，AI 亦可通过总线发起请求",
-      "versions": [
-        {
-          "version": "1.0.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.1/plugins/relay-devkit-api/relay-devkit-api.zip"
-        }
-      ]
-    },
-    {
-      "id": "workspace-manager",
-      "name": "工作区管理",
-      "version": "0.1.0",
-      "description": "工作区管理面板:分组/置顶/图标/备注/搜索高亮/排序切换/批量操作,窗口化虚拟列表支撑 100+ 工作区。所有变更委托主应用 workspaceStore,主应用工作区绑定自动同步。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "workspace",
-        "manager",
-        "panel",
-        "grouping",
-        "pin",
-        "search"
-      ],
-      "icon": "CheckSquare",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/workspace-manager",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/update.json",
-      "sha256": "0a375a52f4f6c9f44954e2e84ca1ca827bda2471175132ebd03a311913df6f9a",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "workspaceWrite": true,
-        "appConfigRead": true,
-        "appConfigWrite": true
-      },
-      "screenshots": [],
-      "readme": "# 工作区管理\n\n工作区数量增长后,下拉切换不再够用。本插件提供完整管理面板:\n\n- **组织**:分组/置顶/图标/备注\n- **检索**:搜索(名称/路径/备注)+高亮,排序切换\n- **规模**:窗口化虚拟列表,100+ 工作区流畅滚动\n- **批量**:多选删除/移入分组;导入导出 JSON 备份\n- **同步**:所有变更委托主应用 workspaceStore,主应用工作区绑定自动更新\n\n## 使用\n\n安装后 ActivityBar 出现\"工作区管理\"图标,或从顶部工作区下拉底部\"管理工作区\"进入。\n\n> 需主应用提供 __POLARIS_WORKSPACE_API__ 宿主支持。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip"
-        }
-      ]
-    },
-    {
-      "id": "image-recognition",
-      "name": "图片识别",
-      "version": "0.1.5",
-      "description": "智谱 GLM-4V 视觉模型图片识别 MCP 插件。提供 AI 图片识别工具（单张/批量/目录），支持本地图片（base64）和 URL 输入。含 API Key 配置与测试面板。v0.1.5：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域访问智谱 API 不再被 CORS 拦截（含测试连接）。v0.1.4：maxTokens 默认提至 4000（下限 1000），长文/多图分析结果不再被腰斩截断；商城补充演示截图。v0.1.3：新增 recognize_image_dir 批量识图 + images 多图数组。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "image",
-        "vision",
-        "glm",
-        "mcp",
-        "panel"
-      ],
-      "icon": "Activity",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/image-recognition",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
-      "sha256": "88b072f2ff15eee3e23817313325117619e62fb112471c02ee816a96bb55e266",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true,
-        "appConfigWrite": true
-      },
-      "screenshots": [
-        "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/image-recognition/screenshots/demo-recognition.jpg",
-        "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/image-recognition/screenshots/demo-scene.jpg"
-      ],
-      "readme": "# 图片识别\n\n智谱 GLM-4V 视觉模型图片识别 MCP 插件。\n\n## 功能\n\n- **MCP 工具**：`recognize_image`，AI 可直接调用识别图片\n- **配置面板**：API Key / 模型 / 端点配置 + 测试连接\n- **试识别**：拖拽或选择本地图片，实时查看识别结果\n\n## 使用\n\n1. 安装后 ActivityBar 出现「图片识别」图标\n2. 在「配置」页填入智谱 API Key（https://open.bigmodel.cn 获取）\n3. 点击「测试连接」验证 API 可用\n4. AI 可通过 `recognize_image` 工具识别图片，或在「识别」页手动测试\n\n## 支持的模型\n\n| 模型 | 特点 |\n|------|------|\n| glm-4v-flash | 快速，~5s，直接给结论 |\n| glm-4.1v-thinking-flash | 带推理过程，过滤后取 `<answer>` 结论 |",
-      "versions": [
-        {
-          "version": "0.1.5",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip"
-        },
-        {
-          "version": "0.1.4",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.4/plugins/image-recognition/image-recognition.zip"
-        },
-        {
-          "version": "0.1.3",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.3/plugins/image-recognition/image-recognition.zip"
-        },
-        {
-          "version": "0.1.2",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.2/plugins/image-recognition/image-recognition.zip"
-        },
-        {
-          "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.1/plugins/image-recognition/image-recognition.zip"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.0/plugins/image-recognition/image-recognition.zip"
-        }
-      ]
-    },
-    {
-      "id": "mimo-tts",
-      "name": "MiMo 语音合成",
-      "version": "0.1.1",
-      "description": "小米 MiMo-V2.5-TTS 系列语音合成（限时免费）：预置音色/文本设计音色/音色克隆。MCP 工具 + 配置面板 + 聊天音频卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发（面板/Web/移动端跨域不再被 CORS 拦截）；voiceclone 样本上限 10MB + DataURL 校验修复。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "tts",
-        "voice",
-        "mimo",
-        "audio",
-        "mcp",
-        "panel",
-        "chat-card"
-      ],
-      "icon": "Activity",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mimo-tts",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/update.json",
-      "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "workspaceRead": true,
-        "workspaceWrite": true
-      },
-      "screenshots": [],
-      "readme": "# MiMo 语音合成\n\n小米 MiMo-V2.5-TTS 系列语音合成插件（官方限时免费，无需付费额度）。\n\n## 功能\n\n- **MCP 工具**：`mimo_tts_synthesize`（预置音色）、`mimo_tts_voice_design`（文本设计音色）、`mimo_tts_voice_clone`（音色克隆）、`mimo_tts_list_voices`\n- **聊天卡片**：AI 合成后聊天区直接显示音频播放器，可试听/下载\n- **配置面板**：API Key / 端点 / 默认音色配置 + 测试连接\n- **音色工坊**：文本描述设计音色、上传样本克隆音色\n\n## 使用\n\n1. 安装后 ActivityBar 出现「语音合成」图标\n2. 在「配置」页填入小米 MiMo 开放平台 API Key（https://mimo.mi.com 获取）\n3. 点击「测试连接」验证 API 可用\n4. 让 AI 调用 `mimo_tts_synthesize` 合成语音，或在「合成」页手动输入文本试听\n\n## 预置音色\n\n| 音色 | 说明 |\n|------|------|\n| 冰糖 / 茉莉 | 中文女声 |\n| 苏打 / 白桦 | 中文男声 |\n| Mia / Chloe | 英文女声 |\n| Milo / Dean | 英文男声 |\n\n> 提示：官方标注 TTS 限时免费，请以 https://mimo.mi.com 公告为准。",
-      "versions": [
-        {
-          "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
-          "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.0/plugins/mimo-tts/mimo-tts.zip"
-        }
-      ]
-    },
-    {
-      "id": "agnes",
-      "name": "Agnes 多模态",
-      "version": "0.1.1",
-      "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域不再被 CORS 拦截。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "image",
-        "video",
-        "generation",
-        "mcp",
-        "panel"
-      ],
-      "icon": "Film",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
-      "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true,
-        "appConfigWrite": true
-      },
-      "versions": [
-        {
-          "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
-          "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip",
-          "sha256": "c6270f9ef39f258c7a035b9cffcf1f82a25d4188e79c758ab0be1ac5c6f739bb"
-        }
-      ]
-    },
-    {
-      "id": "animation-3d",
-      "name": "3D 建模工作室（Blender）",
-      "version": "0.2.0",
-      "description": "Polaris 内的 AI 3D 建模插件：通过 mcp-for-blender 桥接本地 Blender（socket 9876），AI 可直接执行 bpy 代码建模型、查场景、截图自检。含 Blender 启动脚本与未连接提示。",
-      "category": "ai",
-      "tags": [
-        "3d",
-        "blender",
-        "mcp",
-        "modeling"
-      ],
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true,
-        "workspaceRead": true
-      },
-      "sha256": "0342b48816b1f7d539724f884f18f20d8e456ad51449827943c4e3d7d36e2cdc",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-3d",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-3d-v0.2.0/plugins/animation-3d/animation-3d.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/update.json",
-      "versions": [
-        {
-          "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-3d-v0.2.0/plugins/animation-3d/animation-3d.zip"
-        }
-      ]
-    },
-    {
-      "id": "animation-2d",
-      "name": "2D 手绘动画（p5.brush）",
-      "version": "0.1.1",
-      "description": "Polaris 内的 AI 2D 手绘逐帧动画插件（p5.brush 水墨风，基于 ClaudeAnimationBase 去品牌化自研）。AI 可通过 MCP 工具渲染静帧/连续帧/联系方式图/出视频 + GLM-4V 质检；活动栏面板可触发渲染并预览帧。",
-      "category": "ai",
-      "tags": [
-        "2d",
-        "animation",
-        "p5brush",
-        "mcp",
-        "panel"
-      ],
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "workspaceRead": true,
-        "workspaceWrite": true
-      },
-      "sha256": "d92b8f6d6dcb384f2c359e163ae244ccc78f72fbfb2a1efc248576050ab29910",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
-      "versions": [
-        {
-          "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip"
-        }
-      ]
-    },
-    {
-      "id": "douyin-publish",
-      "name": "抖音自动发布",
-      "version": "0.1.0",
-      "description": "抖音视频自动发布流水线：发布编排（文件登记/原生对话框注入/结果记录，幂等）+ 声音信息收集（ffprobe 音频元数据归档）。配合 Polaris 内置浏览器由 AI 执行发布动作。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "douyin",
-        "publish",
-        "automation",
-        "audio",
-        "mcp",
-        "video"
-      ],
-      "icon": "Upload",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/douyin-publish",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/update.json",
-      "sha256": "74cbdad2bfd0c9481e61c633468156e3e12695e838b620853c7ddad82815211d",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true,
-        "network": true,
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "workspaceRead": true,
-        "workspaceWrite": true
-      },
-      "screenshots": [],
-      "readme": "# 抖音自动发布\n\n抖音视频自动发布流水线的辅助编排层（MCP 工具），配合 Polaris 内置浏览器由 AI 执行完整发布流程。附带**声音信息收集**：ffprobe 提取音频元数据归档。\n\n## 工具\n\n- `douyin_prepare_publish`：登记视频（幂等，sha256 去重）\n- `douyin_pick_file`：注入原生文件对话框（参数化 ps1，实时枚举 hwnd）\n- `douyin_publish_status`：查询/恢复状态（断点续跑）\n- `douyin_record_result`：登记 item_id/url/状态\n- `douyin_collect_audio`：声音信息收集（ffprobe + EBU R128）\n- `douyin_list_published`：发布记录列表\n\n## 声音信息收集\n\n每次发布可附加音频元数据：有无音轨/编码/采样率/时长/分辨率/响度 + 声音来源与音色（audioSource/voiceId），服务配音一致性追踪。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip"
-        }
-      ]
-    },
-    {
-      "id": "battle-mode",
-      "name": "Battle Mode",
-      "version": "0.1.1",
-      "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MCP 工具（battle_setup/roll/prompt/report）让 AI 在对话里直接开战，面板可操作可发战报到聊天。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "battle",
-        "debate",
-        "learning",
-        "panel",
-        "divergent-thinking",
-        "mcp"
-      ],
-      "icon": "Swords",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/battle-mode",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/update.json",
-      "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "Battle Mode：为学习而战。角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MVP：纯前端战斗台 + MCP 工具（battle_setup 立题、battle_roll 掷骰、battle_prompt 生成主持人/辩手指令、battle_report 战报）——AI 在对话里就能直接开一场对抗式辩论，面板负责可视化与战报持久化。",
-      "versions": [
-        {
-          "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
-          "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
-          "description": "v0.1.1：面板与 MCP 细节修复"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.0/plugins/battle-mode/battle-mode.zip",
-          "sha256": "a96811c979b9021dec0f6f2a6f88f9b4194d9fb6071cfb4a5a8ab675bd07cc05",
-          "description": "MVP：纯前端战斗台 + MCP 工具（battle_setup/roll/prompt/report），AI 对话内直接开战"
-        }
-      ]
-    },
-    {
-      "id": "capability-runtime",
-      "name": "AI 能力自拓展运行时",
-      "version": "1.0.0",
-      "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "runtime",
-        "capability",
-        "modular",
-        "overlay"
-      ],
-      "icon": "Puzzle",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/capability-runtime",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/update.json",
-      "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
-      "versions": [
-        {
-          "version": "1.0.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
-          "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
-          "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。"
-        }
-      ]
-    },
-    {
-      "id": "news-curator",
-      "name": "AI 每日刊物",
-      "version": "0.3.0",
-      "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "news",
-        "daily",
-        "curation",
-        "panel",
-        "mcp",
-        "voice"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/news-curator",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
-      "sha256": "2f8299d3fa67cf15cb43d19a1ce4efab4d78a4a1dcc549dd2355f5bfa38b7a05",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "appConfigWrite": true,
-        "aiToolAccess": true,
-        "network": true
-      },
-      "screenshots": [],
-      "readme": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
-      "versions": [
-        {
-          "version": "0.3.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip"
-        },
-        {
-          "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.2.0/plugins/news-curator/news-curator.zip",
-          "sha256": "b2ee4f88c7e5ed0a87da236e24e4902430849091aefe77bc1bc3e56e98723d5a",
-          "description": "v0.2.0：真实语音播放/合成（mimo-tts 缓存）+ 历史日报页 + news_save_voice/news_list_daily MCP 工具"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip",
-          "sha256": "4c6a15e6340ad97dab648e1d2840206990b13545682edea6c736748bf425582c",
-          "description": "v0.1.0：MVP — 面板（宿主桥通道）+ 9 个 news_* MCP 工具"
-        }
-      ]
-    },
-    {
-      "id": "opts.zcode-bridge",
-      "name": "ZCode 会话桥接",
-      "version": "0.1.2",
-      "description": "桥接已安装的 ZCode 桌面版：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话，会话落盘后桌面端可见；同时把 ZCode 注册为 Polaris 主对话引擎（思考/工具流适配）。引擎权限默认 yolo，可用 ZBRIDGE_DEFAULT_MODE 环境变量收紧。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "zcode",
-        "engine",
-        "bridge",
-        "session",
-        "mcp",
-        "panel"
-      ],
-      "icon": "GitPullRequest",
-      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
-      "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
-      "tier": "beta",
-      "permissions": {
-        "workspaceRead": true,
-        "workspaceWrite": true,
-        "network": true
-      },
-      "screenshots": [],
-      "versions": [
-        {
-          "version": "0.1.2",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
-          "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
-        }
-      ],
-      "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
-    },
-    {
-      "id": "data-ark",
-      "name": "数据方舟",
-      "version": "0.1.0",
-      "description": "Polaris 数据根的备份/恢复引擎：内容寻址去重（CAS+gzip，不变文件全库只存一份）、增量快照、GFS 保留轮换+引用 GC、单写者租约（双实例自动主备）、崩溃恢复、热文件协议、磁盘预检与库上限降级、错过调度补跑一次。恢复只落暂存目录，引擎不存在覆盖数据根的代码路径。AI 经 7 个 ark_* 工具对话式管理；面板跨端可查状态/发起备份/恢复文件。",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "backup",
-        "restore",
-        "data",
-        "snapshot",
-        "cas",
-        "incremental",
-        "gfs",
-        "safety",
-        "mcp",
-        "panel"
-      ],
-      "icon": "Files",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/data-ark",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/data-ark.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/update.json",
-      "sha256": "183b6468b4bd4aaf6e21fb9e396e2b96bcf5c479ba5af2b2ca6613f1399f6cf8",
-      "tier": "beta",
-      "permissions": {
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 数据方舟\n\nPolaris 数据根的备份/恢复引擎——会话、cap.kv、审计链、配置的保险。\n\n- 服务型插件：后台常驻（租约选举单写者、健康端点、自落盘日志轮转），随应用自启\n- 生产级内核：CAS 去重 / 增量三级判定 / 热文件协议 / tmp+rename 原子落盘 / GFS 轮换 / 错过补偿不风暴 / 库上限降级\n- 恢复只进暂存目录，引擎无任何覆盖数据根的代码路径；SQLite 恢复前须退出应用（UI/工具文案明示）\n- AI 工具 7 个：status / backup_now / list_snapshots / list_files / verify / restore / settings\n- 面板四 Tab：快照（备份/校验/回收）/ 恢复（检索+勾选+暂存）/ 服务（状态+事件流）/ 设置（范围/保留/调度/上限）\n\n> 实测：1.53GB 数据根首份快照存 607MB；第二份增量仅重哈希 4 个文件；恢复文件与活文件逐字节一致。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/data-ark.zip"
-        }
-      ]
-    },
-    {
-      "id": "clip-relay",
-      "name": "接力板",
-      "version": "0.1.0",
-      "description": "跨设备文本接力板：桌面复制的内容（链接/报错栈/口令），手机上打开 Polaris 一键取用；AI 经 relay_push 直接推送到所有设备。URL 推送由后台服务抓取网页标题摘要（外网抓取下沉服务原生执行，跨域根治），条目显示真实标题而非裸链接。纯 cap.kv 单事实库三端一致；置顶片段、未读角标、保留策略自动清理、SSRF 守卫拒绝内网抓取。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "clipboard",
-        "sync",
-        "multi-device",
-        "panel",
-        "mcp"
-      ],
-      "icon": "ClipboardList",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/clip-relay",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/update.json",
-      "sha256": "cc2323461c78f3eed7fc03feaa5f85bcda4620738ed8831484434764c0ff4908",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 接力板\n\n跨设备文本接力：桌面复制的东西，手机上打开 Polaris 一键取用；AI 也能经 relay_push 直接推送。\n\n- 桌面 ↔ 手机 ↔ Web 三端同一块板子（cap.kv 单事实库，3s 轮询）\n- 纯链接推送自动抓取网页标题摘要（服务原生 fetch，浏览器同源策略管不到；SSRF 守卫拒绝内网地址）\n- MCP 工具 4 个（relay_push/list/read/clear）：聊天里说「把这个链接发到我手机上」\n- 置顶常用片段永留且不占保留名额；条数/天数保留策略自动清理\n- 手机 http 访问时复制自动回退手动全选弹窗（浏览器安全模型约束，如实提示）\n\n> 需 node >= 18（服务用全局 fetch）。详见插件 README。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip"
-        }
-      ]
-    },
-    {
-      "id": "page-sentinel",
-      "name": "网页哨兵",
-      "version": "0.1.0",
-      "description": "盯网页变化的后台哨兵：价格/库存/放号/考位/GitHub release/文档更新。抓取全部下沉到后台服务原生执行——浏览器有同源策略而它没有，天然解决插件抓外网页面的跨域问题；面板与 AI（MCP 工具）经 cap.kv 共享同一事实库，桌面与手机 Web 看到一致状态。支持 CSS 选择器/正则/JSON 路径/响应头四种抽取与变化/关键词/数值阈值三种告警条件，行级 diff 展示，事件可一键发给 AI 分析。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "monitor",
-        "watcher",
-        "diff",
-        "http",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Target",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/page-sentinel",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/update.json",
-      "sha256": "a554f1b9976b128aea5353248438905fcb0965a4abc1b2c6129504a3a3b178fd",
-      "tier": "beta",
-      "permissions": {
-        "network": true,
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 网页哨兵（page-sentinel）\n\n> 盯网页变化的后台哨兵：**价格 / 库存 / 补货 / 放号 / 考位 / 演出票 / GitHub release / 文档更新 / API changelog**——变化了、命中了、恢复了，才来找你。\n\n- 面板（ActivityBar → 🎯 网页哨兵）：管理目标、看行级 diff、事件流、服务状态\n- 后台服务：按间隔原生抓取 + 抽取 + diff + 条件评估（**唯一的抓取路径**）\n- MCP 工具（7 个 `sentinel_*`）：在聊天里直接让 AI 登记目标、试抓、查事件、分析变化\n\n## 为什么它能做浏览器做不了的事（跨域问题的解法）\n",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip"
-        }
-      ]
-    },
-    {
-      "id": "feed-radar",
-      "name": "订阅雷达",
-      "version": "0.1.0",
-      "description": "RSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取（ETag 条件请求、退避、礼貌间隔），文章入库 cap.kv 供桌面/手机/Web 三端同读；AI 经 radar_unread/radar_read_article 直接「读报」——看未读、拉正文、做总结。支持分组、星标、OPML 导入导出、保留策略清扫。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "rss",
-        "atom",
-        "reader",
-        "feed",
-        "panel",
-        "mcp"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/feed-radar",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/update.json",
-      "sha256": "eb90d94c4be188c3acb89f84883e1c92c61a39a82a9fe9899b988f99324b1672",
-      "tier": "beta",
-      "permissions": {
-        "network": true,
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 订阅雷达 feed-radar\n\nRSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取，文章入库 cap.kv 供桌面 / 手机 / Web 三端同读；AI 经 MCP 工具直接「读报」——看未读、拉正文、做总结。\n\n## 架构（三方一库）\n\n```\n┌─ 面板 Panel.tsx ──┐   ┌─ MCP server.js ──┐\n│  文章流/订阅源/设置 │   │  7 个 radar_* 工具 │\n└────────┬─────────┘   └────────┬─────────┘\n         │  宿主 invoke → router_dispatch → cap.kv（radar.* 键空间）\n         ▼                      ▼\n┌──────────────────────────────────────────┐\n│  service/radar.js —— 唯一抓取/写状态权威    │\n│  ETag 条件请求 · 退避 · 命令信箱 · 保留清扫  │\n└──────────────────┬───────────────────────┘\n                   ▼  原生 fetch（无同源策略）\n              外网 RSS/Atom 与文章正文\n```\n\n- **跨域铁律**：全部外网抓取只发生在后台服务进程（Node 原生 fetch）。面板与 MCP 永不直接 fetch 外网——单一抓取路径，无第二条写法。\n- **单事实库**：面板 / MCP / 服务三方读写同一份 cap.kv `radar.*` 键空间，桌面与手机 Web 看到一致状态。\n- **命令信箱**：面板/MCP → 服务的唯一触发通道是写 `radar.cmd.*` 命令键，服务消费即删（refreshAll / refreshFeed / pull / forget / purge 五种）。\n- **缓存失效信号**：feed.def 的 `rev`（任何写方递增）。面板靠「rev 变化 → 重读该源文章键」做增量加载，另有 90s 一次全量刷兜底。\n- 服务生命周期由宿主 PluginServiceManager 管理（type=http + `/__health`；桥不可达时健康端点仍返回 200，避免误杀重启循环，降级状态见 `radar.meta`）。\n\n## 键空间契约（权威描述，三方一致）\n\n| 键 | 写者 | 内容 |\n|---|---|---|\n| `radar.feed.<fid>` | 面板/MCP 写定义；服务写运行态字段 | 订阅源定义（id 由 URL 的 sha256 前 10 位派生，重复添加幂等） |\n| `radar.article.<fid>.<aid>` | 服务写新条目；面板/MCP 写 read/star 并 bump feed.rev | 文章元数据（aid 由 guid/link 派生，跨重复抓取去重） |\n| `radar.content.<aid>` | 服务写 | 已抓取的正文（ok/text 或 error） |\n| `radar.settings` | 面板/MCP 写，服务读 | 全局设置（pollMin/retentionDays/maxPerFeed/readKeepDays/contentKeepHours） |\n| `radar.meta` | 服务写（60s 心跳） | 服务状态（version/pid/bridge/feeds/unreadSum…） |\n| `radar.cmd.*` | 面板/MCP 写 → 服务消费即删 | 命令信箱（refreshAll.<n> / refreshFeed.<fid> / pull.<aid> / forget.<fid> / purge.<n>） |\n\n`fid = 'f' + sha256(url 小写去空白).slice(0,10)`，`aid = 'a' + sha256(fid|guid或link).slice(0,12)`——面板、MCP、服务用同一份 `shared/sha256.js` 与同一规则，保证键名跨方一致。\n\n## MCP 工具（AI 读报入口）\n\n| 工具 | 用途 |\n|---|---|\n| `radar_add_feed` | 添加订阅源（同一 URL 幂等），可带显示名/分组/独立间隔 |\n| `radar_list_feeds` | 列出全部订阅源（未读数/条数/抓取状态），可过滤 |\n| `radar_remove_feed` | 删源并联动清理其全部文章与正文（星标也删——删除针对整个源） |\n| `radar_refresh` | 触发立即抓取（全部或单源），可等待完成 |\n| `radar_unread` | 读未读/最新文章流（默认最近 3 天未读，可过滤/加长摘要） |\n| `radar_read_article` | 读某篇完整正文（缺失时写 pull 命令触发服务抓取并轮询） |\n| `radar_mark` | 标记已读/未读/星标 |\n\n## 抓取与保留策略\n\n- 条件请求：ETag / If-Modified-Since，源未更新 304 零成本回跳；\n- 礼貌间隔：同一主机两次抓取至少 10s（用户手动刷新 3s）；连续失败指数退避（×2 → 上限 ×4）；\n- 保留清扫：文章天数上限 + 单源条数上限（**星标永留**）、正文按时数清理、孤儿正文回收、过期死命令回收（>1h）。\n\n## 构建 / 测试 / 打包\n\n```bash\nnpm install && npm run typecheck   # 面板类型检查（tsc --noEmit）\nnpm run build                      # 面板 bundle → dist/panel.js（esbuild，external react）\nnode test/run-tests.mjs            # 离线单测（零依赖，不需 Polaris 运行）\nnode test/smoke-real.mjs           # 真实桥冒烟（需本机 Polaris 在跑，自清理）\nnode ../../scripts/pack.js plugins/feed-radar   # 打 zip + sha256\n```\n\n## 已知边界\n\n- 正文抽取是 readability-lite：JS 渲染的空壳页会诚实报错（提示盯它的 RSS/JSON 接口），不臆造内容。\n- 全文抽取 < 400 字符时回退全文去噪兜底（含 `<title>` 文本）。\n- 移动端面板经宿主统一 invoke 通道（自动取服务地址 + Bearer token），与桌面同份数据。\n",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip"
-        }
-      ]
-    },
-    {
-      "id": "pocket-ledger",
-      "name": "口袋账本",
-      "version": "0.2.0",
-      "description": "对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查。面板四 Tab（记账/明细/统计/设置）+ 分类/月预算（AI 记账即时提醒超支）+ 逐日柱状图 + CSV/JSON 导出。纯本地账本（cap.kv，数据不出设备）：零后台服务、零网络请求，符合插件规范推荐的无状态模式；面板与 AI 经同一计算核心（shared/ledger-core）保证口径一致；桌面与手机 Web 看到同一本账，双端并发记账按账单 id 幂等去重。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "ledger",
-        "expense",
-        "kv",
-        "panel",
-        "mcp"
-      ],
-      "icon": "ClipboardList",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-ledger",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
-      "sha256": "4d844cc19ddc034fc4736c67aabc0ce43cca242f3ebfeb27ed791349290d84fc",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 口袋账本（pocket-ledger）\n\n> 对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查，「这个月哪个分类超预算了」就有答案。\n\n- 面板（ActivityBar → 📋 口袋账本）：记账 / 明细 / 统计 / 设置 四 Tab\n- AI 工具（MCP 5 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账\n- **纯本地**：数据只在 cap.kv（`ledger.*`），零后台服务、零网络请求、不出设备\n\n## 设计取舍（与 page-sentinel 互补）\n",
-      "versions": [
-        {
-          "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
-        }
-      ]
-    },
-    {
-      "id": "memoryforge",
-      "name": "记忆熔炉",
-      "version": "0.1.0",
-      "description": "把读过的、聊过的、学过的，炼成记得住的。AI 对话式制卡：粘贴一段笔记、给一个文章 URL、或直接说「把刚才聊的 OAuth 流程出 10 张卡」，AI 提炼问答卡入库；面板按 SM-2 间隔重复排期复习（重来 10 分钟回队、毕业卡间隔按 ease 拉长），配每日新卡/复习限额、7 天到期预报、30 天留存率与连击。网页抓取由 MCP 进程原生 fetch 执行，天然绕开浏览器同源限制（面板零跨域请求）；数据只存本机 cap.kv memoryforge.*，桌面与手机 Web 同步同一副牌，通勤路上也能复习。面",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "flashcard",
-        "sm2",
-        "memory",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Beaker",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/memoryforge",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/memoryforge.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/update.json",
-      "sha256": "5a401cb2df5245e29dd86c24a6f5e8426997544a7168ceb6561f420972e7efd7",
-      "tier": "beta",
-      "permissions": {
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 记忆熔炉 memoryforge\n\n> 把读过的、聊过的、学过的，炼成记得住的。\n> AI 对话式制卡 + SM-2 间隔重复复习 + 跨端同步的本地记忆卡库。\n\n## 这是什么\n\n大部分知识学过就忘——不是没学会，是从来没有「在快忘的时候被再考一次」。记忆熔炉把「记住」变成一个每天两分钟的闭环：\n\n1. **制卡**：把任何内容丢给 AI——聊天里刚讨论完的 OAuth 流程、一篇文档 URL、一段单词表——AI 提炼成「一卡一原子知识点」的问答卡（`memoryforge_import_cards`）。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/memoryforge.zip"
-        }
-      ]
-    },
-    {
-      "id": "pocket-host",
-      "name": "口袋主机",
-      "version": "0.1.0",
-      "description": "把运行 Polaris 的电脑装进口袋：后台服务持续采样本机 CPU/内存/磁盘/监听端口/进程，面板与 AI（MCP 工具）经 cap.kv 共享同一事实库——手机上打开同一面板，看到的永远是这台主机的实时状态。支持 CPU/内存/磁盘余量阈值告警（边沿触发不轰炸）、进程与端口一键定位、按端口/PID 安全结束进程（执行时重新解析端口归属，防 PID 复用误杀）。服务零外网请求，面板全部数据走宿主 invoke 通道，桌面/Web/手机三端无跨域问题。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "monitor",
-        "system",
-        "host",
-        "port",
-        "process",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Activity",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-host",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/pocket-host.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/update.json",
-      "sha256": "2756bde7fe25960492ef7d2d2ae88cacee708ebca95646d63aa6e6e521e84bc6",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 口袋主机（pocket-host）\n\n> 把运行 Polaris 的电脑装进口袋：手机上打开同一面板，看到的就是这台主机的实时状态——CPU / 内存 / 磁盘 / 监听端口 / 进程，还能让 AI 直接回答「9827 端口被谁占了」「把失控的 node 杀掉」。\n\n- **面板**（ActivityBar → 📟 口袋主机）：概览（双仪表 + 走势 + 磁盘条）、进程、端口、动态、设置 五 Tab\n- **后台服务**：本机指标的唯一采样权威（CPU/内存快采样、进程/端口慢采样、磁盘 statfs），阈值告警边沿触发\n- **MCP 工具**（6 个 `host_*`）：聊天里直接「电脑现在什么状态」「释放 9827」「看看刚才是不是卡过」\n- **跨端**：桌面 / Web / 手机打开同一面板看到同一份快照——数据只有 cap.kv 这一个事实库\n\n## 为什么是它",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/pocket-host.zip"
-        }
-      ]
-    },
-    {
-      "id": "paper-radar",
-      "name": "论文雷达",
-      "version": "0.1.0",
-      "description": "每天上百篇 arXiv 新论文，你只该读十篇。关注主题（LLM Agent / 推理 / 代码生成…），后台服务原生抓取 arXiv API 并按关键词做标题×3/摘要×1 相关性评分，加一句话解读生成「今日值得读」榜单；AI 对话中可直接检索 arXiv、精读论文、收藏、管理主题——搜索走 cap.http 宿主统一转发，无浏览器跨域，请求可审计；面板「今日 / 收藏 / 主题」三页签，数据全部落在 cap.kv，桌面与手机 Web 跨端同步。评分是确定性关键词匹配，不是黑盒，可解释可调整。",
-      "author": "Polaris",
-      "category": "ai",
-      "tags": [
-        "paper",
-        "arxiv",
-        "research",
-        "ranking",
-        "mcp",
-        "panel",
-        "kv",
-        "cap-http"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/paper-radar",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/paper-radar.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/update.json",
-      "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6",
-      "tier": "beta",
-      "permissions": {
-        "network": true,
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 论文雷达 paper-radar\n\n> 每天上百篇 arXiv 新论文，你只该读十篇。配置关注主题，雷达自动生成「今日值得读」——AI 帮你筛，AI 帮你想理由。\n\n- 后台服务原生抓取 arXiv API，确定性关键词评分（标题×3 / 摘要×1）+ 一句话解读\n- AI 搜索经 cap.http 宿主转发，无浏览器跨域，请求可审计\n- 面板与 AI 经 cap.kv 共享同一榜单与收藏，桌面/手机 Web 跨端同步",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/paper-radar/paper-radar.zip",
-          "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6"
-        }
-      ]
-    },
-    {
-      "author": "Polaris",
-      "category": "productivity",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "tier": "beta",
-      "screenshots": [],
-      "versions": [
-        {
-          "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip"
-        },
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip",
-          "sha256": "2f31379cf24c3b1eb46131250acebda03e88cec89480c3867d9893957786a092"
-        }
-      ],
-      "id": "plugin-forge",
-      "name": "插件工坊",
-      "version": "0.1.1",
-      "description": "Polaris 插件开发一站式工坊：权威平台知识库（16 主题代码级核实，纠正官方文档与代码矛盾处）+ plugin.json 体检器（20+ 条实测规则，图标白名单/健康检查/发布 URL 陷阱）+ 生产级脚手架（自发现桥/服务 tick/MCP/冒烟模板一键生成，MCP 可直接落盘）+ AI 工具 forge_*——AI 建插件先拉知识再动手，不再每次重新考古项目。纯本地零服务。",
-      "tags": [
-        "devkit",
-        "knowledge",
-        "lint",
-        "scaffold",
-        "mcp"
-      ],
-      "icon": "Beaker",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/plugin-forge",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/update.json",
-      "sha256": "eefb54772156d0ea72ef39d451893619f57bb9e51f8652748491bd041fb0dc38",
-      "permissions": {
-        "aiToolAccess": true
-      },
-      "readme": "# 插件工坊（plugin-forge）\n\n> 治本「每次建插件都要重新分析项目」：把散落在官方文档（部分与代码矛盾）、六个已交付插件与历届踩坑实录里的插件开发知识，逐条代码级核实后收编成结构化知识库，配清单体检器与生产级脚手架。AI 收到「帮我创建插件」先拉 `forge_overview`，秒级拿到全部平台契约，不再考古。\n\n## 面板（ActivityBar → ⚗️ 插件工坊）\n\n- **知识库**：16 个主题全文（平台总览 / manifest 规范 / 面板 / 跨域治理三层 / 服务 / 服务自举 start / 单写者 / 键空间 / MCP / cap 速查 / 测试 / 发布 / UI / 生产级清单 / 实测坑总表 / AI 工作流）。支持全文搜索（与 MCP `forge_search` 同口径）。\n- **体检**：粘贴或上传 plugin.json → 20+ 条实测规则（图标 18 白名单、服务健康检查、MCP 声明、permissions 已知集、发布 URL @tag 陷阱……），每条问题给修复建议。\n- **脚手架**：填 id/名称/图标/服务/MCP 开关 → 生成 15 个文件的完整骨架（自发现桥 kvclient、服务 tick 骨架、MCP stdio、面板、单测、真实桥冒烟模板、README 键空间契约表），可预览/复制；落盘走 MCP 工具（面板无 fs，手机端复制自动回退手动弹窗）。\n\n## AI 工具（MCP 5 个 `forge_*`）\n\n| 工具 | 用途 |\n|---|---|\n| `forge_overview` | **建插件请求的第一个调用**：平台速览 + 16 主题目录 |\n| `forge_search` | 全文检索（「cap.http 手机上能用吗」这类具体疑点秒答） |\n| `forge_topic` | 读整个主题（含可照抄的代码契约） |\n| `forge_lint` | 体检清单（传 json 字符串或文件路径） |\n| `forge_scaffold` | 生成骨架；`dir + confirm:true` 直接落盘（只新建不覆盖，非空目录拒绝） |\n\n## 架构\n\n```\n面板（React bundle；知识库/模板经 esbuild text loader 内联）\n  └─ 纯本地：零服务、零外网；设置存 cap.kv forge.settings\nMCP server（stdio；fs 读同一份 shared/ 文件 → 面板与 AI 永远同口径）\n```\n\nshared core 模式：体检规则引擎 `shared/forge-core.js` 面板与 MCP 共用，两边结论永远一致。\n\n## 键空间契约（权威表）\n\n| 键 | 写者 | 读者 | 说明 |\n|-"
-    },
-    {
-      "author": "Polaris",
-      "category": "productivity",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "tier": "beta",
-      "screenshots": [],
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip",
-          "sha256": "1e832e11738d86e1273253ff5e4b9f4f6467e36926cc86ad52a70c0530799652"
-        }
-      ],
-      "id": "bookmark-dig",
-      "name": "书签考古",
-      "version": "0.1.0",
-      "description": "把积灰的浏览器书签变成可考古、可体检、可复活的活资产：导入 Netscape 书签导出（Chrome/Edge/Firefox 通用）→ 后台服务并发体检每条链接（原生 fetch 跨域根治，SSRF 守卫拒内网）→ URL 规范化去重/域名分类/死链按域聚合 → 死链清理与「今天挖出」每日重访。AI 经 dig_* 八工具直接检索/清理/复活书签库。数据全在本地 cap.kv 分块存储，单写者幂等，断点续跑。",
-      "tags": [
-        "bookmarks",
-        "link-checker",
-        "health",
-        "resurface",
-        "mcp"
-      ],
-      "icon": "BookOpen",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/bookmark-dig",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/update.json",
-      "sha256": "1e832e11738d86e1273253ff5e4b9f4f6467e36926cc86ad52a70c0530799652",
-      "permissions": {
-        "aiToolAccess": true
-      },
-      "readme": "# 书签考古（bookmark-dig）\n\n> 把积灰的浏览器书签变成可考古、可体检、可复活的活资产。核心循环：**导入 → 体检 → 去重/分类 → 死链清理 → 每日挖出重访**。\n\n## 功能\n\n- **导入**：浏览器书签管理器 → 导出书签（HTML，Chrome/Edge/Firefox 通用 Netscape 格式）→ 面板选文件或桌面端给绝对路径（AI 可用 `dig_import_path`）。解析含文件夹层级、秒级时间戳、HTML 实体；忽略 ICON。\n- **体检**：后台服务并发检查每条链接（默认并发 6、超时 12s、GET 限读 64KB），状态分为存活/重定向/4xx/5xx/域名失效/超时/证书错误/内网拒检/非法 URL；单条失败重试计数，不堵队列；运行清单持久化，服务重启断点续跑。\n- **去重**：URL 规范化（去跟踪参数 utm_*/fbclid/gclid/spm、去碎片/默认端口/尾斜杠、参数排序）后按 normKey 幂等合并；保最早收录时间、更完整标题。\n- **分类**：域名启发式（代码仓库/技术社区/文档/视频/论文/…）；AI 可用 `dig_tag` 覆盖标签。\n- **死链治理**：死链按域名聚合报告；「只重查死链」区分暂时抽风与真死；删除必须 confirm。\n- **今天挖出**：从活书签按「沉睡时长 × 书龄」加权随机捞一条重访并记录——考古的意义不是清单，是重逢。\n- **AI 考古**（MCP 8 工具 `dig_*`）：stats/search/dead/resurface/import_path/check/remove/tag。读路径不依赖服务在线（直接读 kv 分块）。\n\n## 架构（跨域根治点）\n\n```\n面板（React bundle，宿主 invoke 通道；绝不直接 fetch 外网）\n  └─ cap.kv bmd.* 分块存储 ←→ 后台服务（并发体检引擎，原生 fetch + SSRF 守卫）\n                                  └─ MCP server（AI 工具层，stdio；读路径直连 kv）\n```\n\n## 键空间契约（权威表——三方一致，改动须同步）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `bmd.settings` | 面板/MCP | 服务 | 全局设置（30s 热读） |\n| `bmd.meta` | 服务 | 面板/MCP | 心跳（60s）+ 库概况 |\n| `bmd.rec.<n>` | **服务单写** | 面板/MCP | 记录分块（≤200 条/块；键数纪律见插件工坊） |\n| `bmd.run` | 服务 | 面板/MCP | 当前运行清单（断点续跑） |\n"
-    },
-    {
-      "id": "pocket-drop",
-      "name": "口袋快传",
-      "version": "0.1.0",
-      "description": "局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。手机浏览器同源直连自家服务（上传/下载/拍照即传，零跨域）；桌面面板数据走宿主 invoke 读 cap.kv 投影、大文件 127.0.0.1 直传；AI 经 MCP drop_send 把本地文件一键投给手机、drop_save 把手机传来的文件落盘。零云零账号零外网请求，PIN 门禁 + TTL 自动清理 + 容量上限。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "file-transfer",
-        "lan",
-        "qr",
-        "mobile",
-        "mcp"
-      ],
-      "icon": "Files",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-drop",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/update.json",
-      "sha256": "7246799a3c5c1f0ccf31b130388f7739dca541980a8587da94e82ed40a8a6936",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 口袋快传（pocket-drop）\n\n> 局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。电脑上的文件让 AI 一句话投给手机；手机里的照片拍完直接落到电脑。零云、零账号、零外网请求。\n\n- **手机端**：浏览器扫面板二维码 → 上传（多选 / 拍照即传）/ 下载 / 预览 / 删除，同源直连自家服务，零跨域\n- **面板**（ActivityBar → 📁 口袋快传）：扫码入口 + 双向清单 + 手动上传下载 + 设置 + 服务管理\n- **AI 工具**（MCP 5 个 `drop_*`）：「把 D:\\reports\\报表.xlsx 传到我手机」「我手机传了什么」「把刚传的照片存到工作区」\n- **自动清理**：TTL（默认 72h）+ 条目数/总容量双上限，过渡文件不堆积\n\n## 为什么是它\n\n| 场景 | 没有它 | 有了它 |\n|---|---|---|\n| 手机照片进电脑 | 微信文件传输助手 / 数据线 / 网盘中转 | 扫码拍照即传，落地在电脑存储目录，AI 还能直接接手处理 |\n| 电脑文件给手机 | 同上，还要登录账号 | 对 AI 说「把 xx 传到我手机」，或面板拖上传 |\n| 手机拍的白板/发票要给 AI 看 | 先传微信再下载再上传 | 拍照 → 电脑投递区 → `drop_save` 落盘 → AI 直接读路径 |\n| 临时给同网设备发大文件 | 网盘限速 / U盘 | 局域网直传，上限可调到 8GB |\n\n## 跨域 / 数据面架构（读这个再改代码）\n\n浏览器同源策略是插件平台第一杀手，本插件三路数据面各走各的合规通道（详见 `docs/SPEC.md`）：\n\n```\n手机浏览器 ──同源 HTTP──► 服务进程 (node, 0.0.0.0:9867, PIN 门禁)\n                            ├─ GET /            手机页（服务直出单文件 HTML）\n                            ├─ POST /u          上传（流式落盘 + 限长）\n                            ├─ GET /f/<id>      下载 / inline 预览\n                            └─ DELETE /f/<id>   删除\n桌面面板 ── __POLARIS_HOST_INVOKE__ ──► router_dispatch ──► cap.kv (pdrop.*)\n                                                            ▲ 投影/心跳唯一写者=服务\nMCP server.js ── 127.0.0.1 bridge (md5 token, 自发现) ──────┘（命令键 先删后做）\n桌面大文件直传 ── XHR http://127.0.0.1:9867（localhost 免混合内容，CORS 由自家服务放行）\nAI 投递本地文件 ── 服务直接 fs 读路径（零桥上字节）\n```\n\n- **手机路径完全没有跨域问题**：手机访问的是服务自己直出的页面，同源。\n- **面板清单/状态走 cap.kv 投影**（宿主 invoke 通道），桌面/Web/手机三端一致；\n- **桌面大文件直传是唯一例外**：GB 级字节扛不进 kv / cap.http（base64 会爆），只能 XH",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip"
-        }
-      ]
-    },
-    {
-      "id": "sundial",
-      "name": "日晷",
-      "version": "0.1.0",
-      "description": "个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则（每天/每周几/每月几号/每年）、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（Google 公开日历/课表/排班），抓取全部下沉后台服务原生执行——浏览器同源策略管不到它，跨域根治；数据 cap.kv 三端同读（桌面/手机/Web 打开同一面板看到同一份日程）。纯本地存储，数据不出设备。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "calendar",
-        "schedule",
-        "reminder",
-        "ics",
-        "habit",
-        "countdown",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Clock",
-      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
-      "sha256": "0712c361cca9d568bb1f779f0d915e0c5afa8cb0fb8d375c29441a948928de59",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 日晷（sundial）\n\n个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（抓取下沉后台服务原生执行——跨域根治）；数据 cap.kv 三端同读，纯本地存储。\n\n## 亮点\n- 对话式入口：AI 经 7 个 MCP 工具直接增删改查/打卡/订日历\n- 外部日历：ICS 订阅按间隔同步（ETag 条件请求、SSRF 守卫、VTIMEZONE 换算）\n- 三端同看：桌面面板/手机/Web 打开同一面板看到同一份日程与提醒\n- 零依赖：RRULE/ICS/提醒计算全手写纯函数，64 项离线单测\n\n## 说明\n提醒为应用内触达（面板横幅+提示音+AI 可见）；主应用暂无插件可用的系统通知通道。详见仓库 README 的键空间契约与如实边界。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip"
-        }
-      ]
-    },
-    {
-      "id": "time-sift",
-      "name": "拾光机",
-      "version": "0.1.0",
-      "description": "拾光机：把 Polaris 已拥有却从未被开采的资产——历史 AI 会话——变成可检索、可回忆、可视化的个人记忆库。后台服务只读本地四路数据源（Polaris dialogs JSONL、session-v2 消息库、~/.claude 原生会话、~/.zcode 会话库，只索引对话散文不索引工具 I/O），建 CJK 双元倒排索引与足迹统计；面板全文检索（命中片段+阅读器）、GitHub 风格热力图、按天时光列表；AI 经 sift_* 工具直接「回忆」——「我之前怎么解决的」当场翻历史。数据不出设备、零外网请求、零跨域面；跨端经 cap.kv 单事实库，手机上同样可搜可看。装上即有全部历史价值，零冷启动。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "memory",
-        "search",
-        "history",
-        "sessions",
-        "heatmap",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Clock",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/time-sift",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/time-sift.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/update.json",
-      "sha256": "5293eb867d71db35bce9aaa88385120d30197630c88f66f892a9252c70ef0bf5",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 拾光机（time-sift）\n\n> 把 Polaris 已拥有却从未被开采的资产——历史 AI 会话——变成可检索、可回忆、可视化的个人记忆库。\n\n## 这是什么\n\n你在 Polaris 对话、session-v2、Claude Code、ZCode 里聊过的每一个方案、每一次排错，散落在四个数据源里，宿主只有一个关键词列表搜索。拾光机把它们归一成**一个可全文检索、可让 AI 回忆、可看足迹的记忆库**：\n\n- **零冷启动**：装上即有全部历史价值（不像其他插件要先喂内容）\n- **AI 可回忆**：聊天里对 AI 说「我之前怎么解决 XX 的」，它用 sift_search 翻你的历史再回答\n- **足迹可视化**：GitHub 风格 26 周热力图 + 会话/消息/token 总量 + 来源分布\n- **纯本地**：数据源只读、索引缓存在本机、零外网请求；跨端经 cap.kv（桌面/手机/Web 同一账号）\n\n实测本机 1.2GB 原始语料（972 会话）→ 37MB 索引，全量重建 ~40s，检索 ~2s 出结果。\n\n## 功能\n\n- **面板**（ActivityBar → 🕐 拾光机）四 Tab：\n  - **搜索**：关键词 + 来源筛选 + 时间范围 → 命中片段（高亮）→ 点击进阅读器（围绕命中消息翻上下文）\n  - **足迹**：总卡（会话/消息/散文/活跃天）+ 26 周热力图 + 来源分布 + Top 活跃日 + token 口径\n  - **时光机**：按天分组的会话列表（标题过滤 + 来源筛选），点开阅读\n  - **设置**：服务管理（自举 start/stop）+ 索引状态/重建 + 四源开关 + 排除词 + 隐私说明\n- **后台服务**：四路数据源唯一读取者，建 CJK 双元倒排索引（term→会话，超限晋级 common），JSONL 源 30s 增量（mtime）、SQLite 源每 10 分钟全量 diff（指纹比对），目录/统计分块写 cap.kv\n- **MCP 工具**（5 个 `sift_*`）：聊天里让 AI 直接检索/翻开/统计你的历史\n\n## 数据源与口径\n\n| source | 位置 | 读法 |\n|---|---|---|\n| `polaris` | `<数据根>/dialogs/*.jsonl`（v3：首行 meta） | fs 只读，按 message.id 去重 |\n| `v2` | `<数据根>/session-v2/messages.db` + `state.db` | node:sqlite 只读，同 id 取最大 version，排除 tombstoned |\n| `claude` | `~/.claude/projects/<项目>/<sessionId>.jsonl` | fs 只读，跳过 isSidechain 行与 `subagents/` 子目录 |\n| `zcode` | `~/.zcode/cli/db/db.sqlite` | node:sqlite 只读，跳过软删会话与 `uiVisibility:hidden` 消息 |\n\n- **只索引对话散文**（用户输入 + AI 回复文本块）：工具调用/输出、thinking/reasoning 不入索引——记忆价值在对话不在工具 I/O，体积降一个量级。\n- Claude 的 Stop-hook 包装消息（`A session-scoped Stop hook is now active with condition: \"…\"`）剥壳保留 `…` 里的真实意图——28/214 实测会话的标题靠它还原。\n- token/费用只对「能取到用量」的会话累加（polaris meta.tokenUsage / claude 行 usage / zcode turn_usage），UI 明示覆盖口径，不臆造补零。\n- 路径兼容：anchor.json → 数据根；实例 0（`<root>/dialogs`）为限，instances/n 不扫。\n\n## 架构（数据面与跨域）\n\n```\n面板（React bundle，宿主 invoke 通道；绝不直接 fetch，零跨域面）\n  └─ cap.kv sift.* 键空间（目录分块/统计/心跳/命令信箱） ←── 三方同一事实库\n        ▲                                    ▲\nMCP server（stdio；timeline/stats 直读 kv，   │ 命令信箱 cmd.<op>.<nonce>\nsearch/open 走信箱）                          │ 先删后做\n                                             ▼\n        service/sift.js —— 唯一读源/唯一写者（索引在内存，blob/倒排/目录落 <appConfigDir>/time-sift/）\n                                             ▼\n        四路数据源（fs 只读 + node:sqlite 只读；零外网请求）\n```\n\n- 面板零外网请求、零 fs——源读取与索引全部在服务进程（node），跨端（手机 Web）自动一致。\n- 检索/阅读走命令信箱：面板/MCP 写 `sift.cmd.<op>.<nonce>` → 服务先删后做 → 结果写 `sift.result.<nonce>` → 请求方轮询读后删。\n- 目录/统计直读 kv：服务离线时足迹与时光机仍可浏览。\n\n## 键空间契约（权威表——三方一致，改动须同步）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `sift.settings` | 面板/MCP | 服务（30s 热读） | `{sources:{polaris,v2,claude,zcode}, excludeKeywords[], maxMsgChars, sqliteRefreshMin}` |\n| `sift.meta` | **服务单写**（60s 心跳） | 面板/MCP | version/pid/bridge/degraded/dataRoot/sqlite/indexing 进度/catalog 概况/各源状态 |\n| `sift.cat.head` | **服务单写** | 面板/MCP | `{count, chunks, rev, builtAt}` |\n| `sift.cat.<n>` | **服务单写** | 面板/MCP | 目录分块数组（≤200 条/块），sid/source/title/时间/消息数/tokens |\n| `sift.stats.total` | **服务单写** | 面板/MCP | 总计卡（bySource/tokens 覆盖口径） |\n| `sift.stats.daily` | **服务单写** | 面板 | 按天聚合 `{'YYYY-MM-DD':{s,m}}`（本地时区，按 updatedAt 落天） |\n| `sift.cmd.<op>.<nonce>` | 面板/MCP 写 → 服务**先删后做** | — | op ∈ search/open/reindex（reindex 需 confirm:true） |\n| `sift.result.<nonce>` | 服务写，请求方读后删 | 请求方 | `{ok, data|error, at}`；服务顺带回收 >1h 孤儿 |\n| `sift.smoke.*` | 仅冒烟 | — | 冒烟独立子前缀，100% 清理 |\n\nsid 规则：`<源字母>+sha256(源|稳定键)前10位`（polaris=externalId、v2=conversation_id、claude=sessionId、zcode=session.id），跨重装稳定。\n\n## MCP 工具（AI 回忆入口）\n\n| 工具 | 用途 |\n|---|---|\n| `sift_search` | 全文检索历史（「我之前是不是解决过…」「找找我聊过 xx 的会话」），返回标题+片段+sid |\n| `sift_open_session` | 按 sid 读会话对话（可 around 命中消息定位），AI 据此回答「当时怎么做的」 |\n| `sift_timeline` | 按天列会话（「上周三我干了啥」）；直读 kv，服务离线可用 |\n| `sift_stats` | 足迹统计 + 索引状态 |\n| `sift_reindex` | 触发全量重建（confirm 护栏，异步执行，进度看 sift_stats） |\n\n## 构建 / 测试 / 打包\n\n```bash\nnpm install && npm run typecheck   # 面板类型检查（tsc --noEmit）\nnpm run build                      # 面板 bundle → dist/panel.js（esbuild，external react）\nnode test/run-tests.mjs            # 离线单测（零依赖，不需 Polaris 运行）\nnode test/smoke-real.mjs           # 真实桥冒烟（需本机 Polaris 在跑；临时 fixture + 自清理，不碰真实数据根）\nnode ../../scripts/pack.js plugins/time-sift   # 打 zip + sha256\n```\n\n冒烟通过 env `SIFT_DATA_ROOT_OVERRIDE` 把服务源定位限定在临时目录（生产不生效），护栏检测到生产 `sift.*` 业务键即拒跑。\n\n## 已知边界（如实）\n\n- **node ≥ 22.5**（node:sqlite）：不可用时 v2/zcode 两源自动降级关闭（meta.sqlite=false 标明），JSONL 双源不受影响。\n- subagent 转录（`~/.claude/projects/<proj>/<id>/subagents/*.jsonl`）不入索引（与 sidechain 行同一口径）；v2 历史版本只取最新。\n- 双 Polaris 实例并发会各建一份索引（罕见场景，未做租约；互不损坏，浪费一倍磁盘）。\n- 检索只匹配正文，标题单独命中不出结果（标题已参与倒排，用于候选排序加分）。\n- 检索延迟 ~2s（命令信箱经 2s tick 消费）；面板时光机/足迹走直读不受影响。\n- `maxMsgChars` 改动只对新扫描生效，历史条目需重建索引。\n",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/time-sift.zip",
-          "sha256": "5293eb867d71db35bce9aaa88385120d30197630c88f66f892a9252c70ef0bf5"
-        }
-      ]
-    },
-    {
-      "id": "net-sentinel",
-      "name": "网哨",
-      "version": "0.1.0",
-      "description": "把「网络本身」变成可对话的资产：后台原生服务每 10s 对网关/DNS/常用站点做 TCP 握手 + DNS 解析 + 丢包探测（无需 ICMP/管理员），断网/恢复/单目标失联/延迟劣化边沿触发记事件，24h 热力图 + 7 天趋势可回看，滚动保留 30 天。AI 经 MCP 回答「现在网怎么样」「昨晚断过网吗」「github 这周延迟如何」，还能按需测速（confirm + SSRF 守卫）。探测在后台原生执行、面板零直连 fetch（宿主 invoke → cap.kv 单事实库），三端无跨域问题。",
-      "author": "Polaris",
-      "category": "dev",
-      "tags": [
-        "network",
-        "monitor",
-        "ping",
-        "latency",
-        "dns",
-        "speedtest",
-        "outage",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Target",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/net-sentinel",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/update.json",
-      "sha256": "94ffa9c6cdfdeedfa09ba60e4772f4c98d7ba9afb1ec0f91d6623798bb716a84",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "network": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 网哨（net-sentinel）\n\n> 把「网络本身」变成可对话的资产：断网、劣化、DNS 慢、某个站点失联——事后不再无从查证。AI 能直接回答「现在网怎么样」「昨晚断过网吗」「github 这周延迟如何」。\n\n- **面板**（ActivityBar → 🎯 网哨）：概览（在线大状态 + 目标卡片 + 15min spark）、历史（24h/72h/7d 热力 + 折线 + 聚合表）、动态、设置 四 Tab\n- **后台服务**：网络探测的唯一权威——每 10s 对网关/DNS/站点做 TCP 握手（无需 ICMP/管理员），域名先测 DNS 解析再测链路，分钟聚合进小时桶（写前持久，重启续写），滚动保留 30 天\n- **MCP 工具**（5 个 `net_*`）：聊天里直接「测下网速」「帮我盯一下 nas.local」「昨晚有没有断网」\n- **跨端**：桌面 / Web / 手机打开同一面板看到同一份网络事实——数据只有 cap.kv 这一个事实库\n\n## 它解决什么\n\n网速慢/掉线是最高频的基础设施痛点，但没有任何工具能事后回答：\n\n- 昨晚 11 点是不是断过网？（Windows 事件查看器不行、路由器日志没人看）\n- 是 DNS 慢还是链路慢？（网哨对域名目标分离测量 `dnsMs` 与握手 `ms`）\n- 是路由器的问题还是目标站的问题？（网关/锚点/站点三层目标对照归因）\n- 我家网络这周整体质量如何？（24h 热力图 + P95/丢包聚合表）\n\n## 探测语义（为什么被 RST 也算「通」）\n\n网哨测的是**网络可达性**，不是服务可用性：TCP connect 收到 RST（ECONNREFUSED）说明 IP 已应答——链路和 DNS 都是通的，且 SYN→RST 往返仍是有效 RTT。只有超时/不可达/DNS 失败记丢包。这让网哨可以用纯 Node 实现（无需 ICMP/管理员权限），语义上最接近 ping。\n\n**网关防抖加倍**：网关真掉线与防火墙静默过滤 80 端口都表现为 timeout，无法区分——网关类目标的失联判定需要 sustain×2 轮，事件文案会提示长期误报时改端口或停用。\n\n## 在线判定\n\n锚点目标（默认 4 个：223.5.5.5 / 119.29.29.29 / www.baidu.com / 1.1.1.1）中 **≥2 个可达才算在线**——单锚点失联不误报断网，但会记该锚点自己的 target_down 事件。锚点/站点/网关三类目标均可在设置中增删改（≤12 个）。\n\n## 事件（边沿触发不轰炸）\n\n| 事件 | 触发条件 |\n|---|---|\n| 断网 / 网络恢复 | 锚点在线判定翻转，连续 2 轮确认；恢复事件带断网时长 |\n| 目标失联 / 恢复 | 单目标连续 sustainRounds 轮无应答（网关 ×2） |\n| 延迟劣化 / 回落 | 近 sustainRounds 轮平均延迟 ≥ latencyMs（默认 400ms） |\n\n同类事件至少间隔 30 分钟；恢复类事件带持续时长。全部事件可「问 AI」带着上下文进聊天。\n\n## 按需测速\n\n平时零大流量；测速走命令键（`confirm:true` + 下载上限 1-25MB + SSRF 守卫：默认拒绝本机/私网地址，局域网 NAS 测速需显式 `allowPrivate`）。默认走 Cloudflare speed 端点（支持 `{bytes}` 占位符），面板可改任意测速 URL。\n\n## AI 工具（MCP）\n\n| 工具 | 用途 |\n|---|---|\n| `net_status` | 当前在线状态 + 各目标延迟/丢包/DNS（「现在网怎么样」「是 DNS 慢还是网络慢」） |\n| `net_history` | 回看最近 N 小时分目标聚合（默认 1h，上限 72h：「今天上午网怎么样」） |\n| `net_events` | 断网/恢复/失联/劣化事件流（「昨晚有没有断网」） |\n| `net_speedtest` | 按需测速（confirm:true；mb ≤25；SSRF 守卫） |\n| `net_targets` | 目标管理 list/add/remove/enable/disable（「帮我盯一下 xyz.com:443」） |\n\n## 架构与跨域\n\n```\n面板/MCP                     服务（探测引擎，唯一写者）\n   │ cmd.speed / cmd.targets    │\n   ├───────────────────────────▶│ tick 消费命令键（先删后做）\n   │                            │ net.connect 探测 → 分钟聚合 → 小时桶\n   │ 读 snapshot/meta/h.*/event │ 写 cap.kv（netmon.*）＋事件边沿评估\n   │◀───────────────────────────┤\n```\n\n- **面板零直连 fetch**：全部数据走宿主 `__POLARIS_HOST_INVOKE__` → `router_dispatch` → cap.kv（桌面 Tauri 直连 IPC；Web/手机自动带 Bearer token）——浏览器 CORS 面为零\n- **探测全部下沉原生服务**：`net.connect` / `dns.lookup` / 测速 `http.get` 都在后台 node 进程执行，三端行为一致\n- **单写者纪律**：快照/桶/事件/测速只由服务写；`netmon.targets` 由服务独占写（面板/MCP 经命令键原子改）；面板写 settings 与 readAt\n\n## 键空间契约（`netmon.*`，三方一致）\n\n| 键 | 写者 |\n|---|---|\n| `netmon.snapshot`（每 tick） / `netmon.meta`（60s 心跳） | 服务 |\n| `netmon.h.<YYYYMMDDHH>`（小时桶，`[minIdx, avgX10|null, max, loss, cnt]`） | 服务 |\n| `netmon.event.*`（cap 200）/ `netmon.speed.*`（cap 50） | 服务 |\n| `netmon.targets` | 服务独占（cmd.targets 原子改） |\n| `netmon.settings` | 面板/MCP 写、服务读（10s） |\n| `netmon.cmd.speed.*` / `netmon.cmd.targets.*` / `netmon.result.*` | 命令通道（先删后做，结果由消费方删除） |\n| `netmon.readAt` | 面板 |\n\n## 开发与测试\n\n```bash\nnpm install && npm run typecheck && npm run build   # 面板类型检查 + 打包\nnode test/run-tests.mjs                              # 离线单测 42 项（纯逻辑全覆盖）\nnode test/smoke-real.mjs                             # 真实桥冒烟 13 项（需本机 Polaris 在跑）\n```\n\n冒烟覆盖：真实桥自发现 → 快照/小时桶/网关发现 → cmd.targets 闭环（含坏载荷拒绝）→ 测速 SSRF 守卫 + 本地 2MB 真测速闭环 → MCP tools/list 与 net_status/net_history 真读。\n\n## 已知边界\n\n- 探测语义是**网络可达性**：目标「端口拒绝」也算通（RTT 有效）；要测服务可用性请直接访问服务本身\n- 网关目标若防火墙静默过滤探测端口，会持续 timeout——事件文案会提示改端口或停用（防抖已加倍至 sustain×2）\n- 纯 IPv6 环境：IPv4 解析失败会自动回退任意族 lookup\n- 面板历史范围上限 7 天（168 个小时桶并行拉取）；30 天数据保留给趋势与 AI 查询\n",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip"
-        }
-      ]
-    },
-    {
-      "id": "disk-radar",
-      "name": "磁盘雷达",
-      "version": "0.1.0",
-      "description": "把磁盘变成可对话的空间资产：后台服务原生遍历目录（零外网请求、零跨域面——面板全走宿主通道+cap.kv），快照式记录每个根目录的空间解剖与历史增量，两次完整快照间按目录归因增减——「谁偷了我的磁盘」；开发垃圾专项猎手（node_modules/target/dist/bin/obj/缓存，按兄弟文件锚定判定，可解释低误报）；两步删除安全模型——先移入同卷隔离区可恢复，确认后才彻底删除，AI 工具全部只读永不删除。AI 经 disk_* 六工具对话式扫描/归因/报告；面板五 Tab：总览/空间地图（矩形树图）/垃圾清理/历史/设置，桌面与手机 Web 看同一份磁盘状态。",
-      "author": "Polaris",
-      "category": "tools",
-      "tags": [
-        "disk",
-        "storage",
-        "cleanup",
-        "scanner",
-        "mcp"
-      ],
-      "icon": "Files",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/disk-radar",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/update.json",
-      "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
-      "tier": "beta",
-      "permissions": {
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 磁盘雷达（disk-radar）\n\n把磁盘变成可对话的空间资产：快照式空间解剖 + 增量「谁偷了我的磁盘」+ 开发垃圾猎手。\nAI 只读报告，删除永远是人手两步确认（移入隔离区 → 彻底删除）。\n\n## 它解决什么\n\n- **空间被谁吃了**：矩形树图 + Top 目录，点哪钻哪（实时细查任意目录）。\n- **最近被谁吃掉的**：每根周期快照，两次完整快照之间按目录归因增减——WizTree 类工具没有的时间维度。\n- **哪些能安全回收**：node_modules / target / dist / bin+obj / 各类缓存专项清点，**按兄弟文件锚定判定**（`target` 旁必须有 Cargo.toml、`bin/obj` 旁必须有 .sln/.csproj）——可解释、低误报；pnpm store 等全局缓存给专用建议。\n- **删得放心**：隔离区 = 同卷 rename（瞬间完成、可恢复）；「彻底删除」需二次确认；**AI 工具全部只读，没有删除类工具**——AI 负责「报告+解释+建议」，按钮永远在人手里。\n- **跨端**：数据全在 cap.kv，手机打开同一面板看到同一份磁盘状态与垃圾清单。\n\n## 跨域/通道设计（为什么没有跨域问题）\n\n| 层 | 方案 |\n|---|---|\n| 数据面 | 一切状态/快照/清单走 cap.kv（`diskrad.*`），面板/MCP/服务三方共享 |\n| 面板 | **零直连 fetch**——唯一通道是宿主 `__POLARIS_HOST_INVOKE__` → router_dispatch（桌面 Tauri IPC / 手机 Remote 同契约） |\n| 外网 | **零外网请求**——扫描是本地 fs 遍历（node 原生），不依赖 cap.http（避开 Remote 源 deny 陷阱） |\n\n## 组成\n\n- **后台服务**（`service/radar.js`，http 型 + `/__health`）：tick 消费命令键（先删后做）、执行扫描（预算+可取消+不中断降级）、快照/垃圾/state 持久化、隔离区机制、隔离区到期清理、保留清扫。零依赖。\n- **MCP**（`mcp/server.js`，stdio）：`disk_overview / disk_top / disk_growth / disk_junk / disk_scan_start / disk_report` 六工具，全只读。\n- **面板**（`src/` → `dist/panel.js`，React 18 零第三方库）：总览 / 空间地图（squarified 树图+下钻）/ 垃圾清理 / 历史（走势+归因）/ 设置五 Tab。\n\n## 扫描语义\n\n- 单次遍历同时产出：目录聚合树（记录 ",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
-          "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
-          "releasedAt": "2026-10-27"
-        }
-      ]
-    },
-    {
-      "id": "decision-journal",
-      "name": "谋定",
-      "version": "0.1.0",
-      "description": "把「决定」本身变成可复盘、可校准的资产：聊天里说「我选了 B，把握八成，三个月见分晓」即立此存照（含可检验预期+真实把握）；到期清单复盘打分（兑现/部分/落空/作废）；长期积累出你自己的判断力校准曲线——你自称 80% 把握的事，实际兑现率是不是 80%？Brier 分数量化直觉靠不靠谱，教训沉淀成经验卡供 AI 引用。四态生命周期（纠结中→存照→复盘/搁置），AI 工具内嵌决策日记方法论（逼出可检验预期，拒绝「会更好」式空话）。纯本地 cap.kv：零后台服务、零外网请求，面板与 AI 经同一计算核心（shared/decision-core）口径一致，桌面与手机看到同一份台账。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "decision",
-        "journal",
-        "calibration",
-        "reflection",
-        "panel",
-        "mcp"
-      ],
-      "icon": "CheckSquare",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/decision-journal",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/update.json",
-      "sha256": "97e96f268eff2774c4e7dfa6045869d68fec090a0226e067327eb81470f81946",
-      "tier": "beta",
-      "permissions": {
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 谋定（decision-journal）· 决策日记\n\n把「决定」本身变成可复盘、可校准的资产：立此存照（可检验预期+把握）→ 到期复盘打分 → 判断力校准曲线（分桶命中率 + Brier）→ 经验卡供 AI 引用。四态生命周期，AI 工具内嵌方法论。纯本地 cap.kv，零服务零外网。",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip"
-        }
-      ]
-    },
-    {
-      "id": "amber",
-      "name": "琥珀",
-      "version": "0.1.0",
-      "description": "网页封藏馆：把任意网页「琥珀化」成永久可读快照——收藏即封存（服务原生抓取根治跨域），抽出干净正文 + 标题/作者/发布时间（打分容器算法，非硬切片），BOM/响应头/meta 三级字符集探测连 GBK 老页面也不乱码；同一 URL 重复封存 = 快照层积（首封时间永留），封存失败永不摧毁旧快照。全文检索（BM25-lite）、金句摘录、标签星标；AI 经 MCP 直接「代你封存/检索/精读/摘录」，原文日后失效，琥珀是唯一遗产。桌面与手机 Web 三端同读。",
-      "author": "Polaris",
-      "category": "productivity",
-      "tags": [
-        "clipper",
-        "readlater",
-        "archive",
-        "search",
-        "panel",
-        "mcp"
-      ],
-      "icon": "Globe2",
-      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/amber",
-      "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip",
-      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/update.json",
-      "sha256": "220a2019eb25aab666ce579acfa832a7f9a1a8b484f1c3c1ac113b09264efed4",
-      "tier": "beta",
-      "permissions": {
-        "network": true,
-        "appConfigRead": true,
-        "aiToolAccess": true
-      },
-      "screenshots": [],
-      "readme": "# 琥珀 amber —— 网页封藏馆\n\n把任意网页「琥珀化」：一键把 URL 封存成**永久可读快照**。原网页日后失效（404/改版/付费墙），琥珀里的快照是你唯一的遗产。\n\n## 它解决什么问题\n\n- **跨域**：浏览器有同源策略，面板直接 fetch 任何第三方页面都会被拦死。本插件把抓取全部下沉到后台服务（Node 原生 fetch，无同源策略）——这是本插件跨域问题的根治点，与 feed-radar / page-sentinel / bookmark-dig 同一铁律。\n- **永久**：网页会失效、会被改写、会进付费墙。封存快照 = 内容本体入自己的库。\n- **找得回**：BM25-lite 全文检索覆盖封存正文的全部文字（不只是标题），支持中英文。\n- **AI 原生**：聊天里直接让 AI「把这篇存进琥珀」「我收藏的内容里有没有讲 XX 的」「读一下 [id] 给我总结」。\n\n## 与邻居插件的分工\n\n| 插件 | 收的是什么 | 节奏 |\n|---|---|---|\n| feed-radar 订阅雷达 | 「源」（RSS/Atom） | 周期性自动 |\n| page-sentinel 网页哨兵 | 「变化」 | 周期性盯梢 |\n| bookmark-dig 书签考古 | 「书签」 | 一次性体检 |\n| news-curator AI 刊物 | AI 拉给你的 | 每日一期 |\n| **琥珀** | **「页」（用户主动收藏）** | **一次性、存内容本体** |\n\n## 使用\n\n- **面板**：贴 URL → 封存（可带标签）→ 收藏列表 → 阅读视图。阅读时选中正文可「✂ 摘录选中文字」存金句。检索 Tab 全文搜索。手机 Web 同一份 cap.kv 数据。\n- **AI（MCP 7 工具）**：\n  - `amber_save {url, tags?, force?, waitSec?}` 封存（同 URL 幂等，重复=层积重封）\n  - `amber_list {filter?, tag?, host?, status?, limit?}` 翻收藏库\n  - `amber_search {q, limit?, waitSec?}` 全文检索语料库\n  - `amber_read {id|url, maxChars?}` 读封存全文（AI 精读主入口）\n  - `amber_mark {id, read?, star?, tagsAdd?, tagsRemove?}` 状态/标签\n  - `amber_quote {itemId, text, note?}` 存金句；`{itemId?, list:true}` 列摘录\n  - `amber_delete {id|url}` 删除（联动清理）\n\n## 封存质量\n\n- **",
-      "versions": [
-        {
-          "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip"
-        }
-      ]
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip"
     }
-  ]
+   ]
+  },
+  {
+   "id": "polaris.marketplace",
+   "name": "Polaris 插件商城",
+   "version": "1.2.1",
+   "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "marketplace",
+    "panel",
+    "mcp",
+    "installer"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
+   "sha256": "b760f08d5a463ae45ff92693987e94b47ce44c0c6ef9e18d01b04c45f8eaebe2",
+   "tier": "production",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true
+   },
+   "screenshots": [],
+   "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
+   "versions": [
+    {
+     "version": "1.2.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip"
+    }
+   ]
+  },
+  {
+   "id": "relay-devkit",
+   "name": "RELAY DevKit",
+   "version": "1.5.0",
+   "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。v1.5.0: 请求超时可配置（默认 120s，含无限制）；发送中手动停止（fetch/代理真实中断，cap.http 逻辑中断）；/__proxy 客户端断开关联修永久挂起",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "api-client",
+    "json",
+    "sql",
+    "database",
+    "dev-tools",
+    "panel",
+    "service"
+   ],
+   "icon": "Terminal",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.0/plugins/relay-devkit/relay-devkit.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
+   "sha256": "7de52b1b81a21b74e17261d3739fcbf714a3f6ba620515f6c08dca672fa4e1bd",
+   "tier": "production",
+   "permissions": {
+    "workspaceRead": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "# RELAY DevKit\n\n开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。\n\n## 功能\n\n- **API 请求客户端**：多 tab、环境变量、cURL 导入、跨域代理；面板模式宿主 cap.http 直发，携带 Cookie/UA/Referer 等禁发头，免 CORS 限制\n- **JSON 工具**：格式化/压缩/校验/转义，对象树与表格视图\n- **SQL 模板填充**：预编译参数还原，MyBatis 日志解析\n- **时间戳转换**：秒/毫秒/微秒自动识别，双向互转\n- **数据库管理**：MySQL 桥接（经本地后端）+ Supabase REST",
+   "versions": [
+    {
+     "version": "1.5.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.0/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.4.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.1/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.4.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.4.0/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.3.3",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.3.3/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.3.2",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.3.2/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.3.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.3.0/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.2.0/plugins/relay-devkit/relay-devkit.zip"
+    },
+    {
+     "version": "1.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.2.2/plugins/relay-devkit/relay-devkit.zip"
+    }
+   ]
+  },
+  {
+   "id": "relay-devkit-api",
+   "name": "RELAY API Client",
+   "version": "1.0.1",
+   "description": "API 客户端（relay-devkit 精简版，仅保留 API 工具）。请求恒经 Polaris 宿主 cap.http 能力转发（零本地服务，无 CORS / 混合内容 / 禁发头限制），AI 亦可通过 bus 总线调用。多 tab、环境变量、cURL 导入、响应表格 / 对象树 / 路径下钻与筛选。",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "api-client",
+    "http",
+    "rest",
+    "dev-tools",
+    "panel",
+    "zero-service"
+   ],
+   "icon": "Beaker",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit-api",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.1/plugins/relay-devkit-api/relay-devkit-api.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/update.json",
+   "sha256": "aabee6b39f92dbf07a27ceb2c7b2ab0ac7f440608865c8582db96a09a39b9d13",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "# RELAY API Client\n\nAPI 客户端（relay-devkit 精简版），仅保留 API 工具。\n\n## 功能\n\n- **多 Tab**：新建/关闭/重命名，脏标记提示\n- **请求编辑**：Method、URL（回车发送）、Params/Headers/Body、常用 Header 建议\n- **智能响应**：对象树/表格/路径下钻/增强过滤、多视图切换\n- **集合管理**：分组保存/搜索/载入\n- **环境变量**：{{baseUrl}}/{{变量}} 解析、环境管理器\n- **cURL 导入**：粘贴 curl 命令一键解析\n- **零本地服务**：请求经 Polaris 宿主 cap.http 能力转发，无 CORS/混合内容/禁发头限制，不启动任何 node 进程\n- **AI 可调用**：cap.http 已加入 bus 总线白名单，AI 亦可通过总线发起请求",
+   "versions": [
+    {
+     "version": "1.0.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.1/plugins/relay-devkit-api/relay-devkit-api.zip"
+    }
+   ]
+  },
+  {
+   "id": "workspace-manager",
+   "name": "工作区管理",
+   "version": "0.1.0",
+   "description": "工作区管理面板:分组/置顶/图标/备注/搜索高亮/排序切换/批量操作,窗口化虚拟列表支撑 100+ 工作区。所有变更委托主应用 workspaceStore,主应用工作区绑定自动同步。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "workspace",
+    "manager",
+    "panel",
+    "grouping",
+    "pin",
+    "search"
+   ],
+   "icon": "CheckSquare",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/workspace-manager",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/update.json",
+   "sha256": "0a375a52f4f6c9f44954e2e84ca1ca827bda2471175132ebd03a311913df6f9a",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "appConfigRead": true,
+    "appConfigWrite": true
+   },
+   "screenshots": [],
+   "readme": "# 工作区管理\n\n工作区数量增长后,下拉切换不再够用。本插件提供完整管理面板:\n\n- **组织**:分组/置顶/图标/备注\n- **检索**:搜索(名称/路径/备注)+高亮,排序切换\n- **规模**:窗口化虚拟列表,100+ 工作区流畅滚动\n- **批量**:多选删除/移入分组;导入导出 JSON 备份\n- **同步**:所有变更委托主应用 workspaceStore,主应用工作区绑定自动更新\n\n## 使用\n\n安装后 ActivityBar 出现\"工作区管理\"图标,或从顶部工作区下拉底部\"管理工作区\"进入。\n\n> 需主应用提供 __POLARIS_WORKSPACE_API__ 宿主支持。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip"
+    }
+   ]
+  },
+  {
+   "id": "image-recognition",
+   "name": "图片识别",
+   "version": "0.1.5",
+   "description": "智谱 GLM-4V 视觉模型图片识别 MCP 插件。提供 AI 图片识别工具（单张/批量/目录），支持本地图片（base64）和 URL 输入。含 API Key 配置与测试面板。v0.1.5：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域访问智谱 API 不再被 CORS 拦截（含测试连接）。v0.1.4：maxTokens 默认提至 4000（下限 1000），长文/多图分析结果不再被腰斩截断；商城补充演示截图。v0.1.3：新增 recognize_image_dir 批量识图 + images 多图数组。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "image",
+    "vision",
+    "glm",
+    "mcp",
+    "panel"
+   ],
+   "icon": "Activity",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/image-recognition",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
+   "sha256": "88b072f2ff15eee3e23817313325117619e62fb112471c02ee816a96bb55e266",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "appConfigWrite": true
+   },
+   "screenshots": [
+    "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/image-recognition/screenshots/demo-recognition.jpg",
+    "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/plugins/image-recognition/screenshots/demo-scene.jpg"
+   ],
+   "readme": "# 图片识别\n\n智谱 GLM-4V 视觉模型图片识别 MCP 插件。\n\n## 功能\n\n- **MCP 工具**：`recognize_image`，AI 可直接调用识别图片\n- **配置面板**：API Key / 模型 / 端点配置 + 测试连接\n- **试识别**：拖拽或选择本地图片，实时查看识别结果\n\n## 使用\n\n1. 安装后 ActivityBar 出现「图片识别」图标\n2. 在「配置」页填入智谱 API Key（https://open.bigmodel.cn 获取）\n3. 点击「测试连接」验证 API 可用\n4. AI 可通过 `recognize_image` 工具识别图片，或在「识别」页手动测试\n\n## 支持的模型\n\n| 模型 | 特点 |\n|------|------|\n| glm-4v-flash | 快速，~5s，直接给结论 |\n| glm-4.1v-thinking-flash | 带推理过程，过滤后取 `<answer>` 结论 |",
+   "versions": [
+    {
+     "version": "0.1.5",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip"
+    },
+    {
+     "version": "0.1.4",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.4/plugins/image-recognition/image-recognition.zip"
+    },
+    {
+     "version": "0.1.3",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.3/plugins/image-recognition/image-recognition.zip"
+    },
+    {
+     "version": "0.1.2",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.2/plugins/image-recognition/image-recognition.zip"
+    },
+    {
+     "version": "0.1.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.1/plugins/image-recognition/image-recognition.zip"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.0/plugins/image-recognition/image-recognition.zip"
+    }
+   ]
+  },
+  {
+   "id": "mimo-tts",
+   "name": "MiMo 语音合成",
+   "version": "0.1.1",
+   "description": "小米 MiMo-V2.5-TTS 系列语音合成（限时免费）：预置音色/文本设计音色/音色克隆。MCP 工具 + 配置面板 + 聊天音频卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发（面板/Web/移动端跨域不再被 CORS 拦截）；voiceclone 样本上限 10MB + DataURL 校验修复。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "tts",
+    "voice",
+    "mimo",
+    "audio",
+    "mcp",
+    "panel",
+    "chat-card"
+   ],
+   "icon": "Activity",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mimo-tts",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/update.json",
+   "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+   },
+   "screenshots": [],
+   "readme": "# MiMo 语音合成\n\n小米 MiMo-V2.5-TTS 系列语音合成插件（官方限时免费，无需付费额度）。\n\n## 功能\n\n- **MCP 工具**：`mimo_tts_synthesize`（预置音色）、`mimo_tts_voice_design`（文本设计音色）、`mimo_tts_voice_clone`（音色克隆）、`mimo_tts_list_voices`\n- **聊天卡片**：AI 合成后聊天区直接显示音频播放器，可试听/下载\n- **配置面板**：API Key / 端点 / 默认音色配置 + 测试连接\n- **音色工坊**：文本描述设计音色、上传样本克隆音色\n\n## 使用\n\n1. 安装后 ActivityBar 出现「语音合成」图标\n2. 在「配置」页填入小米 MiMo 开放平台 API Key（https://mimo.mi.com 获取）\n3. 点击「测试连接」验证 API 可用\n4. 让 AI 调用 `mimo_tts_synthesize` 合成语音，或在「合成」页手动输入文本试听\n\n## 预置音色\n\n| 音色 | 说明 |\n|------|------|\n| 冰糖 / 茉莉 | 中文女声 |\n| 苏打 / 白桦 | 中文男声 |\n| Mia / Chloe | 英文女声 |\n| Milo / Dean | 英文男声 |\n\n> 提示：官方标注 TTS 限时免费，请以 https://mimo.mi.com 公告为准。",
+   "versions": [
+    {
+     "version": "0.1.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
+     "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.0/plugins/mimo-tts/mimo-tts.zip"
+    }
+   ]
+  },
+  {
+   "id": "agnes",
+   "name": "Agnes 多模态",
+   "version": "0.1.1",
+   "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域不再被 CORS 拦截。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "image",
+    "video",
+    "generation",
+    "mcp",
+    "panel"
+   ],
+   "icon": "Film",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
+   "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "appConfigWrite": true
+   },
+   "versions": [
+    {
+     "version": "0.1.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
+     "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/agnes.zip",
+     "sha256": "c6270f9ef39f258c7a035b9cffcf1f82a25d4188e79c758ab0be1ac5c6f739bb"
+    }
+   ]
+  },
+  {
+   "id": "animation-3d",
+   "name": "3D 建模工作室（Blender）",
+   "version": "0.2.0",
+   "description": "Polaris 内的 AI 3D 建模插件：通过 mcp-for-blender 桥接本地 Blender（socket 9876），AI 可直接执行 bpy 代码建模型、查场景、截图自检。含 Blender 启动脚本与未连接提示。",
+   "category": "ai",
+   "tags": [
+    "3d",
+    "blender",
+    "mcp",
+    "modeling"
+   ],
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "workspaceRead": true
+   },
+   "sha256": "0342b48816b1f7d539724f884f18f20d8e456ad51449827943c4e3d7d36e2cdc",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-3d",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-3d-v0.2.0/plugins/animation-3d/animation-3d.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-3d/update.json",
+   "versions": [
+    {
+     "version": "0.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-3d-v0.2.0/plugins/animation-3d/animation-3d.zip"
+    }
+   ]
+  },
+  {
+   "id": "animation-2d",
+   "name": "2D 手绘动画（p5.brush）",
+   "version": "0.1.1",
+   "description": "Polaris 内的 AI 2D 手绘逐帧动画插件（p5.brush 水墨风，基于 ClaudeAnimationBase 去品牌化自研）。AI 可通过 MCP 工具渲染静帧/连续帧/联系方式图/出视频 + GLM-4V 质检；活动栏面板可触发渲染并预览帧。",
+   "category": "ai",
+   "tags": [
+    "2d",
+    "animation",
+    "p5brush",
+    "mcp",
+    "panel"
+   ],
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+   },
+   "sha256": "d92b8f6d6dcb384f2c359e163ae244ccc78f72fbfb2a1efc248576050ab29910",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
+   "versions": [
+    {
+     "version": "0.1.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.0/plugins/animation-2d/animation-2d.zip"
+    }
+   ]
+  },
+  {
+   "id": "douyin-publish",
+   "name": "抖音自动发布",
+   "version": "0.1.0",
+   "description": "抖音视频自动发布流水线：发布编排（文件登记/原生对话框注入/结果记录，幂等）+ 声音信息收集（ffprobe 音频元数据归档）。配合 Polaris 内置浏览器由 AI 执行发布动作。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "douyin",
+    "publish",
+    "automation",
+    "audio",
+    "mcp",
+    "video"
+   ],
+   "icon": "Upload",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/douyin-publish",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/update.json",
+   "sha256": "74cbdad2bfd0c9481e61c633468156e3e12695e838b620853c7ddad82815211d",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true,
+    "network": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "workspaceRead": true,
+    "workspaceWrite": true
+   },
+   "screenshots": [],
+   "readme": "# 抖音自动发布\n\n抖音视频自动发布流水线的辅助编排层（MCP 工具），配合 Polaris 内置浏览器由 AI 执行完整发布流程。附带**声音信息收集**：ffprobe 提取音频元数据归档。\n\n## 工具\n\n- `douyin_prepare_publish`：登记视频（幂等，sha256 去重）\n- `douyin_pick_file`：注入原生文件对话框（参数化 ps1，实时枚举 hwnd）\n- `douyin_publish_status`：查询/恢复状态（断点续跑）\n- `douyin_record_result`：登记 item_id/url/状态\n- `douyin_collect_audio`：声音信息收集（ffprobe + EBU R128）\n- `douyin_list_published`：发布记录列表\n\n## 声音信息收集\n\n每次发布可附加音频元数据：有无音轨/编码/采样率/时长/分辨率/响度 + 声音来源与音色（audioSource/voiceId），服务配音一致性追踪。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip"
+    }
+   ]
+  },
+  {
+   "id": "battle-mode",
+   "name": "Battle Mode",
+   "version": "0.1.1",
+   "description": "为学习而战的对抗式辩论：角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MCP 工具（battle_setup/roll/prompt/report）让 AI 在对话里直接开战，面板可操作可发战报到聊天。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "battle",
+    "debate",
+    "learning",
+    "panel",
+    "divergent-thinking",
+    "mcp"
+   ],
+   "icon": "Swords",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/battle-mode",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/update.json",
+   "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "Battle Mode：为学习而战。角色卡 + 世界观跳伞 + 维度骰子 + AI主持提示词。MVP：纯前端战斗台 + MCP 工具（battle_setup 立题、battle_roll 掷骰、battle_prompt 生成主持人/辩手指令、battle_report 战报）——AI 在对话里就能直接开一场对抗式辩论，面板负责可视化与战报持久化。",
+   "versions": [
+    {
+     "version": "0.1.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
+     "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
+     "description": "v0.1.1：面板与 MCP 细节修复"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.0/plugins/battle-mode/battle-mode.zip",
+     "sha256": "a96811c979b9021dec0f6f2a6f88f9b4194d9fb6071cfb4a5a8ab675bd07cc05",
+     "description": "MVP：纯前端战斗台 + MCP 工具（battle_setup/roll/prompt/report），AI 对话内直接开战"
+    }
+   ]
+  },
+  {
+   "id": "capability-runtime",
+   "name": "AI 能力自拓展运行时",
+   "version": "1.0.0",
+   "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "runtime",
+    "capability",
+    "modular",
+    "overlay"
+   ],
+   "icon": "Puzzle",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/capability-runtime",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/update.json",
+   "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。",
+   "versions": [
+    {
+     "version": "1.0.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
+     "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
+     "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。"
+    }
+   ]
+  },
+  {
+   "id": "news-curator",
+   "name": "AI 每日刊物",
+   "version": "0.3.0",
+   "description": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "news",
+    "daily",
+    "curation",
+    "panel",
+    "mcp",
+    "voice"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/news-curator",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
+   "sha256": "2f8299d3fa67cf15cb43d19a1ce4efab4d78a4a1dcc549dd2355f5bfa38b7a05",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "aiToolAccess": true,
+    "network": true
+   },
+   "screenshots": [],
+   "readme": "AI 每日刊物：偏好驱动的每日内容刊物（基金/技术/时事/创意/学习），面板阅读 + 真实语音播报（mimo-tts 合成缓存）+ 历史日报回看 + 阅读反馈回流。AI 用内置浏览器抓取数据源，经 MCP 写入 cap.kv，面板只读展示。零插件服务。",
+   "versions": [
+    {
+     "version": "0.3.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip"
+    },
+    {
+     "version": "0.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.2.0/plugins/news-curator/news-curator.zip",
+     "sha256": "b2ee4f88c7e5ed0a87da236e24e4902430849091aefe77bc1bc3e56e98723d5a",
+     "description": "v0.2.0：真实语音播放/合成（mimo-tts 缓存）+ 历史日报页 + news_save_voice/news_list_daily MCP 工具"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/news-curator.zip",
+     "sha256": "4c6a15e6340ad97dab648e1d2840206990b13545682edea6c736748bf425582c",
+     "description": "v0.1.0：MVP — 面板（宿主桥通道）+ 9 个 news_* MCP 工具"
+    }
+   ]
+  },
+  {
+   "id": "opts.zcode-bridge",
+   "name": "ZCode 会话桥接",
+   "version": "0.1.2",
+   "description": "桥接已安装的 ZCode 桌面版：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话，会话落盘后桌面端可见；同时把 ZCode 注册为 Polaris 主对话引擎（思考/工具流适配）。引擎权限默认 yolo，可用 ZBRIDGE_DEFAULT_MODE 环境变量收紧。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "zcode",
+    "engine",
+    "bridge",
+    "session",
+    "mcp",
+    "panel"
+   ],
+   "icon": "GitPullRequest",
+   "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
+   "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
+   "tier": "beta",
+   "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "network": true
+   },
+   "screenshots": [],
+   "versions": [
+    {
+     "version": "0.1.2",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
+     "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
+    }
+   ],
+   "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
+  },
+  {
+   "id": "data-ark",
+   "name": "数据方舟",
+   "version": "0.1.0",
+   "description": "Polaris 数据根的备份/恢复引擎：内容寻址去重（CAS+gzip，不变文件全库只存一份）、增量快照、GFS 保留轮换+引用 GC、单写者租约（双实例自动主备）、崩溃恢复、热文件协议、磁盘预检与库上限降级、错过调度补跑一次。恢复只落暂存目录，引擎不存在覆盖数据根的代码路径。AI 经 7 个 ark_* 工具对话式管理；面板跨端可查状态/发起备份/恢复文件。",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "backup",
+    "restore",
+    "data",
+    "snapshot",
+    "cas",
+    "incremental",
+    "gfs",
+    "safety",
+    "mcp",
+    "panel"
+   ],
+   "icon": "Files",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/data-ark",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/data-ark.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/update.json",
+   "sha256": "183b6468b4bd4aaf6e21fb9e396e2b96bcf5c479ba5af2b2ca6613f1399f6cf8",
+   "tier": "beta",
+   "permissions": {
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 数据方舟\n\nPolaris 数据根的备份/恢复引擎——会话、cap.kv、审计链、配置的保险。\n\n- 服务型插件：后台常驻（租约选举单写者、健康端点、自落盘日志轮转），随应用自启\n- 生产级内核：CAS 去重 / 增量三级判定 / 热文件协议 / tmp+rename 原子落盘 / GFS 轮换 / 错过补偿不风暴 / 库上限降级\n- 恢复只进暂存目录，引擎无任何覆盖数据根的代码路径；SQLite 恢复前须退出应用（UI/工具文案明示）\n- AI 工具 7 个：status / backup_now / list_snapshots / list_files / verify / restore / settings\n- 面板四 Tab：快照（备份/校验/回收）/ 恢复（检索+勾选+暂存）/ 服务（状态+事件流）/ 设置（范围/保留/调度/上限）\n\n> 实测：1.53GB 数据根首份快照存 607MB；第二份增量仅重哈希 4 个文件；恢复文件与活文件逐字节一致。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/data-ark.zip"
+    }
+   ]
+  },
+  {
+   "id": "clip-relay",
+   "name": "接力板",
+   "version": "0.1.0",
+   "description": "跨设备文本接力板：桌面复制的内容（链接/报错栈/口令），手机上打开 Polaris 一键取用；AI 经 relay_push 直接推送到所有设备。URL 推送由后台服务抓取网页标题摘要（外网抓取下沉服务原生执行，跨域根治），条目显示真实标题而非裸链接。纯 cap.kv 单事实库三端一致；置顶片段、未读角标、保留策略自动清理、SSRF 守卫拒绝内网抓取。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "clipboard",
+    "sync",
+    "multi-device",
+    "panel",
+    "mcp"
+   ],
+   "icon": "ClipboardList",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/clip-relay",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/update.json",
+   "sha256": "cc2323461c78f3eed7fc03feaa5f85bcda4620738ed8831484434764c0ff4908",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 接力板\n\n跨设备文本接力：桌面复制的东西，手机上打开 Polaris 一键取用；AI 也能经 relay_push 直接推送。\n\n- 桌面 ↔ 手机 ↔ Web 三端同一块板子（cap.kv 单事实库，3s 轮询）\n- 纯链接推送自动抓取网页标题摘要（服务原生 fetch，浏览器同源策略管不到；SSRF 守卫拒绝内网地址）\n- MCP 工具 4 个（relay_push/list/read/clear）：聊天里说「把这个链接发到我手机上」\n- 置顶常用片段永留且不占保留名额；条数/天数保留策略自动清理\n- 手机 http 访问时复制自动回退手动全选弹窗（浏览器安全模型约束，如实提示）\n\n> 需 node >= 18（服务用全局 fetch）。详见插件 README。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip"
+    }
+   ]
+  },
+  {
+   "id": "page-sentinel",
+   "name": "网页哨兵",
+   "version": "0.1.0",
+   "description": "盯网页变化的后台哨兵：价格/库存/放号/考位/GitHub release/文档更新。抓取全部下沉到后台服务原生执行——浏览器有同源策略而它没有，天然解决插件抓外网页面的跨域问题；面板与 AI（MCP 工具）经 cap.kv 共享同一事实库，桌面与手机 Web 看到一致状态。支持 CSS 选择器/正则/JSON 路径/响应头四种抽取与变化/关键词/数值阈值三种告警条件，行级 diff 展示，事件可一键发给 AI 分析。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "monitor",
+    "watcher",
+    "diff",
+    "http",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Target",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/page-sentinel",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/update.json",
+   "sha256": "a554f1b9976b128aea5353248438905fcb0965a4abc1b2c6129504a3a3b178fd",
+   "tier": "beta",
+   "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 网页哨兵（page-sentinel）\n\n> 盯网页变化的后台哨兵：**价格 / 库存 / 补货 / 放号 / 考位 / 演出票 / GitHub release / 文档更新 / API changelog**——变化了、命中了、恢复了，才来找你。\n\n- 面板（ActivityBar → 🎯 网页哨兵）：管理目标、看行级 diff、事件流、服务状态\n- 后台服务：按间隔原生抓取 + 抽取 + diff + 条件评估（**唯一的抓取路径**）\n- MCP 工具（7 个 `sentinel_*`）：在聊天里直接让 AI 登记目标、试抓、查事件、分析变化\n\n## 为什么它能做浏览器做不了的事（跨域问题的解法）\n",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip"
+    }
+   ]
+  },
+  {
+   "id": "feed-radar",
+   "name": "订阅雷达",
+   "version": "0.1.0",
+   "description": "RSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取（ETag 条件请求、退避、礼貌间隔），文章入库 cap.kv 供桌面/手机/Web 三端同读；AI 经 radar_unread/radar_read_article 直接「读报」——看未读、拉正文、做总结。支持分组、星标、OPML 导入导出、保留策略清扫。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "rss",
+    "atom",
+    "reader",
+    "feed",
+    "panel",
+    "mcp"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/feed-radar",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/update.json",
+   "sha256": "eb90d94c4be188c3acb89f84883e1c92c61a39a82a9fe9899b988f99324b1672",
+   "tier": "beta",
+   "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 订阅雷达 feed-radar\n\nRSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取，文章入库 cap.kv 供桌面 / 手机 / Web 三端同读；AI 经 MCP 工具直接「读报」——看未读、拉正文、做总结。\n\n## 架构（三方一库）\n\n```\n┌─ 面板 Panel.tsx ──┐   ┌─ MCP server.js ──┐\n│  文章流/订阅源/设置 │   │  7 个 radar_* 工具 │\n└────────┬─────────┘   └────────┬─────────┘\n         │  宿主 invoke → router_dispatch → cap.kv（radar.* 键空间）\n         ▼                      ▼\n┌──────────────────────────────────────────┐\n│  service/radar.js —— 唯一抓取/写状态权威    │\n│  ETag 条件请求 · 退避 · 命令信箱 · 保留清扫  │\n└──────────────────┬───────────────────────┘\n                   ▼  原生 fetch（无同源策略）\n              外网 RSS/Atom 与文章正文\n```\n\n- **跨域铁律**：全部外网抓取只发生在后台服务进程（Node 原生 fetch）。面板与 MCP 永不直接 fetch 外网——单一抓取路径，无第二条写法。\n- **单事实库**：面板 / MCP / 服务三方读写同一份 cap.kv `radar.*` 键空间，桌面与手机 Web 看到一致状态。\n- **命令信箱**：面板/MCP → 服务的唯一触发通道是写 `radar.cmd.*` 命令键，服务消费即删（refreshAll / refreshFeed / pull / forget / purge 五种）。\n- **缓存失效信号**：feed.def 的 `rev`（任何写方递增）。面板靠「rev 变化 → 重读该源文章键」做增量加载，另有 90s 一次全量刷兜底。\n- 服务生命周期由宿主 PluginServiceManager 管理（type=http + `/__health`；桥不可达时健康端点仍返回 200，避免误杀重启循环，降级状态见 `radar.meta`）。\n\n## 键空间契约（权威描述，三方一致）\n\n| 键 | 写者 | 内容 |\n|---|---|---|\n| `radar.feed.<fid>` | 面板/MCP 写定义；服务写运行态字段 | 订阅源定义（id 由 URL 的 sha256 前 10 位派生，重复添加幂等） |\n| `radar.article.<fid>.<aid>` | 服务写新条目；面板/MCP 写 read/star 并 bump feed.rev | 文章元数据（aid 由 guid/link 派生，跨重复抓取去重） |\n| `radar.content.<aid>` | 服务写 | 已抓取的正文（ok/text 或 error） |\n| `radar.settings` | 面板/MCP 写，服务读 | 全局设置（pollMin/retentionDays/maxPerFeed/readKeepDays/contentKeepHours） |\n| `radar.meta` | 服务写（60s 心跳） | 服务状态（version/pid/bridge/feeds/unreadSum…） |\n| `radar.cmd.*` | 面板/MCP 写 → 服务消费即删 | 命令信箱（refreshAll.<n> / refreshFeed.<fid> / pull.<aid> / forget.<fid> / purge.<n>） |\n\n`fid = 'f' + sha256(url 小写去空白).slice(0,10)`，`aid = 'a' + sha256(fid|guid或link).slice(0,12)`——面板、MCP、服务用同一份 `shared/sha256.js` 与同一规则，保证键名跨方一致。\n\n## MCP 工具（AI 读报入口）\n\n| 工具 | 用途 |\n|---|---|\n| `radar_add_feed` | 添加订阅源（同一 URL 幂等），可带显示名/分组/独立间隔 |\n| `radar_list_feeds` | 列出全部订阅源（未读数/条数/抓取状态），可过滤 |\n| `radar_remove_feed` | 删源并联动清理其全部文章与正文（星标也删——删除针对整个源） |\n| `radar_refresh` | 触发立即抓取（全部或单源），可等待完成 |\n| `radar_unread` | 读未读/最新文章流（默认最近 3 天未读，可过滤/加长摘要） |\n| `radar_read_article` | 读某篇完整正文（缺失时写 pull 命令触发服务抓取并轮询） |\n| `radar_mark` | 标记已读/未读/星标 |\n\n## 抓取与保留策略\n\n- 条件请求：ETag / If-Modified-Since，源未更新 304 零成本回跳；\n- 礼貌间隔：同一主机两次抓取至少 10s（用户手动刷新 3s）；连续失败指数退避（×2 → 上限 ×4）；\n- 保留清扫：文章天数上限 + 单源条数上限（**星标永留**）、正文按时数清理、孤儿正文回收、过期死命令回收（>1h）。\n\n## 构建 / 测试 / 打包\n\n```bash\nnpm install && npm run typecheck   # 面板类型检查（tsc --noEmit）\nnpm run build                      # 面板 bundle → dist/panel.js（esbuild，external react）\nnode test/run-tests.mjs            # 离线单测（零依赖，不需 Polaris 运行）\nnode test/smoke-real.mjs           # 真实桥冒烟（需本机 Polaris 在跑，自清理）\nnode ../../scripts/pack.js plugins/feed-radar   # 打 zip + sha256\n```\n\n## 已知边界\n\n- 正文抽取是 readability-lite：JS 渲染的空壳页会诚实报错（提示盯它的 RSS/JSON 接口），不臆造内容。\n- 全文抽取 < 400 字符时回退全文去噪兜底（含 `<title>` 文本）。\n- 移动端面板经宿主统一 invoke 通道（自动取服务地址 + Bearer token），与桌面同份数据。\n",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip"
+    }
+   ]
+  },
+  {
+   "id": "pocket-ledger",
+   "name": "口袋账本",
+   "version": "0.2.0",
+   "description": "对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查。面板四 Tab（记账/明细/统计/设置）+ 分类/月预算（AI 记账即时提醒超支）+ 逐日柱状图 + CSV/JSON 导出。纯本地账本（cap.kv，数据不出设备）：零后台服务、零网络请求，符合插件规范推荐的无状态模式；面板与 AI 经同一计算核心（shared/ledger-core）保证口径一致；桌面与手机 Web 看到同一本账，双端并发记账按账单 id 幂等去重。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "ledger",
+    "expense",
+    "kv",
+    "panel",
+    "mcp"
+   ],
+   "icon": "ClipboardList",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-ledger",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
+   "sha256": "4d844cc19ddc034fc4736c67aabc0ce43cca242f3ebfeb27ed791349290d84fc",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 口袋账本（pocket-ledger）\n\n> 对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查，「这个月哪个分类超预算了」就有答案。\n\n- 面板（ActivityBar → 📋 口袋账本）：记账 / 明细 / 统计 / 设置 四 Tab\n- AI 工具（MCP 5 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账\n- **纯本地**：数据只在 cap.kv（`ledger.*`），零后台服务、零网络请求、不出设备\n\n## 设计取舍（与 page-sentinel 互补）\n",
+   "versions": [
+    {
+     "version": "0.2.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
+    }
+   ]
+  },
+  {
+   "id": "memoryforge",
+   "name": "记忆熔炉",
+   "version": "0.1.0",
+   "description": "把读过的、聊过的、学过的，炼成记得住的。AI 对话式制卡：粘贴一段笔记、给一个文章 URL、或直接说「把刚才聊的 OAuth 流程出 10 张卡」，AI 提炼问答卡入库；面板按 SM-2 间隔重复排期复习（重来 10 分钟回队、毕业卡间隔按 ease 拉长），配每日新卡/复习限额、7 天到期预报、30 天留存率与连击。网页抓取由 MCP 进程原生 fetch 执行，天然绕开浏览器同源限制（面板零跨域请求）；数据只存本机 cap.kv memoryforge.*，桌面与手机 Web 同步同一副牌，通勤路上也能复习。面",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "flashcard",
+    "sm2",
+    "memory",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Beaker",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/memoryforge",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/memoryforge.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/update.json",
+   "sha256": "5a401cb2df5245e29dd86c24a6f5e8426997544a7168ceb6561f420972e7efd7",
+   "tier": "beta",
+   "permissions": {
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 记忆熔炉 memoryforge\n\n> 把读过的、聊过的、学过的，炼成记得住的。\n> AI 对话式制卡 + SM-2 间隔重复复习 + 跨端同步的本地记忆卡库。\n\n## 这是什么\n\n大部分知识学过就忘——不是没学会，是从来没有「在快忘的时候被再考一次」。记忆熔炉把「记住」变成一个每天两分钟的闭环：\n\n1. **制卡**：把任何内容丢给 AI——聊天里刚讨论完的 OAuth 流程、一篇文档 URL、一段单词表——AI 提炼成「一卡一原子知识点」的问答卡（`memoryforge_import_cards`）。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/memoryforge.zip"
+    }
+   ]
+  },
+  {
+   "id": "pocket-host",
+   "name": "口袋主机",
+   "version": "0.1.0",
+   "description": "把运行 Polaris 的电脑装进口袋：后台服务持续采样本机 CPU/内存/磁盘/监听端口/进程，面板与 AI（MCP 工具）经 cap.kv 共享同一事实库——手机上打开同一面板，看到的永远是这台主机的实时状态。支持 CPU/内存/磁盘余量阈值告警（边沿触发不轰炸）、进程与端口一键定位、按端口/PID 安全结束进程（执行时重新解析端口归属，防 PID 复用误杀）。服务零外网请求，面板全部数据走宿主 invoke 通道，桌面/Web/手机三端无跨域问题。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "monitor",
+    "system",
+    "host",
+    "port",
+    "process",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Activity",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-host",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/pocket-host.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/update.json",
+   "sha256": "2756bde7fe25960492ef7d2d2ae88cacee708ebca95646d63aa6e6e521e84bc6",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 口袋主机（pocket-host）\n\n> 把运行 Polaris 的电脑装进口袋：手机上打开同一面板，看到的就是这台主机的实时状态——CPU / 内存 / 磁盘 / 监听端口 / 进程，还能让 AI 直接回答「9827 端口被谁占了」「把失控的 node 杀掉」。\n\n- **面板**（ActivityBar → 📟 口袋主机）：概览（双仪表 + 走势 + 磁盘条）、进程、端口、动态、设置 五 Tab\n- **后台服务**：本机指标的唯一采样权威（CPU/内存快采样、进程/端口慢采样、磁盘 statfs），阈值告警边沿触发\n- **MCP 工具**（6 个 `host_*`）：聊天里直接「电脑现在什么状态」「释放 9827」「看看刚才是不是卡过」\n- **跨端**：桌面 / Web / 手机打开同一面板看到同一份快照——数据只有 cap.kv 这一个事实库\n\n## 为什么是它",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/pocket-host.zip"
+    }
+   ]
+  },
+  {
+   "id": "paper-radar",
+   "name": "论文雷达",
+   "version": "0.1.0",
+   "description": "每天上百篇 arXiv 新论文，你只该读十篇。关注主题（LLM Agent / 推理 / 代码生成…），后台服务原生抓取 arXiv API 并按关键词做标题×3/摘要×1 相关性评分，加一句话解读生成「今日值得读」榜单；AI 对话中可直接检索 arXiv、精读论文、收藏、管理主题——搜索走 cap.http 宿主统一转发，无浏览器跨域，请求可审计；面板「今日 / 收藏 / 主题」三页签，数据全部落在 cap.kv，桌面与手机 Web 跨端同步。评分是确定性关键词匹配，不是黑盒，可解释可调整。",
+   "author": "Polaris",
+   "category": "ai",
+   "tags": [
+    "paper",
+    "arxiv",
+    "research",
+    "ranking",
+    "mcp",
+    "panel",
+    "kv",
+    "cap-http"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/paper-radar",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/paper-radar.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/update.json",
+   "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6",
+   "tier": "beta",
+   "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 论文雷达 paper-radar\n\n> 每天上百篇 arXiv 新论文，你只该读十篇。配置关注主题，雷达自动生成「今日值得读」——AI 帮你筛，AI 帮你想理由。\n\n- 后台服务原生抓取 arXiv API，确定性关键词评分（标题×3 / 摘要×1）+ 一句话解读\n- AI 搜索经 cap.http 宿主转发，无浏览器跨域，请求可审计\n- 面板与 AI 经 cap.kv 共享同一榜单与收藏，桌面/手机 Web 跨端同步",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/paper-radar/paper-radar.zip",
+     "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6"
+    }
+   ]
+  },
+  {
+   "author": "Polaris",
+   "category": "productivity",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "tier": "beta",
+   "screenshots": [],
+   "versions": [
+    {
+     "version": "0.1.1",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip"
+    },
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip",
+     "sha256": "2f31379cf24c3b1eb46131250acebda03e88cec89480c3867d9893957786a092"
+    }
+   ],
+   "id": "plugin-forge",
+   "name": "插件工坊",
+   "version": "0.1.1",
+   "description": "Polaris 插件开发一站式工坊：权威平台知识库（16 主题代码级核实，纠正官方文档与代码矛盾处）+ plugin.json 体检器（20+ 条实测规则，图标白名单/健康检查/发布 URL 陷阱）+ 生产级脚手架（自发现桥/服务 tick/MCP/冒烟模板一键生成，MCP 可直接落盘）+ AI 工具 forge_*——AI 建插件先拉知识再动手，不再每次重新考古项目。纯本地零服务。",
+   "tags": [
+    "devkit",
+    "knowledge",
+    "lint",
+    "scaffold",
+    "mcp"
+   ],
+   "icon": "Beaker",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/plugin-forge",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/update.json",
+   "sha256": "eefb54772156d0ea72ef39d451893619f57bb9e51f8652748491bd041fb0dc38",
+   "permissions": {
+    "aiToolAccess": true
+   },
+   "readme": "# 插件工坊（plugin-forge）\n\n> 治本「每次建插件都要重新分析项目」：把散落在官方文档（部分与代码矛盾）、六个已交付插件与历届踩坑实录里的插件开发知识，逐条代码级核实后收编成结构化知识库，配清单体检器与生产级脚手架。AI 收到「帮我创建插件」先拉 `forge_overview`，秒级拿到全部平台契约，不再考古。\n\n## 面板（ActivityBar → ⚗️ 插件工坊）\n\n- **知识库**：16 个主题全文（平台总览 / manifest 规范 / 面板 / 跨域治理三层 / 服务 / 服务自举 start / 单写者 / 键空间 / MCP / cap 速查 / 测试 / 发布 / UI / 生产级清单 / 实测坑总表 / AI 工作流）。支持全文搜索（与 MCP `forge_search` 同口径）。\n- **体检**：粘贴或上传 plugin.json → 20+ 条实测规则（图标 18 白名单、服务健康检查、MCP 声明、permissions 已知集、发布 URL @tag 陷阱……），每条问题给修复建议。\n- **脚手架**：填 id/名称/图标/服务/MCP 开关 → 生成 15 个文件的完整骨架（自发现桥 kvclient、服务 tick 骨架、MCP stdio、面板、单测、真实桥冒烟模板、README 键空间契约表），可预览/复制；落盘走 MCP 工具（面板无 fs，手机端复制自动回退手动弹窗）。\n\n## AI 工具（MCP 5 个 `forge_*`）\n\n| 工具 | 用途 |\n|---|---|\n| `forge_overview` | **建插件请求的第一个调用**：平台速览 + 16 主题目录 |\n| `forge_search` | 全文检索（「cap.http 手机上能用吗」这类具体疑点秒答） |\n| `forge_topic` | 读整个主题（含可照抄的代码契约） |\n| `forge_lint` | 体检清单（传 json 字符串或文件路径） |\n| `forge_scaffold` | 生成骨架；`dir + confirm:true` 直接落盘（只新建不覆盖，非空目录拒绝） |\n\n## 架构\n\n```\n面板（React bundle；知识库/模板经 esbuild text loader 内联）\n  └─ 纯本地：零服务、零外网；设置存 cap.kv forge.settings\nMCP server（stdio；fs 读同一份 shared/ 文件 → 面板与 AI 永远同口径）\n```\n\nshared core 模式：体检规则引擎 `shared/forge-core.js` 面板与 MCP 共用，两边结论永远一致。\n\n## 键空间契约（权威表）\n\n| 键 | 写者 | 读者 | 说明 |\n|-"
+  },
+  {
+   "author": "Polaris",
+   "category": "productivity",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "tier": "beta",
+   "screenshots": [],
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip",
+     "sha256": "1e832e11738d86e1273253ff5e4b9f4f6467e36926cc86ad52a70c0530799652"
+    }
+   ],
+   "id": "bookmark-dig",
+   "name": "书签考古",
+   "version": "0.1.0",
+   "description": "把积灰的浏览器书签变成可考古、可体检、可复活的活资产：导入 Netscape 书签导出（Chrome/Edge/Firefox 通用）→ 后台服务并发体检每条链接（原生 fetch 跨域根治，SSRF 守卫拒内网）→ URL 规范化去重/域名分类/死链按域聚合 → 死链清理与「今天挖出」每日重访。AI 经 dig_* 八工具直接检索/清理/复活书签库。数据全在本地 cap.kv 分块存储，单写者幂等，断点续跑。",
+   "tags": [
+    "bookmarks",
+    "link-checker",
+    "health",
+    "resurface",
+    "mcp"
+   ],
+   "icon": "BookOpen",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/bookmark-dig",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/update.json",
+   "sha256": "1e832e11738d86e1273253ff5e4b9f4f6467e36926cc86ad52a70c0530799652",
+   "permissions": {
+    "aiToolAccess": true
+   },
+   "readme": "# 书签考古（bookmark-dig）\n\n> 把积灰的浏览器书签变成可考古、可体检、可复活的活资产。核心循环：**导入 → 体检 → 去重/分类 → 死链清理 → 每日挖出重访**。\n\n## 功能\n\n- **导入**：浏览器书签管理器 → 导出书签（HTML，Chrome/Edge/Firefox 通用 Netscape 格式）→ 面板选文件或桌面端给绝对路径（AI 可用 `dig_import_path`）。解析含文件夹层级、秒级时间戳、HTML 实体；忽略 ICON。\n- **体检**：后台服务并发检查每条链接（默认并发 6、超时 12s、GET 限读 64KB），状态分为存活/重定向/4xx/5xx/域名失效/超时/证书错误/内网拒检/非法 URL；单条失败重试计数，不堵队列；运行清单持久化，服务重启断点续跑。\n- **去重**：URL 规范化（去跟踪参数 utm_*/fbclid/gclid/spm、去碎片/默认端口/尾斜杠、参数排序）后按 normKey 幂等合并；保最早收录时间、更完整标题。\n- **分类**：域名启发式（代码仓库/技术社区/文档/视频/论文/…）；AI 可用 `dig_tag` 覆盖标签。\n- **死链治理**：死链按域名聚合报告；「只重查死链」区分暂时抽风与真死；删除必须 confirm。\n- **今天挖出**：从活书签按「沉睡时长 × 书龄」加权随机捞一条重访并记录——考古的意义不是清单，是重逢。\n- **AI 考古**（MCP 8 工具 `dig_*`）：stats/search/dead/resurface/import_path/check/remove/tag。读路径不依赖服务在线（直接读 kv 分块）。\n\n## 架构（跨域根治点）\n\n```\n面板（React bundle，宿主 invoke 通道；绝不直接 fetch 外网）\n  └─ cap.kv bmd.* 分块存储 ←→ 后台服务（并发体检引擎，原生 fetch + SSRF 守卫）\n                                  └─ MCP server（AI 工具层，stdio；读路径直连 kv）\n```\n\n## 键空间契约（权威表——三方一致，改动须同步）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `bmd.settings` | 面板/MCP | 服务 | 全局设置（30s 热读） |\n| `bmd.meta` | 服务 | 面板/MCP | 心跳（60s）+ 库概况 |\n| `bmd.rec.<n>` | **服务单写** | 面板/MCP | 记录分块（≤200 条/块；键数纪律见插件工坊） |\n| `bmd.run` | 服务 | 面板/MCP | 当前运行清单（断点续跑） |\n"
+  },
+  {
+   "id": "pocket-drop",
+   "name": "口袋快传",
+   "version": "0.1.0",
+   "description": "局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。手机浏览器同源直连自家服务（上传/下载/拍照即传，零跨域）；桌面面板数据走宿主 invoke 读 cap.kv 投影、大文件 127.0.0.1 直传；AI 经 MCP drop_send 把本地文件一键投给手机、drop_save 把手机传来的文件落盘。零云零账号零外网请求，PIN 门禁 + TTL 自动清理 + 容量上限。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "file-transfer",
+    "lan",
+    "qr",
+    "mobile",
+    "mcp"
+   ],
+   "icon": "Files",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-drop",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/update.json",
+   "sha256": "7246799a3c5c1f0ccf31b130388f7739dca541980a8587da94e82ed40a8a6936",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 口袋快传（pocket-drop）\n\n> 局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。电脑上的文件让 AI 一句话投给手机；手机里的照片拍完直接落到电脑。零云、零账号、零外网请求。\n\n- **手机端**：浏览器扫面板二维码 → 上传（多选 / 拍照即传）/ 下载 / 预览 / 删除，同源直连自家服务，零跨域\n- **面板**（ActivityBar → 📁 口袋快传）：扫码入口 + 双向清单 + 手动上传下载 + 设置 + 服务管理\n- **AI 工具**（MCP 5 个 `drop_*`）：「把 D:\\reports\\报表.xlsx 传到我手机」「我手机传了什么」「把刚传的照片存到工作区」\n- **自动清理**：TTL（默认 72h）+ 条目数/总容量双上限，过渡文件不堆积\n\n## 为什么是它\n\n| 场景 | 没有它 | 有了它 |\n|---|---|---|\n| 手机照片进电脑 | 微信文件传输助手 / 数据线 / 网盘中转 | 扫码拍照即传，落地在电脑存储目录，AI 还能直接接手处理 |\n| 电脑文件给手机 | 同上，还要登录账号 | 对 AI 说「把 xx 传到我手机」，或面板拖上传 |\n| 手机拍的白板/发票要给 AI 看 | 先传微信再下载再上传 | 拍照 → 电脑投递区 → `drop_save` 落盘 → AI 直接读路径 |\n| 临时给同网设备发大文件 | 网盘限速 / U盘 | 局域网直传，上限可调到 8GB |\n\n## 跨域 / 数据面架构（读这个再改代码）\n\n浏览器同源策略是插件平台第一杀手，本插件三路数据面各走各的合规通道（详见 `docs/SPEC.md`）：\n\n```\n手机浏览器 ──同源 HTTP──► 服务进程 (node, 0.0.0.0:9867, PIN 门禁)\n                            ├─ GET /            手机页（服务直出单文件 HTML）\n                            ├─ POST /u          上传（流式落盘 + 限长）\n                            ├─ GET /f/<id>      下载 / inline 预览\n                            └─ DELETE /f/<id>   删除\n桌面面板 ── __POLARIS_HOST_INVOKE__ ──► router_dispatch ──► cap.kv (pdrop.*)\n                                                            ▲ 投影/心跳唯一写者=服务\nMCP server.js ── 127.0.0.1 bridge (md5 token, 自发现) ──────┘（命令键 先删后做）\n桌面大文件直传 ── XHR http://127.0.0.1:9867（localhost 免混合内容，CORS 由自家服务放行）\nAI 投递本地文件 ── 服务直接 fs 读路径（零桥上字节）\n```\n\n- **手机路径完全没有跨域问题**：手机访问的是服务自己直出的页面，同源。\n- **面板清单/状态走 cap.kv 投影**（宿主 invoke 通道），桌面/Web/手机三端一致；\n- **桌面大文件直传是唯一例外**：GB 级字节扛不进 kv / cap.http（base64 会爆），只能 XH",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip"
+    }
+   ]
+  },
+  {
+   "id": "sundial",
+   "name": "日晷",
+   "version": "0.1.0",
+   "description": "个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则（每天/每周几/每月几号/每年）、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（Google 公开日历/课表/排班），抓取全部下沉后台服务原生执行——浏览器同源策略管不到它，跨域根治；数据 cap.kv 三端同读（桌面/手机/Web 打开同一面板看到同一份日程）。纯本地存储，数据不出设备。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "calendar",
+    "schedule",
+    "reminder",
+    "ics",
+    "habit",
+    "countdown",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Clock",
+   "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
+   "sha256": "0712c361cca9d568bb1f779f0d915e0c5afa8cb0fb8d375c29441a948928de59",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 日晷（sundial）\n\n个人日程/提醒/倒计时管家：聊天里说「周五下午3点提醒我取快递」「每天晚上10点背单词打个卡」即入日程；重复规则、到期提醒（面板横幅+提示音+AI 可见）、习惯打卡连击、纪念日/倒数日 D-N 卡片；支持 ICS/Webcal 订阅外部日历（抓取下沉后台服务原生执行——跨域根治）；数据 cap.kv 三端同读，纯本地存储。\n\n## 亮点\n- 对话式入口：AI 经 7 个 MCP 工具直接增删改查/打卡/订日历\n- 外部日历：ICS 订阅按间隔同步（ETag 条件请求、SSRF 守卫、VTIMEZONE 换算）\n- 三端同看：桌面面板/手机/Web 打开同一面板看到同一份日程与提醒\n- 零依赖：RRULE/ICS/提醒计算全手写纯函数，64 项离线单测\n\n## 说明\n提醒为应用内触达（面板横幅+提示音+AI 可见）；主应用暂无插件可用的系统通知通道。详见仓库 README 的键空间契约与如实边界。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip"
+    }
+   ]
+  },
+  {
+   "id": "time-sift",
+   "name": "拾光机",
+   "version": "0.1.0",
+   "description": "拾光机：把 Polaris 已拥有却从未被开采的资产——历史 AI 会话——变成可检索、可回忆、可视化的个人记忆库。后台服务只读本地四路数据源（Polaris dialogs JSONL、session-v2 消息库、~/.claude 原生会话、~/.zcode 会话库，只索引对话散文不索引工具 I/O），建 CJK 双元倒排索引与足迹统计；面板全文检索（命中片段+阅读器）、GitHub 风格热力图、按天时光列表；AI 经 sift_* 工具直接「回忆」——「我之前怎么解决的」当场翻历史。数据不出设备、零外网请求、零跨域面；跨端经 cap.kv 单事实库，手机上同样可搜可看。装上即有全部历史价值，零冷启动。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "memory",
+    "search",
+    "history",
+    "sessions",
+    "heatmap",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Clock",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/time-sift",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/time-sift.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/update.json",
+   "sha256": "5293eb867d71db35bce9aaa88385120d30197630c88f66f892a9252c70ef0bf5",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 拾光机（time-sift）\n\n> 把 Polaris 已拥有却从未被开采的资产——历史 AI 会话——变成可检索、可回忆、可视化的个人记忆库。\n\n## 这是什么\n\n你在 Polaris 对话、session-v2、Claude Code、ZCode 里聊过的每一个方案、每一次排错，散落在四个数据源里，宿主只有一个关键词列表搜索。拾光机把它们归一成**一个可全文检索、可让 AI 回忆、可看足迹的记忆库**：\n\n- **零冷启动**：装上即有全部历史价值（不像其他插件要先喂内容）\n- **AI 可回忆**：聊天里对 AI 说「我之前怎么解决 XX 的」，它用 sift_search 翻你的历史再回答\n- **足迹可视化**：GitHub 风格 26 周热力图 + 会话/消息/token 总量 + 来源分布\n- **纯本地**：数据源只读、索引缓存在本机、零外网请求；跨端经 cap.kv（桌面/手机/Web 同一账号）\n\n实测本机 1.2GB 原始语料（972 会话）→ 37MB 索引，全量重建 ~40s，检索 ~2s 出结果。\n\n## 功能\n\n- **面板**（ActivityBar → 🕐 拾光机）四 Tab：\n  - **搜索**：关键词 + 来源筛选 + 时间范围 → 命中片段（高亮）→ 点击进阅读器（围绕命中消息翻上下文）\n  - **足迹**：总卡（会话/消息/散文/活跃天）+ 26 周热力图 + 来源分布 + Top 活跃日 + token 口径\n  - **时光机**：按天分组的会话列表（标题过滤 + 来源筛选），点开阅读\n  - **设置**：服务管理（自举 start/stop）+ 索引状态/重建 + 四源开关 + 排除词 + 隐私说明\n- **后台服务**：四路数据源唯一读取者，建 CJK 双元倒排索引（term→会话，超限晋级 common），JSONL 源 30s 增量（mtime）、SQLite 源每 10 分钟全量 diff（指纹比对），目录/统计分块写 cap.kv\n- **MCP 工具**（5 个 `sift_*`）：聊天里让 AI 直接检索/翻开/统计你的历史\n\n## 数据源与口径\n\n| source | 位置 | 读法 |\n|---|---|---|\n| `polaris` | `<数据根>/dialogs/*.jsonl`（v3：首行 meta） | fs 只读，按 message.id 去重 |\n| `v2` | `<数据根>/session-v2/messages.db` + `state.db` | node:sqlite 只读，同 id 取最大 version，排除 tombstoned |\n| `claude` | `~/.claude/projects/<项目>/<sessionId>.jsonl` | fs 只读，跳过 isSidechain 行与 `subagents/` 子目录 |\n| `zcode` | `~/.zcode/cli/db/db.sqlite` | node:sqlite 只读，跳过软删会话与 `uiVisibility:hidden` 消息 |\n\n- **只索引对话散文**（用户输入 + AI 回复文本块）：工具调用/输出、thinking/reasoning 不入索引——记忆价值在对话不在工具 I/O，体积降一个量级。\n- Claude 的 Stop-hook 包装消息（`A session-scoped Stop hook is now active with condition: \"…\"`）剥壳保留 `…` 里的真实意图——28/214 实测会话的标题靠它还原。\n- token/费用只对「能取到用量」的会话累加（polaris meta.tokenUsage / claude 行 usage / zcode turn_usage），UI 明示覆盖口径，不臆造补零。\n- 路径兼容：anchor.json → 数据根；实例 0（`<root>/dialogs`）为限，instances/n 不扫。\n\n## 架构（数据面与跨域）\n\n```\n面板（React bundle，宿主 invoke 通道；绝不直接 fetch，零跨域面）\n  └─ cap.kv sift.* 键空间（目录分块/统计/心跳/命令信箱） ←── 三方同一事实库\n        ▲                                    ▲\nMCP server（stdio；timeline/stats 直读 kv，   │ 命令信箱 cmd.<op>.<nonce>\nsearch/open 走信箱）                          │ 先删后做\n                                             ▼\n        service/sift.js —— 唯一读源/唯一写者（索引在内存，blob/倒排/目录落 <appConfigDir>/time-sift/）\n                                             ▼\n        四路数据源（fs 只读 + node:sqlite 只读；零外网请求）\n```\n\n- 面板零外网请求、零 fs——源读取与索引全部在服务进程（node），跨端（手机 Web）自动一致。\n- 检索/阅读走命令信箱：面板/MCP 写 `sift.cmd.<op>.<nonce>` → 服务先删后做 → 结果写 `sift.result.<nonce>` → 请求方轮询读后删。\n- 目录/统计直读 kv：服务离线时足迹与时光机仍可浏览。\n\n## 键空间契约（权威表——三方一致，改动须同步）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `sift.settings` | 面板/MCP | 服务（30s 热读） | `{sources:{polaris,v2,claude,zcode}, excludeKeywords[], maxMsgChars, sqliteRefreshMin}` |\n| `sift.meta` | **服务单写**（60s 心跳） | 面板/MCP | version/pid/bridge/degraded/dataRoot/sqlite/indexing 进度/catalog 概况/各源状态 |\n| `sift.cat.head` | **服务单写** | 面板/MCP | `{count, chunks, rev, builtAt}` |\n| `sift.cat.<n>` | **服务单写** | 面板/MCP | 目录分块数组（≤200 条/块），sid/source/title/时间/消息数/tokens |\n| `sift.stats.total` | **服务单写** | 面板/MCP | 总计卡（bySource/tokens 覆盖口径） |\n| `sift.stats.daily` | **服务单写** | 面板 | 按天聚合 `{'YYYY-MM-DD':{s,m}}`（本地时区，按 updatedAt 落天） |\n| `sift.cmd.<op>.<nonce>` | 面板/MCP 写 → 服务**先删后做** | — | op ∈ search/open/reindex（reindex 需 confirm:true） |\n| `sift.result.<nonce>` | 服务写，请求方读后删 | 请求方 | `{ok, data|error, at}`；服务顺带回收 >1h 孤儿 |\n| `sift.smoke.*` | 仅冒烟 | — | 冒烟独立子前缀，100% 清理 |\n\nsid 规则：`<源字母>+sha256(源|稳定键)前10位`（polaris=externalId、v2=conversation_id、claude=sessionId、zcode=session.id），跨重装稳定。\n\n## MCP 工具（AI 回忆入口）\n\n| 工具 | 用途 |\n|---|---|\n| `sift_search` | 全文检索历史（「我之前是不是解决过…」「找找我聊过 xx 的会话」），返回标题+片段+sid |\n| `sift_open_session` | 按 sid 读会话对话（可 around 命中消息定位），AI 据此回答「当时怎么做的」 |\n| `sift_timeline` | 按天列会话（「上周三我干了啥」）；直读 kv，服务离线可用 |\n| `sift_stats` | 足迹统计 + 索引状态 |\n| `sift_reindex` | 触发全量重建（confirm 护栏，异步执行，进度看 sift_stats） |\n\n## 构建 / 测试 / 打包\n\n```bash\nnpm install && npm run typecheck   # 面板类型检查（tsc --noEmit）\nnpm run build                      # 面板 bundle → dist/panel.js（esbuild，external react）\nnode test/run-tests.mjs            # 离线单测（零依赖，不需 Polaris 运行）\nnode test/smoke-real.mjs           # 真实桥冒烟（需本机 Polaris 在跑；临时 fixture + 自清理，不碰真实数据根）\nnode ../../scripts/pack.js plugins/time-sift   # 打 zip + sha256\n```\n\n冒烟通过 env `SIFT_DATA_ROOT_OVERRIDE` 把服务源定位限定在临时目录（生产不生效），护栏检测到生产 `sift.*` 业务键即拒跑。\n\n## 已知边界（如实）\n\n- **node ≥ 22.5**（node:sqlite）：不可用时 v2/zcode 两源自动降级关闭（meta.sqlite=false 标明），JSONL 双源不受影响。\n- subagent 转录（`~/.claude/projects/<proj>/<id>/subagents/*.jsonl`）不入索引（与 sidechain 行同一口径）；v2 历史版本只取最新。\n- 双 Polaris 实例并发会各建一份索引（罕见场景，未做租约；互不损坏，浪费一倍磁盘）。\n- 检索只匹配正文，标题单独命中不出结果（标题已参与倒排，用于候选排序加分）。\n- 检索延迟 ~2s（命令信箱经 2s tick 消费）；面板时光机/足迹走直读不受影响。\n- `maxMsgChars` 改动只对新扫描生效，历史条目需重建索引。\n",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/time-sift.zip",
+     "sha256": "5293eb867d71db35bce9aaa88385120d30197630c88f66f892a9252c70ef0bf5"
+    }
+   ]
+  },
+  {
+   "id": "net-sentinel",
+   "name": "网哨",
+   "version": "0.1.0",
+   "description": "把「网络本身」变成可对话的资产：后台原生服务每 10s 对网关/DNS/常用站点做 TCP 握手 + DNS 解析 + 丢包探测（无需 ICMP/管理员），断网/恢复/单目标失联/延迟劣化边沿触发记事件，24h 热力图 + 7 天趋势可回看，滚动保留 30 天。AI 经 MCP 回答「现在网怎么样」「昨晚断过网吗」「github 这周延迟如何」，还能按需测速（confirm + SSRF 守卫）。探测在后台原生执行、面板零直连 fetch（宿主 invoke → cap.kv 单事实库），三端无跨域问题。",
+   "author": "Polaris",
+   "category": "dev",
+   "tags": [
+    "network",
+    "monitor",
+    "ping",
+    "latency",
+    "dns",
+    "speedtest",
+    "outage",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Target",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/net-sentinel",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/update.json",
+   "sha256": "94ffa9c6cdfdeedfa09ba60e4772f4c98d7ba9afb1ec0f91d6623798bb716a84",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 网哨（net-sentinel）\n\n> 把「网络本身」变成可对话的资产：断网、劣化、DNS 慢、某个站点失联——事后不再无从查证。AI 能直接回答「现在网怎么样」「昨晚断过网吗」「github 这周延迟如何」。\n\n- **面板**（ActivityBar → 🎯 网哨）：概览（在线大状态 + 目标卡片 + 15min spark）、历史（24h/72h/7d 热力 + 折线 + 聚合表）、动态、设置 四 Tab\n- **后台服务**：网络探测的唯一权威——每 10s 对网关/DNS/站点做 TCP 握手（无需 ICMP/管理员），域名先测 DNS 解析再测链路，分钟聚合进小时桶（写前持久，重启续写），滚动保留 30 天\n- **MCP 工具**（5 个 `net_*`）：聊天里直接「测下网速」「帮我盯一下 nas.local」「昨晚有没有断网」\n- **跨端**：桌面 / Web / 手机打开同一面板看到同一份网络事实——数据只有 cap.kv 这一个事实库\n\n## 它解决什么\n\n网速慢/掉线是最高频的基础设施痛点，但没有任何工具能事后回答：\n\n- 昨晚 11 点是不是断过网？（Windows 事件查看器不行、路由器日志没人看）\n- 是 DNS 慢还是链路慢？（网哨对域名目标分离测量 `dnsMs` 与握手 `ms`）\n- 是路由器的问题还是目标站的问题？（网关/锚点/站点三层目标对照归因）\n- 我家网络这周整体质量如何？（24h 热力图 + P95/丢包聚合表）\n\n## 探测语义（为什么被 RST 也算「通」）\n\n网哨测的是**网络可达性**，不是服务可用性：TCP connect 收到 RST（ECONNREFUSED）说明 IP 已应答——链路和 DNS 都是通的，且 SYN→RST 往返仍是有效 RTT。只有超时/不可达/DNS 失败记丢包。这让网哨可以用纯 Node 实现（无需 ICMP/管理员权限），语义上最接近 ping。\n\n**网关防抖加倍**：网关真掉线与防火墙静默过滤 80 端口都表现为 timeout，无法区分——网关类目标的失联判定需要 sustain×2 轮，事件文案会提示长期误报时改端口或停用。\n\n## 在线判定\n\n锚点目标（默认 4 个：223.5.5.5 / 119.29.29.29 / www.baidu.com / 1.1.1.1）中 **≥2 个可达才算在线**——单锚点失联不误报断网，但会记该锚点自己的 target_down 事件。锚点/站点/网关三类目标均可在设置中增删改（≤12 个）。\n\n## 事件（边沿触发不轰炸）\n\n| 事件 | 触发条件 |\n|---|---|\n| 断网 / 网络恢复 | 锚点在线判定翻转，连续 2 轮确认；恢复事件带断网时长 |\n| 目标失联 / 恢复 | 单目标连续 sustainRounds 轮无应答（网关 ×2） |\n| 延迟劣化 / 回落 | 近 sustainRounds 轮平均延迟 ≥ latencyMs（默认 400ms） |\n\n同类事件至少间隔 30 分钟；恢复类事件带持续时长。全部事件可「问 AI」带着上下文进聊天。\n\n## 按需测速\n\n平时零大流量；测速走命令键（`confirm:true` + 下载上限 1-25MB + SSRF 守卫：默认拒绝本机/私网地址，局域网 NAS 测速需显式 `allowPrivate`）。默认走 Cloudflare speed 端点（支持 `{bytes}` 占位符），面板可改任意测速 URL。\n\n## AI 工具（MCP）\n\n| 工具 | 用途 |\n|---|---|\n| `net_status` | 当前在线状态 + 各目标延迟/丢包/DNS（「现在网怎么样」「是 DNS 慢还是网络慢」） |\n| `net_history` | 回看最近 N 小时分目标聚合（默认 1h，上限 72h：「今天上午网怎么样」） |\n| `net_events` | 断网/恢复/失联/劣化事件流（「昨晚有没有断网」） |\n| `net_speedtest` | 按需测速（confirm:true；mb ≤25；SSRF 守卫） |\n| `net_targets` | 目标管理 list/add/remove/enable/disable（「帮我盯一下 xyz.com:443」） |\n\n## 架构与跨域\n\n```\n面板/MCP                     服务（探测引擎，唯一写者）\n   │ cmd.speed / cmd.targets    │\n   ├───────────────────────────▶│ tick 消费命令键（先删后做）\n   │                            │ net.connect 探测 → 分钟聚合 → 小时桶\n   │ 读 snapshot/meta/h.*/event │ 写 cap.kv（netmon.*）＋事件边沿评估\n   │◀───────────────────────────┤\n```\n\n- **面板零直连 fetch**：全部数据走宿主 `__POLARIS_HOST_INVOKE__` → `router_dispatch` → cap.kv（桌面 Tauri 直连 IPC；Web/手机自动带 Bearer token）——浏览器 CORS 面为零\n- **探测全部下沉原生服务**：`net.connect` / `dns.lookup` / 测速 `http.get` 都在后台 node 进程执行，三端行为一致\n- **单写者纪律**：快照/桶/事件/测速只由服务写；`netmon.targets` 由服务独占写（面板/MCP 经命令键原子改）；面板写 settings 与 readAt\n\n## 键空间契约（`netmon.*`，三方一致）\n\n| 键 | 写者 |\n|---|---|\n| `netmon.snapshot`（每 tick） / `netmon.meta`（60s 心跳） | 服务 |\n| `netmon.h.<YYYYMMDDHH>`（小时桶，`[minIdx, avgX10|null, max, loss, cnt]`） | 服务 |\n| `netmon.event.*`（cap 200）/ `netmon.speed.*`（cap 50） | 服务 |\n| `netmon.targets` | 服务独占（cmd.targets 原子改） |\n| `netmon.settings` | 面板/MCP 写、服务读（10s） |\n| `netmon.cmd.speed.*` / `netmon.cmd.targets.*` / `netmon.result.*` | 命令通道（先删后做，结果由消费方删除） |\n| `netmon.readAt` | 面板 |\n\n## 开发与测试\n\n```bash\nnpm install && npm run typecheck && npm run build   # 面板类型检查 + 打包\nnode test/run-tests.mjs                              # 离线单测 42 项（纯逻辑全覆盖）\nnode test/smoke-real.mjs                             # 真实桥冒烟 13 项（需本机 Polaris 在跑）\n```\n\n冒烟覆盖：真实桥自发现 → 快照/小时桶/网关发现 → cmd.targets 闭环（含坏载荷拒绝）→ 测速 SSRF 守卫 + 本地 2MB 真测速闭环 → MCP tools/list 与 net_status/net_history 真读。\n\n## 已知边界\n\n- 探测语义是**网络可达性**：目标「端口拒绝」也算通（RTT 有效）；要测服务可用性请直接访问服务本身\n- 网关目标若防火墙静默过滤探测端口，会持续 timeout——事件文案会提示改端口或停用（防抖已加倍至 sustain×2）\n- 纯 IPv6 环境：IPv4 解析失败会自动回退任意族 lookup\n- 面板历史范围上限 7 天（168 个小时桶并行拉取）；30 天数据保留给趋势与 AI 查询\n",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip"
+    }
+   ]
+  },
+  {
+   "id": "disk-radar",
+   "name": "磁盘雷达",
+   "version": "0.1.0",
+   "description": "把磁盘变成可对话的空间资产：后台服务原生遍历目录（零外网请求、零跨域面——面板全走宿主通道+cap.kv），快照式记录每个根目录的空间解剖与历史增量，两次完整快照间按目录归因增减——「谁偷了我的磁盘」；开发垃圾专项猎手（node_modules/target/dist/bin/obj/缓存，按兄弟文件锚定判定，可解释低误报）；两步删除安全模型——先移入同卷隔离区可恢复，确认后才彻底删除，AI 工具全部只读永不删除。AI 经 disk_* 六工具对话式扫描/归因/报告；面板五 Tab：总览/空间地图（矩形树图）/垃圾清理/历史/设置，桌面与手机 Web 看同一份磁盘状态。",
+   "author": "Polaris",
+   "category": "tools",
+   "tags": [
+    "disk",
+    "storage",
+    "cleanup",
+    "scanner",
+    "mcp"
+   ],
+   "icon": "Files",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/disk-radar",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/update.json",
+   "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
+   "tier": "beta",
+   "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 磁盘雷达（disk-radar）\n\n把磁盘变成可对话的空间资产：快照式空间解剖 + 增量「谁偷了我的磁盘」+ 开发垃圾猎手。\nAI 只读报告，删除永远是人手两步确认（移入隔离区 → 彻底删除）。\n\n## 它解决什么\n\n- **空间被谁吃了**：矩形树图 + Top 目录，点哪钻哪（实时细查任意目录）。\n- **最近被谁吃掉的**：每根周期快照，两次完整快照之间按目录归因增减——WizTree 类工具没有的时间维度。\n- **哪些能安全回收**：node_modules / target / dist / bin+obj / 各类缓存专项清点，**按兄弟文件锚定判定**（`target` 旁必须有 Cargo.toml、`bin/obj` 旁必须有 .sln/.csproj）——可解释、低误报；pnpm store 等全局缓存给专用建议。\n- **删得放心**：隔离区 = 同卷 rename（瞬间完成、可恢复）；「彻底删除」需二次确认；**AI 工具全部只读，没有删除类工具**——AI 负责「报告+解释+建议」，按钮永远在人手里。\n- **跨端**：数据全在 cap.kv，手机打开同一面板看到同一份磁盘状态与垃圾清单。\n\n## 跨域/通道设计（为什么没有跨域问题）\n\n| 层 | 方案 |\n|---|---|\n| 数据面 | 一切状态/快照/清单走 cap.kv（`diskrad.*`），面板/MCP/服务三方共享 |\n| 面板 | **零直连 fetch**——唯一通道是宿主 `__POLARIS_HOST_INVOKE__` → router_dispatch（桌面 Tauri IPC / 手机 Remote 同契约） |\n| 外网 | **零外网请求**——扫描是本地 fs 遍历（node 原生），不依赖 cap.http（避开 Remote 源 deny 陷阱） |\n\n## 组成\n\n- **后台服务**（`service/radar.js`，http 型 + `/__health`）：tick 消费命令键（先删后做）、执行扫描（预算+可取消+不中断降级）、快照/垃圾/state 持久化、隔离区机制、隔离区到期清理、保留清扫。零依赖。\n- **MCP**（`mcp/server.js`，stdio）：`disk_overview / disk_top / disk_growth / disk_junk / disk_scan_start / disk_report` 六工具，全只读。\n- **面板**（`src/` → `dist/panel.js`，React 18 零第三方库）：总览 / 空间地图（squarified 树图+下钻）/ 垃圾清理 / 历史（走势+归因）/ 设置五 Tab。\n\n## 扫描语义\n\n- 单次遍历同时产出：目录聚合树（记录 ",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
+     "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
+     "releasedAt": "2026-10-27"
+    }
+   ]
+  },
+  {
+   "id": "decision-journal",
+   "name": "谋定",
+   "version": "0.1.0",
+   "description": "把「决定」本身变成可复盘、可校准的资产：聊天里说「我选了 B，把握八成，三个月见分晓」即立此存照（含可检验预期+真实把握）；到期清单复盘打分（兑现/部分/落空/作废）；长期积累出你自己的判断力校准曲线——你自称 80% 把握的事，实际兑现率是不是 80%？Brier 分数量化直觉靠不靠谱，教训沉淀成经验卡供 AI 引用。四态生命周期（纠结中→存照→复盘/搁置），AI 工具内嵌决策日记方法论（逼出可检验预期，拒绝「会更好」式空话）。纯本地 cap.kv：零后台服务、零外网请求，面板与 AI 经同一计算核心（shared/decision-core）口径一致，桌面与手机看到同一份台账。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "decision",
+    "journal",
+    "calibration",
+    "reflection",
+    "panel",
+    "mcp"
+   ],
+   "icon": "CheckSquare",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/decision-journal",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/update.json",
+   "sha256": "97e96f268eff2774c4e7dfa6045869d68fec090a0226e067327eb81470f81946",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 谋定（decision-journal）· 决策日记\n\n把「决定」本身变成可复盘、可校准的资产：立此存照（可检验预期+把握）→ 到期复盘打分 → 判断力校准曲线（分桶命中率 + Brier）→ 经验卡供 AI 引用。四态生命周期，AI 工具内嵌方法论。纯本地 cap.kv，零服务零外网。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip"
+    }
+   ]
+  },
+  {
+   "id": "amber",
+   "name": "琥珀",
+   "version": "0.1.0",
+   "description": "网页封藏馆：把任意网页「琥珀化」成永久可读快照——收藏即封存（服务原生抓取根治跨域），抽出干净正文 + 标题/作者/发布时间（打分容器算法，非硬切片），BOM/响应头/meta 三级字符集探测连 GBK 老页面也不乱码；同一 URL 重复封存 = 快照层积（首封时间永留），封存失败永不摧毁旧快照。全文检索（BM25-lite）、金句摘录、标签星标；AI 经 MCP 直接「代你封存/检索/精读/摘录」，原文日后失效，琥珀是唯一遗产。桌面与手机 Web 三端同读。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "clipper",
+    "readlater",
+    "archive",
+    "search",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Globe2",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/amber",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/update.json",
+   "sha256": "220a2019eb25aab666ce579acfa832a7f9a1a8b484f1c3c1ac113b09264efed4",
+   "tier": "beta",
+   "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 琥珀 amber —— 网页封藏馆\n\n把任意网页「琥珀化」：一键把 URL 封存成**永久可读快照**。原网页日后失效（404/改版/付费墙），琥珀里的快照是你唯一的遗产。\n\n## 它解决什么问题\n\n- **跨域**：浏览器有同源策略，面板直接 fetch 任何第三方页面都会被拦死。本插件把抓取全部下沉到后台服务（Node 原生 fetch，无同源策略）——这是本插件跨域问题的根治点，与 feed-radar / page-sentinel / bookmark-dig 同一铁律。\n- **永久**：网页会失效、会被改写、会进付费墙。封存快照 = 内容本体入自己的库。\n- **找得回**：BM25-lite 全文检索覆盖封存正文的全部文字（不只是标题），支持中英文。\n- **AI 原生**：聊天里直接让 AI「把这篇存进琥珀」「我收藏的内容里有没有讲 XX 的」「读一下 [id] 给我总结」。\n\n## 与邻居插件的分工\n\n| 插件 | 收的是什么 | 节奏 |\n|---|---|---|\n| feed-radar 订阅雷达 | 「源」（RSS/Atom） | 周期性自动 |\n| page-sentinel 网页哨兵 | 「变化」 | 周期性盯梢 |\n| bookmark-dig 书签考古 | 「书签」 | 一次性体检 |\n| news-curator AI 刊物 | AI 拉给你的 | 每日一期 |\n| **琥珀** | **「页」（用户主动收藏）** | **一次性、存内容本体** |\n\n## 使用\n\n- **面板**：贴 URL → 封存（可带标签）→ 收藏列表 → 阅读视图。阅读时选中正文可「✂ 摘录选中文字」存金句。检索 Tab 全文搜索。手机 Web 同一份 cap.kv 数据。\n- **AI（MCP 7 工具）**：\n  - `amber_save {url, tags?, force?, waitSec?}` 封存（同 URL 幂等，重复=层积重封）\n  - `amber_list {filter?, tag?, host?, status?, limit?}` 翻收藏库\n  - `amber_search {q, limit?, waitSec?}` 全文检索语料库\n  - `amber_read {id|url, maxChars?}` 读封存全文（AI 精读主入口）\n  - `amber_mark {id, read?, star?, tagsAdd?, tagsRemove?}` 状态/标签\n  - `amber_quote {itemId, text, note?}` 存金句；`{itemId?, list:true}` 列摘录\n  - `amber_delete {id|url}` 删除（联动清理）\n\n## 封存质量\n\n- **",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip"
+    }
+   ]
+  },
+  {
+   "id": "abacus",
+   "name": "算盘",
+   "version": "0.1.0",
+   "description": "算盘：把散落在三路本地数据里的 AI 用量算成一本账——ZCode 编程会话（model_usage 逐请求遥测）、Claude Code 原生 JSONL、Polaris 聊天（dialogs meta tokenUsage）。回答四个以前答不了的问题：花了多少（token/钱，含缓存折价）、花在哪（模型/项目/agent）、缓存帮你省了多少（缓存节省 = cacheRead×(全价−缓存价)，实测本机命中率 ~98% 的真实价值第一次可见）、哪里在漏钱（限流/重试放大/缓存疑似失效/未计价黑洞）。三种来源两种 input 口径（ZCode 含缓存、Anthropic 惯例不含）在计价引擎里显式归一，不混算。服务只读本地 fs+sqlite，默认零外网；唯一外网点是可选的 LiteLLM 价目同步（服务进程、仅已知 URL、SSRF 守卫）。面板五账页（总览/模型/项目/质量/设置），AI 经 abacus_* 工具直接对账。",
+   "author": "Polaris",
+   "category": "productivity",
+   "tags": [
+    "ai",
+    "cost",
+    "ledger",
+    "tokens",
+    "observability",
+    "panel",
+    "mcp"
+   ],
+   "icon": "Activity",
+   "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/abacus",
+   "repository": "https://github.com/misxzaiz/Polaris-plugin",
+   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/plugin.json",
+   "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip",
+   "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/update.json",
+   "sha256": "3abaed2f9432a0c25f31e9b56345ad99cc907c807eb84687f6e342c006700d97",
+   "tier": "beta",
+   "permissions": {
+    "aiToolAccess": true
+   },
+   "screenshots": [],
+   "readme": "# 算盘（abacus）· AI 花销账房\n\n把散落在三路本地数据里的 AI 用量算成一本账：ZCode 编程（逐请求遥测）、Claude Code 原生 JSONL（含侧链）、Polaris 聊天（宿主结算成本）。四种回答：花了多少（token/钱+缓存折价）、花在哪（模型/项目/agent）、缓存帮你省了多少、哪里在漏钱（限流/重试/缓存失效/未计价）。三源两种 input 口径显式归一，默认零外网。面板五账页 + AI 七工具对账。",
+   "versions": [
+    {
+     "version": "0.1.0",
+     "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip"
+    }
+   ]
+  }
+ ]
 }
