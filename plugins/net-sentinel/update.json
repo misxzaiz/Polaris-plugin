@@ -1,0 +1,64 @@
+{
+  "id": "net-sentinel",
+  "name": "网哨",
+  "version": "0.1.0",
+  "description": "把「网络本身」变成可对话的资产：后台原生服务每 10s 对网关/DNS/常用站点做 TCP 握手延迟 + DNS 解析 + 丢包探测（无需 ICMP/管理员），断网/恢复/单目标失联/延迟劣化边沿触发记事件，24h 热力图 + 7 天趋势可回看，滚动保留 30 天。AI 经 MCP 回答「现在网怎么样」「昨晚断过网吗」「github 这周延迟如何」，还能按需测速（confirm + SSRF 守卫）。探测语义=网络可达性：被 RST 也算通（IP 应答即证明链路通且 SYN→RST 仍是有效 RTT）。全部探测在后台服务原生执行、面板零直连 fetch（宿主 invoke → cap.kv 单事实库），桌面/Web/手机三端无跨域问题。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "net-sentinel.panel",
+        "area": "activityBar",
+        "panelType": "netSentinel",
+        "icon": "Target",
+        "labelKey": "plugins.netSentinel",
+        "labelDefault": "网哨",
+        "order": 74
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "net-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/net.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "网络探测引擎（TCP/DNS 原生探测 + 测速执行者）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "net-sentinel",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/net-sentinel",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip"
+  }
+}
