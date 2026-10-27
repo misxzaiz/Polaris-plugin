@@ -168,13 +168,17 @@ function workspaceRef(ws) {
 }
 
 // ── 对话动作 ───────────────────────────────────────────────────────────────
-// mode 说明（2026-10-26 修复）：ZCode 会话模式决定工具执行权限——
-//   yolo     放行一切工具（无条件）
-//   guarded  遵循权限提示（标准交互，工具执行走正常批准）
-//   auto     工具全拒（"Auto mode is reserved but not implemented yet"）
-//   plan/build 规划/构建模式
-// 之前用 'auto' 导致 ZCode 会话内 Bash 等工具全被拒。默认改 'guarded'。
-const DEFAULT_MODE = process.env.ZBRIDGE_DEFAULT_MODE || 'guarded'
+// mode 说明：ZCode 会话模式决定工具执行权限（桌面端标签见括号）——
+//   yolo     完全访问：放行一切工具（无条件）
+//   guarded  自主模式：按风险分级，低风险自动执行，高风险发 permission 询问并等待应答
+//   auto     （预留未实现）工具全拒："Auto mode is reserved but not implemented yet"
+//   plan/build/edit  规划/构建/自动编辑模式
+// 演进：'auto' 时代码工具全被拒 → 改 'guarded'（2026-10-26）→ 换 'yolo'（2026-10-27）：
+// 桥接会话无人值守，本服务/zcode-core 没有 permissionRequested 应答方，guarded 的
+// 高风险询问会永远停在「等待确认」挂死 turn（-32010 的另一来源）；yolo 与 ZCode
+// 闲时任务场景的官方建议一致（"建议权限切换为完全访问，以减少任务失败率"）。
+// 需要收紧时用 ZBRIDGE_DEFAULT_MODE 环境变量覆盖，无需改代码。
+const DEFAULT_MODE = process.env.ZBRIDGE_DEFAULT_MODE || 'yolo'
 
 async function doCreate(workspacePath, mode) {
   const c = ensureClient()

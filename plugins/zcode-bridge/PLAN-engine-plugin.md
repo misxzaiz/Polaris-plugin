@@ -147,7 +147,11 @@ Polaris 会话 = JSONL（`src/services/dialogStorage`）+ Reconcile 对账（`se
   （真实事件回放，12/12 通过）；协议细节见 Polaris `plans/zcode-engine-tool-stream.md`。
   遗留：真实模型在场的 UI 面板复验（当晚模型网关上游限流，帧层已覆盖）。
 - 模型：实测 `session/send` 是否接受 model 覆盖；能则 providerConfig 映射，不能则只展示。（未做）
-- 权限：`permission_mode` 从 Polaris 传入翻译成 ZCode mode。（未做；当前固定 guarded）
+- 权限：ZCode 权限模式。**现状（2026-10-27）**：桥默认 `yolo`（完全访问，桌面端标签）——
+  桥接会话无人值守、zcode-core 没有 `permissionRequested` 应答方，guarded（自主模式）的
+  高风险询问会永远「等待确认」挂死 turn；mode 决定权收敛在桥 `ZBRIDGE_DEFAULT_MODE`
+  env（server.js 单一权威），engine.js 不再传 mode。遗留：Polaris 侧按会话可配置 +
+  zcode-core 对高风险询问自动拒绝（把挂死变成显式失败）。
 
 **总计 3-5 天，核心投入在 adapter 的协议归一化。面板会话通道可复用，不重写。**
 

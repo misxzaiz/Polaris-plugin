@@ -1,8 +1,8 @@
 {
   "id": "opts.zcode-bridge",
   "name": "ZCode 会话桥接",
-  "version": "0.1.1",
-  "description": "桥接已安装 ZCode 桌面版会话：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话（app-server --stdio 官方协议），会话落盘到 ~/.zcode/cli/db/db.sqlite 后桌面端可见。",
+  "version": "0.1.2",
+  "description": "桥接已安装 ZCode 桌面版会话：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话（app-server --stdio 官方协议），会话落盘到 ~/.zcode/cli/db/db.sqlite 后桌面端可见。v0.1.2：引擎接入主对话（思考/工具流适配）、launcher 崩溃修复、权限模式改 yolo 并支持 ZBRIDGE_DEFAULT_MODE 环境变量收紧；引擎 CLI 改用 {{pluginDir}} 占位符，随数据根迁移不再写死绝对路径。",
   "enabledByDefault": false,
   "contributes": {
     "views": [
@@ -49,9 +49,9 @@
         "name": "ZCode (本地桌面)",
         "description": "桥接已安装 ZCode：在 Polaris 主对话直接使用 ZCode 会话（本地桌面 app-server 协议）",
         "cli": {
-          "command": "D:/app/polaris-s/plugins/zcode-bridge/mcp/engine-launcher.cmd",
+          "command": "{{pluginDir}}/mcp/engine-launcher.cmd",
           "args": [],
-          "installGuide": "ZCode 桌面版已安装于 D:/app/ZCode"
+          "installGuide": "需本机已安装 ZCode 桌面版（默认 D:/app/ZCode）。引擎通过插件内的 engine-launcher.cmd 转发至 mcp/engine.js，由它连接 ZCode 桌面版 app-server。"
         },
         "protocol": "pi-rpc",
         "sessionFlags": "pi",
@@ -71,6 +71,8 @@
   },
   "origin": {
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
-    "homepage": "https://github.com/misxzaiz/Polaris-plugin"
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip"
   }
 }

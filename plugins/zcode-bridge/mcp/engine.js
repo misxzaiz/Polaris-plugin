@@ -369,7 +369,9 @@ async function handlePrompt(message) {
     // ZCode 活性契约：session/create 后会话不在活跃表，直接 send 会
     // "Session is not active"（实测 -32004）；create 后必须 resume 先行，
     // resume 可能因落盘未完成短暂失败，重试数秒。
-    const r = await post('/api/chat/create', { workspacePath: DEFAULT_WS, mode: 'guarded' });
+    // 权限模式不在此指定（单一权威在桥 server.js 的 DEFAULT_MODE，可 env 覆盖）——
+    // engine 硬编码会盖掉桥的决策。当前桥默认 yolo（无人值守无 permission 应答方）。
+    const r = await post('/api/chat/create', { workspacePath: DEFAULT_WS });
     process.stderr.write(`[engine] create → ${JSON.stringify({ ok: r.ok, sessionId: r.sessionId, error: r.error || '', _status: r._status })}\n`);
     if (!r.ok || !r.sessionId) {
       emitMessageStart();

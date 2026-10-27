@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-26 12:30:00",
+  "updated": "2026-10-27 08:27:43",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -603,6 +603,43 @@
           "description": "v0.1.0：MVP — 面板（宿主桥通道）+ 9 个 news_* MCP 工具"
         }
       ]
+    },
+    {
+      "id": "opts.zcode-bridge",
+      "name": "ZCode 会话桥接",
+      "version": "0.1.2",
+      "description": "桥接已安装的 ZCode 桌面版：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话，会话落盘后桌面端可见；同时把 ZCode 注册为 Polaris 主对话引擎（思考/工具流适配）。引擎权限默认 yolo，可用 ZBRIDGE_DEFAULT_MODE 环境变量收紧。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "zcode",
+        "engine",
+        "bridge",
+        "session",
+        "mcp",
+        "panel"
+      ],
+      "icon": "GitPullRequest",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
+      "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
+      "tier": "beta",
+      "permissions": {
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "network": true
+      },
+      "screenshots": [],
+      "versions": [
+        {
+          "version": "0.1.2",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
+          "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
+        }
+      ],
+      "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
     }
   ]
 }
