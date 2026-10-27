@@ -1,0 +1,57 @@
+{
+  "id": "pocket-drop",
+  "name": "口袋快传",
+  "version": "0.1.0",
+  "description": "局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。手机浏览器同源直连自家服务（上传/下载/拍照即传，零跨域）；桌面面板数据走宿主 invoke 读 cap.kv 投影、大文件 127.0.0.1 直传；AI 经 MCP drop_send 把本地文件一键投给手机、drop_save 把手机传来的文件落盘。零云零账号零外网请求，PIN 门禁 + TTL 自动清理 + 容量上限。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "pocket-drop.panel",
+        "area": "activityBar",
+        "panelType": "pocketDrop",
+        "icon": "Files",
+        "labelKey": "plugins.pocketDrop",
+        "labelDefault": "口袋快传",
+        "order": 79
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "drop-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9867,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "局域网快传服务（0.0.0.0 监听供手机访问；PIN 门禁；零外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "pocket-drop",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-drop",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip"
+  }
+}

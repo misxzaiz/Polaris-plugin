@@ -1,0 +1,22 @@
+# 版本控制 / IDE
+.git/
+.gitignore
+
+# 依赖与构建输入（面板 bundle 已含产物；服务与 MCP 零依赖，不需要 node_modules）
+node_modules/
+package.json
+package-lock.json
+
+# 面板源码（dist/panel.js 已是构建产物）
+src/
+tsconfig.json
+
+# 测试（仓库内运行，不进安装包）
+test/
+
+# 文档（SPEC 设计稿不进安装包；README 在仓库内看）
+README.md
+docs/
+
+# 打包产物自身
+*.zip

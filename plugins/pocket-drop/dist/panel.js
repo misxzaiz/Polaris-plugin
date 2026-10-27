@@ -1,0 +1,2755 @@
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// shared/core.js
+var require_core = __commonJS({
+  "shared/core.js"(exports, module) {
+    "use strict";
+    var MAX_ITEMS = 200;
+    var DEFAULT_SETTINGS = Object.freeze({
+      pin: "",
+      ttlHours: 72,
+      maxSizeMb: 2048,
+      totalCapMb: 10240
+    });
+    function normalizeSettings(raw) {
+      const r = raw && typeof raw === "object" ? raw : {};
+      const clamp = (v, lo, hi, dflt) => {
+        const n = Math.round(Number(v));
+        return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : dflt;
+      };
+      return {
+        pin: typeof r.pin === "string" && /^\d{4,8}$/.test(r.pin) ? r.pin : DEFAULT_SETTINGS.pin,
+        ttlHours: clamp(r.ttlHours, 1, 720, DEFAULT_SETTINGS.ttlHours),
+        maxSizeMb: clamp(r.maxSizeMb, 1, 8192, DEFAULT_SETTINGS.maxSizeMb),
+        totalCapMb: clamp(r.totalCapMb, 256, 65536, DEFAULT_SETTINGS.totalCapMb)
+      };
+    }
+    function isValidPin(pin) {
+      return typeof pin === "string" && /^\d{4,8}$/.test(pin);
+    }
+    function newItemId(rand) {
+      const r = rand || Math.random;
+      let s = "";
+      for (let i = 0; i < 12; i++) s += Math.floor(r() * 16).toString(16);
+      return s;
+    }
+    function sanitizeFilename(raw, maxLen) {
+      const cap = maxLen || 180;
+      let s = String(raw == null ? "" : raw);
+      s = s.split(/[\\/]/).pop() || "";
+      s = s.replace(/^([a-zA-Z]):/, "");
+      s = s.replace(/[\x00-\x1f\x7f]/g, "");
+      s = s.trim().replace(/[.\s]+$/, "");
+      const stem = s.replace(/\.[^.]*$/, "").toUpperCase();
+      if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/.test(stem)) s = `_${s}`;
+      if (s.length > cap) {
+        const dot = s.lastIndexOf(".");
+        if (dot > 0 && dot >= s.length - 20) {
+          const ext = s.slice(dot);
+          s = s.slice(0, cap - ext.length) + ext;
+        } else {
+          s = s.slice(0, cap);
+        }
+      }
+      return s || "\u672A\u547D\u540D\u6587\u4EF6";
+    }
+    function dedupeName(existingNames, name) {
+      if (!existingNames.includes(name)) return name;
+      const dot = name.lastIndexOf(".");
+      const stem = dot > 0 ? name.slice(0, dot) : name;
+      const ext = dot > 0 ? name.slice(dot) : "";
+      for (let i = 2; i < 1e4; i++) {
+        const candidate = `${stem} (${i})${ext}`;
+        if (!existingNames.includes(candidate)) return candidate;
+      }
+      return `${stem} (${Date.now()})${ext}`;
+    }
+    function totalBytes(items) {
+      return (Array.isArray(items) ? items : []).reduce((acc, it) => acc + (it && Number(it.size) > 0 ? Number(it.size) : 0), 0);
+    }
+    function addItem(items, item, opts) {
+      const list = Array.isArray(items) ? items : [];
+      const o = opts || {};
+      if (!item || typeof item !== "object" || !item.id) return { ok: false, items: list, reason: "invalid_item" };
+      if (list.some((it) => it.id === item.id)) return { ok: true, items: list, reason: "duplicate_id" };
+      if (list.length >= (o.maxItems || MAX_ITEMS)) return { ok: false, items: list, reason: "too_many_items" };
+      const capBytes = Number(o.totalCapBytes) > 0 ? Number(o.totalCapBytes) : Infinity;
+      if (totalBytes(list) + (Number(item.size) || 0) > capBytes) return { ok: false, items: list, reason: "capacity" };
+      return { ok: true, items: list.concat([item]) };
+    }
+    function removeItem(items, id) {
+      return (Array.isArray(items) ? items : []).filter((it) => !(it && it.id === id));
+    }
+    function planSweep(items, now) {
+      const t = Number(now) || Date.now();
+      const list = Array.isArray(items) ? items : [];
+      const expired = list.filter((it) => it && Number(it.expiresAt) > 0 && Number(it.expiresAt) <= t);
+      return { expired, keep: list.filter((it) => !expired.includes(it)) };
+    }
+    function pruneEvents(events, keep) {
+      const cap = keep || 50;
+      return (Array.isArray(events) ? events : []).filter((e) => e && typeof e === "object").sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0)).slice(0, cap);
+    }
+    function pickLanUrl(ifaces, port) {
+      const p = Number(port) > 0 ? Number(port) : 0;
+      if (!p) return "";
+      const cands = (Array.isArray(ifaces) ? ifaces : []).filter((f) => f && f.address && f.internal !== true && f.family === "IPv4" && !/^169\.254\./.test(f.address) && !/^127\./.test(f.address));
+      const rank = (addr) => {
+        const m = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(addr);
+        if (!m) return 99;
+        const [a, b] = [Number(m[1]), Number(m[2])];
+        if (a === 192 && b === 168) return 0;
+        if (a === 10) return 1;
+        if (a === 172 && b >= 16 && b <= 31) return 2;
+        return 3;
+      };
+      cands.sort((x, y) => rank(x.address) - rank(y.address));
+      return cands.length ? `http://${cands[0].address}:${p}` : "";
+    }
+    function createRateLimiter(opts) {
+      const maxFails = opts && opts.maxFails || 5;
+      const windowMs = opts && opts.windowMs || 60 * 1e3;
+      const lockMs = opts && opts.lockMs || 60 * 1e3;
+      const state = /* @__PURE__ */ new Map();
+      return {
+        /** 记录一次失败；返回当前是否已锁定 */
+        fail(ip, now) {
+          const t = Number(now) || Date.now();
+          const s = state.get(ip) || { fails: [], lockUntil: 0 };
+          s.fails = s.fails.filter((x) => t - x < windowMs);
+          s.fails.push(t);
+          if (s.fails.length >= maxFails) {
+            s.lockUntil = t + lockMs;
+            s.fails = [];
+          }
+          state.set(ip, s);
+          return t < s.lockUntil;
+        },
+        /** 是否放行（未锁定） */
+        allow(ip, now) {
+          const t = Number(now) || Date.now();
+          const s = state.get(ip);
+          if (!s) return true;
+          if (s.lockUntil && t < s.lockUntil) return false;
+          if (s.lockUntil && t >= s.lockUntil) {
+            s.lockUntil = 0;
+            s.fails = [];
+          }
+          return true;
+        },
+        /** 锁定剩余秒数（供 429 Retry-After） */
+        retryAfterSec(ip, now) {
+          const t = Number(now) || Date.now();
+          const s = state.get(ip);
+          return s && s.lockUntil > t ? Math.ceil((s.lockUntil - t) / 1e3) : 0;
+        },
+        reset(ip) {
+          state.delete(ip);
+        },
+        _state: state
+      };
+    }
+    function formatBytes(n) {
+      const v = Number(n);
+      if (!Number.isFinite(v) || v < 0) return "0 B";
+      if (v < 1024) return `${Math.round(v)} B`;
+      const units = ["KB", "MB", "GB", "TB"];
+      let u = -1;
+      let x = v;
+      while (x >= 1024 && u < units.length - 1) {
+        x /= 1024;
+        u++;
+      }
+      return `${x >= 100 ? Math.round(x) : x.toFixed(1)} ${units[u]}`;
+    }
+    function ttlLabel2(expiresAt, now) {
+      const ms = Number(expiresAt) - (Number(now) || Date.now());
+      if (!Number.isFinite(ms) || ms <= 0) return "";
+      const min = Math.floor(ms / 6e4);
+      if (min < 1) return "1 \u5206\u949F\u5185";
+      if (min < 60) return `${min} \u5206\u949F`;
+      const h = Math.floor(min / 60);
+      if (h < 24) return `${h} \u5C0F\u65F6${min % 60 ? ` ${min % 60} \u5206` : ""}`;
+      return `${Math.floor(h / 24)} \u5929 ${h % 24} \u5C0F\u65F6`;
+    }
+    function validateDestPath(dest) {
+      const d = String(dest == null ? "" : dest).trim();
+      if (!d) return { ok: false, error: "\u7F3A\u5C11\u4FDD\u5B58\u8DEF\u5F84 dest" };
+      if (d.length > 1024) return { ok: false, error: "\u8DEF\u5F84\u8FC7\u957F" };
+      if (/[\x00-\x1f]/.test(d)) return { ok: false, error: "\u8DEF\u5F84\u542B\u975E\u6CD5\u5B57\u7B26" };
+      const winAbs = /^[a-zA-Z]:[\\/]/.test(d) || /^\\\\[^\\]/.test(d);
+      const posixAbs = d.startsWith("/");
+      if (!winAbs && !posixAbs) return { ok: false, error: "dest \u5FC5\u987B\u662F\u7EDD\u5BF9\u8DEF\u5F84\uFF08\u5982 D:\\dir\\file.png \u6216 /home/u/file.png\uFF09" };
+      return { ok: true, dest: d };
+    }
+    function mimeFor(name) {
+      const ext = String(name || "").toLowerCase().replace(/^.*\./, "");
+      const map = {
+        png: "image/png",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        gif: "image/gif",
+        webp: "image/webp",
+        bmp: "image/bmp",
+        svg: "image/svg+xml",
+        txt: "text/plain",
+        md: "text/plain",
+        log: "text/plain",
+        csv: "text/csv",
+        json: "application/json",
+        pdf: "application/pdf",
+        mp3: "audio/mpeg",
+        wav: "audio/wav",
+        ogg: "audio/ogg",
+        m4a: "audio/mp4",
+        mp4: "video/mp4",
+        webm: "video/webm",
+        mov: "video/quicktime"
+      };
+      return map[ext] || "application/octet-stream";
+    }
+    function isPreviewable(name) {
+      const m = mimeFor(name);
+      return m !== "application/octet-stream";
+    }
+    module.exports = {
+      MAX_ITEMS,
+      DEFAULT_SETTINGS,
+      normalizeSettings,
+      isValidPin,
+      newItemId,
+      sanitizeFilename,
+      dedupeName,
+      totalBytes,
+      addItem,
+      removeItem,
+      planSweep,
+      pruneEvents,
+      pickLanUrl,
+      createRateLimiter,
+      formatBytes,
+      ttlLabel: ttlLabel2,
+      validateDestPath,
+      mimeFor,
+      isPreviewable
+    };
+  }
+});
+
+// shared/qr.js
+var require_qr = __commonJS({
+  "shared/qr.js"(exports, module) {
+    "use strict";
+    var qrcode2 = function() {
+      var qrcode3 = function(typeNumber, errorCorrectionLevel) {
+        var PAD0 = 236;
+        var PAD1 = 17;
+        var _typeNumber = typeNumber;
+        var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+        var _modules = null;
+        var _moduleCount = 0;
+        var _dataCache = null;
+        var _dataList = [];
+        var _this = {};
+        var makeImpl = function(test, maskPattern) {
+          _moduleCount = _typeNumber * 4 + 17;
+          _modules = function(moduleCount) {
+            var modules = new Array(moduleCount);
+            for (var row = 0; row < moduleCount; row += 1) {
+              modules[row] = new Array(moduleCount);
+              for (var col = 0; col < moduleCount; col += 1) {
+                modules[row][col] = null;
+              }
+            }
+            return modules;
+          }(_moduleCount);
+          setupPositionProbePattern(0, 0);
+          setupPositionProbePattern(_moduleCount - 7, 0);
+          setupPositionProbePattern(0, _moduleCount - 7);
+          setupPositionAdjustPattern();
+          setupTimingPattern();
+          setupTypeInfo(test, maskPattern);
+          if (_typeNumber >= 7) {
+            setupTypeNumber(test);
+          }
+          if (_dataCache == null) {
+            _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
+          }
+          mapData(_dataCache, maskPattern);
+        };
+        var setupPositionProbePattern = function(row, col) {
+          for (var r = -1; r <= 7; r += 1) {
+            if (row + r <= -1 || _moduleCount <= row + r) continue;
+            for (var c = -1; c <= 7; c += 1) {
+              if (col + c <= -1 || _moduleCount <= col + c) continue;
+              if (0 <= r && r <= 6 && (c == 0 || c == 6) || 0 <= c && c <= 6 && (r == 0 || r == 6) || 2 <= r && r <= 4 && 2 <= c && c <= 4) {
+                _modules[row + r][col + c] = true;
+              } else {
+                _modules[row + r][col + c] = false;
+              }
+            }
+          }
+        };
+        var getBestMaskPattern = function() {
+          var minLostPoint = 0;
+          var pattern = 0;
+          for (var i = 0; i < 8; i += 1) {
+            makeImpl(true, i);
+            var lostPoint = QRUtil.getLostPoint(_this);
+            if (i == 0 || minLostPoint > lostPoint) {
+              minLostPoint = lostPoint;
+              pattern = i;
+            }
+          }
+          return pattern;
+        };
+        var setupTimingPattern = function() {
+          for (var r = 8; r < _moduleCount - 8; r += 1) {
+            if (_modules[r][6] != null) {
+              continue;
+            }
+            _modules[r][6] = r % 2 == 0;
+          }
+          for (var c = 8; c < _moduleCount - 8; c += 1) {
+            if (_modules[6][c] != null) {
+              continue;
+            }
+            _modules[6][c] = c % 2 == 0;
+          }
+        };
+        var setupPositionAdjustPattern = function() {
+          var pos = QRUtil.getPatternPosition(_typeNumber);
+          for (var i = 0; i < pos.length; i += 1) {
+            for (var j = 0; j < pos.length; j += 1) {
+              var row = pos[i];
+              var col = pos[j];
+              if (_modules[row][col] != null) {
+                continue;
+              }
+              for (var r = -2; r <= 2; r += 1) {
+                for (var c = -2; c <= 2; c += 1) {
+                  if (r == -2 || r == 2 || c == -2 || c == 2 || r == 0 && c == 0) {
+                    _modules[row + r][col + c] = true;
+                  } else {
+                    _modules[row + r][col + c] = false;
+                  }
+                }
+              }
+            }
+          }
+        };
+        var setupTypeNumber = function(test) {
+          var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+          for (var i = 0; i < 18; i += 1) {
+            var mod = !test && (bits >> i & 1) == 1;
+            _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
+          }
+          for (var i = 0; i < 18; i += 1) {
+            var mod = !test && (bits >> i & 1) == 1;
+            _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
+          }
+        };
+        var setupTypeInfo = function(test, maskPattern) {
+          var data = _errorCorrectionLevel << 3 | maskPattern;
+          var bits = QRUtil.getBCHTypeInfo(data);
+          for (var i = 0; i < 15; i += 1) {
+            var mod = !test && (bits >> i & 1) == 1;
+            if (i < 6) {
+              _modules[i][8] = mod;
+            } else if (i < 8) {
+              _modules[i + 1][8] = mod;
+            } else {
+              _modules[_moduleCount - 15 + i][8] = mod;
+            }
+          }
+          for (var i = 0; i < 15; i += 1) {
+            var mod = !test && (bits >> i & 1) == 1;
+            if (i < 8) {
+              _modules[8][_moduleCount - i - 1] = mod;
+            } else if (i < 9) {
+              _modules[8][15 - i - 1 + 1] = mod;
+            } else {
+              _modules[8][15 - i - 1] = mod;
+            }
+          }
+          _modules[_moduleCount - 8][8] = !test;
+        };
+        var mapData = function(data, maskPattern) {
+          var inc = -1;
+          var row = _moduleCount - 1;
+          var bitIndex = 7;
+          var byteIndex = 0;
+          var maskFunc = QRUtil.getMaskFunction(maskPattern);
+          for (var col = _moduleCount - 1; col > 0; col -= 2) {
+            if (col == 6) col -= 1;
+            while (true) {
+              for (var c = 0; c < 2; c += 1) {
+                if (_modules[row][col - c] == null) {
+                  var dark = false;
+                  if (byteIndex < data.length) {
+                    dark = (data[byteIndex] >>> bitIndex & 1) == 1;
+                  }
+                  var mask = maskFunc(row, col - c);
+                  if (mask) {
+                    dark = !dark;
+                  }
+                  _modules[row][col - c] = dark;
+                  bitIndex -= 1;
+                  if (bitIndex == -1) {
+                    byteIndex += 1;
+                    bitIndex = 7;
+                  }
+                }
+              }
+              row += inc;
+              if (row < 0 || _moduleCount <= row) {
+                row -= inc;
+                inc = -inc;
+                break;
+              }
+            }
+          }
+        };
+        var createBytes = function(buffer, rsBlocks) {
+          var offset = 0;
+          var maxDcCount = 0;
+          var maxEcCount = 0;
+          var dcdata = new Array(rsBlocks.length);
+          var ecdata = new Array(rsBlocks.length);
+          for (var r = 0; r < rsBlocks.length; r += 1) {
+            var dcCount = rsBlocks[r].dataCount;
+            var ecCount = rsBlocks[r].totalCount - dcCount;
+            maxDcCount = Math.max(maxDcCount, dcCount);
+            maxEcCount = Math.max(maxEcCount, ecCount);
+            dcdata[r] = new Array(dcCount);
+            for (var i = 0; i < dcdata[r].length; i += 1) {
+              dcdata[r][i] = 255 & buffer.getBuffer()[i + offset];
+            }
+            offset += dcCount;
+            var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
+            var rawPoly = qrPolynomial(dcdata[r], rsPoly.getLength() - 1);
+            var modPoly = rawPoly.mod(rsPoly);
+            ecdata[r] = new Array(rsPoly.getLength() - 1);
+            for (var i = 0; i < ecdata[r].length; i += 1) {
+              var modIndex = i + modPoly.getLength() - ecdata[r].length;
+              ecdata[r][i] = modIndex >= 0 ? modPoly.getAt(modIndex) : 0;
+            }
+          }
+          var totalCodeCount = 0;
+          for (var i = 0; i < rsBlocks.length; i += 1) {
+            totalCodeCount += rsBlocks[i].totalCount;
+          }
+          var data = new Array(totalCodeCount);
+          var index = 0;
+          for (var i = 0; i < maxDcCount; i += 1) {
+            for (var r = 0; r < rsBlocks.length; r += 1) {
+              if (i < dcdata[r].length) {
+                data[index] = dcdata[r][i];
+                index += 1;
+              }
+            }
+          }
+          for (var i = 0; i < maxEcCount; i += 1) {
+            for (var r = 0; r < rsBlocks.length; r += 1) {
+              if (i < ecdata[r].length) {
+                data[index] = ecdata[r][i];
+                index += 1;
+              }
+            }
+          }
+          return data;
+        };
+        var createData = function(typeNumber2, errorCorrectionLevel2, dataList) {
+          var rsBlocks = QRRSBlock.getRSBlocks(typeNumber2, errorCorrectionLevel2);
+          var buffer = qrBitBuffer();
+          for (var i = 0; i < dataList.length; i += 1) {
+            var data = dataList[i];
+            buffer.put(data.getMode(), 4);
+            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber2));
+            data.write(buffer);
+          }
+          var totalDataCount = 0;
+          for (var i = 0; i < rsBlocks.length; i += 1) {
+            totalDataCount += rsBlocks[i].dataCount;
+          }
+          if (buffer.getLengthInBits() > totalDataCount * 8) {
+            throw "code length overflow. (" + buffer.getLengthInBits() + ">" + totalDataCount * 8 + ")";
+          }
+          if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
+            buffer.put(0, 4);
+          }
+          while (buffer.getLengthInBits() % 8 != 0) {
+            buffer.putBit(false);
+          }
+          while (true) {
+            if (buffer.getLengthInBits() >= totalDataCount * 8) {
+              break;
+            }
+            buffer.put(PAD0, 8);
+            if (buffer.getLengthInBits() >= totalDataCount * 8) {
+              break;
+            }
+            buffer.put(PAD1, 8);
+          }
+          return createBytes(buffer, rsBlocks);
+        };
+        _this.addData = function(data, mode) {
+          mode = mode || "Byte";
+          var newData = null;
+          switch (mode) {
+            case "Numeric":
+              newData = qrNumber(data);
+              break;
+            case "Alphanumeric":
+              newData = qrAlphaNum(data);
+              break;
+            case "Byte":
+              newData = qr8BitByte(data);
+              break;
+            case "Kanji":
+              newData = qrKanji(data);
+              break;
+            default:
+              throw "mode:" + mode;
+          }
+          _dataList.push(newData);
+          _dataCache = null;
+        };
+        _this.isDark = function(row, col) {
+          if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
+            throw row + "," + col;
+          }
+          return _modules[row][col];
+        };
+        _this.getModuleCount = function() {
+          return _moduleCount;
+        };
+        _this.make = function() {
+          if (_typeNumber < 1) {
+            var typeNumber2 = 1;
+            for (; typeNumber2 < 40; typeNumber2++) {
+              var rsBlocks = QRRSBlock.getRSBlocks(typeNumber2, _errorCorrectionLevel);
+              var buffer = qrBitBuffer();
+              for (var i = 0; i < _dataList.length; i++) {
+                var data = _dataList[i];
+                buffer.put(data.getMode(), 4);
+                buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber2));
+                data.write(buffer);
+              }
+              var totalDataCount = 0;
+              for (var i = 0; i < rsBlocks.length; i++) {
+                totalDataCount += rsBlocks[i].dataCount;
+              }
+              if (buffer.getLengthInBits() <= totalDataCount * 8) {
+                break;
+              }
+            }
+            _typeNumber = typeNumber2;
+          }
+          makeImpl(false, getBestMaskPattern());
+        };
+        _this.createTableTag = function(cellSize, margin) {
+          cellSize = cellSize || 2;
+          margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+          var qrHtml = "";
+          qrHtml += '<table style="';
+          qrHtml += " border-width: 0px; border-style: none;";
+          qrHtml += " border-collapse: collapse;";
+          qrHtml += " padding: 0px; margin: " + margin + "px;";
+          qrHtml += '">';
+          qrHtml += "<tbody>";
+          for (var r = 0; r < _this.getModuleCount(); r += 1) {
+            qrHtml += "<tr>";
+            for (var c = 0; c < _this.getModuleCount(); c += 1) {
+              qrHtml += '<td style="';
+              qrHtml += " border-width: 0px; border-style: none;";
+              qrHtml += " border-collapse: collapse;";
+              qrHtml += " padding: 0px; margin: 0px;";
+              qrHtml += " width: " + cellSize + "px;";
+              qrHtml += " height: " + cellSize + "px;";
+              qrHtml += " background-color: ";
+              qrHtml += _this.isDark(r, c) ? "#000000" : "#ffffff";
+              qrHtml += ";";
+              qrHtml += '"/>';
+            }
+            qrHtml += "</tr>";
+          }
+          qrHtml += "</tbody>";
+          qrHtml += "</table>";
+          return qrHtml;
+        };
+        _this.createSvgTag = function(cellSize, margin, alt, title) {
+          var opts = {};
+          if (typeof arguments[0] == "object") {
+            opts = arguments[0];
+            cellSize = opts.cellSize;
+            margin = opts.margin;
+            alt = opts.alt;
+            title = opts.title;
+          }
+          cellSize = cellSize || 2;
+          margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+          alt = typeof alt === "string" ? { text: alt } : alt || {};
+          alt.text = alt.text || null;
+          alt.id = alt.text ? alt.id || "qrcode-description" : null;
+          title = typeof title === "string" ? { text: title } : title || {};
+          title.text = title.text || null;
+          title.id = title.text ? title.id || "qrcode-title" : null;
+          var size = _this.getModuleCount() * cellSize + margin * 2;
+          var c, mc, r, mr, qrSvg = "", rect;
+          rect = "l" + cellSize + ",0 0," + cellSize + " -" + cellSize + ",0 0,-" + cellSize + "z ";
+          qrSvg += '<svg version="1.1" xmlns="http://www.w3.org/2000/svg"';
+          qrSvg += !opts.scalable ? ' width="' + size + 'px" height="' + size + 'px"' : "";
+          qrSvg += ' viewBox="0 0 ' + size + " " + size + '" ';
+          qrSvg += ' preserveAspectRatio="xMinYMin meet"';
+          qrSvg += title.text || alt.text ? ' role="img" aria-labelledby="' + escapeXml([title.id, alt.id].join(" ").trim()) + '"' : "";
+          qrSvg += ">";
+          qrSvg += title.text ? '<title id="' + escapeXml(title.id) + '">' + escapeXml(title.text) + "</title>" : "";
+          qrSvg += alt.text ? '<description id="' + escapeXml(alt.id) + '">' + escapeXml(alt.text) + "</description>" : "";
+          qrSvg += '<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>';
+          qrSvg += '<path d="';
+          for (r = 0; r < _this.getModuleCount(); r += 1) {
+            mr = r * cellSize + margin;
+            for (c = 0; c < _this.getModuleCount(); c += 1) {
+              if (_this.isDark(r, c)) {
+                mc = c * cellSize + margin;
+                qrSvg += "M" + mc + "," + mr + rect;
+              }
+            }
+          }
+          qrSvg += '" stroke="transparent" fill="black"/>';
+          qrSvg += "</svg>";
+          return qrSvg;
+        };
+        _this.createDataURL = function(cellSize, margin) {
+          cellSize = cellSize || 2;
+          margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+          var size = _this.getModuleCount() * cellSize + margin * 2;
+          var min = margin;
+          var max = size - margin;
+          return createDataURL(size, size, function(x, y) {
+            if (min <= x && x < max && min <= y && y < max) {
+              var c = Math.floor((x - min) / cellSize);
+              var r = Math.floor((y - min) / cellSize);
+              return _this.isDark(r, c) ? 0 : 1;
+            } else {
+              return 1;
+            }
+          });
+        };
+        _this.createImgTag = function(cellSize, margin, alt) {
+          cellSize = cellSize || 2;
+          margin = typeof margin == "undefined" ? cellSize * 4 : margin;
+          var size = _this.getModuleCount() * cellSize + margin * 2;
+          var img = "";
+          img += "<img";
+          img += ' src="';
+          img += _this.createDataURL(cellSize, margin);
+          img += '"';
+          img += ' width="';
+          img += size;
+          img += '"';
+          img += ' height="';
+          img += size;
+          img += '"';
+          if (alt) {
+            img += ' alt="';
+            img += escapeXml(alt);
+            img += '"';
+          }
+          img += "/>";
+          return img;
+        };
+        var escapeXml = function(s) {
+          var escaped = "";
+          for (var i = 0; i < s.length; i += 1) {
+            var c = s.charAt(i);
+            switch (c) {
+              case "<":
+                escaped += "&lt;";
+                break;
+              case ">":
+                escaped += "&gt;";
+                break;
+              case "&":
+                escaped += "&amp;";
+                break;
+              case '"':
+                escaped += "&quot;";
+                break;
+              default:
+                escaped += c;
+                break;
+            }
+          }
+          return escaped;
+        };
+        var _createHalfASCII = function(margin) {
+          var cellSize = 1;
+          margin = typeof margin == "undefined" ? cellSize * 2 : margin;
+          var size = _this.getModuleCount() * cellSize + margin * 2;
+          var min = margin;
+          var max = size - margin;
+          var y, x, r1, r2, p;
+          var blocks = {
+            "\u2588\u2588": "\u2588",
+            "\u2588 ": "\u2580",
+            " \u2588": "\u2584",
+            "  ": " "
+          };
+          var blocksLastLineNoMargin = {
+            "\u2588\u2588": "\u2580",
+            "\u2588 ": "\u2580",
+            " \u2588": " ",
+            "  ": " "
+          };
+          var ascii = "";
+          for (y = 0; y < size; y += 2) {
+            r1 = Math.floor((y - min) / cellSize);
+            r2 = Math.floor((y + 1 - min) / cellSize);
+            for (x = 0; x < size; x += 1) {
+              p = "\u2588";
+              if (min <= x && x < max && min <= y && y < max && _this.isDark(r1, Math.floor((x - min) / cellSize))) {
+                p = " ";
+              }
+              if (min <= x && x < max && min <= y + 1 && y + 1 < max && _this.isDark(r2, Math.floor((x - min) / cellSize))) {
+                p += " ";
+              } else {
+                p += "\u2588";
+              }
+              ascii += margin < 1 && y + 1 >= max ? blocksLastLineNoMargin[p] : blocks[p];
+            }
+            ascii += "\n";
+          }
+          if (size % 2 && margin > 0) {
+            return ascii.substring(0, ascii.length - size - 1) + Array(size + 1).join("\u2580");
+          }
+          return ascii.substring(0, ascii.length - 1);
+        };
+        _this.createASCII = function(cellSize, margin) {
+          cellSize = cellSize || 1;
+          if (cellSize < 2) {
+            return _createHalfASCII(margin);
+          }
+          cellSize -= 1;
+          margin = typeof margin == "undefined" ? cellSize * 2 : margin;
+          var size = _this.getModuleCount() * cellSize + margin * 2;
+          var min = margin;
+          var max = size - margin;
+          var y, x, r, p;
+          var white = Array(cellSize + 1).join("\u2588\u2588");
+          var black = Array(cellSize + 1).join("  ");
+          var ascii = "";
+          var line = "";
+          for (y = 0; y < size; y += 1) {
+            r = Math.floor((y - min) / cellSize);
+            line = "";
+            for (x = 0; x < size; x += 1) {
+              p = 1;
+              if (min <= x && x < max && min <= y && y < max && _this.isDark(r, Math.floor((x - min) / cellSize))) {
+                p = 0;
+              }
+              line += p ? white : black;
+            }
+            for (r = 0; r < cellSize; r += 1) {
+              ascii += line + "\n";
+            }
+          }
+          return ascii.substring(0, ascii.length - 1);
+        };
+        _this.renderTo2dContext = function(context, cellSize) {
+          cellSize = cellSize || 2;
+          var length = _this.getModuleCount();
+          for (var row = 0; row < length; row++) {
+            for (var col = 0; col < length; col++) {
+              context.fillStyle = _this.isDark(row, col) ? "black" : "white";
+              context.fillRect(row * cellSize, col * cellSize, cellSize, cellSize);
+            }
+          }
+        };
+        return _this;
+      };
+      qrcode3.stringToBytesFuncs = {
+        "default": function(s) {
+          var bytes = [];
+          for (var i = 0; i < s.length; i += 1) {
+            var c = s.charCodeAt(i);
+            bytes.push(c & 255);
+          }
+          return bytes;
+        }
+      };
+      qrcode3.stringToBytes = qrcode3.stringToBytesFuncs["default"];
+      qrcode3.createStringToBytes = function(unicodeData, numChars) {
+        var unicodeMap = function() {
+          var bin = base64DecodeInputStream(unicodeData);
+          var read = function() {
+            var b = bin.read();
+            if (b == -1) throw "eof";
+            return b;
+          };
+          var count = 0;
+          var unicodeMap2 = {};
+          while (true) {
+            var b0 = bin.read();
+            if (b0 == -1) break;
+            var b1 = read();
+            var b2 = read();
+            var b3 = read();
+            var k = String.fromCharCode(b0 << 8 | b1);
+            var v = b2 << 8 | b3;
+            unicodeMap2[k] = v;
+            count += 1;
+          }
+          if (count != numChars) {
+            throw count + " != " + numChars;
+          }
+          return unicodeMap2;
+        }();
+        var unknownChar = "?".charCodeAt(0);
+        return function(s) {
+          var bytes = [];
+          for (var i = 0; i < s.length; i += 1) {
+            var c = s.charCodeAt(i);
+            if (c < 128) {
+              bytes.push(c);
+            } else {
+              var b = unicodeMap[s.charAt(i)];
+              if (typeof b == "number") {
+                if ((b & 255) == b) {
+                  bytes.push(b);
+                } else {
+                  bytes.push(b >>> 8);
+                  bytes.push(b & 255);
+                }
+              } else {
+                bytes.push(unknownChar);
+              }
+            }
+          }
+          return bytes;
+        };
+      };
+      var QRMode = {
+        MODE_NUMBER: 1 << 0,
+        MODE_ALPHA_NUM: 1 << 1,
+        MODE_8BIT_BYTE: 1 << 2,
+        MODE_KANJI: 1 << 3
+      };
+      var QRErrorCorrectionLevel = {
+        L: 1,
+        M: 0,
+        Q: 3,
+        H: 2
+      };
+      var QRMaskPattern = {
+        PATTERN000: 0,
+        PATTERN001: 1,
+        PATTERN010: 2,
+        PATTERN011: 3,
+        PATTERN100: 4,
+        PATTERN101: 5,
+        PATTERN110: 6,
+        PATTERN111: 7
+      };
+      var QRUtil = function() {
+        var PATTERN_POSITION_TABLE = [
+          [],
+          [6, 18],
+          [6, 22],
+          [6, 26],
+          [6, 30],
+          [6, 34],
+          [6, 22, 38],
+          [6, 24, 42],
+          [6, 26, 46],
+          [6, 28, 50],
+          [6, 30, 54],
+          [6, 32, 58],
+          [6, 34, 62],
+          [6, 26, 46, 66],
+          [6, 26, 48, 70],
+          [6, 26, 50, 74],
+          [6, 30, 54, 78],
+          [6, 30, 56, 82],
+          [6, 30, 58, 86],
+          [6, 34, 62, 90],
+          [6, 28, 50, 72, 94],
+          [6, 26, 50, 74, 98],
+          [6, 30, 54, 78, 102],
+          [6, 28, 54, 80, 106],
+          [6, 32, 58, 84, 110],
+          [6, 30, 58, 86, 114],
+          [6, 34, 62, 90, 118],
+          [6, 26, 50, 74, 98, 122],
+          [6, 30, 54, 78, 102, 126],
+          [6, 26, 52, 78, 104, 130],
+          [6, 30, 56, 82, 108, 134],
+          [6, 34, 60, 86, 112, 138],
+          [6, 30, 58, 86, 114, 142],
+          [6, 34, 62, 90, 118, 146],
+          [6, 30, 54, 78, 102, 126, 150],
+          [6, 24, 50, 76, 102, 128, 154],
+          [6, 28, 54, 80, 106, 132, 158],
+          [6, 32, 58, 84, 110, 136, 162],
+          [6, 26, 54, 82, 110, 138, 166],
+          [6, 30, 58, 86, 114, 142, 170]
+        ];
+        var G15 = 1 << 10 | 1 << 8 | 1 << 5 | 1 << 4 | 1 << 2 | 1 << 1 | 1 << 0;
+        var G18 = 1 << 12 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 1 << 5 | 1 << 2 | 1 << 0;
+        var G15_MASK = 1 << 14 | 1 << 12 | 1 << 10 | 1 << 4 | 1 << 1;
+        var _this = {};
+        var getBCHDigit = function(data) {
+          var digit = 0;
+          while (data != 0) {
+            digit += 1;
+            data >>>= 1;
+          }
+          return digit;
+        };
+        _this.getBCHTypeInfo = function(data) {
+          var d = data << 10;
+          while (getBCHDigit(d) - getBCHDigit(G15) >= 0) {
+            d ^= G15 << getBCHDigit(d) - getBCHDigit(G15);
+          }
+          return (data << 10 | d) ^ G15_MASK;
+        };
+        _this.getBCHTypeNumber = function(data) {
+          var d = data << 12;
+          while (getBCHDigit(d) - getBCHDigit(G18) >= 0) {
+            d ^= G18 << getBCHDigit(d) - getBCHDigit(G18);
+          }
+          return data << 12 | d;
+        };
+        _this.getPatternPosition = function(typeNumber) {
+          return PATTERN_POSITION_TABLE[typeNumber - 1];
+        };
+        _this.getMaskFunction = function(maskPattern) {
+          switch (maskPattern) {
+            case QRMaskPattern.PATTERN000:
+              return function(i, j) {
+                return (i + j) % 2 == 0;
+              };
+            case QRMaskPattern.PATTERN001:
+              return function(i, j) {
+                return i % 2 == 0;
+              };
+            case QRMaskPattern.PATTERN010:
+              return function(i, j) {
+                return j % 3 == 0;
+              };
+            case QRMaskPattern.PATTERN011:
+              return function(i, j) {
+                return (i + j) % 3 == 0;
+              };
+            case QRMaskPattern.PATTERN100:
+              return function(i, j) {
+                return (Math.floor(i / 2) + Math.floor(j / 3)) % 2 == 0;
+              };
+            case QRMaskPattern.PATTERN101:
+              return function(i, j) {
+                return i * j % 2 + i * j % 3 == 0;
+              };
+            case QRMaskPattern.PATTERN110:
+              return function(i, j) {
+                return (i * j % 2 + i * j % 3) % 2 == 0;
+              };
+            case QRMaskPattern.PATTERN111:
+              return function(i, j) {
+                return (i * j % 3 + (i + j) % 2) % 2 == 0;
+              };
+            default:
+              throw "bad maskPattern:" + maskPattern;
+          }
+        };
+        _this.getErrorCorrectPolynomial = function(errorCorrectLength) {
+          var a = qrPolynomial([1], 0);
+          for (var i = 0; i < errorCorrectLength; i += 1) {
+            a = a.multiply(qrPolynomial([1, QRMath.gexp(i)], 0));
+          }
+          return a;
+        };
+        _this.getLengthInBits = function(mode, type) {
+          if (1 <= type && type < 10) {
+            switch (mode) {
+              case QRMode.MODE_NUMBER:
+                return 10;
+              case QRMode.MODE_ALPHA_NUM:
+                return 9;
+              case QRMode.MODE_8BIT_BYTE:
+                return 8;
+              case QRMode.MODE_KANJI:
+                return 8;
+              default:
+                throw "mode:" + mode;
+            }
+          } else if (type < 27) {
+            switch (mode) {
+              case QRMode.MODE_NUMBER:
+                return 12;
+              case QRMode.MODE_ALPHA_NUM:
+                return 11;
+              case QRMode.MODE_8BIT_BYTE:
+                return 16;
+              case QRMode.MODE_KANJI:
+                return 10;
+              default:
+                throw "mode:" + mode;
+            }
+          } else if (type < 41) {
+            switch (mode) {
+              case QRMode.MODE_NUMBER:
+                return 14;
+              case QRMode.MODE_ALPHA_NUM:
+                return 13;
+              case QRMode.MODE_8BIT_BYTE:
+                return 16;
+              case QRMode.MODE_KANJI:
+                return 12;
+              default:
+                throw "mode:" + mode;
+            }
+          } else {
+            throw "type:" + type;
+          }
+        };
+        _this.getLostPoint = function(qrcode4) {
+          var moduleCount = qrcode4.getModuleCount();
+          var lostPoint = 0;
+          for (var row = 0; row < moduleCount; row += 1) {
+            for (var col = 0; col < moduleCount; col += 1) {
+              var sameCount = 0;
+              var dark = qrcode4.isDark(row, col);
+              for (var r = -1; r <= 1; r += 1) {
+                if (row + r < 0 || moduleCount <= row + r) {
+                  continue;
+                }
+                for (var c = -1; c <= 1; c += 1) {
+                  if (col + c < 0 || moduleCount <= col + c) {
+                    continue;
+                  }
+                  if (r == 0 && c == 0) {
+                    continue;
+                  }
+                  if (dark == qrcode4.isDark(row + r, col + c)) {
+                    sameCount += 1;
+                  }
+                }
+              }
+              if (sameCount > 5) {
+                lostPoint += 3 + sameCount - 5;
+              }
+            }
+          }
+          ;
+          for (var row = 0; row < moduleCount - 1; row += 1) {
+            for (var col = 0; col < moduleCount - 1; col += 1) {
+              var count = 0;
+              if (qrcode4.isDark(row, col)) count += 1;
+              if (qrcode4.isDark(row + 1, col)) count += 1;
+              if (qrcode4.isDark(row, col + 1)) count += 1;
+              if (qrcode4.isDark(row + 1, col + 1)) count += 1;
+              if (count == 0 || count == 4) {
+                lostPoint += 3;
+              }
+            }
+          }
+          for (var row = 0; row < moduleCount; row += 1) {
+            for (var col = 0; col < moduleCount - 6; col += 1) {
+              if (qrcode4.isDark(row, col) && !qrcode4.isDark(row, col + 1) && qrcode4.isDark(row, col + 2) && qrcode4.isDark(row, col + 3) && qrcode4.isDark(row, col + 4) && !qrcode4.isDark(row, col + 5) && qrcode4.isDark(row, col + 6)) {
+                lostPoint += 40;
+              }
+            }
+          }
+          for (var col = 0; col < moduleCount; col += 1) {
+            for (var row = 0; row < moduleCount - 6; row += 1) {
+              if (qrcode4.isDark(row, col) && !qrcode4.isDark(row + 1, col) && qrcode4.isDark(row + 2, col) && qrcode4.isDark(row + 3, col) && qrcode4.isDark(row + 4, col) && !qrcode4.isDark(row + 5, col) && qrcode4.isDark(row + 6, col)) {
+                lostPoint += 40;
+              }
+            }
+          }
+          var darkCount = 0;
+          for (var col = 0; col < moduleCount; col += 1) {
+            for (var row = 0; row < moduleCount; row += 1) {
+              if (qrcode4.isDark(row, col)) {
+                darkCount += 1;
+              }
+            }
+          }
+          var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
+          lostPoint += ratio * 10;
+          return lostPoint;
+        };
+        return _this;
+      }();
+      var QRMath = function() {
+        var EXP_TABLE = new Array(256);
+        var LOG_TABLE = new Array(256);
+        for (var i = 0; i < 8; i += 1) {
+          EXP_TABLE[i] = 1 << i;
+        }
+        for (var i = 8; i < 256; i += 1) {
+          EXP_TABLE[i] = EXP_TABLE[i - 4] ^ EXP_TABLE[i - 5] ^ EXP_TABLE[i - 6] ^ EXP_TABLE[i - 8];
+        }
+        for (var i = 0; i < 255; i += 1) {
+          LOG_TABLE[EXP_TABLE[i]] = i;
+        }
+        var _this = {};
+        _this.glog = function(n) {
+          if (n < 1) {
+            throw "glog(" + n + ")";
+          }
+          return LOG_TABLE[n];
+        };
+        _this.gexp = function(n) {
+          while (n < 0) {
+            n += 255;
+          }
+          while (n >= 256) {
+            n -= 255;
+          }
+          return EXP_TABLE[n];
+        };
+        return _this;
+      }();
+      function qrPolynomial(num, shift) {
+        if (typeof num.length == "undefined") {
+          throw num.length + "/" + shift;
+        }
+        var _num = function() {
+          var offset = 0;
+          while (offset < num.length && num[offset] == 0) {
+            offset += 1;
+          }
+          var _num2 = new Array(num.length - offset + shift);
+          for (var i = 0; i < num.length - offset; i += 1) {
+            _num2[i] = num[i + offset];
+          }
+          return _num2;
+        }();
+        var _this = {};
+        _this.getAt = function(index) {
+          return _num[index];
+        };
+        _this.getLength = function() {
+          return _num.length;
+        };
+        _this.multiply = function(e) {
+          var num2 = new Array(_this.getLength() + e.getLength() - 1);
+          for (var i = 0; i < _this.getLength(); i += 1) {
+            for (var j = 0; j < e.getLength(); j += 1) {
+              num2[i + j] ^= QRMath.gexp(QRMath.glog(_this.getAt(i)) + QRMath.glog(e.getAt(j)));
+            }
+          }
+          return qrPolynomial(num2, 0);
+        };
+        _this.mod = function(e) {
+          if (_this.getLength() - e.getLength() < 0) {
+            return _this;
+          }
+          var ratio = QRMath.glog(_this.getAt(0)) - QRMath.glog(e.getAt(0));
+          var num2 = new Array(_this.getLength());
+          for (var i = 0; i < _this.getLength(); i += 1) {
+            num2[i] = _this.getAt(i);
+          }
+          for (var i = 0; i < e.getLength(); i += 1) {
+            num2[i] ^= QRMath.gexp(QRMath.glog(e.getAt(i)) + ratio);
+          }
+          return qrPolynomial(num2, 0).mod(e);
+        };
+        return _this;
+      }
+      ;
+      var QRRSBlock = function() {
+        var RS_BLOCK_TABLE = [
+          // L
+          // M
+          // Q
+          // H
+          // 1
+          [1, 26, 19],
+          [1, 26, 16],
+          [1, 26, 13],
+          [1, 26, 9],
+          // 2
+          [1, 44, 34],
+          [1, 44, 28],
+          [1, 44, 22],
+          [1, 44, 16],
+          // 3
+          [1, 70, 55],
+          [1, 70, 44],
+          [2, 35, 17],
+          [2, 35, 13],
+          // 4
+          [1, 100, 80],
+          [2, 50, 32],
+          [2, 50, 24],
+          [4, 25, 9],
+          // 5
+          [1, 134, 108],
+          [2, 67, 43],
+          [2, 33, 15, 2, 34, 16],
+          [2, 33, 11, 2, 34, 12],
+          // 6
+          [2, 86, 68],
+          [4, 43, 27],
+          [4, 43, 19],
+          [4, 43, 15],
+          // 7
+          [2, 98, 78],
+          [4, 49, 31],
+          [2, 32, 14, 4, 33, 15],
+          [4, 39, 13, 1, 40, 14],
+          // 8
+          [2, 121, 97],
+          [2, 60, 38, 2, 61, 39],
+          [4, 40, 18, 2, 41, 19],
+          [4, 40, 14, 2, 41, 15],
+          // 9
+          [2, 146, 116],
+          [3, 58, 36, 2, 59, 37],
+          [4, 36, 16, 4, 37, 17],
+          [4, 36, 12, 4, 37, 13],
+          // 10
+          [2, 86, 68, 2, 87, 69],
+          [4, 69, 43, 1, 70, 44],
+          [6, 43, 19, 2, 44, 20],
+          [6, 43, 15, 2, 44, 16],
+          // 11
+          [4, 101, 81],
+          [1, 80, 50, 4, 81, 51],
+          [4, 50, 22, 4, 51, 23],
+          [3, 36, 12, 8, 37, 13],
+          // 12
+          [2, 116, 92, 2, 117, 93],
+          [6, 58, 36, 2, 59, 37],
+          [4, 46, 20, 6, 47, 21],
+          [7, 42, 14, 4, 43, 15],
+          // 13
+          [4, 133, 107],
+          [8, 59, 37, 1, 60, 38],
+          [8, 44, 20, 4, 45, 21],
+          [12, 33, 11, 4, 34, 12],
+          // 14
+          [3, 145, 115, 1, 146, 116],
+          [4, 64, 40, 5, 65, 41],
+          [11, 36, 16, 5, 37, 17],
+          [11, 36, 12, 5, 37, 13],
+          // 15
+          [5, 109, 87, 1, 110, 88],
+          [5, 65, 41, 5, 66, 42],
+          [5, 54, 24, 7, 55, 25],
+          [11, 36, 12, 7, 37, 13],
+          // 16
+          [5, 122, 98, 1, 123, 99],
+          [7, 73, 45, 3, 74, 46],
+          [15, 43, 19, 2, 44, 20],
+          [3, 45, 15, 13, 46, 16],
+          // 17
+          [1, 135, 107, 5, 136, 108],
+          [10, 74, 46, 1, 75, 47],
+          [1, 50, 22, 15, 51, 23],
+          [2, 42, 14, 17, 43, 15],
+          // 18
+          [5, 150, 120, 1, 151, 121],
+          [9, 69, 43, 4, 70, 44],
+          [17, 50, 22, 1, 51, 23],
+          [2, 42, 14, 19, 43, 15],
+          // 19
+          [3, 141, 113, 4, 142, 114],
+          [3, 70, 44, 11, 71, 45],
+          [17, 47, 21, 4, 48, 22],
+          [9, 39, 13, 16, 40, 14],
+          // 20
+          [3, 135, 107, 5, 136, 108],
+          [3, 67, 41, 13, 68, 42],
+          [15, 54, 24, 5, 55, 25],
+          [15, 43, 15, 10, 44, 16],
+          // 21
+          [4, 144, 116, 4, 145, 117],
+          [17, 68, 42],
+          [17, 50, 22, 6, 51, 23],
+          [19, 46, 16, 6, 47, 17],
+          // 22
+          [2, 139, 111, 7, 140, 112],
+          [17, 74, 46],
+          [7, 54, 24, 16, 55, 25],
+          [34, 37, 13],
+          // 23
+          [4, 151, 121, 5, 152, 122],
+          [4, 75, 47, 14, 76, 48],
+          [11, 54, 24, 14, 55, 25],
+          [16, 45, 15, 14, 46, 16],
+          // 24
+          [6, 147, 117, 4, 148, 118],
+          [6, 73, 45, 14, 74, 46],
+          [11, 54, 24, 16, 55, 25],
+          [30, 46, 16, 2, 47, 17],
+          // 25
+          [8, 132, 106, 4, 133, 107],
+          [8, 75, 47, 13, 76, 48],
+          [7, 54, 24, 22, 55, 25],
+          [22, 45, 15, 13, 46, 16],
+          // 26
+          [10, 142, 114, 2, 143, 115],
+          [19, 74, 46, 4, 75, 47],
+          [28, 50, 22, 6, 51, 23],
+          [33, 46, 16, 4, 47, 17],
+          // 27
+          [8, 152, 122, 4, 153, 123],
+          [22, 73, 45, 3, 74, 46],
+          [8, 53, 23, 26, 54, 24],
+          [12, 45, 15, 28, 46, 16],
+          // 28
+          [3, 147, 117, 10, 148, 118],
+          [3, 73, 45, 23, 74, 46],
+          [4, 54, 24, 31, 55, 25],
+          [11, 45, 15, 31, 46, 16],
+          // 29
+          [7, 146, 116, 7, 147, 117],
+          [21, 73, 45, 7, 74, 46],
+          [1, 53, 23, 37, 54, 24],
+          [19, 45, 15, 26, 46, 16],
+          // 30
+          [5, 145, 115, 10, 146, 116],
+          [19, 75, 47, 10, 76, 48],
+          [15, 54, 24, 25, 55, 25],
+          [23, 45, 15, 25, 46, 16],
+          // 31
+          [13, 145, 115, 3, 146, 116],
+          [2, 74, 46, 29, 75, 47],
+          [42, 54, 24, 1, 55, 25],
+          [23, 45, 15, 28, 46, 16],
+          // 32
+          [17, 145, 115],
+          [10, 74, 46, 23, 75, 47],
+          [10, 54, 24, 35, 55, 25],
+          [19, 45, 15, 35, 46, 16],
+          // 33
+          [17, 145, 115, 1, 146, 116],
+          [14, 74, 46, 21, 75, 47],
+          [29, 54, 24, 19, 55, 25],
+          [11, 45, 15, 46, 46, 16],
+          // 34
+          [13, 145, 115, 6, 146, 116],
+          [14, 74, 46, 23, 75, 47],
+          [44, 54, 24, 7, 55, 25],
+          [59, 46, 16, 1, 47, 17],
+          // 35
+          [12, 151, 121, 7, 152, 122],
+          [12, 75, 47, 26, 76, 48],
+          [39, 54, 24, 14, 55, 25],
+          [22, 45, 15, 41, 46, 16],
+          // 36
+          [6, 151, 121, 14, 152, 122],
+          [6, 75, 47, 34, 76, 48],
+          [46, 54, 24, 10, 55, 25],
+          [2, 45, 15, 64, 46, 16],
+          // 37
+          [17, 152, 122, 4, 153, 123],
+          [29, 74, 46, 14, 75, 47],
+          [49, 54, 24, 10, 55, 25],
+          [24, 45, 15, 46, 46, 16],
+          // 38
+          [4, 152, 122, 18, 153, 123],
+          [13, 74, 46, 32, 75, 47],
+          [48, 54, 24, 14, 55, 25],
+          [42, 45, 15, 32, 46, 16],
+          // 39
+          [20, 147, 117, 4, 148, 118],
+          [40, 75, 47, 7, 76, 48],
+          [43, 54, 24, 22, 55, 25],
+          [10, 45, 15, 67, 46, 16],
+          // 40
+          [19, 148, 118, 6, 149, 119],
+          [18, 75, 47, 31, 76, 48],
+          [34, 54, 24, 34, 55, 25],
+          [20, 45, 15, 61, 46, 16]
+        ];
+        var qrRSBlock = function(totalCount, dataCount) {
+          var _this2 = {};
+          _this2.totalCount = totalCount;
+          _this2.dataCount = dataCount;
+          return _this2;
+        };
+        var _this = {};
+        var getRsBlockTable = function(typeNumber, errorCorrectionLevel) {
+          switch (errorCorrectionLevel) {
+            case QRErrorCorrectionLevel.L:
+              return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
+            case QRErrorCorrectionLevel.M:
+              return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
+            case QRErrorCorrectionLevel.Q:
+              return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
+            case QRErrorCorrectionLevel.H:
+              return RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+            default:
+              return void 0;
+          }
+        };
+        _this.getRSBlocks = function(typeNumber, errorCorrectionLevel) {
+          var rsBlock = getRsBlockTable(typeNumber, errorCorrectionLevel);
+          if (typeof rsBlock == "undefined") {
+            throw "bad rs block @ typeNumber:" + typeNumber + "/errorCorrectionLevel:" + errorCorrectionLevel;
+          }
+          var length = rsBlock.length / 3;
+          var list = [];
+          for (var i = 0; i < length; i += 1) {
+            var count = rsBlock[i * 3 + 0];
+            var totalCount = rsBlock[i * 3 + 1];
+            var dataCount = rsBlock[i * 3 + 2];
+            for (var j = 0; j < count; j += 1) {
+              list.push(qrRSBlock(totalCount, dataCount));
+            }
+          }
+          return list;
+        };
+        return _this;
+      }();
+      var qrBitBuffer = function() {
+        var _buffer = [];
+        var _length = 0;
+        var _this = {};
+        _this.getBuffer = function() {
+          return _buffer;
+        };
+        _this.getAt = function(index) {
+          var bufIndex = Math.floor(index / 8);
+          return (_buffer[bufIndex] >>> 7 - index % 8 & 1) == 1;
+        };
+        _this.put = function(num, length) {
+          for (var i = 0; i < length; i += 1) {
+            _this.putBit((num >>> length - i - 1 & 1) == 1);
+          }
+        };
+        _this.getLengthInBits = function() {
+          return _length;
+        };
+        _this.putBit = function(bit) {
+          var bufIndex = Math.floor(_length / 8);
+          if (_buffer.length <= bufIndex) {
+            _buffer.push(0);
+          }
+          if (bit) {
+            _buffer[bufIndex] |= 128 >>> _length % 8;
+          }
+          _length += 1;
+        };
+        return _this;
+      };
+      var qrNumber = function(data) {
+        var _mode = QRMode.MODE_NUMBER;
+        var _data = data;
+        var _this = {};
+        _this.getMode = function() {
+          return _mode;
+        };
+        _this.getLength = function(buffer) {
+          return _data.length;
+        };
+        _this.write = function(buffer) {
+          var data2 = _data;
+          var i = 0;
+          while (i + 2 < data2.length) {
+            buffer.put(strToNum(data2.substring(i, i + 3)), 10);
+            i += 3;
+          }
+          if (i < data2.length) {
+            if (data2.length - i == 1) {
+              buffer.put(strToNum(data2.substring(i, i + 1)), 4);
+            } else if (data2.length - i == 2) {
+              buffer.put(strToNum(data2.substring(i, i + 2)), 7);
+            }
+          }
+        };
+        var strToNum = function(s) {
+          var num = 0;
+          for (var i = 0; i < s.length; i += 1) {
+            num = num * 10 + chatToNum(s.charAt(i));
+          }
+          return num;
+        };
+        var chatToNum = function(c) {
+          if ("0" <= c && c <= "9") {
+            return c.charCodeAt(0) - "0".charCodeAt(0);
+          }
+          throw "illegal char :" + c;
+        };
+        return _this;
+      };
+      var qrAlphaNum = function(data) {
+        var _mode = QRMode.MODE_ALPHA_NUM;
+        var _data = data;
+        var _this = {};
+        _this.getMode = function() {
+          return _mode;
+        };
+        _this.getLength = function(buffer) {
+          return _data.length;
+        };
+        _this.write = function(buffer) {
+          var s = _data;
+          var i = 0;
+          while (i + 1 < s.length) {
+            buffer.put(
+              getCode(s.charAt(i)) * 45 + getCode(s.charAt(i + 1)),
+              11
+            );
+            i += 2;
+          }
+          if (i < s.length) {
+            buffer.put(getCode(s.charAt(i)), 6);
+          }
+        };
+        var getCode = function(c) {
+          if ("0" <= c && c <= "9") {
+            return c.charCodeAt(0) - "0".charCodeAt(0);
+          } else if ("A" <= c && c <= "Z") {
+            return c.charCodeAt(0) - "A".charCodeAt(0) + 10;
+          } else {
+            switch (c) {
+              case " ":
+                return 36;
+              case "$":
+                return 37;
+              case "%":
+                return 38;
+              case "*":
+                return 39;
+              case "+":
+                return 40;
+              case "-":
+                return 41;
+              case ".":
+                return 42;
+              case "/":
+                return 43;
+              case ":":
+                return 44;
+              default:
+                throw "illegal char :" + c;
+            }
+          }
+        };
+        return _this;
+      };
+      var qr8BitByte = function(data) {
+        var _mode = QRMode.MODE_8BIT_BYTE;
+        var _data = data;
+        var _bytes = qrcode3.stringToBytes(data);
+        var _this = {};
+        _this.getMode = function() {
+          return _mode;
+        };
+        _this.getLength = function(buffer) {
+          return _bytes.length;
+        };
+        _this.write = function(buffer) {
+          for (var i = 0; i < _bytes.length; i += 1) {
+            buffer.put(_bytes[i], 8);
+          }
+        };
+        return _this;
+      };
+      var qrKanji = function(data) {
+        var _mode = QRMode.MODE_KANJI;
+        var _data = data;
+        var stringToBytes = qrcode3.stringToBytesFuncs["SJIS"];
+        if (!stringToBytes) {
+          throw "sjis not supported.";
+        }
+        !function(c, code) {
+          var test = stringToBytes(c);
+          if (test.length != 2 || (test[0] << 8 | test[1]) != code) {
+            throw "sjis not supported.";
+          }
+        }("\u53CB", 38726);
+        var _bytes = stringToBytes(data);
+        var _this = {};
+        _this.getMode = function() {
+          return _mode;
+        };
+        _this.getLength = function(buffer) {
+          return ~~(_bytes.length / 2);
+        };
+        _this.write = function(buffer) {
+          var data2 = _bytes;
+          var i = 0;
+          while (i + 1 < data2.length) {
+            var c = (255 & data2[i]) << 8 | 255 & data2[i + 1];
+            if (33088 <= c && c <= 40956) {
+              c -= 33088;
+            } else if (57408 <= c && c <= 60351) {
+              c -= 49472;
+            } else {
+              throw "illegal char at " + (i + 1) + "/" + c;
+            }
+            c = (c >>> 8 & 255) * 192 + (c & 255);
+            buffer.put(c, 13);
+            i += 2;
+          }
+          if (i < data2.length) {
+            throw "illegal char at " + (i + 1);
+          }
+        };
+        return _this;
+      };
+      var byteArrayOutputStream = function() {
+        var _bytes = [];
+        var _this = {};
+        _this.writeByte = function(b) {
+          _bytes.push(b & 255);
+        };
+        _this.writeShort = function(i) {
+          _this.writeByte(i);
+          _this.writeByte(i >>> 8);
+        };
+        _this.writeBytes = function(b, off, len) {
+          off = off || 0;
+          len = len || b.length;
+          for (var i = 0; i < len; i += 1) {
+            _this.writeByte(b[i + off]);
+          }
+        };
+        _this.writeString = function(s) {
+          for (var i = 0; i < s.length; i += 1) {
+            _this.writeByte(s.charCodeAt(i));
+          }
+        };
+        _this.toByteArray = function() {
+          return _bytes;
+        };
+        _this.toString = function() {
+          var s = "";
+          s += "[";
+          for (var i = 0; i < _bytes.length; i += 1) {
+            if (i > 0) {
+              s += ",";
+            }
+            s += _bytes[i];
+          }
+          s += "]";
+          return s;
+        };
+        return _this;
+      };
+      var base64EncodeOutputStream = function() {
+        var _buffer = 0;
+        var _buflen = 0;
+        var _length = 0;
+        var _base64 = "";
+        var _this = {};
+        var writeEncoded = function(b) {
+          _base64 += String.fromCharCode(encode(b & 63));
+        };
+        var encode = function(n) {
+          if (n < 0) {
+          } else if (n < 26) {
+            return 65 + n;
+          } else if (n < 52) {
+            return 97 + (n - 26);
+          } else if (n < 62) {
+            return 48 + (n - 52);
+          } else if (n == 62) {
+            return 43;
+          } else if (n == 63) {
+            return 47;
+          }
+          throw "n:" + n;
+        };
+        _this.writeByte = function(n) {
+          _buffer = _buffer << 8 | n & 255;
+          _buflen += 8;
+          _length += 1;
+          while (_buflen >= 6) {
+            writeEncoded(_buffer >>> _buflen - 6);
+            _buflen -= 6;
+          }
+        };
+        _this.flush = function() {
+          if (_buflen > 0) {
+            writeEncoded(_buffer << 6 - _buflen);
+            _buffer = 0;
+            _buflen = 0;
+          }
+          if (_length % 3 != 0) {
+            var padlen = 3 - _length % 3;
+            for (var i = 0; i < padlen; i += 1) {
+              _base64 += "=";
+            }
+          }
+        };
+        _this.toString = function() {
+          return _base64;
+        };
+        return _this;
+      };
+      var base64DecodeInputStream = function(str) {
+        var _str = str;
+        var _pos = 0;
+        var _buffer = 0;
+        var _buflen = 0;
+        var _this = {};
+        _this.read = function() {
+          while (_buflen < 8) {
+            if (_pos >= _str.length) {
+              if (_buflen == 0) {
+                return -1;
+              }
+              throw "unexpected end of file./" + _buflen;
+            }
+            var c = _str.charAt(_pos);
+            _pos += 1;
+            if (c == "=") {
+              _buflen = 0;
+              return -1;
+            } else if (c.match(/^\s$/)) {
+              continue;
+            }
+            _buffer = _buffer << 6 | decode(c.charCodeAt(0));
+            _buflen += 6;
+          }
+          var n = _buffer >>> _buflen - 8 & 255;
+          _buflen -= 8;
+          return n;
+        };
+        var decode = function(c) {
+          if (65 <= c && c <= 90) {
+            return c - 65;
+          } else if (97 <= c && c <= 122) {
+            return c - 97 + 26;
+          } else if (48 <= c && c <= 57) {
+            return c - 48 + 52;
+          } else if (c == 43) {
+            return 62;
+          } else if (c == 47) {
+            return 63;
+          } else {
+            throw "c:" + c;
+          }
+        };
+        return _this;
+      };
+      var gifImage = function(width, height) {
+        var _width = width;
+        var _height = height;
+        var _data = new Array(width * height);
+        var _this = {};
+        _this.setPixel = function(x, y, pixel) {
+          _data[y * _width + x] = pixel;
+        };
+        _this.write = function(out) {
+          out.writeString("GIF87a");
+          out.writeShort(_width);
+          out.writeShort(_height);
+          out.writeByte(128);
+          out.writeByte(0);
+          out.writeByte(0);
+          out.writeByte(0);
+          out.writeByte(0);
+          out.writeByte(0);
+          out.writeByte(255);
+          out.writeByte(255);
+          out.writeByte(255);
+          out.writeString(",");
+          out.writeShort(0);
+          out.writeShort(0);
+          out.writeShort(_width);
+          out.writeShort(_height);
+          out.writeByte(0);
+          var lzwMinCodeSize = 2;
+          var raster = getLZWRaster(lzwMinCodeSize);
+          out.writeByte(lzwMinCodeSize);
+          var offset = 0;
+          while (raster.length - offset > 255) {
+            out.writeByte(255);
+            out.writeBytes(raster, offset, 255);
+            offset += 255;
+          }
+          out.writeByte(raster.length - offset);
+          out.writeBytes(raster, offset, raster.length - offset);
+          out.writeByte(0);
+          out.writeString(";");
+        };
+        var bitOutputStream = function(out) {
+          var _out = out;
+          var _bitLength = 0;
+          var _bitBuffer = 0;
+          var _this2 = {};
+          _this2.write = function(data, length) {
+            if (data >>> length != 0) {
+              throw "length over";
+            }
+            while (_bitLength + length >= 8) {
+              _out.writeByte(255 & (data << _bitLength | _bitBuffer));
+              length -= 8 - _bitLength;
+              data >>>= 8 - _bitLength;
+              _bitBuffer = 0;
+              _bitLength = 0;
+            }
+            _bitBuffer = data << _bitLength | _bitBuffer;
+            _bitLength = _bitLength + length;
+          };
+          _this2.flush = function() {
+            if (_bitLength > 0) {
+              _out.writeByte(_bitBuffer);
+            }
+          };
+          return _this2;
+        };
+        var getLZWRaster = function(lzwMinCodeSize) {
+          var clearCode = 1 << lzwMinCodeSize;
+          var endCode = (1 << lzwMinCodeSize) + 1;
+          var bitLength = lzwMinCodeSize + 1;
+          var table = lzwTable();
+          for (var i = 0; i < clearCode; i += 1) {
+            table.add(String.fromCharCode(i));
+          }
+          table.add(String.fromCharCode(clearCode));
+          table.add(String.fromCharCode(endCode));
+          var byteOut = byteArrayOutputStream();
+          var bitOut = bitOutputStream(byteOut);
+          bitOut.write(clearCode, bitLength);
+          var dataIndex = 0;
+          var s = String.fromCharCode(_data[dataIndex]);
+          dataIndex += 1;
+          while (dataIndex < _data.length) {
+            var c = String.fromCharCode(_data[dataIndex]);
+            dataIndex += 1;
+            if (table.contains(s + c)) {
+              s = s + c;
+            } else {
+              bitOut.write(table.indexOf(s), bitLength);
+              if (table.size() < 4095) {
+                if (table.size() == 1 << bitLength) {
+                  bitLength += 1;
+                }
+                table.add(s + c);
+              }
+              s = c;
+            }
+          }
+          bitOut.write(table.indexOf(s), bitLength);
+          bitOut.write(endCode, bitLength);
+          bitOut.flush();
+          return byteOut.toByteArray();
+        };
+        var lzwTable = function() {
+          var _map = {};
+          var _size = 0;
+          var _this2 = {};
+          _this2.add = function(key) {
+            if (_this2.contains(key)) {
+              throw "dup key:" + key;
+            }
+            _map[key] = _size;
+            _size += 1;
+          };
+          _this2.size = function() {
+            return _size;
+          };
+          _this2.indexOf = function(key) {
+            return _map[key];
+          };
+          _this2.contains = function(key) {
+            return typeof _map[key] != "undefined";
+          };
+          return _this2;
+        };
+        return _this;
+      };
+      var createDataURL = function(width, height, getPixel) {
+        var gif = gifImage(width, height);
+        for (var y = 0; y < height; y += 1) {
+          for (var x = 0; x < width; x += 1) {
+            gif.setPixel(x, y, getPixel(x, y));
+          }
+        }
+        var b = byteArrayOutputStream();
+        gif.write(b);
+        var base64 = base64EncodeOutputStream();
+        var bytes = b.toByteArray();
+        for (var i = 0; i < bytes.length; i += 1) {
+          base64.writeByte(bytes[i]);
+        }
+        base64.flush();
+        return "data:image/gif;base64," + base64;
+      };
+      return qrcode3;
+    }();
+    !function() {
+      qrcode2.stringToBytesFuncs["UTF-8"] = function(s) {
+        function toUTF8Array(str) {
+          var utf8 = [];
+          for (var i = 0; i < str.length; i++) {
+            var charcode = str.charCodeAt(i);
+            if (charcode < 128) utf8.push(charcode);
+            else if (charcode < 2048) {
+              utf8.push(
+                192 | charcode >> 6,
+                128 | charcode & 63
+              );
+            } else if (charcode < 55296 || charcode >= 57344) {
+              utf8.push(
+                224 | charcode >> 12,
+                128 | charcode >> 6 & 63,
+                128 | charcode & 63
+              );
+            } else {
+              i++;
+              charcode = 65536 + ((charcode & 1023) << 10 | str.charCodeAt(i) & 1023);
+              utf8.push(
+                240 | charcode >> 18,
+                128 | charcode >> 12 & 63,
+                128 | charcode >> 6 & 63,
+                128 | charcode & 63
+              );
+            }
+          }
+          return utf8;
+        }
+        return toUTF8Array(s);
+      };
+    }();
+    (function(factory) {
+      if (typeof define === "function" && define.amd) {
+        define([], factory);
+      } else if (typeof exports === "object") {
+        module.exports = factory();
+      }
+    })(function() {
+      return qrcode2;
+    });
+  }
+});
+
+// src/Panel.tsx
+import { useCallback, useEffect as useEffect3, useRef as useRef2, useState as useState4 } from "react";
+
+// src/host.ts
+function hostWindow() {
+  return window;
+}
+function getHostInvoke() {
+  const invoke = hostWindow().__POLARIS_HOST_INVOKE__;
+  if (!invoke) {
+    throw new Error("\u5BBF\u4E3B invoke \u4E0D\u53EF\u7528\uFF1A\u9700\u8981\u4E3B\u5E94\u7528\u63D0\u4F9B __POLARIS_HOST_INVOKE__\uFF08\u8BF7\u66F4\u65B0 Polaris \u4E3B\u5E94\u7528\uFF09");
+  }
+  return invoke;
+}
+
+// src/model.ts
+var import_core = __toESM(require_core());
+var fmtBytes = (n) => (0, import_core.formatBytes)(n);
+var ttlLabel = (expiresAt, now = Date.now()) => (0, import_core.ttlLabel)(expiresAt, now);
+var PLUGIN_ID = "pocket-drop";
+var SERVICE_ID = "drop-service";
+var SERVICE_PORT = 9867;
+async function capDispatch(target, payload) {
+  const invoke = getHostInvoke();
+  const res = await invoke(
+    "router_dispatch",
+    { req: { target, payload } }
+  );
+  if (!res || res.ok !== true) throw new Error(res && res.error || `${target} \u8C03\u7528\u5931\u8D25`);
+  return res.result ?? {};
+}
+async function kvGet(key) {
+  const r = await capDispatch("cap.kv", { action: "get", key }).catch(() => null);
+  return r && r.value !== void 0 ? r.value : null;
+}
+async function kvSet(key, value) {
+  await capDispatch("cap.kv", { action: "set", key, value });
+}
+async function kvDel(key) {
+  await capDispatch("cap.kv", { action: "delete", key });
+}
+async function kvKeys() {
+  const r = await capDispatch("cap.kv", { action: "list" });
+  return Array.isArray(r.keys) ? r.keys : [];
+}
+async function getMeta() {
+  return kvGet("pdrop.meta");
+}
+async function getItems() {
+  const v = await kvGet("pdrop.items");
+  return v && Array.isArray(v.items) ? v.items : [];
+}
+async function getSettings() {
+  const v = await kvGet("pdrop.settings");
+  return v && typeof v === "object" ? v : null;
+}
+async function saveSettings(s) {
+  await kvSet("pdrop.settings", s);
+}
+async function getEvents(limit = 50) {
+  const keys = (await kvKeys()).filter((k) => k.startsWith("pdrop.event.")).sort().reverse().slice(0, limit);
+  const out = [];
+  for (const k of keys) {
+    const e = await kvGet(k);
+    if (e && typeof e === "object") out.push(e);
+  }
+  return out;
+}
+async function sendCommand(op, payload, timeoutMs = 15e3) {
+  const nonce = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e8).toString(36)}`;
+  const resultKey = `pdrop.result.${nonce}`;
+  await kvSet(`pdrop.cmd.${op}.${nonce}`, { op, nonce, ...payload, at: Date.now() });
+  const deadline = Date.now() + timeoutMs;
+  for (; ; ) {
+    const r = await kvGet(resultKey);
+    if (r && typeof r === "object") {
+      await kvDel(resultKey).catch(() => {
+      });
+      return r;
+    }
+    if (Date.now() > deadline) throw new Error("\u670D\u52A1\u672A\u5728 15 \u79D2\u5185\u54CD\u5E94\uFF08\u53EF\u80FD\u672A\u8FD0\u884C\uFF1A\u53BB\u4E0B\u65B9\u670D\u52A1\u7BA1\u7406\u5361\u542F\u52A8\uFF09");
+    await new Promise((res) => setTimeout(res, 700));
+  }
+}
+async function listServiceStatus() {
+  const r = await capDispatch("cap.pluginServiceManager", { action: "list_status" });
+  return Array.isArray(r) ? r : [];
+}
+async function serviceStart() {
+  const disc = await capDispatch("cap.pluginDiscovery", { action: "discover" });
+  const self = (disc.plugins ?? []).find((p) => p.id === PLUGIN_ID);
+  if (!self) throw new Error("\u63D2\u4EF6\u53D1\u73B0\u91CC\u627E\u4E0D\u5230 pocket-drop\uFF08\u63D2\u4EF6\u672A\u6B63\u786E\u5B89\u88C5\uFF1F\uFF09");
+  const svc = self.contributes?.services?.find((s) => s.id === SERVICE_ID);
+  if (!svc) throw new Error("manifest \u91CC\u6CA1\u6709 drop-service \u670D\u52A1\u8D21\u732E");
+  await capDispatch("cap.pluginServiceManager", {
+    action: "start",
+    pluginId: PLUGIN_ID,
+    installPath: self.installPath,
+    contribution: {
+      id: SERVICE_ID,
+      type: svc.type ?? svc.serviceType ?? "http",
+      command: svc.command,
+      argsTemplate: Array.isArray(svc.argsTemplate) ? svc.argsTemplate : [],
+      port: svc.port ?? null,
+      healthCheck: svc.healthCheck ?? null,
+      healthCheckTimeout: svc.healthCheckTimeout ?? null,
+      autoStart: svc.autoStart ?? true,
+      restartOnFailure: svc.restartOnFailure ?? true,
+      maxRestarts: svc.maxRestarts ?? 10,
+      description: svc.description ?? null
+    }
+  });
+}
+async function serviceAction(action) {
+  await capDispatch("cap.pluginServiceManager", { action, pluginId: PLUGIN_ID, serviceId: SERVICE_ID });
+}
+function serviceBase(meta) {
+  return `http://127.0.0.1:${meta && meta.port || SERVICE_PORT}`;
+}
+function uploadFile(base, pin, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${base}/u?pin=${encodeURIComponent(pin)}&name=${encodeURIComponent(file.name || "\u672A\u547D\u540D\u6587\u4EF6")}`);
+    xhr.setRequestHeader("x-drop-from", "desktop");
+    xhr.upload.onprogress = (ev) => {
+      if (ev.lengthComputable && onProgress) onProgress(Math.round(ev.loaded / ev.total * 100));
+    };
+    xhr.onload = () => {
+      let j = {};
+      try {
+        j = JSON.parse(xhr.responseText);
+      } catch (_) {
+      }
+      if (xhr.status === 200 && j.ok && j.item) resolve(j.item);
+      else reject(new Error(j.error || `HTTP ${xhr.status}`));
+    };
+    xhr.onerror = () => reject(new Error("\u7F51\u7EDC\u9519\u8BEF\uFF08\u670D\u52A1\u672A\u8FD0\u884C\u6216\u88AB webview \u62E6\u622A\uFF09"));
+    xhr.send(file);
+  });
+}
+async function deleteItem(base, pin, id) {
+  const res = await fetch(`${base}/f/${id}?pin=${encodeURIComponent(pin)}`, { method: "DELETE" });
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || `HTTP ${res.status}`);
+  }
+}
+async function downloadItem(base, pin, it) {
+  const res = await fetch(`${base}/f/${it.id}?pin=${encodeURIComponent(pin)}&dl=1`);
+  if (!res.ok) {
+    const j = await res.json().catch(() => ({}));
+    throw new Error(j.error || `HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = it.name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3e4);
+}
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (_) {
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      const ok = document.execCommand("copy");
+      ta.remove();
+      return ok;
+    } catch (_2) {
+      return false;
+    }
+  }
+}
+function timeAgo(ts, now = Date.now()) {
+  if (!ts) return "\u4ECE\u672A";
+  const d = Math.max(0, now - ts);
+  if (d < 1e4) return "\u521A\u521A";
+  if (d < 6e4) return `${Math.floor(d / 1e3)} \u79D2\u524D`;
+  if (d < 36e5) return `${Math.floor(d / 6e4)} \u5206\u949F\u524D`;
+  if (d < 864e5) return `${Math.floor(d / 36e5)} \u5C0F\u65F6\u524D`;
+  return `${Math.floor(d / 864e5)} \u5929\u524D`;
+}
+function icoFor(name) {
+  const ext = name.toLowerCase().split(".").pop() || "";
+  if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg", "heic"].includes(ext)) return "\u{1F5BC}\uFE0F";
+  if (["mp4", "mov", "webm", "avi", "mkv"].includes(ext)) return "\u{1F3AC}";
+  if (["mp3", "wav", "ogg", "m4a", "flac"].includes(ext)) return "\u{1F3B5}";
+  if (ext === "pdf") return "\u{1F4D5}";
+  if (["zip", "rar", "7z", "tar", "gz"].includes(ext)) return "\u{1F5DC}\uFE0F";
+  if (["doc", "docx", "xls", "xlsx", "ppt", "pptx", "csv"].includes(ext)) return "\u{1F4C4}";
+  return "\u{1F4E6}";
+}
+
+// src/DropTab.tsx
+var import_qr = __toESM(require_qr());
+import { useMemo, useRef, useState } from "react";
+import { jsx, jsxs } from "react/jsx-runtime";
+function qrPath(text) {
+  const qr = (0, import_qr.default)(0, "M");
+  qr.addData(text);
+  qr.make();
+  const n = qr.getModuleCount();
+  let d = "";
+  for (let r = 0; r < n; r++) {
+    for (let c = 0; c < n; c++) {
+      if (qr.isDark(r, c)) d += `M${c + 4} ${r + 4}h1v1h-1z`;
+    }
+  }
+  return { count: n, path: d };
+}
+var FROM_BADGE = {
+  phone: { label: "\u624B\u673A", color: "#93c5fd" },
+  desktop: { label: "\u9762\u677F", color: "#6ee7a0" },
+  ai: { label: "AI", color: "#fbbf24" }
+};
+function DropTab({ data, reload, showToast, running }) {
+  const [busy, setBusy] = useState("");
+  const [prog, setProg] = useState(null);
+  const fileRef = useRef(null);
+  const meta = data.meta;
+  const settings = data.settings;
+  const pin = settings?.pin || "";
+  const lanUrl = meta?.lanUrl || "";
+  const joinUrl = lanUrl && pin ? `${lanUrl}/?pin=${pin}` : "";
+  const qr = useMemo(() => {
+    if (!joinUrl || joinUrl.length > 512) return null;
+    try {
+      return qrPath(joinUrl);
+    } catch (_) {
+      return null;
+    }
+  }, [joinUrl]);
+  const doUpload = async (files) => {
+    if (!files || !files.length || busy) return;
+    setBusy("upload");
+    const base = serviceBase(meta);
+    try {
+      for (const file of Array.from(files)) {
+        setProg({ name: file.name, pct: 0 });
+        try {
+          await uploadFile(base, pin, file, (pct) => setProg({ name: file.name, pct }));
+          showToast(`\u5DF2\u6295\u9012 ${file.name}`, "good");
+        } catch (e) {
+          showToast(`\u300C${file.name}\u300D\u4E0A\u4F20\u5931\u8D25\uFF1A${e.message}\u3002\u66FF\u4EE3\u8DEF\u5F84\uFF1A\u5BF9 AI \u8BF4\u300C\u628A ${file.name} \u4F20\u5230\u6211\u624B\u673A\u300D\uFF08drop_send\uFF09`, "bad");
+          break;
+        }
+      }
+      setProg(null);
+      await reload();
+    } finally {
+      setBusy("");
+    }
+  };
+  const doDownload = async (it) => {
+    if (busy) return;
+    setBusy(`dl-${it.id}`);
+    try {
+      await downloadItem(serviceBase(meta), pin, it);
+      showToast(`\u5DF2\u4E0B\u8F7D ${it.name}`, "good");
+    } catch (e) {
+      const link = lanUrl ? `${lanUrl}/f/${it.id}?pin=${pin}&dl=1` : "";
+      showToast(`\u4E0B\u8F7D\u5931\u8D25\uFF1A${e.message}${link ? "\u3002\u53EF\u5728\u624B\u673A\u6D4F\u89C8\u5668\u6253\u5F00\u540C\u4E00\u5C40\u57DF\u7F51\u5730\u5740\u4E0B\u8F7D" : ""}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const doDelete = async (it) => {
+    if (busy) return;
+    if (!window.confirm(`\u5220\u9664\u300C${it.name}\u300D\uFF1F\uFF08\u624B\u673A\u7AEF\u4E5F\u5C06\u4E0D\u53EF\u89C1\uFF09`)) return;
+    setBusy(`del-${it.id}`);
+    try {
+      await deleteItem(serviceBase(meta), pin, it.id);
+      showToast("\u5DF2\u5220\u9664", "good");
+      await reload();
+    } catch (e) {
+      showToast(`\u5220\u9664\u5931\u8D25\uFF1A${e.message}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const doStart = async () => {
+    if (busy) return;
+    setBusy("start");
+    try {
+      await serviceStart();
+      showToast("\u542F\u52A8\u6307\u4EE4\u5DF2\u4E0B\u53D1\uFF0C\u7B49\u51E0\u79D2\u2026", "good");
+      setTimeout(() => {
+        void reload();
+      }, 2500);
+    } catch (e) {
+      showToast(`\u542F\u52A8\u5931\u8D25\uFF1A${e.message}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const doCopy = async (text, what) => {
+    const ok = await copyText(text);
+    showToast(ok ? `\u5DF2\u590D\u5236${what}` : "\u590D\u5236\u5931\u8D25\uFF08\u6D4F\u89C8\u5668\u9650\u5236\uFF09\uFF0C\u8BF7\u624B\u52A8\u9009\u62E9\u6587\u672C\u590D\u5236", ok ? "good" : "bad");
+  };
+  if (!data.loaded) return /* @__PURE__ */ jsx("div", { style: { color: "#71717a", fontSize: 12 }, children: "\u8F7D\u5165\u4E2D\u2026" });
+  return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 10 }, children: [
+    !running && /* @__PURE__ */ jsxs("div", { style: { background: "rgba(248,81,73,.08)", border: "1px solid rgba(248,81,73,.35)", borderRadius: 10, padding: 10, fontSize: 12, lineHeight: 1.6 }, children: [
+      /* @__PURE__ */ jsx("b", { style: { color: "#f85149" }, children: "\u670D\u52A1\u672A\u8FD0\u884C" }),
+      "\u2014\u2014\u624B\u673A\u626B\u7801\u4E0E\u6587\u4EF6\u6536\u53D1\u90FD\u4E0D\u53EF\u7528\u3002",
+      meta?.lastTickAt ? "\u5FC3\u8DF3\u5DF2\u8FC7\u671F\uFF08\u670D\u52A1\u53EF\u80FD\u88AB\u505C\u6B62\u6216\u5D29\u6E83\uFF09\u3002" : "\u5C1A\u672A\u6536\u5230\u670D\u52A1\u5FC3\u8DF3\u3002",
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          onClick: doStart,
+          disabled: busy === "start",
+          style: { marginLeft: 8, padding: "4px 12px", fontSize: 12, borderRadius: 6, border: "1px solid #3f3f46", background: "#27272a", color: "#e4e4e7", cursor: "pointer" },
+          children: busy === "start" ? "\u542F\u52A8\u4E2D\u2026" : "\u542F\u52A8\u670D\u52A1"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 12, background: "#18181b", border: "1px solid #27272a", borderRadius: 12, padding: 12, alignItems: "flex-start" }, children: [
+      qr ? /* @__PURE__ */ jsx(
+        "svg",
+        {
+          width: 112,
+          height: 112,
+          viewBox: `0 0 ${qr.count + 8} ${qr.count + 8}`,
+          shapeRendering: "crispEdges",
+          style: { background: "#fff", borderRadius: 8, flex: "none" },
+          children: /* @__PURE__ */ jsx("path", { d: qr.path, fill: "#111" })
+        }
+      ) : /* @__PURE__ */ jsx("div", { style: { width: 112, height: 112, borderRadius: 8, background: "#27272a", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#71717a", textAlign: "center", padding: 8 }, children: running ? "\u7B49\u5F85 PIN \u4E0E\u5C40\u57DF\u7F51\u5730\u5740\u2026" : "\u670D\u52A1\u79BB\u7EBF" }),
+      /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0, fontSize: 12, lineHeight: 1.7 }, children: [
+        /* @__PURE__ */ jsx("div", { style: { color: "#f4f4f5", fontWeight: 600 }, children: "\u624B\u673A\u626B\u7801\u5373\u7528" }),
+        /* @__PURE__ */ jsx("div", { style: { color: "#a1a1aa", wordBreak: "break-all" }, children: joinUrl || "\u7B49\u5F85\u670D\u52A1\u5FC3\u8DF3\u2026" }),
+        /* @__PURE__ */ jsx("div", { style: { color: "#71717a", fontSize: 11 }, children: "\u540C\u4E00 Wi-Fi \u4E0B\u624B\u673A\u6D4F\u89C8\u5668\u6253\u5F00\u5373\u53EF\u4F20\u6587\u4EF6\uFF08\u65E0\u9700\u88C5 App\uFF09\uFF1BPIN \u662F\u8BBF\u95EE\u95E8\u7981\u3002" }),
+        joinUrl && /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsx("button", { onClick: () => doCopy(joinUrl, "\u8BBF\u95EE\u94FE\u63A5"), style: btnGhost(), children: "\u590D\u5236\u94FE\u63A5" }),
+          meta?.lanUrls && meta.lanUrls.length > 1 && /* @__PURE__ */ jsx("button", { onClick: () => doCopy(meta.lanUrls.join("\n"), "\u5168\u90E8\u5730\u5740"), style: btnGhost(), children: "\u5907\u7528\u5730\u5740" })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [
+      /* @__PURE__ */ jsx("input", { ref: fileRef, type: "file", multiple: true, style: { display: "none" }, onChange: (e) => {
+        void doUpload(e.target.files);
+        e.target.value = "";
+      } }),
+      /* @__PURE__ */ jsx("button", { onClick: () => fileRef.current?.click(), disabled: !!busy || !running, style: btnPrimary(), children: busy === "upload" ? "\u4E0A\u4F20\u4E2D\u2026" : "\u{1F4E4} \u4E0A\u4F20\u6587\u4EF6\u5230\u624B\u673A" }),
+      prog && /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+        /* @__PURE__ */ jsxs("div", { style: { fontSize: 11, color: "#a1a1aa", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+          prog.name,
+          " ",
+          prog.pct,
+          "%"
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: { height: 5, background: "#27272a", borderRadius: 3, overflow: "hidden" }, children: /* @__PURE__ */ jsx("div", { style: { height: "100%", width: `${prog.pct}%`, background: "#3b82f6", transition: "width .15s" } }) })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { children: [
+      /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, color: "#a1a1aa", marginBottom: 6 }, children: [
+        "\u6295\u9012\u533A\uFF08",
+        data.items.length,
+        meta ? ` \xB7 \u5360\u7528 ${fmtBytes(meta.storeBytes)}` : "",
+        "\uFF09\u2014\u2014\u624B\u673A\u4E0E\u9762\u677F\u770B\u5230\u7684\u662F\u540C\u4E00\u4EFD"
+      ] }),
+      /* @__PURE__ */ jsx("div", { style: { background: "#18181b", border: "1px solid #27272a", borderRadius: 12, padding: 4 }, children: data.items.length === 0 ? /* @__PURE__ */ jsxs("div", { style: { padding: 24, textAlign: "center", fontSize: 12, color: "#71717a", lineHeight: 1.8 }, children: [
+        "\u6295\u9012\u533A\u662F\u7A7A\u7684\u3002",
+        /* @__PURE__ */ jsx("br", {}),
+        "\u624B\u673A\u626B\u7801\u4E0A\u4F20 \xB7 \u9762\u677F\u70B9\u4E0A\u65B9\u6309\u94AE\u6295\u9012 \xB7 \u6216\u5BF9 AI \u8BF4\u300C\u628A xx \u6587\u4EF6\u4F20\u5230\u6211\u624B\u673A\u300D"
+      ] }) : data.items.slice().sort((a, b) => b.at - a.at).map((it) => {
+        const badge = FROM_BADGE[it.from] || { label: it.from, color: "#a1a1aa" };
+        return /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 8, padding: "8px 8px", borderBottom: "1px solid #1f1f23" }, children: [
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 18, flex: "none" }, children: icoFor(it.name) }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: 12, color: "#e4e4e7", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+              it.name,
+              /* @__PURE__ */ jsxs("span", { style: { fontSize: 10, color: badge.color, marginLeft: 6 }, children: [
+                "\xB7 ",
+                badge.label
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#71717a" }, children: [
+              fmtBytes(it.size),
+              " \xB7 ",
+              ttlLabel(it.expiresAt) ? `\u5269 ${ttlLabel(it.expiresAt)}` : "\u5373\u5C06\u6E05\u7406",
+              it.note ? ` \xB7 ${it.note}` : ""
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx("button", { onClick: () => doDownload(it), disabled: !!busy, style: btnGhost(), children: "\u4E0B\u8F7D" }),
+          /* @__PURE__ */ jsx("button", { onClick: () => doDelete(it), disabled: !!busy, style: { ...btnGhost(), color: "#f87171" }, children: "\u5220" })
+        ] }, it.id);
+      }) })
+    ] })
+  ] });
+}
+function btnPrimary() {
+  return {
+    padding: "8px 14px",
+    fontSize: 12,
+    borderRadius: 8,
+    border: "none",
+    background: "#3b82f6",
+    color: "#fff",
+    cursor: "pointer",
+    minHeight: 36
+  };
+}
+function btnGhost() {
+  return {
+    padding: "5px 10px",
+    fontSize: 11,
+    borderRadius: 7,
+    border: "1px solid #3f3f46",
+    background: "#27272a",
+    color: "#d4d4d8",
+    cursor: "pointer"
+  };
+}
+
+// src/EventTab.tsx
+import { useEffect, useState as useState2 } from "react";
+import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+var TYPE_STYLE = {
+  recv: { label: "\u6536\u5230", color: "#93c5fd" },
+  send: { label: "\u6295\u9012", color: "#fbbf24" },
+  save: { label: "\u4FDD\u5B58", color: "#6ee7a0" },
+  del: { label: "\u5220\u9664", color: "#a1a1aa" },
+  clean: { label: "\u6E05\u7406", color: "#a1a1aa" },
+  clear: { label: "\u6E05\u7A7A", color: "#f87171" },
+  pin_changed: { label: "PIN", color: "#c084fc" },
+  pin_fail: { label: "PIN", color: "#f87171" },
+  boot: { label: "\u542F\u52A8", color: "#6ee7a0" }
+};
+function EventTab({ showToast }) {
+  const [events, setEvents] = useState2(null);
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const list = await getEvents();
+        if (alive) setEvents(list);
+      } catch (e) {
+        if (alive) {
+          setEvents([]);
+          showToast(`\u8BFB\u53D6\u52A8\u6001\u5931\u8D25\uFF1A${e.message}`, "bad");
+        }
+      }
+    };
+    void load();
+    const timer = setInterval(() => {
+      void load();
+    }, 6e3);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
+  if (events === null) return /* @__PURE__ */ jsx2("div", { style: { color: "#71717a", fontSize: 12 }, children: "\u8F7D\u5165\u4E2D\u2026" });
+  if (!events.length) {
+    return /* @__PURE__ */ jsxs2("div", { style: { padding: 24, textAlign: "center", fontSize: 12, color: "#71717a", lineHeight: 1.8 }, children: [
+      "\u8FD8\u6CA1\u6709\u52A8\u6001\u3002",
+      /* @__PURE__ */ jsx2("br", {}),
+      "\u6536\u53D1\u3001\u6E05\u7406\u3001PIN \u53D8\u66F4\u90FD\u4F1A\u8BB0\u5F55\u5728\u8FD9\u91CC\u3002"
+    ] });
+  }
+  return /* @__PURE__ */ jsx2("div", { style: { background: "#18181b", border: "1px solid #27272a", borderRadius: 12, padding: 4 }, children: events.map((e, i) => {
+    const st = TYPE_STYLE[e.type] || { label: e.type, color: "#a1a1aa" };
+    return /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 8, padding: "8px 10px", borderBottom: "1px solid #1f1f23", fontSize: 12 }, children: [
+      /* @__PURE__ */ jsx2("span", { style: { color: st.color, fontSize: 10, flex: "none", paddingTop: 2, minWidth: 34 }, children: st.label }),
+      /* @__PURE__ */ jsx2("span", { style: { flex: 1, color: "#d4d4d8", lineHeight: 1.5 }, children: e.summary }),
+      /* @__PURE__ */ jsx2("span", { style: { color: "#52525b", fontSize: 10, flex: "none", paddingTop: 2 }, children: timeAgo(e.at) })
+    ] }, `${e.at}-${i}`);
+  }) });
+}
+
+// src/SettingsTab.tsx
+import { useEffect as useEffect2, useState as useState3 } from "react";
+import { Fragment, jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
+function isRunning(s) {
+  if (!s) return false;
+  if (s.running === true) return true;
+  return typeof s.status === "string" && /running|ok|alive/i.test(s.status);
+}
+function SettingsTab({ data, reload, showToast, running }) {
+  const [svcRows, setSvcRows] = useState3(null);
+  const [busy, setBusy] = useState3("");
+  const [ttlHours, setTtlHours] = useState3("");
+  const [maxSizeMb, setMaxSizeMb] = useState3("");
+  const [totalCapMb, setTotalCapMb] = useState3("");
+  const [dirty, setDirty] = useState3(false);
+  useEffect2(() => {
+    let alive = true;
+    const poll = async () => {
+      try {
+        const rows = await listServiceStatus();
+        if (alive) setSvcRows(rows);
+      } catch (_) {
+        if (alive) setSvcRows([]);
+      }
+    };
+    void poll();
+    const timer = setInterval(poll, 5e3);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
+  useEffect2(() => {
+    const s = data.settings;
+    if (s && !dirty) {
+      setTtlHours(String(s.ttlHours));
+      setMaxSizeMb(String(s.maxSizeMb));
+      setTotalCapMb(String(s.totalCapMb));
+    }
+  }, [data.settings, dirty]);
+  const mine = (svcRows || []).find((r) => r.pluginId === PLUGIN_ID && (r.serviceId === SERVICE_ID || r.id === SERVICE_ID));
+  const svcUp = isRunning(mine);
+  const doSave = async () => {
+    if (!data.settings) return;
+    const next = {
+      ...data.settings,
+      ttlHours: Number(ttlHours) || data.settings.ttlHours,
+      maxSizeMb: Number(maxSizeMb) || data.settings.maxSizeMb,
+      totalCapMb: Number(totalCapMb) || data.settings.totalCapMb
+    };
+    setBusy("save");
+    try {
+      await saveSettings(next);
+      setDirty(false);
+      showToast("\u8BBE\u7F6E\u5DF2\u4FDD\u5B58\uFF08\u670D\u52A1 30 \u79D2\u5185\u70ED\u66F4\u65B0\uFF09", "good");
+      await reload();
+    } catch (e) {
+      showToast(`\u4FDD\u5B58\u5931\u8D25\uFF1A${e.message}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const doRegenPin = async () => {
+    if (!data.settings) return;
+    if (!window.confirm("\u91CD\u65B0\u751F\u6210 PIN\uFF1F\u5DF2\u8FDE\u63A5\u7684\u624B\u673A\u9700\u8981\u91CD\u65B0\u8F93\u5165\u3002")) return;
+    const pin = String(Math.floor(1e5 + Math.random() * 9e5));
+    setBusy("pin");
+    try {
+      await saveSettings({ ...data.settings, pin });
+      showToast(`\u65B0 PIN\uFF1A${pin}\uFF08\u624B\u673A\u7AEF\u9700\u91CD\u65B0\u8F93\u5165\uFF09`, "good");
+      await reload();
+    } catch (e) {
+      showToast(`\u751F\u6210\u5931\u8D25\uFF1A${e.message}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const doService = async (action) => {
+    if (busy) return;
+    setBusy(action);
+    try {
+      if (action === "start") await serviceStart();
+      else await serviceAction(action);
+      showToast(`\u670D\u52A1${action === "start" ? "\u542F\u52A8" : action === "stop" ? "\u505C\u6B62" : "\u91CD\u542F"}\u6307\u4EE4\u5DF2\u4E0B\u53D1`, "good");
+      setTimeout(() => {
+        void reload();
+      }, 2e3);
+    } catch (e) {
+      showToast(`\u670D\u52A1${action}\u5931\u8D25\uFF1A${e.message}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const doClear = async () => {
+    if (!window.confirm("\u6E05\u7A7A\u6295\u9012\u533A\u5C06\u5220\u9664\u5168\u90E8\u6295\u9012\u6587\u4EF6\uFF08\u542B\u624B\u673A\u7AEF\u672A\u4E0B\u8F7D\u7684\uFF09\uFF0C\u4E0D\u53EF\u6062\u590D\u3002\u786E\u5B9A\uFF1F")) return;
+    if (!window.confirm("\u518D\u6B21\u786E\u8BA4\uFF1A\u771F\u7684\u6E05\u7A7A\u5168\u90E8\uFF1F")) return;
+    setBusy("clear");
+    try {
+      const r = await sendCommand("clear", { confirm: true });
+      showToast(r.ok ? `\u5DF2\u6E05\u7A7A\uFF08${r.count} \u6761\uFF09` : `\u6E05\u7A7A\u5931\u8D25\uFF1A${r.error}`, r.ok ? "good" : "bad");
+      await reload();
+    } catch (e) {
+      showToast(`\u6E05\u7A7A\u5931\u8D25\uFF1A${e.message}`, "bad");
+    } finally {
+      setBusy("");
+    }
+  };
+  const input = (value, onChange, suffix) => /* @__PURE__ */ jsxs3("span", { style: { display: "inline-flex", alignItems: "center", gap: 6 }, children: [
+    /* @__PURE__ */ jsx3(
+      "input",
+      {
+        value,
+        onChange: (e) => {
+          onChange(e.target.value);
+          setDirty(true);
+        },
+        style: { width: 76, padding: "6px 8px", borderRadius: 6, border: "1px solid #3f3f46", background: "#18181b", color: "#e4e4e7", fontSize: 12 }
+      }
+    ),
+    /* @__PURE__ */ jsx3("span", { style: { fontSize: 11, color: "#71717a" }, children: suffix })
+  ] });
+  return /* @__PURE__ */ jsxs3("div", { style: { display: "flex", flexDirection: "column", gap: 12, fontSize: 12 }, children: [
+    /* @__PURE__ */ jsxs3("section", { children: [
+      /* @__PURE__ */ jsx3("div", { style: { color: "#a1a1aa", marginBottom: 6 }, children: "\u6295\u9012\u8BBE\u7F6E" }),
+      /* @__PURE__ */ jsxs3("div", { style: { background: "#18181b", border: "1px solid #27272a", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 10 }, children: [
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsx3("span", { style: { color: "#d4d4d8" }, children: "\u81EA\u52A8\u6E05\u7406\uFF08TTL\uFF09" }),
+          input(ttlHours, setTtlHours, "\u5C0F\u65F6\uFF081\u2013720\uFF09")
+        ] }),
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsx3("span", { style: { color: "#d4d4d8" }, children: "\u5355\u6587\u4EF6\u4E0A\u9650" }),
+          input(maxSizeMb, setMaxSizeMb, "MB\uFF081\u20138192\uFF09")
+        ] }),
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsx3("span", { style: { color: "#d4d4d8" }, children: "\u6295\u9012\u533A\u603B\u5BB9\u91CF" }),
+          input(totalCapMb, setTotalCapMb, "MB\uFF08256\u201365536\uFF09")
+        ] }),
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap" }, children: [
+          /* @__PURE__ */ jsxs3("span", { style: { color: "#d4d4d8" }, children: [
+            "\u8BBF\u95EE PIN",
+            /* @__PURE__ */ jsx3("span", { style: { display: "block", fontSize: 10, color: "#71717a" }, children: "\u624B\u673A\u7AEF\u8BBF\u95EE\u95E8\u7981\uFF0C\u4EC5\u5728\u5C40\u57DF\u7F51\u5185\u6709\u6548" })
+          ] }),
+          /* @__PURE__ */ jsxs3("span", { style: { display: "inline-flex", gap: 6, alignItems: "center" }, children: [
+            /* @__PURE__ */ jsx3("span", { style: { fontSize: 16, letterSpacing: 3, color: "#f4f4f5", fontWeight: 600 }, children: data.settings?.pin || "\u2014\u2014" }),
+            /* @__PURE__ */ jsx3("button", { onClick: doRegenPin, disabled: !!busy, style: ghostBtn(), children: "\u91CD\u65B0\u751F\u6210" })
+          ] })
+        ] }),
+        dirty && /* @__PURE__ */ jsx3("button", { onClick: doSave, disabled: busy === "save", style: primaryBtn(), children: busy === "save" ? "\u4FDD\u5B58\u4E2D\u2026" : "\u4FDD\u5B58\u8BBE\u7F6E" })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs3("section", { children: [
+      /* @__PURE__ */ jsx3("div", { style: { color: "#a1a1aa", marginBottom: 6 }, children: "\u540E\u53F0\u670D\u52A1" }),
+      /* @__PURE__ */ jsxs3("div", { style: { background: "#18181b", border: "1px solid #27272a", borderRadius: 12, padding: 12, display: "flex", flexDirection: "column", gap: 8 }, children: [
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" }, children: [
+          /* @__PURE__ */ jsxs3("span", { style: { color: "#d4d4d8" }, children: [
+            "\u5FEB\u4F20\u670D\u52A1\uFF080.0.0.0:9867\uFF09",
+            /* @__PURE__ */ jsx3("span", { style: { display: "block", fontSize: 10, color: "#71717a" }, children: (svcRows || []).length === 0 ? "\u72B6\u6001\u672A\u77E5\uFF08\u5BBF\u4E3B\u4E0D\u652F\u6301\u670D\u52A1\u7BA1\u7406\uFF1F\uFF09" : mine?.lastError ? `\u6700\u8FD1\u9519\u8BEF\uFF1A${mine.lastError}` : "\u7AEF\u53E3\u88AB\u5360\u7528\u65F6\u4F1A\u8BDA\u5B9E\u5931\u8D25\uFF0C\u89C1\u63D2\u4EF6\u65E5\u5FD7" })
+          ] }),
+          /* @__PURE__ */ jsx3("span", { style: {
+            fontSize: 10,
+            padding: "2px 8px",
+            borderRadius: 8,
+            background: svcUp ? "rgba(63,185,80,.15)" : "rgba(248,81,73,.15)",
+            color: svcUp ? "#3fb950" : "#f85149"
+          }, children: svcUp ? "\u8FD0\u884C\u4E2D" : "\u672A\u8FD0\u884C" })
+        ] }),
+        /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 6 }, children: [
+          /* @__PURE__ */ jsx3("button", { onClick: () => doService("start"), disabled: !!busy, style: ghostBtn(), children: "\u542F\u52A8" }),
+          /* @__PURE__ */ jsx3("button", { onClick: () => doService("stop"), disabled: !!busy, style: ghostBtn(), children: "\u505C\u6B62" }),
+          /* @__PURE__ */ jsx3("button", { onClick: () => doService("restart"), disabled: !!busy, style: ghostBtn(), children: "\u91CD\u542F" })
+        ] }),
+        /* @__PURE__ */ jsxs3("div", { style: { fontSize: 10, color: "#71717a", lineHeight: 1.6 }, children: [
+          "\u9996\u6B21\u76D1\u542C\u5C40\u57DF\u7F51\u7AEF\u53E3\u65F6 Windows \u53EF\u80FD\u5F39\u51FA\u9632\u706B\u5899\u63D0\u793A\uFF0C\u5141\u8BB8\u300C\u4E13\u7528\u7F51\u7EDC\u300D\u5373\u53EF\u3002",
+          running && data.meta?.dropDir && /* @__PURE__ */ jsxs3(Fragment, { children: [
+            "\u5B58\u50A8\u76EE\u5F55\uFF1A",
+            data.meta.dropDir,
+            "\uFF08",
+            data.meta.itemCount ?? 0,
+            " \u6761 / ",
+            fmtBytes(data.meta.storeBytes),
+            "\uFF09"
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs3("section", { children: [
+      /* @__PURE__ */ jsx3("div", { style: { color: "#a1a1aa", marginBottom: 6 }, children: "\u5371\u9669\u533A" }),
+      /* @__PURE__ */ jsxs3("div", { style: { background: "rgba(248,81,73,.05)", border: "1px solid rgba(248,81,73,.3)", borderRadius: 12, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }, children: [
+        /* @__PURE__ */ jsxs3("span", { style: { color: "#d4d4d8" }, children: [
+          "\u6E05\u7A7A\u6295\u9012\u533A",
+          /* @__PURE__ */ jsx3("span", { style: { display: "block", fontSize: 10, color: "#71717a" }, children: "\u5220\u9664\u5168\u90E8\u6295\u9012\u6587\u4EF6\uFF0C\u624B\u673A\u7AEF\u540C\u6B65\u6D88\u5931" })
+        ] }),
+        /* @__PURE__ */ jsx3("button", { onClick: doClear, disabled: !!busy, style: { ...ghostBtn(), color: "#f87171", borderColor: "rgba(248,81,73,.4)" }, children: "\u6E05\u7A7A" })
+      ] })
+    ] })
+  ] });
+}
+function ghostBtn() {
+  return {
+    padding: "5px 12px",
+    fontSize: 11,
+    borderRadius: 7,
+    border: "1px solid #3f3f46",
+    background: "#27272a",
+    color: "#d4d4d8",
+    cursor: "pointer",
+    minHeight: 30
+  };
+}
+function primaryBtn() {
+  return {
+    padding: "8px 14px",
+    fontSize: 12,
+    borderRadius: 8,
+    border: "none",
+    background: "#3b82f6",
+    color: "#fff",
+    cursor: "pointer",
+    minHeight: 36
+  };
+}
+
+// src/Panel.tsx
+import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+var META_FRESH_MS = 90 * 1e3;
+var TABS = [
+  { id: "drop", label: "\u5FEB\u4F20" },
+  { id: "events", label: "\u52A8\u6001" },
+  { id: "settings", label: "\u8BBE\u7F6E" }
+];
+function Panel({ pluginId }) {
+  const [tab, setTab] = useState4("drop");
+  const [data, setData] = useState4({ meta: null, items: [], settings: null, loaded: false });
+  const [toast, setToast] = useState4(null);
+  const toastTimer = useRef2(void 0);
+  const showToast = useCallback((msg, kind = "info") => {
+    setToast({ msg, kind });
+    window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3200);
+  }, []);
+  const reload = useCallback(async () => {
+    try {
+      const [meta, items, settings] = await Promise.all([getMeta(), getItems(), getSettings()]);
+      const next = { meta, items, settings, loaded: true };
+      setData(next);
+      return next;
+    } catch (_) {
+      const next = { meta: null, items: [], settings: null, loaded: true };
+      setData(next);
+      return next;
+    }
+  }, []);
+  useEffect3(() => {
+    void reload();
+    const timer = setInterval(() => {
+      void reload();
+    }, 3e3);
+    return () => clearInterval(timer);
+  }, [reload]);
+  const metaFresh = !!(data.meta && data.meta.lastTickAt && Date.now() - data.meta.lastTickAt < META_FRESH_MS);
+  const running = metaFresh;
+  return /* @__PURE__ */ jsxs4("div", { style: { padding: 12, display: "flex", flexDirection: "column", height: "100%", gap: 10, color: "#d4d4d8" }, children: [
+    /* @__PURE__ */ jsxs4("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
+      /* @__PURE__ */ jsx4("span", { style: { fontSize: 15, fontWeight: 700, color: "#f4f4f5" }, children: "\u26A1 \u53E3\u888B\u5FEB\u4F20" }),
+      /* @__PURE__ */ jsx4("span", { style: {
+        fontSize: 10,
+        padding: "2px 8px",
+        borderRadius: 8,
+        background: running ? "rgba(63,185,80,.15)" : "rgba(248,81,73,.15)",
+        color: running ? "#3fb950" : "#f85149"
+      }, children: running ? "\u670D\u52A1\u8FD0\u884C\u4E2D" : "\u670D\u52A1\u79BB\u7EBF" }),
+      data.meta?.degraded && running && /* @__PURE__ */ jsx4("span", { style: { fontSize: 10, padding: "2px 8px", borderRadius: 8, background: "rgba(210,153,34,.15)", color: "#d29922" }, children: "kv \u964D\u7EA7" })
+    ] }),
+    /* @__PURE__ */ jsx4("div", { style: { display: "flex", gap: 4 }, children: TABS.map((t) => /* @__PURE__ */ jsx4(
+      "button",
+      {
+        onClick: () => setTab(t.id),
+        style: {
+          padding: "6px 14px",
+          fontSize: 12,
+          borderRadius: 8,
+          cursor: "pointer",
+          border: "1px solid",
+          minHeight: 32,
+          borderColor: tab === t.id ? "#3b82f6" : "#3f3f46",
+          background: tab === t.id ? "rgba(59,130,246,.15)" : "transparent",
+          color: tab === t.id ? "#93c5fd" : "#a1a1aa"
+        },
+        children: t.label
+      },
+      t.id
+    )) }),
+    /* @__PURE__ */ jsxs4("div", { style: { flex: 1, minHeight: 0, overflowY: "auto" }, children: [
+      tab === "drop" && /* @__PURE__ */ jsx4(DropTab, { data, reload, showToast, running }),
+      tab === "events" && /* @__PURE__ */ jsx4(EventTab, { showToast }),
+      tab === "settings" && /* @__PURE__ */ jsx4(SettingsTab, { data, reload, showToast, running })
+    ] }),
+    /* @__PURE__ */ jsxs4("div", { style: { fontSize: 10, color: "#52525b" }, children: [
+      pluginId,
+      " \xB7 ",
+      running ? `\u7AEF\u53E3 ${data.meta?.port ?? "\u2014"}` : "\u624B\u673A\u7AEF\u9700\u670D\u52A1\u5728\u7EBF\u540E\u626B\u7801"
+    ] }),
+    toast && /* @__PURE__ */ jsx4("div", { style: {
+      position: "fixed",
+      bottom: 18,
+      left: "50%",
+      transform: "translateX(-50%)",
+      background: toast.kind === "bad" ? "#7f1d1d" : toast.kind === "good" ? "#14532d" : "#27272a",
+      color: "#f4f4f5",
+      fontSize: 12,
+      padding: "8px 14px",
+      borderRadius: 8,
+      zIndex: 99,
+      maxWidth: "80vw",
+      boxShadow: "0 4px 14px rgba(0,0,0,.4)"
+    }, children: toast.msg })
+  ] });
+}
+
+// src/index.tsx
+import { jsx as jsx5 } from "react/jsx-runtime";
+function PocketDropEntry(props) {
+  return /* @__PURE__ */ jsx5(Panel, { pluginId: props.pluginId, onSendToChat: props.onSendToChat });
+}
+export {
+  PocketDropEntry as default
+};

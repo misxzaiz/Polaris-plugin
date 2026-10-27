@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28 00:32:44",
+  "updated": "2026-10-27 17:23:34",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -956,6 +956,10 @@
       "screenshots": [],
       "versions": [
         {
+          "version": "0.1.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip"
+        },
+        {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip",
           "sha256": "2f31379cf24c3b1eb46131250acebda03e88cec89480c3867d9893957786a092"
@@ -963,7 +967,7 @@
       ],
       "id": "plugin-forge",
       "name": "插件工坊",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "description": "Polaris 插件开发一站式工坊：权威平台知识库（16 主题代码级核实，纠正官方文档与代码矛盾处）+ plugin.json 体检器（20+ 条实测规则，图标白名单/健康检查/发布 URL 陷阱）+ 生产级脚手架（自发现桥/服务 tick/MCP/冒烟模板一键生成，MCP 可直接落盘）+ AI 工具 forge_*——AI 建插件先拉知识再动手，不再每次重新考古项目。纯本地零服务。",
       "tags": [
         "devkit",
@@ -977,7 +981,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/plugin-forge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/plugin-forge/update.json",
-      "sha256": "2f31379cf24c3b1eb46131250acebda03e88cec89480c3867d9893957786a092",
+      "sha256": "eefb54772156d0ea72ef39d451893619f57bb9e51f8652748491bd041fb0dc38",
       "permissions": {
         "aiToolAccess": true
       },
@@ -1017,6 +1021,41 @@
         "aiToolAccess": true
       },
       "readme": "# 书签考古（bookmark-dig）\n\n> 把积灰的浏览器书签变成可考古、可体检、可复活的活资产。核心循环：**导入 → 体检 → 去重/分类 → 死链清理 → 每日挖出重访**。\n\n## 功能\n\n- **导入**：浏览器书签管理器 → 导出书签（HTML，Chrome/Edge/Firefox 通用 Netscape 格式）→ 面板选文件或桌面端给绝对路径（AI 可用 `dig_import_path`）。解析含文件夹层级、秒级时间戳、HTML 实体；忽略 ICON。\n- **体检**：后台服务并发检查每条链接（默认并发 6、超时 12s、GET 限读 64KB），状态分为存活/重定向/4xx/5xx/域名失效/超时/证书错误/内网拒检/非法 URL；单条失败重试计数，不堵队列；运行清单持久化，服务重启断点续跑。\n- **去重**：URL 规范化（去跟踪参数 utm_*/fbclid/gclid/spm、去碎片/默认端口/尾斜杠、参数排序）后按 normKey 幂等合并；保最早收录时间、更完整标题。\n- **分类**：域名启发式（代码仓库/技术社区/文档/视频/论文/…）；AI 可用 `dig_tag` 覆盖标签。\n- **死链治理**：死链按域名聚合报告；「只重查死链」区分暂时抽风与真死；删除必须 confirm。\n- **今天挖出**：从活书签按「沉睡时长 × 书龄」加权随机捞一条重访并记录——考古的意义不是清单，是重逢。\n- **AI 考古**（MCP 8 工具 `dig_*`）：stats/search/dead/resurface/import_path/check/remove/tag。读路径不依赖服务在线（直接读 kv 分块）。\n\n## 架构（跨域根治点）\n\n```\n面板（React bundle，宿主 invoke 通道；绝不直接 fetch 外网）\n  └─ cap.kv bmd.* 分块存储 ←→ 后台服务（并发体检引擎，原生 fetch + SSRF 守卫）\n                                  └─ MCP server（AI 工具层，stdio；读路径直连 kv）\n```\n\n## 键空间契约（权威表——三方一致，改动须同步）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `bmd.settings` | 面板/MCP | 服务 | 全局设置（30s 热读） |\n| `bmd.meta` | 服务 | 面板/MCP | 心跳（60s）+ 库概况 |\n| `bmd.rec.<n>` | **服务单写** | 面板/MCP | 记录分块（≤200 条/块；键数纪律见插件工坊） |\n| `bmd.run` | 服务 | 面板/MCP | 当前运行清单（断点续跑） |\n"
+    },
+    {
+      "id": "pocket-drop",
+      "name": "口袋快传",
+      "version": "0.1.0",
+      "description": "局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。手机浏览器同源直连自家服务（上传/下载/拍照即传，零跨域）；桌面面板数据走宿主 invoke 读 cap.kv 投影、大文件 127.0.0.1 直传；AI 经 MCP drop_send 把本地文件一键投给手机、drop_save 把手机传来的文件落盘。零云零账号零外网请求，PIN 门禁 + TTL 自动清理 + 容量上限。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "file-transfer",
+        "lan",
+        "qr",
+        "mobile",
+        "mcp"
+      ],
+      "icon": "Files",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-drop",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/update.json",
+      "sha256": "7a7866d09c96486c5aafdf904eb097ceea966c3ac5281b0787c288faeec289f4",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 口袋快传（pocket-drop）\n\n> 局域网文件互传：手机扫码 ↔ 运行 Polaris 的电脑，无需装任何 App。电脑上的文件让 AI 一句话投给手机；手机里的照片拍完直接落到电脑。零云、零账号、零外网请求。\n\n- **手机端**：浏览器扫面板二维码 → 上传（多选 / 拍照即传）/ 下载 / 预览 / 删除，同源直连自家服务，零跨域\n- **面板**（ActivityBar → 📁 口袋快传）：扫码入口 + 双向清单 + 手动上传下载 + 设置 + 服务管理\n- **AI 工具**（MCP 5 个 `drop_*`）：「把 D:\\reports\\报表.xlsx 传到我手机」「我手机传了什么」「把刚传的照片存到工作区」\n- **自动清理**：TTL（默认 72h）+ 条目数/总容量双上限，过渡文件不堆积\n\n## 为什么是它\n\n| 场景 | 没有它 | 有了它 |\n|---|---|---|\n| 手机照片进电脑 | 微信文件传输助手 / 数据线 / 网盘中转 | 扫码拍照即传，落地在电脑存储目录，AI 还能直接接手处理 |\n| 电脑文件给手机 | 同上，还要登录账号 | 对 AI 说「把 xx 传到我手机」，或面板拖上传 |\n| 手机拍的白板/发票要给 AI 看 | 先传微信再下载再上传 | 拍照 → 电脑投递区 → `drop_save` 落盘 → AI 直接读路径 |\n| 临时给同网设备发大文件 | 网盘限速 / U盘 | 局域网直传，上限可调到 8GB |\n\n## 跨域 / 数据面架构（读这个再改代码）\n\n浏览器同源策略是插件平台第一杀手，本插件三路数据面各走各的合规通道（详见 `docs/SPEC.md`）：\n\n```\n手机浏览器 ──同源 HTTP──► 服务进程 (node, 0.0.0.0:9867, PIN 门禁)\n                            ├─ GET /            手机页（服务直出单文件 HTML）\n                            ├─ POST /u          上传（流式落盘 + 限长）\n                            ├─ GET /f/<id>      下载 / inline 预览\n                            └─ DELETE /f/<id>   删除\n桌面面板 ── __POLARIS_HOST_INVOKE__ ──► router_dispatch ──► cap.kv (pdrop.*)\n                                                            ▲ 投影/心跳唯一写者=服务\nMCP server.js ── 127.0.0.1 bridge (md5 token, 自发现) ──────┘（命令键 先删后做）\n桌面大文件直传 ── XHR http://127.0.0.1:9867（localhost 免混合内容，CORS 由自家服务放行）\nAI 投递本地文件 ── 服务直接 fs 读路径（零桥上字节）\n```\n\n- **手机路径完全没有跨域问题**：手机访问的是服务自己直出的页面，同源。\n- **面板清单/状态走 cap.kv 投影**（宿主 invoke 通道），桌面/Web/手机三端一致；\n- **桌面大文件直传是唯一例外**：GB 级字节扛不进 kv / cap.http（base64 会爆），只能 XH",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip"
+        }
+      ]
     }
   ]
 }
