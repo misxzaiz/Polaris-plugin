@@ -1,0 +1,57 @@
+{
+  "id": "time-trail",
+  "name": "刻漏",
+  "version": "0.1.0",
+  "description": "把「这台机器的时间流向」变成可对话的资产：后台服务驱动 PowerShell 原生采集器记录前台应用与输入空闲状态（user32 内存调用，微秒级开销），按天/小时/应用归集成时间账本，分类规则引擎（改规则即时对全部历史生效）映射七类；默认只记进程名不记窗口标题（隐私分级，标题可开关），随时一键暂停。AI 经 MCP 回答「我今天干了啥」「这周写代码多久了」「帮我归类这些新应用」，面板给出实时当前应用、分类条、24h 时间带与 14 天趋势。数据全在 cap.kv 本地，手机打开同一面板看到同一账本。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "time-trail.panel",
+        "area": "activityBar",
+        "panelType": "timeTrail",
+        "icon": "Clock",
+        "labelKey": "plugins.timeTrail",
+        "labelDefault": "刻漏",
+        "order": 75
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "trail-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/trail.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "时间归集引擎（采集器守护 + 天账本单写者）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "time-trail",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/time-trail",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/time-trail.zip"
+  }
+}
