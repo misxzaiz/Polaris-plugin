@@ -171,8 +171,12 @@
 
 /* 工作区 */
 .relay-devkit-panel .work{display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
-.relay-devkit-panel .tabbar{display:flex;align-items:stretch;height:var(--tabsbar);min-height:var(--tabsbar);border-bottom:1px solid var(--line);background:var(--bg-2);overflow-x:auto;overflow-y:hidden}
+.relay-devkit-panel .tabbar{display:flex;align-items:stretch;height:var(--tabsbar);min-height:var(--tabsbar);border-bottom:1px solid var(--line);background:var(--bg-2);overflow-x:auto;overflow-y:hidden;position:relative}
 .relay-devkit-panel .tabbar::-webkit-scrollbar{height:0}
+/* 右缘溢出遮罩：隐藏滚动条下"还有更多 tab"的唯一提示（左缘因加号 sticky 钉住，只需右侧） */
+.relay-devkit-panel .tabbar::after{content:'';position:absolute;top:0;bottom:0;right:0;width:26px;pointer-events:none;opacity:0;transition:opacity .18s;
+  background:linear-gradient(270deg,var(--bg-2),transparent);z-index:1}
+.relay-devkit-panel .tabbar.has-more::after{opacity:1}
 .relay-devkit-panel .rtab{display:flex;align-items:center;gap:8px;padding:0 12px;border-right:1px solid var(--line);cursor:pointer;color:var(--dim);transition:.14s;white-space:nowrap;max-width:240px;position:relative;flex:none}
 .relay-devkit-panel .rtab:hover{background:var(--surface);color:var(--ink)}
 .relay-devkit-panel .rtab.active{background:var(--surface-2);color:var(--ink)}
@@ -182,7 +186,7 @@
 .relay-devkit-panel .rtab .dirty{width:6px;height:6px;border-radius:50%;background:var(--brand);flex:none}
 .relay-devkit-panel .rtab .tx{width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:13px;color:var(--dimmer);flex:none}
 .relay-devkit-panel .rtab .tx:hover{color:var(--ink);background:var(--surface-3)}
-.relay-devkit-panel .tab-add{flex:none;width:38px;display:inline-flex;align-items:center;justify-content:center;color:var(--dim);font-size:18px;border-right:1px solid var(--line)}
+.relay-devkit-panel .tab-add{position:sticky;left:0;z-index:2;flex:none;width:38px;display:inline-flex;align-items:center;justify-content:center;color:var(--dim);font-size:18px;border-right:1px solid var(--line);background:var(--bg-2)}
 .relay-devkit-panel .tab-add:hover{color:var(--brand);background:var(--surface)}
 
 .relay-devkit-panel .reqbar{display:flex;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);align-items:center}

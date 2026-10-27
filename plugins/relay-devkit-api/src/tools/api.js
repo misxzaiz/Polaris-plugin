@@ -176,6 +176,9 @@ function openEnvManager(){
 /* ===================== tab 条 ===================== */
 function renderTabs(){
   const bar=$('#tabbar'); bar.innerHTML='';
+  // 加号钉在左缘（position:sticky），先插入使其位于滚动起点
+  const add=el('button','tab-add','+'); add.title='新建请求 tab'; add.onclick=()=>{ const nt=newTab(); state.tabs.unshift(nt); state.activeTab=nt.id; renderAll(); persist(); };
+  bar.appendChild(add);
   state.tabs.forEach(t=>{
     const tab=el('div','rtab'+(t.id===state.activeTab?' active':''));
     tab.innerHTML=`<span class="tm ${methodColor(t.method)}">${t.method}</span><span class="tn">${esc(t.name)}</span>`;
@@ -186,9 +189,15 @@ function renderTabs(){
     tab.querySelector('.tn').ondblclick=e=>{ e.stopPropagation(); const n=prompt('重命名 tab：',t.name); if(n!=null){ t.name=n.trim()||t.name; renderTabs(); persist(); } };
     bar.appendChild(tab);
   });
-  const add=el('button','tab-add','+'); add.title='新建请求 tab'; add.onclick=()=>{ const nt=newTab(); state.tabs.push(nt); state.activeTab=nt.id; renderAll(); persist(); };
-  bar.appendChild(add);
+  // 新 tab 回到左缘，确保可见（加号 stick 后滚动起点即在窗口最左）
+  bar.scrollLeft=0;
+  updateTabFade();
   $('#stTabs').textContent=state.tabs.length;
+}
+/* 右缘溢出遮罩：有未滚出的 tab 时亮起（隐藏滚动条下的唯一"还有更多"提示） */
+function updateTabFade(){
+  const bar=$('#tabbar'); if(!bar) return;
+  bar.classList.toggle('has-more', bar.scrollLeft+bar.clientWidth < bar.scrollWidth-1);
 }
 
 /* ===================== 请求栏 ===================== */
@@ -524,7 +533,7 @@ function openCurlImport(){
     try{ const p=parseCurl(txt); if(!p.url){ setStatus('未能从命令中解析出 URL','err'); return; }
       const nt=newTab({ name:'cURL: '+shortUrl(p.url), method:p.method, url:p.url, bodyType:p.bodyType, body:p.body,
         headers:(p.headers.length?p.headers.map(h=>({id:uid(),on:true,k:h.k,v:h.v})):[]).concat([blankRow()]) });
-      syncUrlToParams(nt); nt.dirty=true; state.tabs.push(nt); state.activeTab=nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：'+p.method+' '+p.url,'ok');
+      syncUrlToParams(nt); nt.dirty=true; state.tabs.unshift(nt); state.activeTab=nt.id; renderAll(); persist(); close(); setStatus('已从 cURL 导入：'+p.method+' '+p.url,'ok');
       // 检测禁发头：面板模式经 cap.http 可完整注入，无需提醒；独立窗口直连下会被浏览器剥离，主动提醒开代理
       const fb=p.headers.filter(h=>BROWSER_STRIP.test(h.k));
       if(fb.length && !_panelMode){
@@ -576,7 +585,7 @@ function openSaved(r){
   const exist=state.tabs.find(t=>t.savedId===r.id); if(exist){ state.activeTab=exist.id; renderAll(); return; }
   const t=newTab({ name:r.name,savedId:r.id,method:r.method,url:r.url, params:JSON.parse(JSON.stringify(r.params||[blankRow()])), headers:JSON.parse(JSON.stringify(r.headers||[blankRow()])), bodyType:r.bodyType||'none',body:r.body||'',formBody:JSON.parse(JSON.stringify(r.formBody||[blankRow()])) });
   if(!t.params.length)t.params=[blankRow()]; if(!t.headers.length)t.headers=[blankRow()]; if(!t.formBody.length)t.formBody=[blankRow()];
-  state.tabs.push(t); state.activeTab=t.id; renderAll(); persist(); setStatus('已载入「'+r.name+'」');
+  state.tabs.unshift(t); state.activeTab=t.id; renderAll(); persist(); setStatus('已载入「'+r.name+'」');
 }
 function deleteSaved(g,r){ if(!confirm('删除已保存的请求「'+r.name+'」？'))return; g.requests=g.requests.filter(x=>x.id!==r.id); state.tabs.forEach(t=>{ if(t.savedId===r.id){t.savedId=null;t.dirty=true;} }); persist(); renderSidebar(); renderTabs(); }
 function renameGroup(g){ const n=prompt('分组名称：',g.name); if(n==null)return; g.name=n.trim()||g.name; persist(); renderSidebar(); }
@@ -586,7 +595,7 @@ function deleteGroup(g){ if(!confirm('删除分组「'+g.name+'」及其中 '+g.
 function closeTab(t){
   if(t.dirty&&(t.url||t.savedId)){ if(!confirm('该 tab 有未保存修改，仍要关闭？'))return; }
   const i=state.tabs.indexOf(t); state.tabs.splice(i,1);
-  if(!state.tabs.length){ const nt=newTab(); state.tabs.push(nt); state.activeTab=nt.id; }
+  if(!state.tabs.length){ const nt=newTab(); state.tabs.unshift(nt); state.activeTab=nt.id; }
   else if(state.activeTab===t.id) state.activeTab=state.tabs[Math.max(0,i-1)].id;
   renderAll(); persist();
 }
@@ -692,6 +701,7 @@ function bindEvents(){
   const srch=$('#search'); if(srch) srch.addEventListener('input',renderSidebar);
   const ng=$('#newGroup'); if(ng) ng.onclick=()=>{ const n=prompt('新分组名称：','新分组'); if(!n)return; state.collections.push({id:uid(),name:n.trim(),collapsed:false,requests:[]}); persist(); renderSidebar(); };
   const ts=$('#toggleSide'); if(ts) ts.onclick=()=>{ ui.sideCollapsed=!ui.sideCollapsed; $('#main').classList.toggle('collapsed',ui.sideCollapsed); persist(); };
+  const tb=$('#tabbar'); if(tb) tb.addEventListener('scroll',updateTabFade);
   const lb=$('#layoutBtn'); if(lb) lb.onclick=()=>{ ui.layout = ui.layout==='h'?'v':'h'; applyLayout(); persist(); };
   const pb=$('#proxyBtn'); if(pb) pb.onclick=()=>{ if(_panelMode){ setStatus('面板模式：请求恒经宿主 cap.http 转发（无需手动开关）','ok'); return; } ui.proxyOn=!ui.proxyOn; applyProxyBtn(); persist(); setStatus(ui.proxyOn?'已开启跨域代理 · 请求经本地后端 /__proxy 转发':'已关闭代理 · 浏览器直连','ok'); };
   document.addEventListener('keydown',e=>{ if(currentView()!=='api')return; if((e.metaKey||e.ctrlKey)&&e.key==='Enter'){ e.preventDefault(); send(); } if((e.metaKey||e.ctrlKey)&&(e.key==='s'||e.key==='S')){ e.preventDefault(); saveCurrent(); } });
