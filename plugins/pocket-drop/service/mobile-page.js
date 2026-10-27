@@ -114,6 +114,11 @@ function buildMobilePage(_ctx) {
   'use strict';
   var $ = function (s) { return document.querySelector(s) };
   var PIN = localStorage.getItem('pdrop_pin') || '';
+  // 扫码进入时 URL 自带 ?pin=，直接消费（省一次手输）；非法字符忽略
+  try {
+    var qp = new URLSearchParams(location.search).get('pin');
+    if (qp && /^\\d{4,8}$/.test(qp)) PIN = qp;
+  } catch (_) { /* 老浏览器无 URLSearchParams 则走手输 */ }
   var TTL = 72;
 
   function toast(msg, ms) {
@@ -158,7 +163,7 @@ function buildMobilePage(_ctx) {
     var url = path + (path.indexOf('?') >= 0 ? '&' : '?') + 'pin=' + encodeURIComponent(PIN);
     opts.credentials = 'omit';
     return fetch(url, opts).then(function (res) {
-      if (res.status === 401) { enterGate('PIN 已失效，请重新输入'); throw new Error('401'); }
+      if (res.status === 401) { enterGate('PIN 不正确或已变更，请重新输入'); throw new Error('401'); }
       return res.json().catch(function () { return {} }).then(function (j) { j.__status = res.status; return j });
     });
   }

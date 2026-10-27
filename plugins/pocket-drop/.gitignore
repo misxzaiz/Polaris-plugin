@@ -1,0 +1,2 @@
+# git 层面排除（.pluginignore 已排除打包外内容）
+test/harness.bundle.js
