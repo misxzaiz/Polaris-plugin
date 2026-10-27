@@ -1,0 +1,99 @@
+/**
+ * {{PLUGIN_NAME}}面板（Tab 组装 + 状态概览）
+ *
+ * 惯例：Panel.tsx 组装 Tab 与全局状态；每个 Tab 一个文件（此处精简为单文件，
+ * 业务长大后按 XxxTab.tsx 拆分）。样式内联，颜色/字号遵守主题 token。
+ */
+import React, { useEffect, useState } from 'react'
+import { K, loadMeta, loadSettings, saveSettings, type Meta, type Settings } from './model'
+
+type Tab = 'home' | 'settings'
+
+const tabBtn = (active: boolean): React.CSSProperties => ({
+  padding: '6px 14px',
+  borderRadius: 8,
+  border: 'none',
+  cursor: 'pointer',
+  background: active ? 'var(--p-accent, #4a7dff)' : 'transparent',
+  color: active ? '#fff' : 'inherit',
+})
+
+export default function {{PANEL_TYPE}}Panel(_props: { pluginId: string; onSendToChat?: (m: string) => void | Promise<void> }) {
+  const [tab, setTab] = useState<Tab>('home')
+  const [meta, setMeta] = useState<Meta | null>(null)
+  const [settings, setSettings] = useState<Settings | null>(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    let alive = true
+    const load = async () => {
+      try {
+        const [m, s] = await Promise.all([loadMeta(), loadSettings()])
+        if (!alive) return
+        setMeta(m)
+        setSettings(s)
+        setErr('')
+      } catch (e) {
+        if (alive) setErr(String((e as Error).message || e))
+      }
+    }
+    load()
+    const timer = setInterval(load, 15000)
+    return () => { alive = false; clearInterval(timer) }
+  }, [])
+
+  const svcAlive = !!(meta && meta.lastTickAt && Date.now() - meta.lastTickAt < 90 * 1000)
+
+  return (
+    <div style={{ padding: 16, fontFamily: 'inherit', fontSize: 13, color: 'var(--p-text, inherit)', maxWidth: 860, margin: '0 auto' }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 14 }}>
+        <strong style={{ fontSize: 15 }}>{{PLUGIN_NAME}}</strong>
+        <span style={{ flex: 1 }} />
+        <button style={tabBtn(tab === 'home')} onClick={() => setTab('home')}>概览</button>
+        <button style={tabBtn(tab === 'settings')} onClick={() => setTab('settings')}>设置</button>
+      </div>
+
+      {err && (
+        <div style={{ padding: '8px 12px', borderRadius: 8, background: 'rgba(220,80,80,.12)', marginBottom: 12 }}>
+          加载失败：{err}
+        </div>
+      )}
+
+      {tab === 'home' && (
+        <div>
+          <div style={{ padding: '10px 14px', borderRadius: 10, background: 'var(--p-panel, rgba(128,128,128,.08))', marginBottom: 12 }}>
+            服务状态：{meta
+              ? (svcAlive ? '✅ 运行中' : '⚠️ 心跳过期（服务可能已停止）')
+              : '— 尚无心跳（服务未运行或尚未启动）'}
+            {meta?.bridge ? `（桥 ${meta.bridge}）` : ''}
+            {meta?.degraded ? ' · 降级中' : ''}
+          </div>
+          <div style={{ lineHeight: 1.9, color: 'var(--p-text-dim, #999)' }}>
+            <div>这里替换为业务概览：核心指标、快速入口、空态引导。</div>
+            <div>有 MCP 工具时，在此告诉用户可以对 AI 说什么（例：「帮我把这条…」）。</div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'settings' && settings && (
+        <div>
+          <label style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 0' }}>
+            <input
+              type="checkbox"
+              checked={settings.example}
+              onChange={(e) => {
+                const next = { ...settings, example: e.target.checked }
+                setSettings(next)
+                saveSettings(next).catch((ex) => setErr(String((ex as Error).message || ex)))
+              }}
+            />
+            示例设置（服务约 30 秒内热生效）
+          </label>
+          <div style={{ color: 'var(--p-text-dim, #999)', marginTop: 8 }}>
+            数据保存在 cap.kv 的 <code>{K.settings}</code>；清除数据 = 删除全部 <code>{{PREFIX_DOT}}*</code> 键。
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

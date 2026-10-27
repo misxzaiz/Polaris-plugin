@@ -1,0 +1,129 @@
+#!/usr/bin/env node
+'use strict';
+/**
+ * {{PLUGIN_NAME}} MCP Server —— AI 工具层（零依赖 stdio，JSON-RPC 2024-11-05）
+ *
+ * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经自发现桥）中 {{PREFIX}}.* 键空间
+ * 的读写。协议数据只走 stdout，日志走 stderr。参数：node server.js {{appConfigDir}}
+ *
+ * 工具设计纪律（详见插件工坊知识库 mcp 主题）：
+ *   - description 写「适用句式」（用户会说什么 → 用哪个工具）
+ *   - 危险操作强制 confirm:true
+ *   - 返回结构化中文文本，列表带 id 便于后续按 id 操作
+ */
+const { createKvClient } = require('../service/kvclient');
+const core = require('../shared/core');
+
+const SERVER_NAME = '{{PLUGIN_ID}}';
+const SERVER_VERSION = '0.1.0';
+const PROTOCOL_VERSION = '2024-11-05';
+
+const APP_CONFIG_DIR = process.argv[2] || '';
+const K = {
+  settings: '{{PREFIX}}.settings',
+  meta: '{{PREFIX}}.meta',
+};
+
+function log(level, msg) {
+  process.stderr.write(`[${SERVER_NAME}:${level}] ${new Date().toISOString()} ${msg}\n`);
+}
+
+const kv = createKvClient({ appConfigDir: APP_CONFIG_DIR, log: (l, m) => log(l, m) });
+
+function ok(text) { return { content: [{ type: 'text', text }], isError: false }; }
+function err(text) { return { content: [{ type: 'text', text }], isError: true }; }
+
+const tools = [
+  {
+    name: '{{PLUGIN_ID_NODASH}}_status',
+    description: '查看{{PLUGIN_NAME}}的运行状态（服务心跳/桥连接/设置）。适用：「{{PLUGIN_NAME}}现在什么状态」「服务还活着吗」。',
+    inputSchema: { type: 'object', properties: {} },
+    async call() {
+      const meta = await kv.kvGet(K.meta).catch(() => null);
+      if (!meta || typeof meta !== 'object') return ok('服务尚无心跳（未运行或刚安装）。可在面板「设置 → 服务管理」里启动。');
+      const alive = meta.lastTickAt && (Date.now() - meta.lastTickAt < 90 * 1000);
+      return ok(`{{PLUGIN_NAME}}服务${alive ? '运行中' : '心跳过期（可能已停止）'}\n版本: ${meta.version} · 桥: ${meta.bridge || '?'}${meta.degraded ? ' · 降级中' : ''}\n设置: ${JSON.stringify(meta.settings || {})}`);
+    },
+  },
+  {
+    name: '{{PLUGIN_ID_NODASH}}_set_settings',
+    description: '修改{{PLUGIN_NAME}}设置。适用：「帮我调整{{PLUGIN_NAME}}的设置」。服务约 30 秒内热生效。',
+    inputSchema: {
+      type: 'object',
+      properties: { example: { type: 'boolean', description: '示例设置项' } },
+    },
+    async call(args) {
+      const cur = core.normalizeSettings(await kv.kvGet(K.settings).catch(() => null));
+      const next = core.normalizeSettings({ ...cur, ...args });
+      await kv.kvSet(K.settings, next);
+      return ok(`设置已保存（服务约 30 秒内热生效）：${JSON.stringify(next)}`);
+    },
+  },
+];
+
+// ── JSON-RPC 2.0 over stdio ────────────────────────────────────────────────
+function send(msg) { process.stdout.write(JSON.stringify(msg) + '\n'); }
+
+let buf = '';
+process.stdin.setEncoding('utf8');
+process.stdin.on('data', (chunk) => {
+  buf += chunk;
+  while (true) {
+    const i = buf.indexOf('\n');
+    if (i === -1) break;
+    const line = buf.slice(0, i).trim();
+    buf = buf.slice(i + 1);
+    if (!line) continue;
+    let msg;
+    try { msg = JSON.parse(line); } catch (_) { continue; }
+    handleMessage(msg).catch((e) => {
+      log('error', `handleMessage: ${e.message}`);
+      if (msg.id !== undefined) send({ jsonrpc: '2.0', id: msg.id, error: { code: -32603, message: e.message } });
+    });
+  }
+});
+
+async function handleMessage(msg) {
+  if (msg.method === 'initialize') {
+    send({
+      jsonrpc: '2.0', id: msg.id,
+      result: {
+        protocolVersion: PROTOCOL_VERSION,
+        capabilities: { tools: {} },
+        serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
+      },
+    });
+    return;
+  }
+  if (msg.method === 'notifications/initialized') return;
+  if (msg.method === 'tools/list') {
+    send({
+      jsonrpc: '2.0', id: msg.id,
+      result: { tools: tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema })) },
+    });
+    return;
+  }
+  if (msg.method === 'tools/call') {
+    const name = msg.params && msg.params.name;
+    const args = (msg.params && msg.params.arguments) || {};
+    const tool = tools.find((t) => t.name === name);
+    if (!tool) {
+      send({ jsonrpc: '2.0', id: msg.id, result: err(`未知工具：${name}`) });
+      return;
+    }
+    try {
+      const result = await tool.call(args);
+      send({ jsonrpc: '2.0', id: msg.id, result });
+    } catch (e) {
+      log('error', `tool ${name}: ${e.message}`);
+      send({ jsonrpc: '2.0', id: msg.id, result: err(`执行失败：${e.message}`) });
+    }
+    return;
+  }
+  if (msg.id !== undefined) {
+    send({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `method not found: ${msg.method}` } });
+  }
+}
+
+process.on('uncaughtException', (e) => log('error', `uncaught: ${e.stack || e.message}`));
+log('info', `MCP server ${SERVER_NAME} v${SERVER_VERSION} ready (appConfigDir=${APP_CONFIG_DIR || '(none)'})`);

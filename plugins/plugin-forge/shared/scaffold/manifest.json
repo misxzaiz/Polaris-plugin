@@ -1,0 +1,19 @@
+{
+  "comment": "脚手架模板清单：模板文件名 → 生成目标相对路径。模板文件一律 .txt（esbuild text loader 内联 / node fs 读取），内容里的 {{TOKEN}} 由 forge-core.buildScaffold 替换。",
+  "map": {
+    "package.json.txt": "package.json",
+    "tsconfig.json.txt": "tsconfig.json",
+    "pluginignore.txt": ".pluginignore",
+    "src_host.ts.txt": "src/host.ts",
+    "src_index.tsx.txt": "src/index.tsx",
+    "src_model.ts.txt": "src/model.ts",
+    "src_Panel.tsx.txt": "src/Panel.tsx",
+    "shared_core.js.txt": "shared/core.js",
+    "service_kvclient.js.txt": "service/kvclient.js",
+    "service_main.js.txt": "service/main.js",
+    "mcp_server.js.txt": "mcp/server.js",
+    "test_run-tests.mjs.txt": "test/run-tests.mjs",
+    "test_smoke-real.mjs.txt": "test/smoke-real.mjs",
+    "README.md.txt": "README.md"
+  }
+}

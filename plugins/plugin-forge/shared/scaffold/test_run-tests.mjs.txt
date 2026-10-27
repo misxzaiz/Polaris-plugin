@@ -1,0 +1,33 @@
+/**
+ * 离线单测（node test/run-tests.mjs）—— 纯函数核心直测，零依赖零 mock。
+ * 所有可测逻辑都在 shared/core.js；坑在这里暴露最便宜。
+ */
+import assert from 'node:assert';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const core = require('../shared/core.js');
+
+const results = [];
+const t = (name, fn) => {
+  try { fn(); results.push({ name, pass: true }); }
+  catch (e) { results.push({ name, pass: false, detail: e.message }); }
+};
+
+// ── normalizeSettings ───────────────────────────────────────────────────────
+t('normalizeSettings: null 回落默认', () => {
+  assert.deepStrictEqual(core.normalizeSettings(null), { example: false });
+});
+t('normalizeSettings: 非对象输入回落默认', () => {
+  assert.deepStrictEqual(core.normalizeSettings('x'), { example: false });
+});
+t('normalizeSettings: 合法输入保留', () => {
+  assert.deepStrictEqual(core.normalizeSettings({ example: true }), { example: true });
+});
+
+// TODO: 按 shared/core.js 的业务函数逐个补行为级用例（不只 happy path）
+
+const bad = results.filter((r) => !r.pass);
+for (const r of results) console.log(`${r.pass ? '✓' : '✗'} ${r.name}${r.pass ? '' : ' — ' + r.detail}`);
+console.log(`\n${results.length - bad.length}/${results.length} 通过`);
+process.exit(bad.length ? 1 : 0);

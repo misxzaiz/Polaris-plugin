@@ -1,0 +1,154 @@
+#!/usr/bin/env node
+'use strict';
+/**
+ * main.js —— {{PLUGIN_NAME}}后台服务（零依赖，node >= 18，需全局 fetch）
+ *
+ * 骨架职责（按业务增删，保持已验证的骨架语义）：
+ *   - tick 主循环（4s）：读设置(30s 热更) → 扫前缀发现工作 → 消费命令键(先删后做)
+ *     → 周期性工作(礼貌限速) → meta 心跳(60s)
+ *   - /__health 恒 200：bridge 不可达也活着（降级语义见 meta.degraded），
+ *     避免被宿主健康检查误杀进重启循环
+ *   - 日志自落盘 <appConfigDir>/{{PLUGIN_ID}}.log（宿主不收集 stdout）
+ *
+ * 生命周期由宿主 PluginServiceManager 管理。
+ * 启动参数：node main.js {{port}} {{appConfigDir}}
+ */
+const http = require('http');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const core = require('../shared/core');
+const { createKvClient } = require('./kvclient');
+
+const VERSION = '0.1.0';
+const TICK_MS = 4000;
+const META_BEAT_MS = 60 * 1000;
+const SETTINGS_REREAD_MS = 30 * 1000;
+
+const K = {
+  settings: '{{PREFIX}}.settings',
+  meta: '{{PREFIX}}.meta',
+};
+const CMD_PREFIX = '{{PREFIX}}.cmd.';
+
+// ── 文件日志（宿主不收集插件服务 stdout，自行落盘 + 512KB 轮转）─────────────
+let logFile = null;
+function initLog(appConfigDir) {
+  const dir = appConfigDir || os.tmpdir();
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    logFile = path.join(dir, '{{PLUGIN_ID}}.log');
+    try {
+      const st = fs.statSync(logFile);
+      if (st.size > 512 * 1024) fs.renameSync(logFile, `${logFile}.old`);
+    } catch (_) { /* 不存在即首轮 */ }
+  } catch (_) { logFile = null; }
+}
+const DEBUG = process.env.{{PREFIX_UPPER}}_DEBUG === '1';
+function log(level, msg) {
+  const line = `[{{PLUGIN_ID}}:${level}] ${new Date().toISOString()} ${msg}`;
+  if (level === 'debug' && !DEBUG) return;
+  process.stderr.write(line + '\n');
+  if (logFile) {
+    try { fs.appendFileSync(logFile, line + '\n'); } catch (_) { /* 磁盘问题不打断主流程 */ }
+  }
+}
+
+// ── 主流程 ─────────────────────────────────────────────────────────────────
+const PORT = parseInt(process.argv[2], 10) || 0;
+const APP_CONFIG_DIR = process.argv[3] || '';
+
+initLog(APP_CONFIG_DIR);
+
+const kv = createKvClient({ appConfigDir: APP_CONFIG_DIR, log });
+
+let settings = core.normalizeSettings(null);
+let settingsReadAt = 0;
+let degraded = false;
+let lastEndpointRefreshAt = 0;
+const startedAt = Date.now();
+let lastMetaAt = 0;
+
+/** 命令键消费：先删后做（幂等核心——两个消费者并发时 delete 天然互斥） */
+async function consumeCommands() {
+  const keys = await kv.kvKeys();
+  const cmdKeys = keys.filter((k) => k.startsWith(CMD_PREFIX));
+  for (const k of cmdKeys) {
+    const cmd = await kv.kvGet(k).catch(() => null);
+    const delOk = await kv.kvDel(k).then(() => true).catch(() => false);
+    if (!delOk) continue; // 别人抢到了，跳过
+    if (!cmd || typeof cmd !== 'object') continue;
+    log('info', `消费命令 ${k}`);
+    try {
+      // TODO: 按命令类型执行；结果写结果键 <PREFIX>.result.<nonce>
+    } catch (e) {
+      log('warn', `命令 ${k} 执行失败: ${e.message}`);
+      await kv.kvSet('{{PREFIX}}.result.' + String(cmd.nonce || 'unknown'), { ok: false, error: e.message, at: Date.now() }).catch(() => {});
+    }
+  }
+}
+
+async function tick() {
+  try {
+    if (Date.now() - settingsReadAt > SETTINGS_REREAD_MS) {
+      const raw = await kv.kvGet(K.settings).catch(() => null);
+      if (raw && typeof raw === 'object') settings = core.normalizeSettings(raw);
+      settingsReadAt = Date.now();
+    }
+
+    await consumeCommands();
+
+    // TODO: 周期性业务工作（礼貌限速：并发 ≤6，超时必设，失败重试 ≤3 后诚实标记）
+
+    if (Date.now() - lastMetaAt > META_BEAT_MS) {
+      lastMetaAt = Date.now();
+      await kv.kvSet(K.meta, {
+        version: VERSION,
+        pid: process.pid,
+        startedAt,
+        lastTickAt: Date.now(),
+        bridge: (() => { const ep = kv.endpoint(); return ep ? `${ep.host}:${ep.port}` : ''; })(),
+        degraded,
+        settings,
+      }).catch(() => {});
+    }
+
+    if (degraded) {
+      degraded = false;
+      log('info', 'bridge 已恢复');
+    }
+  } catch (e) {
+    const wasDown = degraded;
+    degraded = true;
+    log('warn', `tick 降级: ${e.message}`);
+    if (!wasDown || Date.now() - lastEndpointRefreshAt > 60 * 1000) {
+      if (!wasDown) log('info', 'bridge 不可达，进入降级（健康端点保持 200）');
+      lastEndpointRefreshAt = Date.now();
+      kv.refreshEndpoint(true).catch(() => {});
+    }
+  }
+}
+
+// ── 健康端点（宿主仅看 2xx；bridge 不可达也返回 200，降级见 meta）───────────
+const server = http.createServer((req, res) => {
+  if (req.url === '/__health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ ok: true, version: VERSION, degraded, uptimeSec: Math.floor((Date.now() - startedAt) / 1000) }));
+    return;
+  }
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ ok: false, error: 'not found' }));
+});
+
+if (PORT > 0) {
+  server.listen(PORT, '127.0.0.1', () => log('info', `health endpoint on 127.0.0.1:${PORT}`));
+  server.on('error', (e) => log('error', `health endpoint: ${e.message}`));
+}
+
+process.on('uncaughtException', (e) => log('error', `uncaught: ${e.stack || e.message}`));
+process.on('SIGTERM', () => { try { server.close(); } catch (_) { /* ignore */ } process.exit(0); });
+process.on('SIGINT', () => { try { server.close(); } catch (_) { /* ignore */ } process.exit(0); });
+
+log('info', `{{PLUGIN_ID}} service v${VERSION} start (pid=${process.pid})`);
+setInterval(tick, TICK_MS);

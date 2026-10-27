@@ -1,0 +1,56 @@
+{
+  "id": "bookmark-dig",
+  "name": "书签考古",
+  "version": "0.1.0",
+  "description": "把积灰的浏览器书签变成可考古、可体检、可复活的活资产：导入 Netscape 书签导出（Chrome/Edge/Firefox 通用）→ 后台服务并发体检每条链接（原生 fetch，浏览器同源策略管不到服务进程，跨域根治；SSRF 守卫拒内网）→ 去重/分类/死链报告。杀手锏：①「今天挖出」——从活书签里按沉睡时长×书龄加权随机捞一条老书签重访，让书签库真正被用起来；②死链按域名聚合报告，一眼看清该批量清理什么；③AI 考古——dig_search/dig_dead/dig_resurface 让 AI 直接检索、清理、复活你的书签库。数据全部在本地 cap.kv（bmd.* 分块存储），检查记录单写者幂等，断点续跑，跑完自清理冒烟。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "bookmark-dig.panel",
+        "area": "activityBar",
+        "panelType": "bookmarkDig",
+        "icon": "BookOpen",
+        "labelKey": "plugins.bookmarkDig",
+        "labelDefault": "书签考古",
+        "order": 77
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "dig-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/dig.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "书签链接并发体检引擎（原生 fetch，无跨域限制，SSRF 守卫）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "bookmark-dig",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/bookmark-dig",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip"
+  }
+}

@@ -1,0 +1,22 @@
+'use strict';
+/**
+ * core.js —— {{PLUGIN_NAME}}纯函数核心（零依赖，CommonJS）
+ *
+ * 面板（esbuild bundle）与 MCP / 服务（node require）共用同一份业务计算，
+ * 保证三端口径一致（pocket-ledger/data-ark 验证过的 shared core 模式）。
+ * 可测逻辑全部放这里，test/run-tests.mjs 直测本文件。
+ */
+
+/** 示例：设置规范化（非法输入回落默认值，绝不抛错） */
+function normalizeSettings(raw) {
+  const r = (raw && typeof raw === 'object') ? raw : {};
+  return { example: r.example === true };
+}
+
+/** 示例：把业务规则写成纯函数 —— 输入→输出，不碰 kv/fetch/fs */
+function planSomething(items, settings, now) {
+  if (!Array.isArray(items)) return [];
+  return items.filter((it) => it && it.enabled !== false);
+}
+
+module.exports = { normalizeSettings, planSomething };

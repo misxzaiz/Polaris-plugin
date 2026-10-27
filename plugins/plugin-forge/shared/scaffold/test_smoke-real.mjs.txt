@@ -1,0 +1,149 @@
+/**
+ * 真实环境全链路冒烟（node test/smoke-real.mjs）
+ *
+ * 前提：本机 Polaris 正在运行（anchor.json → config.json web.port 可达）。
+ * 护栏：真实 kv 中已存在本插件业务键（除冒烟子前缀）时拒跑，防误伤生产数据。
+ * 流程：
+ *   1. 自发现真实桥端点（与服务同规则：anchor → config）
+ *   2. 护栏检查
+ *   3. 经真实桥写测试数据 + 写命令键
+ *   4. spawn 真实服务进程（无 env 注入，自发现真实桥）→ waitFor 心跳
+ *   5. 验证服务产出（结果键/状态键）
+ *   6. spawn 真实 mcp/server.js → initialize → tools/list → tools/call 全闭环
+ *   7. finally：杀进程 + 删光本插件前缀全部键 + N/N 报告
+ */
+import { spawn } from 'node:child_process';
+import http from 'node:http';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const APP_ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+const PLUGIN_ID = '{{PLUGIN_ID}}';
+const PREFIX = '{{PREFIX}}.';
+
+// ── 真实桥端点（与服务同规则：anchor → config）────────────────────────────
+function loadEndpoint() {
+  const anchorPath = path.join(process.env.APPDATA || '', 'Polaris', 'anchor.json');
+  const anchor = JSON.parse(fs.readFileSync(anchorPath, 'utf8'));
+  const cfg = JSON.parse(fs.readFileSync(path.join(anchor.dataRoot, 'config.json'), 'utf8'));
+  return { host: '127.0.0.1', base: cfg.web.port, token: cfg.web.token || '' };
+}
+const EP = loadEndpoint();
+
+function md5(s) { return crypto.createHash('md5').update(String(s)).digest('hex'); }
+
+function bridgeDispatch(target, payload, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify({ req: { target, payload } });
+    const headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) };
+    if (EP.token) headers.Authorization = `Bearer ${md5(EP.token)}`;
+    const req = http.request({ hostname: EP.host, port: EP.base, path: '/api/router-dispatch', method: 'POST', headers, timeout: timeoutMs }, (res) => {
+      let b = '';
+      res.on('data', (c) => { b += c; });
+      res.on('end', () => resolve(JSON.parse(b)));
+    });
+    req.on('error', reject);
+    req.on('timeout', () => req.destroy(new Error('bridge timeout')));
+    req.write(data);
+    req.end();
+  });
+}
+async function kvSet(k, v) { const r = await bridgeDispatch('cap.kv', { action: 'set', key: k, value: v }); if (!r.ok) throw new Error('kv set: ' + r.error); }
+async function kvGet(k) { const r = await bridgeDispatch('cap.kv', { action: 'get', key: k }); if (!r.ok) throw new Error('kv get: ' + r.error); return r.result?.value ?? null; }
+async function kvKeys() { const r = await bridgeDispatch('cap.kv', { action: 'list' }); return r.result?.keys ?? []; }
+async function kvDel(k) { return bridgeDispatch('cap.kv', { action: 'delete', key: k }); }
+
+async function waitFor(fn, ms, step = 500, label = '') {
+  const t0 = Date.now();
+  while (Date.now() - t0 < ms) {
+    const v = await fn();
+    if (v) return v;
+    await new Promise((r) => setTimeout(r, step));
+  }
+  throw new Error(`冒烟超时：${label || fn.toString().slice(0, 60)}`);
+}
+
+const results = [];
+const record = (name, pass, detail = '') => { results.push({ name, pass }); console.log(`${pass ? '✓' : '✗'} ${name}${detail ? ' — ' + detail : ''}`); };
+
+// ── 护栏：业务键存在则拒跑（冒烟数据走 smoke 子前缀）───────────────────────
+const preKeys = (await kvKeys()).filter((k) => k.startsWith(PREFIX));
+const businessKeys = preKeys.filter((k) => !k.startsWith(`${PREFIX}smoke.`));
+if (businessKeys.length > 0) {
+  console.error(`[smoke] 检测到 ${businessKeys.length} 个生产业务键（如 ${businessKeys[0]}），拒绝运行以防误伤。`);
+  process.exit(2);
+}
+
+// ── 拉起真实服务（无 env 注入，走 anchor→config 自发现）────────────────────
+const appdata = process.env.APPDATA || '';
+const svcPort = 19870 + Math.floor(Math.random() * 500);
+const svc = spawn(process.execPath, [path.join(APP_ROOT, 'service/main.js'), String(svcPort), path.join(appdata, 'Polaris')], {
+  cwd: APP_ROOT,
+  stdio: ['ignore', 'pipe', 'pipe'],
+});
+const svcErr = [];
+svc.stderr.on('data', (c) => svcErr.push(String(c)));
+
+try {
+  // 1. 服务自发现真实桥 + 心跳
+  await waitFor(async () => (await kvGet(`${PREFIX}meta`))?.lastTickAt, 20000, 500, '服务心跳（真实桥）');
+  const meta = await kvGet(`${PREFIX}meta`);
+  record('服务自发现真实桥并写入心跳', true, `桥=${meta.bridge}`);
+
+  // 2. 命令键闭环：写命令 → 服务先删后做 → 结果键
+  const nonce = 'smoke' + crypto.randomUUID().slice(0, 6);
+  await kvSet(`${PREFIX}cmd.ping.${nonce}`, { op: 'ping', nonce, at: Date.now() });
+  // TODO: 在 service/main.js 的 consumeCommands 里处理 ping → 写 result
+  const result = await waitFor(async () => kvGet(`${PREFIX}result.${nonce}`), 15000, 500, '命令闭环');
+  record('命令键先删后做 + 结果键回写', !!result, JSON.stringify(result || {}).slice(0, 80));
+
+  // 3. 真实 MCP 全闭环
+  const mcp = spawn(process.execPath, [path.join(APP_ROOT, 'mcp/server.js'), path.join(appdata, 'Polaris')], {
+    cwd: APP_ROOT, stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  let buf = '';
+  const pending = new Map();
+  let nextId = 1;
+  mcp.stdout.setEncoding('utf8');
+  mcp.stdout.on('data', (c) => {
+    buf += c;
+    while (true) {
+      const i = buf.indexOf('\n');
+      if (i === -1) break;
+      const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+      if (!line) continue;
+      const msg = JSON.parse(line);
+      const p = pending.get(msg.id);
+      if (p) { pending.delete(msg.id); p(msg); }
+    }
+  });
+  const rpc = (method, params) => new Promise((resolve, reject) => {
+    const id = nextId++;
+    const t = setTimeout(() => reject(new Error('mcp rpc 超时: ' + method)), 60000);
+    pending.set(id, (m) => { clearTimeout(t); resolve(m); });
+    mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+  });
+  await rpc('initialize', { protocolVersion: '2024-11-05', capabilities: {}, clientInfo: { name: 'smoke', version: '0' } });
+  mcp.stdin.write(JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) + '\n');
+  const lst = await rpc('tools/list', {});
+  record('MCP 连接真实桥，tools/list', Array.isArray(lst.result.tools) && lst.result.tools.length >= 2, `${lst.result.tools.map((t) => t.name).join(', ')}`);
+  const st = await rpc('tools/call', { name: '{{PLUGIN_ID_NODASH}}_status', arguments: {} });
+  record('MCP 工具真实闭环（读心跳）', /运行中|心跳/.test(st.result.content[0].text), st.result.content[0].text.split('\n')[0]);
+  mcp.kill();
+
+  console.log('[smoke] 冒烟项全部执行完毕，开始清理…');
+} catch (e) {
+  record('流程', false, e.message);
+  console.error('服务日志尾部：', svcErr.join('').slice(-1200));
+} finally {
+  svc.kill();
+  await new Promise((r) => setTimeout(r, 800));
+  const keys = await kvKeys();
+  const mine = keys.filter((k) => k.startsWith(PREFIX));
+  await Promise.all(mine.map((k) => kvDel(k)));
+  console.log(`[smoke] 已清理 ${mine.length} 个 ${PREFIX}* 键，真实 kv 恢复原状`);
+  const bad = results.filter((r) => !r.pass);
+  console.log(`[smoke] 结果：${results.length - bad.length}/${results.length} 通过`);
+  process.exit(bad.length ? 1 : 0);
+}

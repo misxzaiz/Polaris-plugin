@@ -1,0 +1,11 @@
+/**
+ * 入口：{{PLUGIN_NAME}}面板（dist/panel.js，宿主按 mod.default 加载）
+ */
+import {{PANEL_TYPE}}Panel from './Panel'
+
+export default function {{PANEL_TYPE}}Entry(props: {
+  pluginId: string
+  onSendToChat?: (message: string) => void | Promise<void>
+}) {
+  return <{{PANEL_TYPE}}Panel {...props} />
+}

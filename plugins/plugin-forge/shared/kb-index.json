@@ -1,0 +1,23 @@
+{
+  "version": "0.1.0",
+  "updatedAt": "2026-10-27",
+  "note": "元数据索引；正文在同目录 <id>.md。全部结论于 2026-10-27 对照主仓代码与六个已交付插件逐条核实，与 docs/plugin-development-guide.md 冲突处以本库为准（冲突点已标注）。",
+  "topics": [
+    { "id": "overview", "title": "平台总览：三类进程与两条通道", "summary": "面板 bundle / 后台服务 / MCP server 各自怎么跑、怎么跟宿主通信。建插件前先读这个建立全局图。", "tags": ["总览", "架构", "入门", "进程", "通道", "router_dispatch", "bridge"] },
+    { "id": "manifest", "title": "plugin.json 权威规范", "summary": "逐字段清单：必填项、图标 18 白名单、视图区、服务健康检查、MCP 声明、permissions 已知集。", "tags": ["manifest", "plugin.json", "图标", "icon", "白名单", "contributes", "views", "order"] },
+    { "id": "panel", "title": "面板：构建 / 入口 / 宿主通道 / capDispatch", "summary": "esbuild 参数（React 必须 external）、默认导出签名、__POLARIS_HOST_INVOKE__ 通道与 router_dispatch 包装。", "tags": ["panel", "esbuild", "react", "external", "invoke", "capDispatch", "bundle", "shim"] },
+    { "id": "cross-origin", "title": "跨域治理三层方案（最重要的一课）", "summary": "面板绝不直接 fetch：桌面走 cap.http 转发、跨端通用解是下沉服务原生 fetch、Remote 源默认 deny 陷阱。", "tags": ["跨域", "CORS", "cap.http", "fetch", "Remote", "deny", "混合内容", "抓取"] },
+    { "id": "service", "title": "服务进程：桥自发现 + 生命周期 + 日志", "summary": "零环境变量注入 → anchor/config/扫端口自发现；健康检查语义；宿主不收 stdout → 自落盘。", "tags": ["service", "kvclient", "自发现", "anchor", "健康检查", "healthCheck", "日志", "log"] },
+    { "id": "service-start", "title": "面板自举服务 start（discover + contribution）", "summary": "服务 start 必须带 installPath+contribution：面板经 cap.pluginDiscovery 找自己再按 toBackendContribution 形态传。", "tags": ["start", "自举", "pluginServiceManager", "pluginDiscovery", "installPath", "contribution", "serviceAction"] },
+    { "id": "single-writer", "title": "单写者与幂等纪律", "summary": "命令键先删后做、结果键轮询、id 幂等去重、租约模式。多端并发写的竞态全部靠契约消灭。", "tags": ["单写者", "幂等", "并发", "竞态", "命令键", "先删后做", "租约", "lease"] },
+    { "id": "keyspace", "title": "cap.kv 键空间纪律", "summary": "list 返回全局所有键（跨插件共享）：前缀必加、键数要省、大列表分块、README 写权威键表。", "tags": ["cap.kv", "键空间", "前缀", "list", "分块", "chunk", "sqlite", "kv"] },
+    { "id": "mcp", "title": "MCP server 最小实现与工具设计", "summary": "stdio JSON-RPC 骨架、工具 description 写法（决定 AI 会不会用）、危险操作 confirm 门。", "tags": ["mcp", "stdio", "jsonrpc", "工具", "tools", "description", "confirm", "AI"] },
+    { "id": "caps", "title": "插件可用 cap 速查", "summary": "cap.kv / cap.pluginServiceManager / cap.pluginDiscovery / cap.http 四个插件实际可用的能力与 payload 形态。", "tags": ["cap", "能力", "router", "bus", "payload", "action", "速查"] },
+    { "id": "testing", "title": "三层验证与真实桥冒烟配方", "summary": "离线单测（纯函数）+ tsc/esbuild + 真实桥冒烟：起真服务真 MCP、写真 kv、跑完自清理。含防误伤生产数据的护栏。", "tags": ["测试", "单测", "冒烟", "smoke", "真实桥", "验证", "typecheck", "esbuild"] },
+    { "id": "publishing", "title": "打包发布与 index.json 三坑", "summary": "pack.js 用法、新插件必须手动加 index 条目、@tag URL 会 404、zip 每次重打 sha 都变、index.json 并发覆盖实录。", "tags": ["发布", "pack", "publish", "index.json", "sha256", "update.json", "jsdelivr", "tag", "坑"] },
+    { "id": "ui-ux", "title": "面板 UI 约定与移动端坑", "summary": "Tab 结构惯例、clipboard 非安全上下文回退、内联 SVG 图表、主题 token、手机响应式。", "tags": ["UI", "面板", "clipboard", "移动端", "手机", "图表", "SVG", "tab", "回退"] },
+    { "id": "production-checklist", "title": "生产级清单（data-ark 标准）", "summary": "原子写、诚实降级、日志轮转、不掩盖同步问题、SSRF 守卫、危险操作 confirm、冒烟自清理——逐条打勾才算生产级。", "tags": ["生产级", "清单", "checklist", "原子写", "降级", "SSRF", "守卫", "confirm", "轮转"] },
+    { "id": "pitfalls", "title": "实测坑总表（文档没写的都在这）", "summary": "fetch body 无 .on、Promise executor 不能 await、限频键含维度、GBK 解码、env 注入不存在、plugin_service_* 已删……一条一个实战故事。", "tags": ["坑", "pitfall", "实测", "ReadableStream", "GBK", "env", "HMR", "多实例"] },
+    { "id": "workflow", "title": "AI 建插件推荐流程（先读我）", "summary": "收到「帮我创建插件」类请求时的标准作业程序：拉知识 → 定契约 → shared core → 三进程 → 冒烟 → 发布，每步引用对应主题。", "tags": ["流程", "workflow", "SOP", "AI", "创建插件", "脚手架", "步骤"] }
+  ]
+}

@@ -1,0 +1,72 @@
+/**
+ * 通信层 + 数据访问（{{PLUGIN_NAME}}面板）
+ *
+ * 统一经宿主 invoke 通道调 router_dispatch；面板与后台服务、MCP server
+ * 读写同一个 cap.kv 的 {{PREFIX}}.* 键空间（契约见 README 权威表）。
+ */
+import { getHostInvoke } from './host'
+
+export interface Settings {
+  // TODO: 按业务补齐设置字段（服务每 30s 热读一次）
+  example: boolean
+}
+
+export function normalizeSettings(raw: unknown): Settings {
+  const r = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>
+  return {
+    example: r.example === true,
+  }
+}
+
+// ── cap 通道 ────────────────────────────────────────────────────────────────
+async function capDispatch<T = Record<string, unknown>>(target: string, payload: Record<string, unknown>): Promise<T> {
+  const res = await getHostInvoke()<{ ok: boolean; result?: T; error?: string }>('router_dispatch', { req: { target, payload } })
+  if (!res.ok) throw new Error(res.error || `${target} 调用失败`)
+  return (res.result ?? {}) as T
+}
+
+export async function kvGet<T = unknown>(key: string): Promise<T | null> {
+  // 读可能撞并发删除：容忍任何失败返回 null
+  const r = await capDispatch<{ value?: unknown }>('cap.kv', { action: 'get', key }).catch(() => null)
+  return ((r && r.value) ?? null) as T | null
+}
+
+export async function kvSet(key: string, value: unknown): Promise<void> {
+  await capDispatch('cap.kv', { action: 'set', key, value })
+}
+
+export async function kvDel(key: string): Promise<void> {
+  await capDispatch('cap.kv', { action: 'delete', key }).catch(() => {})
+}
+
+export async function kvKeys(): Promise<string[]> {
+  const r = await capDispatch<{ keys?: string[] }>('cap.kv', { action: 'list' }).catch(() => null)
+  return (r && Array.isArray(r.keys)) ? r.keys : []
+}
+
+// ── 键空间（与 service/main.js、mcp/server.js 三方一致，README 为权威）──────
+export const K = {
+  settings: '{{PREFIX}}.settings',
+  meta: '{{PREFIX}}.meta',
+}
+
+export async function loadSettings(): Promise<Settings> {
+  return normalizeSettings(await kvGet(K.settings))
+}
+
+export async function saveSettings(s: Settings): Promise<void> {
+  await kvSet(K.settings, s)
+}
+
+export interface Meta {
+  version?: string
+  pid?: number
+  startedAt?: number
+  lastTickAt?: number
+  degraded?: boolean
+  bridge?: string
+}
+
+export async function loadMeta(): Promise<Meta | null> {
+  return kvGet<Meta>(K.meta)
+}
