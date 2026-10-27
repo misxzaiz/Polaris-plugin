@@ -1,0 +1,57 @@
+{
+  "id": "feed-radar",
+  "name": "订阅雷达",
+  "version": "0.1.0",
+  "description": "RSS/Atom 订阅雷达：订阅源交给后台服务按间隔抓取（ETag 条件请求、退避、礼貌间隔），文章入库 cap.kv 供桌面/手机/Web 三端同读；AI 经 radar_unread/radar_read_article 直接「读报」——看未读、拉正文、做总结。支持分组、星标、OPML 导入导出、保留策略清扫。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "feed-radar.panel",
+        "area": "activityBar",
+        "panelType": "feedRadar",
+        "icon": "BookOpen",
+        "labelKey": "plugins.feedRadar",
+        "labelDefault": "订阅雷达",
+        "order": 73
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "radar-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/radar.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "订阅抓取/调度服务（原生 fetch，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "feed-radar",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/feed-radar",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip"
+  }
+}
