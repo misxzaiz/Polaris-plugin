@@ -1,0 +1,41 @@
+{
+  "id": "decision-journal",
+  "name": "谋定",
+  "version": "0.1.0",
+  "description": "把「决定」本身变成可复盘、可校准的资产：聊天里说「我选了 B，把握八成，三个月见分晓」即立此存照（含可检验预期+真实把握）；到期清单复盘打分（兑现/部分/落空/作废）；长期积累出你自己的判断力校准曲线——你自称 80% 把握的事，实际兑现率是不是 80%？Brier 分数量化直觉靠不靠谱，教训沉淀成经验卡供 AI 引用。纯本地 cap.kv，零后台服务、零外网请求，面板与 AI 经同一计算核心口径一致，桌面与手机看到同一份台账。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "decision-journal.panel",
+        "area": "activityBar",
+        "panelType": "decisionJournal",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.decisionJournal",
+        "labelDefault": "谋定",
+        "order": 81
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "decision-journal",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/decision-journal",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip"
+  }
+}

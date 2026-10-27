@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28 03:32:05",
+  "updated": "2026-10-28 04:40:00",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1207,6 +1207,41 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
           "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
           "releasedAt": "2026-10-27"
+        }
+      ]
+    },
+    {
+      "id": "decision-journal",
+      "name": "谋定",
+      "version": "0.1.0",
+      "description": "把「决定」本身变成可复盘、可校准的资产：聊天里说「我选了 B，把握八成，三个月见分晓」即立此存照（含可检验预期+真实把握）；到期清单复盘打分（兑现/部分/落空/作废）；长期积累出你自己的判断力校准曲线——你自称 80% 把握的事，实际兑现率是不是 80%？Brier 分数量化直觉靠不靠谱，教训沉淀成经验卡供 AI 引用。四态生命周期（纠结中→存照→复盘/搁置），AI 工具内嵌决策日记方法论（逼出可检验预期，拒绝「会更好」式空话）。纯本地 cap.kv：零后台服务、零外网请求，面板与 AI 经同一计算核心（shared/decision-core）口径一致，桌面与手机看到同一份台账。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "decision",
+        "journal",
+        "calibration",
+        "reflection",
+        "panel",
+        "mcp"
+      ],
+      "icon": "CheckSquare",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/decision-journal",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/update.json",
+      "sha256": "97e96f268eff2774c4e7dfa6045869d68fec090a0226e067327eb81470f81946",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 谋定（decision-journal）· 决策日记\n\n把「决定」本身变成可复盘、可校准的资产：立此存照（可检验预期+把握）→ 到期复盘打分 → 判断力校准曲线（分桶命中率 + Brier）→ 经验卡供 AI 引用。四态生命周期，AI 工具内嵌方法论。纯本地 cap.kv，零服务零外网。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip"
         }
       ]
     }
