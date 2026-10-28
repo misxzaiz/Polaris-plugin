@@ -1,0 +1,63 @@
+{
+  "id": "zhifang",
+  "name": "纸坊",
+  "version": "0.1.0",
+  "description": "本地 PDF 工坊：把「合并、抽页/重排、拆分、旋转、删页、图片转 PDF、提取文字」这些最高频 PDF 操作变成 AI 对话里的一句话 + 面板里的拖拽。文件全程不出本机（服务只绑 127.0.0.1 + token，零外网请求），在线工具的隐私焦虑与免费次数限制从根上不存在。输出永不覆盖（同名自动 -2/-3）、输入永不修改删除、加密 PDF 明确拒绝（不破解）。面板与 AI（5 个 zhifang_* MCP 工具）共用同一引擎与同一份任务台账（cap.kv zhifang.history.*）。明确不做假压缩/OCR——扫描件与压缩需求如实告知边界。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "zhifang.panel",
+        "area": "activityBar",
+        "panelType": "zhifang",
+        "icon": "Files",
+        "labelKey": "plugins.zhifang",
+        "labelDefault": "纸坊",
+        "order": 88
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "zhifang-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "面板文件操作引擎（127.0.0.1 + token）：上传字节→pdf-lib/pdfjs 本地处理→落盘输出目录，登记任务历史"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "zhifang",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zhifang",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/zhifang.zip"
+  }
+}
