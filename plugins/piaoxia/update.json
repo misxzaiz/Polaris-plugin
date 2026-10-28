@@ -1,0 +1,63 @@
+{
+  "id": "piaoxia",
+  "name": "票匣",
+  "version": "0.1.0",
+  "description": "票匣——个人电子发票保险库：把散落在下载文件夹/微信卡包导出/邮箱附件里的电子发票收拢成一本可对话的票账。拖进来自动解析（数电票 PDF/XML 文本层，零 OCR 零外网），20 位发票号码唯一判重防财务打回，报销状态一句话流转（待报销→已提交→已到账），保修到期倒数支撑维权，抬头一键复制，月度/类别/销方透视。纯本地：服务只绑 127.0.0.1+token，数据存 cap.kv，原件归档数据根，敏感字段不出设备。纸质/扫描票不做 OCR，如实引导手动录入。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "piaoxia.panel",
+        "area": "activityBar",
+        "panelType": "piaoxia",
+        "icon": "ClipboardList",
+        "labelKey": "plugins.piaoxia",
+        "labelDefault": "票匣",
+        "order": 89
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "piaoxia-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "票匣解析引擎（127.0.0.1 + token）：拖拽/路径扫描的 PDF/XML 电子发票本地解析 + 原件归档数据根，零外网请求"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "piaoxia",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/piaoxia",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/piaoxia.zip"
+  }
+}

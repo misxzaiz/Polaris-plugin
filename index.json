@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28T21:17:21.700Z",
+  "updated": "2026-10-28T22:00:40.691Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1876,6 +1876,45 @@
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/quanfu.zip",
           "sha256": "de9fc836971f0fa42ebf5430a01484b325b65d9a530eae8e5284586615a590b9"
+        }
+      ]
+    },
+    {
+      "id": "piaoxia",
+      "name": "票匣",
+      "version": "0.1.0",
+      "description": "票匣——个人电子发票保险库：把散落在下载文件夹/微信卡包导出/邮箱附件里的电子发票收拢成一本可对话的票账。拖进来自动解析（数电票 PDF 文本层/数电票 XML，零 OCR 零外网），20 位发票号码唯一判重防财务打回，报销状态一句话流转（待报销→已提交→已到账），保修到期倒数支撑维权，抬头一键复制，月度/分类/销方透视与 CSV 导出。纯本地：服务只绑 127.0.0.1+token，数据存 cap.kv，原件归档数据根 piaoxia/ 目录。扫描件/纸质票不做 OCR，如实引导手动录入。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "invoice",
+        "reimburse",
+        "expense",
+        "warranty",
+        "finance",
+        "local-first",
+        "mcp",
+        "panel"
+      ],
+      "icon": "ClipboardList",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/piaoxia",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/piaoxia.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/update.json",
+      "sha256": "2db1a183c354cd57b4d48632591d8e424dce64ab07566a1ea990a75e118ec25c",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 票匣——个人电子发票保险库\n\n拖进来自动解析判重（数电票 PDF/XML，20 位发票号码唯一键），报销状态一句话流转（待报销→已提交→已到账），保修到期倒数支撑维权，抬头一键复制，月度/分类/销方透视。纯本地零外网，原件归档数据根。扫描件/纸质票不做 OCR（手动录入兜底），OFD 暂不支持。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/piaoxia.zip",
+          "sha256": "2db1a183c354cd57b4d48632591d8e424dce64ab07566a1ea990a75e118ec25c"
         }
       ]
     }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ElecInvoice xmlns="http://www.chinatax.gov.cn/dfpv/schema/elecinvoice">
+  <InvoiceNo>24312000000123456789</InvoiceNo>
+  <IssueDate>2026-10-15</IssueDate>
+  <InvoiceType>10</InvoiceType>
+  <BuyerInfo>
+    <BuyerName>杭州某某网络科技有限公司</BuyerName>
+    <BuyerTaxId>91330106MA27XW1234</BuyerTaxId>
+  </BuyerInfo>
+  <SellerInfo>
+    <SellerName>杭州某某餐饮管理有限公司</SellerName>
+    <SellerTaxId>91330105MA2ABCD1XY</SellerTaxId>
+  </SellerInfo>
+  <GoodsInfo>
+    <ItemName>*餐饮服务*午餐费</ItemName>
+    <Amount>280.00</Amount>
+  </GoodsInfo>
+  <TotalTaxExclusiveAmount>280.00</TotalTaxExclusiveAmount>
+  <TotalTaxAmount>16.80</TotalTaxAmount>
+  <TotalTaxInclusiveAmount>296.80</TotalTaxInclusiveAmount>
+</ElecInvoice>
