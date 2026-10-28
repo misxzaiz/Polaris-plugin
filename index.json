@@ -1618,6 +1618,42 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/shouzha.zip"
         }
       ]
+    },
+    {
+      "id": "guanzhi",
+      "name": "观止",
+      "version": "0.1.0",
+      "description": "常驻工作台的书影音消费账本：把「看过的/读过的/玩过的」变成可对话、可复盘、会主动帮你挑下一部的活资产。对话式记账（「昨晚看完《流浪地球2》打9分」一句话入账，AI 凭常识补全年份/导演/类型，同体裁同名自动判重转状态）、想看清单被激活（今晚看什么→躺龄越久越优先+逐日轮换的确定性推荐，附口味画像）、进行中收尾提醒、年报（完成数/评分均值/月度节奏/分体裁/年度十佳/心头好/最长短评）、CSV/JSON 导出与 JSON 导入。面板与 AI（7 个 MCP 工具）经 cap.kv 共享同一事实库。纯本地台账：零后台服务、零网络权限、数据不出设备，桌面与手机 Web 同看一份。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "media-tracker",
+        "book-movie-game",
+        "watchlist",
+        "year-report",
+        "mcp",
+        "kv"
+      ],
+      "icon": "Film",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/guanzhi",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/guanzhi.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/update.json",
+      "sha256": "8b895f1165d70971a329f39452657e0556e306267b80cabf9c2cf3ea2c21ae30",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 观止（Guanzhi）— 书影音消费账本\n\n> 常驻工作台的书影音台账：看过的每一步都算数，想看的每一部都会再见到你。\n\n## 解决什么问题\n\n书影音记录的需求真实存在，但现有方案各有结构性缺口：\n\n- **Goodreads 停滞**：被 Amazon 收购后功能长期停滞（「If Goodreads disappeared today, would you care?」等长帖持续吵了多年），用户持续外流到 StoryGraph/Fable 等。\n- **豆瓣绑架**：安卓端误点广告强制拉起 App 下载、页Ad面商业化侵蚀记录体验，「逃离豆瓣」是长期话题；主流替代 NeoDB 要先理解联邦宇宙、选实例、注册账号。\n- **自托管门槛**：Ryot/Yamtrack/Movary 等自托管追踪器印证了需求，但都要 Docker/服务器；英文元数据生态对中文书影音不友好。\n- **记录成本高**：以上全部是「搜索元数据 → 填表单」的流程；记录本身就成了负担，清单死了。\n\n观止的答案：**一句话记账**（AI 从对话提取记录并凭常识补全年份/作者/类型，同体裁同名自动判重转状态）+ **清单被激活**（今晚看什么→从想看清单与进行中给确定性推荐，附口味画像）+ **年报会自己长出来**（纯派生，无需预生成）。纯本地：零网络权限、零后台服务、数据不出设备。\n\n## 怎么用\n\n**聊天里（AI 7 工具，`guanzhi_*`）**：\n- 「昨晚看完《流浪地球2》打9分」→ 记账（自动补全 2023/郭帆/科幻，报「今年第 N 部」）\n- 「想看《沙丘3》」「开始读《三体》」→ 心愿/进行中（想看 → 开始 → 完成 的状态机）\n- 「我看过什么科幻」「上次给《X》打几分」→ 检索（标题/作者/类型/短评模糊）\n- 「我今年看了多少电影」「我的平均分」→ 问账（透视 + 年报）\n- 「今晚看什么」→ 推荐（先收尾进行中 + 心愿清单躺龄优先 + 逐日轮换，附口味画像）\n- 「把这段清单导进来」→ 批量导入（批内 + 账本双重判重，逐条校验）\n\n**面板（四 Tab）**：\n- **总览**：今年完成/在进行/评分均值 KPI → 进行中（开得最久在前，先收尾）→ 最近完成 → 想看清单（压得最久在前）→ 记一笔表单\n- **藏卷**：搜索 + 体裁/状态/心头好过滤 → 全量记录卡（状态流转/编辑/删除）\n- **年报**：年份选择 → 完成数/评分均值/心头好 KPI → 分体裁条形 → 月度 12 柱 → 评分档 → 年度十佳 → 心头好 → 年度最长短评\n- **设置**：CSV/JSON 导出（剪贴板）、JSON 导入（判重+逐条校验）、清空数据\n\n## 设计要点\n\n- **一条一键**（`guanzhi.work.<id>`）：规避列表并发覆盖，桌面与手机双端并发后到者胜。\n- **状态-日期语义**（唯一权威 `applyStatusDates`）：`wish` 清日期；`active` 补开始日记今天、清陈旧完成日；`done` 缺完成日记今天；`dropped` 原样保留。新建与状态切换共用同一函数，口径不漂移。\n- **判重键**：同体裁 + 标题（去空白、忽略大小写）；年份只在双方都有且不同时才区分作品（沙丘1984 ≠ 沙丘2021；一方缺年份视为同作）。导入与账本互判重。\n- **推荐确定性**：评分 = min(躺龄天/30, 4) + 体裁定向 +1.5 + 当日盐 jitter（`hash(today+id)`）；同一天重复问结果一致，跨日自然轮换——可解释、无黑盒。\n- **导入不做日期臆造**：批量导入 `autoDates=false`，旧记录缺完成日保持缺失，而不是被盖成导入当天。\n- **计算唯一权威**：`shared/guanzhi-core.js` 同时被面板 bundle 与 MCP require，口径永不漂移。\n- **纯本地**：零网络请求、零后台服务、零跨域面；数据存 cap.kv，桌面与手机 Web 看到同一份。\n- **无海报设计**：排版化封面（体裁 emoji + 渐变），不依赖任何外部元数据 API——记录闭环不因外网/反爬/停服而中断。\n\n## 键空间\n\n| 键 | 内容 |\n|---|---|\n| `guanzhi.work.<id>` | Work（title/kind/status/rating/startDate/finishDate/year/creator/genre/link/note/favorite/createdAt/updatedAt） |\n| `guanzhi.settings` | Settings（schemaVersion，预留） |\n\n## 验证\n\n- 离线单测 43 组（归一化/状态-日期语义/判重/透视/年报/推荐确定性/CSV/导入判重）：`node test/run-tests.mjs`\n- MCP 全流程（内存桥 + JSON-RPC stdio）：`node test/mcp-verify.mjs`\n- 真桥冒烟 12 项（需 Polaris 运行中，快照式清理只删本次新建键）：`node test/smoke-real.mjs`\n- 面板渲染 harness（mock 宿主桥 + 罐头数据）：`npx esbuild test/harness.tsx --bundle --format=iife --outfile=test/harness.js --jsx=automatic` + `node test/harness-serve.mjs` → http://127.0.0.1:9898\n\n## 已知边界\n\n- **无海报/评分榜**：不做外部元数据拉取（TMDB/豆瓣），封面为体裁排版卡；后续可选「用户自带 TMDB Key 的可选增强」，不进 MVP。\n- **无重看/重读记录**：同一作品只保留一条记录，状态机不表达「第二次看完」；重看感受可更新短评。\n- **导入不解析豆瓣 CSV**：豆瓣官方导出 CSV 列结构需实测后适配（见主仓 spec 的后续路线），当前导入格式为观止 JSON（或 AI 整理的数组）。\n- **无系统级推送**：清单提醒形态是面板 + AI 随问随答（插件平台能力边界）。\n- 评分口径 0-10（一位小数），与豆瓣 5 星、Letterboxd 5 星间需人工换算（×2 / ÷2）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/guanzhi.zip"
+        }
+      ]
     }
   ]
 }
