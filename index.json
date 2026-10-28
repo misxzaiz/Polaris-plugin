@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28T16:59:49.088Z",
+  "updated": "2026-10-28T17:44:42Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1581,6 +1581,41 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/changqi.zip"
+        }
+      ]
+    },
+    {
+      "id": "shouzha",
+      "name": "守闸",
+      "version": "0.1.0",
+      "description": "订阅与续费管家：把散落在支付宝/微信/Apple/各 App 里的自动续费与会员订阅，变成一本可对话的未来支出承诺账。三榜盯防沉默扣费——逾期待对账（扣费日过境未确认即红榜，不静默滚周期）、即将扣费、试用转正红榜；价格史检出涨价；年化排行+未来 12 个月现金流透视+取消止损统计。纯本地（cap.kv，数据不出设备）：零后台服务、零网络请求；聊天里说「我订了 xx 年费 248」即登记，「下个月要扣多少」即透视；面板与 AI 经同一计算核心（shared/core）保证口径一致，桌面与手机 Web 看到同一本订阅账。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "subscription",
+        "renewal",
+        "billing",
+        "money",
+        "reminders",
+        "cashflow"
+      ],
+      "icon": "Activity",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/shouzha",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/shouzha.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/update.json",
+      "sha256": "248cf08d70d96bc57d8179318a49193f6640ba57969b2f589d541e46bb8186f9",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 守闸 shouzha —— 订阅与续费管家\n\n把散落在支付宝/微信/Apple/各 App 里的自动续费与会员订阅，变成一本可对话的未来支出承诺账。三榜盯防沉默扣费：逾期待对账（扣费日过境未确认即红榜，不静默滚周期）、即将扣费、试用转正红榜；价格史检出涨价；年化排行 + 未来 12 个月现金流透视 + 取消止损统计。纯本地（cap.kv）：零后台服务、零网络请求；聊天里说「我订了 xx 年费 248」即登记，「下个月要扣多少」即透视。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/shouzha.zip"
         }
       ]
     }

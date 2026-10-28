@@ -1,0 +1,44 @@
+{
+  "id": "shouzha",
+  "name": "守闸",
+  "version": "0.1.0",
+  "description": "订阅与续费管家：把散落在支付宝/微信/Apple/各 App 里的自动续费与会员订阅，变成一本可对话的未来支出承诺账。三榜盯防沉默扣费——逾期待对账（扣费日过境未确认即红榜，不静默滚周期）、即将扣费、试用转正红榜；价格史检出涨价；年化排行+未来 12 个月现金流透视+取消止损统计。纯本地（cap.kv，数据不出设备）：零后台服务、零网络请求；聊天里说「我订了 xx 年费 248」即登记，「下个月要扣多少」即透视；面板与 AI 经同一计算核心（shared/core）保证口径一致，桌面与手机 Web 看到同一本订阅账。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "shouzha.panel",
+        "area": "activityBar",
+        "panelType": "shouzha",
+        "icon": "Activity",
+        "labelKey": "plugins.shouzha",
+        "labelDefault": "守闸",
+        "order": 74
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "shouzha",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/shouzha",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/shouzha.zip"
+  }
+}
