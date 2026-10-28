@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28T20:11:00.541Z",
+  "updated": "2026-10-28T21:17:21.700Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1839,6 +1839,43 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/zhifang.zip"
+        }
+      ]
+    },
+    {
+      "id": "quanfu",
+      "name": "泉府",
+      "version": "0.1.0",
+      "description": "贷款全生命周期台账：把家庭「最大的一笔负债」变成可对话、可对账、会主动提醒的活资产。一句话建档（「100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」）；提前还款三方案对比（基准/缩期/减月供——省息、月供、期限）；利率变更/提前还款/银行对账一键记事件、账本自动重放；重定价日倒数（2024-11 新政 3/6/12 个月周期）；年度本息构成；组合贷归组。等额本息/等额本金/先息后本三引擎，逐期分级舍入。纯本地零网络（cap.kv，无服务进程）。只做记录与测算，不构成金融建议。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "loan",
+        "mortgage",
+        "ledger",
+        "amortization",
+        "panel",
+        "mcp"
+      ],
+      "icon": "AlertCircle",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/quanfu",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/quanfu.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/update.json",
+      "sha256": "de9fc836971f0fa42ebf5430a01484b325b65d9a530eae8e5284586615a590b9",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 泉府 quanfu\n\n贷款全生命周期台账：对话式建档、提前还款三方案对比（缩期 vs 减月供）、利率变更/提前还款/对账事件重放、重定价倒数、年度本息构成、组合贷归组。等额本息/等额本金/先息后本，逐期分级舍入。纯本地零网络，数据不出设备。只做记录与测算，不构成金融建议。\n\n- 对 AI 说「我有一笔 100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」一句话建档\n- 「提前还 20 万缩期还是减月供」三方案并列对比\n- 「这个月重定价了 3.3%」「银行说我剩 65 万」即记即对账\n- 面板四 Tab：总览 / 测算 / 贷款 / 设置",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/quanfu.zip",
+          "sha256": "de9fc836971f0fa42ebf5430a01484b325b65d9a530eae8e5284586615a590b9"
         }
       ]
     }
