@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-27",
+  "updated": "2026-10-28T02:45:35Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -65,9 +65,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "b760f08d5a463ae45ff92693987e94b47ce44c0c6ef9e18d01b04c45f8eaebe2",
+      "sha256": "c4bd3dfd8abc6b1acff7b37d6438193f6fc865404bd035ed910a82ed8b75fe61",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true,
@@ -79,7 +79,8 @@
       "versions": [
         {
           "version": "1.2.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v1.2.1/plugins/marketplace/marketplace.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
+          "sha256": "c4bd3dfd8abc6b1acff7b37d6438193f6fc865404bd035ed910a82ed8b75fe61"
         }
       ]
     },
@@ -167,9 +168,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit-api",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.1/plugins/relay-devkit-api/relay-devkit-api.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/relay-devkit-api.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/update.json",
-      "sha256": "aabee6b39f92dbf07a27ceb2c7b2ab0ac7f440608865c8582db96a09a39b9d13",
+      "sha256": "de312193fd030cfe8ac559fbadc73e0f99cd2c13eaebc8f7558fa26ad86aba3a",
       "tier": "beta",
       "permissions": {
         "workspaceRead": true,
@@ -180,7 +181,8 @@
       "versions": [
         {
           "version": "1.0.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-api-v1.0.1/plugins/relay-devkit-api/relay-devkit-api.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit-api/relay-devkit-api.zip",
+          "sha256": "de312193fd030cfe8ac559fbadc73e0f99cd2c13eaebc8f7558fa26ad86aba3a"
         }
       ]
     },
@@ -205,7 +207,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/update.json",
-      "sha256": "0a375a52f4f6c9f44954e2e84ca1ca827bda2471175132ebd03a311913df6f9a",
+      "sha256": "fe9e7b52a521f45f9f2646c6817ae5b1d28e5d5a2dbc329ac31ea03876509af9",
       "tier": "beta",
       "permissions": {
         "workspaceRead": true,
@@ -218,7 +220,8 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip",
+          "sha256": "fe9e7b52a521f45f9f2646c6817ae5b1d28e5d5a2dbc329ac31ea03876509af9"
         }
       ]
     },
@@ -421,16 +424,17 @@
         "workspaceRead": true,
         "workspaceWrite": true
       },
-      "sha256": "d92b8f6d6dcb384f2c359e163ae244ccc78f72fbfb2a1efc248576050ab29910",
+      "sha256": "29c756f0eddb6dfbc6d963fa39bd9a3edbd5210226f9f5c98dc52c9b44af2272",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/animation-2d",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/update.json",
       "versions": [
         {
           "version": "0.1.1",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@animation-2d-v0.1.1/plugins/animation-2d/animation-2d.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/animation-2d/animation-2d.zip",
+          "sha256": "29c756f0eddb6dfbc6d963fa39bd9a3edbd5210226f9f5c98dc52c9b44af2272"
         },
         {
           "version": "0.1.0",
@@ -457,9 +461,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/douyin-publish",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/douyin-publish.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/update.json",
-      "sha256": "74cbdad2bfd0c9481e61c633468156e3e12695e838b620853c7ddad82815211d",
+      "sha256": "aa447ea7756a3a51f03cf6ee34a07c6881c2e87534665f985ac64ef18b4bb7fe",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true,
@@ -474,7 +478,8 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@douyin-publish-v0.1.0/plugins/douyin-publish/douyin-publish.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/douyin-publish.zip",
+          "sha256": "aa447ea7756a3a51f03cf6ee34a07c6881c2e87534665f985ac64ef18b4bb7fe"
         }
       ]
     },
@@ -540,9 +545,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/capability-runtime",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/capability-runtime.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/update.json",
-      "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
+      "sha256": "b5872fb33941495ac94cc0bdd2834a7ffe303783c652476637e254f55358ba84",
       "tier": "beta",
       "permissions": {
         "workspaceRead": true,
@@ -556,9 +561,8 @@
       "versions": [
         {
           "version": "1.0.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@capability-runtime-v1.0.0/plugins/capability-runtime/capability-runtime.zip",
-          "sha256": "913aa5b50a88dfbae7cea2d54827b136163bebf442d8e22cbfb03d249a47bda3",
-          "description": "让 AI 在运行时自行扩展能力：热插拔功能模组（装完立即出现在 tools/list，无需重启宿主/客户端）+ 桌面输入悬浮窗（AI 即时创建可置顶浮窗收集用户输入）。模组持久化、审计、进程级隔离。"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/capability-runtime.zip",
+          "sha256": "b5872fb33941495ac94cc0bdd2834a7ffe303783c652476637e254f55358ba84"
         }
       ]
     },
@@ -631,7 +635,7 @@
       "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
       "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
       "tier": "beta",
       "permissions": {
@@ -643,15 +647,11 @@
       "versions": [
         {
           "version": "0.1.3",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip"
-        },
-        {
-          "version": "0.1.2",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip",
-          "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip",
+          "sha256": "fa6ae1d14812cb547d48babab2cee673b0edbb71ab5d40c8b3d39ec3229291bf"
         }
       ],
-      "sha256": "0e0c0280deea08578f752d2800ada7ac0ed292ba494be7268f6a9598153ca84d"
+      "sha256": "fa6ae1d14812cb547d48babab2cee673b0edbb71ab5d40c8b3d39ec3229291bf"
     },
     {
       "id": "data-ark",
@@ -1084,7 +1084,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
-      "sha256": "0712c361cca9d568bb1f779f0d915e0c5afa8cb0fb8d375c29441a948928de59",
+      "sha256": "f220f71fa04eb811868e0eee29c41d55ed8ab0b2f3d129f46e43c4b729a1041b",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1095,7 +1095,8 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
+          "sha256": "f220f71fa04eb811868e0eee29c41d55ed8ab0b2f3d129f46e43c4b729a1041b"
         }
       ]
     },
@@ -1308,7 +1309,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/update.json",
-      "sha256": "31bb35e62d57ca40287589539631b0c3fdb8bdc291175bee49a9dffcc5d0a4db",
+      "sha256": "7f1f1cbb0a8e74150cc7962ee843f8f8a7932b53c6a994030612474a89e758c0",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1318,7 +1319,8 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip",
+          "sha256": "7f1f1cbb0a8e74150cc7962ee843f8f8a7932b53c6a994030612474a89e758c0"
         }
       ]
     },
@@ -1466,6 +1468,76 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/lingxi/lingxi.zip"
+        }
+      ]
+    },
+    {
+      "id": "opts.zcode-adapter",
+      "name": "ZCode 插件适配器",
+      "version": "0.1.0",
+      "description": "通用方言适配器参考实现：发现并翻译 ZCode (.zcode-plugin/plugin.json) 插件格式。适配器只有翻译权，准入校验由宿主独占（plans/plugin-adapter-capability-spec.md）。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "zcode",
+        "adapter",
+        "plugin",
+        "translation",
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-adapter",
+      "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/zcode-adapter.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/update.json",
+      "sha256": "ea322f9758e4283ca5a38451b1fc7f71f61043dec13899274d3212a49462c03e",
+      "tier": "beta",
+      "permissions": {
+        "workspaceRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/zcode-adapter.zip",
+          "sha256": "ea322f9758e4283ca5a38451b1fc7f71f61043dec13899274d3212a49462c03e"
+        }
+      ]
+    },
+    {
+      "id": "watchtower",
+      "name": "守望台",
+      "version": "0.1.0",
+      "description": "插件运营台：用量计量（谁在被用/谁在浪费）+ 生命周期治理（服务启停/冷热分级/清理建议）。双通道计量——AI 经 MCP 工具调用自动记账，用户手动打开面板自动记账，同账本同口径（shared/usage-core 双端共用）。仅依赖宿主 cap.kv/cap.pluginDiscovery/cap.pluginServiceManager 三能力，纯本地零服务零外联；面板（总览/服务/治理/口径）+ MCP 9 工具。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "usage",
+        "monitor",
+        "governance",
+        "service",
+        "mcp",
+        "kv"
+      ],
+      "icon": "Activity",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/watchtower",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
+      "sha256": "5e553abd90f7a1230f666ec845988c228c44171214992ebf6640d184ca52ab19",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
+          "sha256": "5e553abd90f7a1230f666ec845988c228c44171214992ebf6640d184ca52ab19"
         }
       ]
     }

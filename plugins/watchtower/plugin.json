@@ -1,0 +1,41 @@
+{
+  "id": "watchtower",
+  "name": "守望台",
+  "version": "0.1.0",
+  "description": "插件运营台：用量计量（谁在被用/谁在浪费）+ 生命周期治理（服务启停/冷热分级/清理建议）。双通道计量——AI 经 MCP 工具调用自动记账，用户手动打开面板自动记账，同账本同口径（shared/usage-core 双端共用）。仅依赖宿主 cap.kv/cap.pluginDiscovery/cap.pluginServiceManager 三能力，纯本地零服务零外联；面板（总览/服务/治理/口径）+ MCP 9 工具，AI 可「查插件用量」「停冷门插件后台服务」「清理沉睡插件」。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "watchtower.panel",
+        "area": "activityBar",
+        "panelType": "watchtower",
+        "icon": "Activity",
+        "labelKey": "plugins.watchtower",
+        "labelDefault": "守望台",
+        "order": 92
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "watchtower",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/watchtower",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip"
+  }
+}
