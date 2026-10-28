@@ -1,0 +1,57 @@
+{
+  "id": "quote-sentinel",
+  "name": "盘哨",
+  "version": "0.1.0",
+  "description": "常驻工作台的 A股/ETF/指数行情哨兵：盘中自选实时行情（腾讯主源→东财备源→缓存兜底三级降级，面板显式标注数据时间）、到价与涨跌幅提醒（交易日单次去重）、持仓成本与盈亏、当日分时图。抓取全部下沉后台服务原生执行，面板与 AI（10 个 MCP 工具）经 cap.kv 共享同一事实库——直接用自然语言问「我的自选怎么样了」「茅台涨过 1350 提醒我」。仅展示公开行情数据，非投资建议。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "quote-sentinel.panel",
+        "area": "activityBar",
+        "panelType": "quoteSentinel",
+        "icon": "Activity",
+        "labelKey": "plugins.quoteSentinel",
+        "labelDefault": "盘哨",
+        "order": 73
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "quotes-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/quotes.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "行情轮询/提醒引擎（原生 fetch，无跨域限制）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "quote-sentinel",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "network": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/quote-sentinel",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/quote-sentinel.zip"
+  }
+}
