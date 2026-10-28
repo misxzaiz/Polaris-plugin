@@ -1547,6 +1547,42 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/quote-sentinel.zip"
         }
       ]
+    },
+    {
+      "id": "changqi",
+      "name": "常契",
+      "version": "0.1.0",
+      "description": "常驻工作台的订阅契约账簿：每一笔自动续费都被看见、被提醒、可果断取消。对话式入册（「我在 iCloud 开了月度会员 6 元」一句话入账本）、下次扣费日推导（月末 clamp anniversary 语义，1/31→2/28→3/31 不漂移）、扣费前提醒投影（当天红条/提前 N 天橙条/试用转正紫条）、月均·年化·本月将扣透视、渠道与分类分布、五渠道取消自动续费路径引导（App 内取消往往不彻底）、已取消留档可恢复、试用期转正预警、CSV/JSON 导出。面板与 AI（9 个 MCP 工具）经 cap.kv 共享同一事实库——直接用自然语言问「这周要扣什么」「我订阅一年花多少」。纯本地台账：零后台服务、零网络请求、数据不出设备，桌面与手机 Web 同看一份。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "subscription",
+        "renewal-reminder",
+        "finance",
+        "trial",
+        "mcp",
+        "kv"
+      ],
+      "icon": "Clock",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/changqi",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/changqi.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/update.json",
+      "sha256": "7f0dcebd29cf557b9a58b47f9912897b56ba639a50c69d26cc14a2171988d51b",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true,
+        "appConfigRead": true
+      },
+      "screenshots": [],
+      "readme": "# 常契（Changqi）— 订阅契约账簿\n\n> 常驻工作台的订阅台账：每一笔自动续费都被看见、被提醒、可果断取消。\n\n## 解决什么问题\n\n自动续费的坑是结构性的：\n\n- **取消链路割裂**：App 内退订往往不彻底，还需到支付宝（设置→支付设置→免密支付/自动扣款）、微信（服务→钱包→支付设置→自动续费）、Apple（设置→Apple ID→订阅）各自的深层入口逐个解约（新华网、经济观察网多次报道，黑猫投诉相关工单持续海量）。\n- **扣费前无提醒**：平台普遍不做显著的续费前通知，「未收到提醒被扣费」是高频投诉。\n- **桌面/Web 端缺位**：iOS 上的 Bobby（手动录入 + 本地隐私，~4.7 星）验证了产品模式，但桌面端一直没有好方案。\n\n常契的答案：一张**跨渠道的本地订阅台账** + **续费前主动提醒** + **取消路径随取消附带**——不依赖任何平台的良心，数据不出设备。\n\n## 怎么用\n\n**聊天里（AI 9 工具，`changqi_*`）**：\n- 「我在 iCloud 开了月度会员 6 元」→ 入册（自动算月均、报下次扣费日）\n- 「这周要扣什么」→ 即将扣费窗口（含试用转正预警）\n- 「我订阅一年花多少」「钱都花在哪类订阅上」→ 透视\n- 「网易云不打算续了」→ 软取消 + 附微信取消路径\n- 「这个扣过了」→ 推进下期（红条消退）\n\n**面板（三 Tab）**：\n- **总览**：月均/本月将扣/试用期 KPI → 预警条（红=今天扣、紫=试用转正、橙=即将、黄=本周）→ 状态过滤 → 台账卡（已扣/取消/编辑/恢复/删）\n- **统计**：月均与年化总额、按渠道/按分类条形、最大三笔、试用期占用\n- **设置**：提醒窗口与试用预警天数、货币符号、CSV/JSON 导出（剪贴板）、五渠道取消路径字典、清空数据\n\n## 设计要点\n\n- **一条一键**（`changqi.sub.<id>`）：规避列表并发覆盖，桌面与手机双端并发后到者胜。\n- **下次扣费日推导**：锚点为名义周期原点，anniversary 语义（1/31 月付 → 2/28 → 3/31，闰年 2/29 平年落 2/28）；`lastConfirmedDate` 作为排他下限——「已扣」确认后当天不再报警、下期自然顺延，名义节奏永久保留。\n- **月度化口径**：周付 ×52/12、季付 ÷3、年付 ÷12、自定义 ×(30.44/天数)；月均/年化/分布全部同一口径。\n- **提醒纯派生**：读时比较日期，零定时器、零后台服务；打开面板或问 AI 即是最新的。\n- **计算唯一权威**：`shared/subs-core.js` 同时被面板 bundle 与 MCP require，口径永不漂移。\n- **纯本地**：零网络请求、零后台服务、零跨域面；数据存 cap.kv，桌面与手机 Web 看到同一份。\n\n## 键空间\n\n| 键 | 内容 |\n|---|---|\n| `changqi.sub.<id>` | Subscription（名称/金额/周期/锚点/渠道/分类/状态/试用期/备注/lastConfirmedDate） |\n| `changqi.settings` | 设置（货币符号/提醒窗口/试用预警天数） |\n\n## 验证\n\n- 离线单测 26 组（月末 clamp/闰年/各周期步进/urgency 边界/月度化/透视/归一化/CSV）：`node test/run-tests.mjs`\n- MCP 全流程（内存桥 + JSON-RPC stdio）：`node test/mcp-verify.mjs`\n- 真桥冒烟 14 项（需 Polaris 运行中，快照式清理只删本次新建键）：`node test/smoke-real.mjs`\n- 面板渲染 harness（mock 宿主桥 + 罐头数据）：`npx esbuild test/harness.tsx --bundle --format=iife --outfile=test/harness.js --jsx=automatic` + `node test/harness-serve.mjs`\n\n## 已知边界\n\n- 无自动检测（不解析账单/不连银行）：录入靠对话式 AI 或面板表单，30 秒内完成一笔。\n- 无系统级推送：提醒形态是面板预警条 + AI 随问随答（插件平台能力边界）。\n- 不做汇率换算：多币种只记录原币种与符号。\n- 试用期转正后不会自动改状态：转正扣费日按 trialEndsAt 提醒，转正后可手动「编辑」去掉试用期或取消。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/changqi.zip"
+        }
+      ]
     }
   ]
 }

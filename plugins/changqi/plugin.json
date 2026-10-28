@@ -1,0 +1,42 @@
+{
+  "id": "changqi",
+  "name": "常契",
+  "version": "0.1.0",
+  "description": "常驻工作台的订阅契约账簿：每一笔自动续费都被看见、被提醒、可果断取消。对话式入册（「我在 iCloud 开了月度会员 6 元」一句话入账本）、下次扣费日推导（月末 clamp anniversary 语义，1/31→2/28→3/31 不漂移）、扣费前提醒投影（当天红条/提前 N 天橙条/试用转正紫条）、月均·年化·本月将扣透视、渠道与分类分布、五渠道取消自动续费路径引导（App 内取消往往不彻底）、已取消留档可恢复、试用期转正预警、CSV/JSON 导出。面板与 AI（9 个 MCP 工具）经 cap.kv 共享同一事实库——直接用自然语言问「这周要扣什么」「我订阅一年花多少」。纯本地台账：零后台服务、零网络请求、数据不出设备，桌面与手机 Web 同看一份。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "changqi.panel",
+        "area": "activityBar",
+        "panelType": "changqi",
+        "icon": "Clock",
+        "labelKey": "plugins.changqi",
+        "labelDefault": "常契",
+        "order": 76
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "changqi",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/changqi",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/changqi.zip"
+  }
+}
