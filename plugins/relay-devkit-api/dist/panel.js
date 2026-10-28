@@ -2051,6 +2051,7 @@ function bindTopEvents() {
 }
 function renderSidebar() {
   const tree = $("#tree");
+  const prevScroll = tree.scrollTop;
   tree.innerHTML = "";
   const q = ($("#search").value || "").toLowerCase().trim();
   let total = 0, shown = 0;
@@ -2103,6 +2104,7 @@ function renderSidebar() {
     tree.appendChild(gEl);
   });
   if (q && shown === 0) tree.appendChild(el("div", "tree-empty", "\u6CA1\u6709\u5339\u914D\u300C" + esc(q) + "\u300D\u7684\u8BF7\u6C42\u3002"));
+  if (prevScroll) tree.scrollTop = prevScroll;
   $("#stSaved").textContent = total;
 }
 function renderEnv() {
@@ -2239,8 +2241,10 @@ function openEnvManager() {
   };
   render();
 }
+var _resetTabScroll = false;
 function renderTabs() {
   const bar = $("#tabbar");
+  const prevScroll = bar.scrollLeft;
   bar.innerHTML = "";
   const add = el("button", "tab-add", "+");
   add.title = "\u65B0\u5EFA\u8BF7\u6C42 tab";
@@ -2248,6 +2252,7 @@ function renderTabs() {
     const nt = newTab();
     state.tabs.unshift(nt);
     state.activeTab = nt.id;
+    _resetTabScroll = true;
     renderAll();
     persist();
   };
@@ -2284,7 +2289,10 @@ function renderTabs() {
     };
     bar.appendChild(tab);
   });
-  bar.scrollLeft = 0;
+  if (_resetTabScroll) {
+    bar.scrollLeft = 0;
+    _resetTabScroll = false;
+  } else if (prevScroll) bar.scrollLeft = prevScroll;
   updateTabFade();
   $("#stTabs").textContent = state.tabs.length;
 }

@@ -1,8 +1,8 @@
 {
   "id": "relay-devkit-api",
   "name": "RELAY API Client",
-  "version": "1.0.1",
-  "description": "API 客户端（relay-devkit 精简版，仅保留 API 工具）。请求恒经 Polaris 宿主 cap.http 能力转发（零本地服务，无 CORS / 混合内容 / 禁发头限制），AI 亦可通过 bus 总线调用。多 tab、环境变量、cURL 导入、响应表格 / 对象树 / 路径下钻与筛选。v1.0.0: 首个 API-only 版本，移除 node 后端与 JSON/SQL/时间戳/数据库/AI 工具，请求改道宿主 cap.http。",
+  "version": "1.0.2",
+  "description": "API 客户端（relay-devkit 精简版，仅保留 API 工具）。请求恒经 Polaris 宿主 cap.http 能力转发（零本地服务，无 CORS / 混合内容 / 禁发头限制），AI 亦可通过 bus 总线调用。多 tab、环境变量、cURL 导入、响应表格 / 对象树 / 路径下钻与筛选。v1.0.2: 修复点击 tab 后 tab 条/侧栏滚动位置跳回开头——重建 DOM 前记录 scrollLeft/scrollTop，渲染后恢复，仅新建 tab 时滚回最左。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
