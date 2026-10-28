@@ -1,0 +1,41 @@
+{
+  "id": "qimu",
+  "name": "启幕",
+  "version": "0.1.0",
+  "description": "AI PPT 工厂：在对话里把主题、大纲或资料变成真实可编辑的 .pptx 文件（默认落盘桌面）。与「图片式幻灯片」产品的本质区别——本地直生原生 OOXML：7 类版式（封面/章节/要点/双栏/引言/图表/表格）由确定性布局引擎排版，容量护栏超限即要求拆页而非缩字硬塞，从源头杜绝「导出后排版崩坏」；5 套主题；柱/线/饼原生图表与斑马表格；面板无需 AI 也能用大纲语法独立构建并下载。零额度零会员、零后台服务、内容不出设备。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "qimu.panel",
+        "area": "activityBar",
+        "panelType": "qimu",
+        "icon": "Film",
+        "labelKey": "plugins.qimu",
+        "labelDefault": "启幕",
+        "order": 75
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "qimu",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/qimu",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/qimu.zip"
+  }
+}
