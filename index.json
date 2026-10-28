@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-29",
+  "updated": "2026-10-28T22:58:16.106Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1952,6 +1952,43 @@
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/jinkui.zip",
           "sha256": "adf1ac4f997f19aa2d21a9beb5d2f74a43f8404c774922b0da6c638143b6617b"
+        }
+      ]
+    },
+    {
+      "id": "weibian",
+      "name": "韦编",
+      "version": "0.1.0",
+      "description": "韦编——本地文档全文检索与 AI 检索工具：把散落在本地文件夹里的 md/txt/PDF/docx/网页/代码变成一条命令可搜、AI 可引用、手机可查的全文索引。配置一次目录，之后零录入（后台增量扫描）；CJK bigram+unigram 分词 + BM25 排序 + 片段高亮；AI 侧 4 工具让宿主 AI 首次拥有本地内容检索；面板三端同读。零外网请求（无 network 权限）、文件只读、读取严格限制在索引目录内。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "search",
+        "full-text",
+        "local-files",
+        "ai-tools",
+        "index",
+        "panel",
+        "mcp"
+      ],
+      "icon": "BookOpen",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/weibian",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@weibian-v0.1.0/plugins/weibian/weibian.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/update.json",
+      "sha256": "97bb0d9a46ec58fe7dc4ee0b3f0ae44278aae35e4d8db58f02e2300a0bd0a5ba",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 韦编 weibian\n\n本地文档全文检索与 AI 检索工具：把散落在本地文件夹里的 md/txt/PDF/docx/网页/代码变成一条命令可搜、AI 可引用、手机可查的全文索引。配置一次目录，之后零录入：后台增量扫描（指纹对账、预算化提取），CJK bigram+unigram 分词 + BM25 + 片段高亮。\n\n- 面板「索引」添加目录（桌面/文档一键建议），自动建索引\n- 「搜索」：多词相关性排序、ext:/dir: 过滤、片段高亮、点开预览可续读\n- AI 对话：「帮我在文档里找关于 X 的论述」→ weibian_search + weibian_read 引用原文\n- 手机同局域网打开 Polaris 即可搜电脑文档（token 鉴权直连）\n- 安全：只索引显式目录、文件只读、零外网（无 network 权限）、读取防穿越防逃逸",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@weibian-v0.1.0/plugins/weibian/weibian.zip"
         }
       ]
     }

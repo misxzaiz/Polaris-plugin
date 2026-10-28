@@ -1,0 +1,63 @@
+{
+  "id": "weibian",
+  "name": "韦编",
+  "version": "0.1.0",
+  "description": "韦编——本地文档全文检索与 AI 检索工具：把散落在本地文件夹里的 md/txt/PDF/docx/网页/代码变成一条命令可搜、AI 可引用、手机可查的全文索引。配置一次目录，之后零录入：后台增量扫描（mtime+size 指纹对账、预算化提取不卡盘），CJK bigram+unigram 双层分词 + BM25 排序 + 片段高亮。AI 侧 4 工具（weibian_search/weibian_read/weibian_status/weibian_reindex）——宿主 AI 首次拥有本地内容检索；面板三端同读，手机同局域网直连 PC 检索。安全底线：只索引用户显式配置的目录；读取严格限制在索引目录内（防穿越/防符号链接逃逸）；零外网请求（未申请 network 权限）；文件只读永不修改。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "weibian.panel",
+        "area": "activityBar",
+        "panelType": "weibian",
+        "icon": "BookOpen",
+        "labelKey": "plugins.weibian",
+        "labelDefault": "韦编",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "weibian-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/weibian.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "本地文档全文索引引擎（token 鉴权）：增量扫描白名单目录 → 提取（文本/GBK/PDF/docx/html）→ 内存倒排 + 每文档 JSON；检索/只读读取/重建 API"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "weibian",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/weibian",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/weibian.zip"
+  }
+}

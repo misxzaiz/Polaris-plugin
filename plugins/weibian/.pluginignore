@@ -1,0 +1,22 @@
+# 版本控制 / IDE
+.git/
+.gitignore
+
+# 依赖与构建输入
+node_modules/
+package.json
+package-lock.json
+
+# 面板源码（dist/panel.js 已是构建产物；shared/ 是运行时代码必须保留）
+src/
+tsconfig.json
+
+# 测试
+test/
+
+# 文档
+README.md
+
+# 打包产物自身
+*.zip
+test/.harness-bundle.cjs
