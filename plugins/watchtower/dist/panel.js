@@ -121,10 +121,12 @@ var require_usage_core = __commonJS({
       return base;
     }
     function dayBreakdown(rec, day) {
+      if (!rec || typeof rec !== "object") return { mcp: 0, panel: 0, total: 0 };
       const slot = rec.trends && rec.trends[day] || { mcp: 0, panel: 0 };
       return { mcp: slot.mcp, panel: slot.panel, total: slot.mcp + slot.panel };
     }
     function daysWithData(rec) {
+      if (!rec || typeof rec !== "object") return [];
       return Object.keys(rec.trends || {}).sort();
     }
     function aggregateWindow2(rec, nDays) {
@@ -258,7 +260,7 @@ var require_usage_core = __commonJS({
         serviceByPlugin.get(s.pluginId).push(s);
       }
       const rows = plugins.map((p) => {
-        const rec = normalizeUsage2(usageByPlugin[p.id]);
+        const rec = normalizeUsage2(usageByPlugin[p.id]) || emptyUsage(p.id);
         const activity = activityOf2(rec);
         const wins = TREND_WINDOWS2.map((n) => ({ days: n, ...aggregateWindow2(rec, n) }));
         return {

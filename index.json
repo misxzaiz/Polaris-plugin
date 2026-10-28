@@ -1527,7 +1527,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
-      "sha256": "af8afad012d5eb62bfef3cceacb545878f9884a56dfc9bfcc8f7653bc84aee39",
+      "sha256": "f27ad88e7fe2ced5fb200543d32546d42eab649f7dc5d3b8a992b4b466c50970",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1537,7 +1537,7 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
-          "sha256": "af8afad012d5eb62bfef3cceacb545878f9884a56dfc9bfcc8f7653bc84aee39"
+          "sha256": "f27ad88e7fe2ced5fb200543d32546d42eab649f7dc5d3b8a992b4b466c50970"
         }
       ]
     }
