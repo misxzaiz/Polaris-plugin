@@ -5,7 +5,7 @@
  *
  * 职责：把 AI 的「看看哪个插件冷/热」「停掉/启用来释放资源」「报告一次用量」
  * 意图翻译为对宿主三个能力的读写：
- *   - cap.kv                  → 用量账本（watchtower.usage.<pluginId>）
+ *   - cap.kv                  → 用量账本（watchtower.usage.* 自有 + plugin.usage.* 宿主观测只读合并）
  *   - cap.pluginDiscovery     → discover（插件清单）/ uninstall（卸载）
  *   - cap.pluginServiceManager → list_status / start / stop / restart（服务管理）
  * 全部计算逻辑走 shared/usage-core.js（与面板同一权威，口径不漂移）。
@@ -14,10 +14,10 @@
  *   env POLARIS_HOST/PORT/TOKEN → anchor.json → config.json → 端口扫描
  * 无后台服务、无外网请求——纯本地账本。
  *
- * 工具一览（8 个）：
+ * 工具一览（9 个）：
  *   watchtower_usage_stats    用量总览（热冷榜/近N天/活跃分级）
  *   watchtower_plugin                单插件用量详情
- *   watchtower_report_usage   计量一次插件使用（AI 主动报，扩展覆盖全插件）
+ *   watchtower_report_usage   计量一次插件使用（AI 主动报，补 MCP 通道覆盖）
  *   watchtower_service_status 全部后台服务状态
  *   watchtower_service_start  启动某后台服务
  *   watchtower_service_stop   停止某后台服务
@@ -26,7 +26,9 @@
  *   watchtower_uninstall      卸载插件（需确认，只限非内置）
  *
  * 边界声明（如实）：
- *   - 计量是「报告式」：MCP 工具调用自动记；AI/面板之外的使用需 watchtower_report_usage 补记
+ *   - 面板打开由宿主自动观测（cap.kv plugin.usage.*，读时合并进 panel 通道）
+ *   - MCP 工具调用直连插件子进程，宿主不在链路：本插件自记 watchtower_* 的调用，
+ *     其它插件的工具调用需 watchtower_report_usage 补记
  *   - 服务状态粒度 = 宿主 cap.pluginServiceManager 提供（running/exited/port/pid/uptime），无 CPU/内存
  */
 const http = require('http');
@@ -37,7 +39,7 @@ const os = require('os');
 const core = require('../shared/usage-core.js');
 
 const SERVER_NAME = 'watchtower';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.2.0';
 const PROTOCOL_VERSION = '2024-11-05';
 
 function log(level, msg) {
@@ -180,6 +182,7 @@ async function plService(action, pluginId, serviceId) {
 }
 
 // ── 账本读写 ────────────────────────────────────────────────────────────────
+/** 守望台自有账本（watchtower.usage.*，本插件写） */
 async function loadAllUsage() {
   const keys = await kvKeys();
   const ids = keys.filter((k) => k.startsWith(core.K.usagePrefix))
@@ -192,6 +195,30 @@ async function loadAllUsage() {
     if (rec && rec.pluginId) byPlugin[rec.pluginId] = rec;
   }
   return byPlugin;
+}
+
+/** 宿主面板打开观测（plugin.usage.*，宿主 pluginUsageObserver 写，只读） */
+async function loadHostObservations() {
+  const keys = await kvKeys();
+  const byPlugin = {};
+  for (const k of keys) {
+    if (!k.startsWith(core.K.hostUsagePrefix)) continue;
+    // eslint-disable-next-line no-await-in-loop
+    const obs = core.normalizeHostObservation(await kvGet(k));
+    if (obs) byPlugin[obs.pluginId] = obs;
+  }
+  return byPlugin;
+}
+
+/** 自有账本 + 宿主观测读时合并（合并结果不落盘，每次重读重算，幂等） */
+async function loadMergedUsage() {
+  const [own, host] = await Promise.all([loadAllUsage(), loadHostObservations()]);
+  const ids = new Set([...Object.keys(own), ...Object.keys(host)]);
+  const merged = {};
+  for (const id of ids) {
+    merged[id] = core.mergeHostIntoUsage(own[id] || null, host[id] || null, id);
+  }
+  return merged;
 }
 
 async function loadPluginList() {
@@ -226,7 +253,7 @@ const tools = [
     },
     async call(args) {
       await recordOne('watchtower', 'mcp');
-      const [plugins, usage, services] = await Promise.all([loadPluginList(), loadAllUsage(), loadServiceList()]);
+      const [plugins, usage, services] = await Promise.all([loadPluginList(), loadMergedUsage(), loadServiceList()]);
       const sum = core.summarize(plugins, usage, services);
       const focus = args.focus || 'all';
       const days = Number(args.days) || 7;
@@ -261,7 +288,7 @@ const tools = [
         }
       }
       lines.push('');
-      lines.push('提示：各种来源经本插件 MCP 调用自动记账；面板打开自动记录；其它来源可用 watchtower_report_usage 补记。');
+      lines.push('提示：面板打开由宿主自动观测记账；经本插件 MCP 的工具调用自动记账；其它插件的 MCP 工具调用可用 watchtower_report_usage 补记。');
       return ok(lines.join('\n'));
     },
   },
@@ -275,7 +302,7 @@ const tools = [
     },
     async call(args) {
       await recordOne('watchtower', 'mcp');
-      const [plugins, usage, services] = await Promise.all([loadPluginList(), loadAllUsage(), loadServiceList()]);
+      const [plugins, usage, services] = await Promise.all([loadPluginList(), loadMergedUsage(), loadServiceList()]);
       const p = plugins.find((x) => x.id === args.pluginId);
       if (!p) return err(`未找到插件 ${args.pluginId}（可 watchtower_usage_stats 看全部）`);
       const rec = core.normalizeUsage(usage[p.id]);
@@ -300,7 +327,7 @@ const tools = [
   },
   {
     name: 'watchtower_report_usage',
-    description: '守望台·补记一次插件使用。当 AI 或用户经本插件 MCP 之外使用某插件（如直接调其它插件的工具，或在对话里讨论）时，调用它把这次使用记入账本——让计量覆盖所有插件，不只是本插件。用户说「刚才用了 XX」「把 XX 也记一下」时配合使用。',
+    description: '守望台·补记一次插件工具调用。插件面板打开已由宿主自动观测（无需补记）；但 AI 经其它插件 MCP 工具的使用宿主看不到（调用直连插件子进程），用本工具把那次使用记入账本（source=mcp）。用户说「刚才用了 XX」「把 XX 也记一下」时配合使用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -405,7 +432,7 @@ const tools = [
     },
     async call(args) {
       await recordOne('watchtower', 'mcp');
-      const [plugins, usage, services] = await Promise.all([loadPluginList(), loadAllUsage(), loadServiceList()]);
+      const [plugins, usage, services] = await Promise.all([loadPluginList(), loadMergedUsage(), loadServiceList()]);
       const suggestions = core.governanceSuggestions(plugins, usage, services);
       const include = args.include || 'cold';
       if (!include || include === 'all' || !suggestions.length) {

@@ -52,14 +52,16 @@ var require_usage_core = __commonJS({
     function makeId() {
       return "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
     }
-    function windowStartDay(nDays) {
-      return fmtDay3(nowMs() - (nDays - 1) * DAY_MS);
+    function windowStartDay(nDays, now = nowMs()) {
+      return fmtDay3(now - (nDays - 1) * DAY_MS);
     }
     var K2 = {
       usagePrefix: "watchtower.usage.",
       usage(pluginId) {
         return this.usagePrefix + pluginId;
       },
+      /** 宿主自有键空间（宿主 pluginUsageObserver 写入，守望台只读）：面板打开观测 */
+      hostUsagePrefix: "plugin.usage.",
       settings: "watchtower.settings"
     };
     function emptyUsage(pluginId) {
@@ -103,7 +105,7 @@ var require_usage_core = __commonJS({
       }
       return rec;
     }
-    function recordUsage2(pluginId, source, prev, at = nowMs()) {
+    function recordUsage(pluginId, source, prev, at = nowMs()) {
       const base = normalizeUsage2(prev) || emptyUsage(pluginId);
       base.pluginId = pluginId;
       const day = fmtDay3(at);
@@ -129,8 +131,8 @@ var require_usage_core = __commonJS({
       if (!rec || typeof rec !== "object") return [];
       return Object.keys(rec.trends || {}).sort();
     }
-    function aggregateWindow2(rec, nDays) {
-      const start = windowStartDay(nDays);
+    function aggregateWindow2(rec, nDays, now = nowMs()) {
+      const start = windowStartDay(nDays, now);
       const days = daysWithData(rec).filter((d) => d >= start);
       let mcp = 0;
       let panel = 0;
@@ -147,9 +149,44 @@ var require_usage_core = __commonJS({
         lastDay: days.length ? days[days.length - 1] : null
       };
     }
-    function costOf2(rec, nDays) {
-      const w = aggregateWindow2(rec, nDays);
+    function costOf2(rec, nDays, now = nowMs()) {
+      const w = aggregateWindow2(rec, nDays, now);
       return w.mcp * COST_MCP_WEIGHT + w.panel * COST_PANEL_WEIGHT;
+    }
+    function normalizeHostObservation2(raw) {
+      if (!raw || typeof raw !== "object") return null;
+      const pluginId = typeof raw.pluginId === "string" ? raw.pluginId : null;
+      if (!pluginId) return null;
+      const count = toInt(raw.count);
+      const days = {};
+      if (raw.days && typeof raw.days === "object") {
+        for (const [day, n] of Object.entries(raw.days)) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+          const v = toInt(n);
+          if (v > 0) days[day] = v;
+        }
+      }
+      return {
+        pluginId,
+        count,
+        firstUsed: toTs(raw.firstUsed),
+        lastUsed: toTs(raw.lastUsed),
+        days
+      };
+    }
+    function mergeHostIntoUsage2(rec, obs, pluginId) {
+      const base = normalizeUsage2(rec) || emptyUsage(pluginId);
+      base.pluginId = pluginId;
+      if (!obs) return base;
+      for (const [day, n] of Object.entries(obs.days)) {
+        const slot = base.trends[day] || { mcp: 0, panel: 0 };
+        slot.panel += n;
+        base.trends[day] = slot;
+      }
+      base.panelOpens += obs.count;
+      if (obs.firstUsed && (base.firstUsed === null || obs.firstUsed < base.firstUsed)) base.firstUsed = obs.firstUsed;
+      if (obs.lastUsed && (base.lastUsed === null || obs.lastUsed > base.lastUsed)) base.lastUsed = obs.lastUsed;
+      return base;
     }
     function activityOf2(rec, now = nowMs()) {
       if (!rec || typeof rec.pluginId !== "string") return "never";
@@ -190,6 +227,10 @@ var require_usage_core = __commonJS({
     }
     function hasServices(plugin) {
       return Array.isArray(plugin.contributes?.services) && plugin.contributes.services.length > 0;
+    }
+    function serviceIdsOf(plugin) {
+      if (!Array.isArray(plugin.contributes?.services)) return [];
+      return plugin.contributes.services.map((s) => s && typeof s.id === "string" ? s.id : null).filter((id) => id !== null);
     }
     function mcpServerCount(plugin) {
       return Array.isArray(plugin.contributes?.mcpServers) ? plugin.contributes.mcpServers.length : 0;
@@ -273,6 +314,7 @@ var require_usage_core = __commonJS({
           cost7: costOf2(rec, 7),
           services: serviceByPlugin.get(p.id) || [],
           hasServices: hasServices(p),
+          serviceIds: serviceIdsOf(p),
           mcpServerCount: mcpServerCount(p)
         };
       });
@@ -314,17 +356,20 @@ var require_usage_core = __commonJS({
       windowStartDay,
       emptyUsage,
       normalizeUsage: normalizeUsage2,
-      recordUsage: recordUsage2,
+      recordUsage,
       dayBreakdown,
       daysWithData,
       aggregateWindow: aggregateWindow2,
       costOf: costOf2,
+      normalizeHostObservation: normalizeHostObservation2,
+      mergeHostIntoUsage: mergeHostIntoUsage2,
       activityOf: activityOf2,
       ACTIVITY_LABELS,
       activityLabel: activityLabel2,
       normalizePlugin: normalizePlugin2,
       hasServices,
       mcpServerCount,
+      serviceIdsOf,
       normalizeServiceStatus: normalizeServiceStatus2,
       governanceSuggestions,
       summarize: summarize2
@@ -359,9 +404,6 @@ async function kvGet(key) {
   const r = await capDispatch("cap.kv", { action: "get", key });
   return r.value ?? null;
 }
-async function kvSet(key, value) {
-  await capDispatch("cap.kv", { action: "set", key, value });
-}
 async function kvKeys() {
   const r = await capDispatch("cap.kv", { action: "list" });
   return r.keys ?? [];
@@ -377,6 +419,26 @@ async function loadAllUsage() {
   }
   return byPlugin;
 }
+async function loadHostObservations() {
+  const keys = await kvKeys();
+  const byPlugin = {};
+  for (const k of keys) {
+    if (!k.startsWith(core.K.hostUsagePrefix)) continue;
+    const v = await kvGet(k);
+    const obs = core.normalizeHostObservation(v);
+    if (obs) byPlugin[obs.pluginId] = obs;
+  }
+  return byPlugin;
+}
+async function loadMergedUsage() {
+  const [own, host] = await Promise.all([loadAllUsage(), loadHostObservations()]);
+  const ids = /* @__PURE__ */ new Set([...Object.keys(own), ...Object.keys(host)]);
+  const merged = {};
+  for (const id of ids) {
+    merged[id] = core.mergeHostIntoUsage(own[id] ?? null, host[id] ?? null, id);
+  }
+  return merged;
+}
 async function loadPluginList() {
   const res = await capDispatch("cap.pluginDiscovery", { action: "discover" });
   return (Array.isArray(res.plugins) ? res.plugins : []).map((p) => core.normalizePlugin(p)).filter((p) => p !== null);
@@ -387,16 +449,18 @@ async function loadServiceList() {
   return arr.map((s) => core.normalizeServiceStatus(s)).filter((s) => s !== null);
 }
 async function loadSummary() {
-  const [plugins, usage, services] = await Promise.all([loadPluginList(), loadAllUsage(), loadServiceList()]);
+  const [plugins, usage, services] = await Promise.all([loadPluginList(), loadMergedUsage(), loadServiceList()]);
   return core.summarize(plugins, usage, services);
 }
-async function notePanelOpen() {
-  const k = core.K.usage("watchtower");
-  const prev = core.normalizeUsage(await kvGet(k));
-  await kvSet(k, core.recordUsage("watchtower", "panel", prev));
-}
-async function serviceAction(action, pluginId, serviceId) {
-  const r = await capDispatch("cap.pluginServiceManager", { action, pluginId, serviceId });
+async function serviceAction(action, pluginId, serviceId, opts) {
+  const payload = { action, pluginId };
+  if (action === "start") {
+    payload.installPath = opts?.installPath ?? "";
+    payload.contribution = opts?.contribution ?? {};
+  } else {
+    payload.serviceId = serviceId;
+  }
+  const r = await capDispatch("cap.pluginServiceManager", payload);
   return core.normalizeServiceStatus(r);
 }
 async function uninstallPlugin(installPath) {
@@ -494,7 +558,6 @@ function WatchtowerPanel(props) {
   const [opBusy, setOpBusy] = useState(null);
   const [confirmUninstall, setConfirmUninstall] = useState(null);
   const [toast, setToast] = useState(null);
-  const noteRef = useRef(false);
   const timerRef = useRef(null);
   const toastFn = (text, kind) => {
     setToast({ text, kind });
@@ -509,11 +572,6 @@ function WatchtowerPanel(props) {
     }).catch((e) => setError(e.message || String(e))).finally(() => setLoading(false));
   };
   useEffect(() => {
-    if (!noteRef.current) {
-      noteRef.current = true;
-      notePanelOpen().catch(() => {
-      });
-    }
     refresh();
   }, []);
   const topLines = useMemo(() => {
@@ -524,12 +582,24 @@ function WatchtowerPanel(props) {
       running: summary.totals.runningServices
     };
   }, [summary]);
-  async function doService(row, s, action) {
-    const key = `${s.pluginId}/${s.serviceId}/${action}`;
+  async function doService(pluginId, serviceId, action, row) {
+    const key = `${pluginId}/${serviceId}/${action}`;
     setOpBusy(key);
     try {
-      const next = await serviceAction(action, s.pluginId, s.serviceId);
-      toastFn(`${action === "start" ? "\u542F\u52A8" : action === "stop" ? "\u505C\u6B62" : "\u91CD\u542F"} ${s.serviceId} \u2192 ${next?.state || "?"}`, "good");
+      let contribution;
+      if (action === "start") {
+        if (!row) {
+          toastFn(`\u542F\u52A8 ${serviceId} \u5931\u8D25\uFF1A\u7F3A\u5C11\u63D2\u4EF6\u4FE1\u606F\uFF08installPath/contribution\uFF09`, "bad");
+          setOpBusy(null);
+          return;
+        }
+        contribution = row.plugin.contributes?.services?.find((s) => s && s.id === serviceId);
+      }
+      const next = await serviceAction(action, pluginId, serviceId, {
+        installPath: row?.plugin.installPath,
+        contribution
+      });
+      toastFn(`${action === "start" ? "\u542F\u52A8" : action === "stop" ? "\u505C\u6B62" : "\u91CD\u542F"} ${serviceId} \u2192 ${next?.state || "?"}`, "good");
       refresh();
     } catch (e) {
       toastFn(`\u64CD\u4F5C\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`, "bad");
@@ -718,8 +788,8 @@ function ServicesTab({
         ] }),
         /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
         /* @__PURE__ */ jsxs("div", { className: "wt-actions", children: [
-          /* @__PURE__ */ jsx("button", { className: "wt-btn ghost sm", disabled: !!opBusy, onClick: () => onService(row, s, "restart"), children: "\u91CD\u542F" }),
-          /* @__PURE__ */ jsx("button", { className: "wt-btn sm", disabled: !!opBusy, onClick: () => onService(row, s, "stop"), children: "\u505C\u6B62" })
+          /* @__PURE__ */ jsx("button", { className: "wt-btn ghost sm", disabled: !!opBusy, onClick: () => onService(s.pluginId, s.serviceId, "restart", row), children: "\u91CD\u542F" }),
+          /* @__PURE__ */ jsx("button", { className: "wt-btn sm", disabled: !!opBusy, onClick: () => onService(s.pluginId, s.serviceId, "stop", row), children: "\u505C\u6B62" })
         ] })
       ] }, `${s.pluginId}/${s.serviceId}`);
     }) }),
@@ -728,25 +798,31 @@ function ServicesTab({
       "\u5DF2\u58F0\u660E\u670D\u52A1",
       /* @__PURE__ */ jsx("span", { className: "wt-hint", children: "\u672A\u5728\u8FD0\u884C\u7684\u4E5F\u53EF\u624B\u52A8\u542F\u52A8" })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: "wt-card", children: withServices.map((r) => /* @__PURE__ */ jsxs("div", { className: "wt-srv", children: [
-      /* @__PURE__ */ jsx("b", { children: r.plugin.name }),
-      /* @__PURE__ */ jsxs("span", { className: `wt-badge ${r.services.some((s) => s.state === "running") ? "act" : "off"}`, children: [
-        r.services.filter((s) => s.state === "running").length,
-        "/",
-        r.services.length,
-        " \u8FD0\u884C\u4E2D"
-      ] }),
-      /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
-      r.services.filter((s) => s.state !== "running").length > 0 ? /* @__PURE__ */ jsx("div", { className: "wt-actions", children: /* @__PURE__ */ jsx(
-        "button",
-        {
-          className: "wt-btn sm",
-          disabled: !!opBusy,
-          onClick: () => onService(r, r.services.find((s) => s.state !== "running"), "start"),
-          children: "\u542F\u52A8"
-        }
-      ) }) : null
-    ] }, r.plugin.id)) })
+    /* @__PURE__ */ jsx("div", { className: "wt-card", children: withServices.map((r) => {
+      const runningSet = new Set(r.services.filter((s) => s.state === "running").map((s) => s.serviceId));
+      const declared = r.serviceIds;
+      const runningCount = declared.filter((id) => runningSet.has(id)).length;
+      const stoppedIds = declared.filter((id) => !runningSet.has(id));
+      return /* @__PURE__ */ jsxs("div", { className: "wt-srv", children: [
+        /* @__PURE__ */ jsx("b", { children: r.plugin.name }),
+        /* @__PURE__ */ jsxs("span", { className: `wt-badge ${runningCount > 0 ? "act" : "off"}`, children: [
+          runningCount,
+          "/",
+          declared.length,
+          " \u8FD0\u884C\u4E2D"
+        ] }),
+        /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+        stoppedIds.length > 0 ? /* @__PURE__ */ jsx("div", { className: "wt-actions", children: /* @__PURE__ */ jsx(
+          "button",
+          {
+            className: "wt-btn sm",
+            disabled: !!opBusy,
+            onClick: () => onService(r.plugin.id, stoppedIds[0], "start", r),
+            children: "\u542F\u52A8"
+          }
+        ) }) : null
+      ] }, r.plugin.id);
+    }) })
   ] });
 }
 function AdviceTab({
@@ -812,16 +888,18 @@ function AboutTab() {
           "\uFF1A\u6BCF\u6B21 watchtower_* \u5DE5\u5177\u8C03\u7528\u81EA\u52A8 +1\uFF08source=mcp\uFF09\u3002"
         ] }),
         /* @__PURE__ */ jsxs("li", { children: [
-          /* @__PURE__ */ jsx("b", { children: "\u{1F52D} \u9762\u677F\u81EA\u8EAB\u6253\u5F00" }),
-          "\uFF1A\u672C\u9762\u677F\u6253\u5F00\u4E00\u6B21\u8BB0 +1\uFF08source=panel\uFF09\u3002"
+          /* @__PURE__ */ jsx("b", { children: "\u63D2\u4EF6\u9762\u677F\u6253\u5F00\uFF08\u542B\u5176\u5B83\u63D2\u4EF6\uFF09" }),
+          "\uFF1A\u5BBF\u4E3B\u5728\u9762\u677F\u6302\u8F7D\u70B9",
+          /* @__PURE__ */ jsx("b", { children: "\u81EA\u52A8\u89C2\u6D4B" }),
+          "\uFF08cap.kv ",
+          /* @__PURE__ */ jsx("code", { children: "plugin.usage.*" }),
+          "\uFF09\uFF0C\u672C\u9762\u677F\u8BFB\u65F6\u5408\u5E76\u2014\u2014\u6253\u5F00\u5373\u8BB0\u8D26\uFF0C\u65E0\u9700 AI \u8865\u8BB0\u3002"
         ] }),
         /* @__PURE__ */ jsxs("li", { children: [
-          /* @__PURE__ */ jsx("b", { children: "\u5176\u5B83\u63D2\u4EF6\u7684\u7528\u91CF" }),
-          "\uFF1A\u4EC5\u5F53 AI \u4E3B\u52A8\u7528 ",
+          /* @__PURE__ */ jsx("b", { children: "\u5176\u5B83\u63D2\u4EF6\u7684 MCP \u5DE5\u5177\u8C03\u7528" }),
+          "\uFF1A\u8C03\u7528\u76F4\u8FDE\u63D2\u4EF6\u5B50\u8FDB\u7A0B\uFF0C\u5BBF\u4E3B\u4E0D\u5728\u94FE\u8DEF\uFF0C\u9700 AI \u4E3B\u52A8\u7528 ",
           /* @__PURE__ */ jsx("code", { children: "watchtower_report_usage" }),
-          " \u8865\u8BB0\u65F6\u624D\u8BA1\u5165\u2014\u2014\u5BBF\u4E3B\u76EE\u524D",
-          /* @__PURE__ */ jsx("b", { children: "\u4E0D\u5E7F\u64AD" }),
-          "\u5176\u5B83\u63D2\u4EF6\u5DE5\u5177/\u9762\u677F\u4E8B\u4EF6\uFF0C\u6240\u4EE5\u9ED8\u8BA4\u4E0D\u8986\u76D6\u3002"
+          " \u8865\u8BB0\u3002"
         ] })
       ] }),
       /* @__PURE__ */ jsx("b", { children: "\u4E0D\u5439\u7684\u8FB9\u754C" }),
@@ -829,7 +907,7 @@ function AboutTab() {
         /* @__PURE__ */ jsxs("li", { children: [
           "\u7EDF\u8BA1\u662F",
           /* @__PURE__ */ jsx("b", { children: "\u89C2\u6D4B\u91CF" }),
-          "\uFF0C\u4E0D\u662F\u5BBF\u4E3B\u6743\u5A01\u5BA1\u8BA1\uFF1A\u6539\u7ED5\u8FC7\u672C\u63D2\u4EF6\u5165\u53E3\u7684\u4F7F\u7528\u4F1A\u88AB\u6F0F\u8BB0\uFF08\u5982\u5B9E\uFF0C\u4E0D\u4F2A\u88C5\u5168\u91CF\uFF09\u3002"
+          "\uFF0C\u4E0D\u662F\u5BBF\u4E3B\u6743\u5A01\u5BA1\u8BA1\uFF1A\u9762\u677F\u6253\u5F00\u6BCF\u4F1A\u8BDD\u6BCF\u9762\u677F\u8BB0 1 \u6B21\uFF08\u9762\u677F\u4FDD\u6D3B\u5E38\u9A7B\uFF0C\u5207\u6362\u663E\u9690\u4E0D\u91CD\u8BB0\uFF09\uFF1B\u65E7\u7248\u5BBF\u4E3B\uFF08\u65E0\u89C2\u6D4B\uFF09\u7684\u9762\u677F\u6253\u5F00\u4F1A\u6F0F\u8BB0\u3002"
         ] }),
         /* @__PURE__ */ jsxs("li", { children: [
           "\u670D\u52A1\u72B6\u6001\u6765\u81EA\u5BBF\u4E3B ",

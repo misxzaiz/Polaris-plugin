@@ -7,14 +7,20 @@
  * 所有"计算"必须放这里，两侧只做 IO（cap.kv / cap.pluginDiscovery /
  * cap.pluginServiceManager 读写），防止口径漂移。
  *
- * 计量口径（双通道，分开记，避免混淆）：
- *   source = 'mcp'  ：AI 经本插件 MCP 工具触发的一次调用
- *   source = 'panel'：用户手动打开面板/点按钮触发的一次打开
+ * 计量口径（面板通道双源合并，分账记录避免混淆）：
+ *   source = 'mcp'  ：AI 经本插件 MCP 工具触发的一次调用（本插件自记）
+ *   source = 'panel'：用户打开插件面板的一次打开
+ *     - 宿主 0.x 观测版起，面板打开由宿主在 PluginPanelHost 挂载点自动观测
+ *       （cap.kv `plugin.usage.<pluginId>`，宿主自有键空间），守望台**读时合并**
+ *       进 panel 通道，不回写自有账本（plans/plugin-usage-observation.md）；
+ *     - 守望台自身面板不再自记（同事实单写者=宿主）。
  * 两种来源写入同一账本的不同计数位，聚合时可选合并或分看。
  *
- * 数据契约（cap.kv `watchtower.` 键空间，权威描述见 README）：
+ * 数据契约（cap.kv，权威描述见 README）：
  *   watchtower.usage.<pluginId> → UsageRecord
  *     { count, lastUsed, firstUsed, panelOpens, trends: { 'YYYY-MM-DD': { mcp, panel } } }
+ *   plugin.usage.<pluginId> → 宿主观测
+ *     { v: 1, pluginId, count, firstUsed, lastUsed, days: { 'YYYY-MM-DD': n } }
  *   watchtower.settings → { schemaVersion: 1 }
  *
  * 治理建议（派生自聚合结果，纯函数）：
@@ -65,9 +71,9 @@ function makeId() {
   return 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
-/** 取近 N 天窗口的起始日字符串（含今天） */
-function windowStartDay(nDays) {
-  return fmtDay(nowMs() - (nDays - 1) * DAY_MS);
+/** 取近 N 天窗口的起始日字符串（含今天）；now 可注入（测试确定性，勿用真实时钟写死用例） */
+function windowStartDay(nDays, now = nowMs()) {
+  return fmtDay(now - (nDays - 1) * DAY_MS);
 }
 
 // ── 键空间 ──────────────────────────────────────────────────────────────────
@@ -76,6 +82,8 @@ const K = {
   usage(pluginId) {
     return this.usagePrefix + pluginId;
   },
+  /** 宿主自有键空间（宿主 pluginUsageObserver 写入，守望台只读）：面板打开观测 */
+  hostUsagePrefix: 'plugin.usage.',
   settings: 'watchtower.settings',
 };
 
@@ -171,10 +179,13 @@ function daysWithData(rec) {
 
 /**
  * 近 N 天聚合。
+ * @param {UsageRecord} rec
+ * @param {number} nDays
+ * @param {number} [now] 可注入当前时间（测试确定性）
  * @returns {{ mcp:number, panel:number, total:number, firstDay:string, lastDay:string|null }}
  */
-function aggregateWindow(rec, nDays) {
-  const start = windowStartDay(nDays);
+function aggregateWindow(rec, nDays, now = nowMs()) {
+  const start = windowStartDay(nDays, now);
   const days = daysWithData(rec).filter((d) => d >= start);
   let mcp = 0;
   let panel = 0;
@@ -193,9 +204,66 @@ function aggregateWindow(rec, nDays) {
 }
 
 /** 加权成本（工具调用 > 面板打开），用于排序"活跃度" */
-function costOf(rec, nDays) {
-  const w = aggregateWindow(rec, nDays);
+function costOf(rec, nDays, now = nowMs()) {
+  const w = aggregateWindow(rec, nDays, now);
   return w.mcp * COST_MCP_WEIGHT + w.panel * COST_PANEL_WEIGHT;
+}
+
+// ── 宿主观测（cap.kv `plugin.usage.` 键空间，plans/plugin-usage-observation.md）──
+/**
+ * 归一化宿主写入的面板打开观测。
+ *
+ * 宿主在权威观测点（面板模块加载成功）自动记录"用户打开了某插件的面板"，
+ * 落 cap.kv 宿主自有键空间 `plugin.usage.<pluginId>`（宿主不写守望台私有键）。
+ * @param {unknown} raw cap.kv get 的 value
+ * @returns {{ pluginId:string, count:number, firstUsed:number, lastUsed:number, days:Record<string,number> }|null}
+ */
+function normalizeHostObservation(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const pluginId = typeof raw.pluginId === 'string' ? raw.pluginId : null;
+  if (!pluginId) return null;
+  const count = toInt(raw.count);
+  const days = {};
+  if (raw.days && typeof raw.days === 'object') {
+    for (const [day, n] of Object.entries(raw.days)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      const v = toInt(n);
+      if (v > 0) days[day] = v;
+    }
+  }
+  return {
+    pluginId,
+    count,
+    firstUsed: toTs(raw.firstUsed),
+    lastUsed: toTs(raw.lastUsed),
+    days,
+  };
+}
+
+/**
+ * 把宿主观测合并进守望台账本（**读时合并，不回写**）。
+ *
+ * 语义：宿主观测的就是"面板打开"，计入 panel 通道（trends[day].panel 与
+ * panelOpens）。只允许对"刚从 watchtower.usage.* 读出的自有账本"合并一次——
+ * 合并结果不落盘，下次读取重新从两处原始键合并，天然幂等。
+ * @param {UsageRecord|null} rec 守望台自有账本（normalizeUsage 产物或 null）
+ * @param {{ count:number, firstUsed:number|null, lastUsed:number|null, days:Record<string,number> }|null} obs normalizeHostObservation 产物
+ * @param {string} pluginId
+ * @returns {UsageRecord}
+ */
+function mergeHostIntoUsage(rec, obs, pluginId) {
+  const base = normalizeUsage(rec) || emptyUsage(pluginId);
+  base.pluginId = pluginId;
+  if (!obs) return base;
+  for (const [day, n] of Object.entries(obs.days)) {
+    const slot = base.trends[day] || { mcp: 0, panel: 0 };
+    slot.panel += n;
+    base.trends[day] = slot;
+  }
+  base.panelOpens += obs.count;
+  if (obs.firstUsed && (base.firstUsed === null || obs.firstUsed < base.firstUsed)) base.firstUsed = obs.firstUsed;
+  if (obs.lastUsed && (base.lastUsed === null || obs.lastUsed > base.lastUsed)) base.lastUsed = obs.lastUsed;
+  return base;
 }
 
 // ── 活跃度分级 ──────────────────────────────────────────────────────────────
@@ -257,6 +325,17 @@ function normalizePlugin(raw) {
 /** 该插件是否声明了后台服务 */
 function hasServices(plugin) {
   return Array.isArray(plugin.contributes?.services) && plugin.contributes.services.length > 0;
+}
+
+/** 该插件声明的服务 id 列表（contributes.services[].id）——启动服务的可靠来源。
+ *  注意：cap.pluginServiceManager.list_status 只返回"正在管理"的服务，已停止的不在
+ *  其中；启动某服务必须用**声明的 serviceId**，否则停掉后拿不到 id（面板启动按钮
+ *  曾因此报"缺参数"）。 */
+function serviceIdsOf(plugin) {
+  if (!Array.isArray(plugin.contributes?.services)) return [];
+  return plugin.contributes.services
+    .map((s) => (s && typeof s.id === 'string' ? s.id : null))
+    .filter((id) => id !== null);
 }
 
 /** 该插件声明的 MCP server 数量 */
@@ -371,6 +450,7 @@ function summarize(plugins, usageByPlugin, services = []) {
       cost7: costOf(rec, 7),
       services: serviceByPlugin.get(p.id) || [],
       hasServices: hasServices(p),
+      serviceIds: serviceIdsOf(p),
       mcpServerCount: mcpServerCount(p),
     };
   });
@@ -407,7 +487,8 @@ module.exports = {
   fmtDay, dayStart, nowMs, makeId, windowStartDay,
   emptyUsage, normalizeUsage, recordUsage, dayBreakdown,
   daysWithData, aggregateWindow, costOf,
+  normalizeHostObservation, mergeHostIntoUsage,
   activityOf, ACTIVITY_LABELS, activityLabel,
-  normalizePlugin, hasServices, mcpServerCount,
+  normalizePlugin, hasServices, mcpServerCount, serviceIdsOf,
   normalizeServiceStatus, governanceSuggestions, summarize,
 };

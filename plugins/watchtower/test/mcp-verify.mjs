@@ -11,7 +11,14 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(HERE, '..');
 
-const mcp = spawn(process.execPath, ['mcp/server.js', ''], { cwd: APP_ROOT, stdio: ['pipe', 'pipe', 'pipe'] });
+// 无宿主隔离（回归）：曾直接 spawn——本机若有运行中的 Polaris，端口扫描会真连上
+// 真宿主：工具真执行、"无宿主 isError"断言失败，还会向真实账本写 +1（测试污染）。
+// 现在 env 钉死到一个必拒连的端口（ENV 存在时 server 跳过扫描直用），场景恒为"无宿主"。
+const mcp = spawn(process.execPath, ['mcp/server.js', ''], {
+  cwd: APP_ROOT,
+  stdio: ['pipe', 'pipe', 'pipe'],
+  env: { ...process.env, POLARIS_HOST: '127.0.0.1', POLARIS_PORT: '1', POLARIS_TOKEN: '' },
+});
 const stderr = [];
 mcp.stderr.on('data', (c) => stderr.push(String(c)));
 

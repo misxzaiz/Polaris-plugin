@@ -5,13 +5,14 @@
  *   （经宿主 invoke → router_dispatch，跨端同一个账本）
  * 计算全部走 shared/usage-core.js（与 MCP 同一权威）。
  *
- * 双通道计量：
- *   - MCP 工具调用自动记（mcp/server.js 每工具先 record）
- *   - 面板打开记本面板自身（notePanelOpen），且操作按钮（服务启停等）算「面板操作」继续累积
+ * 计量通道（v0.2.0 起）：
+ *   - 面板打开：宿主 PluginPanelHost 挂载点自动观测（含本面板），读时合并——
+ *     本面板不再自记（同事实单写者 = 宿主，避免双计）
+ *   - MCP 工具调用：mcp/server.js 每工具先 record
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  loadSummary, notePanelOpen, serviceAction, uninstallPlugin,
+  loadSummary, serviceAction, uninstallPlugin,
   timeAgo, fmtDay, type Summary, type ServiceStatus, type Row,
 } from './model'
 
@@ -98,7 +99,6 @@ export default function WatchtowerPanel(props: {
   const [opBusy, setOpBusy] = useState<string | null>(null)
   const [confirmUninstall, setConfirmUninstall] = useState<Row | null>(null)
   const [toast, setToast] = useState<{ text: string; kind?: 'good' | 'bad' } | null>(null)
-  const noteRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const toastFn = (text: string, kind?: 'good' | 'bad') => {
@@ -115,12 +115,8 @@ export default function WatchtowerPanel(props: {
       .finally(() => setLoading(false))
   }
 
-  // 首挂载：记一次面板打开（双通道计量）+ 载入
+  // 首挂载：载入（面板打开的记账由宿主观测自动完成，本面板不自记）
   useEffect(() => {
-    if (!noteRef.current) {
-      noteRef.current = true
-      notePanelOpen().catch(() => {})
-    }
     refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -134,12 +130,21 @@ export default function WatchtowerPanel(props: {
     }
   }, [summary])
 
-  async function doService(row: Row, s: ServiceStatus, action: 'start' | 'stop' | 'restart') {
-    const key = `${s.pluginId}/${s.serviceId}/${action}`
+  async function doService(pluginId: string, serviceId: string, action: 'start' | 'stop' | 'restart', row?: Row) {
+    const key = `${pluginId}/${serviceId}/${action}`
     setOpBusy(key)
     try {
-      const next = await serviceAction(action, s.pluginId, s.serviceId)
-      toastFn(`${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'} ${s.serviceId} → ${next?.state || '?'}`, 'good')
+      let contribution: Record<string, unknown> | undefined
+      if (action === 'start') {
+        if (!row) { toastFn(`启动 ${serviceId} 失败：缺少插件信息（installPath/contribution）`, 'bad'); setOpBusy(null); return }
+        contribution = (row.plugin.contributes?.services as Record<string, unknown>[] | undefined)
+          ?.find((s) => s && s.id === serviceId) as Record<string, unknown>
+      }
+      const next = await serviceAction(action, pluginId, serviceId, {
+        installPath: row?.plugin.installPath,
+        contribution,
+      })
+      toastFn(`${action === 'start' ? '启动' : action === 'stop' ? '停止' : '重启'} ${serviceId} → ${next?.state || '?'}`, 'good')
       refresh()
     } catch (e: unknown) {
       toastFn(`操作失败：${e instanceof Error ? e.message : String(e)}`, 'bad')
@@ -299,7 +304,7 @@ function ServicesTab({
   loading: boolean
   runningServices: ServiceStatus[]
   opBusy: string | null
-  onService: (r: Row, s: ServiceStatus, action: 'start' | 'stop' | 'restart') => void
+  onService: (pluginId: string, serviceId: string, action: 'start' | 'stop' | 'restart', row?: Row) => void
 }) {
   if (loading && !summary) return <div className="wt-empty">加载服务状态…</div>
   const rows = summary?.rows ?? []
@@ -331,8 +336,8 @@ function ServicesTab({
                 <span className="wt-sub">{s.port ? `端口 ${s.port}` : ''}{s.uptime != null ? ` · up ${Math.round(s.uptime / 1000)}s` : ''}{s.restartCount ? ` · 重启×${s.restartCount}` : ''}</span>
                 <span style={{ flex: 1 }} />
                 <div className="wt-actions">
-                  <button className="wt-btn ghost sm" disabled={!!opBusy} onClick={() => onService(row!, s, 'restart')}>重启</button>
-                  <button className="wt-btn sm" disabled={!!opBusy} onClick={() => onService(row!, s, 'stop')}>停止</button>
+                  <button className="wt-btn ghost sm" disabled={!!opBusy} onClick={() => onService(s.pluginId, s.serviceId, 'restart', row)}>重启</button>
+                  <button className="wt-btn sm" disabled={!!opBusy} onClick={() => onService(s.pluginId, s.serviceId, 'stop', row)}>停止</button>
                 </div>
               </div>
             )
@@ -342,26 +347,35 @@ function ServicesTab({
 
       <div className="wt-sec"><span className="wt-bar" />已声明服务<span className="wt-hint">未在运行的也可手动启动</span></div>
       <div className="wt-card">
-        {withServices.map((r) => (
-          <div key={r.plugin.id} className="wt-srv">
-            <b>{r.plugin.name}</b>
-            <span className={`wt-badge ${r.services.some((s) => s.state === 'running') ? 'act' : 'off'}`}>
-              {r.services.filter((s) => s.state === 'running').length}/{r.services.length} 运行中
-            </span>
-            <span style={{ flex: 1 }} />
-            {r.services.filter((s) => s.state !== 'running').length > 0 ? (
-              <div className="wt-actions">
-                <button
-                  className="wt-btn sm"
-                  disabled={!!opBusy}
-                  onClick={() => onService(r, r.services.find((s) => s.state !== 'running')!, 'start')}
-                >
-                  启动
-                </button>
-              </div>
-            ) : null}
-          </div>
-        ))}
+        {withServices.map((r) => {
+          // 启动按钮用「声明的 serviceId」（contributes.services[].id），不依赖
+          // list_status——后者只返回正在管理的服务，停掉后该服务不在其中，
+          // 若用 r.services.find(...) 会拿到 undefined 而报"缺参数"。
+          const runningSet = new Set(r.services.filter((s) => s.state === 'running').map((s) => s.serviceId))
+          const declared = r.serviceIds
+          const runningCount = declared.filter((id) => runningSet.has(id)).length
+          const stoppedIds = declared.filter((id) => !runningSet.has(id))
+          return (
+            <div key={r.plugin.id} className="wt-srv">
+              <b>{r.plugin.name}</b>
+              <span className={`wt-badge ${runningCount > 0 ? 'act' : 'off'}`}>
+                {runningCount}/{declared.length} 运行中
+              </span>
+              <span style={{ flex: 1 }} />
+              {stoppedIds.length > 0 ? (
+                <div className="wt-actions">
+                  <button
+                    className="wt-btn sm"
+                    disabled={!!opBusy}
+                    onClick={() => onService(r.plugin.id, stoppedIds[0], 'start', r)}
+                  >
+                    启动
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )
+        })}
       </div>
     </>
   )
@@ -440,12 +454,12 @@ function AboutTab() {
             <b>本插件统计什么</b>
             <ul>
               <li><b>AI 经本插件 MCP 工具调用</b>：每次 watchtower_* 工具调用自动 +1（source=mcp）。</li>
-              <li><b>🔭 面板自身打开</b>：本面板打开一次记 +1（source=panel）。</li>
-              <li><b>其它插件的用量</b>：仅当 AI 主动用 <code>watchtower_report_usage</code> 补记时才计入——宿主目前<b>不广播</b>其它插件工具/面板事件，所以默认不覆盖。</li>
+              <li><b>插件面板打开（含其它插件）</b>：宿主在面板挂载点<b>自动观测</b>（cap.kv <code>plugin.usage.*</code>），本面板读时合并——打开即记账，无需 AI 补记。</li>
+              <li><b>其它插件的 MCP 工具调用</b>：调用直连插件子进程，宿主不在链路，需 AI 主动用 <code>watchtower_report_usage</code> 补记。</li>
             </ul>
             <b>不吹的边界</b>
             <ul>
-              <li>统计是<b>观测量</b>，不是宿主权威审计：改绕过本插件入口的使用会被漏记（如实，不伪装全量）。</li>
+              <li>统计是<b>观测量</b>，不是宿主权威审计：面板打开每会话每面板记 1 次（面板保活常驻，切换显隐不重记）；旧版宿主（无观测）的面板打开会漏记。</li>
               <li>服务状态来自宿主 <code>cap.pluginServiceManager</code>，只给 running/exited、端口、pid、uptime、重启次数、最近错误，<b>无 CPU/内存指标</b>。</li>
               <li>停用/卸载等写操作只做<b>单插件级</b>；批量管理建议去宿主设置，禁毒越权。</li>
             </ul>

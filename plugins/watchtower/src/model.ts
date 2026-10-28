@@ -7,8 +7,14 @@
  * 通道：window.__POLARIS_HOST_INVOKE__ → router_dispatch → cap.*
  * （cap.kv / cap.pluginDiscovery / cap.pluginServiceManager）
  *
+ * 计量通道（v0.2.0 起）：
+ *   - 面板打开：宿主 PluginPanelHost 挂载点自动观测（plugin.usage.*），读时合并
+ *   - MCP 工具调用：本插件 MCP server 自动记（watchtower.usage.*，source=mcp）
+ *   - 其它来源：AI 经 watchtower_report_usage 补记
+ *
  * 键空间契约（与 mcp/server.js 一致，权威描述见 README）：
- *   watchtower.usage.<pluginId> → UsageRecord（用量/冷热账本）
+ *   watchtower.usage.<pluginId> → UsageRecord（本插件写）
+ *   plugin.usage.<pluginId>     → 宿主面板打开观测（宿主写，本插件只读合并）
  *   watchtower.settings         → { schemaVersion: 1 }
  */
 import { getHostInvoke } from './host'
@@ -70,6 +76,7 @@ export interface Row {
   cost7: number
   services: ServiceStatus[]
   hasServices: boolean
+  serviceIds: string[]
   mcpServerCount: number
 }
 
@@ -138,6 +145,44 @@ async function loadAllUsage(): Promise<Record<string, UsageRecord>> {
   return byPlugin
 }
 
+/** 宿主面板打开观测（cap.kv `plugin.usage.<pluginId>`，宿主 pluginUsageObserver 写入） */
+export interface HostObservation {
+  v: 1
+  pluginId: string
+  count: number
+  firstUsed: number | null
+  lastUsed: number | null
+  days: Record<string, number>
+}
+
+/**
+ * 宿主面板打开观测（cap.kv `plugin.usage.*`，宿主 pluginUsageObserver 写入）。
+ * 读时合并进 panel 通道（core.mergeHostIntoUsage），不回写自有账本。
+ */
+async function loadHostObservations(): Promise<Record<string, HostObservation>> {
+  const keys = await kvKeys()
+  const byPlugin: Record<string, HostObservation> = {}
+  for (const k of keys) {
+    if (!k.startsWith(core.K.hostUsagePrefix)) continue
+    // eslint-disable-next-line no-await-in-loop
+    const v = await kvGet<HostObservation>(k)
+    const obs = core.normalizeHostObservation(v)
+    if (obs) byPlugin[obs.pluginId] = obs as HostObservation
+  }
+  return byPlugin
+}
+
+/** 自有账本 + 宿主观测读时合并（合并结果不落盘，每次重读重算，幂等） */
+async function loadMergedUsage(): Promise<Record<string, UsageRecord>> {
+  const [own, host] = await Promise.all([loadAllUsage(), loadHostObservations()])
+  const ids = new Set([...Object.keys(own), ...Object.keys(host)])
+  const merged: Record<string, UsageRecord> = {}
+  for (const id of ids) {
+    merged[id] = core.mergeHostIntoUsage(own[id] ?? null, host[id] ?? null, id)
+  }
+  return merged
+}
+
 async function loadPluginList(): Promise<PluginInfo[]> {
   const res = await capDispatch<{ plugins?: unknown[] }>('cap.pluginDiscovery', { action: 'discover' })
   return (Array.isArray(res.plugins) ? res.plugins : [])
@@ -155,24 +200,34 @@ async function loadServiceList(): Promise<ServiceStatus[]> {
 
 // ── 汇总视图（复用 core.summarize，类型对齐）────────────────────────────────
 export async function loadSummary(): Promise<Summary> {
-  const [plugins, usage, services] = await Promise.all([loadPluginList(), loadAllUsage(), loadServiceList()])
+  const [plugins, usage, services] = await Promise.all([loadPluginList(), loadMergedUsage(), loadServiceList()])
   return core.summarize(plugins, usage, services) as unknown as Summary
 }
 
-/** 面板打开/操作记为自身用量（双通道计量的一部分） */
-export async function notePanelOpen(): Promise<void> {
-  const k = core.K.usage('watchtower')
-  const prev = core.normalizeUsage(await kvGet<UsageRecord>(k))
-  await kvSet(k, core.recordUsage('watchtower', 'panel', prev))
-}
-
 // ── 服务操作 ───────────────────────────────────────────────────────────────
+/**
+ * 服务启停。注意宿主 cap.pluginServiceManager 的 action 参数不对称：
+ *   - stop/restart：`{ pluginId, serviceId }`
+ *   - start：`{ pluginId, installPath, contribution }`——contribution 是完整的
+ *     服务声明对象（contributes.services[] 原样，含 id/type/command/argsTemplate 等），
+ *     **不接收 serviceId**；传 serviceId 会导致 installPath 缺失而报"缺少参数"。
+ * @param contribution start 时必传：该服务的完整 manifest 声明对象
+ */
 export async function serviceAction(
   action: 'start' | 'stop' | 'restart',
   pluginId: string,
   serviceId: string,
+  opts?: { installPath?: string; contribution?: Record<string, unknown> },
 ): Promise<ServiceStatus | null> {
-  const r = await capDispatch<unknown>('cap.pluginServiceManager', { action, pluginId, serviceId })
+  const payload: Record<string, unknown> = { action, pluginId }
+  if (action === 'start') {
+    // start 专用参数（不传 serviceId）
+    payload.installPath = opts?.installPath ?? ''
+    payload.contribution = opts?.contribution ?? {}
+  } else {
+    payload.serviceId = serviceId
+  }
+  const r = await capDispatch<unknown>('cap.pluginServiceManager', payload)
   return core.normalizeServiceStatus(r) as ServiceStatus | null
 }
 

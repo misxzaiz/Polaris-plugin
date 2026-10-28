@@ -63,18 +63,58 @@ test('normalizeUsage: 脏数据防御 + 趋势白名单', () => {
   assert.equal(core.normalizeUsage({ pluginId: 7 }), null)
 })
 
-test('windowStartDay / aggregateWindow: 以本地日窗口聚合', () => {
+test('windowStartDay / aggregateWindow: 以本地日窗口聚合（now 注入，不随真实时钟漂移）', () => {
+  // 回归：本用例曾写死日期并依赖真实时钟，"今天"一变窗口起点就漂（10-22 掉出
+  // 7 天窗）导致 3!==5。聚合窗口现支持注入 now，用例与日期解耦。
   const rec = core.emptyUsage('a')
   rec.trends['2026-10-20'] = { mcp: 1, panel: 0 } // 8 天前，7 天窗口外
   rec.trends['2026-10-22'] = { mcp: 2, panel: 1 } // 6 天前，范围内
   rec.trends['2026-10-28'] = { mcp: 3, panel: 0 } // 今天
-  const w7 = core.aggregateWindow(rec, 7)
+  const w7 = core.aggregateWindow(rec, 7, NOW)
   assert.equal(w7.mcp, 5)
   assert.equal(w7.panel, 1)
   assert.equal(w7.total, 6)
   assert.equal(w7.firstDay, '2026-10-22')
-  const w30 = core.aggregateWindow(rec, 30)
+  const w30 = core.aggregateWindow(rec, 30, NOW)
   assert.equal(w30.total, 7)
+})
+
+test('normalizeHostObservation / mergeHostIntoUsage: 宿主面板打开观测读时合并', () => {
+  // 宿主观测形态（cap.kv plugin.usage.*，宿主 pluginUsageObserver 写入）
+  const obs = core.normalizeHostObservation({
+    v: 1,
+    pluginId: 'lingxi',
+    count: 3,
+    firstUsed: NOW - 2 * DAY,
+    lastUsed: NOW - DAY,
+    days: { [core.fmtDay(NOW - 2 * DAY)]: 1, [core.fmtDay(NOW - DAY)]: 2 },
+  })
+  assert.ok(obs)
+  assert.equal(obs.count, 3)
+  assert.equal(obs.days[core.fmtDay(NOW - DAY)], 2)
+
+  // 自有账本：只有 mcp 记录
+  const own = core.recordUsage('lingxi', 'mcp', null, NOW - DAY)
+  const merged = core.mergeHostIntoUsage(own, obs, 'lingxi')
+  // panel 通道 += 宿主观测：panelOpens 0→3，宿主两天趋势并入
+  assert.equal(merged.panelOpens, 3)
+  assert.equal(merged.count, 1) // mcp 不受影响
+  assert.equal(merged.trends[core.fmtDay(NOW - DAY)].panel, 2)
+  assert.equal(merged.trends[core.fmtDay(NOW - 2 * DAY)].panel, 1)
+  assert.equal(merged.firstUsed, Math.min(NOW - DAY, obs.firstUsed)) // 最早保留
+  assert.equal(merged.lastUsed, NOW - DAY) // 自有更新（宿主 lastUsed 同日，取大者）
+
+  // 合并幂等语义：合并结果不落盘，重放同输入结果确定（不会自我累加）
+  const mergedAgain = core.mergeHostIntoUsage(own, obs, 'lingxi')
+  assert.deepEqual(mergedAgain, merged)
+  // 空账本 + 仅宿主观测也能成立（面板打开过但从未经 MCP 的插件）
+  const hostOnly = core.mergeHostIntoUsage(null, obs, 'lingxi')
+  assert.equal(hostOnly.count, 0)
+  assert.equal(hostOnly.panelOpens, 3)
+  // 脏观测防御
+  assert.equal(core.normalizeHostObservation(null), null)
+  assert.equal(core.normalizeHostObservation({ count: 5 }), null)
+  assert.equal(core.normalizeHostObservation({ pluginId: 'x', count: '7', days: { bad: 3, '2026-10-28': '2' } }).count, 7)
 })
 
 test('costOf: 工具调用权重大于面板打开', () => {
@@ -183,6 +223,35 @@ test('summarize: 无记录插件不崩溃（回归：真桥踩到的 null.trends
   assert.equal(mixed.rows.length, 2)
   assert.equal(mixed.rows.find((r) => r.plugin.id === 'a').usage.count, 1)
   assert.equal(mixed.rows.find((r) => r.plugin.id === 'b').activity, 'never')
+})
+
+test('serviceIdsOf: 从 contributes.services 提取声明的服务 id（启动服务的可靠来源）', () => {
+  const p = core.normalizePlugin({
+    id: 'svc-plugin',
+    name: 'SvcPlugin',
+    contributes: { services: [{ id: 'alpha' }, { id: 'beta', type: 'http' }, { id: 'gamma' }, {}] },
+  })
+  assert.deepEqual(core.serviceIdsOf(p), ['alpha', 'beta', 'gamma'])
+  // 无 services 声明 → 空数组
+  assert.deepEqual(core.serviceIdsOf(core.normalizePlugin({ id: 'x', name: 'X', contributes: {} })), [])
+})
+
+test('summarize: Row 透出 serviceIds（已停止服务也能拿到声明的 id，防启动缺参数）', () => {
+  const plugin = core.normalizePlugin({
+    id: 'svc-plugin',
+    name: 'SvcPlugin',
+    contributes: { services: [{ id: 'alpha' }, { id: 'beta' }] },
+  })
+  // list_status 只返回正在管理的（这里只有 beta 在跑，alpha 已停止不在其中）
+  const services = [core.normalizeServiceStatus({ serviceId: 'beta', pluginId: 'svc-plugin', state: 'running' })]
+  const sum = core.summarize([plugin], {}, services)
+  const row = sum.rows[0]
+  assert.deepEqual(row.serviceIds, ['alpha', 'beta'])
+  // 模拟面板"启动"逻辑：声明但未运行 = serviceIds 去掉运行中的
+  const runningSet = new Set(row.services.filter((s) => s.state === 'running').map((s) => s.serviceId))
+  const stoppedIds = row.serviceIds.filter((id) => !runningSet.has(id))
+  assert.deepEqual(stoppedIds, ['alpha']) // alpha 已停止，仍能从声明拿到 id → 不 undefined
+  assert.ok(stoppedIds.length > 0, '停止的服务应有可启动的 serviceId')
 })
 
 test('fmtDay / dayStart: 日期边界', () => {

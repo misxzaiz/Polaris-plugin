@@ -17,17 +17,20 @@
 
 与 marketplace 的边界：marketplace 做发现/安装/更新；本插件做统计/治理/服务启停，不做第二个商城。
 
-## 双通道计量（核心机制）
+## 计量通道（核心机制，v0.2.0）
 
 | 通道 | 记的账 | 说明 |
 |---|---|---|
+| **面板打开（宿主观测）** | 用户打开任何插件面板 +1 | 宿主在面板挂载点自动观测（cap.kv `plugin.usage.*`，宿主自有键空间），守望台读时合并——**打开其它插件也自动记账** |
 | **MCP 工具调用** | 每次 `watchtower_*` 被调先自记 `source=mcp` | 经本插件触发的 AI 使用自动入账 |
-| **面板打开** | 面板挂载记 `source=panel`，操作仍累计 | 用户亲手点开 = 一次使用 |
-| **补记（覆盖全插件）** | `watchtower_report_usage` | AI 用别的插件时补记，扩展覆盖 |
+| **补记（MCP 通道）** | `watchtower_report_usage` | 其它插件的 MCP 工具调用直连插件子进程、宿主不在链路，需 AI 主动补记 |
 
-两种来源分账（`trends[day].mcp/.panel`），聚合时可看单维或合并（工具调用加权 2 ×、面板 1 ×）。
+面板打开每会话每面板记 1 次（面板保活常驻，切换显隐不重记）；旧版宿主（无观测）会漏记面板打开。
 
-**口径边界（如实交代）**：宿主**不广播**其它插件面板/工具事件，所以「别的插件被用」只能靠 AI 主动 `watchtower_report_usage` 补记——本面板的统计是**观测量**，不是宿主权威审计；不经本插件/面板入口的使用会被漏记。
+## 口径边界（如实交代）
+
+- 统计是**观测量**，不是宿主权威审计：面板打开由宿主观测自动覆盖；**其它插件 MCP 工具调用**仍需 AI 主动 `watchtower_report_usage` 补记——不经任何观测点的使用会漏记。
+- 合并是**读时派生**：宿主观测（`plugin.usage.*`）永不回写守望台自有账本（`watchtower.usage.*`），两处键空间各自单写者，重复读取结果幂等。
 
 ## AI 工具（MCP）
 
@@ -50,14 +53,16 @@
 - 「哪些插件在后台放着还占用端口」 → watchtower_cold_plugins + watchtower_service_status
 - 「把刚用的那个插件也记一下账」 → watchtower_report_usage pluginId=xxx
 
-## 数据契约（cap.kv `watchtower.*`，权威描述）
+## 数据契约（cap.kv，权威描述）
 
-- `watchtower.usage.<pluginId>` → `UsageRecord`：
+- `watchtower.usage.<pluginId>` → `UsageRecord`（守望台自有账本，守望台写）：
   - `{ pluginId, count, panelOpens, firstUsed, lastUsed, trends }`
   - `trends`：`{ 'YYYY-MM-DD': { mcp, panel } }`（日级分账）
+- `plugin.usage.<pluginId>` → 宿主面板打开观测（宿主 `pluginUsageObserver` 写，守望台只读合并）：
+  - `{ v: 1, pluginId, count, firstUsed, lastUsed, days: { 'YYYY-MM-DD': n } }`（days 只留近 90 天，count/first/last 累计语义）
 - `watchtower.settings` → `{ schemaVersion: 1 }`（v1 预留）
 
-计算核心 `shared/usage-core.js`（CJS `module.exports`，MCP `require` + 面板 esbuild 打包双端共用），一切口径一致。
+计算核心 `shared/usage-core.js`（CJS `module.exports`，MCP `require` + 面板 esbuild 打包双端共用），一切口径一致；合并也在此（`mergeHostIntoUsage`，读时派生不落盘）。
 
 ## 开发
 
