@@ -1,0 +1,45 @@
+{
+  "id": "jinkui",
+  "name": "金匮",
+  "version": "0.1.0",
+  "description": "家庭保单与保障台账：把散落在各保司 App/邮箱/抽屉里的保单，收进一个可对话、会主动提醒、数据不出本机的家庭保险柜。聊天里说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年」一句话入柜；缴费红黄榜盯防宽限期（逾期 60 天内保障仍有效）与中止期（出险不赔、可复效）；等待期/满期/续保倒数；理赔/批改/退保随手记流水；四大件缺口矩阵（医疗/重疾/寿险/意外 × 成员）确定性透视现状；未来 12 个月保费现金流。纯本地零网络（cap.kv，无服务进程），零账号零上传。只做记录与现状透视，不构成投保建议。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "jinkui.panel",
+        "area": "activityBar",
+        "panelType": "jinkui",
+        "icon": "ClipboardList",
+        "labelKey": "plugins.jinkui",
+        "labelDefault": "金匮",
+        "order": 84
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "jinkui",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jinkui",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/jinkui.zip"
+  }
+}

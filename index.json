@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28T22:00:40.691Z",
+  "updated": "2026-10-29",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1915,6 +1915,43 @@
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/piaoxia.zip",
           "sha256": "2db1a183c354cd57b4d48632591d8e424dce64ab07566a1ea990a75e118ec25c"
+        }
+      ]
+    },
+    {
+      "id": "jinkui",
+      "name": "金匮",
+      "version": "0.1.0",
+      "description": "家庭保单与保障台账：把散落在各保司 App/邮箱/抽屉里的保单，收进一个可对话、会主动提醒、数据不出本机的家庭保险柜。聊天里说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年」一句话入柜；缴费红黄榜盯防宽限期（逾期 60 天内保障仍有效）与中止期（出险不赔、可复效）；等待期/满期/续保倒数；理赔/批改/退保随手记流水；四大件缺口矩阵（医疗/重疾/寿险/意外 × 成员）确定性透视现状；未来 12 个月保费现金流。纯本地零网络（cap.kv，无服务进程），零账号零上传。只做记录与现状透视，不构成投保建议。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "insurance",
+        "policy",
+        "ledger",
+        "family",
+        "panel",
+        "mcp"
+      ],
+      "icon": "ClipboardList",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jinkui",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/jinkui.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/update.json",
+      "sha256": "adf1ac4f997f19aa2d21a9beb5d2f74a43f8404c774922b0da6c638143b6617b",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 金匮（jinkui）—— 家庭保单与保障台账\n\n> 匮者，柜也；《史记》「藏诸金匮石室」。保单正是一个家庭最该锁进金柜的纸。\n>\n> 把散落在各保司 App、邮箱附件、抽屉纸质单里的家庭保单，收进一个**可对话、会主动提醒、数据不出本机**的家庭保险柜。\n\n## 是什么\n\n- **对话式入柜**：聊天里说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年，2023 年 5 月生效」→ 自动建成员档案 + 保单入柜（未知成员名自动建档）。\n- **缴费红黄榜**：🟡 warnDays 内应缴/满期；🔴 宽限期（长期险逾期 60 天内，**保障仍有效**，尽快补缴）与中止期（其后 2 年内，**出险不赔**、可申请复效）。\n- **法定口径状态机**：等待期 → 有效 → 宽限期 → 中止期 → 效力终止；一年期短险到期即满期、无宽限期（如实区分）。\n- **四大件缺口矩阵**：成员 × 医疗/重疾/寿险/意外 的覆盖计数与保额合计，缺格高亮——确定性现状透视，不推荐任何产品。\n- **12 个月保费现金流**：逐月应缴分桶 + 年合计（趸交不计入年缴口径）。\n- **流水随记**：缴费确认推进台账、理赔/批改/退保/复效留痕；误记可删、进度自动重推。\n- **家庭三端同读**：桌面 / 手机 / Web 打开同一面板看到同一本账。\n\n## 明确不做（边界）\n\n- **不做产品推荐、保费对比、理赔代办**——输出一律带「不构成投保建议」。\n- **不解析、不上传保单文件**——「电子保单位置」只登记路径描述（如「邮箱 xx」「保司App-我的保单」）。\n- **不对接任何保司接口**——零外网请求，纯本地 cap.kv。\n- 车辆保险（交强险/商业险）归 **车辖（chexia）** 管；贷款归 **泉府（quanfu）**；订阅续费归 **常契/守闸**。\n\n## MCP 工具（6 个，AI 对话式）\n\n| 工具 | 语义 |\n|---|---|\n| `jinkui_today` | 缴费红黄榜 + 等待期 + 满期 + 家庭合计 + 缺口速览 |\n| `jinkui_add` | entity=member 建成员 / entity=policy 建保单（insured 传成员名自动配档） |\n| `jinkui_log` | 记事件：pay（缴费）/ claim（理赔）/ endorse（批改）/ reinstate（复效，仅宽限/中止期）/ surrender（退保）/ other |\n| `jinkui_query` | scope=policies｜detail｜events｜calendar（未来 N 天）｜gap（缺口矩阵）｜stats（合计+现金流） |\n| `jinkui_update` | 改保单/成员（产品名与被保人为判重锚点不可改） |\n| `jinkui_delete` | 删保单（confirm 门，连带流水）/ 删成员（名下有保单拒删）/ 删单条流水 |\n\n## 键空间契约（权威）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `jinkui.member.<id>` | 面板/MCP | 面板/MCP | 成员 `{id,name,relation,birthYear?,note,createdAt}`；id=`sha256(\"member\\|名字\")[:12]` |\n| `jinkui.policy.<id>` | 面板/MCP | 面板/MCP | 保单 `{id,name,kind,insuredId,holderId?,company?,policyNo?,coverage?,coverageNote?,premium?,freq,payYears?,startDate,endDate?,waitingDays?,fileNote?,note?,endedAt?,endReason?,createdAt}`；id=`sha256(\"policy\\|被保人\\|险种\\|公司\\|产品名\")[:12]` |\n| `jinkui.ev.<occKey>` | 面板/MCP | 面板/MCP | 事件 `{occKey:\"type\\|policyId\\|date\",type:'pay'\\|'claim'\\|'endorse'\\|'reinstate'\\|'surrender'\\|'other',policyId,date,amount?,note,at}`；同日同型幂等覆盖 |\n| `jinkui.settings` | 面板 | 面板/MCP | `{graceDays:60,warnDays:30}`（非法值回落缺省） |\n\n纯 kv 零服务：无后台进程、无快照键，全部派生量（缴费进度/状态/矩阵/现金流）由 `shared/core.js` 两方（面板 + MCP）同源现算。\n\n## 数据与隐私\n\n- 纯本地：cap.kv 单事实库，零网络权限、零账号、零上传。\n- 枚举字段全部服务端白名单校验；金额/日期越界中文报错。\n- 删除需两击确认（面板）/ `confirm=true`（MCP）；删成员前校验名下保单。\n\n## 开发\n\n```bash\nnpm install\nnpm run typecheck        # tsc strict\nnpm run build            # esbuild → dist/panel.js（React external）\nnode test/run-tests.mjs  # 离线单测 33 组（日期/规范化/状态机/投影）\nnode test/mcp-verify.mjs # 内存桥 + spawn 真实 MCP 全流程 57 项\nnode test/harness-run.mjs# jsdom 无头渲染四 Tab 26 项\nnode test/smoke-real.mjs # 真宿主冒烟（需 Polaris 运行中；快照式清场）\n```\n\n## 语义锚（与 core.js/工具描述一致）\n\n- `policy.startDate` = 首期缴费日（=生效日；无缴费事件时视为已缴首期）\n- pay 事件 `date` = 该次缴费对应的缴费日（缴到哪期填哪期的缴费日）\n- reinstate 事件 `date` = 复效日（账面视同补缴至该日所在期）\n- surrender 事件 `date` = 退保日；晚于最近 reinstate 即「已退保」\n- 缴费进度：`paidUntil = max(pay/reinstate 事件日)` → 已缴期数按 freq 步进；`nextPayDate = paidUntil + freq 个月`（月末钳制 anniversary 语义）\n\n## 已知边界\n\n- 保额/保费为登记值，透视合计以合同为准；宽限期/复效规则以各产品条款为准（台账按行业通用口径投影）。\n- 缴费年限未登记的非趸交保单，缴费提醒按「持续续缴」处理，补录 payYears 后自动收敛。\n- AI 侧工具列表更新后需重启应用/重连 MCP 才可见（宿主缓存）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/jinkui.zip",
+          "sha256": "adf1ac4f997f19aa2d21a9beb5d2f74a43f8404c774922b0da6c638143b6617b"
         }
       ]
     }
