@@ -1,0 +1,56 @@
+{
+  "id": "qingnang",
+  "name": "青囊",
+  "version": "0.1.0",
+  "description": "家庭用药与药箱管家：家庭成员档案 × 用药方案 × 药箱库存 × 效期红黄榜 × 补货预测，全部可对话。聊天里说「我妈每天早晚各一片氨氯地平」一句话建档；「今晚的药吃了吗」即查即打卡；「布洛芬过期没」「降压药还够吃几天」即答。今日应服面板横幅+提示音，手机打开同一面板替家人打卡，数据纯本地存储（cap.kv）不出设备。只做药事记录与提醒，不提供医疗建议——相互作用与剂量调整请咨询医生药师。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "qingnang.panel",
+        "area": "activityBar",
+        "panelType": "qingnang",
+        "icon": "Activity",
+        "labelKey": "plugins.qingnang",
+        "labelDefault": "青囊",
+        "order": 76
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "qingnang-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/qingnang.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "今日应服投影计算 + 心跳 + 效期扫描（纯本地，零外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "qingnang",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/qingnang",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/qingnang.zip"
+  }
+}

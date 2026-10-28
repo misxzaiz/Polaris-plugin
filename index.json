@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28",
+  "updated": "2026-10-28T19:41:38.317Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1723,6 +1723,44 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gezhi/gezhi.zip"
+        }
+      ]
+    },
+    {
+      "id": "qingnang",
+      "name": "青囊",
+      "version": "0.1.0",
+      "description": "家庭用药与药箱管家：家庭成员档案 × 用药方案 × 药箱库存 × 效期红黄榜 × 补货预测，全部可对话。聊天里说「我妈每天早晚各一片氨氯地平」一句话建档；「今晚的药吃了吗」即查即打卡；「布洛芬过期没」「降压药还够吃几天」即答。今日应服面板横幅+提示音，手机打开同一面板替家人打卡，数据纯本地存储（cap.kv）不出设备。只做药事记录与提醒，不提供医疗建议——相互作用与剂量调整请咨询医生药师。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "health",
+        "medication",
+        "family",
+        "inventory",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "Activity",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/qingnang",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/qingnang.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/update.json",
+      "sha256": "d213b787834e00365a37c231fce5dc97f73a02a872c9ab24930ac0c5ff0ec364",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 青囊 qingnang —— 家庭用药与药箱管家\n\n> 把「谁该吃什么药、家里还剩什么药、哪盒快过期」变成**可对话、会主动提醒**的家庭健康资产。\n> 青囊者，医者所携药囊也（华佗青囊）。只做药事记录与提醒，**不提供医疗建议**。\n\n## 为什么要有青囊\n\n- 现有用药 App（Medisafe / MyTherapy / Apple 健康用药）都只算「**这盒药还剩几粒**」的单处方维度——**家庭药箱维度**（全家所有药 × 库存 × 效期 × 补货）没有任何主流产品在做。中国家庭 83.7% 有囤药习惯、87.8% 从不清理小药箱、每年约 1.5 万吨家庭药过期。\n- 手机提醒是「最不可靠的环节」（厂商杀后台 / 系统更新吃提醒）；家里常开的电脑是不受这些影响的**冗余提醒通道**，而多成员多字段的药事管理天然是桌面强项。\n- 健康数据是隐私敏感数据：青囊**纯本地存储**（cap.kv，不出设备），无账号、无上传。\n\n## 核心能力\n\n| 能力 | 说明 |\n|---|---|\n| 家庭成员档案 | 人/宠物分开建档，全家共享同一只药箱 |\n| 用药方案五型 | 每天 / 每周几 / 每 N 天 / 吃N停M（周期，如短效避孕药、驱虫）/ 需要时（prn） |\n| 今日药单 | 按成员分组、按时序排列；现在该吃（宽限内）/ 过点未服 / 未到点三态；一键已服/跳过/撤销 |\n| 到药提醒 | 后台服务常驻计算应服投影 → 面板横幅 + 提示音（WebAudio）+ Tab 角标；AI 对话可见 |\n| 药箱库存 | **FEFO 先到期先用**纯派生（单一事实=批次+打卡记录，无可写库存键，天然幂等）；批次级剩余/可用总量/待清理分列 |\n| 补货预测 | 按近 14 天实际消耗速率（无记录回落方案排量，如实标注 estimated）→ 约够几天 / 该买什么 |\n| 效期红黄榜 | 过期红（不参与可用量，单列待清理）/ 临期黄（默认提前 90 天可调） |\n| 依从率 | 近 7 天计划 vs 实际（分母只含已判定次数，今天未到点不算漏服） |\n| 三端同读 | 手机/Web 打开同一面板看到同一份数据，替家人打卡 |\n| AI 对话式 | 6 个 MCP 工具：「我妈每天早晚各一片氨氯地平」一句话建档排方案；「布洛芬过期没」即查 |\n\n## 快速开始\n\n1. 插件中心安装「青囊」→ 左侧 ActivityBar 出现 💊 面板（后台服务自动拉起）。\n2. 「设置」页建家庭成员 →「药箱」页登记药品（名称/单位/首批数量/效期）→「方案」页排用药计划。\n3. 或者什么都不填，直接对 AI 说：\n\n```\n帮我建一个家庭成员：妈妈。她每天早晚各吃一片氨氯地平（5mg×24片），\n家里还剩一盒，效期 2027 年 6 月。\n```\n\n之后每天问「今天该吃什么药」、说「晚上的药吃了」即可。手机浏览器打开 Polaris 同一面板可替家人打卡。\n\n## 与 AI 的对话约定（MCP 工具）\n\n| 工具 | 用途 |\n|---|---|\n| `qingnang_today` | 今日（或指定日）全家药单 + 应服未打卡 + 预警摘要 + 依从率 |\n| `qingnang_add` | 建成员/药品（可带首批）/批次（补货）/方案（支持 profileName/medName 按名自动建档配药） |\n| `qingnang_log` | 打卡：已服/跳过/撤销；支持补记日期；自动 FEFO 扣库存并回报剩余 |\n| `qingnang_query` | stock 库存全表 / refill 补货清单 / expiry 效期榜 / regimens 方案 / profiles 成员 / meds 药品 / logs 流水 / adherence 依从率 |\n| `qingnang_update` | 改剂量/时刻/频次/停用（active:false）/盘点改批次数量 |\n| `qingnang_delete` | 删除（confirm 门；方案删连带清打卡；成员删需 purge） |\n\n**剂量必须来自用户或医嘱**——工具描述与输出明确不推断、不推荐剂量，不做相互作用判断。\n\n## 架构\n\n```\n┌─────────────── 面板（今日/药箱/方案/设置）───────────────┐\n│  __POLARIS_HOST_INVOKE__ → router_dispatch → cap.kv      │\n│  零外网、零本地库存派生（只持近 8 天日志）                  │\n└──────────────────────────┬───────────────────────────────┘\n                           │ 读写 qingnang.* 键空间\n┌──────────────────────────┴───────────────────────────────┐\n│ shared/core.js 纯函数核心（三方同源，同一口径）              │\n│  normalize×5 · 五型展开 · todayPlan · FEFO stockForMed     │\n│  refillForecast · expiryBands · adherence · dosesProjection│\n├──────────────────────────┬───────────────────────────────┤\n│ service/qingnang.js      │ mcp/server.js（stdio JSON-RPC）│\n│ 派生投影单写权威：         │ AI 工具层：翻译 tools/call →    │\n│  qingnang.doses 应服投影  │ cap.kv qingnang.* 读写          │\n│  qingnang.stocks 药箱快照 │ 支持按名自动建档；confirm 门     │\n│  qingnang.meta 心跳       │                                │\n│ （15s tick，全量兜底120s）│ （零外网；现算用同一 core）      │\n└──────────────────────────┴───────────────────────────────┘\n```\n\n**库存为什么是派生的**：`可用量 = Σ 批次qty − FEFO消耗(按打卡时序归因到最早到期批次)`。\n批次与打卡记录是唯一事实，库存没有可写键——重复打卡、并发打卡、服务重启都不会算错；\n盘点修正 = 直接改批次 qty。过期批次不参与可用量与消耗，单列「待清理」。\n\n**键空间契约**（三方一致）：\n\n| 键 | 写者 |\n|---|---|\n| `qingnang.profile.<id>` / `med.<id>` / `batch.<id>` / `reg.<id>` | 面板/MCP |\n| `qingnang.log.<regId\\|date\\|time>` | 面板/MCP（occKey 覆盖语义=天然幂等） |\n| `qingnang.settings` | 面板/MCP |\n| `qingnang.doses` / `qingnang.stocks` / `qingnang.meta` | **仅服务** |\n\n## 验证\n\n```bash\nnode test/run-tests.mjs      # 离线单测 42 项：五型展开/FEFO 归因/效期带/依从率/幂等/规范化边界\nnode test/smoke-real.mjs     # 真实宿主冒烟（需 Polaris 运行中）：\n                             # MCP 6 工具全链路 + 服务独立拉起验证投影/快照/心跳 + 快照式清理\npnpm typecheck && pnpm build # 面板 tsc --noEmit + esbuild 自包含 bundle\n```\n\n## 已知边界（如实）\n\n- **提醒是面板内横幅+提示音**：平台暂无系统通知通道（无 cap.notification），未打开 Polaris 时不会弹系统通知。桌面端定位是「家庭药事管理控制台 + 在家时段冗余提醒」，手机原生生仍需靠手机端闹钟兜底。\n- 面板只拉近 8 天打卡记录（今日药单与依从率足够）；全历史库存派生在服务端快照完成。服务停摆超过 5 分钟，药箱页会如实提示「数据可能过期」，不做本地假算。\n- 补货预测在打卡记录很少的前两周会跳（实际速率口径的真实含义）；预估口径会标注「按方案估算」。\n- 删除方案会连带删除其打卡记录（medId 映射断，保留会破坏库存派生口径）；只是暂停请用「停用」。\n\n## 免责声明\n\n青囊是**家庭药事记录工具**：记录、提醒、库存与效期管理。不提供医疗建议，不判断药物相互作用，不推荐剂量；用药请严格遵医嘱，身体不适请及时就医。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/qingnang.zip",
+          "sha256": "d213b787834e00365a37c231fce5dc97f73a02a872c9ab24930ac0c5ff0ec364"
         }
       ]
     }
