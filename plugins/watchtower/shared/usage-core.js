@@ -158,12 +158,14 @@ function recordUsage(pluginId, source, prev, at = nowMs()) {
  * @returns {{mcp:number, panel:number, total:number}}
  */
 function dayBreakdown(rec, day) {
+  if (!rec || typeof rec !== 'object') return { mcp: 0, panel: 0, total: 0 };
   const slot = (rec.trends && rec.trends[day]) || { mcp: 0, panel: 0 };
   return { mcp: slot.mcp, panel: slot.panel, total: slot.mcp + slot.panel };
 }
 
-/** 取记录中全部有数据的日期（升序） */
+/** 取记录中全部有数据的日期（升序）；null/undefined 记录返回空数组 */
 function daysWithData(rec) {
+  if (!rec || typeof rec !== 'object') return [];
   return Object.keys(rec.trends || {}).sort();
 }
 
@@ -354,7 +356,9 @@ function summarize(plugins, usageByPlugin, services = []) {
   }
 
   const rows = plugins.map((p) => {
-    const rec = normalizeUsage(usageByPlugin[p.id]);
+    // 无记录插件兜底为空账本：normalizeUsage(undefined)=null，会令后续
+    // aggregateWindow/costOf 读 null.trends 崩溃（真桥冒烟实测踩到）。
+    const rec = normalizeUsage(usageByPlugin[p.id]) || emptyUsage(p.id);
     const activity = activityOf(rec);
     const wins = TREND_WINDOWS.map((n) => ({ days: n, ...aggregateWindow(rec, n) }));
     return {

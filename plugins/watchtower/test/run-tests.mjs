@@ -159,6 +159,32 @@ test('normalizePlugin: 未知字段防御', () => {
   assert.equal(core.normalizePlugin({ name: 'no id' }), null)
 })
 
+test('summarize: 无记录插件不崩溃（回归：真桥踩到的 null.trends bug）', () => {
+  // 关键场景：插件在 discover 列表里但完全没有 usage 记录（normalizeUsage→null）
+  const plugins = [
+    { id: 'newbie', name: 'Newbie', builtin: false, contributes: {}, source: {}, origin: {}, version: '1', enabledByDefault: true },
+  ]
+  const sum = core.summarize(plugins, {}, [])
+  assert.equal(sum.totals.plugins, 1)
+  assert.equal(sum.rows[0].plugin.id, 'newbie')
+  assert.equal(sum.rows[0].activity, 'never') // 无记录 → never，不崩
+  assert.equal(sum.rows[0].usage.count, 0)
+  assert.deepEqual(sum.rows[0].windows.map((w) => w.total), [0, 0, 0]) // 三窗口全 0
+  assert.equal(sum.rows[0].cost7, 0)
+  // 混用：有记录 + 无记录混合也不崩
+  const mixed = core.summarize(
+    [
+      { id: 'a', name: 'A', builtin: false, contributes: {}, source: {}, origin: {}, version: '1', enabledByDefault: true },
+      { id: 'b', name: 'B', builtin: false, contributes: {}, source: {}, origin: {}, version: '1', enabledByDefault: true },
+    ],
+    { a: core.recordUsage('a', 'mcp', null, NOW - DAY) },
+    [],
+  )
+  assert.equal(mixed.rows.length, 2)
+  assert.equal(mixed.rows.find((r) => r.plugin.id === 'a').usage.count, 1)
+  assert.equal(mixed.rows.find((r) => r.plugin.id === 'b').activity, 'never')
+})
+
 test('fmtDay / dayStart: 日期边界', () => {
   assert.equal(core.fmtDay(0), '1970-01-01')
   const start = core.dayStart('2026-10-28')

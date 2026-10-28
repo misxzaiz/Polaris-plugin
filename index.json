@@ -947,7 +947,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/paper-radar/paper-radar.zip",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@paper-radar-v0.1.0/plugins/paper-radar/paper-radar.zip",
           "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6"
         }
       ]
@@ -1527,7 +1527,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
-      "sha256": "5e553abd90f7a1230f666ec845988c228c44171214992ebf6640d184ca52ab19",
+      "sha256": "af8afad012d5eb62bfef3cceacb545878f9884a56dfc9bfcc8f7653bc84aee39",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1537,7 +1537,7 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
-          "sha256": "5e553abd90f7a1230f666ec845988c228c44171214992ebf6640d184ca52ab19"
+          "sha256": "af8afad012d5eb62bfef3cceacb545878f9884a56dfc9bfcc8f7653bc84aee39"
         }
       ]
     }
