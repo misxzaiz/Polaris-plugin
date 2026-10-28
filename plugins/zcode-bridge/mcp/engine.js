@@ -16,20 +16,35 @@
 //   - turn-complete 带 stopReason："tool-calls"=工具轮（正文在后续轮），"stop"=最终正文轮
 //
 // 会话管理：
-//   - 新会话  --session-id <temp_id> → 9862 桥 POST /api/chat/create (guarded)
+//   - 新会话  --session-id <temp_id> → session/create
 //   - 续聊    --session <temp_id>    → 读 <session-dir>/<temp_id>.json 里的 zcodeSid → resume
-//   - 映射落盘 `--session-dir/<temp_id>.json` {temp_id, zcodeSid, ws}（与 PiRpc 引擎 session_paths 对应）
+//   - 映射落盘 `--session-dir/<temp_id>.json` {temp_id, zcodeSid, ws}
 //
-// 复用 9862 生产桥（已在跑的 zcode-bridge-http 服务）作为 ZCode 会话读写通道。
+// 模型选择（2026-10-28，协议实测定案）：
+//   - 宿主把 Polaris Profile 的选择经 env 注入本进程：
+//       ANTHROPIC_MODEL   前端选中的模型名（ai_chat_core Custom 引擎分支注入）
+//       ANTHROPIC_API_KEY / ANTHROPIC_BASE_URL   Profile 的密钥与端点
+//       ZCODE_MODEL_PROVIDER / ZCODE_MODEL / ZCODE_REASONING_LEVEL   显式覆盖（Profile custom_env）
+//   - ANTHROPIC_API_KEY+BASE_URL 齐备时：生成「真实 personal 配置 + profile provider」的
+//     私有配置文件（不碰用户真实 provider_config.json），经 ZCODE_PERSONAL_PROVIDER_CONFIG_FILE
+//     env 注入自持 app-server —— 套餐 Key（bigmodel 控制台签发的 id.secret）与自建端点
+//     都走这一条路；自建端点 V4 握手失败自动 fail-open 明发（实测通）。
+//   - 无 Profile 端点时：providerId 由 ZCODE_MODEL_PROVIDER 或观察目录解析，仅 setModel
+//     切到 ZCode 已注册的 provider（如用户自建的 new-provider）。
+//   - 每轮 prompt 都 re-assert setModel（幂等）：会话中途换模型下一轮生效。
+//     失败一律降级为「ZCode 默认模型」，绝不中断轮次。
+//   - 观察目录 <session-dir>/_zcode_model_catalog.json 记录 {providers:{modelId→providerId},
+//     levels:{modelId→reasoningLevel}}，从事件流学习 + 阶梯试错沉淀。
 'use strict';
 
 const readline = require('node:readline');
-const http = require('node:http');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
+const { ZCodeClient, readRealPersonalConfig, mergeProfileProvider, resolveModelSelection } = require('./zcode-core.js');
 
 // ── 命令行解析（对齐 PluginEngineRunner.build_command 生产方式）──────────
-// node engine.js [--mode rpc] [--session-dir <d>] [--session-id <id> | --session <id>] [--session-dir <d>]
+// node engine.js [--mode rpc] [--session-dir <d>] [--session-id <id> | --session <id>] [--workdir <d>]
 const argv = process.argv.slice(2);
 function getArg(name) {
   const i = argv.indexOf(name);
@@ -41,8 +56,10 @@ const sessionDir = getArg('--session-dir');
 const workDir = getArg('--workdir');
 const mode = getArg('--mode') || 'rpc';
 
-// 9862 生产桥（同插件 services 端口）
-const BRIDGE = process.env.ZCODE_BRIDGE_URL || 'http://127.0.0.1:9862';
+// 会话模式（ZCode 侧权限）：桥接会话无人值守、无 permission 应答方，默认 yolo。
+// 与面板 server.js 的 ZBRIDGE_DEFAULT_MODE 同名同义，可 env 收紧。
+const SESSION_MODE = process.env.ZBRIDGE_DEFAULT_MODE || 'yolo';
+
 // 默认工作区：Polaris 把主对话工作区设为 spawn cwd（configure_command.current_dir）；
 // 显式 --workdir 兜底，其次回退默认项目。
 let DEFAULT_WS = (() => {
@@ -80,6 +97,90 @@ function writeMapping(zcodeSid, ws) {
   }
 }
 
+// ── 模型观察目录（跨进程/跨会话沉淀 modelId→providerId 与 reasoningLevel）──
+const CATALOG_PATH = sessionDir ? path.join(sessionDir, '_zcode_model_catalog.json') : null;
+function readCatalog() {
+  if (!CATALOG_PATH) return { providers: {}, levels: {} };
+  try {
+    const raw = JSON.parse(fs.readFileSync(CATALOG_PATH, 'utf8'));
+    return { providers: raw.providers || {}, levels: raw.levels || {} };
+  } catch {
+    return { providers: {}, levels: {} };
+  }
+}
+function writeCatalog(catalog) {
+  if (!CATALOG_PATH) return;
+  try {
+    fs.mkdirSync(sessionDir, { recursive: true });
+    fs.writeFileSync(CATALOG_PATH, JSON.stringify(catalog, null, 2));
+  } catch (e) {
+    process.stderr.write(`[engine] 写模型目录失败: ${e.message}\n`);
+  }
+}
+function learnProvider(catalog, providerId, modelId) {
+  if (!providerId || !modelId || catalog.providers[modelId] === providerId) return;
+  catalog.providers[modelId] = providerId;
+  writeCatalog(catalog);
+}
+function learnLevel(catalog, modelId, level) {
+  if (!modelId || !level || catalog.levels[modelId] === level) return;
+  catalog.levels[modelId] = level;
+  writeCatalog(catalog);
+}
+
+// ── 模型选择解析 + 私有 provider 配置 ─────────────────────────────────────
+const catalog = readCatalog();
+let lastApplied = null; // 当前 zcodeSid 上已成功的 setModel（避免每轮重复调用）
+let lastFailedKey = null; // 刚失败的 (providerId,modelId)：本轮内不重复撞同一堵墙
+
+// ANTHROPIC_API_KEY + BASE_URL 齐备 → 生成私有 personal 配置并自持注入。
+// 返回 {configPath, providerId} 或 null（无 Profile 端点，走观察目录路径）。
+function maybeGenerateProfileProviderConfig() {
+  const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
+  const baseUrl = (process.env.ANTHROPIC_BASE_URL || '').trim();
+  const modelId = (process.env.ZCODE_MODEL || process.env.ANTHROPIC_MODEL || '').trim();
+  if (!apiKey || !baseUrl || !modelId) return null;
+  const providerId = 'polaris-profile';
+  const merged = mergeProfileProvider(readRealPersonalConfig(), {
+    providerId,
+    providerName: 'Polaris Profile',
+    baseUrl,
+    apiKey,
+    models: [modelId],
+  });
+  const dir = sessionDir || os.tmpdir();
+  const configPath = path.join(dir, '_polaris_profile_provider.json');
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(configPath, JSON.stringify(merged));
+  } catch (e) {
+    process.stderr.write(`[engine] 写私有 personal 配置失败: ${e.message}（降级为观察目录路径）\n`);
+    return null;
+  }
+  return { configPath, providerId };
+}
+
+const profileProvider = maybeGenerateProfileProviderConfig();
+// 解析优先级：显式 ZCODE_MODEL_PROVIDER > Profile 模式固定 providerId > 观察目录
+const effectiveProviderEnv = process.env.ZCODE_MODEL_PROVIDER
+  ? process.env.ZCODE_MODEL_PROVIDER
+  : profileProvider
+    ? profileProvider.providerId
+    : '';
+function resolveSelection() {
+  const sel = resolveModelSelection(
+    { ZCODE_MODEL: process.env.ZCODE_MODEL, ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL, ZCODE_MODEL_PROVIDER: effectiveProviderEnv },
+    catalog.providers,
+  );
+  return sel;
+}
+
+// 自持 app-server：引擎路径不再依赖 9862 面板桥（面板桥与引擎各自独立实例）
+const client = new ZCodeClient({
+  workspacePath: DEFAULT_WS,
+  personalProviderConfigFile: profileProvider ? profileProvider.configPath : null,
+});
+
 // 恢复映射（续聊冷启动）：优先用已落盘的 zcodeSid + ws
 let restored = readMapping();
 let zcodeRealSid = null; // 真实 ZCode sessionId（create 后持有，或从映射恢复）
@@ -94,52 +195,6 @@ if (restored && restored.zcodeSid) {
 if (isResume && !zcodeRealSid) {
   process.stderr.write(`[engine] 续聊请求但映射缺失 tempId=${tempId} sessionDir=${sessionDir || '(无)'}　→ 拒绝并退出，避免静默新建\n`);
   process.exit(2);
-}
-
-// ── HTTP 到 9862 生产桥 ──────────────────────────────────────────────────
-function post(pathname, body) {
-  return new Promise((resolve, reject) => {
-    const data = JSON.stringify(body || {});
-    const req = http.request(
-      BRIDGE + pathname,
-      { method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) } },
-      (res) => {
-        let b = '';
-        res.on('data', (c) => (b += c));
-        res.on('end', () => {
-          try {
-            const o = JSON.parse(b);
-            o._status = res.statusCode;
-            resolve(o);
-          } catch {
-            resolve({ ok: false, error: b, _status: res.statusCode });
-          }
-        });
-      },
-    );
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
-}
-function get(pathname) {
-  return new Promise((resolve, reject) => {
-    http
-      .get(BRIDGE + pathname, (res) => {
-        let b = '';
-        res.on('data', (c) => (b += c));
-        res.on('end', () => {
-          try {
-            const o = JSON.parse(b);
-            o._status = res.statusCode;
-            resolve(o);
-          } catch {
-            resolve({ ok: false, error: b, _status: res.statusCode });
-          }
-        });
-      })
-      .on('error', reject);
-  });
 }
 
 // ── stdout PiRpc 帧输出 ───────────────────────────────────────────────────
@@ -210,6 +265,50 @@ function emitResponse(reqId, success, data) {
   out({ type: 'response', id: reqId, command: (data && data.command) || 'prompt', success, data });
 }
 
+// ── setModel 应用（阶梯 + 降级）───────────────────────────────────────────
+// 档位阶梯：ZCODE_REASONING_LEVEL 显式 > 目录沉淀 > high/medium/low。
+// GLM-5.3 / deepseek-v4 等模型 setModel 必须带档位（协议实测）；
+// 错误形态：缺档位 → "Reasoning level is required"；档位不支持 → "not supported"。
+async function applyModelSelection(sessionId) {
+  const sel = resolveSelection();
+  if (!sel) return; // 无选择 → 继承 ZCode 默认（不报错）
+  const key = `${sel.providerId}/${sel.modelId}`;
+  if (lastApplied && `${lastApplied.providerId}/${lastApplied.modelId}` === key) return; // 已生效
+  if (lastFailedKey === key) return; // 本进程已试败：不再撞墙，降级默认
+
+  const candidates = [];
+  const cached = catalog.levels[sel.modelId];
+  if (cached) candidates.push(cached);
+  const envLevel = (process.env.ZCODE_REASONING_LEVEL || '').trim();
+  if (envLevel && !candidates.includes(envLevel)) candidates.push(envLevel);
+  for (const lv of ['high', 'medium', 'low']) if (!candidates.includes(lv)) candidates.push(lv);
+
+  // 先无档位直试（部分模型不需要档位），失败再按阶梯带档位重试
+  const attempts = [{ level: null }, ...candidates.map((lv) => ({ level: lv }))];
+  for (const attempt of attempts) {
+    try {
+      await client.setModel(sessionId, sel.providerId, sel.modelId, {
+        reasoningLevel: attempt.level,
+        persistAsWorkspaceLastUsed: false,
+      });
+      lastApplied = sel;
+      if (attempt.level) learnLevel(catalog, sel.modelId, attempt.level);
+      process.stderr.write(`[engine] setModel → ${key}${attempt.level ? ` (level=${attempt.level})` : ''}\n`);
+      return;
+    } catch (e) {
+      const msg = e.messageText || e.message || '';
+      const needLevel = /reasoning level is required/i.test(msg);
+      const badLevel = /not supported/i.test(msg) && /reasoning/i.test(msg);
+      if (needLevel || badLevel) continue; // 换下一档位
+      process.stderr.write(`[engine] setModel ${key} 失败（降级 ZCode 默认）: ${msg.slice(0, 200)}\n`);
+      lastFailedKey = key;
+      return;
+    }
+  }
+  process.stderr.write(`[engine] setModel ${key} 各档位均被拒（降级 ZCode 默认）\n`);
+  lastFailedKey = key;
+}
+
 // ── ZCode 事件 → PiRpc 帧 ─────────────────────────────────────────────────
 // 状态机要点（对齐 plans/zcode-engine-tool-stream.md）：
 //   - text-delta 的 payload.kind 区分：reasoning_delta（推理）/ text_delta（正文）/ 工具生命周期
@@ -247,6 +346,8 @@ const TOOL_NAME_HINT = (input) => {
 
 function zcodeEventToPi(evt) {
   const p = evt.payload || {};
+  // 模型观察：任何携带 modelId+providerId 的事件都沉淀进目录（续聊冷启动后的解析依据）
+  if (p.modelId && p.providerId) learnProvider(catalog, p.providerId, p.modelId);
   if (evt.kind === 'turn-started') {
     // 每轮开始：上一轮正文流若未关（异常/工具轮残留），先关掉。不在此 emitTurnStart——
     // 等首段正文才开启 turn，保证纯工具中转轮不产生空 turn。
@@ -329,7 +430,7 @@ function zcodeEventToPi(evt) {
   }
 }
 
-async function drainZcode(zcodeSess, cursor) {
+async function drainZcode(zcodeSid, cursor) {
   // 收尾依赖 sessionFinalized（最终正文轮 turn-complete 才置位），
   // 工具轮的静默中间窗口（等模型下一轮思考）不会误判收尾。
   // 超时是「空闲型」：每收到事件就重置——agentic 长任务（多工具轮）只要还在
@@ -339,17 +440,14 @@ async function drainZcode(zcodeSess, cursor) {
   let lastEventAt = Date.now();
   while (Date.now() - lastEventAt < idleMs) {
     if (sessionFinalized || aborted) break;
-    const r = await get(`/api/chat/events?sessionId=${encodeURIComponent(zcodeSess)}&cursor=${cursor}`);
-    if (r.ok) {
-      cursor = r.cursor;
-      const evts = r.events || [];
-      if (evts.length > 0) lastEventAt = Date.now();
-      if (process.env.ZCODE_DEBUG) {
-        process.stderr.write(`[engine] drain cursor=${cursor} n=${evts.length} kinds=${evts.map((e) => (e.payload || {}).kind || e.kind).join(',')}\n`);
-      }
-      for (const evt of evts) zcodeEventToPi(evt);
+    const { cursor: next, events } = client.drainEvents(cursor);
+    cursor = next;
+    if (events.length > 0) lastEventAt = Date.now();
+    if (process.env.ZCODE_DEBUG) {
+      process.stderr.write(`[engine] drain cursor=${cursor} n=${events.length} kinds=${events.map((e) => (e.payload || {}).kind || e.kind).join(',')}\n`);
     }
-    await new Promise((res) => setTimeout(res, 400));
+    for (const evt of events) zcodeEventToPi(evt);
+    await new Promise((res) => setTimeout(res, 300));
   }
   return cursor;
 }
@@ -365,32 +463,37 @@ async function handlePrompt(message) {
   aborted = false;
 
   if (!zcodeRealSid) {
-    // 新会话：create（ZCode 异步落盘）→ resume 激活 → send。
+    // 新会话：create（ZCode 异步落盘）→ resume 激活 → setModel → send。
     // ZCode 活性契约：session/create 后会话不在活跃表，直接 send 会
     // "Session is not active"（实测 -32004）；create 后必须 resume 先行，
     // resume 可能因落盘未完成短暂失败，重试数秒。
-    // 权限模式不在此指定（单一权威在桥 server.js 的 DEFAULT_MODE，可 env 覆盖）——
-    // engine 硬编码会盖掉桥的决策。当前桥默认 yolo（无人值守无 permission 应答方）。
-    const r = await post('/api/chat/create', { workspacePath: DEFAULT_WS });
-    process.stderr.write(`[engine] create → ${JSON.stringify({ ok: r.ok, sessionId: r.sessionId, error: r.error || '', _status: r._status })}\n`);
-    if (!r.ok || !r.sessionId) {
+    const r = await client.request('session/create', {
+      workspace: { workspacePath: DEFAULT_WS, workspaceKey: DEFAULT_WS },
+      mode: SESSION_MODE,
+    });
+    if (r.error || !(r.result && (r.result.sessionId || (r.result.session && r.result.session.sessionId)))) {
+      const errMsg = (r.error && `${r.error.message} (${r.error.code})`) || 'create 未返回 sessionId';
+      process.stderr.write(`[engine] create 失败: ${errMsg}\n`);
       emitMessageStart();
-      emitDelta(`⚠ 创建 ZCode 会话失败: ${r.error || '未知'}`);
+      emitDelta(`⚠ 创建 ZCode 会话失败: ${errMsg}`);
       emitMessageEnd();
       emitTurnEnd();
       emitAgentEnd();
       return;
     }
-    zcodeRealSid = r.sessionId;
+    zcodeRealSid = r.result.sessionId || (r.result.session && r.result.session.sessionId);
     writeMapping(zcodeRealSid, DEFAULT_WS);
     emitResponse(tempId, true, { command: 'session_id', sessionId: zcodeRealSid });
 
     // 激活等待：resume 新会话可能短暂 "Session not found"，最多重试 ~10s
     let active = false;
     for (let attempt = 1; attempt <= 10; attempt += 1) {
-      const rr = await post('/api/chat/resume', { sessionId: zcodeRealSid, workspacePath: DEFAULT_WS });
-      process.stderr.write(`[engine] 激活 resume #${attempt} → ${JSON.stringify({ ok: rr.ok, error: rr.error || '' })}\n`);
-      if (rr.ok) { active = true; break; }
+      const rr = await client.request('session/resume', {
+        sessionId: zcodeRealSid,
+        workspace: { workspacePath: DEFAULT_WS, workspaceKey: DEFAULT_WS },
+      });
+      if (!rr.error) { active = true; break; }
+      process.stderr.write(`[engine] 激活 resume #${attempt} 失败 → ${String(rr.error.message || '').slice(0, 120)}\n`);
       await new Promise((res) => setTimeout(res, 1000));
     }
     if (!active) {
@@ -402,34 +505,53 @@ async function handlePrompt(message) {
       return;
     }
 
-    await sendAndDrain(message, 0);
+    try { await client.subscribe(zcodeRealSid); } catch (e) {
+      process.stderr.write(`[engine] 订阅事件流失败: ${e.message}（无流式输出，仅收尾帧）\n`);
+    }
+    await applyModelSelection(zcodeRealSid);
+    await sendAndDrain(message);
   } else {
     // 续聊（冷启动后先 resume 激活历史会话）
-    const rr = await post('/api/chat/resume', { sessionId: zcodeRealSid, workspacePath: restoredWs || DEFAULT_WS });
-    process.stderr.write(`[engine] resume → ${JSON.stringify({ ok: rr.ok, error: rr.error || '', _status: rr._status })}\n`);
-    await sendAndDrain(message, 0);
+    const rr = await client.request('session/resume', {
+      sessionId: zcodeRealSid,
+      workspace: { workspacePath: restoredWs || DEFAULT_WS, workspaceKey: restoredWs || DEFAULT_WS },
+    });
+    if (rr.error) process.stderr.write(`[engine] resume 失败（继续尝试发送）: ${String(rr.error.message || '').slice(0, 160)}\n`);
+    try { await client.subscribe(zcodeRealSid); } catch (e) {
+      process.stderr.write(`[engine] 订阅事件流失败: ${e.message}\n`);
+    }
+    await applyModelSelection(zcodeRealSid);
+    await sendAndDrain(message);
   }
   // abort/异常路径下正文流可能未关，统一兜底收尾（正常路径 sessionFinalized 已关过，此为空操作）
   closeMessageIfOpen();
   emitAgentEnd();
 }
 
-async function sendAndDrain(message, cursor) {
-  const r = await post('/api/chat/send', { sessionId: zcodeRealSid, content: message, workspacePath: DEFAULT_WS });
-  process.stderr.write(`[engine] send → ${JSON.stringify({ ok: r.ok, cursor: r.cursor, error: r.error || '', _status: r._status })}\n`);
-  if (!r.ok) {
+async function sendAndDrain(message) {
+  try {
+    await client.sendMessage(zcodeRealSid, message);
+  } catch (e) {
     // 错误也走正文流：必须先确保 message 已开启，否则 message_update 是无 message_start 的裸帧
     ensureMessageOpen();
-    emitDelta(`⚠ 发送失败: ${r.error || '未知'}`);
+    emitDelta(`⚠ 发送失败: ${e.message}`);
     closeMessageIfOpen();
     return;
   }
-  await drainZcode(zcodeRealSid, r.cursor);
+  await drainZcode(zcodeRealSid, -1);
 }
 
 // ── stdin 主循环 ─────────────────────────────────────────────────────────
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 let seq = 0;
+let turnInFlight = false; // 有 prompt 在处理中（drain 未收尾）
+let stdinClosed = false; // 宿主已关闭 stdin（本轮结束后退出）
+
+function shutdown(exitCode = 0) {
+  // 引擎自持 app-server 子进程：退出时必须回收，否则宿主杀掉引擎后留下孤儿
+  // app-server（旧架构 app-server 常驻在 9862 面板桥服务里，无此问题）。
+  client.dispose().finally(() => process.exit(exitCode));
+}
 
 rl.on('line', async (line) => {
   if (!line.trim()) return;
@@ -447,15 +569,40 @@ rl.on('line', async (line) => {
   }
   if (msg.type === 'prompt' && typeof msg.message === 'string') {
     const reqId = msg.id || `req-${++seq}`;
+    turnInFlight = true;
     try {
       await handlePrompt(msg.message);
     } catch (e) {
       process.stderr.write(`[engine] 处理失败: ${e.message}\n`);
       emitResponse(reqId, false, { command: 'prompt', error: e.message });
+    } finally {
+      turnInFlight = false;
+      if (stdinClosed) {
+        process.stderr.write('[engine] 在飞轮次已收尾，退出并回收 app-server\n');
+        shutdown();
+      }
     }
   }
 });
 
+rl.on('close', () => {
+  // 宿主关闭 stdin：在飞轮次跑完再退（立即退会砍断正在 drain 的 turn），
+  // 空闲状态则直接退出。
+  stdinClosed = true;
+  if (!turnInFlight) {
+    process.stderr.write('[engine] stdin 关闭（空闲），退出并回收 app-server\n');
+    shutdown();
+  }
+});
+process.on('exit', () => {
+  try { if (client.child && !client._exited) client.child.kill(); } catch { /* 尽力而为 */ }
+});
+for (const sig of ['SIGTERM', 'SIGINT']) {
+  process.on(sig, () => shutdown());
+}
+
 process.stderr.write(
-  `[engine] ready mode=${mode} tempId=${tempId} resume=${isResume} zcodeSid=${zcodeRealSid || '(new)'} ws=${DEFAULT_WS}\n`,
+  `[engine] ready mode=${mode} tempId=${tempId} resume=${isResume} zcodeSid=${zcodeRealSid || '(new)'} ws=${DEFAULT_WS}`
+    + ` model=${(process.env.ZCODE_MODEL || process.env.ANTHROPIC_MODEL || '').trim() || '(继承默认)'}`
+    + ` profileProvider=${profileProvider ? profileProvider.providerId : '(无)'}\n`,
 );

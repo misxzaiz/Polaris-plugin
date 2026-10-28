@@ -33,6 +33,8 @@ const DEFAULT_ZCODE_CJS = process.env.ZCODE_CJS || 'D:/app/ZCode/resources/glm/z
 const DEFAULT_PROVIDER_CONFIG_GLOB =
   process.env.ZCODE_PROVIDER_CONFIG ||
   path.join(os.homedir(), '.zcode', 'v2', 'runtime', 'provider', 'windows-x86_64', '3.16.3', 'endpoint-*', 'zcode-builtin.json');
+// 用户真实 personal provider 配置（ZCode 桌面与 CLI 共享的自建供应商声明）
+const REAL_PERSONAL_PROVIDER_CONFIG = path.join(os.homedir(), '.zcode', 'v2', 'provider_config.json');
 
 // ── 最小运行时偏好应答（server 反向 request，15s 内不回则 create 失败）──────
 function defaultRuntimePreferences() {
@@ -67,6 +69,65 @@ function resolveProviderConfig(globPattern = DEFAULT_PROVIDER_CONFIG_GLOB) {
   return fs.existsSync(full) ? full : null;
 }
 
+// ── 私有 personal provider 配置（模型选择通道，2026-10-28）─────────────────
+// 背景：ZCode app-server 的模型注册表来自「builtin 模板 + personal 配置」。
+// 桥要按 Polaris Profile 注入自定义 provider（套餐 API Key / 自建端点），
+// 不能改写用户的真实 provider_config.json（会污染桌面端），因此生成
+// 「真实配置深合并 + profile provider 条目」的私有文件，经
+// ZCODE_PERSONAL_PROVIDER_CONFIG_FILE env 注入 app-server（协议支持的覆盖点，
+// 且协议要求 builtin 与 personal 路径同时提供——桥本就设置 builtin）。
+// 鉴权说明：bigmodel/zai 的 anthropic 兼容端点强制 V4 客户端签名，签名器解析
+// apiKey 的 `id.secret` / JWT 格式——控制台签发的套餐 API Key 即此格式；
+// 自建端点握手失败自动 fail-open 明发（实测 localhost 代理可通）。
+
+/** 读取用户真实 personal provider 配置；缺失/损坏时返回可用的空骨架。 */
+function readRealPersonalConfig(configPath = REAL_PERSONAL_PROVIDER_CONFIG) {
+  const fs = require('node:fs');
+  try {
+    const raw = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (raw && typeof raw === 'object' && raw.config && typeof raw.config === 'object') return raw;
+  } catch { /* 不存在或损坏都走骨架 */ }
+  return { schemaVersion: 1, config: { providerOrder: [], providerConfigRules: { providerRules: [] } } };
+}
+
+/**
+ * 生成「真实配置 + profile provider」的私有 personal 配置对象（纯函数，便于测试）。
+ * providerId 冲突时覆盖同名条目；不改动 providerOrder（不抢用户默认位）。
+ * @param {object} profile { providerId, providerName, baseUrl, apiKey, models }
+ */
+function mergeProfileProvider(realConfig, profile) {
+  const config = realConfig.config || {};
+  const rules = (config.providerConfigRules = config.providerConfigRules || {});
+  const existing = Array.isArray(rules.providerRules) ? rules.providerRules : [];
+  const entry = {
+    providerId: profile.providerId,
+    providerName: profile.providerName || profile.providerId,
+    config: {
+      group: 'standard-personal',
+      access: { type: 'api-key', apiKey: profile.apiKey || '' },
+      api: { type: 'anthropic-messages', baseUrl: profile.baseUrl },
+      personalModelIds: profile.models.slice(),
+      modelOrder: profile.models.slice(),
+    },
+  };
+  rules.providerRules = [...existing.filter((r) => r && r.providerId !== profile.providerId), entry];
+  return { schemaVersion: realConfig.schemaVersion ?? 1, config };
+}
+
+/**
+ * 模型选择解析（纯函数）：把宿主注入的 env + 观察目录解析成 setModel 目标。
+ * 优先级：ZCODE_MODEL 显式 > ANTHROPIC_MODEL（宿主 Profile 选择注入）；
+ * providerId：ZCODE_MODEL_PROVIDER 显式 > 观察目录（modelId→providerId）。
+ * 任一环缺失返回 null（继承 ZCode 默认，不报错）。
+ */
+function resolveModelSelection(env = {}, catalog = {}) {
+  const modelId = String(env.ZCODE_MODEL || env.ANTHROPIC_MODEL || '').trim();
+  if (!modelId) return null;
+  const providerId = String(env.ZCODE_MODEL_PROVIDER || '').trim() || catalog[modelId] || '';
+  if (!providerId) return null;
+  return { providerId, modelId };
+}
+
 /** ZCode Protocol NDJSON 客户端（一进程一实例）。 */
 class ZCodeClient {
   /**
@@ -74,13 +135,16 @@ class ZCodeClient {
    * @param {string} opts.workspacePath  会话归属的工作区路径（--cwd 且 create 的 workspacePath）
    * @param {string} [opts.zcodeCjs]     zcode.cjs 绝对路径
    * @param {string} [opts.providerConfigFile] zcode-builtin.json 路径（缺省自动探测）
+   * @param {string} [opts.personalProviderConfigFile] 私有 personal provider 配置路径
+   *        （注入 ZCODE_PERSONAL_PROVIDER_CONFIG_FILE；协议要求与 builtin 路径成对提供）
    * @param {boolean} [opts.autoSpawn]   构造时立即 spawn（默认 true）
    * @param {number} [opts.requestTimeoutMs] 单请求超时（默认 45s，模型轮可能慢）
    */
-  constructor({ workspacePath, zcodeCjs, providerConfigFile, autoSpawn = true, requestTimeoutMs = 45000 }) {
+  constructor({ workspacePath, zcodeCjs, providerConfigFile, personalProviderConfigFile, autoSpawn = true, requestTimeoutMs = 45000 }) {
     this.workspacePath = workspacePath;
     this.zcodeCjs = zcodeCjs || DEFAULT_ZCODE_CJS;
     this.providerConfigFile = providerConfigFile || resolveProviderConfig();
+    this.personalProviderConfigFile = personalProviderConfigFile || null;
     this.requestTimeoutMs = requestTimeoutMs;
     this.child = null;
     this.rl = null;
@@ -99,9 +163,19 @@ class ZCodeClient {
   spawn() {
     if (this.child) return;
     const args = ['app-server', '--stdio', '--surface', 'desktop'];
-    const env = { ...process.env };
+    // env 清洗：宿主经 Profile 注入的 ANTHROPIC_*/OPENAI_* 是给 CLI 型引擎用的，
+    // 对 ZCode app-server 无意义且不应泄漏进协议子进程（zcode 的 provider 体系
+    // 走自己的 builtin/personal 配置与凭据，不读这些变量）。
+    const env = {};
+    for (const [k, v] of Object.entries(process.env)) {
+      if (/^(ANTHROPIC|OPENAI)_/.test(k)) continue;
+      env[k] = v;
+    }
     if (this.providerConfigFile) {
       env.ZCODE_BUILTIN_PROVIDER_CONFIG_FILE = this.providerConfigFile;
+    }
+    if (this.personalProviderConfigFile) {
+      env.ZCODE_PERSONAL_PROVIDER_CONFIG_FILE = this.personalProviderConfigFile;
     }
     this.child = spawn('node', [this.zcodeCjs, ...args], {
       cwd: this.workspacePath,
@@ -228,6 +302,26 @@ class ZCodeClient {
     return resp.result || {};
   }
 
+  /**
+   * 切换会话模型（session/setModel，2026-10-28 协议实测）。
+   * - model 为 {providerId, modelId} 严格对象（协议不接受裸字符串）
+   * - expectedRevision 协议层可选，桥无需跟踪 stateRevision
+   * - persistAsWorkspaceLastUsed 默认 false：桥的选择不得反向持久化为
+   *   工作区默认（否则会悄悄改掉 ZCode 桌面端后续会话的模型）
+   */
+  async setModel(sessionId, providerId, modelId, { reasoningLevel, persistAsWorkspaceLastUsed = false } = {}) {
+    const model = { providerId, modelId };
+    if (reasoningLevel) model.options = { reasoningLevel };
+    const resp = await this.request('session/setModel', { sessionId, model, persistAsWorkspaceLastUsed });
+    if (resp.error) {
+      const err = new Error(`切换模型失败: ${resp.error.message || resp.error} (${resp.error.code})`);
+      err.code = resp.error.code;
+      err.messageText = String(resp.error.message || '');
+      throw err;
+    }
+    return resp.result || {};
+  }
+
   /** 读取事件缓冲中 seq > cursor 的增量（面板轮询用，cursor=-1 全量）。 */
   drainEvents(cursor = -1) {
     const out = this._eventBuffer.filter((e) => e.seq > cursor);
@@ -301,4 +395,13 @@ function queryDbSessions({ dbPath = path.join(os.homedir(), '.zcode', 'cli', 'db
   }
 }
 
-module.exports = { ZCodeClient, resolveProviderConfig, defaultRuntimePreferences, queryDbSessions };
+module.exports = {
+  ZCodeClient,
+  resolveProviderConfig,
+  defaultRuntimePreferences,
+  queryDbSessions,
+  readRealPersonalConfig,
+  mergeProfileProvider,
+  resolveModelSelection,
+  REAL_PERSONAL_PROVIDER_CONFIG,
+};

@@ -1,8 +1,8 @@
 {
   "id": "opts.zcode-bridge",
   "name": "ZCode 会话桥接",
-  "version": "0.1.2",
-  "description": "桥接已安装 ZCode 桌面版会话：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话（app-server --stdio 官方协议），会话落盘到 ~/.zcode/cli/db/db.sqlite 后桌面端可见。v0.1.2：引擎接入主对话（思考/工具流适配）、launcher 崩溃修复、权限模式改 yolo 并支持 ZBRIDGE_DEFAULT_MODE 环境变量收紧；引擎 CLI 改用 {{pluginDir}} 占位符，随数据根迁移不再写死绝对路径。",
+  "version": "0.1.3",
+  "description": "桥接已安装 ZCode 桌面版会话：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话（app-server --stdio 官方协议），会话落盘到 ~/.zcode/cli/db/db.sqlite 后桌面端可见。v0.1.3：引擎支持模型选择——Profile 的端点/密钥/模型经 env 注入引擎，生成插件私有 personal provider 配置（不污染桌面配置）并按轮 session/setModel 切换（套餐 API Key 与自建端点同路，自建 V4 握手 fail-open）；reasoningLevel 阶梯自动补齐；引擎改为自持 app-server（不再依赖 9862 面板桥）且退出回收子进程；观察目录沉淀 modelId→providerId 与档位。",
   "enabledByDefault": false,
   "contributes": {
     "views": [
@@ -51,7 +51,7 @@
         "cli": {
           "command": "{{pluginDir}}/mcp/engine-launcher.cmd",
           "args": [],
-          "installGuide": "需本机已安装 ZCode 桌面版（默认 D:/app/ZCode）。引擎通过插件内的 engine-launcher.cmd 转发至 mcp/engine.js，由它连接 ZCode 桌面版 app-server。"
+          "installGuide": "需本机已安装 ZCode 桌面版（默认 D:/app/ZCode）。引擎通过插件内的 engine-launcher.cmd 转发至 mcp/engine.js，自持 app-server 子进程（退出自动回收）。模型选择：搭配一个供应商 Profile（targetEngines 含 zcode）——套餐模型在 Profile 填 BigModel 控制台签发的套餐 API Key + https://open.bigmodel.cn/api/anthropic + GLM-5.3/GLM-5.3-Flash；自建端点 Profile 照常填即可，引擎按轮自动 session/setModel。"
         },
         "protocol": "pi-rpc",
         "sessionFlags": "pi",
@@ -73,6 +73,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.2/plugins/zcode-bridge/zcode-bridge.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip"
   }
 }

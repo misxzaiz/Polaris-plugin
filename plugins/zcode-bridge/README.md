@@ -46,11 +46,21 @@ Polaris AI ── MCP stdio ──▶ zcode-bridge/mcp/server.js       (JSON-RPC
 
 无 provider 配置时自动探测，剥离对具体版本的硬依赖。
 
+## 引擎模型选择（v0.1.3，主对话 ZCode 引擎）
+
+在 Polaris 主对话选 ZCode 引擎 + 供应商 Profile + 模型，引擎按轮 `session/setModel` 切换（会话中途换模型下一轮生效；失败自动降级 ZCode 默认，不中断轮次）：
+
+- **套餐模型**：Profile 填 BigModel 控制台签发的**套餐 API Key**（桌面 OAuth 密钥是 `enc:v1:` 加密态不可直接用）+ `https://open.bigmodel.cn/api/anthropic` + 模型 `GLM-5.3` / `GLM-5.3-Flash`。
+- **自建端点**：Profile 照常填（如 localhost 代理），引擎同路处理（V4 握手失败自动 fail-open 明发）。
+- 机制：引擎把 Profile 的端点/密钥/模型生成**插件私有** personal provider 配置（真实配置深合并，不碰桌面 `provider_config.json`），经 `ZCODE_PERSONAL_PROVIDER_CONFIG_FILE` 注入自持 app-server。细节与协议实测结论见 [PLAN-model-select.md](./PLAN-model-select.md)。
+- 可选 Profile custom_env：`ZCODE_REASONING_LEVEL`（档位偏好，默认阶梯 high→medium→low 自动补齐）、`ZCODE_MODEL_PROVIDER` / `ZCODE_MODEL`（显式覆盖）、`ZBRIDGE_DEFAULT_MODE`（会话权限，默认 yolo）。
+
 ## 测试
 
 ```bash
-node plugins/zcode-bridge/test/smoke.cjs
-# 6/6 passed：initialize / tools/list / list_sessions / create / send / 落盘验证
+node plugins/zcode-bridge/test/smoke.cjs                    # 6/6：面板 MCP 回归
+node plugins/zcode-bridge/test/unit-model-select.cjs        # 16/16：模型选择纯函数
+node plugins/zcode-bridge/test/integration-engine-model.cjs # 16/16：引擎级（需自建端点可达）
 ```
 
 ## 边界 / 后续
