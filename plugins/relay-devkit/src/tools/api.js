@@ -118,7 +118,9 @@ function bindTopEvents(){
 
 /* ===================== 侧栏 ===================== */
 function renderSidebar(){
-  const tree=$('#tree'); tree.innerHTML='';
+  const tree=$('#tree');
+  const prevScroll=tree.scrollTop;   // 重建会重置 scrollTop，先记录
+  tree.innerHTML='';
   const q=($('#search').value||'').toLowerCase().trim();
   let total=0, shown=0;
   if(!state.collections.length) tree.appendChild(el('div','tree-empty','还没有任何分组。<br>点击右上角 ＋ 新建一个。'));
@@ -146,6 +148,7 @@ function renderSidebar(){
     gEl.appendChild(reqs); tree.appendChild(gEl);
   });
   if(q && shown===0) tree.appendChild(el('div','tree-empty','没有匹配「'+esc(q)+'」的请求。'));
+  if(prevScroll) tree.scrollTop=prevScroll;   // 恢复滚动位置（搜索/点击重建不打断浏览）
   $('#stSaved').textContent=total;
 }
 
@@ -237,10 +240,15 @@ function openTimeoutSettings(){
   function close(){ bg.classList.remove('open'); bg.innerHTML=''; }
 }
 /* ===================== tab 条 ===================== */
+// 新建 tab 时置 true：新 tab unshift 到头部，需滚动到最左让用户看到；
+// 其余场景（点击/关闭/保存等）应恢复重建前的滚动位置，避免整条 tab 栏跳回开头。
+let _resetTabScroll=false;
 function renderTabs(){
-  const bar=$('#tabbar'); bar.innerHTML='';
+  const bar=$('#tabbar');
+  const prevScroll=bar.scrollLeft;   // 重建会重置 scrollLeft，先记录点击前位置
+  bar.innerHTML='';
   // 加号钉在左缘（position:sticky），先插入使其位于滚动起点
-  const add=el('button','tab-add','+'); add.title='新建请求 tab'; add.onclick=()=>{ const nt=newTab(); state.tabs.unshift(nt); state.activeTab=nt.id; renderAll(); persist(); };
+  const add=el('button','tab-add','+'); add.title='新建请求 tab'; add.onclick=()=>{ const nt=newTab(); state.tabs.unshift(nt); state.activeTab=nt.id; _resetTabScroll=true; renderAll(); persist(); };
   bar.appendChild(add);
   state.tabs.forEach(t=>{
     const tab=el('div','rtab'+(t.id===state.activeTab?' active':''));
@@ -252,8 +260,10 @@ function renderTabs(){
     tab.querySelector('.tn').ondblclick=e=>{ e.stopPropagation(); const n=prompt('重命名 tab：',t.name); if(n!=null){ t.name=n.trim()||t.name; renderTabs(); persist(); } };
     bar.appendChild(tab);
   });
-  // 新 tab 回到左缘，确保可见（加号 stick 后滚动起点即在窗口最左）
-  bar.scrollLeft=0;
+  // 新 tab 回到左缘，确保可见（加号 stick 后滚动起点即在窗口最左）；
+  // 其他操作（点击/关闭/保存等）恢复重建前位置，避免点靠后 tab 时整条跳回开头。
+  if(_resetTabScroll){ bar.scrollLeft=0; _resetTabScroll=false; }
+  else if(prevScroll) bar.scrollLeft=prevScroll;
   updateTabFade();
   $('#stTabs').textContent=state.tabs.length;
 }

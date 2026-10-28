@@ -1,8 +1,8 @@
 {
   "id": "relay-devkit",
   "name": "RELAY DevKit",
-  "version": "1.5.0",
-  "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。v1.5.0: 请求超时可配置（默认 30s→120s，环境菜单 ⏱ 设置，支持无限制并明示 900s 宿主护栏）；发送中支持手动停止（fetch/代理路径真实中断，cap.http 面板直发为逻辑中断+迟到响应丢弃）；/__proxy 客户端断开关联销毁上游，修复上游永不响应的永久挂起。v1.4.1: CSS 全面作用域化至 .relay-devkit-panel，修复打开面板污染主应用样式（移除 :root/body/通配符/全局滚动条注入）；下载地址钉 tag 支持远程更新。v1.4.0: 移除内置 AI 助手（独立成插件发布）；面板模式 API 请求改走宿主 cap.http 直发（携带 Cookie/UA/Referer 等禁发头、无 CORS/混合内容限制，二进制 base64 返回预览下载）。v1.3.3: 数据库面板模式改走宿主 cap.http 直连（规避 iframe 混合内容/CORS/禁发头）；mysql2 内联 vendor 离线打包，装完即用无需 npm i。v1.3.2: 修复代理跨域失败——透传时剥离目标服务器自身 CORS 头，消除双 Access-Control-Allow-Origin 冲突。v1.3.1: 直连模式含浏览器禁发头时强制拦截并引导开代理；cURL 导入自动识别禁发头。v1.3.0: 代理模式禁发头后端注入（Cookie/UA/Referer 经 X-Relay-H-* 还原，cURL 导入发送完整等效）。",
+  "version": "1.5.1",
+  "description": "开发者工具箱：API 客户端、JSON 格式化、SQL 工具、数据库管理、时间戳转换。v1.5.1: 修复点击 tab 后 tab 条/侧栏滚动位置跳回开头——重建 DOM 前记录 scrollLeft/scrollTop，渲染后恢复，仅新建 tab 时滚回最左。v1.5.0: 请求超时可配置（默认 30s→120s，环境菜单 ⏱ 设置，支持无限制并明示 900s 宿主护栏）；发送中支持手动停止（fetch/代理路径真实中断，cap.http 面板直发为逻辑中断+迟到响应丢弃）；/__proxy 客户端断开关联销毁上游，修复上游永不响应的永久挂起。v1.4.1: CSS 全面作用域化至 .relay-devkit-panel，修复打开面板污染主应用样式（移除 :root/body/通配符/全局滚动条注入）；下载地址钉 tag 支持远程更新。v1.4.0: 移除内置 AI 助手（独立成插件发布）；面板模式 API 请求改走宿主 cap.http 直发（携带 Cookie/UA/Referer 等禁发头、无 CORS/混合内容限制，二进制 base64 返回预览下载）。v1.3.3: 数据库面板模式改走宿主 cap.http 直连（规避 iframe 混合内容/CORS/禁发头）；mysql2 内联 vendor 离线打包，装完即用无需 npm i。v1.3.2: 修复代理跨域失败——透传时剥离目标服务器自身 CORS 头，消除双 Access-Control-Allow-Origin 冲突。v1.3.1: 直连模式含浏览器禁发头时强制拦截并引导开代理；cURL 导入自动识别禁发头。v1.3.0: 代理模式禁发头后端注入（Cookie/UA/Referer 经 X-Relay-H-* 还原，cURL 导入发送完整等效）。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -47,6 +47,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/relay-devkit",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.0/plugins/relay-devkit/relay-devkit.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.1/plugins/relay-devkit/relay-devkit.zip"
   }
 }
