@@ -10,6 +10,10 @@ node_modules/
 # 插件打包临时目录
 plugins/*/.tmp-pack-*
 
+# 安装/改名前的旧版插件备份（本地临时产物，禁止提交）
+.tmp-install-backup/
+.tmp-rename-backup/
+
 # Blender 建模插件生成目录（测试输出，不提交）
 plugins/blender-modeling/generated/
 plugins/blender-modeling/cache/
@@ -23,3 +27,4 @@ plugins/animation-2d/out/
 
 # douyin-publish 运行时状态（发布记录，含本机路径与 itemId）
 plugins/douyin-publish/state/
+*.harness-bundle*

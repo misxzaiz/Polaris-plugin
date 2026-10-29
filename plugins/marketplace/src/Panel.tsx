@@ -9,7 +9,9 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
  *   - 已装：读取本地已装插件，支持卸载 / 检查更新 / 应用更新
  *
  * 运行环境：宿主 webview，React 由 pluginModuleLoader shim 注入。
- * Tauri invoke 通过 window.__TAURI_INTERNALS__.invoke 调用（零外部依赖）。
+ * 宿主调用统一走 window.__POLARIS_HOST_INVOKE__（主应用 main.tsx 挂载，环境感知：
+ * 桌面 Tauri → IPC；手机 App / Web → HTTP 桥，与主前端同一 transport/token），
+ * 旧版宿主回退 __TAURI_INTERNALS__.invoke（仅桌面）。
  * 插件管理面统一经 router_dispatch → cap.pluginDiscovery 总线（旧 plugin_* 命令已删除）。
  */
 
@@ -70,21 +72,95 @@ interface UpdateCheck {
 
 /* ---------- 工具函数 ---------- */
 
-const DEFAULT_INDEX = 'https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json'
-
 /** 解析插件 tier：未设置时默认 demo */
 function resolveTier(p: MarketPlugin): PluginTier {
   if (p.tier === 'production' || p.tier === 'beta') return p.tier
   return 'demo'
 }
 
-/** 调用 Tauri 命令（插件上下文零依赖） */
-async function tauriInvoke<T>(cmd: string, args: Record<string, unknown> = {}): Promise<T> {
-  const internals = (window as unknown as { __TAURI_INTERNALS__?: { invoke?: (c: string, a?: Record<string, unknown>) => Promise<T> } }).__TAURI_INTERNALS__
-  if (!internals?.invoke) {
-    throw new Error('Tauri invoke 不可用（非 Tauri 环境或未授权）')
+/** 官方商城索引源（多镜像兜底：raw 访问不稳时切 jsdelivr） */
+const OFFICIAL_INDEX_SOURCES = [
+  'https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json',
+  'https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/index.json',
+]
+
+/** 本地/自定义商城源持久化 key（localStorage：面板与主前端同 window，随应用持久） */
+const INDEX_SOURCE_KEY = 'polaris.marketplace.indexUrl'
+
+/** 读用户自定义源（空 = 未设置，走官方多镜像） */
+function getCustomIndexSource(): string {
+  try { return (localStorage.getItem(INDEX_SOURCE_KEY) || '').trim() } catch { return '' }
+}
+
+/** 写用户自定义源（空串 = 清除，恢复官方源） */
+function setCustomIndexSource(value: string): void {
+  try {
+    const v = (value || '').trim()
+    if (v) localStorage.setItem(INDEX_SOURCE_KEY, v)
+    else localStorage.removeItem(INDEX_SOURCE_KEY)
+  } catch { /* 无痕/受限存储：静默忽略（本次会话仍可用自选源） */ }
+}
+
+/** 带超时的 fetch（单源 10s，超时切下一镜像） */
+function fetchWithTimeout(url: string, ms = 10_000): Promise<Response> {
+  const ac = new AbortController()
+  const timer = setTimeout(() => ac.abort(), ms)
+  return fetch(url, { cache: 'no-cache', signal: ac.signal }).finally(() => clearTimeout(timer))
+}
+
+/**
+ * 索引加载时把相对 URL（downloadUrl / manifestUrl / updateUrl / versions[].downloadUrl）
+ * 相对索引源解析为绝对地址——本地商城（127.0.0.1 静态服务）或任意镜像源
+ * 的索引可直接写相对路径，安装时面板传绝对地址给宿主。
+ */
+function resolveIndexUrls(data: IndexData, sourceUrl: string): void {
+  if (!/^https?:\/\//i.test(sourceUrl)) return
+  const resolve = (raw: string): string => {
+    if (!raw || /^https?:\/\//i.test(raw)) return raw
+    try { return new URL(raw, sourceUrl).toString() } catch { return raw }
   }
-  return internals.invoke(cmd, args)
+  for (const p of data.plugins) {
+    p.downloadUrl = p.downloadUrl ? resolve(p.downloadUrl) : undefined
+    p.manifestUrl = p.manifestUrl ? resolve(p.manifestUrl) : undefined
+    p.updateUrl = p.updateUrl ? resolve(p.updateUrl) : undefined
+    for (const v of p.versions || []) v.downloadUrl = resolve(v.downloadUrl)
+  }
+}
+
+/**
+ * 宿主调用通道（自适配）：
+ * 1. __POLARIS_HOST_INVOKE__：主应用 main.tsx 挂载（批 7 宿主桥白名单），环境感知，首选；
+ * 2. __TAURI_INTERNALS__.invoke：旧版桌面宿主裸 IPC 回退（手机壳无注册命令，必失败）。
+ */
+function getInvoke(): (cmd: string, args?: Record<string, unknown>) => Promise<unknown> {
+  const g = window as unknown as {
+    __POLARIS_HOST_INVOKE__?: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>
+    __TAURI_INTERNALS__?: { invoke?: (c: string, a?: Record<string, unknown>) => Promise<unknown> }
+  }
+  if (typeof g.__POLARIS_HOST_INVOKE__ === 'function') return g.__POLARIS_HOST_INVOKE__
+  if (g.__TAURI_INTERNALS__?.invoke) {
+    const invoke = g.__TAURI_INTERNALS__.invoke
+    return (cmd, args) => invoke(cmd, args)
+  }
+  throw new Error('宿主调用通道不可用：请更新 Polaris 主应用，或在手机 App 上先连接桌面端服务')
+}
+
+/** 错误翻译：把裸报错变成可操作的提示 */
+function humanizeError(raw: unknown): string {
+  const msg = raw instanceof Error ? raw.message : String(raw ?? '未知错误')
+  if (/router_dispatch/i.test(msg) && /not found|unregistered|未注册/i.test(msg)) {
+    return '宿主缺少 router_dispatch 命令：当前应用壳未注册后端命令（手机壳/旧版应用）。请更新 Polaris 主应用，或在手机 App 中先连接桌面端服务'
+  }
+  if (/HTTP 401|HTTP 403|认证失败|unauthorized|forbidden/i.test(msg)) {
+    return '认证失败（HTTP 401/403）：远程桌面服务拒绝了请求。请在手机 App 中重新连接桌面端服务（设置 → 服务连接），确认 token 有效'
+  }
+  if (/Failed to fetch|NetworkError|网络不可达|load failed|fetch failed|network/i.test(msg)) {
+    return '网络不可达：当前为远程/未连接模式，无法访问桌面端服务。请在手机 App 中先连接桌面端服务（设置 → 服务连接），或检查网络'
+  }
+  if (!/__POLARIS_HOST_INVOKE__/i.test(msg) && /deny|denied|拒绝|not allowed|permission/i.test(msg)) {
+    return `${msg}（远程模式下仅放行查看/检查更新等只读操作；安装/卸载/更新请在桌面端操作，或在 AI 会话中执行）`
+  }
+  return msg
 }
 
 /** router_dispatch 返回形态（与 Polaris 后端 commands/router.rs RouterDispatchResponse 对应） */
@@ -106,15 +182,15 @@ async function dispatchPluginDiscovery(
   action: string,
   payload: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const res = await tauriInvoke<DispatchResponse>('router_dispatch', {
-    req: {
-      target: 'cap.pluginDiscovery',
-      payload: { action, ...payload },
-    },
-  })
-  if (!res.ok) {
-    throw new Error(res.error || `cap.pluginDiscovery ${action} 失败`)
+  let res: DispatchResponse
+  try {
+    res = await getInvoke()('router_dispatch', {
+      req: { target: 'cap.pluginDiscovery', payload: { action, ...payload } },
+    }) as DispatchResponse
+  } catch (e) {
+    throw new Error(humanizeError(e))
   }
+  if (!res.ok) throw new Error(res.error ? humanizeError(res.error) : `cap.pluginDiscovery ${action} 失败`)
   return res.result || {}
 }
 
@@ -221,6 +297,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [installing, setInstalling] = useState<string | null>(null)
   const [installMsg, setInstallMsg] = useState<string | null>(null)
+  const [sourceUsed, setSourceUsed] = useState<string>('')
 
   // 已装状态
   const [installed, setInstalled] = useState<InstalledPlugin[]>([])
@@ -231,14 +308,36 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [opMsg, setOpMsg] = useState<string | null>(null)
 
   const loadIndex = useCallback(async () => {
-    setMLoading(true); setMError(null)
+    setMLoading(true); setMError(null); setSourceUsed('')
     try {
-      const res = await fetch(DEFAULT_INDEX, { cache: 'no-cache' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      setIndex(await res.json())
+      // 候选源：自定义源（本地商城/镜像）优先，官方多镜像兜底，全部失败才报错
+      const custom = getCustomIndexSource()
+      const candidates = custom ? [custom, ...OFFICIAL_INDEX_SOURCES] : OFFICIAL_INDEX_SOURCES
+      let lastError = ''
+      for (const source of candidates) {
+        try {
+          const res = await fetchWithTimeout(source)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const data: IndexData = await res.json()
+          if (!Array.isArray(data?.plugins)) throw new Error('索引格式无效（缺少 plugins 数组）')
+          // 相对 downloadUrl/manifestUrl 等相对索引源解析为绝对地址（本地商城支持的关键）
+          resolveIndexUrls(data, source)
+          setIndex(data); setSourceUsed(source)
+          return
+        } catch (e) {
+          lastError = e instanceof DOMException && e.name === 'AbortError' ? `${source} 超时（10s）` : `${source}：${e instanceof Error ? e.message : String(e)}`
+        }
+      }
+      throw new Error(lastError || '所有索引源均不可达')
     } catch (e) { setMError(e instanceof Error ? e.message : String(e)) }
     finally { setMLoading(false) }
   }, [])
+
+  /** 应用自定义商城源（本地商城/镜像入口；空串恢复官方源） */
+  const applyIndexSource = useCallback((value: string) => {
+    setCustomIndexSource(value)
+    void loadIndex()
+  }, [loadIndex])
 
   const loadInstalled = useCallback(async () => {
     setILoading(true); setIError(null)
@@ -319,6 +418,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
           selected={selected} setSelected={(p) => { setSelected(p); setSelectedVersion(''); setInstallMsg(null) }}
           selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
           installing={installing} installMsg={installMsg} onInstall={handleInstall} onReload={loadIndex}
+          sourceUsed={sourceUsed} onApplySource={applyIndexSource}
         />
       ) : (
         <InstalledView
@@ -354,18 +454,30 @@ interface MarketViewProps {
   installMsg: string | null
   onInstall: (p: MarketPlugin, scope: 'user' | 'project') => void
   onReload: () => void
+  /** 当前生效的索引源（空 = 加载中/失败未定），展示 + 设置面板 */
+  sourceUsed: string
+  /** 应用自定义索引源（本地商城/镜像；空串恢复官方多镜像） */
+  onApplySource: (value: string) => void
 }
 
 function MarketView(props: MarketViewProps) {
   const { index, loading, error, query, setQuery, category, setCategory,
     tierFilter, setTierFilter, selected, setSelected,
     selectedVersion, setSelectedVersion,
-    installing, installMsg, onInstall, onReload } = props
+    installing, installMsg, onInstall, onReload,
+    sourceUsed, onApplySource } = props
+  // 源设置面板（本组件局部 UI 状态）
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [sourceDraft, setSourceDraft] = useState('')
+  const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith('\\\\')
 
   if (loading) return <div style={{ padding: 24, color: '#8E8E93' }}>加载商城索引中…</div>
   if (error) return (
     <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ color: '#EF4444' }}>加载失败：{error}</div>
+      <div style={{ color: '#EF4444', wordBreak: 'break-all' }}>加载失败：{error}</div>
+      <div style={{ fontSize: 11, color: '#8E8E93', lineHeight: 1.5 }}>
+        自定义源优先、官方镜像兜底（raw.githubusercontent → cdn.jsdelivr）。请检查网络后重试。
+      </div>
       <button onClick={onReload} style={s.btn}>重试</button>
     </div>
   )
@@ -408,7 +520,37 @@ function MarketView(props: MarketViewProps) {
         <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索插件…"
           style={{ flex: 1, padding: '6px 10px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none' }} />
         <button onClick={onReload} title="刷新索引" style={{ ...s.btn, padding: '6px 10px' }}>↻</button>
+        <button onClick={() => { setSourceDraft(sourceUsed); setSettingsOpen(o => !o) }} title="商城源设置（官方/本地镜像）" style={{ ...s.btn, padding: '6px 10px' }}>⚙</button>
       </div>
+
+      {/* 商城源设置面板 */}
+      {settingsOpen && (
+        <div style={{ margin: '0 12px 8px', padding: 10, borderRadius: 8, background: '#1F1F24', border: '1px solid #3F3F46', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 11, color: '#B4B4B8', fontWeight: 600 }}>商城源</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={sourceDraft}
+              onChange={e => setSourceDraft(e.target.value)}
+              placeholder="自定义索引 URL（留空 = 官方源），如 http://127.0.0.1:8787/index.json"
+              style={{ flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none', wordBreak: 'break-all' }}
+            />
+            <button onClick={() => { onApplySource(sourceDraft); setSettingsOpen(false) }} style={{ ...s.btn, padding: '4px 10px' }}>保存</button>
+            <button onClick={() => { setSourceDraft(''); onApplySource(''); setSettingsOpen(false) }} title="恢复官方源" style={{ ...s.miniBtn, padding: '4px 10px' }}>官方</button>
+          </div>
+          {isLocalSource && (
+            <div style={{ fontSize: 10, color: '#F59E0B', lineHeight: 1.5 }}>
+              ⚠ 浏览器/面板无法直接 fetch 本地路径（file:// 或盘符路径）。请先在商城目录启动本地静态服务：
+              <code style={{ color: '#F8F8F8' }}>node scripts/serve-market.js D:\你的商城目录 8787</code>
+              ，然后填 <code style={{ color: '#F8F8F8' }}>http://127.0.0.1:8787/index.json</code>。
+            </div>
+          )}
+          <div style={{ fontSize: 10, color: '#6B7280', lineHeight: 1.5 }}>
+            • 本地商城：索引里的 downloadUrl 可写相对路径（相对 index.json）或本地绝对路径（zip 或插件目录；桌面端直接本机安装，仅 Tauri 生效）<br />
+            • 官方源失败自动切镜像（raw.githubusercontent → cdn.jsdelivr）
+          </div>
+          {sourceUsed && <div style={{ fontSize: 10, color: '#10B981', wordBreak: 'break-all' }}>当前源：{sourceUsed}</div>}
+        </div>
+      )}
 
       {/* 过滤栏：等级 + 分类 */}
       <div style={{ padding: '0 12px 8px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>

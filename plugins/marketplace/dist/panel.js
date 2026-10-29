@@ -1,28 +1,87 @@
 // src/Panel.tsx
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
-var DEFAULT_INDEX = "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json";
 function resolveTier(p) {
   if (p.tier === "production" || p.tier === "beta") return p.tier;
   return "demo";
 }
-async function tauriInvoke(cmd, args = {}) {
-  const internals = window.__TAURI_INTERNALS__;
-  if (!internals?.invoke) {
-    throw new Error("Tauri invoke \u4E0D\u53EF\u7528\uFF08\u975E Tauri \u73AF\u5883\u6216\u672A\u6388\u6743\uFF09");
+var OFFICIAL_INDEX_SOURCES = [
+  "https://raw.githubusercontent.com/misxzaiz/Polaris-plugin/main/index.json",
+  "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/index.json"
+];
+var INDEX_SOURCE_KEY = "polaris.marketplace.indexUrl";
+function getCustomIndexSource() {
+  try {
+    return (localStorage.getItem(INDEX_SOURCE_KEY) || "").trim();
+  } catch {
+    return "";
   }
-  return internals.invoke(cmd, args);
+}
+function setCustomIndexSource(value) {
+  try {
+    const v = (value || "").trim();
+    if (v) localStorage.setItem(INDEX_SOURCE_KEY, v);
+    else localStorage.removeItem(INDEX_SOURCE_KEY);
+  } catch {
+  }
+}
+function fetchWithTimeout(url, ms = 1e4) {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), ms);
+  return fetch(url, { cache: "no-cache", signal: ac.signal }).finally(() => clearTimeout(timer));
+}
+function resolveIndexUrls(data, sourceUrl) {
+  if (!/^https?:\/\//i.test(sourceUrl)) return;
+  const resolve = (raw) => {
+    if (!raw || /^https?:\/\//i.test(raw)) return raw;
+    try {
+      return new URL(raw, sourceUrl).toString();
+    } catch {
+      return raw;
+    }
+  };
+  for (const p of data.plugins) {
+    p.downloadUrl = p.downloadUrl ? resolve(p.downloadUrl) : void 0;
+    p.manifestUrl = p.manifestUrl ? resolve(p.manifestUrl) : void 0;
+    p.updateUrl = p.updateUrl ? resolve(p.updateUrl) : void 0;
+    for (const v of p.versions || []) v.downloadUrl = resolve(v.downloadUrl);
+  }
+}
+function getInvoke() {
+  const g = window;
+  if (typeof g.__POLARIS_HOST_INVOKE__ === "function") return g.__POLARIS_HOST_INVOKE__;
+  if (g.__TAURI_INTERNALS__?.invoke) {
+    const invoke = g.__TAURI_INTERNALS__.invoke;
+    return (cmd, args) => invoke(cmd, args);
+  }
+  throw new Error("\u5BBF\u4E3B\u8C03\u7528\u901A\u9053\u4E0D\u53EF\u7528\uFF1A\u8BF7\u66F4\u65B0 Polaris \u4E3B\u5E94\u7528\uFF0C\u6216\u5728\u624B\u673A App \u4E0A\u5148\u8FDE\u63A5\u684C\u9762\u7AEF\u670D\u52A1");
+}
+function humanizeError(raw) {
+  const msg = raw instanceof Error ? raw.message : String(raw ?? "\u672A\u77E5\u9519\u8BEF");
+  if (/router_dispatch/i.test(msg) && /not found|unregistered|未注册/i.test(msg)) {
+    return "\u5BBF\u4E3B\u7F3A\u5C11 router_dispatch \u547D\u4EE4\uFF1A\u5F53\u524D\u5E94\u7528\u58F3\u672A\u6CE8\u518C\u540E\u7AEF\u547D\u4EE4\uFF08\u624B\u673A\u58F3/\u65E7\u7248\u5E94\u7528\uFF09\u3002\u8BF7\u66F4\u65B0 Polaris \u4E3B\u5E94\u7528\uFF0C\u6216\u5728\u624B\u673A App \u4E2D\u5148\u8FDE\u63A5\u684C\u9762\u7AEF\u670D\u52A1";
+  }
+  if (/HTTP 401|HTTP 403|认证失败|unauthorized|forbidden/i.test(msg)) {
+    return "\u8BA4\u8BC1\u5931\u8D25\uFF08HTTP 401/403\uFF09\uFF1A\u8FDC\u7A0B\u684C\u9762\u670D\u52A1\u62D2\u7EDD\u4E86\u8BF7\u6C42\u3002\u8BF7\u5728\u624B\u673A App \u4E2D\u91CD\u65B0\u8FDE\u63A5\u684C\u9762\u7AEF\u670D\u52A1\uFF08\u8BBE\u7F6E \u2192 \u670D\u52A1\u8FDE\u63A5\uFF09\uFF0C\u786E\u8BA4 token \u6709\u6548";
+  }
+  if (/Failed to fetch|NetworkError|网络不可达|load failed|fetch failed|network/i.test(msg)) {
+    return "\u7F51\u7EDC\u4E0D\u53EF\u8FBE\uFF1A\u5F53\u524D\u4E3A\u8FDC\u7A0B/\u672A\u8FDE\u63A5\u6A21\u5F0F\uFF0C\u65E0\u6CD5\u8BBF\u95EE\u684C\u9762\u7AEF\u670D\u52A1\u3002\u8BF7\u5728\u624B\u673A App \u4E2D\u5148\u8FDE\u63A5\u684C\u9762\u7AEF\u670D\u52A1\uFF08\u8BBE\u7F6E \u2192 \u670D\u52A1\u8FDE\u63A5\uFF09\uFF0C\u6216\u68C0\u67E5\u7F51\u7EDC";
+  }
+  if (!/__POLARIS_HOST_INVOKE__/i.test(msg) && /deny|denied|拒绝|not allowed|permission/i.test(msg)) {
+    return `${msg}\uFF08\u8FDC\u7A0B\u6A21\u5F0F\u4E0B\u4EC5\u653E\u884C\u67E5\u770B/\u68C0\u67E5\u66F4\u65B0\u7B49\u53EA\u8BFB\u64CD\u4F5C\uFF1B\u5B89\u88C5/\u5378\u8F7D/\u66F4\u65B0\u8BF7\u5728\u684C\u9762\u7AEF\u64CD\u4F5C\uFF0C\u6216\u5728 AI \u4F1A\u8BDD\u4E2D\u6267\u884C\uFF09`;
+  }
+  return msg;
 }
 async function dispatchPluginDiscovery(action, payload) {
-  const res = await tauriInvoke("router_dispatch", {
-    req: {
-      target: "cap.pluginDiscovery",
-      payload: { action, ...payload }
-    }
-  });
-  if (!res.ok) {
-    throw new Error(res.error || `cap.pluginDiscovery ${action} \u5931\u8D25`);
+  let res;
+  try {
+    res = await getInvoke()("router_dispatch", {
+      req: { target: "cap.pluginDiscovery", payload: { action, ...payload } }
+    });
+  } catch (e) {
+    throw new Error(humanizeError(e));
   }
+  if (!res.ok) throw new Error(res.error ? humanizeError(res.error) : `cap.pluginDiscovery ${action} \u5931\u8D25`);
   return res.result || {};
 }
 async function installPlugin(plugin, scope, version) {
@@ -132,6 +191,7 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const [selectedVersion, setSelectedVersion] = useState("");
   const [installing, setInstalling] = useState(null);
   const [installMsg, setInstallMsg] = useState(null);
+  const [sourceUsed, setSourceUsed] = useState("");
   const [installed, setInstalled] = useState([]);
   const [iLoading, setILoading] = useState(false);
   const [iError, setIError] = useState(null);
@@ -141,16 +201,36 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const loadIndex = useCallback(async () => {
     setMLoading(true);
     setMError(null);
+    setSourceUsed("");
     try {
-      const res = await fetch(DEFAULT_INDEX, { cache: "no-cache" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setIndex(await res.json());
+      const custom = getCustomIndexSource();
+      const candidates = custom ? [custom, ...OFFICIAL_INDEX_SOURCES] : OFFICIAL_INDEX_SOURCES;
+      let lastError = "";
+      for (const source of candidates) {
+        try {
+          const res = await fetchWithTimeout(source);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          if (!Array.isArray(data?.plugins)) throw new Error("\u7D22\u5F15\u683C\u5F0F\u65E0\u6548\uFF08\u7F3A\u5C11 plugins \u6570\u7EC4\uFF09");
+          resolveIndexUrls(data, source);
+          setIndex(data);
+          setSourceUsed(source);
+          return;
+        } catch (e) {
+          lastError = e instanceof DOMException && e.name === "AbortError" ? `${source} \u8D85\u65F6\uFF0810s\uFF09` : `${source}\uFF1A${e instanceof Error ? e.message : String(e)}`;
+        }
+      }
+      throw new Error(lastError || "\u6240\u6709\u7D22\u5F15\u6E90\u5747\u4E0D\u53EF\u8FBE");
     } catch (e) {
       setMError(e instanceof Error ? e.message : String(e));
     } finally {
       setMLoading(false);
     }
   }, []);
+  const applyIndexSource = useCallback((value) => {
+    setCustomIndexSource(value);
+    void loadIndex();
+  }, [loadIndex]);
   const loadInstalled = useCallback(async () => {
     setILoading(true);
     setIError(null);
@@ -246,7 +326,9 @@ function MarketplacePanel({ pluginId: _pluginId }) {
         installing,
         installMsg,
         onInstall: handleInstall,
-        onReload: loadIndex
+        onReload: loadIndex,
+        sourceUsed,
+        onApplySource: applyIndexSource
       }
     ) : /* @__PURE__ */ jsx(
       InstalledView,
@@ -284,14 +366,20 @@ function MarketView(props) {
     installing,
     installMsg,
     onInstall,
-    onReload
+    onReload,
+    sourceUsed,
+    onApplySource
   } = props;
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [sourceDraft, setSourceDraft] = useState("");
+  const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith("\\\\");
   if (loading) return /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93" }, children: "\u52A0\u8F7D\u5546\u57CE\u7D22\u5F15\u4E2D\u2026" });
   if (error) return /* @__PURE__ */ jsxs("div", { style: { padding: 24, display: "flex", flexDirection: "column", gap: 12 }, children: [
-    /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444" }, children: [
+    /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444", wordBreak: "break-all" }, children: [
       "\u52A0\u8F7D\u5931\u8D25\uFF1A",
       error
     ] }),
+    /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#8E8E93", lineHeight: 1.5 }, children: "\u81EA\u5B9A\u4E49\u6E90\u4F18\u5148\u3001\u5B98\u65B9\u955C\u50CF\u515C\u5E95\uFF08raw.githubusercontent \u2192 cdn.jsdelivr\uFF09\u3002\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5\u3002" }),
     /* @__PURE__ */ jsx("button", { onClick: onReload, style: s.btn, children: "\u91CD\u8BD5" })
   ] });
   const plugins = index?.plugins ?? [];
@@ -330,7 +418,50 @@ function MarketView(props) {
           style: { flex: 1, padding: "6px 10px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 12, outline: "none" }
         }
       ),
-      /* @__PURE__ */ jsx("button", { onClick: onReload, title: "\u5237\u65B0\u7D22\u5F15", style: { ...s.btn, padding: "6px 10px" }, children: "\u21BB" })
+      /* @__PURE__ */ jsx("button", { onClick: onReload, title: "\u5237\u65B0\u7D22\u5F15", style: { ...s.btn, padding: "6px 10px" }, children: "\u21BB" }),
+      /* @__PURE__ */ jsx("button", { onClick: () => {
+        setSourceDraft(sourceUsed);
+        setSettingsOpen((o) => !o);
+      }, title: "\u5546\u57CE\u6E90\u8BBE\u7F6E\uFF08\u5B98\u65B9/\u672C\u5730\u955C\u50CF\uFF09", style: { ...s.btn, padding: "6px 10px" }, children: "\u2699" })
+    ] }),
+    settingsOpen && /* @__PURE__ */ jsxs("div", { style: { margin: "0 12px 8px", padding: 10, borderRadius: 8, background: "#1F1F24", border: "1px solid #3F3F46", display: "flex", flexDirection: "column", gap: 8 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#B4B4B8", fontWeight: 600 }, children: "\u5546\u57CE\u6E90" }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            value: sourceDraft,
+            onChange: (e) => setSourceDraft(e.target.value),
+            placeholder: "\u81EA\u5B9A\u4E49\u7D22\u5F15 URL\uFF08\u7559\u7A7A = \u5B98\u65B9\u6E90\uFF09\uFF0C\u5982 http://127.0.0.1:8787/index.json",
+            style: { flex: 1, padding: "5px 8px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 11, outline: "none", wordBreak: "break-all" }
+          }
+        ),
+        /* @__PURE__ */ jsx("button", { onClick: () => {
+          onApplySource(sourceDraft);
+          setSettingsOpen(false);
+        }, style: { ...s.btn, padding: "4px 10px" }, children: "\u4FDD\u5B58" }),
+        /* @__PURE__ */ jsx("button", { onClick: () => {
+          setSourceDraft("");
+          onApplySource("");
+          setSettingsOpen(false);
+        }, title: "\u6062\u590D\u5B98\u65B9\u6E90", style: { ...s.miniBtn, padding: "4px 10px" }, children: "\u5B98\u65B9" })
+      ] }),
+      isLocalSource && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#F59E0B", lineHeight: 1.5 }, children: [
+        "\u26A0 \u6D4F\u89C8\u5668/\u9762\u677F\u65E0\u6CD5\u76F4\u63A5 fetch \u672C\u5730\u8DEF\u5F84\uFF08file:// \u6216\u76D8\u7B26\u8DEF\u5F84\uFF09\u3002\u8BF7\u5148\u5728\u5546\u57CE\u76EE\u5F55\u542F\u52A8\u672C\u5730\u9759\u6001\u670D\u52A1\uFF1A",
+        /* @__PURE__ */ jsx("code", { style: { color: "#F8F8F8" }, children: "node scripts/serve-market.js D:\\\u4F60\u7684\u5546\u57CE\u76EE\u5F55 8787" }),
+        "\uFF0C\u7136\u540E\u586B ",
+        /* @__PURE__ */ jsx("code", { style: { color: "#F8F8F8" }, children: "http://127.0.0.1:8787/index.json" }),
+        "\u3002"
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#6B7280", lineHeight: 1.5 }, children: [
+        "\u2022 \u672C\u5730\u5546\u57CE\uFF1A\u7D22\u5F15\u91CC\u7684 downloadUrl \u53EF\u5199\u76F8\u5BF9\u8DEF\u5F84\uFF08\u76F8\u5BF9 index.json\uFF09\u6216\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\uFF08zip \u6216\u63D2\u4EF6\u76EE\u5F55\uFF1B\u684C\u9762\u7AEF\u76F4\u63A5\u672C\u673A\u5B89\u88C5\uFF0C\u4EC5 Tauri \u751F\u6548\uFF09",
+        /* @__PURE__ */ jsx("br", {}),
+        "\u2022 \u5B98\u65B9\u6E90\u5931\u8D25\u81EA\u52A8\u5207\u955C\u50CF\uFF08raw.githubusercontent \u2192 cdn.jsdelivr\uFF09"
+      ] }),
+      sourceUsed && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#10B981", wordBreak: "break-all" }, children: [
+        "\u5F53\u524D\u6E90\uFF1A",
+        sourceUsed
+      ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { style: { padding: "0 12px 8px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }, children: [
       /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#6B7280", marginRight: 2 }, children: "\u7B49\u7EA7" }),
