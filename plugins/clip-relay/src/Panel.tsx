@@ -1,5 +1,5 @@
 /**
- * 接力板面板外壳：头部（心跳）+ 主视图（接力板）+ 设置
+ * 文本接力面板外壳：头部（心跳）+ 主视图（文本接力）+ 设置
  *
  * 数据源：cap.kv relay.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零网络请求；URL 标题抓取由后台服务原生执行（跨域根治点），
@@ -209,7 +209,7 @@ export default function ClipRelayPanel({ pluginId, onSendToChat }: {
       <div className="cr-top">
         <div className="cr-logo">📋</div>
         <div className="cr-tt">
-          <b>接力板</b>
+          <b>文本接力</b>
           <small>
             <i className={`cr-dot ${hb.cls}`} />
             {hb.text}

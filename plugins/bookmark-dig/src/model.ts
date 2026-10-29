@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（书签考古面板）
+ * 通信层 + 数据访问（书签体检面板）
  *
  * 键空间契约（权威表见 README；面板/服务/MCP 三方一致）：
  *   bmd.settings / bmd.meta / bmd.rec.<n> / bmd.run / bmd.report.<id>

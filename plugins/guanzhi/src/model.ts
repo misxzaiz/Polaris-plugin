@@ -1,5 +1,5 @@
 /**
- * 通信层 + 账本数据访问（观止面板）
+ * 通信层 + 账本数据访问（书影音账本面板）
  *
  * 计算逻辑全部复用 shared/guanzhi-core.js（与 MCP 同一权威，esbuild 打包进
  * bundle）；本文件只做 cap.kv IO 与视图模型组装。

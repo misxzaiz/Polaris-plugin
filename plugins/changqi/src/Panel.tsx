@@ -1,5 +1,5 @@
 /**
- * 常契面板外壳：头部（月均速览）+ 三 Tab（总览 / 统计 / 设置）
+ * 订阅台账面板外壳：头部（月均速览）+ 三 Tab（总览 / 统计 / 设置）
  * 数据面：cap.kv changqi.*（经宿主 invoke → router_dispatch），跨端同一份台账。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -162,7 +162,7 @@ export default function ChangqiPanel(_props: { pluginId: string; onSendToChat?: 
       <div className="cq-top">
         <div className="cq-logo">🗓️</div>
         <div className="cq-tt">
-          <b>常契</b>
+          <b>订阅台账</b>
           <small>{headInfo.text}</small>
         </div>
         <div className="cq-tabs">

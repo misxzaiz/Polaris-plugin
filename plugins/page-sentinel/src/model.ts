@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（网页哨兵面板）
+ * 通信层 + 数据访问（网页监测面板）
  *
  * 统一经宿主 invoke 通道调 router_dispatch；面板与后台服务、MCP server
  * 读写同一个 cap.kv（SqliteStorage domain=kv）的 sentinel.* 键空间。
@@ -313,7 +313,7 @@ export async function testFetch(spec: { url: string; mode: ExtractMode; selector
       return r
     }
   }
-  return { ok: false, error: '试抓超时：后台服务可能未运行（设置 → 插件 → 网页哨兵 查看服务状态）' }
+  return { ok: false, error: '试抓超时：后台服务可能未运行（设置 → 插件 → 网页监测 查看服务状态）' }
 }
 
 // ── 服务管理（cap.pluginServiceManager；start 需经 discovery 自举安装信息）──

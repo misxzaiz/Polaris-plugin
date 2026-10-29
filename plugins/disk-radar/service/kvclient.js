@@ -1,6 +1,6 @@
 'use strict';
 /**
- * kvclient.js —— Polaris IPC Bridge 客户端（磁盘雷达服务专用，零依赖）
+ * kvclient.js —— Polaris IPC Bridge 客户端（磁盘分析服务专用，零依赖）
  *
  * 全部数据读写经 router_dispatch（target=cap.kv）透传到宿主 SqliteStorage
  * domain=kv，与面板 / MCP server 共享同一份事实库。

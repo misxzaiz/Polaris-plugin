@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * sundial MCP Server —— 日晷的 AI 工具层（零依赖 stdio）
+ * sundial MCP Server —— 日程提醒的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 sundial.* 键空间的读写。本进程**不直接抓外网**——ICS 订阅的抓取同步
@@ -132,7 +132,7 @@ function rangeToWindow(range, now) {
 const tools = [
   {
     name: 'sundial_add',
-    description: '给日晷（sundial）添加一条日程、习惯打卡或倒数日。适用：「周五下午3点提醒我取快递」「从明天起每天晚上10点提醒背单词（习惯打卡）」「帮我记着距离高考还有多少天」。时间参数由你解析成结构化格式：全天用 2026-11-05，时刻用 2026-10-30 15:00（24 小时制）。重复规则写友好格式：daily/每天、weekdays/工作日、weekly:MO,WE/每周一三、monthly:15/每月15号、yearly/每年，可接 ;COUNT=10 或 ;UNTIL=20271231。同一标题+时间重复添加会生成不同事件（不幂等），先 sundial_query 查重。',
+    description: '给日程提醒（sundial）添加一条日程、习惯打卡或倒数日。适用：「周五下午3点提醒我取快递」「从明天起每天晚上10点提醒背单词（习惯打卡）」「帮我记着距离高考还有多少天」。时间参数由你解析成结构化格式：全天用 2026-11-05，时刻用 2026-10-30 15:00（24 小时制）。重复规则写友好格式：daily/每天、weekdays/工作日、weekly:MO,WE/每周一三、monthly:15/每月15号、yearly/每年，可接 ;COUNT=10 或 ;UNTIL=20271231。同一标题+时间重复添加会生成不同事件（不幂等），先 sundial_query 查重。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -163,7 +163,7 @@ const tools = [
   },
   {
     name: 'sundial_query',
-    description: '查询日晷日程。适用：「这周有什么安排」「周五要干嘛」「我有哪些习惯在打卡」「下次牙医复诊是什么时候」。返回带事件 id 与 occ=发生键，供 sundial_update / sundial_done / sundial_delete 按键操作。',
+    description: '查询日程提醒日程。适用：「这周有什么安排」「周五要干嘛」「我有哪些习惯在打卡」「下次牙医复诊是什么时候」。返回带事件 id 与 occ=发生键，供 sundial_update / sundial_done / sundial_delete 按键操作。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -198,7 +198,7 @@ const tools = [
   },
   {
     name: 'sundial_update',
-    description: '修改日晷的一条日程（sundial_query 可查 id）。适用：「把周会改到下午4点」「这个提醒改成提前一天」「取消重复，改成一次性」。只传想改的字段，其余保持不变。ICS 订阅同步来的事件（source=ics）改定义字段会被下次同步覆盖，只建议改提醒（remind）。',
+    description: '修改日程提醒的一条日程（sundial_query 可查 id）。适用：「把周会改到下午4点」「这个提醒改成提前一天」「取消重复，改成一次性」。只传想改的字段，其余保持不变。ICS 订阅同步来的事件（source=ics）改定义字段会被下次同步覆盖，只建议改提醒（remind）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -226,7 +226,7 @@ const tools = [
   },
   {
     name: 'sundial_delete',
-    description: '删除日晷的一条日程（联动清掉其提醒与打卡记录）。危险操作需 confirm。适用：「把取快递那条删了」。',
+    description: '删除日程提醒的一条日程（联动清掉其提醒与打卡记录）。危险操作需 confirm。适用：「把取快递那条删了」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -245,7 +245,7 @@ const tools = [
   },
   {
     name: 'sundial_done',
-    description: '给日晷的一次发生打卡：标记完成 / 跳过 / 撤销。适用：「今天单词打过了」「今天的跑步算跳过」「昨天那个打卡记错了，撤掉」。习惯（habit）打卡会累积连击（面板显示 🔥N）。id 与 occ 都来自 sundial_query 输出。',
+    description: '给日程提醒的一次发生打卡：标记完成 / 跳过 / 撤销。适用：「今天单词打过了」「今天的跑步算跳过」「昨天那个打卡记错了，撤掉」。习惯（habit）打卡会累积连击（面板显示 🔥N）。id 与 occ 都来自 sundial_query 输出。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -280,7 +280,7 @@ const tools = [
   },
   {
     name: 'sundial_ics',
-    description: '日晷的外部日历（ICS/Webcal）订阅管理。适用：「订阅我的 Google 日历公开链接」「看看订阅了哪些日历」「刷新一下课表日历」「退订这个日历」。添加后由后台服务按间隔（默认 6 小时）原生抓取同步——跨域由服务进程根治，面板与手机端都能看到同一份日历。remove 是危险操作需 confirm。',
+    description: '日程提醒的外部日历（ICS/Webcal）订阅管理。适用：「订阅我的 Google 日历公开链接」「看看订阅了哪些日历」「刷新一下课表日历」「退订这个日历」。添加后由后台服务按间隔（默认 6 小时）原生抓取同步——跨域由服务进程根治，面板与手机端都能看到同一份日历。remove 是危险操作需 confirm。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -335,7 +335,7 @@ const tools = [
   },
   {
     name: 'sundial_today',
-    description: '日晷今日摘要——用户问「今天有什么安排」「我现在要干嘛」时的第一入口。返回：今天与明天的日程（含已完成标记）、习惯今日打卡状态与连击、当前到期的提醒（横幅未确认的）、最近的倒数日。也适合作为一天开始时主动调用的工具。',
+    description: '日程提醒今日摘要——用户问「今天有什么安排」「我现在要干嘛」时的第一入口。返回：今天与明天的日程（含已完成标记）、习惯今日打卡状态与连击、当前到期的提醒（横幅未确认的）、最近的倒数日。也适合作为一天开始时主动调用的工具。',
     inputSchema: {
       type: 'object',
       properties: {},

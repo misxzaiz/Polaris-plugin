@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * feed-radar MCP Server —— 订阅雷达的 AI 工具层（零依赖 stdio）
+ * feed-radar MCP Server —— RSS 订阅的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 radar.* 键空间的读写。本进程**不直接抓外网**——抓取与正文拉取全部
@@ -122,7 +122,7 @@ function fmtArticleBrief(a, feedTitleMap, withFull) {
 const tools = [
   {
     name: 'radar_add_feed',
-    description: '给订阅雷达（feed-radar）添加一个 RSS/Atom 订阅源。适用：「订阅 https://example.com/feed.xml」「以后这个博客更新了第一时间让我知道」。同一 URL 幂等（重复添加不会产生双份）。后台服务会在下一个抓取周期（全局默认 15 分钟、命令刷新可立即）抓取入库。',
+    description: '给RSS 订阅（feed-radar）添加一个 RSS/Atom 订阅源。适用：「订阅 https://example.com/feed.xml」「以后这个博客更新了第一时间让我知道」。同一 URL 幂等（重复添加不会产生双份）。后台服务会在下一个抓取周期（全局默认 15 分钟、命令刷新可立即）抓取入库。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -148,7 +148,7 @@ const tools = [
   },
   {
     name: 'radar_list_feeds',
-    description: '列出订阅雷达的全部订阅源（含未读数/共几条/状态）。用于「我订阅了哪些」「哪个源挂了」。',
+    description: '列出RSS 订阅的全部订阅源（含未读数/共几条/状态）。用于「我订阅了哪些」「哪个源挂了」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -166,7 +166,7 @@ const tools = [
   },
   {
     name: 'radar_remove_feed',
-    description: '删除订阅雷达的一个订阅源（可传 id 或 URL），联动删除其全部文章与已拉取的正文。星标文章也会删除——删除是针对整个订阅源。',
+    description: '删除RSS 订阅的一个订阅源（可传 id 或 URL），联动删除其全部文章与已拉取的正文。星标文章也会删除——删除是针对整个订阅源。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -196,7 +196,7 @@ const tools = [
   },
   {
     name: 'radar_refresh',
-    description: '触发订阅雷达立即抓取刷新。不传参=全部订阅源；传 id=只刷该源。命令经信箱由后台服务执行（抓取的单一权威，Escape 浏览器跨域限制靠它）。',
+    description: '触发RSS 订阅立即抓取刷新。不传参=全部订阅源；传 id=只刷该源。命令经信箱由后台服务执行（抓取的单一权威，Escape 浏览器跨域限制靠它）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -228,7 +228,7 @@ const tools = [
   },
   {
     name: 'radar_unread',
-    description: '读订阅雷达的未读/最新文章流（「AI 读报」主入口）。默认列最近 3 天未读，按发布时间从新到旧；返回 id 可供 radar_read_article 拉正文、radar_mark 标记。适用：「看看今天订阅里有什么值得读的」「把技术源的新文章总结一下」。',
+    description: '读RSS 订阅的未读/最新文章流（「AI 读报」主入口）。默认列最近 3 天未读，按发布时间从新到旧；返回 id 可供 radar_read_article 拉正文、radar_mark 标记。适用：「看看今天订阅里有什么值得读的」「把技术源的新文章总结一下」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -272,7 +272,7 @@ const tools = [
   },
   {
     name: 'radar_read_article',
-    description: '读取订阅雷达某篇文章的完整正文（radar_unread 可查 id）。正文由后台服务抓原文链接并抽取主干——如正文缺失会写命令触发后台抓取并轮询等待。适用：AI 真正读文章内容后做总结/观点/对比。',
+    description: '读取RSS 订阅某篇文章的完整正文（radar_unread 可查 id）。正文由后台服务抓原文链接并抽取主干——如正文缺失会写命令触发后台抓取并轮询等待。适用：AI 真正读文章内容后做总结/观点/对比。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -311,7 +311,7 @@ const tools = [
   },
   {
     name: 'radar_mark',
-    description: '标记订阅雷达文章的已读/未读或加星/取消星。适用：「这篇看过了，标已读」「这篇存个星标」。两个动作可同时指定。',
+    description: '标记RSS 订阅文章的已读/未读或加星/取消星。适用：「这篇看过了，标已读」「这篇存个星标」。两个动作可同时指定。',
     inputSchema: {
       type: 'object',
       properties: {

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * amber MCP Server —— 琥珀的 AI 工具层（零依赖 stdio）
+ * amber MCP Server —— 网页封存的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 amber.* 键空间的读写。本进程**不直接抓外网**——封存抓取全部通过命令
@@ -9,13 +9,13 @@
  * 同时保证"单一抓取路径"不出现第二条写法）。
  *
  * 工具一览：
- *   amber_save     封存网页 URL（幂等：同 URL 永远同一琥珀；重复调用=层积重封）
+ *   amber_save     封存网页 URL（幂等：同 URL 永远同一网页封存；重复调用=层积重封）
  *   amber_list     列收藏（未读/星标/标签/来源/异常过滤）——「翻收藏库」入口
  *   amber_search   全文检索语料库（BM25-lite，命令信箱 + 轮询结果槽）
- *   amber_read     读某条琥珀的完整封存正文（AI 精读主入口）
+ *   amber_read     读某条网页封存的完整封存正文（AI 精读主入口）
  *   amber_mark     标记已读/星标、增删标签
  *   amber_quote    存金句摘录 / 列出某条的摘录
- *   amber_delete   删除琥珀（联动清理正文与摘录）
+ *   amber_delete   删除网页封存（联动清理正文与摘录）
  */
 const crypto = require('crypto');
 
@@ -126,13 +126,13 @@ async function findQuoteKeys() {
 const tools = [
   {
     name: 'amber_save',
-    description: '把一个网页 URL 封存进琥珀（网页封藏馆）：后台服务抓取原文、抽取干净正文、生成永久可读快照。适用：「把这篇文章存进琥珀」「收藏 https://… 以后读」。同一 URL 幂等（重复封存=更新快照并+1 封存次数，阅读状态与标签保留）。原网页日后失效也不影响已封存的快照。',
+    description: '把一个网页 URL 封存进网页封存（网页封藏馆）：后台服务抓取原文、抽取干净正文、生成永久可读快照。适用：「把这篇文章存进网页封存」「收藏 https://… 以后读」。同一 URL 幂等（重复封存=更新快照并+1 封存次数，阅读状态与标签保留）。原网页日后失效也不影响已封存的快照。',
     inputSchema: {
       type: 'object',
       properties: {
         url: { type: 'string', description: '要封存的网页地址（公网 http(s)）' },
         tags: { type: 'string', description: '标签（可选，逗号/空格分隔，如「技术,AI」）' },
-        force: { type: 'boolean', description: '已封存过时是否强制重抓更新快照（默认 false：已封存过就直接返回现有琥珀）' },
+        force: { type: 'boolean', description: '已封存过时是否强制重抓更新快照（默认 false：已封存过就直接返回现有网页封存）' },
         waitSec: { type: 'integer', description: '等待封存完成的秒数（默认 25，最长 45；0=只入队不等）' },
       },
       required: ['url'],
@@ -143,7 +143,7 @@ const tools = [
       const id = lib.itemIdFor(n.url);
       const existing = await getItem(id).catch(() => null);
       if (existing && typeof existing === 'object' && existing.status === 'ok' && args.force !== true) {
-        return ok(`该网页之前已封存过（琥珀不会重复制造）：\n${fmtItemLine(existing, true)}\n要更新快照可传 force: true 重新抓取。`);
+        return ok(`该网页之前已封存过（网页封存不会重复制造）：\n${fmtItemLine(existing, true)}\n要更新快照可传 force: true 重新抓取。`);
       }
       // 登记 pending（幂等：已有则保留用户状态）+ 下发封存命令
       const norm = lib.normalizeItem({ url: n.url, tags: args.tags, id }, existing && typeof existing === 'object' ? existing : null);
@@ -172,7 +172,7 @@ const tools = [
   },
   {
     name: 'amber_list',
-    description: '列出琥珀（网页封藏馆）里的收藏。适用：「我存了哪些关于 X 的文章」「最近的收藏」「看看没读的」。支持未读/星标/标签/来源/异常过滤。',
+    description: '列出网页封存（网页封藏馆）里的收藏。适用：「我存了哪些关于 X 的文章」「最近的收藏」「看看没读的」。支持未读/星标/标签/来源/异常过滤。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -208,7 +208,7 @@ const tools = [
   },
   {
     name: 'amber_search',
-    description: '全文检索琥珀语料库（BM25-lite，覆盖封存正文的全部文字）。适用：「我记得收藏过讲 XX 的文章」「我存过的内容里有没有提到 YY」。返回命中条目 + 命中上下文片段，amber_read 可继续读全文。',
+    description: '全文检索网页封存语料库（BM25-lite，覆盖封存正文的全部文字）。适用：「我记得收藏过讲 XX 的文章」「我存过的内容里有没有提到 YY」。返回命中条目 + 命中上下文片段，amber_read 可继续读全文。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -234,7 +234,7 @@ const tools = [
       await kv.kvDel(K.search(n)).catch(() => {});
       if (!result) return ok(`检索已下发但 ${waitSec}s 内未完成（语料大时首检偏慢，稍后重试）。`);
       if (result.error) return err(`检索失败：${result.error}`);
-      if (!result.hits || !result.hits.length) return ok(`琥珀里 ${result.total || 0} 篇正文中没有命中「${q}」。`);
+      if (!result.hits || !result.hits.length) return ok(`网页封存里 ${result.total || 0} 篇正文中没有命中「${q}」。`);
       const lines = result.hits.map((h, i) => `${i + 1}. [${h.id}] ${oneLine(h.title, 70)}（${h.host} · 相关度 ${h.score}）\n   ${oneLine(h.snippet, 240)}`);
       return ok([
         `「${q}」命中 ${result.hits.length}/${result.total} 篇：`,
@@ -246,7 +246,7 @@ const tools = [
   },
   {
     name: 'amber_read',
-    description: '读取琥珀某条的完整封存正文（amber_list / amber_search 可查 id）。正文是封存时抽取的干净 Markdown-lite 文本——原网页即使已失效，这里仍是可读副本。适用：AI 真正读完全文后做总结/观点/对比/引用。',
+    description: '读取网页封存某条的完整封存正文（amber_list / amber_search 可查 id）。正文是封存时抽取的干净 Markdown-lite 文本——原网页即使已失效，这里仍是可读副本。适用：AI 真正读完全文后做总结/观点/对比/引用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -282,7 +282,7 @@ const tools = [
   },
   {
     name: 'amber_mark',
-    description: '更新琥珀条目的状态：已读/未读、星标/取消星标、增删标签。适用：「这篇读过了」「这篇很重要存个星」「给它打个 AI 标签」。不传的动作不动。',
+    description: '更新网页封存条目的状态：已读/未读、星标/取消星标、增删标签。适用：「这篇读过了」「这篇很重要存个星」「给它打个 AI 标签」。不传的动作不动。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -315,7 +315,7 @@ const tools = [
   },
   {
     name: 'amber_quote',
-    description: '金句摘录：把一段文字存为琥珀摘录（默认带上来源条目），或列出某条（/全部）已有摘录。适用：「把这段话摘下来」「这篇里我摘过哪些金句」。摘录是琥珀的独立层，AI 后续可经 amber_search 之外的引用素材。',
+    description: '金句摘录：把一段文字存为网页封存摘录（默认带上来源条目），或列出某条（/全部）已有摘录。适用：「把这段话摘下来」「这篇里我摘过哪些金句」。摘录是网页封存的独立层，AI 后续可经 amber_search 之外的引用素材。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -367,7 +367,7 @@ const tools = [
   },
   {
     name: 'amber_delete',
-    description: '删除琥珀条目（联动清理封存正文与该条全部摘录）。星标条目也会删除——删除就是删除，不可恢复。',
+    description: '删除网页封存条目（联动清理封存正文与该条全部摘录）。星标条目也会删除——删除就是删除，不可恢复。',
     inputSchema: {
       type: 'object',
       properties: {

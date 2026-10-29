@@ -1,5 +1,5 @@
 /**
- * 琥珀面板外壳：头部（状态/心跳）+ 四 Tab（收藏 / 检索 / 摘录 / 设置）
+ * 网页封存面板外壳：头部（状态/心跳）+ 四 Tab（收藏 / 检索 / 摘录 / 设置）
  *
  * 数据源：cap.kv amber.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；网页抓取与正文抽取由后台服务原生执行（跨域问题的根本解法）。
@@ -168,7 +168,7 @@ export default function AmberPanel({ pluginId, onSendToChat }: {
     const last = data.meta?.lastTickAt
     if (!last) return { cls: 'down', text: '服务未报告心跳' }
     const age = Date.now() - last
-    if (age < 180 * 1000) return { cls: 'ok', text: `服务在线 · ${data.meta?.items ?? data.items.length} 琥珀 · 桥 ${data.meta?.bridge || '?'}` }
+    if (age < 180 * 1000) return { cls: 'ok', text: `服务在线 · ${data.meta?.items ?? data.items.length} 网页封存 · 桥 ${data.meta?.bridge || '?'}` }
     return { cls: 'stale', text: `心跳停滞 ${Math.round(age / 60000)} 分钟` }
   })()
 
@@ -180,7 +180,7 @@ export default function AmberPanel({ pluginId, onSendToChat }: {
       <div className="am-top">
         <div className="am-logo">🟡</div>
         <div className="am-tt">
-          <b>琥珀 · 网页封藏馆</b>
+          <b>网页封存 · 网页封藏馆</b>
           <small>
             <i className={`am-dot ${heartbeat.cls}`} />
             {heartbeat.text}

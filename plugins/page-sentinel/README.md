@@ -1,8 +1,8 @@
-# 网页哨兵（page-sentinel）
+# 网页监测（page-sentinel）
 
 > 盯网页变化的后台哨兵：**价格 / 库存 / 补货 / 放号 / 考位 / 演出票 / GitHub release / 文档更新 / API changelog**——变化了、命中了、恢复了，才来找你。
 
-- 面板（ActivityBar → 🎯 网页哨兵）：管理目标、看行级 diff、事件流、服务状态
+- 面板（ActivityBar → 🎯 网页监测）：管理目标、看行级 diff、事件流、服务状态
 - 后台服务：按间隔原生抓取 + 抽取 + diff + 条件评估（**唯一的抓取路径**）
 - MCP 工具（7 个 `sentinel_*`）：在聊天里直接让 AI 登记目标、试抓、查事件、分析变化
 

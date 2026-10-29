@@ -1,5 +1,5 @@
 /**
- * 磁盘雷达面板外壳：头部（状态/心跳）+ 五 Tab（总览/空间地图/垃圾清理/历史/设置）
+ * 磁盘分析面板外壳：头部（状态/心跳）+ 五 Tab（总览/空间地图/垃圾清理/历史/设置）
  *
  * 数据源：cap.kv diskrad.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零直连请求（无 CORS 面）；跨端一致由 cap.kv 单事实库保证。
@@ -190,7 +190,7 @@ export default function DiskRadarPanel({ pluginId, onSendToChat }: {
       <div className="dr-top">
         <div className="dr-logo">📡</div>
         <div className="dr-tt">
-          <b>磁盘雷达</b>
+          <b>磁盘分析</b>
           <small>
             <i className={`dr-dot ${heartbeat.cls}`} />
             {heartbeat.text}

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * wenjin-core.js —— 问津（求职投递与面试作战台账）纯函数核心
+ * wenjin-core.js —— 求职台账（求职投递与面试作战台账）纯函数核心
  *
  * 面板 / MCP 三方同源的唯一计算权威（同 qingnang/changqi 范式）：
  *   - 全部派生（管道/跟进/日程/漏斗/offer 年化/问题库/CSV）都是纯函数，

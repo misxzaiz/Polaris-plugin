@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（启幕面板专用，与 pocket-ledger / shouzha 同一模式）
+ * 宿主 API 访问层（PPT 工坊面板专用，与 pocket-ledger / shouzha 同一模式）
  */
 export type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>
 

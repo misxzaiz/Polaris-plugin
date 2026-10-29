@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（泉府面板）
+ * 通信层 + 数据访问（贷款台账面板）
  *
  * 面板经宿主 invoke 通道调 router_dispatch，与 MCP server 读写
  * 同一个 cap.kv 的 quanfu.* 键空间（无后台服务，派生一律 shared/core 现算）。
@@ -136,7 +136,7 @@ export async function importAll(json: string): Promise<{ loans: number; events: 
   try { parsed = JSON.parse(json) } catch { throw new Error('不是合法 JSON') }
   const p = parsed as { kind?: string; loans?: Loan[]; events?: LoanEvent[]; settings?: Settings }
   if (!p || p.kind !== 'quanfu-export' || !Array.isArray(p.loans) || !Array.isArray(p.events)) {
-    throw new Error('不是泉府导出文件（缺 kind: quanfu-export）')
+    throw new Error('不是贷款台账导出文件（缺 kind: quanfu-export）')
   }
   let nLoan = 0
   let nEv = 0

@@ -107,7 +107,7 @@ export default function GezhiPanel(_props: { pluginId?: string, onSendToChat?: (
       <div className="gz-top">
         <div className="gz-logo">▦</div>
         <div className="gz-tt">
-          <b>格致 · Excel 工厂</b>
+          <b>Excel 工坊 · Excel 工厂</b>
           <small>粘贴数据或让 AI 做，交付真实可编辑 .xlsx</small>
         </div>
         <div className="gz-tabs">

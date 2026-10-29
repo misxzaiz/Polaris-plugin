@@ -197,7 +197,7 @@ export default function SettingsTab({ data, reload, showToast }: {
       <div className="da-sec"><i className="da-bar" />关于</div>
       <div className="da-card">
         <div className="da-card-b da-sub">
-          数据方舟 data-ark v0.1.0 —— Polaris 数据根的备份/恢复引擎。
+          数据备份 data-ark v0.1.0 —— Polaris 数据根的备份/恢复引擎。
           <br />· 内容寻址去重（CAS+gzip）：不变文件全库只存一份，增量快照只记变化；
           <br />· GFS 保留轮换 + 引用 GC、单写者租约（双 Polaris 实例自动主备）、崩溃恢复（tmp 清理/manifest 最后写）；
           <br />· 热文件协议：读写冲突自动重试，仍不稳定则诚实标记跳过，绝不炸整份快照；

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * changqi MCP Server —— 常契（订阅契约账簿）的 AI 工具层（无状态透传，零依赖）
+ * changqi MCP Server —— 订阅台账（订阅契约账簿）的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的订阅管理意图翻译为 cap.kv 的 changqi.* 读写；
  * 全部计算逻辑走 shared/subs-core.js（与面板同一权威，口径不漂移）。
@@ -196,7 +196,7 @@ function resolveDayStr(input, now) {
 const tools = [
   {
     name: 'changqi_add',
-    description: '常契·订阅入册。从对话提取订阅信息后调用（"我在 iCloud 开了月度会员 6 元"→ name=iCloud会员 amount=6 cycle=monthly channel=apple）。amount 为每期金额；cycle 为扣费周期；anchorDate 为上次扣费日或账单上的下次扣费日（缺省今天）；channel 为扣费渠道（决定取消引导文案）；trialEndsAt 提供则入为试用期（转正前会预警）。入册成功即回报月均支出。',
+    description: '订阅台账·订阅入册。从对话提取订阅信息后调用（"我在 iCloud 开了月度会员 6 元"→ name=iCloud会员 amount=6 cycle=monthly channel=apple）。amount 为每期金额；cycle 为扣费周期；anchorDate 为上次扣费日或账单上的下次扣费日（缺省今天）；channel 为扣费渠道（决定取消引导文案）；trialEndsAt 提供则入为试用期（转正前会预警）。入册成功即回报月均支出。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -242,7 +242,7 @@ const tools = [
   },
   {
     name: 'changqi_list',
-    description: '常契·台账列表。按状态（active/trial/cancelled，缺省全部非取消=进行中+试用）与关键词过滤，按下期扣费日排序。适合"我有哪些订阅""看看已取消的"。',
+    description: '订阅台账·台账列表。按状态（active/trial/cancelled，缺省全部非取消=进行中+试用）与关键词过滤，按下期扣费日排序。适合"我有哪些订阅""看看已取消的"。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -277,7 +277,7 @@ const tools = [
   },
   {
     name: 'changqi_update',
-    description: '常契·修改订阅字段（部分补丁）。可改 name/amount/cycle/cycleDays/anchorDate/channel/category/trialEndsAt/note；trialEndsAt 传空串退出试用。改金额/周期后立即回报新月均。',
+    description: '订阅台账·修改订阅字段（部分补丁）。可改 name/amount/cycle/cycleDays/anchorDate/channel/category/trialEndsAt/note；trialEndsAt 传空串退出试用。改金额/周期后立即回报新月均。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -324,7 +324,7 @@ const tools = [
   },
   {
     name: 'changqi_advance',
-    description: '常契·确认"这期已经扣过了"。红条消退、下期自动顺延（保留原扣费节奏）。适合用户说"这个扣过了""刚续费了"。paidDate 缺省今天。',
+    description: '订阅台账·确认"这期已经扣过了"。红条消退、下期自动顺延（保留原扣费节奏）。适合用户说"这个扣过了""刚续费了"。paidDate 缺省今天。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -351,7 +351,7 @@ const tools = [
   },
   {
     name: 'changqi_cancel',
-    description: '常契·取消订阅（软取消：状态置为已取消，台账留档可查，不再提醒）。返回会附带该渠道关闭自动续费的路径指引（App 内取消往往不彻底）。用户说"取消 xx 订阅""退订"时调用。',
+    description: '订阅台账·取消订阅（软取消：状态置为已取消，台账留档可查，不再提醒）。返回会附带该渠道关闭自动续费的路径指引（App 内取消往往不彻底）。用户说"取消 xx 订阅""退订"时调用。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: '订阅 id' } },
@@ -374,7 +374,7 @@ const tools = [
   },
   {
     name: 'changqi_delete',
-    description: '常契·彻底删除订阅记录（不可恢复，与软取消不同）。必须 confirm=true 才执行；一般场景建议 changqi_cancel（留档）。',
+    description: '订阅台账·彻底删除订阅记录（不可恢复，与软取消不同）。必须 confirm=true 才执行；一般场景建议 changqi_cancel（留档）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -393,7 +393,7 @@ const tools = [
   },
   {
     name: 'changqi_upcoming',
-    description: '常契·即将扣费窗口：未来 N 天（缺省 7）内会扣费的订阅清单，含今天将扣与试用转正预警。适合"这周要扣什么""最近有什么要续费"。',
+    description: '订阅台账·即将扣费窗口：未来 N 天（缺省 7）内会扣费的订阅清单，含今天将扣与试用转正预警。适合"这周要扣什么""最近有什么要续费"。',
     inputSchema: {
       type: 'object',
       properties: { days: { type: 'integer', description: '窗口天数（缺省 7，上限 90）' } },
@@ -420,7 +420,7 @@ const tools = [
   },
   {
     name: 'changqi_summary',
-    description: '常契·订阅透视：月均/年化总额、本月将扣笔数与金额、渠道分布、分类分布、最大三笔、试用期占用。适合"我订阅一年花多少""钱都花在哪类订阅上"。',
+    description: '订阅台账·订阅透视：月均/年化总额、本月将扣笔数与金额、渠道分布、分类分布、最大三笔、试用期占用。适合"我订阅一年花多少""钱都花在哪类订阅上"。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const settings = await loadSettings();
@@ -452,7 +452,7 @@ const tools = [
   },
   {
     name: 'changqi_cancel_guide',
-    description: '常契·查询某渠道关闭自动续费的路径（不改数据）。渠道：alipay 支付宝 / wechat 微信 / apple Apple / card 银行卡 / other 其他。',
+    description: '订阅台账·查询某渠道关闭自动续费的路径（不改数据）。渠道：alipay 支付宝 / wechat 微信 / apple Apple / card 银行卡 / other 其他。',
     inputSchema: {
       type: 'object',
       properties: { channel: { type: 'string', enum: core.CHANNELS, description: '扣费渠道' } },

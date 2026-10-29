@@ -152,7 +152,7 @@ async function testFetch(spec, onProgress) {
       return r;
     }
   }
-  return { ok: false, error: "\u8BD5\u6293\u8D85\u65F6\uFF1A\u540E\u53F0\u670D\u52A1\u53EF\u80FD\u672A\u8FD0\u884C\uFF08\u8BBE\u7F6E \u2192 \u63D2\u4EF6 \u2192 \u7F51\u9875\u54E8\u5175 \u67E5\u770B\u670D\u52A1\u72B6\u6001\uFF09" };
+  return { ok: false, error: "\u8BD5\u6293\u8D85\u65F6\uFF1A\u540E\u53F0\u670D\u52A1\u53EF\u80FD\u672A\u8FD0\u884C\uFF08\u8BBE\u7F6E \u2192 \u63D2\u4EF6 \u2192 \u7F51\u9875\u76D1\u6D4B \u67E5\u770B\u670D\u52A1\u72B6\u6001\uFF09" };
 }
 async function listServiceStatus() {
   const r = await capDispatch("cap.pluginServiceManager", { action: "list_status" });
@@ -598,7 +598,7 @@ function FeedTab({ onSendToChat, showToast, markRead, unread }) {
   const shown = filter ? (events || []).filter((e) => (e.targetName || e.targetId) === filter) : events || [];
   const sendToChat = async (ev) => {
     const lines = [
-      `\u3010\u7F51\u9875\u54E8\u5175\u3011\u76D1\u63A7\u300C${ev.targetName || ev.targetId}\u300D${EVENT_TYPE_META[ev.type]?.label || ev.type}\uFF1A${ev.summary}`,
+      `\u3010\u7F51\u9875\u76D1\u6D4B\u3011\u76D1\u63A7\u300C${ev.targetName || ev.targetId}\u300D${EVENT_TYPE_META[ev.type]?.label || ev.type}\uFF1A${ev.summary}`,
       `\u65F6\u95F4\uFF1A${new Date(ev.at).toLocaleString("zh-CN", { hour12: false })}`
     ];
     if (ev.diff && ev.diff.length) {
@@ -719,7 +719,7 @@ function SettingsTab({ pluginId, snap, reload, showToast }) {
     }
   };
   const clearAll = async () => {
-    if (!window.confirm("\u5220\u9664\u7F51\u9875\u54E8\u5175\u7684\u5168\u90E8\u6570\u636E\uFF08\u76EE\u6807/\u72B6\u6001/\u5FEB\u7167/\u4E8B\u4EF6/\u8BBE\u7F6E\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) return;
+    if (!window.confirm("\u5220\u9664\u7F51\u9875\u76D1\u6D4B\u7684\u5168\u90E8\u6570\u636E\uFF08\u76EE\u6807/\u72B6\u6001/\u5FEB\u7167/\u4E8B\u4EF6/\u8BBE\u7F6E\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) return;
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith("sentinel."));
       await Promise.all(keys.map((k) => kvDel(k)));
@@ -896,7 +896,7 @@ function SettingsTab({ pluginId, snap, reload, showToast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx3("div", { className: "ps-card", children: /* @__PURE__ */ jsxs3("div", { className: "ps-card-b ps-sub", children: [
-      "\u7F51\u9875\u54E8\u5175 page-sentinel v0.1.0 \u2014\u2014 \u76EF\u7F51\u9875\u53D8\u5316\u7684\u540E\u53F0\u54E8\u5175\uFF1A\u4EF7\u683C / \u5E93\u5B58 / \u653E\u53F7 / \u8003\u4F4D / release / \u6587\u6863\u66F4\u65B0\u3002",
+      "\u7F51\u9875\u76D1\u6D4B page-sentinel v0.1.0 \u2014\u2014 \u76EF\u7F51\u9875\u53D8\u5316\u7684\u540E\u53F0\u54E8\u5175\uFF1A\u4EF7\u683C / \u5E93\u5B58 / \u653E\u53F7 / \u8003\u4F4D / release / \u6587\u6863\u66F4\u65B0\u3002",
       /* @__PURE__ */ jsx3("br", {}),
       "\xB7 \u6D4F\u89C8\u5668\u6709\u540C\u6E90\u7B56\u7565\uFF0C\u672C\u63D2\u4EF6\u628A\u6293\u53D6\u4E0B\u6C89\u5230\u540E\u53F0\u670D\u52A1\u539F\u751F\u6267\u884C\uFF0C\u5929\u7136\u65E0\u8DE8\u57DF\u95EE\u9898\uFF1B",
       /* @__PURE__ */ jsx3("br", {}),
@@ -1071,7 +1071,7 @@ function SentinelPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs4("div", { className: "ps-top", children: [
       /* @__PURE__ */ jsx4("div", { className: "ps-logo", children: "\u{1F6E1}\uFE0F" }),
       /* @__PURE__ */ jsxs4("div", { className: "ps-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u7F51\u9875\u54E8\u5175" }),
+        /* @__PURE__ */ jsx4("b", { children: "\u7F51\u9875\u76D1\u6D4B" }),
         /* @__PURE__ */ jsxs4("small", { children: [
           /* @__PURE__ */ jsx4("i", { className: `ps-dot ${heartbeat.cls}` }),
           heartbeat.text

@@ -1,5 +1,5 @@
 /**
- * 泉府面板外壳：头部 + 四 Tab（总览 / 测算 / 贷款 / 设置）
+ * 贷款台账面板外壳：头部 + 四 Tab（总览 / 测算 / 贷款 / 设置）
  *
  * 数据源：cap.kv quanfu.* 键空间（经宿主 invoke → router_dispatch）。
  * 无后台服务——还款表/状态/三方案全部经 shared/core 本地现算（与 MCP 同源同口径）。
@@ -166,7 +166,7 @@ export default function QuanfuPanel({ pluginId, onSendToChat }: {
       <div className="qf-top">
         <div className="qf-logo">🏛️</div>
         <div className="qf-tt">
-          <b>泉府</b>
+          <b>贷款台账</b>
           <small>贷款台账 · {states.filter((s) => s.active && !s.settled).length} 笔在还 · 数据仅存本机</small>
         </div>
         <div className="qf-tabs">
@@ -190,7 +190,7 @@ export default function QuanfuPanel({ pluginId, onSendToChat }: {
           {tab === 'whatif' && <WhatifTab {...tabProps} states={states} />}
           {tab === 'loans' && <LoansTab {...tabProps} states={states} />}
           {tab === 'settings' && <SettingsTab {...tabProps} />}
-          <div className="qf-foot">泉府只做贷款记录与测算：标准等额本息/等额本金/先息后本公式、逐期分级舍入，<br />与银行实际计息可能有分级出入；不构成金融建议。数据仅存本机（cap.kv）。</div>
+          <div className="qf-foot">贷款台账只做贷款记录与测算：标准等额本息/等额本金/先息后本公式、逐期分级舍入，<br />与银行实际计息可能有分级出入；不构成金融建议。数据仅存本机（cap.kv）。</div>
         </div>
       </div>
       {toast && <div className={`qf-toast ${toast.bad ? 'bad' : ''}`}>{toast.msg}</div>}

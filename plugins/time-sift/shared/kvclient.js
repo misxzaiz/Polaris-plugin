@@ -1,6 +1,6 @@
 'use strict';
 /**
- * kvclient.js —— Polaris IPC Bridge 客户端（拾光机专用，零依赖）
+ * kvclient.js —— Polaris IPC Bridge 客户端（会话记忆专用，零依赖）
  *
  * 与 feed-radar / clip-relay / page-sentinel 的 kvclient 同一套验证过的样板（勿改协议）：
  * 全部数据读写经 router_dispatch（target=cap.kv）透传到宿主 SqliteStorage domain=kv，
@@ -93,7 +93,7 @@ async function resolveEndpoint(appConfigDir) {
   return { host, port: basePort, token, via: 'fallback' };
 }
 
-/** 从 anchor.json 解析数据根（拾光机读源需要；与 kv 自发现同一候选序列） */
+/** 从 anchor.json 解析数据根（会话记忆读源需要；与 kv 自发现同一候选序列） */
 function resolveDataRoot(appConfigDir) {
   for (const anchor of [
     process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris', 'anchor.json') : '',

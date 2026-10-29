@@ -1,5 +1,5 @@
 /**
- * 入口：故人面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：人情账本面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import TetherPanel from './Panel'
 

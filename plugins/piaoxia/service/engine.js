@@ -1,12 +1,12 @@
 'use strict';
 /**
- * engine.js —— 票匣解析引擎（service 与 MCP 共用的唯一实现）
+ * engine.js —— 发票保险库解析引擎（service 与 MCP 共用的唯一实现）
  *
  * 职责：把一份电子发票文件（PDF / 数电票 XML）解析成 shared/core 可归一化的字段草稿。
  * 设计约束：
  *   - 全本地：vendor/pdfjs.min.js 抽取 PDF 文本层，零外网、零 OCR。
  *   - 解析失败永不抛给上层崩溃，统一返回 { ok:false, error } + 中文可操作原因；
- *     「是扫描件没有文字层」是明确告知的边界（票匣不做 OCR），引导手动录入。
+ *     「是扫描件没有文字层」是明确告知的边界（发票保险库不做 OCR），引导手动录入。
  *   - 提取策略：标签锚定（发票号码/价税合计/开票日期…）优先，位置配对（买卖方
  *     名称与税号按出现顺序对齐）兜底；全文与去空白两种视图配合匹配。
  *   - 金额只取「确实读到的」，绝不编造：缺字段宁缺勿造，cross-check 不一致仅告警。
@@ -82,7 +82,7 @@ async function pdfLines(bytes, label) {
     pdf = await task.promise;
   } catch (e) {
     const msg = String((e && e.message) || e);
-    if (/password/i.test(msg)) throw new Error((label || '文件') + ' 是密码保护的 PDF：票匣不做破解，请先解除密码后再收');
+    if (/password/i.test(msg)) throw new Error((label || '文件') + ' 是密码保护的 PDF：发票保险库不做破解，请先解除密码后再收');
     throw new Error((label || '文件') + ' 无法解析为 PDF：文件可能损坏或不是标准 PDF');
   }
   try {
@@ -93,7 +93,7 @@ async function pdfLines(bytes, label) {
       for (const line of itemsToLines(tc.items)) all.push(line);
     }
     if (!all.length) {
-      throw new Error((label || '文件') + ' 没有可读的文字层：它很可能是扫描件/图片型 PDF。票匣不做 OCR，请在票册手动录入这张票');
+      throw new Error((label || '文件') + ' 没有可读的文字层：它很可能是扫描件/图片型 PDF。发票保险库不做 OCR，请在票册手动录入这张票');
     }
     return all;
   } finally {
@@ -458,7 +458,7 @@ async function parseAuto(input) {
       return { ok: true, draft: fields, warnings, type };
     }
     if (type === 'zip') {
-      return { ok: false, error: label + ' 是压缩包（OFD 版式/zip）。票匣暂只支持 PDF 与 XML，请从税务局下载 PDF 或 XML 版式', type };
+      return { ok: false, error: label + ' 是压缩包（OFD 版式/zip）。发票保险库暂只支持 PDF 与 XML，请从税务局下载 PDF 或 XML 版式', type };
     }
     return { ok: false, error: label + ' 不是可识别的电子发票文件（需要 PDF 或 XML）', type };
   } catch (e) {

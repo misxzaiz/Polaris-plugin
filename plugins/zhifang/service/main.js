@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * main.js —— 纸坊（zhifang）后台服务（node >= 18）
+ * main.js —— PDF 工坊（zhifang）后台服务（node >= 18）
  *
  * 职责：
  *   - 面板的文件操作引擎入口：面板把用户拖入的文件字节（base64）POST 到

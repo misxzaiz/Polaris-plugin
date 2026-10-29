@@ -1,6 +1,6 @@
 'use strict';
 /**
- * lib.js —— 网哨纯逻辑层（零依赖，可离线单测）
+ * lib.js —— 网络哨兵纯逻辑层（零依赖，可离线单测）
  *
  * 设计约束（同 pocket-host/service/lib.js）：本文件不触碰网络/文件系统，
  * 所有函数输入输出均为纯数据，test/run-tests.mjs 直接驱动。

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * radar.js —— 订阅雷达后台服务（零依赖，node >= 18，需全局 fetch）
+ * radar.js —— RSS 订阅后台服务（零依赖，node >= 18，需全局 fetch）
  *
  * 职责（radar.* 键空间里"状态/文章/正文"的单写权威；feed 定义可由面板/MCP 写）：
  *   - 按间隔抓订阅源：条件请求（ETag / If-Modified-Since，304 零成本回跳）、

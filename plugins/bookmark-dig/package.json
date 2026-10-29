@@ -2,7 +2,7 @@
   "name": "bookmark-dig-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "bookmark-dig 插件面板（打包用）：书签考古",
+  "description": "bookmark-dig 插件面板（打包用）：书签体检",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

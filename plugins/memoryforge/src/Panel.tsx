@@ -1,5 +1,5 @@
 /**
- * 记忆熔炉面板外壳：头部（连击/今日进度速览）+ 四 Tab（复习 / 卡库 / 统计 / 设置）
+ * 记忆卡片面板外壳：头部（连击/今日进度速览）+ 四 Tab（复习 / 卡库 / 统计 / 设置）
  * 数据面：cap.kv memoryforge.*（经宿主 invoke → router_dispatch），跨端同一副牌。
  * 计算权威：shared/srs-core.js（与 MCP 同源）。
  */
@@ -170,7 +170,7 @@ export default function ForgePanel(_props: { pluginId: string; onSendToChat?: (m
       <div className="mf-top">
         <div className="mf-logo">🔥</div>
         <div className="mf-tt">
-          <b>记忆熔炉</b>
+          <b>记忆卡片</b>
           <small>{head}</small>
         </div>
         <div className="mf-tabs">

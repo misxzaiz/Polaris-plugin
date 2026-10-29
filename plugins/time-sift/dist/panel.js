@@ -355,7 +355,7 @@ function SearchTab({ meta }) {
     error && /* @__PURE__ */ jsx2("div", { className: "ts-err", children: error }),
     serviceBusy && !error && /* @__PURE__ */ jsx2("div", { className: "ts-sub", style: { padding: "0 18px 8px" }, children: "\u9996\u6B21\u5EFA\u7D22\u5F15\u8FDB\u884C\u4E2D\u2014\u2014\u73B0\u5728\u80FD\u641C\u5230\u7684\u662F\u5DF2\u626B\u5B8C\u7684\u90E8\u5206\uFF0C\u626B\u5B8C\u81EA\u52A8\u9F50\u5168\u3002" }),
     !searched && !error && /* @__PURE__ */ jsxs2("div", { className: "ts-empty", children: [
-      /* @__PURE__ */ jsx2("b", { children: "\u62FE\u5149\u673A\uFF1A\u627E\u56DE\u4F60\u548C AI \u804A\u8FC7\u7684\u4E00\u5207" }),
+      /* @__PURE__ */ jsx2("b", { children: "\u4F1A\u8BDD\u8BB0\u5FC6\uFF1A\u627E\u56DE\u4F60\u548C AI \u804A\u8FC7\u7684\u4E00\u5207" }),
       "\u8F93\u5165\u5173\u952E\u8BCD\u641C\u5386\u53F2\u4F1A\u8BDD\u2014\u2014\u300C\u4E0A\u6B21\u90A3\u4E2A JSONL \u89E3\u6790 bug \u600E\u4E48\u4FEE\u7684\u300D\u300C\u6211\u804A\u8FC7 XX \u65B9\u6848\u7684\u4F1A\u8BDD\u300D\u3002",
       /* @__PURE__ */ jsx2("br", {}),
       "\u4E5F\u53EF\u4EE5\u76F4\u63A5\u5728\u804A\u5929\u91CC\u5BF9 AI \u8BF4\u300C\u5E2E\u6211\u627E\u627E\u4EE5\u524D\u5173\u4E8E XX \u7684\u4F1A\u8BDD\u300D\uFF08sift_search \u5DE5\u5177\uFF09\u3002"
@@ -932,7 +932,7 @@ function SettingsTab({ meta, onMetaRefresh }) {
       /* @__PURE__ */ jsx5("span", { className: "ts-bar" }),
       " \u9690\u79C1"
     ] }),
-    /* @__PURE__ */ jsx5("div", { className: "ts-card", children: /* @__PURE__ */ jsx5("div", { className: "ts-card-b ts-sub", children: "\u62FE\u5149\u673A\u662F\u7EAF\u672C\u5730\u63D2\u4EF6\uFF1A\u6570\u636E\u6E90\u53EA\u8BFB\uFF0C\u7D22\u5F15\u7F13\u5B58\u843D\u5728\u5E94\u7528\u914D\u7F6E\u76EE\u5F55\uFF08time-sift/\uFF09\uFF0C\u5BF9\u5916\u96F6\u7F51\u7EDC\u8BF7\u6C42\u3002 \u53EF\u89C1\u6570\u636E\u7ECF cap.kv \u5728\u4F60\u7684\u8BBE\u5907\u4E4B\u95F4\u540C\u6B65\uFF08\u684C\u9762/\u624B\u673A/Web \u540C\u4E00\u8D26\u53F7\uFF09\uFF0C\u4E0D\u7ECF\u4EFB\u4F55\u7B2C\u4E09\u65B9\u3002" }) })
+    /* @__PURE__ */ jsx5("div", { className: "ts-card", children: /* @__PURE__ */ jsx5("div", { className: "ts-card-b ts-sub", children: "\u4F1A\u8BDD\u8BB0\u5FC6\u662F\u7EAF\u672C\u5730\u63D2\u4EF6\uFF1A\u6570\u636E\u6E90\u53EA\u8BFB\uFF0C\u7D22\u5F15\u7F13\u5B58\u843D\u5728\u5E94\u7528\u914D\u7F6E\u76EE\u5F55\uFF08time-sift/\uFF09\uFF0C\u5BF9\u5916\u96F6\u7F51\u7EDC\u8BF7\u6C42\u3002 \u53EF\u89C1\u6570\u636E\u7ECF cap.kv \u5728\u4F60\u7684\u8BBE\u5907\u4E4B\u95F4\u540C\u6B65\uFF08\u684C\u9762/\u624B\u673A/Web \u540C\u4E00\u8D26\u53F7\uFF09\uFF0C\u4E0D\u7ECF\u4EFB\u4F55\u7B2C\u4E09\u65B9\u3002" }) })
   ] });
 }
 
@@ -1037,7 +1037,7 @@ function TimeSiftPanel({ pluginId }) {
     /* @__PURE__ */ jsxs6("div", { className: "ts-top", children: [
       /* @__PURE__ */ jsx6("div", { className: "ts-logo", children: "\u23F3" }),
       /* @__PURE__ */ jsxs6("div", { className: "ts-tt", children: [
-        /* @__PURE__ */ jsx6("b", { children: "\u62FE\u5149\u673A" }),
+        /* @__PURE__ */ jsx6("b", { children: "\u4F1A\u8BDD\u8BB0\u5FC6" }),
         /* @__PURE__ */ jsxs6("small", { children: [
           /* @__PURE__ */ jsx6("span", { className: `ts-dot ${status}` }),
           statusText

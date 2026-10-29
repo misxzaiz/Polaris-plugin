@@ -94,7 +94,7 @@ export default function IndexTab({ stats, onStats }: { stats: WeibianStats | nul
       const r = await apiProbe(newRoot.trim() || undefined)
       setProbe(r)
       if (r.checked && !r.checked.exists) setErr('路径不存在，请检查盘符与拼写')
-      else if (r.checked && !r.checked.isDir) setErr('这是一个文件——韦编按文件夹收录（索引其所在文件夹即可）')
+      else if (r.checked && !r.checked.isDir) setErr('这是一个文件——文档检索按文件夹收录（索引其所在文件夹即可）')
       else if (r.checked && r.checked.isDir) await addRoot(r.checked.path)
     } catch (e) {
       setErr(e instanceof ServiceUnavailableError ? e.message : String((e as Error).message || e))

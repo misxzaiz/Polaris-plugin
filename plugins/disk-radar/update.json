@@ -1,6 +1,6 @@
 {
   "id": "disk-radar",
-  "name": "磁盘雷达",
+  "name": "磁盘分析",
   "version": "0.1.0",
   "description": "把磁盘变成可对话的空间资产：后台服务原生遍历目录（零外网请求、零跨域面——面板全走宿主通道+cap.kv），快照式记录每个根目录的空间解剖与历史增量，两次完整快照间按目录归因增减——「谁偷了我的磁盘」；开发垃圾专项猎手（node_modules/target/dist/bin/obj/缓存，按兄弟文件锚定判定，可解释低误报）；两步删除安全模型——先移入同卷隔离区可恢复，确认后才彻底删除，AI 工具全部只读永不删除。AI 经 disk_* 六工具对话式扫描/归因/报告；面板五 Tab：总览/空间地图（矩形树图）/垃圾清理/历史/设置，桌面与手机 Web 看同一份磁盘状态。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "diskRadar",
         "icon": "Files",
         "labelKey": "plugins.diskRadar",
-        "labelDefault": "磁盘雷达",
+        "labelDefault": "磁盘分析",
         "order": 78
       }
     ],
@@ -25,7 +25,11 @@
         "id": "disk-radar-service",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/service/radar.js", "{{port}}", "{{appConfigDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/service/radar.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
         "autoStart": true,
@@ -39,7 +43,10 @@
         "id": "disk-radar",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

@@ -1,5 +1,5 @@
 /**
- * 入口：书签考古面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：书签体检面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import BookmarkDigPanel from './Panel'
 

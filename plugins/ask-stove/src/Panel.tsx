@@ -1,5 +1,5 @@
 /**
- * 问灶面板外壳：头部（服务状态 + 五 Tab + 设置）+ 路由
+ * 食材管家面板外壳：头部（服务状态 + 五 Tab + 设置）+ 路由
  * 数据面：cap.kv stove.*（经宿主 invoke → router_dispatch），跨端一致。
  * 网络面：菜谱抓取经命令邮箱下发给后台服务，面板零直连外网。
  */
@@ -137,7 +137,7 @@ export default function AskStovePanel(props: {
       <div className="as-top">
         <div className="as-logo">🍲</div>
         <div className="as-tt">
-          <b>问灶</b>
+          <b>食材管家</b>
           <small>
             <span className="as-dot" style={{ display: 'inline-block', marginRight: 5, ...(metaFresh ? {} : { background: '#F85149', boxShadow: 'none' }) }} />
             {metaFresh ? `服务在线 · ${timeAgo(ov.meta!.lastTickAt!)}` : '服务未连上（可在设置里重启）'}

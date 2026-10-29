@@ -1,0 +1,11 @@
+# 测试与演示样例（不进安装包）
+test/
+fixtures/
+
+# 打包产物与日志
+*.zip
+*.log
+.tmp-pack-*/
+
+# 打包规则自身
+.pluginignore

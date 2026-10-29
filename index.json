@@ -67,7 +67,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "c4bd3dfd8abc6b1acff7b37d6438193f6fc865404bd035ed910a82ed8b75fe61",
+      "sha256": "a89f29108663782505d7b4ea18ed4bec3b43d59682f22301959ddefde716bad6",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true,
@@ -80,7 +80,7 @@
         {
           "version": "1.2.1",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
-          "sha256": "c4bd3dfd8abc6b1acff7b37d6438193f6fc865404bd035ed910a82ed8b75fe61"
+          "sha256": "a89f29108663782505d7b4ea18ed4bec3b43d59682f22301959ddefde716bad6"
         }
       ]
     },
@@ -644,9 +644,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/data-ark",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/data-ark.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@data-ark-v0.1.0/plugins/data-ark/data-ark.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/update.json",
-      "sha256": "183b6468b4bd4aaf6e21fb9e396e2b96bcf5c479ba5af2b2ca6613f1399f6cf8",
+      "sha256": "111041d50cde231866e76b07d7510051df6a5d5c35f9a32dee1ae7da9b80e043",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -657,7 +657,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/data-ark.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@data-ark-v0.1.0/plugins/data-ark/data-ark.zip"
         }
       ]
     },
@@ -679,9 +679,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/clip-relay",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@clip-relay-v0.1.0/plugins/clip-relay/clip-relay.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/update.json",
-      "sha256": "cc2323461c78f3eed7fc03feaa5f85bcda4620738ed8831484434764c0ff4908",
+      "sha256": "b47ac1a3d998deb7a173c455c36ceda28b4c4a9ccb056ce8b1fb97d2b7a20f26",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -692,7 +692,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/clip-relay.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@clip-relay-v0.1.0/plugins/clip-relay/clip-relay.zip"
         }
       ]
     },
@@ -715,9 +715,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/page-sentinel",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@page-sentinel-v0.1.0/plugins/page-sentinel/page-sentinel.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/update.json",
-      "sha256": "a554f1b9976b128aea5353248438905fcb0965a4abc1b2c6129504a3a3b178fd",
+      "sha256": "6d155199b48e21e3c8de67b6119569b30b877ef26f6c03fe70bef2329aefb915",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -729,7 +729,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/page-sentinel.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@page-sentinel-v0.1.0/plugins/page-sentinel/page-sentinel.zip"
         }
       ]
     },
@@ -752,9 +752,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/feed-radar",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@feed-radar-v0.1.0/plugins/feed-radar/feed-radar.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/update.json",
-      "sha256": "eb90d94c4be188c3acb89f84883e1c92c61a39a82a9fe9899b988f99324b1672",
+      "sha256": "54b83f39949598e5647539bee70f2eb694883dae71a6fe2f0a290939beee83a1",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -766,7 +766,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/feed-radar.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@feed-radar-v0.1.0/plugins/feed-radar/feed-radar.zip"
         }
       ]
     },
@@ -788,9 +788,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-ledger",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.2.0/plugins/pocket-ledger/pocket-ledger.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
-      "sha256": "4d844cc19ddc034fc4736c67aabc0ce43cca242f3ebfeb27ed791349290d84fc",
+      "sha256": "0acfa4ab5dd4a23fc251024d31f72df6c22ce52c7552a5f1cfabce72455848ae",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -800,7 +800,7 @@
       "versions": [
         {
           "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/pocket-ledger.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.2.0/plugins/pocket-ledger/pocket-ledger.zip"
         },
         {
           "version": "0.1.0",
@@ -826,9 +826,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/memoryforge",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/memoryforge.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@memoryforge-v0.1.0/plugins/memoryforge/memoryforge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/update.json",
-      "sha256": "5a401cb2df5245e29dd86c24a6f5e8426997544a7168ceb6561f420972e7efd7",
+      "sha256": "fa0e34a62ab68b830bbebbffbd4cb3f71a14302c96cb255b00f63c620d8c149b",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -839,7 +839,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/memoryforge.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@memoryforge-v0.1.0/plugins/memoryforge/memoryforge.zip"
         }
       ]
     },
@@ -901,9 +901,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/paper-radar",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/paper-radar.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@paper-radar-v0.1.0/plugins/paper-radar/paper-radar.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/update.json",
-      "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6",
+      "sha256": "ca9d234a2c230d3800c516eeaf0c60da0569fb9c17f1f715ef46f98d1f8b6247",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -915,8 +915,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@paper-radar-v0.1.0/plugins/paper-radar/paper-radar.zip",
-          "sha256": "28f2793fb2bdc03c27ea4a6ec52b04b6f44ddf951df6b07cd2e4052003e788a6"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@paper-radar-v0.1.0/plugins/paper-radar/paper-radar.zip"
         }
       ]
     },
@@ -968,8 +967,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip",
-          "sha256": "1e832e11738d86e1273253ff5e4b9f4f6467e36926cc86ad52a70c0530799652"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@bookmark-dig-v0.1.0/plugins/bookmark-dig/bookmark-dig.zip"
         }
       ],
       "id": "bookmark-dig",
@@ -986,9 +984,9 @@
       "icon": "BookOpen",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/bookmark-dig",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/bookmark-dig.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@bookmark-dig-v0.1.0/plugins/bookmark-dig/bookmark-dig.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bookmark-dig/update.json",
-      "sha256": "1e832e11738d86e1273253ff5e4b9f4f6467e36926cc86ad52a70c0530799652",
+      "sha256": "bce51234cd8ba9e4142e3c61963ada0fdfd4bd185babf3267093ee80db86c740",
       "permissions": {
         "aiToolAccess": true
       },
@@ -1050,9 +1048,9 @@
       "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@sundial-v0.1.0/plugins/sundial/sundial.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
-      "sha256": "f220f71fa04eb811868e0eee29c41d55ed8ab0b2f3d129f46e43c4b729a1041b",
+      "sha256": "a770c4bdff32f9a77d5be249af52ac03b75c85630185bad99e475912ef305d70",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1063,8 +1061,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/sundial.zip",
-          "sha256": "f220f71fa04eb811868e0eee29c41d55ed8ab0b2f3d129f46e43c4b729a1041b"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@sundial-v0.1.0/plugins/sundial/sundial.zip"
         }
       ]
     },
@@ -1088,9 +1085,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/time-sift",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/time-sift.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@time-sift-v0.1.0/plugins/time-sift/time-sift.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/update.json",
-      "sha256": "5293eb867d71db35bce9aaa88385120d30197630c88f66f892a9252c70ef0bf5",
+      "sha256": "d650d5c8fce72d1069a724a3d64a9ea80c2d8f9cb7c07d8419fc39d961076649",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1101,8 +1098,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/time-sift.zip",
-          "sha256": "5293eb867d71db35bce9aaa88385120d30197630c88f66f892a9252c70ef0bf5"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@time-sift-v0.1.0/plugins/time-sift/time-sift.zip"
         }
       ]
     },
@@ -1128,9 +1124,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/net-sentinel",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@net-sentinel-v0.1.0/plugins/net-sentinel/net-sentinel.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/update.json",
-      "sha256": "94ffa9c6cdfdeedfa09ba60e4772f4c98d7ba9afb1ec0f91d6623798bb716a84",
+      "sha256": "a4c527bbace7ba7d9297d728073d6dffe807a029d8a40df48fd7b3ecb231e059",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1142,7 +1138,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/net-sentinel.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@net-sentinel-v0.1.0/plugins/net-sentinel/net-sentinel.zip"
         }
       ]
     },
@@ -1164,9 +1160,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/disk-radar",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@disk-radar-v0.1.0/plugins/disk-radar/disk-radar.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/update.json",
-      "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
+      "sha256": "37000ea6bfa1a16573ff800172623643dc689138567b5551d7d6e9f05d8d3ae8",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1177,9 +1173,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/disk-radar.zip",
-          "sha256": "8743dfe6018a09a2c107794928cfb57697a9a4e8e9e8e3260d45e10b55735b2c",
-          "releasedAt": "2026-10-27"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@disk-radar-v0.1.0/plugins/disk-radar/disk-radar.zip"
         }
       ]
     },
@@ -1202,9 +1196,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/decision-journal",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@decision-journal-v0.1.0/plugins/decision-journal/decision-journal.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/update.json",
-      "sha256": "97e96f268eff2774c4e7dfa6045869d68fec090a0226e067327eb81470f81946",
+      "sha256": "3d9a4ebcc357f1e38dc17e897e1a52f342758367b99f8a1c205a1beacf2fe9bb",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1214,7 +1208,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/decision-journal.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@decision-journal-v0.1.0/plugins/decision-journal/decision-journal.zip"
         }
       ]
     },
@@ -1237,9 +1231,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/amber",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@amber-v0.1.0/plugins/amber/amber.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/update.json",
-      "sha256": "220a2019eb25aab666ce579acfa832a7f9a1a8b484f1c3c1ac113b09264efed4",
+      "sha256": "d4854dc748e08cdc136d79277a41e526c3ef7be4368c922e00b9bd5adfbcf9b8",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -1251,7 +1245,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/amber.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@amber-v0.1.0/plugins/amber/amber.zip"
         }
       ]
     },
@@ -1275,9 +1269,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/abacus",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@abacus-v0.1.0/plugins/abacus/abacus.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/update.json",
-      "sha256": "7f1f1cbb0a8e74150cc7962ee843f8f8a7932b53c6a994030612474a89e758c0",
+      "sha256": "3025e64100fa8e83ae9cc727279ec91fa9b9980837aa1a351c87b599669f6bca",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1287,8 +1281,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/abacus.zip",
-          "sha256": "7f1f1cbb0a8e74150cc7962ee843f8f8a7932b53c6a994030612474a89e758c0"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@abacus-v0.1.0/plugins/abacus/abacus.zip"
         }
       ]
     },
@@ -1311,9 +1304,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/time-trail",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/time-trail.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@time-trail-v0.1.0/plugins/time-trail/time-trail.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/update.json",
-      "sha256": "4b21d431d29abd8734a4ce3fb8a45a2d4345da404c21e8ce7fbdba5d3c6903ba",
+      "sha256": "8a7ce49b28d15908388c77b4d1fdebaa3bc45e1dc073ce3ded6eadd6cc0ce41f",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1325,7 +1318,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/time-trail.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@time-trail-v0.1.0/plugins/time-trail/time-trail.zip"
         }
       ]
     },
@@ -1349,9 +1342,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ask-stove",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/ask-stove.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ask-stove-v0.1.0/plugins/ask-stove/ask-stove.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/update.json",
-      "sha256": "6558cbdd286c9270e4bd8065527f4501af31a3c82118e921c64231b5f5d5f9b8",
+      "sha256": "cd7501442f777aedeae38d14f9f6fa5da57f2a1877e37001fec566c86571111c",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1363,7 +1356,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/ask-stove.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ask-stove-v0.1.0/plugins/ask-stove/ask-stove.zip"
         }
       ]
     },
@@ -1390,7 +1383,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tether/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@tether-v0.1.0/plugins/tether/tether.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tether/update.json",
-      "sha256": "08d6fb5525c44a1b30a58e5634f298cb89d0d9a8e5520349939c7f90e8eb02fa",
+      "sha256": "e501645da0f6dd28615240aa0ed1eb2de5262e930f99cd5630c2078f20e26ed0",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1423,9 +1416,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/lingxi",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/lingxi/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/lingxi/lingxi.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@lingxi-v0.1.0/plugins/lingxi/lingxi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/lingxi/update.json",
-      "sha256": "f470e2fdd9b90d9173fb754eb6cf340af8931249d4ad255a49fc7662dc642e5e",
+      "sha256": "80139f44b4018c09530b178fa08785f1adf8eb03dc059db044135c6a1eba85df",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1435,7 +1428,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/lingxi/lingxi.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@lingxi-v0.1.0/plugins/lingxi/lingxi.zip"
         }
       ]
     },
@@ -1493,9 +1486,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/watchtower",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.2.0/plugins/watchtower/watchtower.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
-      "sha256": "db207865caaf52ce95303611744b6fcb66905219fcba5eb6defea4b298944c49",
+      "sha256": "0aa8bf70959ab3af05771464b46854f4c1fab60ee6c24ed109279f47eb3c74e9",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1504,7 +1497,7 @@
       "versions": [
         {
           "version": "0.2.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/watchtower.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.2.0/plugins/watchtower/watchtower.zip"
         },
         {
           "version": "0.1.0",
@@ -1534,9 +1527,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/quote-sentinel",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/quote-sentinel.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@quote-sentinel-v0.1.0/plugins/quote-sentinel/quote-sentinel.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/update.json",
-      "sha256": "f5a91483c0b279125a1a321573dde632183afc7fe7537d1680a8dbcb915ccae5",
+      "sha256": "0ec3a1d43c19234f92057820c1af215a6168636e75a2fc8cb55b0bcba8244820",
       "tier": "beta",
       "permissions": {
         "network": true,
@@ -1548,7 +1541,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/quote-sentinel.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@quote-sentinel-v0.1.0/plugins/quote-sentinel/quote-sentinel.zip"
         }
       ]
     },
@@ -1571,9 +1564,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/changqi",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/changqi.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@changqi-v0.1.0/plugins/changqi/changqi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/update.json",
-      "sha256": "7f0dcebd29cf557b9a58b47f9912897b56ba639a50c69d26cc14a2171988d51b",
+      "sha256": "76635ba1a495a8aff5c7c1a653dc88cb6573a4ad093e386af6d74ffce8fc22ca",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true,
@@ -1584,7 +1577,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/changqi.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@changqi-v0.1.0/plugins/changqi/changqi.zip"
         }
       ]
     },
@@ -1607,9 +1600,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/shouzha",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/shouzha.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@shouzha-v0.1.0/plugins/shouzha/shouzha.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/update.json",
-      "sha256": "248cf08d70d96bc57d8179318a49193f6640ba57969b2f589d541e46bb8186f9",
+      "sha256": "b6e16e9a6ce04b5b769a8fb32cb6123b73ef41ff6583ddba7d9ba798b30dc15a",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1619,7 +1612,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/shouzha.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@shouzha-v0.1.0/plugins/shouzha/shouzha.zip"
         }
       ]
     },
@@ -1642,9 +1635,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/guanzhi",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/guanzhi.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@guanzhi-v0.1.0/plugins/guanzhi/guanzhi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/update.json",
-      "sha256": "8b895f1165d70971a329f39452657e0556e306267b80cabf9c2cf3ea2c21ae30",
+      "sha256": "05311b14b4b0206b42d3e7209699f986244d3a3b5d9fbec7a9078653031b67a2",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1655,7 +1648,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/guanzhi.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@guanzhi-v0.1.0/plugins/guanzhi/guanzhi.zip"
         }
       ]
     },
@@ -1678,9 +1671,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/qimu",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/qimu.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@qimu-v0.1.0/plugins/qimu/qimu.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/update.json",
-      "sha256": "93d9f09c9fa2f7245e7340b3289f1df569c760a39964dcfc81fbb5d982689379",
+      "sha256": "692f49220f8897c54e2b712f2e5bda9534d77491d12457766e14a96d0aff0e73",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -1690,7 +1683,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/qimu.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@qimu-v0.1.0/plugins/qimu/qimu.zip"
         }
       ]
     },
@@ -1713,9 +1706,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/gezhi",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gezhi/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gezhi/gezhi.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@gezhi-v0.1.0/plugins/gezhi/gezhi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gezhi/update.json",
-      "sha256": "017334f638b3fa873b03f29d6a0a1e8c86e01f926d886b642f43120b404e4c93",
+      "sha256": "e3a878380522e4f308cf8b5f495e960ffa567da27e6d59d599a4a770d2fbdfd0",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1726,7 +1719,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gezhi/gezhi.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@gezhi-v0.1.0/plugins/gezhi/gezhi.zip"
         }
       ]
     },
@@ -1750,9 +1743,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/qingnang",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/qingnang.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@qingnang-v0.1.0/plugins/qingnang/qingnang.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/update.json",
-      "sha256": "d213b787834e00365a37c231fce5dc97f73a02a872c9ab24930ac0c5ff0ec364",
+      "sha256": "a8a239b14640b3ad793aac4ef5d3d15f9573b63bad3d7870bef37d885839346f",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,
@@ -1763,8 +1756,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/qingnang.zip",
-          "sha256": "d213b787834e00365a37c231fce5dc97f73a02a872c9ab24930ac0c5ff0ec364"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@qingnang-v0.1.0/plugins/qingnang/qingnang.zip"
         }
       ]
     },
@@ -1789,9 +1781,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/wenjin",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/wenjin/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/wenjin/wenjin.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@wenjin-v0.1.0/plugins/wenjin/wenjin.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/wenjin/update.json",
-      "sha256": "3921304e167d946e6fc92b36e8c2f17b64be6710c84dd4e4f99d3cf59c9324f7",
+      "sha256": "c484fdd1bbbf12619ab398bad387de434bcdc55794da3439ec8611b9696f05fd",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,
@@ -1802,8 +1794,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/wenjin/wenjin.zip",
-          "sha256": "3921304e167d946e6fc92b36e8c2f17b64be6710c84dd4e4f99d3cf59c9324f7"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@wenjin-v0.1.0/plugins/wenjin/wenjin.zip"
         }
       ]
     },
@@ -1825,9 +1816,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zhifang",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/zhifang.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zhifang-v0.1.0/plugins/zhifang/zhifang.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/update.json",
-      "sha256": "312f5bc19251bbd17012f743dbb2562049f8353f04271b0549e5d219d8ea4f11",
+      "sha256": "fd1eb03fce0f411c7b3f26e99d15e090c5955b046fa2b280fb41fee89f3e4829",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -1838,7 +1829,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/zhifang.zip"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zhifang-v0.1.0/plugins/zhifang/zhifang.zip"
         }
       ]
     },
@@ -1861,9 +1852,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/quanfu",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/quanfu.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@quanfu-v0.1.0/plugins/quanfu/quanfu.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/update.json",
-      "sha256": "de9fc836971f0fa42ebf5430a01484b325b65d9a530eae8e5284586615a590b9",
+      "sha256": "67b36a4626e07fd2b3ae0a3efe83998ecd22c2a8a9fc1849b022cdf1c44b114e",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,
@@ -1874,8 +1865,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/quanfu.zip",
-          "sha256": "de9fc836971f0fa42ebf5430a01484b325b65d9a530eae8e5284586615a590b9"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@quanfu-v0.1.0/plugins/quanfu/quanfu.zip"
         }
       ]
     },
@@ -1900,9 +1890,9 @@
       "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/piaoxia",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/piaoxia.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@piaoxia-v0.1.0/plugins/piaoxia/piaoxia.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/update.json",
-      "sha256": "2db1a183c354cd57b4d48632591d8e424dce64ab07566a1ea990a75e118ec25c",
+      "sha256": "c959cd569c36aea8aebc0fcfb4f57c07f61d05bc171083c401f27d45553e2ffa",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,
@@ -1913,8 +1903,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/piaoxia.zip",
-          "sha256": "2db1a183c354cd57b4d48632591d8e424dce64ab07566a1ea990a75e118ec25c"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@piaoxia-v0.1.0/plugins/piaoxia/piaoxia.zip"
         }
       ]
     },
@@ -1937,9 +1926,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jinkui",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/jinkui.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@jinkui-v0.1.0/plugins/jinkui/jinkui.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/update.json",
-      "sha256": "adf1ac4f997f19aa2d21a9beb5d2f74a43f8404c774922b0da6c638143b6617b",
+      "sha256": "68a2ef2c0ceee21be430a41827757465497ec622582c3580745991b42c8f29a5",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,
@@ -1950,8 +1939,7 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/jinkui.zip",
-          "sha256": "adf1ac4f997f19aa2d21a9beb5d2f74a43f8404c774922b0da6c638143b6617b"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@jinkui-v0.1.0/plugins/jinkui/jinkui.zip"
         }
       ]
     },
@@ -1977,7 +1965,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@weibian-v0.1.0/plugins/weibian/weibian.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/update.json",
-      "sha256": "97bb0d9a46ec58fe7dc4ee0b3f0ae44278aae35e4d8db58f02e2300a0bd0a5ba",
+      "sha256": "0bf94a4c0d8ae2073b4ed4c3a14755096e9994363e5e227265f88d93036ef505",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,

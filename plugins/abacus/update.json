@@ -1,8 +1,8 @@
 {
   "id": "abacus",
-  "name": "算盘",
+  "name": "AI 用量账",
   "version": "0.1.0",
-  "description": "算盘：把散落在三路本地数据里的 AI 用量算成一本账——ZCode 编程会话（model_usage 逐请求遥测）、Claude Code 原生 JSONL、Polaris 聊天（dialogs meta tokenUsage）。回答四个以前答不了的问题：花了多少（token/钱，含缓存折价）、花在哪（模型/项目/agent）、缓存帮你省了多少（缓存节省 = cacheRead×(全价−缓存价)，实测本机命中率 ~98% 的真实价值第一次可见）、哪里在漏钱（限流/重试放大/缓存疑似失效/未计价黑洞）。三种来源两种 input 口径（ZCode 含缓存、Anthropic 惯例不含）在计价引擎里显式归一，不混算。服务只读本地 fs+sqlite，默认零外网；唯一外网点是可选的 LiteLLM 价目同步（服务进程、仅已知 URL、SSRF 守卫）。面板五账页（总览/模型/项目/质量/设置），AI 经 abacus_* 工具直接对账。",
+  "description": "AI 用量账：把散落在三路本地数据里的 AI 用量算成一本账——ZCode 编程会话（model_usage 逐请求遥测）、Claude Code 原生 JSONL、Polaris 聊天（dialogs meta tokenUsage）。回答四个以前答不了的问题：花了多少（token/钱，含缓存折价）、花在哪（模型/项目/agent）、缓存帮你省了多少（缓存节省 = cacheRead×(全价−缓存价)，实测本机命中率 ~98% 的真实价值第一次可见）、哪里在漏钱（限流/重试放大/缓存疑似失效/未计价黑洞）。三种来源两种 input 口径（ZCode 含缓存、Anthropic 惯例不含）在计价引擎里显式归一，不混算。服务只读本地 fs+sqlite，默认零外网；唯一外网点是可选的 LiteLLM 价目同步（服务进程、仅已知 URL、SSRF 守卫）。面板五账页（总览/模型/项目/质量/设置），AI 经 abacus_* 工具直接对账。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -12,7 +12,7 @@
         "panelType": "abacusLedger",
         "icon": "Activity",
         "labelKey": "plugins.abacus",
-        "labelDefault": "算盘",
+        "labelDefault": "AI 用量账",
         "order": 82
       }
     ],

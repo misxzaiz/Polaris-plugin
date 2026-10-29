@@ -1,6 +1,6 @@
 'use strict';
 /**
- * trail-core.js —— 刻漏纯函数核心（键构造 / 分类规则引擎 / 归集 / 聚合）
+ * trail-core.js —— 时间统计纯函数核心（键构造 / 分类规则引擎 / 归集 / 聚合）
  *
  * 三方共用权威（与主仓 plans/time-trail-plugin-spec.md 键空间契约一致）：
  *   - service/trail.js   归集引擎（唯一写者）

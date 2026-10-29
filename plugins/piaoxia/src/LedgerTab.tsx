@@ -60,7 +60,7 @@ export default function LedgerTab({ ctx }: { ctx: PanelCtx }) {
       <div className="px-card">
         {list.length === 0 ? (
           <div className="px-dim" style={{ textAlign: 'center', padding: '26px 0' }}>
-            {ctx.data.invoices.size === 0 ? '票匣还是空的：去「收票台」拖入发票，或点右上「＋手动录入」' : '没有匹配过滤条件的票'}
+            {ctx.data.invoices.size === 0 ? '发票保险库还是空的：去「收票台」拖入发票，或点右上「＋手动录入」' : '没有匹配过滤条件的票'}
           </div>
         ) : (
           <table className="px-table">
@@ -237,7 +237,7 @@ function ManualForm({ ctx, onDone }: { ctx: PanelCtx, onDone: () => void }) {
 
   return (
     <div className="px-card">
-      <h3>手动录入 <span className="px-hint">纸质票/扫描件走这里（票匣不做 OCR）</span></h3>
+      <h3>手动录入 <span className="px-hint">纸质票/扫描件走这里（发票保险库不做 OCR）</span></h3>
       <div className="px-row">
         <input className="px-input" placeholder="发票号码（纸质票可空）" value={f.number} onChange={(e) => set('number', e.target.value)} style={{ width: 200 }} />
         <input className="px-input" type="date" value={f.date} onChange={(e) => set('date', e.target.value)} />

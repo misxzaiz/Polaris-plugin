@@ -1,6 +1,6 @@
 'use strict';
 /**
- * usage-core.js —— 守望台（watchtower）共享核心（单一权威，零依赖）
+ * usage-core.js —— 插件运营（watchtower）共享核心（单一权威，零依赖）
  *
  * 被 MCP server（CJS require）与面板（esbuild 打包进 bundle）共用：
  * 键空间、计量记录、插件归一化、冷热分级、日级/近 N 天聚合、治理建议。
@@ -11,9 +11,9 @@
  *   source = 'mcp'  ：AI 经本插件 MCP 工具触发的一次调用（本插件自记）
  *   source = 'panel'：用户打开插件面板的一次打开
  *     - 宿主 0.x 观测版起，面板打开由宿主在 PluginPanelHost 挂载点自动观测
- *       （cap.kv `plugin.usage.<pluginId>`，宿主自有键空间），守望台**读时合并**
+ *       （cap.kv `plugin.usage.<pluginId>`，宿主自有键空间），插件运营**读时合并**
  *       进 panel 通道，不回写自有账本（plans/plugin-usage-observation.md）；
- *     - 守望台自身面板不再自记（同事实单写者=宿主）。
+ *     - 插件运营自身面板不再自记（同事实单写者=宿主）。
  * 两种来源写入同一账本的不同计数位，聚合时可选合并或分看。
  *
  * 数据契约（cap.kv，权威描述见 README）：
@@ -82,7 +82,7 @@ const K = {
   usage(pluginId) {
     return this.usagePrefix + pluginId;
   },
-  /** 宿主自有键空间（宿主 pluginUsageObserver 写入，守望台只读）：面板打开观测 */
+  /** 宿主自有键空间（宿主 pluginUsageObserver 写入，插件运营只读）：面板打开观测 */
   hostUsagePrefix: 'plugin.usage.',
   settings: 'watchtower.settings',
 };
@@ -214,7 +214,7 @@ function costOf(rec, nDays, now = nowMs()) {
  * 归一化宿主写入的面板打开观测。
  *
  * 宿主在权威观测点（面板模块加载成功）自动记录"用户打开了某插件的面板"，
- * 落 cap.kv 宿主自有键空间 `plugin.usage.<pluginId>`（宿主不写守望台私有键）。
+ * 落 cap.kv 宿主自有键空间 `plugin.usage.<pluginId>`（宿主不写插件运营私有键）。
  * @param {unknown} raw cap.kv get 的 value
  * @returns {{ pluginId:string, count:number, firstUsed:number, lastUsed:number, days:Record<string,number> }|null}
  */
@@ -241,12 +241,12 @@ function normalizeHostObservation(raw) {
 }
 
 /**
- * 把宿主观测合并进守望台账本（**读时合并，不回写**）。
+ * 把宿主观测合并进插件运营账本（**读时合并，不回写**）。
  *
  * 语义：宿主观测的就是"面板打开"，计入 panel 通道（trends[day].panel 与
  * panelOpens）。只允许对"刚从 watchtower.usage.* 读出的自有账本"合并一次——
  * 合并结果不落盘，下次读取重新从两处原始键合并，天然幂等。
- * @param {UsageRecord|null} rec 守望台自有账本（normalizeUsage 产物或 null）
+ * @param {UsageRecord|null} rec 插件运营自有账本（normalizeUsage 产物或 null）
  * @param {{ count:number, firstUsed:number|null, lastUsed:number|null, days:Record<string,number> }|null} obs normalizeHostObservation 产物
  * @param {string} pluginId
  * @returns {UsageRecord}

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * page-sentinel MCP Server —— 网页哨兵的 AI 工具层（无状态透传，零依赖）
+ * page-sentinel MCP Server —— 网页监测的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的 tools/call 翻译为 Polaris IPC bridge 的 router_dispatch
  * （target=cap.kv）读写 sentinel.* 键空间，与服务/面板共享同一事实库。
@@ -262,7 +262,7 @@ async function listAll() {
 const tools = [
   {
     name: 'sentinel_add_watch',
-    description: '登记一个网页监控目标（网页哨兵）。后台服务会按间隔抓取该 URL，抽取内容并在变化或条件满足时生成事件，面板「网页哨兵」可见。适用：盯价格/库存/放号/考位/release/文档更新。抓取由 Polaris 后台服务原生发起，无浏览器跨域限制。',
+    description: '登记一个网页监控目标（网页监测）。后台服务会按间隔抓取该 URL，抽取内容并在变化或条件满足时生成事件，面板「网页监测」可见。适用：盯价格/库存/放号/考位/release/文档更新。抓取由 Polaris 后台服务原生发起，无浏览器跨域限制。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -288,12 +288,12 @@ const tools = [
       if (t.error) return err(t.error);
       await kvSet(K.target(id), t);
       if (args.checkNow !== false) await kvSet(K.cmdCheck(id), { op: 'check', at: Date.now() });
-      return ok(`已登记监控「${t.name}」(${id})：${t.url}\n模式=${t.mode} 条件=${t.condition}${t.keyword ? ` 关键词=${t.keyword}` : ''}${t.threshold !== undefined ? ` 阈值=${t.threshold}` : ''} 间隔=${t.intervalSec}s\n已${args.checkNow !== false ? '触发首查，几秒后可用 sentinel_check_now 或 sentinel_get_events 查看结果' : '交由后台按间隔调度'}。面板「网页哨兵」中可见。`);
+      return ok(`已登记监控「${t.name}」(${id})：${t.url}\n模式=${t.mode} 条件=${t.condition}${t.keyword ? ` 关键词=${t.keyword}` : ''}${t.threshold !== undefined ? ` 阈值=${t.threshold}` : ''} 间隔=${t.intervalSec}s\n已${args.checkNow !== false ? '触发首查，几秒后可用 sentinel_check_now 或 sentinel_get_events 查看结果' : '交由后台按间隔调度'}。面板「网页监测」中可见。`);
     },
   },
   {
     name: 'sentinel_list_watch',
-    description: '列出网页哨兵的全部监控目标及其最新状态（是否正常、上次检查、最近事件）。',
+    description: '列出网页监测的全部监控目标及其最新状态（是否正常、上次检查、最近事件）。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const all = await listAll();
@@ -307,7 +307,7 @@ const tools = [
   },
   {
     name: 'sentinel_update_watch',
-    description: '修改网页哨兵监控目标：改名/改 URL/改抽取配置/改间隔/改条件/暂停(enabled=false)/恢复(enabled=true)。传 id（sentinel_list_watch 可查）+ 要改的字段。',
+    description: '修改网页监测监控目标：改名/改 URL/改抽取配置/改间隔/改条件/暂停(enabled=false)/恢复(enabled=true)。传 id（sentinel_list_watch 可查）+ 要改的字段。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -332,7 +332,7 @@ const tools = [
   },
   {
     name: 'sentinel_remove_watch',
-    description: '删除网页哨兵监控目标及其全部状态/快照/事件数据。',
+    description: '删除网页监测监控目标及其全部状态/快照/事件数据。',
     inputSchema: { type: 'object', properties: { id: { type: 'string', description: '目标 id' } }, required: ['id'] },
     async call(args) {
       const raw = await kvGet(K.target(args.id));
@@ -345,7 +345,7 @@ const tools = [
   },
   {
     name: 'sentinel_check_now',
-    description: '让网页哨兵立即检查一次指定目标并等待结果（最多 40 秒）。返回检查结论与是否有新事件。',
+    description: '让网页监测立即检查一次指定目标并等待结果（最多 40 秒）。返回检查结论与是否有新事件。',
     inputSchema: { type: 'object', properties: { id: { type: 'string', description: '目标 id' } }, required: ['id'] },
     async call(args) {
       const raw = await kvGet(K.target(args.id));
@@ -360,7 +360,7 @@ const tools = [
         if (st && st.lastCheckedAt && st.lastCheckedAt > before) break;
         st = null;
       }
-      if (!st) return err('等待检查结果超时（服务可能未运行——在 Polaris 设置→插件中确认网页哨兵服务状态，或检查间隔期间桥不可达）');
+      if (!st) return err('等待检查结果超时（服务可能未运行——在 Polaris 设置→插件中确认网页监测服务状态，或检查间隔期间桥不可达）');
       const keys = await kvKeys();
       const evKeys = keys.filter((k) => k.startsWith(K.eventPrefix(args.id))).sort().reverse();
       let evText = '本次检查无新事件。';
@@ -378,7 +378,7 @@ const tools = [
   },
   {
     name: 'sentinel_test_fetch',
-    description: '网页哨兵试抓：按给定的 url+抽取配置抓一次并返回抽取文本预览（不登记目标）。用于验证 selector/regex/jsonPath 是否写对。',
+    description: '网页监测试抓：按给定的 url+抽取配置抓一次并返回抽取文本预览（不登记目标）。用于验证 selector/regex/jsonPath 是否写对。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -403,12 +403,12 @@ const tools = [
           return err(`试抓失败：${r.error}`);
         }
       }
-      return err('试抓超时（服务可能未运行——在 Polaris 设置→插件中确认网页哨兵服务状态）');
+      return err('试抓超时（服务可能未运行——在 Polaris 设置→插件中确认网页监测服务状态）');
     },
   },
   {
     name: 'sentinel_get_events',
-    description: '回读网页哨兵的最近事件（变化/命中/失误/错误/恢复），可按目标过滤。返回时间、类型、摘要与差异预览。',
+    description: '回读网页监测的最近事件（变化/命中/失误/错误/恢复），可按目标过滤。返回时间、类型、摘要与差异预览。',
     inputSchema: {
       type: 'object',
       properties: {

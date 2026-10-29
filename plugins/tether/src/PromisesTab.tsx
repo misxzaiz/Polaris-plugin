@@ -33,7 +33,7 @@ export default function PromisesTab({ data, reload, showToast }: {
   const add = async () => {
     const t = text.trim()
     if (!t) { showToast('内容不能为空', 'bad'); return }
-    if (!personId) { showToast('选一个人（先去「故人」建档）', 'bad'); return }
+    if (!personId) { showToast('选一个人（先去「人情账本」建档）', 'bad'); return }
     const norm = normalizePromise({ personId, direction: pDir, text: t, due: due.trim() || undefined })
     if (norm.error || !norm.promise) { showToast(norm.error || '承诺不合法', 'bad'); return }
     await savePromises({ byId: { ...data.promisesBook.byId, [norm.promise.id]: norm.promise } })

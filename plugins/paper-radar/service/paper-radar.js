@@ -1,6 +1,6 @@
 'use strict';
 /**
- * paper-radar 后台服务 —— 论文雷达的抓取与调度核心
+ * paper-radar 后台服务 —— 论文速递的抓取与调度核心
  *
  * 职责：
  *   1. 定时（按设置）向 arXiv API 拉取关注主题的最新论文
@@ -385,7 +385,7 @@ async function main(port, appConfigDir) {
   startApi(PORT);
 
   await heartbeat('ok', { startedAt: Date.now() });
-  log('info', '论文雷达服务启动');
+  log('info', '论文速递服务启动');
 
   // 启动即首扫（若当天还没有 feed）
   try {

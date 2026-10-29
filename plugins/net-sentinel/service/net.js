@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * net.js —— 网哨后台服务（零依赖，node >= 18.15）
+ * net.js —— 网络哨兵后台服务（零依赖，node >= 18.15）
  *
  * 职责（网络探测的唯一权威——单写者）：
  *   - 每 tick（默认 10s）对全部启用目标并发探测：域名先 dns.lookup（OS 解析器，

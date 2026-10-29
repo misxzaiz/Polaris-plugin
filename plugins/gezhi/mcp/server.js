@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * gezhi MCP Server —— 格致（AI Excel 工厂）的 AI 工具层（无状态透传，零 npm 依赖）
+ * gezhi MCP Server —— Excel 工坊（AI Excel 工厂）的 AI 工具层（无状态透传，零 npm 依赖）
  *
  * 职责：把 AI 的「做表格」意图翻译为真实 .xlsx 文件 + cap.kv 登记；
  * 全部计算走 shared/core.js（归一化/护栏/布局）与 shared/render.js（exceljs 渲染）。
@@ -205,7 +205,7 @@ function ok(text) { return { content: [{ type: 'text', text }], isError: false }
 function err(text) { return { content: [{ type: 'text', text }], isError: true }; }
 
 // ── 工具 ───────────────────────────────────────────────────────────────────
-const GUIDE_TEXT = `【格致 Sheet Spec 契约】xlsx_build 的 arguments 本身就是 spec：
+const GUIDE_TEXT = `【Excel 工坊 Sheet Spec 契约】xlsx_build 的 arguments 本身就是 spec：
 
 {
   "title": "三月采购台账",            // 必填，≤50 字；用于文件名与登记
@@ -297,7 +297,7 @@ const SHEET_SCHEMA = {
 const tools = [
   {
     name: 'xlsx_build',
-    description: '格致·构建真实 Excel 文件。把整理好的数据表交给它：产出一套带原生表头样式/列宽/数字格式/真实公式（行公式与=SUM汇总）/条件格式/冻结表头/筛选的可编辑 .xlsx，落到用户导出目录并登记。 arguments 就是 Sheet Spec 本身（title/theme/sheets）。用户说「做成 Excel」「导出表格」「给我台账」即用此工具；不确定字段契约时先调 xlsx_guide。数据必须在 arguments 里给全——不要让用户再粘贴。',
+    description: 'Excel 工坊·构建真实 Excel 文件。把整理好的数据表交给它：产出一套带原生表头样式/列宽/数字格式/真实公式（行公式与=SUM汇总）/条件格式/冻结表头/筛选的可编辑 .xlsx，落到用户导出目录并登记。 arguments 就是 Sheet Spec 本身（title/theme/sheets）。用户说「做成 Excel」「导出表格」「给我台账」即用此工具；不确定字段契约时先调 xlsx_guide。数据必须在 arguments 里给全——不要让用户再粘贴。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -346,13 +346,13 @@ const tools = [
   },
   {
     name: 'xlsx_guide',
-    description: '格致·spec 契约手册。返回 xlsx_build 的完整字段说明、容量护栏、最小示例与台账配方。构建前拿不准字段/想确认公式写法时调用，一次调用即可，不要重复调用。',
+    description: 'Excel 工坊·spec 契约手册。返回 xlsx_build 的完整字段说明、容量护栏、最小示例与台账配方。构建前拿不准字段/想确认公式写法时调用，一次调用即可，不要重复调用。',
     inputSchema: { type: 'object', properties: {} },
     async call() { return ok(GUIDE_TEXT); },
   },
   {
     name: 'xlsx_recent',
-    description: '格致·最近生成的 Excel 作品列表（标题/规格/路径/时间）。',
+    description: 'Excel 工坊·最近生成的 Excel 作品列表（标题/规格/路径/时间）。',
     inputSchema: {
       type: 'object',
       properties: { limit: { type: 'integer', description: '条数，缺省 10' } },
@@ -371,7 +371,7 @@ const tools = [
   },
   {
     name: 'xlsx_reveal',
-    description: '格致·在资源管理器中定位某个已生成的 Excel 文件（Windows/macOS/Linux 三平台）。只接受 xlsx_recent 里列出的作品路径。',
+    description: 'Excel 工坊·在资源管理器中定位某个已生成的 Excel 文件（Windows/macOS/Linux 三平台）。只接受 xlsx_recent 里列出的作品路径。',
     inputSchema: {
       type: 'object',
       properties: { path: { type: 'string', description: '作品路径（来自 xlsx_recent）' } },
@@ -401,7 +401,7 @@ const tools = [
   },
   {
     name: 'xlsx_forget',
-    description: '格致·删除作品登记（仅移除列表记录，不删除文件本身）。',
+    description: 'Excel 工坊·删除作品登记（仅移除列表记录，不删除文件本身）。',
     inputSchema: {
       type: 'object',
       properties: {

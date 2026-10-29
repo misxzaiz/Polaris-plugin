@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（韦编面板，与纸坊/口袋快传同一模式）
+ * 宿主 API 访问层（文档检索面板，与纸坊/口袋快传同一模式）
  *
  * 统一经宿主 invoke 通道（window.__POLARIS_HOST_INVOKE__，主应用 main.tsx 挂载）：
  *   - 桌面 Tauri：直连后端 IPC

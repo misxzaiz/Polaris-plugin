@@ -2,7 +2,7 @@
   "name": "guanzhi-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "guanzhi 插件面板（打包用）：观止书影音消费账本",
+  "description": "guanzhi 插件面板（打包用）：书影音账本书影音消费账本",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

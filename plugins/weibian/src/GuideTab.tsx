@@ -23,7 +23,7 @@ export default function GuideTab() {
 
       <div className="wb-sec"><i className="wb-bar" />在 AI 对话里用</div>
       <div className="wb-card"><div className="wb-card-b">
-        <div className="wb-sub">韦编给 AI 提供了 4 个工具，直接用自然语言即可：</div>
+        <div className="wb-sub">文档检索给 AI 提供了 4 个工具，直接用自然语言即可：</div>
         <div className="wb-code">「帮我在文档里找关于缓存策略的论述」</div>
         <div className="wb-code">「我之前写过一份两总线架构的 spec，找出来看看」</div>
         <div className="wb-sub">

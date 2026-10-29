@@ -1000,7 +1000,7 @@ function SettingsTab({ data, reload, showToast }) {
     }
   };
   const clearAll = async () => {
-    if (!window.confirm("\u6E05\u7A7A\u53E3\u888B\u8D26\u672C\u5168\u90E8\u6570\u636E\uFF08\u8D26\u5355+\u8BBE\u7F6E+\u9644\u4EF6\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\uFF0C\u5EFA\u8BAE\u5148\u5BFC\u51FA\u3002")) return;
+    if (!window.confirm("\u6E05\u7A7A\u65E5\u5E38\u8BB0\u8D26\u5168\u90E8\u6570\u636E\uFF08\u8D26\u5355+\u8BBE\u7F6E+\u9644\u4EF6\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\uFF0C\u5EFA\u8BAE\u5148\u5BFC\u51FA\u3002")) return;
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith("ledger."));
       await Promise.all(keys.map((k) => kvDel(k)));
@@ -1124,7 +1124,7 @@ function SettingsTab({ data, reload, showToast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b pl-sub", children: [
-      '\u53E3\u888B\u8D26\u672C pocket-ledger v0.2.0 \u2014\u2014 \u5BF9\u8BDD\u5F0F\u8BB0\u8D26\uFF1A\u804A\u5929\u91CC\u8BF4"\u5348\u996D 35"\u5C31\u5165\u8D26\uFF0C"\u4E0A\u6708\u5496\u5561\u82B1\u4E86\u591A\u5C11"\u5C31\u80FD\u67E5\u3002',
+      '\u65E5\u5E38\u8BB0\u8D26 pocket-ledger v0.2.0 \u2014\u2014 \u5BF9\u8BDD\u5F0F\u8BB0\u8D26\uFF1A\u804A\u5929\u91CC\u8BF4"\u5348\u996D 35"\u5C31\u5165\u8D26\uFF0C"\u4E0A\u6708\u5496\u5561\u82B1\u4E86\u591A\u5C11"\u5C31\u80FD\u67E5\u3002',
       /* @__PURE__ */ jsx4("br", {}),
       "\xB7 \u96F6\u540E\u53F0\u670D\u52A1\u3001\u96F6\u7F51\u7EDC\u8BF7\u6C42\uFF0C\u7EAF\u672C\u5730\u8D26\u672C\uFF08\u63D2\u4EF6\u89C4\u8303\u63A8\u8350\u7684\u65E0\u72B6\u6001\u6A21\u5F0F\uFF09\uFF1B",
       /* @__PURE__ */ jsx4("br", {}),
@@ -1287,7 +1287,7 @@ function LedgerPanel(_props) {
     /* @__PURE__ */ jsxs5("div", { className: "pl-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "pl-logo", children: "\u{1F4D2}" }),
       /* @__PURE__ */ jsxs5("div", { className: "pl-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u53E3\u888B\u8D26\u672C" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u65E5\u5E38\u8BB0\u8D26" }),
         /* @__PURE__ */ jsx5("small", { className: `pl-balance ${todayBalance.cls}`, children: todayBalance.text })
       ] }),
       /* @__PURE__ */ jsx5("div", { className: "pl-tabs", children: [

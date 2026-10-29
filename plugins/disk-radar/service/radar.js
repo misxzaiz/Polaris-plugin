@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * radar.js —— 磁盘雷达后台服务（零依赖，node >= 18；零外网请求）
+ * radar.js —— 磁盘分析后台服务（零依赖，node >= 18；零外网请求）
  *
  * 职责（键空间唯一写者，契约见 README / shared/disk-core.js）：
  *   - 周期消费命令键 diskrad.cmd.*（先删后做）：scan / cancel / report /

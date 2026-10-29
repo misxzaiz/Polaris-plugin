@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（论文雷达面板）
+ * 通信层 + 数据访问（论文速递面板）
  *
  * 统一经宿主 invoke 通道调 router_dispatch；面板与后台服务、MCP server
  * 读写同一个 cap.kv（SqliteStorage domain=kv）的 paper.* 键空间。

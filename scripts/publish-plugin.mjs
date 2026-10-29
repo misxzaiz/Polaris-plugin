@@ -126,7 +126,7 @@ function updateIndexJson(pluginId, sha256) {
     console.error(`   ⚠  index.json 中未找到插件 "${pluginId}"，跳过 sha256 更新`)
     return false
   }
-  const manifestPath = join(PLUGINS_DIR, pluginId, 'plugin.json')
+  const manifestPath = join(pluginDir, 'plugin.json')
   let version = plugin.version || '1.0.0'
   if (existsSync(manifestPath)) {
     try {
@@ -134,8 +134,8 @@ function updateIndexJson(pluginId, sha256) {
       version = manifest.version || version
     } catch {}
   }
-  const tagName = `${pluginId}-v${version}`
-  const base = `https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@${tagName}/plugins/${pluginId}/${pluginId}.zip`
+  const tagName = `${dirNameArg}-v${version}`
+  const base = `https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@${tagName}/plugins/${dirNameArg}/${dirNameArg}.zip`
   plugin.version = version
   plugin.sha256 = sha256
   plugin.downloadUrl = base
@@ -151,33 +151,43 @@ function updateIndexJson(pluginId, sha256) {
 
 // ── main ─────────────────────────────────────────────────────────────
 
-const pluginId = process.argv[2]
+const pluginDirArg = process.argv[2]
 const doPush = process.argv.includes('--push')
+const noBuild = process.argv.includes('--no-build')
+// 显式插件 id 时使用（默认与目录名一致；id≠目录名的插件用 <dir>:<id> 显式指定）
+const idArg = process.argv[3] && !process.argv[3].startsWith('-') ? process.argv[3] : undefined
 
-if (!pluginId) {
-  console.error('用法: node scripts/publish-plugin.mjs <plugin-id> [--push]')
-  console.error('  示例: node scripts/publish-plugin.mjs polaris-api --push')
+if (!pluginDirArg) {
+  console.error('用法: node scripts/publish-plugin.mjs <plugin-dir>[:<plugin-id>] [--push]')
+  console.error('  示例: node scripts/publish-plugin.mjs zcode-bridge opts.zcode-bridge --push')
+  console.error('  id≠目录名时须显式传 id；不传则 id=目录名')
   process.exit(1)
 }
 
-const pluginDir = resolve(PLUGINS_DIR, pluginId)
+const [dirNameArg, idFromArg] = pluginDirArg.split(':')
+const pluginId = idFromArg || idArg || dirNameArg
+
+const pluginDir = resolve(PLUGINS_DIR, dirNameArg)
 if (!existsSync(pluginDir)) {
   console.error(`✗ 插件目录不存在: ${pluginDir}`)
   process.exit(1)
 }
 
-const zipName = `${pluginId}.zip`
+const zipName = `${dirNameArg}.zip`
 const zipPath = join(pluginDir, zipName)
 const buildJs = join(pluginDir, 'build.js')
 const pkgJson = join(pluginDir, 'package.json')
 const pluginIgnore = join(pluginDir, '.pluginignore')
+const manifestPath = join(pluginDir, 'plugin.json')
 
 console.log(`\n📦 ${pluginId}`)
 console.log(`   目录: ${pluginDir}`)
 
 // ── 1. 构建（优先 prod 模式） ─────────────────────────────────────────
 
-if (existsSync(pkgJson)) {
+if (noBuild) {
+  console.log('  ⏭  跳过构建 (--no-build)')
+} else if (existsSync(pkgJson)) {
   const pkg = JSON.parse(readFileSync(pkgJson, 'utf-8'))
   if (pkg.scripts?.['build:prod']) {
     console.log('  🔨 npm run build:prod')
@@ -276,10 +286,10 @@ if (doPush) {
     } catch {}
   }
 
-  const tagName = `${pluginId}-v${version}`
+  const tagName = `${dirNameArg}-v${version}`
 
   // git add
-  run(`git add plugins/${pluginId}/ index.json`, REPO_DIR)
+  run(`git add plugins/${dirNameArg}/ index.json`, REPO_DIR)
 
   // 检查是否有改动
   const status = runCapture('git status --porcelain', REPO_DIR)

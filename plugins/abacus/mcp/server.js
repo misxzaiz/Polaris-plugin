@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * abacus MCP Server —— 算盘的 AI 工具层（零依赖 stdio JSON-RPC）
+ * abacus MCP Server —— AI 用量账的 AI 工具层（零依赖 stdio JSON-RPC）
  *
  * 职责：把「我这 AI 到底花了多少钱/token、花在哪、哪里在漏钱」翻译为对
  * cap.kv abacus.* 聚合面的只读查询（聚合由后台服务唯一写入，MCP 永不计算，
@@ -176,7 +176,7 @@ function money(usd, fx) {
 async function loadAgg() {
   const meta = await kvGet(core.K.meta).catch(() => null);
   if (!meta) {
-    throw new Error('算盘服务还没有发布过聚合（首次扫描约需 1 分钟）：请确认插件已启用并稍候，或打开算盘面板查看扫描状态。');
+    throw new Error('AI 用量账服务还没有发布过聚合（首次扫描约需 1 分钟）：请确认插件已启用并稍候，或打开AI 用量账面板查看扫描状态。');
   }
   const [summary, models, projects, quality, sessions, prices] = await Promise.all([
     kvGet(core.K.summary), kvGet(core.K.models), kvGet(core.K.projects),
@@ -217,7 +217,7 @@ const tools = [
       const s = agg.summary;
       if (!s) return err('聚合数据缺失（服务尚未完成首扫）');
       const lines = [
-        `算盘 · ${label}总账（扫描于 ${new Date(agg.meta.lastScanAt || Date.now()).toLocaleString()}）`,
+        `AI 用量账 · ${label}总账（扫描于 ${new Date(agg.meta.lastScanAt || Date.now()).toLocaleString()}）`,
         '',
         bucketText(label, s[period], fx),
         '',
@@ -275,7 +275,7 @@ const tools = [
   },
   {
     name: 'abacus_quality',
-    description: '质量与漏钱透视：限流/错误分类计数、重试行数、TTFT 与时长分位、工具调用遥测（Top 工具/破坏性操作计数）、以及算盘自动生成的漏钱洞察列表。',
+    description: '质量与漏钱透视：限流/错误分类计数、重试行数、TTFT 与时长分位、工具调用遥测（Top 工具/破坏性操作计数）、以及AI 用量账自动生成的漏钱洞察列表。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const agg = await loadAgg();

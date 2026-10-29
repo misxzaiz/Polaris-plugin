@@ -595,7 +595,7 @@ async function runCmd(op, body, waitMs, stepMs = 1e3) {
       return r;
     }
   }
-  return { ok: false, error: "\u7B49\u5F85\u670D\u52A1\u54CD\u5E94\u8D85\u65F6\u2014\u2014\u53BB \u8BBE\u7F6E Tab \u786E\u8BA4\u78C1\u76D8\u96F7\u8FBE\u670D\u52A1\u662F\u5426\u5728\u8FD0\u884C" };
+  return { ok: false, error: "\u7B49\u5F85\u670D\u52A1\u54CD\u5E94\u8D85\u65F6\u2014\u2014\u53BB \u8BBE\u7F6E Tab \u786E\u8BA4\u78C1\u76D8\u5206\u6790\u670D\u52A1\u662F\u5426\u5728\u8FD0\u884C" };
 }
 function cmdScan(path, deep = false, label) {
   return runCmd("scan", { ...path ? { path } : {}, deep, ...label ? { label } : {} }, 8e3);
@@ -649,7 +649,7 @@ async function serviceAction(action) {
     );
     const self = (r.plugins || []).find((p) => p.id === PLUGIN_ID);
     const svc = self?.contributes?.services?.find((s) => s.id === SERVICE_ID);
-    if (!self || !svc) throw new Error("\u63D2\u4EF6\u53D1\u73B0\u7ED3\u679C\u91CC\u627E\u4E0D\u5230\u78C1\u76D8\u96F7\u8FBE\u670D\u52A1\u2014\u2014\u8BF7\u786E\u8BA4\u63D2\u4EF6\u5DF2\u6B63\u786E\u5B89\u88C5");
+    if (!self || !svc) throw new Error("\u63D2\u4EF6\u53D1\u73B0\u7ED3\u679C\u91CC\u627E\u4E0D\u5230\u78C1\u76D8\u5206\u6790\u670D\u52A1\u2014\u2014\u8BF7\u786E\u8BA4\u63D2\u4EF6\u5DF2\u6B63\u786E\u5B89\u88C5");
     await capDispatch("cap.pluginServiceManager", {
       action: "start",
       pluginId: PLUGIN_ID,
@@ -1548,7 +1548,7 @@ function SettingsTab({ data, reload, showToast }) {
     }
   };
   const clearAll = async () => {
-    if (!window.confirm("\u6E05\u7A7A\u78C1\u76D8\u96F7\u8FBE\u7684\u5168\u90E8\u672C\u5730\u6570\u636E\uFF08\u8BBE\u7F6E/\u6839/\u5FEB\u7167/\u5783\u573E/\u9694\u79BB\u533A\u6E05\u5355\uFF09\uFF1F\u78C1\u76D8\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\u3002")) return;
+    if (!window.confirm("\u6E05\u7A7A\u78C1\u76D8\u5206\u6790\u7684\u5168\u90E8\u672C\u5730\u6570\u636E\uFF08\u8BBE\u7F6E/\u6839/\u5FEB\u7167/\u5783\u573E/\u9694\u79BB\u533A\u6E05\u5355\uFF09\uFF1F\u78C1\u76D8\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\u3002")) return;
     if (!window.confirm("\u518D\u6B21\u786E\u8BA4\uFF1A\u8FD9\u4E00\u6B65\u4E0D\u53EF\u64A4\u9500\uFF08\u9694\u79BB\u533A\u6587\u4EF6\u4ECD\u5728\u78C1\u76D8\u4E0A\uFF0C\u4F46\u9762\u677F\u4E0D\u518D\u663E\u793A\u5B83\u4EEC\uFF09\u3002")) return;
     try {
       const mine = await listMyKeys();
@@ -1912,7 +1912,7 @@ function DiskRadarPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs6("div", { className: "dr-top", children: [
       /* @__PURE__ */ jsx6("div", { className: "dr-logo", children: "\u{1F4E1}" }),
       /* @__PURE__ */ jsxs6("div", { className: "dr-tt", children: [
-        /* @__PURE__ */ jsx6("b", { children: "\u78C1\u76D8\u96F7\u8FBE" }),
+        /* @__PURE__ */ jsx6("b", { children: "\u78C1\u76D8\u5206\u6790" }),
         /* @__PURE__ */ jsxs6("small", { children: [
           /* @__PURE__ */ jsx6("i", { className: `dr-dot ${heartbeat.cls}` }),
           heartbeat.text,

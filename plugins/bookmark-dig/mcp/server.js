@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * 书签考古 MCP Server —— AI 工具层（零依赖 stdio，JSON-RPC 2024-11-05）
+ * 书签体检 MCP Server —— AI 工具层（零依赖 stdio，JSON-RPC 2024-11-05）
  *
  * 读路径（stats/search/dead/resurface）：直接读 cap.kv 的 bmd.rec.* 分块，
  * 服务不在线也能用。写路径（import/check/remove/tag）走命令键先删后做，
@@ -91,14 +91,14 @@ async function pollResult(nonce, timeoutMs = 30000) {
 const tools = [
   {
     name: 'dig_stats',
-    description: '书签考古统计：总数/存活/死链/待查/重复、分类分布、死链重灾区域名。适用：「我的书签健康情况怎么样」「有多少死链」。',
+    description: '书签体检统计：总数/存活/死链/待查/重复、分类分布、死链重灾区域名。适用：「我的书签健康情况怎么样」「有多少死链」。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const recs = await readAllRecords();
       if (!recs.length) return ok('书签库是空的。用 dig_import_path 导入浏览器书签导出 HTML，或面板「检查」页选文件导入。');
       const roll = core.rollup(recs);
       const lines = [
-        `书签考古统计（共 ${roll.total} 条）`,
+        `书签体检统计（共 ${roll.total} 条）`,
         `存活 ${roll.alive} · 死链 ${roll.dead} · 待检查 ${roll.pending} · 重复 ${roll.duplicates}`,
         '',
         '分类分布：' + roll.categories.slice(0, 10).map((c) => `${c.name} ${c.count}`).join('，'),

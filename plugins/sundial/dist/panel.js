@@ -710,7 +710,7 @@ var require_core = __commonJS({
     function normalizeEvent2(raw, existing) {
       if (!raw || typeof raw !== "object") return { error: "\u8F7D\u8377\u7F3A\u5931" };
       const prev = existing && typeof existing === "object" ? existing : null;
-      const title = clip(raw.title, TITLE_CAP);
+      const title = clip(raw.title !== void 0 ? raw.title : prev ? prev.title : "", TITLE_CAP);
       if (!title) return { error: "\u6807\u9898\u4E0D\u80FD\u4E3A\u7A7A" };
       const when = parseWhen(raw.start !== void 0 ? raw.start : prev ? prev.start : null);
       if (!when) return { error: "\u65F6\u95F4\u4E0D\u5408\u6CD5\uFF1A\u652F\u6301 2026-10-28\uFF08\u5168\u5929\uFF09\u30012026-10-28 15:00\u3001ISO \u6216\u6BEB\u79D2\u65F6\u95F4\u6233" };
@@ -2251,7 +2251,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     ] }),
     /* @__PURE__ */ jsxs4("div", { className: "sd-card", children: [
       /* @__PURE__ */ jsx4("div", { className: "sd-field", style: { borderTop: "none" }, children: /* @__PURE__ */ jsxs4("div", { className: "sd-field-l", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u65E5\u6677\u670D\u52A1\uFF08ICS \u6293\u53D6 / \u63D0\u9192\u6295\u5F71\uFF09" }),
+        /* @__PURE__ */ jsx4("b", { children: "\u65E5\u7A0B\u63D0\u9192\u670D\u52A1\uFF08ICS \u6293\u53D6 / \u63D0\u9192\u6295\u5F71\uFF09" }),
         /* @__PURE__ */ jsxs4("small", { children: [
           svc === null && "\u72B6\u6001\u672A\u77E5\uFF08\u5BBF\u4E3B\u901A\u9053\u4E0D\u53EF\u7528\uFF1F\uFF09",
           svc && svc.running && `\u8FD0\u884C\u4E2D${meta ? ` \xB7 ${meta.events ?? "?"} \u4E8B\u4EF6 \xB7 ${meta.icsCount ?? 0} \u8BA2\u9605` : ""}`,
@@ -2364,7 +2364,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     ] }),
     /* @__PURE__ */ jsx4("div", { className: "sd-card", children: /* @__PURE__ */ jsxs4("div", { className: "sd-note", style: { borderTop: "none" }, children: [
       /* @__PURE__ */ jsx4("b", { children: "\u5BF9\u8BDD\u5F0F\u7528\u6CD5" }),
-      "\uFF1A\u804A\u5929\u91CC\u5BF9 AI \u8BF4\u300C\u5468\u4E94\u4E0B\u53483\u70B9\u63D0\u9192\u6211\u53D6\u5FEB\u9012\u300D\u300C\u6BCF\u5929\u665A\u4E0A10\u70B9\u63D0\u9192\u80CC\u5355\u8BCD\u5E76\u6253\u5361\u300D\u300C\u8DDD\u79BB\u9AD8\u8003\u8FD8\u6709\u51E0\u5929\u300D\u300C\u8BA2\u9605\u6211\u7684\u8BFE\u8868 ICS \u94FE\u63A5\u300D\uFF0CAI \u4F1A\u8C03\u7528\u65E5\u6677\u7684 MCP \u5DE5\u5177\u76F4\u63A5\u843D\u5E93\u3002",
+      "\uFF1A\u804A\u5929\u91CC\u5BF9 AI \u8BF4\u300C\u5468\u4E94\u4E0B\u53483\u70B9\u63D0\u9192\u6211\u53D6\u5FEB\u9012\u300D\u300C\u6BCF\u5929\u665A\u4E0A10\u70B9\u63D0\u9192\u80CC\u5355\u8BCD\u5E76\u6253\u5361\u300D\u300C\u8DDD\u79BB\u9AD8\u8003\u8FD8\u6709\u51E0\u5929\u300D\u300C\u8BA2\u9605\u6211\u7684\u8BFE\u8868 ICS \u94FE\u63A5\u300D\uFF0CAI \u4F1A\u8C03\u7528\u65E5\u7A0B\u63D0\u9192\u7684 MCP \u5DE5\u5177\u76F4\u63A5\u843D\u5E93\u3002",
       /* @__PURE__ */ jsx4("br", {}),
       /* @__PURE__ */ jsx4("b", { children: "\u63D0\u9192\u89E6\u8FBE" }),
       "\uFF1A\u5230\u671F\u63D0\u9192\u663E\u793A\u5728\u672C\u9762\u677F\u6A2A\u5E45\uFF08\u5E26\u63D0\u793A\u97F3\uFF09+ AI \u7684 sundial_today \u53EF\u89C1\u3002\u4E3B\u5E94\u7528\u6682\u672A\u63D0\u4F9B\u7CFB\u7EDF\u7EA7\u901A\u77E5\u901A\u9053\uFF0C\u62FF\u5230\u540E\u672C\u63D2\u4EF6\u4F1A\u8DDF\u8FDB\u3002",
@@ -2519,7 +2519,7 @@ function SundialPanel({ pluginId, onSendToChat }) {
     const last = data.meta?.lastTickAt;
     if (!last) return { cls: "down", text: "\u670D\u52A1\u672A\u62A5\u544A\u5FC3\u8DF3" };
     const age = Date.now() - last;
-    if (age < 180 * 1e3) return { cls: "ok", text: `\u65E5\u6677\u5728\u7EBF \xB7 ${data.events.length} \u4E8B\u4EF6 \xB7 \u6865 ${data.meta?.bridge || "?"}` };
+    if (age < 180 * 1e3) return { cls: "ok", text: `\u65E5\u7A0B\u63D0\u9192\u5728\u7EBF \xB7 ${data.events.length} \u4E8B\u4EF6 \xB7 \u6865 ${data.meta?.bridge || "?"}` };
     return { cls: "stale", text: `\u5FC3\u8DF3\u505C\u6EDE ${Math.round(age / 6e4)} \u5206\u949F` };
   })();
   const remindCount = data ? data.reminders.filter((r) => !data.acked[r.id] || data.acked[r.id] <= r.remindAt).length : 0;
@@ -2528,7 +2528,7 @@ function SundialPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs5("div", { className: "sd-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "sd-logo", children: "\u{1F31E}" }),
       /* @__PURE__ */ jsxs5("div", { className: "sd-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u65E5\u6677" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u65E5\u7A0B\u63D0\u9192" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           /* @__PURE__ */ jsx5("i", { className: `sd-dot ${heartbeat.cls}` }),
           heartbeat.text

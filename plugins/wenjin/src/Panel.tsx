@@ -1,5 +1,5 @@
 /**
- * 问津面板外壳：头部（状态/心跳）+ 四 Tab（今日 / 投递 / 洞察 / 设置）
+ * 求职台账面板外壳：头部（状态/心跳）+ 四 Tab（今日 / 投递 / 洞察 / 设置）
  *
  * 数据源：cap.kv wenjin.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；派生（管道/跟进/漏斗/offer 对比）全部在 shared/core.js
@@ -149,7 +149,7 @@ export default function WenjinPanel() {
       <div className="wj-top">
         <div className="wj-logo">💧</div>
         <div className="wj-tt">
-          <b>问津</b>
+          <b>求职台账</b>
           <small>
             <span className={`wj-dot ${dotCls}`} />
             {loadErr ? '连接失败' : metaOk ? '台账就绪' : '等待首次记录'}
@@ -181,7 +181,7 @@ export default function WenjinPanel() {
                 : <SettingsTab data={data} reload={reload} toast={showToast} />
         ) : null}
         <div className="wj-foot">
-          问津 · 求职投递与面试作战台账 —— 只做记录、派生与提醒<br />
+          求职台账 · 求职投递与面试作战台账 —— 只做记录、派生与提醒<br />
           不抓取招聘平台、不自动投递；洞察与 offer 对比不构成职业建议
         </div>
       </div>

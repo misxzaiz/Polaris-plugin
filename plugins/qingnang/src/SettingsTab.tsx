@@ -190,14 +190,14 @@ export default function SettingsTab({ data, reload, showToast, pluginId, onSendT
         <div className="qn-card"><div className="qn-card-b">
           <div className="qn-sub" style={{ marginBottom: 8 }}>跟 AI 管家说一句话就能建档排方案：</div>
           <div className="qn-row" style={{ flexWrap: 'wrap', gap: 6 }}>
-            <button className="qn-btn ghost sm" onClick={() => onSendToChat('我妈每天早晚各吃一片氨氯地平，家里还剩一盒24片，效期2027年6月，帮我记到青囊')}>示例：给妈妈排降压药</button>
-            <button className="qn-btn ghost sm" onClick={() => onSendToChat('看看青囊里哪些药快过期了、哪些该买了')}>示例：查效期和补货</button>
+            <button className="qn-btn ghost sm" onClick={() => onSendToChat('我妈每天早晚各吃一片氨氯地平，家里还剩一盒24片，效期2027年6月，帮我记到用药管家')}>示例：给妈妈排降压药</button>
+            <button className="qn-btn ghost sm" onClick={() => onSendToChat('看看用药管家里哪些药快过期了、哪些该买了')}>示例：查效期和补货</button>
           </div>
         </div></div>
       )}
 
       <div className="qn-foot" style={{ fontSize: 11, color: '#8B95A7' }}>
-        青囊只做家庭药事记录与提醒，<b>不提供医疗建议</b>；药物相互作用、剂量调整、停药决定请咨询医生或药师。
+        用药管家只做家庭药事记录与提醒，<b>不提供医疗建议</b>；药物相互作用、剂量调整、停药决定请咨询医生或药师。
       </div>
     </div>
   )

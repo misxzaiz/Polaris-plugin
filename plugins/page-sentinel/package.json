@@ -2,7 +2,7 @@
   "name": "page-sentinel-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "page-sentinel 插件面板（打包用）：网页哨兵",
+  "description": "page-sentinel 插件面板（打包用）：网页监测",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

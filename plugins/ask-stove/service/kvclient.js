@@ -1,6 +1,6 @@
 'use strict';
 /**
- * kvclient.js —— Polaris IPC Bridge 客户端（问灶服务专用，零依赖）
+ * kvclient.js —— Polaris IPC Bridge 客户端（食材管家服务专用，零依赖）
  *
  * 全部数据读写经 router_dispatch（target=cap.kv）透传到宿主 SqliteStorage。
  * 面板 / MCP server / 本服务共享同一份事实库（stove.*）。

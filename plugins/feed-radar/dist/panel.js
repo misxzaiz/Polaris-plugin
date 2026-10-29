@@ -1000,7 +1000,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     setBusy("");
   };
   const clearAll = async () => {
-    if (!window.confirm("\u5220\u9664\u8BA2\u9605\u96F7\u8FBE\u7684\u5168\u90E8\u6570\u636E\uFF08\u8BA2\u9605\u6E90/\u6587\u7AE0/\u6B63\u6587/\u8BBE\u7F6E\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) return;
+    if (!window.confirm("\u5220\u9664RSS \u8BA2\u9605\u7684\u5168\u90E8\u6570\u636E\uFF08\u8BA2\u9605\u6E90/\u6587\u7AE0/\u6B63\u6587/\u8BBE\u7F6E\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) return;
     setBusy("clearAll");
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith("radar."));
@@ -1194,7 +1194,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx3("div", { className: "fr-card", children: /* @__PURE__ */ jsxs3("div", { className: "fr-card-b fr-sub", children: [
-      "\u8BA2\u9605\u96F7\u8FBE feed-radar v0.1.0 \u2014\u2014 RSS/Atom \u8BA2\u9605 + AI \u8BFB\u62A5\u3002",
+      "RSS \u8BA2\u9605 feed-radar v0.1.0 \u2014\u2014 RSS/Atom \u8BA2\u9605 + AI \u8BFB\u62A5\u3002",
       /* @__PURE__ */ jsx3("br", {}),
       "\xB7 \u6D4F\u89C8\u5668\u6709\u540C\u6E90\u7B56\u7565\uFF0C\u672C\u63D2\u4EF6\u628A\u6293\u53D6\u4E0B\u6C89\u5230\u540E\u53F0\u670D\u52A1\u539F\u751F\u6267\u884C\uFF0C\u5929\u7136\u65E0\u8DE8\u57DF\u95EE\u9898\uFF1B",
       /* @__PURE__ */ jsx3("br", {}),
@@ -1361,7 +1361,7 @@ function RadarPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs4("div", { className: "fr-top", children: [
       /* @__PURE__ */ jsx4("div", { className: "fr-logo", children: "\u{1F4E1}" }),
       /* @__PURE__ */ jsxs4("div", { className: "fr-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u8BA2\u9605\u96F7\u8FBE" }),
+        /* @__PURE__ */ jsx4("b", { children: "RSS \u8BA2\u9605" }),
         /* @__PURE__ */ jsxs4("small", { children: [
           /* @__PURE__ */ jsx4("i", { className: `fr-dot ${heartbeat.cls}` }),
           heartbeat.text

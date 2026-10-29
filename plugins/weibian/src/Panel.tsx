@@ -108,7 +108,7 @@ export default function WeibianPanel(_props: { pluginId?: string }) {
       <div className="wb-top">
         <div className="wb-logo">📖</div>
         <div className="wb-tt">
-          <b>韦编</b>
+          <b>文档检索</b>
           <small>本地文档全文检索 · {statusLine}</small>
         </div>
         <div className="wb-tabs">

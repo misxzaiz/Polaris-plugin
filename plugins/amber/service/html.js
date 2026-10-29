@@ -1,9 +1,9 @@
 'use strict';
 /**
- * html.js —— 零依赖容错 HTML 解析器（琥珀服务专用）
+ * html.js —— 零依赖容错 HTML 解析器（网页封存服务专用）
  *
  * 与 page-sentinel 的解析器同源（实测可靠），只保留 DOM 解析与文本部分——
- * 琥珀不需要 CSS 选择器引擎（容器选择靠 extract.js 的打分算法）。
+ * 网页封存不需要 CSS 选择器引擎（容器选择靠 extract.js 的打分算法）。
  * 为什么不用 cheerio/jsdom：插件 zip 打包排除 node_modules（.pluginignore），
  * 服务必须只依赖 Node 内置能力。
  *

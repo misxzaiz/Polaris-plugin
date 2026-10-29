@@ -1,6 +1,6 @@
 'use strict';
 /**
- * tether-core.js —— 故人共享核心（单一权威，零依赖）
+ * tether-core.js —— 人情账本共享核心（单一权威，零依赖）
  *
  * 被 MCP server（CJS require）与面板（esbuild 打包进 bundle）共用：
  * 键空间、人物/往来/承诺归一化、模糊找人、失联分级、生日推算、

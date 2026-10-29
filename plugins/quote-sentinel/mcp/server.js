@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * quote-sentinel MCP Server —— 盘哨的 AI 工具层（无状态透传，零依赖）
+ * quote-sentinel MCP Server —— 行情哨兵的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的 tools/call 翻译为 Polaris IPC bridge 的 router_dispatch
  * （target=cap.kv）读写 qsent.* 键空间，与服务/面板共享同一事实库。
@@ -205,7 +205,7 @@ async function runCommand(cmdKey, resultKey, payload, { timeoutMs = 12000, pollM
       return r;
     }
   }
-  throw new Error('后台服务未响应（可能未运行：设置 → 插件 → 盘哨 查看服务状态）');
+  throw new Error('后台服务未响应（可能未运行：设置 → 插件 → 行情哨兵 查看服务状态）');
 }
 
 // ── 格式化辅助 ─────────────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ async function resolveName(code, id) {
 const tools = [
   {
     name: 'qs_overview',
-    description: '盘哨：大盘概览。返回默认指数（上证指数/深证成指/创业板指）最新行情、自选股涨跌榜与服务运行状态。适合回答「今天大盘怎么样」「我的自选整体如何」。',
+    description: '行情哨兵：大盘概览。返回默认指数（上证指数/深证成指/创业板指）最新行情、自选股涨跌榜与服务运行状态。适合回答「今天大盘怎么样」「我的自选整体如何」。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const settings = (await kvGet(K.settings)) || {};
@@ -291,7 +291,7 @@ const tools = [
         lines.push(`【服务】运行中 v${meta.version || '?'}，轮询间隔 ${meta.pollSec}s（${sess}），数据源 ${meta.lastSource || '暂无'}`
           + (meta.lastError ? `，注意：${meta.lastError}` : ''));
       } else {
-        lines.push('【服务】未检测到运行心跳（后台服务可能未启动：设置 → 插件 → 盘哨）');
+        lines.push('【服务】未检测到运行心跳（后台服务可能未启动：设置 → 插件 → 行情哨兵）');
       }
       lines.push(DISCLAIMER);
       return ok(lines.join('\n'));
@@ -299,7 +299,7 @@ const tools = [
   },
   {
     name: 'qs_quote_query',
-    description: '盘哨：查询 A股/ETF/指数 实时行情。传入 6 位代码（可带 sh/sz/bj 前缀）或已加入自选的代码；经后台服务实时抓取（腾讯主源，东财备源）。不支持场外基金（如 006348）、港股、美股。',
+    description: '行情哨兵：查询 A股/ETF/指数 实时行情。传入 6 位代码（可带 sh/sz/bj 前缀）或已加入自选的代码；经后台服务实时抓取（腾讯主源，东财备源）。不支持场外基金（如 006348）、港股、美股。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -330,7 +330,7 @@ const tools = [
   },
   {
     name: 'qs_search',
-    description: '盘哨：按名称或代码搜索证券（A股/ETF/指数/港股/场外基金均会返回，港股与场外基金标记为不可行情）。用于先把名称变成代码再查询或加自选。',
+    description: '行情哨兵：按名称或代码搜索证券（A股/ETF/指数/港股/场外基金均会返回，港股与场外基金标记为不可行情）。用于先把名称变成代码再查询或加自选。',
     inputSchema: {
       type: 'object',
       properties: { query: { type: 'string', description: '名称或代码，如「茅台」「510300」「券商ETF」' } },
@@ -352,11 +352,11 @@ const tools = [
   },
   {
     name: 'qs_watchlist_list',
-    description: '盘哨：列出自选清单及各标的最新行情快照。',
+    description: '行情哨兵：列出自选清单及各标的最新行情快照。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const ids = await loadWatchIds();
-      if (!ids.length) return ok('自选为空。可用 qs_watchlist_add 添加，或建议用户在盘哨面板添加。');
+      if (!ids.length) return ok('自选为空。可用 qs_watchlist_add 添加，或建议用户在行情哨兵面板添加。');
       const defs = await Promise.all(ids.map((id) => kvGet(K.watch(id)).catch(() => null)));
       const states = await Promise.all(ids.map((id) => kvGet(K.state(id)).catch(() => null)));
       const lines = [`自选 ${ids.length} 只：`];
@@ -371,7 +371,7 @@ const tools = [
   },
   {
     name: 'qs_watchlist_add',
-    description: '盘哨：添加自选。支持 6 位代码（可带 sh/sz/bj 前缀）；000 开头的上证指数必须写 sh000001。港股/美股/场外基金不支持。',
+    description: '行情哨兵：添加自选。支持 6 位代码（可带 sh/sz/bj 前缀）；000 开头的上证指数必须写 sh000001。港股/美股/场外基金不支持。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -396,7 +396,7 @@ const tools = [
   },
   {
     name: 'qs_watchlist_remove',
-    description: '盘哨：移除自选（同时清理其行情缓存与分时数据；提醒规则保留，可另行删除）。',
+    description: '行情哨兵：移除自选（同时清理其行情缓存与分时数据；提醒规则保留，可另行删除）。',
     inputSchema: {
       type: 'object',
       properties: { code: { type: 'string', description: '如 600519 / sh000001' } },
@@ -416,7 +416,7 @@ const tools = [
   },
   {
     name: 'qs_position_set',
-    description: '盘哨：设置或清除持仓（成本价 + 股数），用于面板与概览中显示浮动盈亏。shares/cost 任一 ≤0 或缺省即清除该持仓。',
+    description: '行情哨兵：设置或清除持仓（成本价 + 股数），用于面板与概览中显示浮动盈亏。shares/cost 任一 ≤0 或缺省即清除该持仓。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -441,7 +441,7 @@ const tools = [
   },
   {
     name: 'qs_alert_set',
-    description: '盘哨：新建或修改行情提醒（同一标同一类型只保留一条）。类型：price_above 价格升至、price_below 价格跌至、pct_above 涨幅达、pct_below 跌幅达。每个交易日每条规则最多触发一次。',
+    description: '行情哨兵：新建或修改行情提醒（同一标同一类型只保留一条）。类型：price_above 价格升至、price_below 价格跌至、pct_above 涨幅达、pct_below 跌幅达。每个交易日每条规则最多触发一次。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -476,12 +476,12 @@ const tools = [
       await kvSet(K.alert(alert.id), alert);
       const watchDef = await kvGet(K.watch(r.id)).catch(() => null);
       const name = (watchDef && watchDef.name) || r.id;
-      return ok(`${existing ? '已更新' : '已创建'}提醒 [id=${alert.id}]：${name}(${r.id}) ${describeAlert(alert)}${alert.enabled ? '' : '（当前为暂停状态）'}。触发后写入盘哨面板「提醒」页与 qs_alert_list；删除用 qs_alert_remove 传此 id。`);
+      return ok(`${existing ? '已更新' : '已创建'}提醒 [id=${alert.id}]：${name}(${r.id}) ${describeAlert(alert)}${alert.enabled ? '' : '（当前为暂停状态）'}。触发后写入行情哨兵面板「提醒」页与 qs_alert_list；删除用 qs_alert_remove 传此 id。`);
     },
   },
   {
     name: 'qs_alert_list',
-    description: '盘哨：列出全部提醒规则（含最近触发时间）与最近触发记录。',
+    description: '行情哨兵：列出全部提醒规则（含最近触发时间）与最近触发记录。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const alerts = await loadAlerts();
@@ -510,7 +510,7 @@ const tools = [
   },
   {
     name: 'qs_alert_remove',
-    description: '盘哨：删除提醒规则（按 id；id 可从 qs_alert_list 获得）。',
+    description: '行情哨兵：删除提醒规则（按 id；id 可从 qs_alert_list 获得）。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: '提醒规则 id' } },

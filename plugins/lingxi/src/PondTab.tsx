@@ -132,7 +132,7 @@ export default function PondTab({ ideas, reload, showToast, onOpenIdea, onSendTo
                       <button
                         className="lx-btn ghost sm"
                         onClick={() => onSendToChat(
-                          `灵犀，我刚入池了「${capResult.title}」，池里说有几个相关旧想法，帮我一起盘一盘：它们是重复、可合并，还是该互相链接？`,
+                          `灵感池，我刚入池了「${capResult.title}」，池里说有几个相关旧想法，帮我一起盘一盘：它们是重复、可合并，还是该互相链接？`,
                         )}
                       >
                         去对话里盘一盘

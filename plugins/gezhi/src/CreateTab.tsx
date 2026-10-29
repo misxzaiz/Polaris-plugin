@@ -46,7 +46,7 @@ export default function CreateTab({ ctx }: { ctx: PanelCtx }) {
     const sheet: CoreNS.SheetSpec = {
       ...ingest.sheet,
       name: sheetName.trim() || '数据',
-      ...(captionOn ? { caption: `生成于 ${new Date().toISOString().slice(0, 10)} · ${title.trim() || '格致'}` } : {}),
+      ...(captionOn ? { caption: `生成于 ${new Date().toISOString().slice(0, 10)} · ${title.trim() || 'Excel 工坊'}` } : {}),
       ...opts,
       ...(statsOn ? { stats: [{ type: 'sum' as const }] } : {}),
     }

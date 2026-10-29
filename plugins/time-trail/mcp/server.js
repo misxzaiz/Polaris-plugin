@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * time-trail MCP Server —— 刻漏的 AI 工具层（零依赖 stdio）
+ * time-trail MCP Server —— 时间统计的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 timetrail.* 键空间的读数/归类/控制。归集/落盘全部由后台服务单权威执行
@@ -71,7 +71,7 @@ function freshAge(snap) {
 async function snapshotHealthHint() {
   const snap = await loadSnapshot();
   if (!snap || typeof snap !== 'object') {
-    return { snap: null, hint: '暂无快照：刻漏后台服务可能未运行（Polaris 设置→插件→刻漏 查看服务状态；面板设置 Tab 可一键启动）' };
+    return { snap: null, hint: '暂无快照：时间统计后台服务可能未运行（Polaris 设置→插件→时间统计 查看服务状态；面板设置 Tab 可一键启动）' };
   }
   const age = freshAge(snap);
   if (age > 120) {
@@ -157,11 +157,11 @@ const tools = [
       const cats = await loadCats();
       const day = await loadDay(core.dateKeyOf(Date.now()));
       if (!day) {
-        return ok(`${hint}\n\n今日（${core.dateKeyOf(Date.now())}）暂无记录：${snap.paused ? '刻漏处于暂停（隐私模式）' : '服务刚启动或采集器未运行'}`);
+        return ok(`${hint}\n\n今日（${core.dateKeyOf(Date.now())}）暂无记录：${snap.paused ? '时间统计处于暂停（隐私模式）' : '服务刚启动或采集器未运行'}`);
       }
       const agg = core.aggregateDays([day], { rules: cats });
       const lines = [];
-      lines.push(`刻漏 · ${day.date} · 采集器${snap.collector === 'alive' ? '正常' : snap.collector === 'dead' ? '离线' : '不支持'}（${snap.tickSec}s 采样，空闲阈值 ${snap.idleSec}s）`);
+      lines.push(`时间统计 · ${day.date} · 采集器${snap.collector === 'alive' ? '正常' : snap.collector === 'dead' ? '离线' : '不支持'}（${snap.tickSec}s 采样，空闲阈值 ${snap.idleSec}s）`);
       if (hint) lines.push(`⚠ ${hint}`);
       lines.push(renderCurrent(snap));
       lines.push('');
@@ -201,7 +201,7 @@ const tools = [
         for (let i = 0; i < n; i++) dates.push(core.dateKeyOf(now - i * 86400000));
       }
       const days = (await Promise.all(dates.map((d) => loadDay(d)))).filter(Boolean);
-      if (!days.length) return ok(`区间 ${dates[0]} ~ ${dates[dates.length - 1]} 暂无记录（刻漏可能刚安装，或处于暂停）。`);
+      if (!days.length) return ok(`区间 ${dates[0]} ~ ${dates[dates.length - 1]} 暂无记录（时间统计可能刚安装，或处于暂停）。`);
       const agg = core.aggregateDays(days, {
         rules,
         app: args && args.app ? String(args.app) : undefined,
@@ -212,7 +212,7 @@ const tools = [
         args && args.cat ? `分类=${args.cat}（${core.CATEGORIES[args.cat] ? core.CATEGORIES[args.cat].label : args.cat}）` : '',
       ].filter(Boolean).join('，');
       const lines = [];
-      lines.push(`刻漏查询 · ${days.length} 天（${dates[dates.length - 1]} ~ ${dates[0]}）${filterTxt ? ` · 过滤：${filterTxt}` : ''}`);
+      lines.push(`时间统计查询 · ${days.length} 天（${dates[dates.length - 1]} ~ ${dates[0]}）${filterTxt ? ` · 过滤：${filterTxt}` : ''}`);
       lines.push(`合计活跃 ${core.fmtDur(agg.totalSec)} · 空闲 ${core.fmtDur(agg.idleSec)} · 切换 ${agg.switches} 次 · 日均 ${core.fmtDur(Math.round(agg.totalSec / days.length))}`);
       lines.push('');
       lines.push('分类合计：');
@@ -309,7 +309,7 @@ const tools = [
   },
   {
     name: 'timetrail_control',
-    description: '刻漏控制：status 查看服务/采集器健康与隐私设置；pause 暂停采集（隐私模式，期间什么都不记）；resume 恢复采集。适用于「先别记了」「现在采集正常吗」。',
+    description: '时间统计控制：status 查看服务/采集器健康与隐私设置；pause 暂停采集（隐私模式，期间什么都不记）；resume 恢复采集。适用于「先别记了」「现在采集正常吗」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -332,7 +332,7 @@ const tools = [
       // status
       const { snap, hint } = await snapshotHealthHint();
       const meta = await kv.kvGet(core.K.meta).catch(() => null);
-      const lines = ['刻漏状态：'];
+      const lines = ['时间统计状态：'];
       if (meta && typeof meta === 'object') {
         lines.push(`  服务：pid=${meta.pid}，运行 ${core.fmtDur(Math.round((Date.now() - (meta.startedAt || Date.now())) / 1000))}，桥=${meta.bridge || '未连接'}`);
         lines.push(`  采集器：${snap ? snap.collector : '?'}（重启 ${meta.collectorRestarts || 0} 次）`);

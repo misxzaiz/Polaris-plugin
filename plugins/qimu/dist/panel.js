@@ -8552,7 +8552,7 @@ var require_render = __commonJS({
       const pptx = new PptxGenJS();
       pptx.defineLayout({ name: "QIMU_W16x9", width: g.W, height: g.H });
       pptx.layout = "QIMU_W16x9";
-      pptx.author = deck.author || "Polaris \u542F\u5E55";
+      pptx.author = deck.author || "Polaris PPT \u5DE5\u574A";
       pptx.title = deck.title;
       pptx.subject = deck.subtitle || deck.title;
       pptx.company = "Polaris";
@@ -9131,7 +9131,7 @@ function QimuPanel(_props) {
     /* @__PURE__ */ jsxs4("div", { className: "qm-top", children: [
       /* @__PURE__ */ jsx4("div", { className: "qm-logo", children: "\u{1F3AC}" }),
       /* @__PURE__ */ jsxs4("div", { className: "qm-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u542F\u5E55" }),
+        /* @__PURE__ */ jsx4("b", { children: "PPT \u5DE5\u574A" }),
         /* @__PURE__ */ jsx4("small", { children: "AI PPT \u5DE5\u5382 \xB7 \u5927\u7EB2\u8FDB\uFF0C\u53EF\u7F16\u8F91 PPTX \u51FA" })
       ] }),
       /* @__PURE__ */ jsx4("div", { className: "qm-tabs", children: [

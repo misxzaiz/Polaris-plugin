@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * weibian MCP Server —— 韦编的 AI 工具层（零依赖 stdio）
+ * weibian MCP Server —— 文档检索的 AI 工具层（零依赖 stdio）
  *
- * 职责：把 AI 的 tools/call 翻译为对韦编后台服务（127.0.0.1 + token）的调用。
+ * 职责：把 AI 的 tools/call 翻译为对文档检索后台服务（127.0.0.1 + token）的调用。
  * 服务地址与 token 从 cap.kv `weibian.meta` 读取（经 Polaris IPC bridge 自发现，
  * 与服务/面板共享同一份事实库）。本进程零外网请求。
  *
@@ -59,7 +59,7 @@ async function serviceMeta(force) {
 async function callService(method, apiPath, body) {
   const meta = await serviceMeta(method === 'status' || method === 'search');
   if (!meta) {
-    return { ok: false, status: 0, error: '韦编服务未就绪（尚未写入 weibian.meta）：请让用户打开一次韦编面板，或稍后重试（服务由宿主自动拉起）。' };
+    return { ok: false, status: 0, error: '文档检索服务未就绪（尚未写入 weibian.meta）：请让用户打开一次文档检索面板，或稍后重试（服务由宿主自动拉起）。' };
   }
   const base = `http://127.0.0.1:${meta.port}`;
   const controller = new AbortController();
@@ -76,7 +76,7 @@ async function callService(method, apiPath, body) {
     return { ok: res.ok && json.ok !== false, status: res.status, json, error: json.error };
   } catch (e) {
     const msg = String((e && e.message) || e);
-    return { ok: false, status: 0, error: /abort/i.test(msg) ? '服务请求超时（索引可能正在大量重建，稍后重试）' : `服务不可达：${msg}（服务可能未启动；让用户打开一次韦编面板即可拉起）` };
+    return { ok: false, status: 0, error: /abort/i.test(msg) ? '服务请求超时（索引可能正在大量重建，稍后重试）' : `服务不可达：${msg}（服务可能未启动；让用户打开一次文档检索面板即可拉起）` };
   } finally {
     clearTimeout(timer);
   }
@@ -121,7 +121,7 @@ async function toolStatus() {
   const s = r.json;
   const errLine = s.errors && s.errors.length ? `\n最近问题：${s.errors.map((e) => `${e.path}（${e.reason}）`).join('；')}` : '';
   return ok([
-    `韦编索引状态：`,
+    `文档检索索引状态：`,
     `- 文档 ${s.docs}（上限 ${s.maxDocs}${s.capped ? '，已触顶——建议拆分目录或调大上限' : ''}），词项 ${s.tokens}，覆盖 ${Math.round((s.bytes || 0) / 1048576)} MB 源文件`,
     `- 索引目录 ${s.roots} 个；扫描${s.scanning ? `进行中（待处理 ${s.pending}）` : '空闲'}，上次耗时 ${s.lastScanMs || 0}ms`,
     `- 服务桥${s.degraded ? '降级（宿主桥不可达，搜索仍可用，设置不刷新）' : '正常'}`,
@@ -139,7 +139,7 @@ async function toolReindex(args) {
 const tools = [
   {
     name: 'weibian_search',
-    description: '韦编·本地文档全文检索：在用户配置的索引目录（笔记/spec/PDF/文档/代码）里按关键词搜索，返回文件路径与命中片段，按相关性排序。支持前缀过滤：ext:pdf（或 ext:text/ext:code/ext:docx/ext:html 类别名）与 dir:子目录名。AI 需要引用用户本地资料、找"我写过/看过的内容"时用这个；拿到结果后用 weibian_read 取上下文。',
+    description: '文档检索·本地文档全文检索：在用户配置的索引目录（笔记/spec/PDF/文档/代码）里按关键词搜索，返回文件路径与命中片段，按相关性排序。支持前缀过滤：ext:pdf（或 ext:text/ext:code/ext:docx/ext:html 类别名）与 dir:子目录名。AI 需要引用用户本地资料、找"我写过/看过的内容"时用这个；拿到结果后用 weibian_read 取上下文。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -151,7 +151,7 @@ const tools = [
   },
   {
     name: 'weibian_read',
-    description: '韦编·只读原文：读取索引目录内文件的可读文本（txt/md/代码/PDF 文字层/docx/html），用于检索命中后取上下文引用。只能读用户配置的索引目录内的文件（越界会拒绝）；分段续读用 offset。',
+    description: '文档检索·只读原文：读取索引目录内文件的可读文本（txt/md/代码/PDF 文字层/docx/html），用于检索命中后取上下文引用。只能读用户配置的索引目录内的文件（越界会拒绝）；分段续读用 offset。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -164,12 +164,12 @@ const tools = [
   },
   {
     name: 'weibian_status',
-    description: '韦编·索引状态：文档数/词项数/索引目录/扫描进度/最近问题。检索结果为空时先看这里（索引是否已建立、目录是否在范围内、是否触顶）。',
+    description: '文档检索·索引状态：文档数/词项数/索引目录/扫描进度/最近问题。检索结果为空时先看这里（索引是否已建立、目录是否在范围内、是否触顶）。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'weibian_reindex',
-    description: '韦编·重建索引：all=true 清空重建（慢，全量重提取）；否则增量重扫（通常不需要，服务每 10 分钟自动对账）。仅在用户明确要求"重建索引"时使用。',
+    description: '文档检索·重建索引：all=true 清空重建（慢，全量重提取）；否则增量重扫（通常不需要，服务每 10 分钟自动对账）。仅在用户明确要求"重建索引"时使用。',
     inputSchema: {
       type: 'object',
       properties: { all: { type: 'boolean', description: 'true=清空重建；缺省=增量重扫' } },

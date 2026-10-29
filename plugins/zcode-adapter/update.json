@@ -1,0 +1,36 @@
+{
+  "id": "opts.zcode-adapter",
+  "name": "ZCode 插件适配器",
+  "version": "0.1.0",
+  "description": "通用方言适配器参考实现：发现并翻译 ZCode (.zcode-plugin/plugin.json) 插件格式。适配器只有翻译权，准入校验由宿主独占（plans/plugin-adapter-capability-spec.md）。",
+  "enabledByDefault": false,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "zcode-adapter-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ],
+    "adapters": [
+      {
+        "id": "adapter.zcode",
+        "tool": "discover",
+        "idPrefix": "zcode.",
+        "roots": ["${WORKSPACE}/.zcode-plugins"],
+        "timeoutMs": 3000
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/zcode-adapter.zip"
+  }
+}

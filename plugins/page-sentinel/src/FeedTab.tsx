@@ -34,7 +34,7 @@ export default function FeedTab({ onSendToChat, showToast, markRead, unread }: {
 
   const sendToChat = async (ev: SentinelEvent) => {
     const lines = [
-      `【网页哨兵】监控「${ev.targetName || ev.targetId}」${EVENT_TYPE_META[ev.type]?.label || ev.type}：${ev.summary}`,
+      `【网页监测】监控「${ev.targetName || ev.targetId}」${EVENT_TYPE_META[ev.type]?.label || ev.type}：${ev.summary}`,
       `时间：${new Date(ev.at).toLocaleString('zh-CN', { hour12: false })}`,
     ]
     if (ev.diff && ev.diff.length) {

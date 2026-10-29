@@ -618,7 +618,7 @@ function ClipRelayPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs3("div", { className: "cr-top", children: [
       /* @__PURE__ */ jsx3("div", { className: "cr-logo", children: "\u{1F4CB}" }),
       /* @__PURE__ */ jsxs3("div", { className: "cr-tt", children: [
-        /* @__PURE__ */ jsx3("b", { children: "\u63A5\u529B\u677F" }),
+        /* @__PURE__ */ jsx3("b", { children: "\u6587\u672C\u63A5\u529B" }),
         /* @__PURE__ */ jsxs3("small", { children: [
           /* @__PURE__ */ jsx3("i", { className: `cr-dot ${hb.cls}` }),
           hb.text

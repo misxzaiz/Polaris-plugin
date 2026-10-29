@@ -1,5 +1,5 @@
 /**
- * 入口：观止面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：书影音账本面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import GuanzhiPanel from './Panel'
 

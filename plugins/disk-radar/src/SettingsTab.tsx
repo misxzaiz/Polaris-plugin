@@ -121,7 +121,7 @@ export default function SettingsTab({ data, reload, showToast }: TabProps) {
   }
 
   const clearAll = async () => {
-    if (!window.confirm('清空磁盘雷达的全部本地数据（设置/根/快照/垃圾/隔离区清单）？磁盘文件不受影响。')) return
+    if (!window.confirm('清空磁盘分析的全部本地数据（设置/根/快照/垃圾/隔离区清单）？磁盘文件不受影响。')) return
     if (!window.confirm('再次确认：这一步不可撤销（隔离区文件仍在磁盘上，但面板不再显示它们）。')) return
     try {
       const mine = await listMyKeys()

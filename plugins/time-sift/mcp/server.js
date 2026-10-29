@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * server.js —— 拾光机 MCP server（stdio JSON-RPC，零依赖）
+ * server.js —— 会话记忆 MCP server（stdio JSON-RPC，零依赖）
  *
- * 把 AI 的 tools/call 翻译成对拾光机数据面的操作：
+ * 把 AI 的 tools/call 翻译成对会话记忆数据面的操作：
  *   sift_search / sift_open_session → 命令信箱（cmd 键先写后等服务结果，服务持有索引）
  *   sift_timeline / sift_stats      → 直读 cap.kv（目录/统计键，服务离线也能用）
  *   sift_reindex                    → 命令信箱（异步触发，confirm 护栏，不等待完成）
@@ -74,14 +74,14 @@ const TOOLS = [
   {
     name: 'sift_stats',
     description:
-      '读拾光机足迹统计：总会话/消息/散文量、活跃天数、各来源分布、token 覆盖口径、索引状态。' +
-      '适用：「我和 AI 聊了多少」「拾光机索引好了没」。',
+      '读会话记忆足迹统计：总会话/消息/散文量、活跃天数、各来源分布、token 覆盖口径、索引状态。' +
+      '适用：「我和 AI 聊了多少」「会话记忆索引好了没」。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'sift_reindex',
     description:
-      '触发拾光机全量重建索引（重活：重读全部数据源）。适用：索引状态异常/新装插件首次建索引失败后手动重建。' +
+      '触发会话记忆全量重建索引（重活：重读全部数据源）。适用：索引状态异常/新装插件首次建索引失败后手动重建。' +
       '异步执行不等待完成，重建进度看 sift_stats 的 indexing 字段。危险度低但耗资源，需 confirm。',
     inputSchema: {
       type: 'object',
@@ -114,7 +114,7 @@ async function mailboxCall(op, payload, { deadlineMs = 20000 } = {}) {
   }
   return {
     ok: false,
-    error: `等待服务响应超时（${deadlineMs}ms）。后台服务可能未运行或索引未就绪——去「拾光机」面板的设置页看服务状态，或稍后重试。`,
+    error: `等待服务响应超时（${deadlineMs}ms）。后台服务可能未运行或索引未就绪——去「会话记忆」面板的设置页看服务状态，或稍后重试。`,
   };
 }
 

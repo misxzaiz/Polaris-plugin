@@ -1,5 +1,5 @@
 /**
- * 金匮面板外壳：头部 + 四 Tab（总览 / 保单 / 透视 / 设置）
+ * 保单台账面板外壳：头部 + 四 Tab（总览 / 保单 / 透视 / 设置）
  *
  * 数据源：cap.kv jinkui.* 键空间（经宿主 invoke → router_dispatch）。
  * 无后台服务——缴费进度/状态机/缺口矩阵/现金流全部经 shared/core 本地现算
@@ -153,7 +153,7 @@ export default function JinkuiPanel({ pluginId, onSendToChat }: {
       <div className="jk-top">
         <div className="jk-logo">🛡️</div>
         <div className="jk-tt">
-          <b>金匮</b>
+          <b>保单台账</b>
           <small>家庭保单台账 · {data ? `${data.policies.length} 张入柜 · 数据仅存本机` : '加载中…'}</small>
         </div>
         <div className="jk-tabs">
@@ -177,7 +177,7 @@ export default function JinkuiPanel({ pluginId, onSendToChat }: {
           {tab === 'policies' && <PoliciesTab {...tabProps} states={states} />}
           {tab === 'insights' && <InsightsTab {...tabProps} states={states} />}
           {tab === 'settings' && <SettingsTab {...tabProps} />}
-          <div className="jk-foot">金匮只做保单记录与现状透视：状态/宽限期/缺口为台账口径投影，与保司实际条款可能有出入；<br />不构成投保建议，退保/复效/理赔以保司合同与客服为准。数据仅存本机（cap.kv）。</div>
+          <div className="jk-foot">保单台账只做保单记录与现状透视：状态/宽限期/缺口为台账口径投影，与保司实际条款可能有出入；<br />不构成投保建议，退保/复效/理赔以保司合同与客服为准。数据仅存本机（cap.kv）。</div>
         </div>
       </div>
       {toast && <div className={`jk-toast ${toast.bad ? 'bad' : ''}`}>{toast.msg}</div>}

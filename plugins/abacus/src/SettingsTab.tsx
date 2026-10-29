@@ -205,7 +205,7 @@ export default function SettingsTab({ ctx, busy, onCmd, onSaveSettings, defaults
 
       <div className="ab-sec"><i className="ab-bar" />口径说明（为什么两边的「输入」不一样）</div>
       <div className="ab-card"><div className="ab-card-b ab-caliber">
-        三种来源的 input_tokens 语义不同，算盘在计价前已显式归一（详见 plans spec 与 README）：
+        三种来源的 input_tokens 语义不同，AI 用量账在计价前已显式归一（详见 plans spec 与 README）：
         <br />• <code>zcode</code>：input <b>含</b>缓存读/写 → 全价输入 = input − cacheRead − cacheWrite
         <br />• <code>claude</code>：input <b>不含</b>缓存（Anthropic API 惯例）→ 全价输入 = input
         <br />• <code>polaris</code>：input <b>不含</b>缓存（宿主网关语义），costUsd 直接采用宿主网关结算值

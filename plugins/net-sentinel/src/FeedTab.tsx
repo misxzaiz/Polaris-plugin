@@ -38,7 +38,7 @@ export default function FeedTab({ onSendToChat, showToast, markRead, unread, rel
 
   const doSend = (ev: NetEvent) => {
     if (!onSendToChat) return
-    onSendToChat(`【网哨事件】${new Date(ev.at).toLocaleString('zh-CN', { hour12: false })} ${ev.summary}`)
+    onSendToChat(`【网络哨兵事件】${new Date(ev.at).toLocaleString('zh-CN', { hour12: false })} ${ev.summary}`)
   }
 
   if (events === null) return <div className="ns-empty">加载中…</div>

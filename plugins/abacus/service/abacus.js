@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * abacus.js —— 算盘后台服务（AI 花销账房的唯一聚合权威）
+ * abacus.js —— AI 用量账后台服务（AI 花销账房的唯一聚合权威）
  *
  * 职责与边界：
  *  - 唯一读源：三路数据源（zcode db.sqlite / ~/.claude JSONL / <dataRoot> dialogs）只由本进程读取

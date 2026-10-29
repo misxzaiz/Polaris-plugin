@@ -1,5 +1,5 @@
 /**
- * 启幕面板外壳：头部（当前主题/大纲状态速览）+ 三 Tab（创作 / 作品 / 设置）
+ * PPT 工坊面板外壳：头部（当前主题/大纲状态速览）+ 三 Tab（创作 / 作品 / 设置）
  * 创作流：大纲 DSL → core 归一化 + layout 几何 → HTML 预览（同一几何，≈成品）
  *         → 本地构建（同一渲染器，浏览器 blob 下载）或对话里让 AI 走 ppt_build 落盘。
  */
@@ -112,7 +112,7 @@ export default function QimuPanel(_props: { pluginId: string; onSendToChat?: (m:
       <div className="qm-top">
         <div className="qm-logo">🎬</div>
         <div className="qm-tt">
-          <b>启幕</b>
+          <b>PPT 工坊</b>
           <small>AI PPT 工厂 · 大纲进，可编辑 PPTX 出</small>
         </div>
         <div className="qm-tabs">

@@ -2,7 +2,7 @@
   "name": "decision-journal-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "decision-journal 插件面板（打包用）：谋定·决策日记",
+  "description": "decision-journal 插件面板（打包用）：决策日志·决策日记",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

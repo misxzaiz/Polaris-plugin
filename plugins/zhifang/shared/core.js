@@ -1,6 +1,6 @@
 'use strict';
 /**
- * core.js —— 纸坊（zhifang）纯函数核心（零依赖）
+ * core.js —— PDF 工坊（zhifang）纯函数核心（零依赖）
  *
  * 面板 / service / MCP 三方同源：页码规格解析、输出命名、输入校验、
  * 设置归一化、人类可读格式化全部在这里，口径不漂移。

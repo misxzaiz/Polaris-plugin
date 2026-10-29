@@ -2,7 +2,7 @@
   "name": "shouzha-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "shouzha 插件面板（打包用）：守闸订阅与续费管家",
+  "description": "shouzha 插件面板（打包用）：续费管家订阅与续费管家",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

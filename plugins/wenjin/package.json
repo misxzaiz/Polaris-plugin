@@ -2,7 +2,7 @@
   "name": "wenjin-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "wenjin 插件面板（打包用）：问津——求职投递与面试作战台账",
+  "description": "wenjin 插件面板（打包用）：求职台账——求职投递与面试作战台账",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

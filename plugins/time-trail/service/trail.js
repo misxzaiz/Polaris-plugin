@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * trail.js —— 刻漏服务主循环（时间归集引擎，天账本唯一写者）
+ * trail.js —— 时间统计服务主循环（时间归集引擎，天账本唯一写者）
  *
  * 架构（spec §3/§5，主仓 plans/time-trail-plugin-spec.md）：
  *   spawn collector.ps1（PowerShell 子进程，stdout=JSONL）

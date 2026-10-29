@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * sundial.js —— 日晷后台服务（零依赖，node >= 18，需全局 fetch）
+ * sundial.js —— 日程提醒后台服务（零依赖，node >= 18，需全局 fetch）
  *
  * 职责（sundial.* 键空间里「提醒投影 / ICS 同步 / 运行态」的单写权威）：
  *   - 提醒投影：按事件 + remind 展开（shared/core），到期窗口内写 sundial.reminders，

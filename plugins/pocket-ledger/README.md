@@ -1,14 +1,14 @@
-# 口袋账本（pocket-ledger）
+# 日常记账（pocket-ledger）
 
 > 对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查，「这个月哪个分类超预算了」就有答案。
 
-- 面板（ActivityBar → 📋 口袋账本）：记账 / 明细 / 统计 / 设置 四 Tab
+- 面板（ActivityBar → 📋 日常记账）：记账 / 明细 / 统计 / 设置 四 Tab
 - AI 工具（MCP 5 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账
 - **纯本地**：数据只在 cap.kv（`ledger.*`），零后台服务、零网络请求、不出设备
 
 ## 设计取舍（与 page-sentinel 互补）
 
-page-sentinel 是"重服务"插件（抓取必须下沉后台）；口袋账本是插件规范推荐的**零进程无状态**模式的样板——所有计算在 `shared/ledger-core.js`（面板与 MCP 共用的单一权威），宿主 cap.kv 承担全部存储。
+page-sentinel 是"重服务"插件（抓取必须下沉后台）；日常记账是插件规范推荐的**零进程无状态**模式的样板——所有计算在 `shared/ledger-core.js`（面板与 MCP 共用的单一权威），宿主 cap.kv 承担全部存储。
 
 ## 数据契约（cap.kv `ledger.*` 键空间）
 

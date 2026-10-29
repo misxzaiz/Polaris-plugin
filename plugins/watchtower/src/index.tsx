@@ -1,5 +1,5 @@
 /**
- * 入口：守望台插件面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：插件运营插件面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import WatchtowerPanel from './Panel'
 

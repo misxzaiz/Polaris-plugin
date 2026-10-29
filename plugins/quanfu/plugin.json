@@ -1,6 +1,6 @@
 {
   "id": "quanfu",
-  "name": "泉府",
+  "name": "贷款台账",
   "version": "0.1.0",
   "description": "贷款全生命周期台账：把家庭「最大的一笔负债」变成可对话、可对账、会主动提醒的活资产。聊天里说「我有一笔 100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」一句话建档；「提前还 20 万，缩期还是减月供」三方案并列对比（省息/月供/期限）；「这个月重定价了 3.3%」「银行说我剩 65 万」即记即对账。等额本息/等额本金/先息后本三引擎 + 事件分段重放（利率变更/提前还款）+ 重定价日倒数 + 年度本息构成，组合贷归组。纯本地零网络（cap.kv，无服务进程），数据不出设备。只做记录与测算，不构成金融建议。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "quanfu",
         "icon": "AlertCircle",
         "labelKey": "plugins.quanfu",
-        "labelDefault": "泉府",
+        "labelDefault": "贷款台账",
         "order": 89
       }
     ],
@@ -25,7 +25,10 @@
         "id": "quanfu",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

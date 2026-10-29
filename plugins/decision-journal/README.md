@@ -1,6 +1,6 @@
-# 谋定（decision-journal）· 决策日记
+# 决策日志（decision-journal）· 决策日记
 
-> 谋定而后动，知止而有得。
+> 决策日志而后动，知止而有得。
 
 把「决定」本身变成可复盘、可校准的资产：
 
@@ -11,7 +11,7 @@
 
 ## 入口
 
-- **面板**：ActivityBar「谋定」——总览（到期清单+速览）/ 决策（列表/详情/新建/复盘）/ 校准（曲线+经验卡）/ 设置。
+- **面板**：ActivityBar「决策日志」——总览（到期清单+速览）/ 决策（列表/详情/新建/复盘）/ 校准（曲线+经验卡）/ 设置。
 - **AI（MCP，9 工具）**：`decision_create` / `decision_settle` / `decision_resolve` / `decision_list` / `decision_get` / `decision_update` / `decision_shelve` / `decision_stats` / `decision_delete`。
 
 对话示例：

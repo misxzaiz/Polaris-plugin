@@ -1,5 +1,5 @@
 /**
- * 网页哨兵面板外壳：头部（状态/心跳）+ 三 Tab（监控 / 动态 / 设置）
+ * 网页监测面板外壳：头部（状态/心跳）+ 三 Tab（监控 / 动态 / 设置）
  *
  * 数据源：cap.kv sentinel.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；外网抓取由后台服务原生执行（跨域问题的根本解法）。
@@ -187,7 +187,7 @@ export default function SentinelPanel({ pluginId, onSendToChat }: {
       <div className="ps-top">
         <div className="ps-logo">🛡️</div>
         <div className="ps-tt">
-          <b>网页哨兵</b>
+          <b>网页监测</b>
           <small>
             <i className={`ps-dot ${heartbeat.cls}`} />
             {heartbeat.text}

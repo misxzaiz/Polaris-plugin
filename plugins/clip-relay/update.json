@@ -1,8 +1,8 @@
 {
   "id": "clip-relay",
-  "name": "接力板",
+  "name": "文本接力",
   "version": "0.1.0",
-  "description": "跨设备文本接力板：桌面复制的内容（链接/报错栈/口令/片段），手机上打开 Polaris 一键取用；手机打字也能送到桌面。杀手锏是 MCP 工具 relay_push——聊天里说「把这个链接发到我手机上」，AI 直接推送到所有设备。URL 推送由后台服务抓取网页标题摘要（外网抓取下沉服务原生执行，浏览器同源策略管不到它，跨域问题根治），条目显示真实标题而非裸链接。纯 cap.kv 单事实库，桌面/Web/手机三端一致；含置顶常用片段、未读角标、保留策略自动清理。",
+  "description": "跨设备文本文本接力：桌面复制的内容（链接/报错栈/口令/片段），手机上打开 Polaris 一键取用；手机打字也能送到桌面。杀手锏是 MCP 工具 relay_push——聊天里说「把这个链接发到我手机上」，AI 直接推送到所有设备。URL 推送由后台服务抓取网页标题摘要（外网抓取下沉服务原生执行，浏览器同源策略管不到它，跨域问题根治），条目显示真实标题而非裸链接。纯 cap.kv 单事实库，桌面/Web/手机三端一致；含置顶常用片段、未读角标、保留策略自动清理。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -12,7 +12,7 @@
         "panelType": "clipRelay",
         "icon": "ClipboardList",
         "labelKey": "plugins.clipRelay",
-        "labelDefault": "接力板",
+        "labelDefault": "文本接力",
         "order": 74
       }
     ],

@@ -1,0 +1,45 @@
+{
+  "id": "duzhi",
+  "name": "消费账单",
+  "version": "0.1.0",
+  "description": "家庭账单透视：把微信/支付宝官方导出的账单，变成一本可对话、可透视、数据不出本机的消费账。邮箱账单 zip 拖进面板（微信需输解压密码）或对 AI 说「帮我导入下载目录里的账单」即自动去重入库；月度现金流/分类占比/商户 top/退款单列口径；聊天里问「上月奶茶花了多少」即查即答；按批次一键撤销；分类关键词规则可教。纯本地零网络（cap.kv，无服务进程），解压密码只在内存用一次，零账号零上传。只做统计透视，不构成理财建议。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "duzhi.panel",
+        "area": "activityBar",
+        "panelType": "duzhi",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.duzhi",
+        "labelDefault": "消费账单",
+        "order": 93
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "duzhi",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/duzhi",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/duzhi.zip"
+  }
+}

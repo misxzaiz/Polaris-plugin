@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（数据方舟面板专用，与 page-sentinel / pocket-ledger 同一模式）
+ * 宿主 API 访问层（数据备份面板专用，与 page-sentinel / pocket-ledger 同一模式）
  *
  * 数据读写统一走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__）：
  *   - 桌面 Tauri：直连后端 IPC（Source::Bootstrap）

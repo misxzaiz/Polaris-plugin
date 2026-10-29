@@ -1,6 +1,6 @@
 'use strict';
 /**
- * decision-core.js —— 谋定共享核心（单一权威，零依赖）
+ * decision-core.js —— 决策日志共享核心（单一权威，零依赖）
  *
  * 被 MCP server（CJS require）与面板（esbuild 打包进 bundle）共用：
  * 键空间、决策归一化、状态机守卫、到期判定、校准数学（分桶命中率/Brier/bias）、

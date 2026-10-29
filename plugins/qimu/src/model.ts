@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（启幕面板）
+ * 通信层 + 数据访问（PPT 工坊面板）
  *
  * 计算逻辑全部复用 shared/core.js 与 mcp/render.js（与 MCP 同一权威，esbuild
  * 打包进 bundle——render.js 无 node 依赖，可在浏览器跑，outputType: 'blob'）。

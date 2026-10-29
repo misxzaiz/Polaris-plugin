@@ -1,6 +1,6 @@
 'use strict';
 /**
- * snapshot.js —— 数据方舟快照引擎（零依赖，node >= 18）
+ * snapshot.js —— 数据备份快照引擎（零依赖，node >= 18）
  *
  * 设计要点（生产级约束）：
  *  1. 内容寻址存储（CAS）：对象 = objects/<h2>/<sha256>.gz，全库去重——

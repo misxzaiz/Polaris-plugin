@@ -5,8 +5,8 @@ import { fmtDate, timeAgo, reviewLabel, confidenceWord,
   OUTCOME_META, STATUS_META, type PanelCtx } from './model'
 
 const SAMPLE_PROMPTS = [
-  '帮我立此存照：我在纠结要不要把 X 迁到 RouterBus（帮我把这个两难记进谋定）',
-  '谋定里有什么决定快到期该复盘了？',
+  '帮我立此存照：我在纠结要不要把 X 迁到 RouterBus（帮我把这个两难记进决策日志）',
+  '决策日志里有什么决定快到期该复盘了？',
   '我最近的判断准不准？看看我的决策校准报告',
 ]
 

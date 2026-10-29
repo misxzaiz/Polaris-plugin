@@ -1,6 +1,6 @@
 'use strict';
 /**
- * kvclient.js —— Polaris IPC Bridge 客户端（算盘 vendored，与 feed-radar/clip-relay/page-sentinel 同一套验证过的样板，勿改协议）
+ * kvclient.js —— Polaris IPC Bridge 客户端（AI 用量账 vendored，与 feed-radar/clip-relay/page-sentinel 同一套验证过的样板，勿改协议）
  *
  * 与 feed-radar / clip-relay / page-sentinel 的 kvclient 同一套验证过的样板（勿改协议）：
  * 全部数据读写经 router_dispatch（target=cap.kv）透传到宿主 SqliteStorage domain=kv，

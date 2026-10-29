@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（网哨面板专用，与 pocket-host / page-sentinel 同一模式）
+ * 宿主 API 访问层（网络哨兵面板专用，与 pocket-host / page-sentinel 同一模式）
  *
  * 面板数据全部走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__，
  * 主应用 main.tsx 挂载，即 @/services/transport 的统一 invoke）：

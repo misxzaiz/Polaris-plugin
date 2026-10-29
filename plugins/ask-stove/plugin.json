@@ -1,6 +1,6 @@
 {
   "id": "ask-stove",
-  "name": "问灶",
+  "name": "食材管家",
   "version": "0.1.0",
   "description": "把「冰箱里有啥、今晚吃啥、周末买啥」变成可对话的资产：食材库存五分区+临期红榜（过期即红、剩 N 天即黄，一键记吃掉/扔掉）、菜谱库（URL 一键导入——后台服务原生 fetch 根治浏览器跨域并带 SSRF 守卫，也可手动或让 AI 从正文抽取）、本周计划、采购清单（按未来 7 天计划缺料自动扣在库补齐，按超市动线六类分组）、浪费透视（吃掉 vs 扔掉、浪费率、12 周趋势）。灶签推荐引擎完全可解释：临期食材加分、缺料降权、近 7 天做过的回避，每条推荐带理由。AI 经 12 个 stove_* MCP 工具口语化管理——「买了两斤排骨一把小葱」入库、「番茄用掉了」消耗、「今晚 20 分钟能做啥」带理由推荐。数据全走 cap.kv，桌面/手机同源；采购清单在手机上边逛边勾。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "askStove",
         "icon": "Beaker",
         "labelKey": "plugins.askStove",
-        "labelDefault": "问灶",
+        "labelDefault": "食材管家",
         "order": 83
       }
     ],
@@ -25,7 +25,11 @@
         "id": "stove-service",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/service/stove.js", "{{port}}", "{{appConfigDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/service/stove.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
         "autoStart": true,
@@ -39,7 +43,10 @@
         "id": "ask-stove",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

@@ -1,5 +1,5 @@
 /**
- * 盘哨面板外壳：头部（服务状态/数据源）+ 三 Tab（行情 / 提醒 / 设置）
+ * 行情哨兵面板外壳：头部（服务状态/数据源）+ 三 Tab（行情 / 提醒 / 设置）
  *
  * 数据源：cap.kv qsent.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；外网抓取由后台服务原生执行（跨域问题的根本解法）。
@@ -130,7 +130,7 @@ export default function Panel({ pluginId }: { pluginId: string }) {
         <div className="qs-ttrow">
           <div className="qs-logo">盤</div>
           <div className="qs-tt">
-            <b>盘哨</b>
+            <b>行情哨兵</b>
             <small>
               <span className={`qs-dot ${dotCls}`} />
               {meta

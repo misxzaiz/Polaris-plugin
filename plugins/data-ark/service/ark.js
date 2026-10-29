@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * ark.js —— 数据方舟后台服务（零依赖，node >= 18）
+ * ark.js —— 数据备份后台服务（零依赖，node >= 18）
  *
  * 启动：node ark.js <port> <appConfigDir>   （{{port}}/{{appConfigDir}} 由宿主注入）
  * 职责：租约选举（单写者）→ 调度/补偿快照 → 消费面板/AI 命令（kv cmd 键）

@@ -24313,7 +24313,7 @@ var require_render = __commonJS({
     function buildWorkbook(book, g) {
       const t = g.themes;
       const wb = new ExcelJS.Workbook();
-      wb.creator = "Polaris \u683C\u81F4";
+      wb.creator = "Polaris Excel \u5DE5\u574A";
       wb.created = /* @__PURE__ */ new Date();
       wb.calcProperties.fullCalcOnLoad = true;
       const meta = { sheets: [], cellCount: 0 };
@@ -24594,7 +24594,7 @@ function CreateTab({ ctx }) {
     const sheet = {
       ...ingest.sheet,
       name: sheetName.trim() || "\u6570\u636E",
-      ...captionOn ? { caption: `\u751F\u6210\u4E8E ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)} \xB7 ${title.trim() || "\u683C\u81F4"}` } : {},
+      ...captionOn ? { caption: `\u751F\u6210\u4E8E ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)} \xB7 ${title.trim() || "Excel \u5DE5\u574A"}` } : {},
       ...opts,
       ...statsOn ? { stats: [{ type: "sum" }] } : {}
     };
@@ -24941,7 +24941,7 @@ function GezhiPanel(_props) {
     /* @__PURE__ */ jsxs5("div", { className: "gz-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "gz-logo", children: "\u25A6" }),
       /* @__PURE__ */ jsxs5("div", { className: "gz-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u683C\u81F4 \xB7 Excel \u5DE5\u5382" }),
+        /* @__PURE__ */ jsx5("b", { children: "Excel \u5DE5\u574A \xB7 Excel \u5DE5\u5382" }),
         /* @__PURE__ */ jsx5("small", { children: "\u7C98\u8D34\u6570\u636E\u6216\u8BA9 AI \u505A\uFF0C\u4EA4\u4ED8\u771F\u5B9E\u53EF\u7F16\u8F91 .xlsx" })
       ] }),
       /* @__PURE__ */ jsx5("div", { className: "gz-tabs", children: [["create", "\u521B\u4F5C"], ["works", `\u4F5C\u54C1${works.length ? ` ${works.length}` : ""}`], ["settings", "\u8BBE\u7F6E"]].map(([k, label]) => /* @__PURE__ */ jsx5("button", { className: `gz-tab ${tab === k ? "on" : ""}`, onClick: () => setTab(k), children: label }, k)) })

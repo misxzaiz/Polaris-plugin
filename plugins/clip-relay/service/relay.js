@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * relay.js —— 接力板后台服务（零依赖，node >= 18，需全局 fetch）
+ * relay.js —— 文本接力后台服务（零依赖，node >= 18，需全局 fetch）
  *
  * 职责（relay.item.* 的 enrich 单权威；条目本身由面板/MCP 写入）：
  *   - URL 条目补全：扫描 relay.item.* 中 kind=url 且未 enriched 的条目，

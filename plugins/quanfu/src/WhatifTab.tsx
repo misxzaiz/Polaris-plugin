@@ -88,7 +88,7 @@ export default function WhatifTab({ data, states, showToast }: TabProps & { stat
               {col('减月供（期限不变）', result.w.payment, result.w.saved.payment, result.w.saved.payment > result.w.saved.term)}
             </div>
             <div className="qf-sub" style={{ marginTop: 8 }}>
-              事实对比：同样一笔钱，缩期通常省息更多、减月供现金流更松——选哪个取决于你的现金流与合同条款，泉府不代作决定。
+              事实对比：同样一笔钱，缩期通常省息更多、减月供现金流更松——选哪个取决于你的现金流与合同条款，贷款台账不代作决定。
               满意的话在聊天里说「提前还 {unit === 'wan' ? `${amount} 万` : `${amount} 元`}选{result.w.saved.term >= result.w.saved.payment ? '缩期' : '减月供'}」，AI 会记录并重放账本。
             </div>
           </div>

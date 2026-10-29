@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * decision-journal MCP Server —— 谋定的 AI 工具层（无状态透传，零依赖）
+ * decision-journal MCP Server —— 决策日志的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI「立此存照 / 复盘 / 校准」的意图翻译为 cap.kv 的 decision.* 读写；
  * 全部计算逻辑走 shared/decision-core.js（与面板同一权威，口径不漂移）。
@@ -218,7 +218,7 @@ const tools = [
   {
     name: 'decision_create',
     description: [
-      '谋定·立此存照：记录一个刚做出的决定（decided），或一个纠结中的问题（open）。',
+      '决策日志·立此存照：记录一个刚做出的决定（decided），或一个纠结中的问题（open）。',
       '方法论（必须遵守）：',
       '1) decided 必须带 expectedText——一条「可检验的预期」：含时间范围与可观察判据（如「三个月内迁移完成且零数据丢失」），拒绝「会更好」「应该没问题」这类空话；',
       '2) confidence 是 0-100 的真实把握。用户说「挺有把握」「大概率」这类模糊表述时，先追问一个数字再落库，不要替用户编；',
@@ -268,7 +268,7 @@ const tools = [
   },
   {
     name: 'decision_settle',
-    description: '谋定·定案：把纠结中（open）的决策拍板——补 chosen / 可检验预期 / 把握，进入存照等待复盘。预期与把握的方法论同 decision_create：先追问数字，不编造。',
+    description: '决策日志·定案：把纠结中（open）的决策拍板——补 chosen / 可检验预期 / 把握，进入存照等待复盘。预期与把握的方法论同 decision_create：先追问数字，不编造。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -306,7 +306,7 @@ const tools = [
   {
     name: 'decision_resolve',
     description: [
-      '谋定·复盘：到期（或用户主动提起）时对一条存照打分。先 decision_get 取原文，把 expected 与现实逐条对照后再打分：',
+      '决策日志·复盘：到期（或用户主动提起）时对一条存照打分。先 decision_get 取原文，把 expected 与现实逐条对照后再打分：',
       '- hit 兑现：预期基本如数发生；',
       '- partial 部分兑现：方向对但打折（记 note 说明打了几折）；',
       '- miss 落空：预期没发生；',
@@ -345,7 +345,7 @@ const tools = [
   },
   {
     name: 'decision_list',
-    description: '谋定·查询决策列表。status：due=到期待复盘（做晨报/提醒时先查这个）、open=纠结中、decided=存照中、resolved=已复盘、shelved=搁置、all=全部（缺省）。用户问「有什么该复盘了」→ status=due；「我纠结中的事」→ open。',
+    description: '决策日志·查询决策列表。status：due=到期待复盘（做晨报/提醒时先查这个）、open=纠结中、decided=存照中、resolved=已复盘、shelved=搁置、all=全部（缺省）。用户问「有什么该复盘了」→ status=due；「我纠结中的事」→ open。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -381,7 +381,7 @@ const tools = [
   },
   {
     name: 'decision_get',
-    description: '谋定·读取一条决策全文（背景/选项/预期/复盘/关联）。复盘或引用前先调用。',
+    description: '决策日志·读取一条决策全文（背景/选项/预期/复盘/关联）。复盘或引用前先调用。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: '决策 id' } },
@@ -395,7 +395,7 @@ const tools = [
   },
   {
     name: 'decision_update',
-    description: '谋定·编辑决策字段（不改状态）：标题/问题/背景/选项/理由/预期(text+confidence)/复盘期限/标签/关联。改预期要向用户确认（改了预期等于改了校准口径）。',
+    description: '决策日志·编辑决策字段（不改状态）：标题/问题/背景/选项/理由/预期(text+confidence)/复盘期限/标签/关联。改预期要向用户确认（改了预期等于改了校准口径）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -425,7 +425,7 @@ const tools = [
   },
   {
     name: 'decision_shelve',
-    description: '谋定·搁置：纠结中或存照中的决策不再跟进（前提消失、优先级让位）。搁置不计入校准。已复盘的不可搁置。',
+    description: '决策日志·搁置：纠结中或存照中的决策不再跟进（前提消失、优先级让位）。搁置不计入校准。已复盘的不可搁置。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -446,7 +446,7 @@ const tools = [
   },
   {
     name: 'decision_stats',
-    description: '谋定·校准报告：各状态计数、分桶校准表（自称把握 vs 实际命中率）、Brier 分数（越低越准，0=完美）、bias 解读（过度自信/保守）、最近教训。用户问「我判断准不准」「我的直觉靠谱吗」时调用。写新决定前也可引用历史教训。',
+    description: '决策日志·校准报告：各状态计数、分桶校准表（自称把握 vs 实际命中率）、Brier 分数（越低越准，0=完美）、bias 解读（过度自信/保守）、最近教训。用户问「我判断准不准」「我的直觉靠谱吗」时调用。写新决定前也可引用历史教训。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const all = await loadAll();
@@ -474,7 +474,7 @@ const tools = [
   },
   {
     name: 'decision_delete',
-    description: '谋定·删除一条决策（不可恢复）。必须显式 confirm=true。',
+    description: '决策日志·删除一条决策（不可恢复）。必须显式 confirm=true。',
     inputSchema: {
       type: 'object',
       properties: {

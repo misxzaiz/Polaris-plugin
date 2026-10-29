@@ -1,5 +1,5 @@
 /**
- * 故人面板外壳：头部（人情速览）+ 五 Tab（今日 / 故人 / 承诺 / 往来 / 设置）
+ * 人情账本面板外壳：头部（人情速览）+ 五 Tab（今日 / 人情账本 / 承诺 / 往来 / 设置）
  * 数据面：cap.kv tether.*（经宿主 invoke → router_dispatch），跨端同一本账。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -176,7 +176,7 @@ export default function TetherPanel(_props: { pluginId: string; onSendToChat?: (
     const warn = drift.filter((d) => d.level === 'warn').length
     const openN = board.overdue.length + board.dueSoon.length + board.scheduled.length + board.openNoDue.length
     const active = Object.values(data.peopleBook.byId).filter((p) => !p.archivedAt).length
-    return `${active} 位故人 · ${openN} 条待闭环 · 预警 ${lost ? `${lost} 红` : ''}${lost && warn ? '+' : ''}${warn ? `${warn} 黄` : ''}${!lost && !warn ? '无' : ''}`
+    return `${active} 位人情账本 · ${openN} 条待闭环 · 预警 ${lost ? `${lost} 红` : ''}${lost && warn ? '+' : ''}${warn ? `${warn} 黄` : ''}${!lost && !warn ? '无' : ''}`
   })()
 
   const tabProps: TabProps = {
@@ -189,13 +189,13 @@ export default function TetherPanel(_props: { pluginId: string; onSendToChat?: (
       <div className="tr-top">
         <div className="tr-logo">🏮</div>
         <div className="tr-tt">
-          <b>故人</b>
+          <b>人情账本</b>
           <small>{summary}</small>
         </div>
         <div className="tr-tabs">
                     {([
             ['today', '今日'],
-            ['people', '故人'],
+            ['people', '人情账本'],
             ['promises', '承诺'],
             ['journal', '往来'],
             ['stats', '透视'],

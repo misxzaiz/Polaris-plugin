@@ -889,7 +889,7 @@ function ZhifangPanel(_props) {
     /* @__PURE__ */ jsxs4("div", { className: "zf-top", children: [
       /* @__PURE__ */ jsx4("div", { className: "zf-logo", children: "\u{1F4C4}" }),
       /* @__PURE__ */ jsxs4("div", { className: "zf-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u7EB8\u574A \xB7 \u672C\u5730 PDF \u5DE5\u574A" }),
+        /* @__PURE__ */ jsx4("b", { children: "PDF \u5DE5\u574A \xB7 \u672C\u5730 PDF \u5DE5\u574A" }),
         /* @__PURE__ */ jsx4("small", { children: meta ? `\u670D\u52A1\u5728\u7EBF :${meta.port} \xB7 \u6587\u4EF6\u5168\u7A0B\u4E0D\u51FA\u672C\u673A` : "\u670D\u52A1\u672A\u5728\u7EBF \u2014\u2014 \u9700\u5728 \u8BBE\u7F6E \u2192 \u63D2\u4EF6\u670D\u52A1 \u542F\u52A8\u540E\u4F7F\u7528\u5DE5\u4F5C\u53F0" })
       ] }),
       /* @__PURE__ */ jsx4("div", { className: "zf-tabs", children: [["work", "\u5DE5\u4F5C\u53F0"], ["history", "\u5386\u53F2"], ["settings", "\u8BBE\u7F6E"]].map(([k, label]) => /* @__PURE__ */ jsx4("button", { className: "zf-tab" + (tab === k ? " on" : ""), onClick: () => {

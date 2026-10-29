@@ -1,5 +1,5 @@
 /**
- * 青囊面板外壳：头部（状态/心跳）+ 四 Tab（今日 / 药箱 / 方案 / 设置）
+ * 用药管家面板外壳：头部（状态/心跳）+ 四 Tab（今日 / 药箱 / 方案 / 设置）
  *
  * 数据源：cap.kv qingnang.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求、零本地库存派生——库存/效期/补货全部读服务端 qingnang.stocks 快照。
@@ -170,7 +170,7 @@ export default function QingnanPanel({ pluginId, onSendToChat }: {
     const age = Date.now() - last
     if (age < 180 * 1000) {
       const c = data.meta?.counts
-      return { cls: 'ok', text: `青囊在线 · ${c ? `${c.profiles}成员 ${c.meds}药 ${c.regimens}方案` : ''} · 桥 ${data.meta?.bridge || '?'}` }
+      return { cls: 'ok', text: `用药管家在线 · ${c ? `${c.profiles}成员 ${c.meds}药 ${c.regimens}方案` : ''} · 桥 ${data.meta?.bridge || '?'}` }
     }
     return { cls: 'stale', text: `心跳停滞 ${Math.round(age / 60000)} 分钟` }
   })()
@@ -185,7 +185,7 @@ export default function QingnanPanel({ pluginId, onSendToChat }: {
       <div className="qn-top">
         <div className="qn-logo">💊</div>
         <div className="qn-tt">
-          <b>青囊</b>
+          <b>用药管家</b>
           <small>
             <i className={`qn-dot ${heartbeat.cls}`} />
             {heartbeat.text}
@@ -212,7 +212,7 @@ export default function QingnanPanel({ pluginId, onSendToChat }: {
           {tab === 'cabinet' && <CabinetTab data={data} reload={reload} showToast={showToast} pluginId={pluginId} />}
           {tab === 'plans' && <PlansTab data={data} reload={reload} showToast={showToast} pluginId={pluginId} />}
           {tab === 'settings' && <SettingsTab data={data} reload={reload} showToast={showToast} pluginId={pluginId} onSendToChat={onSendToChat} />}
-          <div className="qn-foot">青囊是家庭药事记录工具，不提供医疗建议——相互作用与剂量调整请咨询医生药师。数据仅存本机（cap.kv）。</div>
+          <div className="qn-foot">用药管家是家庭药事记录工具，不提供医疗建议——相互作用与剂量调整请咨询医生药师。数据仅存本机（cap.kv）。</div>
         </div>
       </div>
       {toast && <div className={`qn-toast ${toast.bad ? 'bad' : ''}`}>{toast.msg}</div>}

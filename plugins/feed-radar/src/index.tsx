@@ -1,5 +1,5 @@
 /**
- * 入口：订阅雷达面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：RSS 订阅面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import RadarPanel from './Panel'
 

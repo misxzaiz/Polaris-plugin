@@ -2,7 +2,7 @@
   "name": "jinkui-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "jinkui 插件面板（打包用）：金匮——家庭保单与保障台账",
+  "description": "jinkui 插件面板（打包用）：保单台账——家庭保单与保障台账",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

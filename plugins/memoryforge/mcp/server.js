@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * memoryforge MCP Server —— 记忆熔炉的 AI 工具层（零依赖，node >= 18）
+ * memoryforge MCP Server —— 记忆卡片的 AI 工具层（零依赖，node >= 18）
  *
  * 职责：把 AI 的"制卡/复习/查库"意图翻译为 cap.kv 的 memoryforge.* 读写；
  * 全部调度/统计计算走 shared/srs-core.js（与面板同一权威，口径不漂移）。
@@ -263,7 +263,7 @@ const tools = [
   {
     name: 'memoryforge_import_cards',
     description: [
-      '记忆熔炉·批量制卡（核心入口）。把要记的知识点写成问答卡存入卡库，按 SM-2 间隔重复排期。',
+      '记忆卡片·批量制卡（核心入口）。把要记的知识点写成问答卡存入卡库，按 SM-2 间隔重复排期。',
       '制卡原则：一卡一原子知识点；front 是能独立成立的问题/提示，back 是精炼答案（不看上下文也能答）。',
       '优先做"问答/填空"，避免"是/否"题；同一主题放同一 deck（牌组），可加 tags。',
       '适用：「把这篇文章做成卡片」「把我们刚才聊的 OAuth 流程出 10 张卡」「这些单词帮我做成卡」。',
@@ -323,7 +323,7 @@ const tools = [
   },
   {
     name: 'memoryforge_extract_url',
-    description: '记忆熔炉·抓网页正文。原生 fetch 抓取公网 URL 并提取正文文本（无浏览器跨域限制），供制卡前阅读内容。只支持 http/https 公网地址；HTML 自动去壳取正文（截断至 12000 字符），JSON/纯文本原样返回。',
+    description: '记忆卡片·抓网页正文。原生 fetch 抓取公网 URL 并提取正文文本（无浏览器跨域限制），供制卡前阅读内容。只支持 http/https 公网地址；HTML 自动去壳取正文（截断至 12000 字符），JSON/纯文本原样返回。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -343,7 +343,7 @@ const tools = [
   },
   {
     name: 'memoryforge_list_due',
-    description: '记忆熔炉·出题。返回当前应学的卡片（到期卡在前、新卡在后，受每日限额约束），适合"今天该复习什么""带我过一遍卡片"。用户答后逐张用 memoryforge_grade_card 记录评分。',
+    description: '记忆卡片·出题。返回当前应学的卡片（到期卡在前、新卡在后，受每日限额约束），适合"今天该复习什么""带我过一遍卡片"。用户答后逐张用 memoryforge_grade_card 记录评分。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -371,7 +371,7 @@ const tools = [
   },
   {
     name: 'memoryforge_grade_card',
-    description: '记忆熔炉·评分。用户对某张卡作了回忆后，按质量评分并写入 SM-2 排期：0=想不起来（重来）；1=想起但费劲（困难）；2=正常想起（良好）；3=秒答（轻松）。返回下次复习时间。',
+    description: '记忆卡片·评分。用户对某张卡作了回忆后，按质量评分并写入 SM-2 排期：0=想不起来（重来）；1=想起但费劲（困难）；2=正常想起（良好）；3=秒答（轻松）。返回下次复习时间。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -400,7 +400,7 @@ const tools = [
   },
   {
     name: 'memoryforge_search_cards',
-    description: '记忆熔炉·查卡库。按关键词（问题/答案/标签/来源）/牌组/标签/状态检索卡片，适合"我有多少张 Rust 卡""找一下昨天那批卡"。',
+    description: '记忆卡片·查卡库。按关键词（问题/答案/标签/来源）/牌组/标签/状态检索卡片，适合"我有多少张 Rust 卡""找一下昨天那批卡"。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -432,7 +432,7 @@ const tools = [
   },
   {
     name: 'memoryforge_stats',
-    description: '记忆熔炉·统计概览。卡库总量、各状态分布、当前到期数、今日进度、30 天留存率、连击天数、7 天到期预报与牌组分布。适合"我学得怎么样""记忆熔炉现在什么情况"。',
+    description: '记忆卡片·统计概览。卡库总量、各状态分布、当前到期数、今日进度、30 天留存率、连击天数、7 天到期预报与牌组分布。适合"我学得怎么样""记忆卡片现在什么情况"。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const [all, decks, meta, settings] = [await loadAllCards(), await loadAllDecks(), await loadMeta(), await loadSettings()];
@@ -454,7 +454,7 @@ const tools = [
   },
   {
     name: 'memoryforge_remove_cards',
-    description: '记忆熔炉·删卡。按 id 列表永久删除卡片（先 search_cards 确认 id）。可先列出将删的卡向用户确认。',
+    description: '记忆卡片·删卡。按 id 列表永久删除卡片（先 search_cards 确认 id）。可先列出将删的卡向用户确认。',
     inputSchema: {
       type: 'object',
       properties: {

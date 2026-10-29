@@ -187,7 +187,7 @@ export default function DetailDrawer({ id, reload, showToast, onClose, onSendToC
             )}
             <button
               className="lx-btn ghost sm"
-              onClick={() => onSendToChat(`灵犀，帮我深化这个想法：${fmtIdeaLine(idea, Date.now())}。先给我三个追问，再一起把轮廓聊出来。`)}
+              onClick={() => onSendToChat(`灵感池，帮我深化这个想法：${fmtIdeaLine(idea, Date.now())}。先给我三个追问，再一起把轮廓聊出来。`)}
             >
               让 AI 深化
             </button>

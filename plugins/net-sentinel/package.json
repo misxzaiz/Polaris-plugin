@@ -2,7 +2,7 @@
   "name": "net-sentinel-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "net-sentinel 插件面板（打包用）：网哨——网络质量哨兵",
+  "description": "net-sentinel 插件面板（打包用）：网络哨兵——网络质量哨兵",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

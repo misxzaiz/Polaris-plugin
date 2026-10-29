@@ -79,7 +79,7 @@ export default function SettingsTab({ data, reload, showToast }: {
         await kvDel(k)
       }
       await reload()
-      showToast('已清空全部观止数据')
+      showToast('已清空全部书影音账本数据')
     } catch (e) {
       showToast(`清空失败：${(e as Error).message}`, 'bad')
     }
@@ -95,7 +95,7 @@ export default function SettingsTab({ data, reload, showToast }: {
         </div>
       </div>
 
-      <div className="gz-sec"><span className="gz-bar" />导入 JSON<span className="gz-hint">观止导出格式；同体裁同名同年判重</span></div>
+      <div className="gz-sec"><span className="gz-bar" />导入 JSON<span className="gz-hint">书影音账本导出格式；同体裁同名同年判重</span></div>
       <div className="gz-card">
         <div className="gz-card-b">
           <textarea
@@ -116,7 +116,7 @@ export default function SettingsTab({ data, reload, showToast }: {
           {clearArmed ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <button className="gz-btn sm danger" onClick={async () => {
-                if (window.confirm('再次确认：清空观止全部数据？不可恢复。')) {
+                if (window.confirm('再次确认：清空书影音账本全部数据？不可恢复。')) {
                   setClearArmed(false)
                   await clearAll()
                 } else setClearArmed(false)

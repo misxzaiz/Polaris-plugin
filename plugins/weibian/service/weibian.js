@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * weibian.js —— 韦编后台服务（node >= 18，零外部依赖；PDF 走 vendor/pdfjs）
+ * weibian.js —— 文档检索后台服务（node >= 18，零外部依赖；PDF 走 vendor/pdfjs）
  *
  * 职责（weibian.* 键空间里 stats/meta 的单写权威；settings 仅面板写）：
  *   - 本地文档全文索引：settings.roots 白名单目录 → 指纹对账（mtime+size）→

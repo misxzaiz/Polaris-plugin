@@ -1,5 +1,5 @@
 /**
- * 刻漏面板外壳：头部（心跳）+ 四 Tab（今日 / 历史 / 分类 / 设置）
+ * 时间统计面板外壳：头部（心跳）+ 四 Tab（今日 / 历史 / 分类 / 设置）
  *
  * 数据源：cap.kv timetrail.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零网络请求（采集在后台服务+PowerShell 子进程执行）；天账本由后台
@@ -196,7 +196,7 @@ export default function TimeTrailPanel({ pluginId, onSendToChat }: {
       <div className="tt-top">
         <div className="tt-logo">🕰️</div>
         <div className="tt-tt">
-          <b>刻漏</b>
+          <b>时间统计</b>
           <small>
             <i className={`tt-dot ${hbState}`} />
             {hbText}

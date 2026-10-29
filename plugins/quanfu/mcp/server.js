@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * quanfu MCP Server —— 泉府的 AI 工具层（零依赖 stdio）
+ * quanfu MCP Server —— 贷款台账的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 quanfu.* 键空间的读写，并用 shared/core 现算还款表/状态/三方案对比。
@@ -52,7 +52,7 @@ function ok(text) {
 function err(text) {
   return { content: [{ type: 'text', text }], isError: true };
 }
-const DISCLAIMER = '（泉府只做贷款记录与测算：标准等额本息/等额本金/先息后本公式、逐期分级舍入，与银行实际计息可能有分级出入；不构成金融建议，提前还款前请核对合同违约金条款。）';
+const DISCLAIMER = '（贷款台账只做贷款记录与测算：标准等额本息/等额本金/先息后本公式、逐期分级舍入，与银行实际计息可能有分级出入；不构成金融建议，提前还款前请核对合同违约金条款。）';
 
 // ── 数据访问 ─────────────────────────────────────────────────────────────────
 async function listLoans() {
@@ -121,7 +121,7 @@ function whatifText(w, amount) {
   L.push(row('不提前还（基准）', w.baseline, null));
   L.push(row('缩期（月供基本不变，期限缩短）', w.term, w.saved.term));
   L.push(row('减月供（期限不变，月供降低）', w.payment, w.saved.payment));
-  L.push('事实对比：同样一笔钱，缩期通常省息更多、减月供现金流更松——选哪个取决于你的现金流与合同条款，泉府不代作决定。');
+  L.push('事实对比：同样一笔钱，缩期通常省息更多、减月供现金流更松——选哪个取决于你的现金流与合同条款，贷款台账不代作决定。');
   return L.join('\n');
 }
 
@@ -129,7 +129,7 @@ function whatifText(w, amount) {
 async function toolToday() {
   const [loans, events, settings] = await Promise.all([listLoans(), listEvents(), readSettings()]);
   if (!loans.length) {
-    return ok('泉府还没有贷款台账。请用 quanfu_add 建档，或引导用户说「我有一笔 100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」。\n' + DISCLAIMER);
+    return ok('贷款台账还没有贷款台账。请用 quanfu_add 建档，或引导用户说「我有一笔 100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」。\n' + DISCLAIMER);
   }
   const now = Date.now();
   const today = core.dayKey(now);
@@ -395,12 +395,12 @@ const AMOUNT_HINT = '金额双单位：*Wan 用万（推荐，如 20 万=amountW
 const tools = [
   {
     name: 'quanfu_today',
-    description: '泉府·今日台账：全家每笔贷款的进度（已还期数/剩余本金/下期扣款/当前利率/剩余总利息/结清日）、临近事件（扣款日、重定价日、对账漂移）与家庭合计。用户问「我还欠多少」「下月供多少」「什么时候还完」时用。',
+    description: '贷款台账·今日台账：全家每笔贷款的进度（已还期数/剩余本金/下期扣款/当前利率/剩余总利息/结清日）、临近事件（扣款日、重定价日、对账漂移）与家庭合计。用户问「我还欠多少」「下月供多少」「什么时候还完」时用。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'quanfu_add',
-    description: '泉府·建贷款：用户说「我有一笔 100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」→ name=商贷, principalWan=100, annualRate=3.6, method=annuity, termMonths=360, startDate=2021-03-01。startDate=第一期还款日（不是放款日）；组合贷（公积金+商贷）分两笔建、同名 groupId 归组；已有 repricing 时传 {day:"01-01"|"anniversary", cycleMonths:12|6|3}。',
+    description: '贷款台账·建贷款：用户说「我有一笔 100 万 30 年等额本息 3.6% 的房贷，2021 年 3 月开始还」→ name=商贷, principalWan=100, annualRate=3.6, method=annuity, termMonths=360, startDate=2021-03-01。startDate=第一期还款日（不是放款日）；组合贷（公积金+商贷）分两笔建、同名 groupId 归组；已有 repricing 时传 {day:"01-01"|"anniversary", cycleMonths:12|6|3}。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -422,7 +422,7 @@ const tools = [
   },
   {
     name: 'quanfu_whatif',
-    description: '泉府·提前还款测算（不落库）：对已有贷款并列「基准/缩期/减月供」三方案——剩余总利息、省息、月供变化、期限变化、新结清日。用户说「提前还 20 万缩期还是减月供」「还 10 万能省多少利息」时用。先 quanfu_today 拿贷款名/id。',
+    description: '贷款台账·提前还款测算（不落库）：对已有贷款并列「基准/缩期/减月供」三方案——剩余总利息、省息、月供变化、期限变化、新结清日。用户说「提前还 20 万缩期还是减月供」「还 10 万能省多少利息」时用。先 quanfu_today 拿贷款名/id。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -435,7 +435,7 @@ const tools = [
   },
   {
     name: 'quanfu_log',
-    description: '泉府·记事件：type=rate 记利率变更/重定价（date=新利率生效的第一期还款日，rate=新年利率%）；type=prepay 记提前还款（mode 必填：term 缩期/payment 减月供——用户没说就先用 quanfu_whatif 给出对比再问）；type=checkpoint 记银行 App 里的实际剩余本金对账。用户说「这个月重定价了 3.3%」「提前还了 10 万选的缩期」「银行说我剩 65 万」时用。',
+    description: '贷款台账·记事件：type=rate 记利率变更/重定价（date=新利率生效的第一期还款日，rate=新年利率%）；type=prepay 记提前还款（mode 必填：term 缩期/payment 减月供——用户没说就先用 quanfu_whatif 给出对比再问）；type=checkpoint 记银行 App 里的实际剩余本金对账。用户说「这个月重定价了 3.3%」「提前还了 10 万选的缩期」「银行说我剩 65 万」时用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -453,7 +453,7 @@ const tools = [
   },
   {
     name: 'quanfu_query',
-    description: '泉府·查询：scope=loans 贷款清单｜detail 单笔详情（含最近对账漂移）｜events 事件流水｜schedule 未来还款表（默认 12 期，可 months）｜yearly 年度本息构成。用户问「月供里利息占多少」「未来几个月还多少」「每年利息多少」时用。',
+    description: '贷款台账·查询：scope=loans 贷款清单｜detail 单笔详情（含最近对账漂移）｜events 事件流水｜schedule 未来还款表（默认 12 期，可 months）｜yearly 年度本息构成。用户问「月供里利息占多少」「未来几个月还多少」「每年利息多少」时用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -466,7 +466,7 @@ const tools = [
   },
   {
     name: 'quanfu_update',
-    description: '泉府·修改贷款参数：id + patch。改 name/lender/kind/note/groupId/repricing 无副作用；改 principal/annualRate/method/termMonths/startDate 会整表如实重放（历史利率调整请用 quanfu_log type=rate 而不是直接改初始利率）；active:false 停用（结清/转出，保留历史）。',
+    description: '贷款台账·修改贷款参数：id + patch。改 name/lender/kind/note/groupId/repricing 无副作用；改 principal/annualRate/method/termMonths/startDate 会整表如实重放（历史利率调整请用 quanfu_log type=rate 而不是直接改初始利率）；active:false 停用（结清/转出，保留历史）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -478,7 +478,7 @@ const tools = [
   },
   {
     name: 'quanfu_delete',
-    description: '泉府·删除（需 confirm=true）：kind=loan 删贷款及全部事件；kind=event 删单条事件（id=occKey，误记的利率/提前还款/对账用）。',
+    description: '贷款台账·删除（需 confirm=true）：kind=loan 删贷款及全部事件；kind=event 删单条事件（id=occKey，误记的利率/提前还款/对账用）。',
     inputSchema: {
       type: 'object',
       properties: {

@@ -823,7 +823,7 @@ function OverviewTab({ data, reload, showToast, goTab }) {
       /* @__PURE__ */ jsxs("span", { className: "sz-sub", children: [
         "\u6CA1\u6709\u903E\u671F\u3001\u8FD1\u671F\u6263\u8D39\u6216\u8BD5\u7528\u8F6C\u6B63\u3002",
         /* @__PURE__ */ jsx("br", {}),
-        "\u5728\u300C\u8BA2\u9605\u300DTab \u767B\u8BB0\u4F60\u7684\u7B2C\u4E00\u7B14\u8BA2\u9605\uFF0C\u5B88\u95F8\u5F00\u59CB\u66FF\u4F60\u76EF\u9632\u3002"
+        "\u5728\u300C\u8BA2\u9605\u300DTab \u767B\u8BB0\u4F60\u7684\u7B2C\u4E00\u7B14\u8BA2\u9605\uFF0C\u7EED\u8D39\u7BA1\u5BB6\u5F00\u59CB\u66FF\u4F60\u76EF\u9632\u3002"
       ] })
     ] }) }),
     /* @__PURE__ */ jsxs("div", { className: "sz-sec", children: [
@@ -1738,7 +1738,7 @@ function ShouzhaPanel(_props) {
     /* @__PURE__ */ jsxs5("div", { className: "sz-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "sz-logo", children: "\u{1F6AA}" }),
       /* @__PURE__ */ jsxs5("div", { className: "sz-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u5B88\u95F8" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u7EED\u8D39\u7BA1\u5BB6" }),
         /* @__PURE__ */ jsx5("small", { className: "sz-cost", children: headCost })
       ] }),
       /* @__PURE__ */ jsx5("div", { className: "sz-tabs", children: [

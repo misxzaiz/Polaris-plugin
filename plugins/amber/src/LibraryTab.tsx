@@ -135,7 +135,7 @@ export default function LibraryTab({ data, reload, showToast, onSendToChat, sele
   }
 
   const doDelete = async (a: AmberItem) => {
-    if (!window.confirm(`删除这条琥珀？「${a.title || a.url}」\n封存正文与相关摘录会一并删除，不可恢复。`)) return
+    if (!window.confirm(`删除这条网页封存？「${a.title || a.url}」\n封存正文与相关摘录会一并删除，不可恢复。`)) return
     try {
       await deleteItem(a.id)
       setReadingId('')
@@ -176,7 +176,7 @@ export default function LibraryTab({ data, reload, showToast, onSendToChat, sele
           <div className="am-read-h">
             <button className="am-btn sm ghost" onClick={() => setReadingId('')}>← 返回</button>
           </div>
-          <div className="am-empty">这条琥珀已被删除或不存在。</div>
+          <div className="am-empty">这条网页封存已被删除或不存在。</div>
         </div>
       )
     }
@@ -286,7 +286,7 @@ export default function LibraryTab({ data, reload, showToast, onSendToChat, sele
       {list.length === 0 ? (
         <div className="am-empty">
           {total === 0
-            ? <>还没有收藏。<br />在上面贴一个 URL 点「封存」，或在聊天里对 AI 说<br />「把 https://… 存进琥珀」。</>
+            ? <>还没有收藏。<br />在上面贴一个 URL 点「封存」，或在聊天里对 AI 说<br />「把 https://… 存进网页封存」。</>
             : <>当前过滤下没有条目。</>}
         </div>
       ) : (

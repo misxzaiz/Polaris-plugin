@@ -60,7 +60,7 @@ var require_usage_core = __commonJS({
       usage(pluginId) {
         return this.usagePrefix + pluginId;
       },
-      /** 宿主自有键空间（宿主 pluginUsageObserver 写入，守望台只读）：面板打开观测 */
+      /** 宿主自有键空间（宿主 pluginUsageObserver 写入，插件运营只读）：面板打开观测 */
       hostUsagePrefix: "plugin.usage.",
       settings: "watchtower.settings"
     };
@@ -630,7 +630,7 @@ function WatchtowerPanel(props) {
     /* @__PURE__ */ jsxs("div", { className: "wt-top", children: [
       /* @__PURE__ */ jsx("div", { className: "wt-logo", children: "\u{1F441}" }),
       /* @__PURE__ */ jsxs("div", { className: "wt-tt", children: [
-        /* @__PURE__ */ jsx("b", { children: "\u5B88\u671B\u53F0" }),
+        /* @__PURE__ */ jsx("b", { children: "\u63D2\u4EF6\u8FD0\u8425" }),
         /* @__PURE__ */ jsx("small", { onClick: () => setTab("overview"), children: loading ? "\u52A0\u8F7D\u4E2D\u2026" : `${summary?.totals.plugins ?? 0} \u63D2\u4EF6 \xB7 ${topLines.active} \u6D3B\u8DC3 \xB7 ${topLines.running} \u670D\u52A1\u5728\u8DD1` })
       ] }),
       /* @__PURE__ */ jsx("div", { className: "wt-tabs", children: [["overview", "\u603B\u89C8"], ["services", "\u670D\u52A1"], ["advice", "\u6CBB\u7406"], ["about", "\u53E3\u5F84"]].map(([k, l]) => /* @__PURE__ */ jsx("button", { className: `wt-tab ${tab === k ? "on" : ""}`, onClick: () => setTab(k), children: l }, k)) })

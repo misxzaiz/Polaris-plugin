@@ -61,7 +61,7 @@ export default function OverviewTab({ data, states, onSendToChat }: TabProps & {
             {onSendToChat && (
               <button
                 className="qf-btn ghost sm"
-                onClick={() => onSendToChat(`帮我看看贷款台账：现在家庭月供、剩余本金和剩余利息是什么情况？（泉府）`)}
+                onClick={() => onSendToChat(`帮我看看贷款台账：现在家庭月供、剩余本金和剩余利息是什么情况？（贷款台账）`)}
               >问 AI</button>
             )}
           </div>

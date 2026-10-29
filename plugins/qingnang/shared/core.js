@@ -1,6 +1,6 @@
 'use strict';
 /**
- * core.js —— 青囊（qingnang）三方共享纯函数核心（零依赖，浏览器 / node 同源一致）
+ * core.js —— 用药管家（qingnang）三方共享纯函数核心（零依赖，浏览器 / node 同源一致）
  *
  * 职责（面板 / MCP / 服务共用同一实现，保证「同一份药事数据」三端口径一字不差）：
  *   - 四类实体规范化（profile/med/batch/regimen + settings/log，写入口径唯一）

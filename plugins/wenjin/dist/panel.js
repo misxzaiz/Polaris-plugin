@@ -1669,7 +1669,7 @@ function FunnelTable({ rows, resumeNames }) {
         ] })
       ] }, g.key)) })
     ] }),
-    small ? /* @__PURE__ */ jsx3("div", { className: "wj-sub", style: { marginTop: 6 }, children: "\u6837\u672C <5 \u7684\u884C\u53EA\u7ED9\u8BA1\u6570\u4E0D\u7ED9\u51FA\u767E\u5206\u6BD4\u2014\u2014\u6837\u672C\u4F1A\u6492\u8C0E\uFF0C\u95EE\u6D25\u9009\u62E9\u8BDA\u5B9E\u3002" }) : null,
+    small ? /* @__PURE__ */ jsx3("div", { className: "wj-sub", style: { marginTop: 6 }, children: "\u6837\u672C <5 \u7684\u884C\u53EA\u7ED9\u8BA1\u6570\u4E0D\u7ED9\u51FA\u767E\u5206\u6BD4\u2014\u2014\u6837\u672C\u4F1A\u6492\u8C0E\uFF0C\u6C42\u804C\u53F0\u8D26\u9009\u62E9\u8BDA\u5B9E\u3002" }) : null,
     /* @__PURE__ */ jsx3("div", { className: "wj-sub", style: { marginTop: 4 }, children: "\u53E3\u5F84\uFF1A\u6295\u9012\u2192\u56DE\u97F3\u2192\u9762\u8BD5\u2192offer \u9010\u7EA7\u8F6C\u5316\uFF1B\u88AB\u62D2\u4E5F\u7B97\u300C\u6709\u56DE\u97F3\u300D\u3002" })
   ] }) });
 }
@@ -1890,7 +1890,7 @@ function SettingsTab({ data, reload, toast }) {
         toast(`\u5DF2\u5199\u5165 ${n} \u6761\uFF08\u8BC6\u522B\u4E3A\u539F\u59CB\u6570\u636E\uFF09`);
         await reload();
       } else {
-        toast("\u4E0D\u662F\u95EE\u6D25\u7684\u5907\u4EFD\u6587\u4EF6", true);
+        toast("\u4E0D\u662F\u6C42\u804C\u53F0\u8D26\u7684\u5907\u4EFD\u6587\u4EF6", true);
       }
     } catch (e) {
       toast(e.message, true);
@@ -2017,8 +2017,8 @@ function SettingsTab({ data, reload, toast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx4("div", { className: "wj-card", children: /* @__PURE__ */ jsxs4("div", { className: "wj-card-b wj-sub", children: [
-      /* @__PURE__ */ jsx4("b", { children: "\u95EE\u6D25" }),
-      "\u2014\u2014\u4F7F\u5B50\u8DEF\u95EE\u6D25\u3002\u6D25\u8005\uFF0C\u6E21\u53E3\u4E5F\uFF1B\u6C42\u804C\u5C31\u662F\u627E\u6E21\u53E3\uFF0C\u6BCF\u4E00\u4EFD\u6295\u9012\u90FD\u503C\u5F97\u6709\u8D26\u53EF\u67E5\u3002",
+      /* @__PURE__ */ jsx4("b", { children: "\u6C42\u804C\u53F0\u8D26" }),
+      "\u2014\u2014\u4F7F\u5B50\u8DEF\u6C42\u804C\u53F0\u8D26\u3002\u6D25\u8005\uFF0C\u6E21\u53E3\u4E5F\uFF1B\u6C42\u804C\u5C31\u662F\u627E\u6E21\u53E3\uFF0C\u6BCF\u4E00\u4EFD\u6295\u9012\u90FD\u503C\u5F97\u6709\u8D26\u53EF\u67E5\u3002",
       /* @__PURE__ */ jsx4("br", {}),
       "\u53EA\u505A\u8BB0\u5F55\u3001\u6D3E\u751F\u4E0E\u63D0\u9192\uFF1A\u4E0D\u6293\u53D6\u62DB\u8058\u5E73\u53F0\u3001\u4E0D\u81EA\u52A8\u6295\u9012\u3001\u4E0D\u627F\u8BFA\u300CATS \u901A\u8FC7\u7387\u300D\u3002",
       /* @__PURE__ */ jsx4("br", {}),
@@ -2156,7 +2156,7 @@ function WenjinPanel() {
     /* @__PURE__ */ jsxs5("div", { className: "wj-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "wj-logo", children: "\u{1F4A7}" }),
       /* @__PURE__ */ jsxs5("div", { className: "wj-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u95EE\u6D25" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u6C42\u804C\u53F0\u8D26" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           /* @__PURE__ */ jsx5("span", { className: `wj-dot ${dotCls}` }),
           loadErr ? "\u8FDE\u63A5\u5931\u8D25" : metaOk ? "\u53F0\u8D26\u5C31\u7EEA" : "\u7B49\u5F85\u9996\u6B21\u8BB0\u5F55",
@@ -2182,7 +2182,7 @@ function WenjinPanel() {
       !data && !loadErr ? /* @__PURE__ */ jsx5("div", { className: "wj-empty", children: "\u6B63\u5728\u8BFB\u53D6\u53F0\u8D26\u2026\u2026" }) : null,
       data && view ? tab === "today" ? /* @__PURE__ */ jsx5(TodayTab, { data, view, reload, toast: showToast, goTab: setTab }) : tab === "apps" ? /* @__PURE__ */ jsx5(AppsTab, { data, view, reload, toast: showToast }) : tab === "insight" ? /* @__PURE__ */ jsx5(InsightTab, { data, view }) : /* @__PURE__ */ jsx5(SettingsTab, { data, reload, toast: showToast }) : null,
       /* @__PURE__ */ jsxs5("div", { className: "wj-foot", children: [
-        "\u95EE\u6D25 \xB7 \u6C42\u804C\u6295\u9012\u4E0E\u9762\u8BD5\u4F5C\u6218\u53F0\u8D26 \u2014\u2014 \u53EA\u505A\u8BB0\u5F55\u3001\u6D3E\u751F\u4E0E\u63D0\u9192",
+        "\u6C42\u804C\u53F0\u8D26 \xB7 \u6C42\u804C\u6295\u9012\u4E0E\u9762\u8BD5\u4F5C\u6218\u53F0\u8D26 \u2014\u2014 \u53EA\u505A\u8BB0\u5F55\u3001\u6D3E\u751F\u4E0E\u63D0\u9192",
         /* @__PURE__ */ jsx5("br", {}),
         "\u4E0D\u6293\u53D6\u62DB\u8058\u5E73\u53F0\u3001\u4E0D\u81EA\u52A8\u6295\u9012\uFF1B\u6D1E\u5BDF\u4E0E offer \u5BF9\u6BD4\u4E0D\u6784\u6210\u804C\u4E1A\u5EFA\u8BAE"
       ] })

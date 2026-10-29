@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（订阅雷达面板）
+ * 通信层 + 数据访问（RSS 订阅面板）
  *
  * 面板经宿主 invoke 通道调 router_dispatch，与后台服务、MCP server 读写
  * 同一个 cap.kv 的 radar.* 键空间。
@@ -242,7 +242,7 @@ export async function loadRadar(cache: CacheState): Promise<RadarData> {
   }
 }
 
-// ── 数据访问层（订阅雷达面板）─────────────────────────────────────────────
+// ── 数据访问层（RSS 订阅面板）─────────────────────────────────────────────
 // 纯逻辑与 id 计算三方共享同一实现（shared/sha256），保证「面板加的源」
 // 与「AI 加的源」「服务抓的条目」键名完全一致（panel / mcp / service 三方一致）。
 import { sha256Hex } from '../shared/sha256'

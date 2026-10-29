@@ -41,7 +41,7 @@ export default function OverviewTab({ data, states }: Props) {
   if (!data.policies.length) {
     return (
       <div className="jk-empty">
-        金匮还是空的。把家里的保单一张张「入柜」：<br />
+        保单台账还是空的。把家里的保单一张张「入柜」：<br />
         在对话里说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年」<br />
         或在「保单」Tab 点「新增保单」。
       </div>

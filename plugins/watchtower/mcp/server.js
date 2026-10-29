@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * watchtower MCP Server —— 守望台：插件用量计量 + 生命周期治理（AI 工具层）
+ * watchtower MCP Server —— 插件运营：插件用量计量 + 生命周期治理（AI 工具层）
  *
  * 职责：把 AI 的「看看哪个插件冷/热」「停掉/启用来释放资源」「报告一次用量」
  * 意图翻译为对宿主三个能力的读写：
@@ -182,7 +182,7 @@ async function plService(action, pluginId, serviceId) {
 }
 
 // ── 账本读写 ────────────────────────────────────────────────────────────────
-/** 守望台自有账本（watchtower.usage.*，本插件写） */
+/** 插件运营自有账本（watchtower.usage.*，本插件写） */
 async function loadAllUsage() {
   const keys = await kvKeys();
   const ids = keys.filter((k) => k.startsWith(core.K.usagePrefix))
@@ -243,7 +243,7 @@ async function recordOne(pluginId, source) {
 const tools = [
   {
     name: 'watchtower_usage_stats',
-    description: '守望台·插件用量总览。列出全部插件的使用统计：调用次数/面板打开/末次使用/活跃分级（活跃·沉睡·冷门·从未），附近 1/7/30 天趋势与治理建议。用户问「哪些插件在用/没用」「最近谁被用得多」「帮我看看插件使用情况」时调用。',
+    description: '插件运营·插件用量总览。列出全部插件的使用统计：调用次数/面板打开/末次使用/活跃分级（活跃·沉睡·冷门·从未），附近 1/7/30 天趋势与治理建议。用户问「哪些插件在用/没用」「最近谁被用得多」「帮我看看插件使用情况」时调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -294,7 +294,7 @@ const tools = [
   },
   {
     name: 'watchtower_plugin',
-    description: '守望台·查看单个插件的完整用量：累计/近 1/7/30 天/末次/首次/日趋势，活跃分级，是否在跑后台服务。用户问「XX 插件用得怎么样」「XX 最近用过吗」时调用。',
+    description: '插件运营·查看单个插件的完整用量：累计/近 1/7/30 天/末次/首次/日趋势，活跃分级，是否在跑后台服务。用户问「XX 插件用得怎么样」「XX 最近用过吗」时调用。',
     inputSchema: {
       type: 'object',
       properties: { pluginId: { type: 'string', description: '插件 id' } },
@@ -327,7 +327,7 @@ const tools = [
   },
   {
     name: 'watchtower_report_usage',
-    description: '守望台·补记一次插件工具调用。插件面板打开已由宿主自动观测（无需补记）；但 AI 经其它插件 MCP 工具的使用宿主看不到（调用直连插件子进程），用本工具把那次使用记入账本（source=mcp）。用户说「刚才用了 XX」「把 XX 也记一下」时配合使用。',
+    description: '插件运营·补记一次插件工具调用。插件面板打开已由宿主自动观测（无需补记）；但 AI 经其它插件 MCP 工具的使用宿主看不到（调用直连插件子进程），用本工具把那次使用记入账本（source=mcp）。用户说「刚才用了 XX」「把 XX 也记一下」时配合使用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -347,7 +347,7 @@ const tools = [
   },
   {
     name: 'watchtower_service_status',
-    description: '守望台·全部后台服务的运行状态。列出每个声明了后台服务（contributes.services）的插件的服务状态：running/exited、端口、pid、uptime、重启次数、最近错误。用户问「哪些插件在后台跑着」「XX 服务挂了没」时调用。',
+    description: '插件运营·全部后台服务的运行状态。列出每个声明了后台服务（contributes.services）的插件的服务状态：running/exited、端口、pid、uptime、重启次数、最近错误。用户问「哪些插件在后台跑着」「XX 服务挂了没」时调用。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       await recordOne('watchtower', 'mcp');
@@ -368,7 +368,7 @@ const tools = [
   },
   {
     name: 'watchtower_service_start',
-    description: '守望台·启动某插件的后台服务。用户说「把 XX 的服务拉起来」「启动 XX 服务」时调用。需要 pluginId + serviceId。',
+    description: '插件运营·启动某插件的后台服务。用户说「把 XX 的服务拉起来」「启动 XX 服务」时调用。需要 pluginId + serviceId。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -387,7 +387,7 @@ const tools = [
   },
   {
     name: 'watchtower_service_stop',
-    description: '守望台·停止某插件的后台服务。用户说「把 XX 的服务停掉」「XX 别跑了」时调用（通常用于释放资源）。需要 pluginId + serviceId；也可先 watchtower_service_status 看谁在跑。',
+    description: '插件运营·停止某插件的后台服务。用户说「把 XX 的服务停掉」「XX 别跑了」时调用（通常用于释放资源）。需要 pluginId + serviceId；也可先 watchtower_service_status 看谁在跑。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -405,7 +405,7 @@ const tools = [
   },
   {
     name: 'watchtower_service_restart',
-    description: '守望台·重启某插件的后台服务。用户说「XX 服务重启一下」「XX 卡了帮我重启」时调用。需要 pluginId + serviceId。',
+    description: '插件运营·重启某插件的后台服务。用户说「XX 服务重启一下」「XX 卡了帮我重启」时调用。需要 pluginId + serviceId。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -423,7 +423,7 @@ const tools = [
   },
   {
     name: 'watchtower_cold_plugins',
-    description: '守望台·冷门/沉睡插件治理建议。列出近 30 天零使用（冷门）或近 7 天未用但历史用过（沉睡）的插件，以及「冷门且后台服务仍在跑」的高优先级项，给停用/卸载建议。用户问「哪些插件可以清理」「帮我瘦身插件列表」时调用。',
+    description: '插件运营·冷门/沉睡插件治理建议。列出近 30 天零使用（冷门）或近 7 天未用但历史用过（沉睡）的插件，以及「冷门且后台服务仍在跑」的高优先级项，给停用/卸载建议。用户问「哪些插件可以清理」「帮我瘦身插件列表」时调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -457,7 +457,7 @@ const tools = [
   },
   {
     name: 'watchtower_uninstall',
-    description: '守望台·卸载插件。危险操作，仅限非内置插件；调用前务必向用户二次确认插件 id 与不可逆性。靠 installPath 执行（cap.pluginDiscovery uninstall）。卸载后不可恢复，请谨慎。用户明确说「卸载 XX 插件」且你已确认时才调用。',
+    description: '插件运营·卸载插件。危险操作，仅限非内置插件；调用前务必向用户二次确认插件 id 与不可逆性。靠 installPath 执行（cap.pluginDiscovery uninstall）。卸载后不可恢复，请谨慎。用户明确说「卸载 XX 插件」且你已确认时才调用。',
     inputSchema: {
       type: 'object',
       properties: { pluginId: { type: 'string', description: '插件 id' } },

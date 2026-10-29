@@ -1068,7 +1068,7 @@ async function importAllJSON(text) {
   } catch (_) {
     throw new Error("\u4E0D\u662F\u5408\u6CD5 JSON");
   }
-  if (!payload || payload.kind !== "piaoxia-export") throw new Error("\u4E0D\u662F\u7968\u5323\u5BFC\u51FA\u7684\u5907\u4EFD\u6587\u4EF6\uFF08\u7F3A kind \u6807\u8BC6\uFF09");
+  if (!payload || payload.kind !== "piaoxia-export") throw new Error("\u4E0D\u662F\u53D1\u7968\u4FDD\u9669\u5E93\u5BFC\u51FA\u7684\u5907\u4EFD\u6587\u4EF6\uFF08\u7F3A kind \u6807\u8BC6\uFF09");
   let nInv = 0;
   let nTitle = 0;
   const warns = [];
@@ -1126,7 +1126,7 @@ function InboxTab({ ctx }) {
     }
     const bad = files.filter((f) => /\.(ofd|zip|rar|7z|jpg|jpeg|png)$/i.test(f.name));
     if (bad.length) {
-      ctx.toast("\u4E0D\u652F\u6301 " + bad.map((f) => f.name).join("\u3001") + "\uFF1AOFD/\u56FE\u7247/\u538B\u7F29\u5305\u6682\u4E0D\u89E3\u6790\uFF08\u7968\u5323\u4E0D\u505A OCR\uFF09\uFF0C\u8BF7\u4ECE\u7A0E\u52A1\u5C40\u4E0B\u8F7D PDF \u6216 XML \u7248\u5F0F", true);
+      ctx.toast("\u4E0D\u652F\u6301 " + bad.map((f) => f.name).join("\u3001") + "\uFF1AOFD/\u56FE\u7247/\u538B\u7F29\u5305\u6682\u4E0D\u89E3\u6790\uFF08\u53D1\u7968\u4FDD\u9669\u5E93\u4E0D\u505A OCR\uFF09\uFF0C\u8BF7\u4ECE\u7A0E\u52A1\u5C40\u4E0B\u8F7D PDF \u6216 XML \u7248\u5F0F", true);
     }
     const good = files.filter((f) => /\.(pdf|xml)$/i.test(f.name));
     if (!good.length && !dirPath.trim()) return;
@@ -1337,7 +1337,7 @@ function LedgerTab({ ctx }) {
       ctx.view.pending.stale[0].date,
       "\uFF09\uFF0C\u5C0F\u5FC3\u62A5\u9500\u8FC7\u671F\u3002"
     ] }),
-    /* @__PURE__ */ jsx2("div", { className: "px-card", children: list.length === 0 ? /* @__PURE__ */ jsx2("div", { className: "px-dim", style: { textAlign: "center", padding: "26px 0" }, children: ctx.data.invoices.size === 0 ? "\u7968\u5323\u8FD8\u662F\u7A7A\u7684\uFF1A\u53BB\u300C\u6536\u7968\u53F0\u300D\u62D6\u5165\u53D1\u7968\uFF0C\u6216\u70B9\u53F3\u4E0A\u300C\uFF0B\u624B\u52A8\u5F55\u5165\u300D" : "\u6CA1\u6709\u5339\u914D\u8FC7\u6EE4\u6761\u4EF6\u7684\u7968" }) : /* @__PURE__ */ jsxs2("table", { className: "px-table", children: [
+    /* @__PURE__ */ jsx2("div", { className: "px-card", children: list.length === 0 ? /* @__PURE__ */ jsx2("div", { className: "px-dim", style: { textAlign: "center", padding: "26px 0" }, children: ctx.data.invoices.size === 0 ? "\u53D1\u7968\u4FDD\u9669\u5E93\u8FD8\u662F\u7A7A\u7684\uFF1A\u53BB\u300C\u6536\u7968\u53F0\u300D\u62D6\u5165\u53D1\u7968\uFF0C\u6216\u70B9\u53F3\u4E0A\u300C\uFF0B\u624B\u52A8\u5F55\u5165\u300D" : "\u6CA1\u6709\u5339\u914D\u8FC7\u6EE4\u6761\u4EF6\u7684\u7968" }) : /* @__PURE__ */ jsxs2("table", { className: "px-table", children: [
       /* @__PURE__ */ jsx2("thead", { children: /* @__PURE__ */ jsxs2("tr", { children: [
         /* @__PURE__ */ jsx2("th", { children: "\u53F7\u7801" }),
         /* @__PURE__ */ jsx2("th", { children: "\u65E5\u671F" }),
@@ -1569,7 +1569,7 @@ function ManualForm({ ctx, onDone }) {
   return /* @__PURE__ */ jsxs2("div", { className: "px-card", children: [
     /* @__PURE__ */ jsxs2("h3", { children: [
       "\u624B\u52A8\u5F55\u5165 ",
-      /* @__PURE__ */ jsx2("span", { className: "px-hint", children: "\u7EB8\u8D28\u7968/\u626B\u63CF\u4EF6\u8D70\u8FD9\u91CC\uFF08\u7968\u5323\u4E0D\u505A OCR\uFF09" })
+      /* @__PURE__ */ jsx2("span", { className: "px-hint", children: "\u7EB8\u8D28\u7968/\u626B\u63CF\u4EF6\u8D70\u8FD9\u91CC\uFF08\u53D1\u7968\u4FDD\u9669\u5E93\u4E0D\u505A OCR\uFF09" })
     ] }),
     /* @__PURE__ */ jsxs2("div", { className: "px-row", children: [
       /* @__PURE__ */ jsx2("input", { className: "px-input", placeholder: "\u53D1\u7968\u53F7\u7801\uFF08\u7EB8\u8D28\u7968\u53EF\u7A7A\uFF09", value: f.number, onChange: (e) => set("number", e.target.value), style: { width: 200 } }),
@@ -1833,7 +1833,7 @@ function SettingsTab({ ctx }) {
         ] }),
         /* @__PURE__ */ jsxs4("li", { children: [
           /* @__PURE__ */ jsx4("b", { style: { color: "#d7dde6" }, children: "\u4E0D\u505A\u53D1\u7968\u67E5\u9A8C" }),
-          "\uFF1A\u4E0D\u5BF9\u63A5\u7A0E\u52A1\u67E5\u9A8C\u63A5\u53E3\uFF1B\u771F\u4F2A\u8BF7\u8D70\u5B98\u65B9\u67E5\u9A8C\u5E73\u53F0\uFF0C\u7968\u5323\u53EA\u505A\u672C\u5730\u53F0\u8D26\u3002"
+          "\uFF1A\u4E0D\u5BF9\u63A5\u7A0E\u52A1\u67E5\u9A8C\u63A5\u53E3\uFF1B\u771F\u4F2A\u8BF7\u8D70\u5B98\u65B9\u67E5\u9A8C\u5E73\u53F0\uFF0C\u53D1\u7968\u4FDD\u9669\u5E93\u53EA\u505A\u672C\u5730\u53F0\u8D26\u3002"
         ] }),
         /* @__PURE__ */ jsxs4("li", { children: [
           /* @__PURE__ */ jsx4("b", { style: { color: "#d7dde6" }, children: "\u89E3\u6790\u4E0D\u786E\u5B9A\u65F6\u4F1A\u660E\u8BF4" }),
@@ -1957,7 +1957,7 @@ function ImportCard({ ctx }) {
   return /* @__PURE__ */ jsxs4("div", { className: "px-card", children: [
     /* @__PURE__ */ jsxs4("h3", { children: [
       "\u5BFC\u5165 ",
-      /* @__PURE__ */ jsx4("span", { className: "px-hint", children: "JSON = \u7968\u5323\u5907\u4EFD\u6062\u590D\uFF1BCSV = \u4ECE\u5176\u4ED6\u53F0\u8D26\u8FC1\u79FB\uFF08\u8868\u5934\u987B\u5339\u914D\u7968\u5323\u5BFC\u51FA\u683C\u5F0F\uFF09" })
+      /* @__PURE__ */ jsx4("span", { className: "px-hint", children: "JSON = \u53D1\u7968\u4FDD\u9669\u5E93\u5907\u4EFD\u6062\u590D\uFF1BCSV = \u4ECE\u5176\u4ED6\u53F0\u8D26\u8FC1\u79FB\uFF08\u8868\u5934\u987B\u5339\u914D\u53D1\u7968\u4FDD\u9669\u5E93\u5BFC\u51FA\u683C\u5F0F\uFF09" })
     ] }),
     /* @__PURE__ */ jsxs4("div", { className: "px-row", children: [
       /* @__PURE__ */ jsx4("button", { className: "px-btn", disabled: busy, onClick: () => fileRef.current?.click(), children: "\u9009\u62E9 .json / .csv \u6587\u4EF6" }),
@@ -2150,7 +2150,7 @@ function PiaoxiaPanel(props) {
       /* @__PURE__ */ jsx5("span", { className: "px-sub", children: "\u4E2A\u4EBA\u7535\u5B50\u53D1\u7968\u4FDD\u9669\u5E93" }),
       /* @__PURE__ */ jsxs5("span", { style: { marginLeft: "auto" }, className: "px-sub", children: [
         /* @__PURE__ */ jsx5("span", { className: "px-dot " + (metaAgeOk ? "ok" : loaded ? "warn" : "off") }),
-        metaAgeOk ? `\u7968\u5323\u5C31\u7EEA \xB7 ${data.invoices.size} \u5F20\u7968` : loaded ? "\u7B49\u5F85\u89E3\u6790\u670D\u52A1\uFF08\u9762\u677F\u6536\u7968\u529F\u80FD\u6682\u4E0D\u53EF\u7528\uFF0CAI \u6536\u7968\u4E0D\u53D7\u5F71\u54CD\uFF09" : "\u8FDE\u63A5\u4E2D\u2026"
+        metaAgeOk ? `\u53D1\u7968\u4FDD\u9669\u5E93\u5C31\u7EEA \xB7 ${data.invoices.size} \u5F20\u7968` : loaded ? "\u7B49\u5F85\u89E3\u6790\u670D\u52A1\uFF08\u9762\u677F\u6536\u7968\u529F\u80FD\u6682\u4E0D\u53EF\u7528\uFF0CAI \u6536\u7968\u4E0D\u53D7\u5F71\u54CD\uFF09" : "\u8FDE\u63A5\u4E2D\u2026"
       ] })
     ] }),
     /* @__PURE__ */ jsxs5("div", { className: "px-tabs", children: [

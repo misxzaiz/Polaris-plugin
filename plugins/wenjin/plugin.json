@@ -1,6 +1,6 @@
 {
   "id": "wenjin",
-  "name": "问津",
+  "name": "求职台账",
   "version": "0.1.0",
   "description": "求职投递与面试作战台账：聊天里说「投了字节的前端岗」「二面过了」即建档记账，事件自动推进状态机；跟进到期（N 天无进展）主动点名；渠道漏斗 × 简历版本漏斗归因回复率（哪版简历有效）；面试问题自动汇成复盘题库；offer 结构化年化对比（月薪×月数×年终奖×通勤，期权只记文本不计价）；CSV 导入迁移 Excel 台账、JSON 备份还原。纯本地存储（cap.kv）数据不出设备，零服务零外网请求，桌面与手机 Web 同看一本账。只做记录与提醒，不抓取招聘平台、不自动投递，洞察不构成职业建议。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "wenjin",
         "icon": "GitPullRequest",
         "labelKey": "plugins.wenjin",
-        "labelDefault": "问津",
+        "labelDefault": "求职台账",
         "order": 71
       }
     ],
@@ -25,7 +25,10 @@
         "id": "wenjin",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

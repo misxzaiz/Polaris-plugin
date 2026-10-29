@@ -1,5 +1,5 @@
 /**
- * 观止面板外壳：头部（今年速览）+ 四 Tab（总览 / 藏卷 / 年报 / 设置）
+ * 书影音账本面板外壳：头部（今年速览）+ 四 Tab（总览 / 藏卷 / 年报 / 设置）
  * 数据面：cap.kv guanzhi.*（经宿主 invoke → router_dispatch），跨端同一份账本。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -151,7 +151,7 @@ export default function GuanzhiPanel(_props: { pluginId: string; onSendToChat?: 
       <div className="gz-top">
         <div className="gz-logo">🎞️</div>
         <div className="gz-tt">
-          <b>观止</b>
+          <b>书影音账本</b>
           <small>{headInfo.text}</small>
         </div>
         <div className="gz-tabs">

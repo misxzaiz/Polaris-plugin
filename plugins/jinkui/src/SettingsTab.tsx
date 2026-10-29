@@ -150,7 +150,7 @@ export default function SettingsTab({ data, reload, showToast }: TabProps) {
 
       <div className="jk-sec"><span className="jk-bar" />口径与边界</div>
       <div className="jk-card"><div className="jk-card-b jk-sub" style={{ lineHeight: 1.8 }}>
-        · 金匮是「家庭保单台账」：记录、缴费提醒、宽限期/中止期状态投影、四大件覆盖透视。<br />
+        · 保单台账是「家庭保单台账」：记录、缴费提醒、宽限期/中止期状态投影、四大件覆盖透视。<br />
         · 不做产品推荐、不做保费对比、不构成投保/退保建议；退保通常只退现金价值，决定前与保司确认。<br />
         · 状态为台账口径投影：与保司实际宽限/复效条款有出入时以合同为准。<br />
         · 纯本地存储（cap.kv），零账号零上传；「电子保单位置」只登记路径描述，不存文件本体。

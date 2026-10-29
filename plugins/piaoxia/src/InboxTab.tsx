@@ -26,7 +26,7 @@ export default function InboxTab({ ctx }: { ctx: PanelCtx }) {
     }
     const bad = files.filter((f) => /\.(ofd|zip|rar|7z|jpg|jpeg|png)$/i.test(f.name))
     if (bad.length) {
-      ctx.toast('不支持 ' + bad.map((f) => f.name).join('、') + '：OFD/图片/压缩包暂不解析（票匣不做 OCR），请从税务局下载 PDF 或 XML 版式', true)
+      ctx.toast('不支持 ' + bad.map((f) => f.name).join('、') + '：OFD/图片/压缩包暂不解析（发票保险库不做 OCR），请从税务局下载 PDF 或 XML 版式', true)
     }
     const good = files.filter((f) => /\.(pdf|xml)$/i.test(f.name))
     if (!good.length && !dirPath.trim()) return

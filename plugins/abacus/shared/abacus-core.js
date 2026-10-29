@@ -1,6 +1,6 @@
 'use strict';
 /**
- * abacus-core —— 算盘的纯计算核心（服务 / 面板 / MCP 三方共用同一权威，口径不漂移）
+ * abacus-core —— AI 用量账的纯计算核心（服务 / 面板 / MCP 三方共用同一权威，口径不漂移）
  *
  * 职责：口径归一（三源两种 input 语义 → 统一台账条目）、计价（USD/Mtok）、
  *       聚合（summary/daily/models/projects/quality/sessions）、漏钱洞察。

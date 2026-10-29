@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * main.js —— 票匣（piaoxia）后台服务（node >= 18）
+ * main.js —— 发票保险库（piaoxia）后台服务（node >= 18）
  *
  * 职责：
  *   - 面板的收票引擎入口：面板把拖入的文件字节（base64）POST 到

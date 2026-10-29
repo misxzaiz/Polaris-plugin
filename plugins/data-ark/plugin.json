@@ -1,6 +1,6 @@
 {
   "id": "data-ark",
-  "name": "数据方舟",
+  "name": "数据备份",
   "version": "0.1.0",
   "description": "Polaris 数据根的备份/恢复引擎：会话、cap.kv、审计链、配置等全部保护起来。内容寻址去重存储（CAS+gzip，不变文件全库只存一份）、增量快照（mtime/size 初筛+sha256 确认）、GFS 保留轮换（日/周/月）+引用 GC、单写者租约（双 Polaris 实例自动主备）、崩溃恢复（tmp 清理、manifest 最后写）、热文件协议（读写冲突重试后诚实跳过）、磁盘空间预检与库上限降级、错过调度补跑一次不风暴。恢复只落备份库的 restored/ 暂存目录——引擎不存在任何覆盖数据根的代码路径。后台服务随应用自启，日志自落盘轮转；AI 经 7 个 ark_* MCP 工具对话式管理备份；面板跨端可查状态、发起备份、浏览与恢复文件。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "dataArk",
         "icon": "Files",
         "labelKey": "plugins.dataArk",
-        "labelDefault": "数据方舟",
+        "labelDefault": "数据备份",
         "order": 75
       }
     ],
@@ -25,7 +25,11 @@
         "id": "ark-service",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/service/ark.js", "{{port}}", "{{appConfigDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/service/ark.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
         "autoStart": true,
@@ -39,7 +43,10 @@
         "id": "data-ark",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

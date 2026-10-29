@@ -1,6 +1,6 @@
 {
   "id": "memoryforge",
-  "name": "记忆熔炉",
+  "name": "记忆卡片",
   "version": "0.1.0",
   "description": "把读过的、聊过的、学过的，炼成记得住的。AI 对话式制卡：粘贴一段笔记、给一个文章 URL、或直接说「把刚才聊的 OAuth 流程出 10 张卡」，AI 提炼问答卡入库；面板按 SM-2 间隔重复排期复习（重来 10 分钟回队、毕业卡间隔按 ease 拉长），配每日新卡/复习限额、7 天到期预报、30 天留存率与连击。网页抓取由 MCP 进程原生 fetch 执行，天然绕开浏览器同源限制（面板零跨域请求）；数据只存本机 cap.kv memoryforge.*，桌面与手机 Web 同步同一副牌，通勤路上也能复习。面板与 AI 共用同一计算核心（shared/srs-core），调度口径永远一致。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "memoryForge",
         "icon": "Beaker",
         "labelKey": "plugins.memoryForge",
-        "labelDefault": "记忆熔炉",
+        "labelDefault": "记忆卡片",
         "order": 74
       }
     ],
@@ -25,7 +25,10 @@
         "id": "memoryforge",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

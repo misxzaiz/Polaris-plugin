@@ -1347,7 +1347,7 @@ function BookmarkDigPanel(props) {
   };
   return /* @__PURE__ */ jsxs5("div", { style: { padding: 16, fontFamily: "inherit", fontSize: 13, color: "var(--p-text, inherit)", maxWidth: 880, margin: "0 auto" }, children: [
     /* @__PURE__ */ jsxs5("div", { style: { display: "flex", gap: 8, alignItems: "center", marginBottom: 12, flexWrap: "wrap" }, children: [
-      /* @__PURE__ */ jsx5("strong", { style: { fontSize: 15 }, children: "\u{1F4D6} \u4E66\u7B7E\u8003\u53E4" }),
+      /* @__PURE__ */ jsx5("strong", { style: { fontSize: 15 }, children: "\u{1F4D6} \u4E66\u7B7E\u4F53\u68C0" }),
       run && /* @__PURE__ */ jsxs5("span", { style: { padding: "2px 10px", borderRadius: 999, background: "var(--p-accent, #4a7dff)", color: "#fff", fontSize: 11 }, children: [
         "\u68C0\u67E5\u4E2D ",
         run.cursor,

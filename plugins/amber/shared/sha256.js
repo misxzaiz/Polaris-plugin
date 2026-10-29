@@ -1,11 +1,11 @@
 'use strict';
 /**
- * sha256.js —— 琥珀三方共享的纯 JS SHA-256（浏览器 / node / worker 同源一致）
+ * sha256.js —— 网页封存三方共享的纯 JS SHA-256（浏览器 / node / worker 同源一致）
  *
  * 为什么不用 node:crypto / crypto.subtle：
  *   1. node:crypto 在面板 bundle（浏览器）里不可用；
  *   2. crypto.subtle 只在安全上下文可用——手机经 http://局域网地址 访问时不存在；
- *   3. 琥珀条目的稳定 id 必须**三方一字不差**（面板 / MCP / 服务各自算的
+ *   3. 网页封存条目的稳定 id 必须**三方一字不差**（面板 / MCP / 服务各自算的
  *      id 会直接成为 cap.kv 的键名，不一致 = 数据物理分裂）。
  *
  * 实现：经典 FIPS 180-4 流程（字数组 + K 表 + 压缩循环），输入做 UTF-8 编码。

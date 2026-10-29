@@ -1,5 +1,5 @@
 /**
- * 灵犀面板外壳：头部（池子速览）+ 四 Tab（星图 / 回访 / 池子 / 统计）
+ * 灵感池面板外壳：头部（池子速览）+ 四 Tab（星图 / 回访 / 池子 / 统计）
  * 数据面：cap.kv lingxi.*（经宿主 invoke → router_dispatch），跨端同一个池子。
  * 计算全部走 shared/pond-core.js（与 MCP 同一权威）。
  */
@@ -170,7 +170,7 @@ export default function LingxiPanel(props: { pluginId: string; onSendToChat?: (m
 
   const sendToChat = useCallback((msg: string) => {
     if (onSendToChat) return onSendToChat(msg)
-    showToast('该入口不支持唤起对话，请在对话里直接 @灵犀', 'bad')
+    showToast('该入口不支持唤起对话，请在对话里直接 @灵感池', 'bad')
     return undefined
   }, [onSendToChat, showToast])
 
@@ -182,7 +182,7 @@ export default function LingxiPanel(props: { pluginId: string; onSendToChat?: (m
       <div className="lx-top">
         <div className="lx-logo">🌌</div>
         <div className="lx-tt">
-          <b>灵犀</b>
+          <b>灵感池</b>
           <small className={subtitleCls} onClick={() => setTab('revisit')}>{subtitle}</small>
         </div>
         <div className="lx-tabs">

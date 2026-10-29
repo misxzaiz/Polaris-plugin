@@ -1,6 +1,6 @@
 'use strict';
 /**
- * extract.js —— 韦编文档文本提取器（零外部依赖；PDF 走 zhifang 同款 vendor/pdfjs）
+ * extract.js —— 文档检索文档文本提取器（零外部依赖；PDF 走 zhifang 同款 vendor/pdfjs）
  *
  * 输出统一为纯文本（供 tokenize）。所有提取器只读输入，永不修改源文件。
  *   - text 类：BOM 探测 → UTF-8 严格解码 → 失败回退 GBK（Windows 中文环境常见）；

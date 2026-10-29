@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * stove.js —— 问灶后台服务（零依赖，node >= 18，需全局 fetch）
+ * stove.js —— 食材管家后台服务（零依赖，node >= 18，需全局 fetch）
  *
  * 职责（服务是插件唯一的对外网络出口；库存/菜谱/计划/采购正身由面板与 MCP
  * 直接写 cap.kv，本服务不碰它们）：

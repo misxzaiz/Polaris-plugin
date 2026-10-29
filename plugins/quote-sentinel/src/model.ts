@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（盘哨面板）
+ * 通信层 + 数据访问（行情哨兵面板）
  *
  * 统一经宿主 invoke 通道调 router_dispatch；面板与后台服务、MCP server
  * 读写同一个 cap.kv（SqliteStorage domain=kv）的 qsent.* 键空间。
@@ -340,7 +340,7 @@ async function runServiceCommand<T>(cmdKey: string, resultKey: string, payload: 
       return r
     }
   }
-  throw new Error('后台服务未响应（可能未运行：设置 → 插件 → 盘哨 查看服务状态）')
+  throw new Error('后台服务未响应（可能未运行：设置 → 插件 → 行情哨兵 查看服务状态）')
 }
 
 export async function searchWithService(q: string): Promise<SearchResult[]> {

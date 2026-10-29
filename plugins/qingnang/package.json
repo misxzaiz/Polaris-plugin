@@ -2,7 +2,7 @@
   "name": "qingnang-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "qingnang 插件面板（打包用）：青囊——家庭用药与药箱管家",
+  "description": "qingnang 插件面板（打包用）：用药管家——家庭用药与药箱管家",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

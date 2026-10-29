@@ -526,7 +526,7 @@ function LibraryTab({ data, reload, showToast, onSendToChat, selectedId, onConsu
     }
   };
   const doDelete = async (a) => {
-    if (!window.confirm(`\u5220\u9664\u8FD9\u6761\u7425\u73C0\uFF1F\u300C${a.title || a.url}\u300D
+    if (!window.confirm(`\u5220\u9664\u8FD9\u6761\u7F51\u9875\u5C01\u5B58\uFF1F\u300C${a.title || a.url}\u300D
 \u5C01\u5B58\u6B63\u6587\u4E0E\u76F8\u5173\u6458\u5F55\u4F1A\u4E00\u5E76\u5220\u9664\uFF0C\u4E0D\u53EF\u6062\u590D\u3002`)) return;
     try {
       await deleteItem(a.id);
@@ -569,7 +569,7 @@ ${body.text.slice(0, 3e3)}`);
     if (!item) {
       return /* @__PURE__ */ jsxs("div", { children: [
         /* @__PURE__ */ jsx("div", { className: "am-read-h", children: /* @__PURE__ */ jsx("button", { className: "am-btn sm ghost", onClick: () => setReadingId(""), children: "\u2190 \u8FD4\u56DE" }) }),
-        /* @__PURE__ */ jsx("div", { className: "am-empty", children: "\u8FD9\u6761\u7425\u73C0\u5DF2\u88AB\u5220\u9664\u6216\u4E0D\u5B58\u5728\u3002" })
+        /* @__PURE__ */ jsx("div", { className: "am-empty", children: "\u8FD9\u6761\u7F51\u9875\u5C01\u5B58\u5DF2\u88AB\u5220\u9664\u6216\u4E0D\u5B58\u5728\u3002" })
       ] });
     }
     const a = item;
@@ -755,7 +755,7 @@ ${body.text.slice(0, 3e3)}`);
       /* @__PURE__ */ jsx("br", {}),
       "\u5728\u4E0A\u9762\u8D34\u4E00\u4E2A URL \u70B9\u300C\u5C01\u5B58\u300D\uFF0C\u6216\u5728\u804A\u5929\u91CC\u5BF9 AI \u8BF4",
       /* @__PURE__ */ jsx("br", {}),
-      "\u300C\u628A https://\u2026 \u5B58\u8FDB\u7425\u73C0\u300D\u3002"
+      "\u300C\u628A https://\u2026 \u5B58\u8FDB\u7F51\u9875\u5C01\u5B58\u300D\u3002"
     ] }) : /* @__PURE__ */ jsx(Fragment, { children: "\u5F53\u524D\u8FC7\u6EE4\u4E0B\u6CA1\u6709\u6761\u76EE\u3002" }) }) : /* @__PURE__ */ jsxs("div", { className: "am-card", style: { padding: 0 }, children: [
       list.map((a) => /* @__PURE__ */ jsxs("div", { className: `am-art ${a.read ? "read" : ""}`, onClick: () => setReadingId(a.id), children: [
         /* @__PURE__ */ jsx("i", { className: `am-unread ${a.read ? "off" : ""}` }),
@@ -947,7 +947,7 @@ function QuotesTab({ data, reload, showToast, openItem }) {
     quotes.length === 0 ? /* @__PURE__ */ jsxs3("div", { className: "am-empty", children: [
       "\u8FD8\u6CA1\u6709\u6458\u5F55\u3002",
       /* @__PURE__ */ jsx3("br", {}),
-      "\u6253\u5F00\u4EFB\u610F\u4E00\u6761\u7425\u73C0\uFF0C\u9009\u4E2D\u4E00\u6BB5\u6B63\u6587\u70B9\u300C\u2702 \u6458\u5F55\u9009\u4E2D\u6587\u5B57\u300D\uFF1B",
+      "\u6253\u5F00\u4EFB\u610F\u4E00\u6761\u7F51\u9875\u5C01\u5B58\uFF0C\u9009\u4E2D\u4E00\u6BB5\u6B63\u6587\u70B9\u300C\u2702 \u6458\u5F55\u9009\u4E2D\u6587\u5B57\u300D\uFF1B",
       /* @__PURE__ */ jsx3("br", {}),
       "\u804A\u5929\u91CC\u4E5F\u53EF\u4EE5\u8BA9 AI \u7528 amber_quote \u5E2E\u4F60\u6458\u3002"
     ] }) : /* @__PURE__ */ jsx3("div", { className: "am-card", style: { padding: 0 }, children: quotes.map((q) => {
@@ -1036,7 +1036,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     }
   };
   const purge = async () => {
-    if (!window.confirm("\u6E05\u7A7A\u5168\u90E8\u7425\u73C0\u6761\u76EE\u3001\u6B63\u6587\u4E0E\u6458\u5F55\uFF08\u8BBE\u7F6E\u4FDD\u7559\uFF09\u3002\u786E\u5B9A\uFF1F")) return;
+    if (!window.confirm("\u6E05\u7A7A\u5168\u90E8\u7F51\u9875\u5C01\u5B58\u6761\u76EE\u3001\u6B63\u6587\u4E0E\u6458\u5F55\uFF08\u8BBE\u7F6E\u4FDD\u7559\uFF09\u3002\u786E\u5B9A\uFF1F")) return;
     setBusy("purge");
     try {
       await purgeAll();
@@ -1048,13 +1048,13 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     setBusy("");
   };
   const clearAll = async () => {
-    if (!window.confirm("\u5220\u9664\u7425\u73C0\u63D2\u4EF6\u7684\u5168\u90E8\u6570\u636E\uFF08\u6761\u76EE/\u6B63\u6587/\u6458\u5F55/\u8BBE\u7F6E/\u4FE1\u7BB1\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) return;
+    if (!window.confirm("\u5220\u9664\u7F51\u9875\u5C01\u5B58\u63D2\u4EF6\u7684\u5168\u90E8\u6570\u636E\uFF08\u6761\u76EE/\u6B63\u6587/\u6458\u5F55/\u8BBE\u7F6E/\u4FE1\u7BB1\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) return;
     setBusy("clearAll");
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith("amber."));
       await Promise.all(keys.map((k) => kvDel(k)));
       await reload();
-      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u7425\u73C0\u6570\u636E");
+      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u7F51\u9875\u5C01\u5B58\u6570\u636E");
     } catch (e) {
       showToast(`\u6E05\u7406\u5931\u8D25\uFF1A${e.message}`, true);
     }
@@ -1175,7 +1175,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     /* @__PURE__ */ jsx4("div", { className: "am-card", children: /* @__PURE__ */ jsxs4("div", { className: "am-card-b", children: [
       /* @__PURE__ */ jsxs4("div", { className: "am-state", style: { marginTop: 0 }, children: [
         /* @__PURE__ */ jsxs4("span", { className: "am-kv", children: [
-          "\u7425\u73C0 ",
+          "\u7F51\u9875\u5C01\u5B58 ",
           /* @__PURE__ */ jsx4("b", { children: data?.items.length ?? 0 })
         ] }),
         /* @__PURE__ */ jsxs4("span", { className: "am-kv", children: [
@@ -1196,7 +1196,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
         ] })
       ] }),
       /* @__PURE__ */ jsxs4("div", { className: "am-actions", children: [
-        /* @__PURE__ */ jsx4("button", { className: "am-btn sm ghost", disabled: !!busy, onClick: purge, children: busy === "purge" ? /* @__PURE__ */ jsx4("span", { className: "am-spin" }) : "\u6E05\u7A7A\u5168\u90E8\u7425\u73C0\uFF08\u4FDD\u7559\u8BBE\u7F6E\uFF09" }),
+        /* @__PURE__ */ jsx4("button", { className: "am-btn sm ghost", disabled: !!busy, onClick: purge, children: busy === "purge" ? /* @__PURE__ */ jsx4("span", { className: "am-spin" }) : "\u6E05\u7A7A\u5168\u90E8\u7F51\u9875\u5C01\u5B58\uFF08\u4FDD\u7559\u8BBE\u7F6E\uFF09" }),
         /* @__PURE__ */ jsx4("button", { className: "am-btn sm danger", disabled: !!busy, onClick: clearAll, children: busy === "clearAll" ? /* @__PURE__ */ jsx4("span", { className: "am-spin" }) : "\u6E05\u7A7A\u5168\u90E8\u6570\u636E" })
       ] })
     ] }) }),
@@ -1205,7 +1205,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx4("div", { className: "am-card", children: /* @__PURE__ */ jsxs4("div", { className: "am-card-b am-sub", children: [
-      "\u7425\u73C0 amber v0.1.0 \u2014\u2014 \u628A\u7F51\u9875\u5C01\u8FDB\u7425\u73C0\uFF1A\u6C38\u4E45\u53EF\u8BFB\u5FEB\u7167 + \u5168\u6587\u68C0\u7D22 + \u91D1\u53E5\u6458\u5F55\u3002",
+      "\u7F51\u9875\u5C01\u5B58 amber v0.1.0 \u2014\u2014 \u628A\u7F51\u9875\u5C01\u8FDB\u7F51\u9875\u5C01\u5B58\uFF1A\u6C38\u4E45\u53EF\u8BFB\u5FEB\u7167 + \u5168\u6587\u68C0\u7D22 + \u91D1\u53E5\u6458\u5F55\u3002",
       /* @__PURE__ */ jsx4("br", {}),
       "\xB7 \u6D4F\u89C8\u5668\u6709\u540C\u6E90\u7B56\u7565\uFF0C\u672C\u63D2\u4EF6\u628A\u6293\u53D6\u4E0B\u6C89\u5230\u540E\u53F0\u670D\u52A1\u539F\u751F\u6267\u884C\uFF0C\u5929\u7136\u65E0\u8DE8\u57DF\u95EE\u9898\uFF1B",
       /* @__PURE__ */ jsx4("br", {}),
@@ -1213,7 +1213,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
       /* @__PURE__ */ jsx4("br", {}),
       "\xB7 \u540C\u4E00 URL \u91CD\u590D\u5C01\u5B58 = \u5FEB\u7167\u66F4\u65B0 + \u5C01\u5B58\u6B21\u6570\u5C42\u79EF\uFF0C\u9605\u8BFB\u72B6\u6001\u4E0E\u6807\u7B7E\u4FDD\u7559\uFF1B",
       /* @__PURE__ */ jsx4("br", {}),
-      "\xB7 \u5C01\u5B58\u5931\u8D25\u6C38\u4E0D\u6467\u6BC1\u65E7\u5FEB\u7167\u2014\u2014\u5DF2\u5C01\u5B58\u7684\u7425\u73C0\u662F\u4F60\u6C38\u4E45\u9057\u4EA7\uFF1B",
+      "\xB7 \u5C01\u5B58\u5931\u8D25\u6C38\u4E0D\u6467\u6BC1\u65E7\u5FEB\u7167\u2014\u2014\u5DF2\u5C01\u5B58\u7684\u7F51\u9875\u5C01\u5B58\u662F\u4F60\u6C38\u4E45\u9057\u4EA7\uFF1B",
       /* @__PURE__ */ jsx4("br", {}),
       "\xB7 \u5728\u804A\u5929\u91CC\u53EF\u76F4\u63A5\u8BA9 AI \u4EE3\u4F60\u64CD\u4F5C\uFF08amber_save / amber_search / amber_read / amber_quote\u2026\uFF09\u3002"
     ] }) })
@@ -1367,7 +1367,7 @@ function AmberPanel({ pluginId, onSendToChat }) {
     const last = data.meta?.lastTickAt;
     if (!last) return { cls: "down", text: "\u670D\u52A1\u672A\u62A5\u544A\u5FC3\u8DF3" };
     const age = Date.now() - last;
-    if (age < 180 * 1e3) return { cls: "ok", text: `\u670D\u52A1\u5728\u7EBF \xB7 ${data.meta?.items ?? data.items.length} \u7425\u73C0 \xB7 \u6865 ${data.meta?.bridge || "?"}` };
+    if (age < 180 * 1e3) return { cls: "ok", text: `\u670D\u52A1\u5728\u7EBF \xB7 ${data.meta?.items ?? data.items.length} \u7F51\u9875\u5C01\u5B58 \xB7 \u6865 ${data.meta?.bridge || "?"}` };
     return { cls: "stale", text: `\u5FC3\u8DF3\u505C\u6EDE ${Math.round(age / 6e4)} \u5206\u949F` };
   })();
   const unread = data?.items.filter((x) => !x.read).length ?? 0;
@@ -1376,7 +1376,7 @@ function AmberPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs5("div", { className: "am-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "am-logo", children: "\u{1F7E1}" }),
       /* @__PURE__ */ jsxs5("div", { className: "am-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u7425\u73C0 \xB7 \u7F51\u9875\u5C01\u85CF\u9986" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u7F51\u9875\u5C01\u5B58 \xB7 \u7F51\u9875\u5C01\u85CF\u9986" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           /* @__PURE__ */ jsx5("i", { className: `am-dot ${heartbeat.cls}` }),
           heartbeat.text

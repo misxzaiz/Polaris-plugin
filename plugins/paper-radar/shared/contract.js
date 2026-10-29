@@ -1,6 +1,6 @@
 'use strict';
 /**
- * contract.js —— 论文雷达三端共享契约（service / mcp / panel）
+ * contract.js —— 论文速递三端共享契约（service / mcp / panel）
  *
  * 键空间 + 模型字段 + 评分核心，须与面板 src/model.ts 保持同步
  *（权威字段说明见 README）。改动键名或字段时，请同时改三处。

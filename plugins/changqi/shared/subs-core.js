@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 常契 subs-core —— 订阅契约账本的唯一计算权威（CommonJS，零依赖）
+ * 订阅台账 subs-core —— 订阅契约账本的唯一计算权威（CommonJS，零依赖）
  *
  * 面板（esbuild 打包进 bundle）与 MCP（require）与测试三方共用，
  * 保证「下次扣费日推导 / 月度化口径 / 提醒分级 / 透视聚合」口径不漂移。

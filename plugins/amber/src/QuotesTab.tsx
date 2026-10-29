@@ -38,7 +38,7 @@ export default function QuotesTab({ data, reload, showToast, openItem }: {
       <div className="am-sec"><i className="am-bar" />金句摘录<span className="am-hint">共 {quotes.length} 条</span></div>
       {quotes.length === 0 ? (
         <div className="am-empty">
-          还没有摘录。<br />打开任意一条琥珀，选中一段正文点「✂ 摘录选中文字」；<br />聊天里也可以让 AI 用 amber_quote 帮你摘。
+          还没有摘录。<br />打开任意一条网页封存，选中一段正文点「✂ 摘录选中文字」；<br />聊天里也可以让 AI 用 amber_quote 帮你摘。
         </div>
       ) : (
         <div className="am-card" style={{ padding: 0 }}>

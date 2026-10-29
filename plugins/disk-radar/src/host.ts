@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（磁盘雷达面板专用，与 page-sentinel 同一模式）
+ * 宿主 API 访问层（磁盘分析面板专用，与 page-sentinel 同一模式）
  *
  * 面板自身绝不直接 fetch 任何地址——数据读写统一走宿主暴露的 invoke 通道
  * （window.__POLARIS_HOST_INVOKE__，主应用 main.tsx 挂载）：

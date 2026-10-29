@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * jinkui MCP Server —— 金匮的 AI 工具层（零依赖 stdio）
+ * jinkui MCP Server —— 保单台账的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 jinkui.* 键空间的读写，并用 shared/core 现算缴费进度/状态机/缺口矩阵。
@@ -53,7 +53,7 @@ function ok(text) {
 function err(text) {
   return { content: [{ type: 'text', text }], isError: true };
 }
-const DISCLAIMER = '（金匮只做保单记录与现状透视：状态/宽限期/缺口为台账口径投影，与保司实际条款可能有出入；不构成投保建议，退保/复效/理赔以保司合同与客服为准。）';
+const DISCLAIMER = '（保单台账只做保单记录与现状透视：状态/宽限期/缺口为台账口径投影，与保司实际条款可能有出入；不构成投保建议，退保/复效/理赔以保司合同与客服为准。）';
 
 // ── 数据访问 ─────────────────────────────────────────────────────────────────
 async function listMembers() {
@@ -136,7 +136,7 @@ function fmtAlertDate(d) {
 async function toolToday() {
   const [policies, events, members, settings] = await Promise.all([listPolicies(), listEvents(), listMembers(), readSettings()]);
   if (!policies.length) {
-    return ok('金匮还没有保单台账。请用 jinkui_add entity=policy 建档，或引导用户说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年，2023 年 5 月生效」。\n' + DISCLAIMER);
+    return ok('保单台账还没有保单台账。请用 jinkui_add entity=policy 建档，或引导用户说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年，2023 年 5 月生效」。\n' + DISCLAIMER);
   }
   const now = Date.now();
   const today = core.dayKey(now);
@@ -278,7 +278,7 @@ async function toolLog(args) {
     const st = core.policyStatus(policy, core.eventsFor(await listEvents(), policy.id), settings, now);
     return ok([
       `已记退保：「${policy.name}」自 ${date} 起按已退保留档${args.amount != null ? `，退回 ${core.fmtMoney(args.amount)}` : ''}。`,
-      `提醒：退保通常只退现金价值（前期可能远低于已缴保费），后续新保单有等待期——决定前建议与保司确认。金匮不代作决定。`,
+      `提醒：退保通常只退现金价值（前期可能远低于已缴保费），后续新保单有等待期——决定前建议与保司确认。保单台账不代作决定。`,
     ].join('\n') + '\n' + DISCLAIMER);
   }
   if (type === 'reinstate') {
@@ -525,12 +525,12 @@ const COVERAGE_HINT = '保额双单位：coverageWan 用万（推荐，如 300 �
 const tools = [
   {
     name: 'jinkui_today',
-    description: '金匮·今日台账：缴费红黄榜（宽限期/中止期红榜——保障已出风险；warnDays 内缴费黄榜）、等待期、满期提醒、家庭合计（在保单数/年缴保费/累计已缴/累计理赔）与缺口速览。用户问「保单该交了吗」「有啥要注意的」「全家保障怎么样」时用。',
+    description: '保单台账·今日台账：缴费红黄榜（宽限期/中止期红榜——保障已出风险；warnDays 内缴费黄榜）、等待期、满期提醒、家庭合计（在保单数/年缴保费/累计已缴/累计理赔）与缺口速览。用户问「保单该交了吗」「有啥要注意的」「全家保障怎么样」时用。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
     name: 'jinkui_add',
-    description: '金匮·入柜建档：entity=policy 建保单——用户说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年，2023 年 5 月生效」→ name=平安少儿重疾, kind=critical, insured=娃, coverageWan=50, premium=4000, freq=yearly, payYears=20, startDate=2023-05-01。insured 传成员名自动配档；entity=member 先建成员（本人/配偶/子女/父母）。startDate=首期缴费日（不是签单日）；趸交 freq=single；电子保单位置用 fileNote 登记。',
+    description: '保单台账·入柜建档：entity=policy 建保单——用户说「给娃买了份 50 万的重疾，平安的，年缴 4000 缴 20 年，2023 年 5 月生效」→ name=平安少儿重疾, kind=critical, insured=娃, coverageWan=50, premium=4000, freq=yearly, payYears=20, startDate=2023-05-01。insured 传成员名自动配档；entity=member 先建成员（本人/配偶/子女/父母）。startDate=首期缴费日（不是签单日）；趸交 freq=single；电子保单位置用 fileNote 登记。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -559,7 +559,7 @@ const tools = [
   },
   {
     name: 'jinkui_log',
-    description: '金匮·记事件：type=pay 记缴费（date=该期缴费日，缴到哪期填哪期；金额缺省按保单保费）；type=claim 记理赔（amount=获赔金额，note=出险说明）；type=endorse 记批改（note 写清改了什么）；type=reinstate 记复效（date=复效日，仅宽限期/中止期可用）；type=surrender 记退保（date=退保日）。用户说「这份交过了」「理赔下来 8000」「把受益人改成我」「那份退了」时用。',
+    description: '保单台账·记事件：type=pay 记缴费（date=该期缴费日，缴到哪期填哪期；金额缺省按保单保费）；type=claim 记理赔（amount=获赔金额，note=出险说明）；type=endorse 记批改（note 写清改了什么）；type=reinstate 记复效（date=复效日，仅宽限期/中止期可用）；type=surrender 记退保（date=退保日）。用户说「这份交过了」「理赔下来 8000」「把受益人改成我」「那份退了」时用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -574,7 +574,7 @@ const tools = [
   },
   {
     name: 'jinkui_query',
-    description: '金匮·查询：scope=policies 全家保单清单｜detail 单张详情（缴费进度/宽限期/等待期/流水数）｜events 事件流水｜calendar 未来 N 天缴费日历（days，默认 90）｜gap 四大件缺口矩阵｜stats 家庭合计+未来 12 个月保费现金流。用户问「我妈的重疾什么时候缴费」「谁没医疗险」「今年保费多少」「未来几个月要交哪些」时用。',
+    description: '保单台账·查询：scope=policies 全家保单清单｜detail 单张详情（缴费进度/宽限期/等待期/流水数）｜events 事件流水｜calendar 未来 N 天缴费日历（days，默认 90）｜gap 四大件缺口矩阵｜stats 家庭合计+未来 12 个月保费现金流。用户问「我妈的重疾什么时候缴费」「谁没医疗险」「今年保费多少」「未来几个月要交哪些」时用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -587,7 +587,7 @@ const tools = [
   },
   {
     name: 'jinkui_update',
-    description: '金匮·修改：kind=policy 改保单（company/policyNo/coverage/premium/payYears/endDate/waitingDays/fileNote/note…；产品名与被保人不可改，录错删重建）；kind=member 改成员（relation/birthYear/note）。改缴费参数会如实重推缴费进度。',
+    description: '保单台账·修改：kind=policy 改保单（company/policyNo/coverage/premium/payYears/endDate/waitingDays/fileNote/note…；产品名与被保人不可改，录错删重建）；kind=member 改成员（relation/birthYear/note）。改缴费参数会如实重推缴费进度。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -600,7 +600,7 @@ const tools = [
   },
   {
     name: 'jinkui_delete',
-    description: '金匮·删除（需 confirm=true，AI 必须先向用户确认）：kind=policy 删保单连带事件；kind=member 删成员（名下有保单会拒绝）；kind=event 删单条事件（id=occKey，误记的缴费/理赔用）。',
+    description: '保单台账·删除（需 confirm=true，AI 必须先向用户确认）：kind=policy 删保单连带事件；kind=member 删成员（名下有保单会拒绝）；kind=event 删单条事件（id=occKey，误记的缴费/理赔用）。',
     inputSchema: {
       type: 'object',
       properties: {

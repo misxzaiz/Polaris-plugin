@@ -1219,7 +1219,7 @@ function SettingsTab({ ctx, busy, onCmd, onSaveSettings, defaults }) {
       "\u53E3\u5F84\u8BF4\u660E\uFF08\u4E3A\u4EC0\u4E48\u4E24\u8FB9\u7684\u300C\u8F93\u5165\u300D\u4E0D\u4E00\u6837\uFF09"
     ] }),
     /* @__PURE__ */ jsx5("div", { className: "ab-card", children: /* @__PURE__ */ jsxs5("div", { className: "ab-card-b ab-caliber", children: [
-      "\u4E09\u79CD\u6765\u6E90\u7684 input_tokens \u8BED\u4E49\u4E0D\u540C\uFF0C\u7B97\u76D8\u5728\u8BA1\u4EF7\u524D\u5DF2\u663E\u5F0F\u5F52\u4E00\uFF08\u8BE6\u89C1 plans spec \u4E0E README\uFF09\uFF1A",
+      "\u4E09\u79CD\u6765\u6E90\u7684 input_tokens \u8BED\u4E49\u4E0D\u540C\uFF0CAI \u7528\u91CF\u8D26\u5728\u8BA1\u4EF7\u524D\u5DF2\u663E\u5F0F\u5F52\u4E00\uFF08\u8BE6\u89C1 plans spec \u4E0E README\uFF09\uFF1A",
       /* @__PURE__ */ jsx5("br", {}),
       "\u2022 ",
       /* @__PURE__ */ jsx5("code", { children: "zcode" }),
@@ -1401,7 +1401,7 @@ function AbacusPanel(_props) {
       /* @__PURE__ */ jsxs6("div", { className: "ab-headrow", children: [
         /* @__PURE__ */ jsx6("div", { className: "ab-logo", children: "\u{1F9EE}" }),
         /* @__PURE__ */ jsxs6("div", { className: "ab-tt", children: [
-          /* @__PURE__ */ jsx6("b", { children: "\u7B97\u76D8 \xB7 AI \u82B1\u9500\u8D26\u623F" }),
+          /* @__PURE__ */ jsx6("b", { children: "AI \u7528\u91CF\u8D26 \xB7 AI \u82B1\u9500\u8D26\u623F" }),
           /* @__PURE__ */ jsx6("small", { children: loadErr ? `\u52A0\u8F7D\u5931\u8D25\uFF1A${loadErr}` : statusLine })
         ] }),
         /* @__PURE__ */ jsx6("div", { className: "ab-status", children: meta && meta.sources ? /* @__PURE__ */ jsxs6(Fragment4, { children: [

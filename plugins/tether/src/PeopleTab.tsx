@@ -1,5 +1,5 @@
 /**
- * 故人 Tab：花名册（搜索/关系筛选/归档开关）+ 详情抽屉
+ * 人情账本 Tab：花名册（搜索/关系筛选/归档开关）+ 详情抽屉
  * 详情 = 档案字段 + 失联状态 + 就地快捷记账（联系/人情/便签/承诺）+ 未闭环承诺 + 最近往来
  */
 import { useMemo, useState } from 'react'
@@ -355,7 +355,7 @@ export default function PeopleTab({ data, reload, showToast, selectedPersonId, s
 
   return (
     <div>
-      <Section title="故人" hint={`${list.length} 位`} />
+      <Section title="人情账本" hint={`${list.length} 位`} />
       <div className="tr-card">
         <div className="tr-card-b">
           <div className="tr-row">

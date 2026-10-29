@@ -1,5 +1,5 @@
 /**
- * 守闸面板外壳：头部（月均成本速览）+ 四 Tab（总览 / 订阅 / 透视 / 设置）
+ * 续费管家面板外壳：头部（月均成本速览）+ 四 Tab（总览 / 订阅 / 透视 / 设置）
  * 数据面：cap.kv shouzha.*（经宿主 invoke → router_dispatch），跨端同一本账。
  * 提醒触达：应用内横幅 + WebAudio 短音（宿主暂无系统通知通道，与日晷同一方案）；
  * 首载不响，仅当逾期/试用转正「新增」且面板可见时提示。
@@ -210,7 +210,7 @@ export default function ShouzhaPanel(_props: { pluginId: string; onSendToChat?: 
       <div className="sz-top">
         <div className="sz-logo">🚪</div>
         <div className="sz-tt">
-          <b>守闸</b>
+          <b>续费管家</b>
           <small className="sz-cost">{headCost}</small>
         </div>
         <div className="sz-tabs">

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * server.js —— 票匣 MCP server（stdio JSON-RPC 2.0，零 npm 依赖）
+ * server.js —— 发票保险库 MCP server（stdio JSON-RPC 2.0，零 npm 依赖）
  *
  * 范式对齐 wenjin：description 即 prompt 工程；业务校验在 call() 内手写并返回
  * 中文可操作错误（错误文案里写下一步该用哪个工具）；normalize* 是写入唯一入口；
@@ -175,7 +175,7 @@ async function toolCollect(args) {
   if (added.length) lines.push('\n【新增】\n' + added.join('\n'));
   if (dupes.length) lines.push('\n【重复（未改动账面）】\n' + dupes.join('\n'));
   if (failed.length) lines.push('\n【失败（需人工处理）】\n' + failed.join('\n'));
-  if (failed.length) lines.push('\n扫描件/纸质票无法解析（票匣不做 OCR）：让用户在票册「手动录入」，或用 piaoxia_add 直接入账。');
+  if (failed.length) lines.push('\n扫描件/纸质票无法解析（发票保险库不做 OCR）：让用户在票册「手动录入」，或用 piaoxia_add 直接入账。');
   await beat('collect');
   return ok(lines.join('\n'));
 }
@@ -313,7 +313,7 @@ async function toolQuery(args) {
   // stats（默认）
   const catRows = view.byCategory.map((r) => r.label + ' ¥' + core.num2(r.total) + '（' + r.count + '张）').join('，');
   return ok([
-    '票匣总览：共 ' + view.counts.all + ' 张。',
+    '发票保险库总览：共 ' + view.counts.all + ' 张。',
     '待报销 ' + view.pending.count + ' 张 / ¥' + core.num2(view.pending.total) + '；在途（已提交未到账）' + view.inFlight.count + ' 张 / ¥' + core.num2(view.inFlight.total) + '。',
     view.thisMonth + '：开票 ' + view.month.opened.count + ' 张 / ¥' + core.num2(view.month.opened.total) +
     '；到账 ' + view.month.settled.count + ' 张 / ¥' + core.num2(view.month.settled.total) + '。',
@@ -456,7 +456,7 @@ const tools = [
   {
     name: 'piaoxia_collect',
     description: [
-      '票匣·收票：扫描一个文件或目录，把电子发票（PDF 文本层 / 数电票 XML）解析入账并归档原件，20 位发票号码自动判重。',
+      '发票保险库·收票：扫描一个文件或目录，把电子发票（PDF 文本层 / 数电票 XML）解析入账并归档原件，20 位发票号码自动判重。',
       '用户说「把下载文件夹/桌面/XX目录里的发票收进来」「导入这张发票」时用。',
       '参数 path 必填（绝对路径）；recursive 默认递归子目录。',
       '扫描件/纸质票无文字层会失败——这时引导用户用 piaoxia_add 手动入账，不要硬重试。',
@@ -474,7 +474,7 @@ const tools = [
   {
     name: 'piaoxia_add',
     description: [
-      '票匣·手动入账：纸质票/对话里直接说票时用。',
+      '发票保险库·手动入账：纸质票/对话里直接说票时用。',
       '用户说「昨天开了张 280 的餐费发票」「记一张出租车票 45」时用。',
       'total（价税合计正数）必填；date 建议 YYYY-MM-DD（用户说「昨天/上周」时按今天推算）；',
       'number 是发票号码（数电票 20 位、旧票 8 位），纸质票没有可不填；',
@@ -509,7 +509,7 @@ const tools = [
   {
     name: 'piaoxia_query',
     description: [
-      '票匣·查询：报销透视/统计/找票全走这里。',
+      '发票保险库·查询：报销透视/统计/找票全走这里。',
       'type=pending 待报销清单（「哪些票还没报」「这个月能报多少」）；type=stale 场景也看 pending 的逾期段。',
       'type=month 月度（参数 month=YYYY-MM，默认本月）；type=category 分类汇总（参数 category 可选，中文）；',
       'type=seller 按销方（参数 seller）；type=reimburse 报销单分组或明细（参数 reimburseId）；',
@@ -532,7 +532,7 @@ const tools = [
   {
     name: 'piaoxia_set_status',
     description: [
-      '票匣·报销状态流转：submit（已提交，可带 reimburseId 报销单号）/ settle（已到账）/ reject（已退回，带 rejectNote 原因）/ reopen（退回或误操作后放回待报销）/ archive（不报销）/ restore（恢复）。',
+      '发票保险库·报销状态流转：submit（已提交，可带 reimburseId 报销单号）/ settle（已到账）/ reject（已退回，带 rejectNote 原因）/ reopen（退回或误操作后放回待报销）/ archive（不报销）/ restore（恢复）。',
       '用户说「这批发上去了，单号 R202611」「报销到账了」「财务打回了说抬头错」时用。',
       'number 用发票号码定位；不确定先 piaoxia_query type=search。',
     ].join('\n'),
@@ -551,7 +551,7 @@ const tools = [
   {
     name: 'piaoxia_update',
     description: [
-      '票匣·改票：改类别/用途/保修期/备注/销方等账面字段（金额改错也可改 total）。',
+      '发票保险库·改票：改类别/用途/保修期/备注/销方等账面字段（金额改错也可改 total）。',
       '用户说「那张火锅票算招待不是餐饮」「这台空调保修三年」「改成公司抬头」时用。',
       'number 定位；只传要改的字段（部分补丁）。category 用中文即可；warrantyMonths 是月数。',
     ].join('\n'),
@@ -573,7 +573,7 @@ const tools = [
   {
     name: 'piaoxia_delete',
     description: [
-      '票匣·删票：需要 confirm=true，且必须先向用户复述票面（号码/销方/金额）确认后才调用。',
+      '发票保险库·删票：需要 confirm=true，且必须先向用户复述票面（号码/销方/金额）确认后才调用。',
       '归档原件不会被删除。用户只是想改状态时不要用这个（用 piaoxia_set_status）。',
     ].join('\n'),
     inputSchema: {
@@ -589,7 +589,7 @@ const tools = [
   {
     name: 'piaoxia_titles',
     description: [
-      '票匣·抬头管理：开发票用的购方信息。',
+      '发票保险库·抬头管理：开发票用的购方信息。',
       'action=list 列出；action=add 添加（name 必填、taxId 统一社会信用代码、bank/account/address/phone 可选、isDefault 设默认）；',
       'action=copy 输出可直接贴给开票员的完整文本（参数 id 可选，缺省用默认抬头）；action=delete（confirm=true）。',
       '用户说「记一下我们公司开票信息」「我的发票抬头」时用。',

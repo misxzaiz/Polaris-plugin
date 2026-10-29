@@ -1,6 +1,6 @@
 'use strict';
 /**
- * sha256.js —— 订阅雷达三方共享的纯 JS SHA-256（浏览器 / node / worker 同源一致）
+ * sha256.js —— RSS 订阅三方共享的纯 JS SHA-256（浏览器 / node / worker 同源一致）
  *
  * 为什么不用 node:crypto / crypto.subtle：
  *   1. node:crypto 在面板 bundle（浏览器）里不可用；

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * sources.js —— 算盘三路数据源读取器（service 进程专用，全部只读）
+ * sources.js —— AI 用量账三路数据源读取器（service 进程专用，全部只读）
  *
  * 只读铁律：zcode / session 库用 node:sqlite readOnly 打开；claude JSONL 与
  * polaris dialogs 用 fs 只读。对源数据零写入。

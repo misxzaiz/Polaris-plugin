@@ -1,6 +1,6 @@
 'use strict';
 /**
- * sift-core.js —— 拾光机纯函数核心（shared core 模式）
+ * sift-core.js —— 会话记忆纯函数核心（shared core 模式）
  *
  * 服务 / MCP / 单测三方共用同一份实现，保证检索口径永远一致。
  * 全部为纯函数：不给 fs、不给网络；crypto 仅用 node 内置（makeSid）。

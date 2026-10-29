@@ -61,7 +61,7 @@ export default function SettingsTab({ data, reload, showToast }: {
         await kvDel(k)
       }
       await reload()
-      showToast('已清空全部常契数据')
+      showToast('已清空全部订阅台账数据')
     } catch (e) {
       showToast(`清空失败：${(e as Error).message}`, 'bad')
     }
@@ -121,7 +121,7 @@ export default function SettingsTab({ data, reload, showToast }: {
           {clearArmed ? (
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <button className="cq-btn sm danger" onClick={async () => {
-                if (window.confirm('再次确认：清空常契全部数据？不可恢复。')) {
+                if (window.confirm('再次确认：清空订阅台账全部数据？不可恢复。')) {
                   setClearArmed(false)
                   await clearAll()
                 } else setClearArmed(false)

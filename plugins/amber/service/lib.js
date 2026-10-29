@@ -1,6 +1,6 @@
 'use strict';
 /**
- * lib.js —— 琥珀纯逻辑层（零依赖，可离线单测）
+ * lib.js —— 网页封存纯逻辑层（零依赖，可离线单测）
  *
  * 职责：
  *   - URL 规范化（normalizeUrl：补协议/裁剪，与面板/MCP 同规则）
@@ -96,7 +96,7 @@ function normalizeUrl(rawUrl) {
   return { url };
 }
 
-/** 稳定条目 id：同一 URL 永远映射同一 id（重复封存 = 更新同一琥珀） */
+/** 稳定条目 id：同一 URL 永远映射同一 id（重复封存 = 更新同一网页封存） */
 function itemIdFor(url) {
   return 'b' + sha256Hex(String(url).trim()).slice(0, 12);
 }
@@ -124,7 +124,7 @@ function normalizeTags(raw) {
 
 // ── 条目规范化 ─────────────────────────────────────────────────────────────
 /**
- * 面板/MCP 写入的原始载荷 → 干净的琥珀条目。
+ * 面板/MCP 写入的原始载荷 → 干净的网页封存条目。
  * existing 存在时保留用户状态（read/star/tags/firstSealedAt/sealCount）与
  * 服务写的封存字段——重复封存只更新正文相关字段，不重置用户状态。
  */

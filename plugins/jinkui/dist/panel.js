@@ -887,7 +887,7 @@ async function importAll(json) {
   }
   const p = parsed;
   if (!p || p.kind !== "jinkui-export" || !Array.isArray(p.policies)) {
-    throw new Error("\u4E0D\u662F\u91D1\u532E\u5BFC\u51FA\u6587\u4EF6\uFF08\u7F3A kind: jinkui-export\uFF09");
+    throw new Error("\u4E0D\u662F\u4FDD\u5355\u53F0\u8D26\u5BFC\u51FA\u6587\u4EF6\uFF08\u7F3A kind: jinkui-export\uFF09");
   }
   let nMember = 0;
   let nPolicy = 0;
@@ -980,7 +980,7 @@ function OverviewTab({ data, states }) {
   const { totals, gap, reds, yellows, waiting, ended } = derived;
   if (!data.policies.length) {
     return /* @__PURE__ */ jsxs("div", { className: "jk-empty", children: [
-      "\u91D1\u532E\u8FD8\u662F\u7A7A\u7684\u3002\u628A\u5BB6\u91CC\u7684\u4FDD\u5355\u4E00\u5F20\u5F20\u300C\u5165\u67DC\u300D\uFF1A",
+      "\u4FDD\u5355\u53F0\u8D26\u8FD8\u662F\u7A7A\u7684\u3002\u628A\u5BB6\u91CC\u7684\u4FDD\u5355\u4E00\u5F20\u5F20\u300C\u5165\u67DC\u300D\uFF1A",
       /* @__PURE__ */ jsx2("br", {}),
       "\u5728\u5BF9\u8BDD\u91CC\u8BF4\u300C\u7ED9\u5A03\u4E70\u4E86\u4EFD 50 \u4E07\u7684\u91CD\u75BE\uFF0C\u5E73\u5B89\u7684\uFF0C\u5E74\u7F34 4000 \u7F34 20 \u5E74\u300D",
       /* @__PURE__ */ jsx2("br", {}),
@@ -1759,7 +1759,7 @@ function SettingsTab({ data, reload, showToast }) {
       "\u53E3\u5F84\u4E0E\u8FB9\u754C"
     ] }),
     /* @__PURE__ */ jsx5("div", { className: "jk-card", children: /* @__PURE__ */ jsxs4("div", { className: "jk-card-b jk-sub", style: { lineHeight: 1.8 }, children: [
-      "\xB7 \u91D1\u532E\u662F\u300C\u5BB6\u5EAD\u4FDD\u5355\u53F0\u8D26\u300D\uFF1A\u8BB0\u5F55\u3001\u7F34\u8D39\u63D0\u9192\u3001\u5BBD\u9650\u671F/\u4E2D\u6B62\u671F\u72B6\u6001\u6295\u5F71\u3001\u56DB\u5927\u4EF6\u8986\u76D6\u900F\u89C6\u3002",
+      "\xB7 \u4FDD\u5355\u53F0\u8D26\u662F\u300C\u5BB6\u5EAD\u4FDD\u5355\u53F0\u8D26\u300D\uFF1A\u8BB0\u5F55\u3001\u7F34\u8D39\u63D0\u9192\u3001\u5BBD\u9650\u671F/\u4E2D\u6B62\u671F\u72B6\u6001\u6295\u5F71\u3001\u56DB\u5927\u4EF6\u8986\u76D6\u900F\u89C6\u3002",
       /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u4E0D\u505A\u4EA7\u54C1\u63A8\u8350\u3001\u4E0D\u505A\u4FDD\u8D39\u5BF9\u6BD4\u3001\u4E0D\u6784\u6210\u6295\u4FDD/\u9000\u4FDD\u5EFA\u8BAE\uFF1B\u9000\u4FDD\u901A\u5E38\u53EA\u9000\u73B0\u91D1\u4EF7\u503C\uFF0C\u51B3\u5B9A\u524D\u4E0E\u4FDD\u53F8\u786E\u8BA4\u3002",
       /* @__PURE__ */ jsx5("br", {}),
@@ -1890,7 +1890,7 @@ function JinkuiPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs5("div", { className: "jk-top", children: [
       /* @__PURE__ */ jsx6("div", { className: "jk-logo", children: "\u{1F6E1}\uFE0F" }),
       /* @__PURE__ */ jsxs5("div", { className: "jk-tt", children: [
-        /* @__PURE__ */ jsx6("b", { children: "\u91D1\u532E" }),
+        /* @__PURE__ */ jsx6("b", { children: "\u4FDD\u5355\u53F0\u8D26" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           "\u5BB6\u5EAD\u4FDD\u5355\u53F0\u8D26 \xB7 ",
           data ? `${data.policies.length} \u5F20\u5165\u67DC \xB7 \u6570\u636E\u4EC5\u5B58\u672C\u673A` : "\u52A0\u8F7D\u4E2D\u2026"
@@ -1917,7 +1917,7 @@ function JinkuiPanel({ pluginId, onSendToChat }) {
       tab === "insights" && /* @__PURE__ */ jsx6(InsightsTab, { ...tabProps, states }),
       tab === "settings" && /* @__PURE__ */ jsx6(SettingsTab, { ...tabProps }),
       /* @__PURE__ */ jsxs5("div", { className: "jk-foot", children: [
-        "\u91D1\u532E\u53EA\u505A\u4FDD\u5355\u8BB0\u5F55\u4E0E\u73B0\u72B6\u900F\u89C6\uFF1A\u72B6\u6001/\u5BBD\u9650\u671F/\u7F3A\u53E3\u4E3A\u53F0\u8D26\u53E3\u5F84\u6295\u5F71\uFF0C\u4E0E\u4FDD\u53F8\u5B9E\u9645\u6761\u6B3E\u53EF\u80FD\u6709\u51FA\u5165\uFF1B",
+        "\u4FDD\u5355\u53F0\u8D26\u53EA\u505A\u4FDD\u5355\u8BB0\u5F55\u4E0E\u73B0\u72B6\u900F\u89C6\uFF1A\u72B6\u6001/\u5BBD\u9650\u671F/\u7F3A\u53E3\u4E3A\u53F0\u8D26\u53E3\u5F84\u6295\u5F71\uFF0C\u4E0E\u4FDD\u53F8\u5B9E\u9645\u6761\u6B3E\u53EF\u80FD\u6709\u51FA\u5165\uFF1B",
         /* @__PURE__ */ jsx6("br", {}),
         "\u4E0D\u6784\u6210\u6295\u4FDD\u5EFA\u8BAE\uFF0C\u9000\u4FDD/\u590D\u6548/\u7406\u8D54\u4EE5\u4FDD\u53F8\u5408\u540C\u4E0E\u5BA2\u670D\u4E3A\u51C6\u3002\u6570\u636E\u4EC5\u5B58\u672C\u673A\uFF08cap.kv\uFF09\u3002"
       ] })

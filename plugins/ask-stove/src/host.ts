@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（问灶面板专用，与数据方舟/网页哨兵同一模式）
+ * 宿主 API 访问层（食材管家面板专用，与数据方舟/网页哨兵同一模式）
  *
  * 数据读写统一走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__）：
  *   - 桌面 Tauri：直连后端 IPC（Source::Bootstrap）

@@ -1775,7 +1775,7 @@ function AskStovePanel(props) {
     /* @__PURE__ */ jsxs7("div", { className: "as-top", children: [
       /* @__PURE__ */ jsx7("div", { className: "as-logo", children: "\u{1F372}" }),
       /* @__PURE__ */ jsxs7("div", { className: "as-tt", children: [
-        /* @__PURE__ */ jsx7("b", { children: "\u95EE\u7076" }),
+        /* @__PURE__ */ jsx7("b", { children: "\u98DF\u6750\u7BA1\u5BB6" }),
         /* @__PURE__ */ jsxs7("small", { children: [
           /* @__PURE__ */ jsx7("span", { className: "as-dot", style: { display: "inline-block", marginRight: 5, ...metaFresh ? {} : { background: "#F85149", boxShadow: "none" } } }),
           metaFresh ? `\u670D\u52A1\u5728\u7EBF \xB7 ${timeAgo(ov.meta.lastTickAt)}` : "\u670D\u52A1\u672A\u8FDE\u4E0A\uFF08\u53EF\u5728\u8BBE\u7F6E\u91CC\u91CD\u542F\uFF09"

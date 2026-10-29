@@ -1,5 +1,5 @@
 /**
- * 入口：常契面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：订阅台账面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import ChangqiPanel from './Panel'
 

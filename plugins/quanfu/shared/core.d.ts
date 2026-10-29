@@ -1,4 +1,4 @@
-/** 泉府 shared/core.js 的类型声明（面板 tsc strict 用；与 core.js 保持同步） */
+/** 贷款台账 shared/core.js 的类型声明（面板 tsc strict 用；与 core.js 保持同步） */
 export declare const DAY_MS: number
 export declare const METHODS: string[]
 export declare const METHOD_NAMES: Record<string, string>

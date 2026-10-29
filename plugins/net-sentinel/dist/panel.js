@@ -593,7 +593,7 @@ function FeedTab({ onSendToChat, showToast, markRead, unread, reload }) {
   };
   const doSend = (ev) => {
     if (!onSendToChat) return;
-    onSendToChat(`\u3010\u7F51\u54E8\u4E8B\u4EF6\u3011${new Date(ev.at).toLocaleString("zh-CN", { hour12: false })} ${ev.summary}`);
+    onSendToChat(`\u3010\u7F51\u7EDC\u54E8\u5175\u4E8B\u4EF6\u3011${new Date(ev.at).toLocaleString("zh-CN", { hour12: false })} ${ev.summary}`);
   };
   if (events === null) return /* @__PURE__ */ jsx3("div", { className: "ns-empty", children: "\u52A0\u8F7D\u4E2D\u2026" });
   return /* @__PURE__ */ jsxs3(Fragment3, { children: [
@@ -741,7 +741,7 @@ function SettingsTab({ pluginId, data, reload, showToast }) {
     }
   };
   const doClearAll = async () => {
-    if (!window.confirm("\u6E05\u7A7A\u5168\u90E8\u7F51\u54E8\u6570\u636E\uFF1F\uFF08\u5FEB\u7167/\u5386\u53F2\u6876/\u4E8B\u4EF6/\u6D4B\u901F\u8BB0\u5F55\uFF1B\u670D\u52A1\u4F1A\u81EA\u52A8\u91CD\u5EFA\u9ED8\u8BA4\u76EE\u6807\uFF09")) return;
+    if (!window.confirm("\u6E05\u7A7A\u5168\u90E8\u7F51\u7EDC\u54E8\u5175\u6570\u636E\uFF1F\uFF08\u5FEB\u7167/\u5386\u53F2\u6876/\u4E8B\u4EF6/\u6D4B\u901F\u8BB0\u5F55\uFF1B\u670D\u52A1\u4F1A\u81EA\u52A8\u91CD\u5EFA\u9ED8\u8BA4\u76EE\u6807\uFF09")) return;
     const n = await clearAllData().catch(() => 0);
     showToast(`\u5DF2\u6E05\u7A7A ${n} \u4E2A\u952E\uFF0C\u670D\u52A1\u5C06\u5728\u4E0B\u8F6E\u91CD\u5EFA`);
     setTimeout(reload, 3e3);
@@ -1036,7 +1036,7 @@ function NetSentinelPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs5("div", { className: "ns-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "ns-logo", children: "\u{1F4E1}" }),
       /* @__PURE__ */ jsxs5("div", { className: "ns-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u7F51\u54E8" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u7F51\u7EDC\u54E8\u5175" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           /* @__PURE__ */ jsx5("i", { className: `ns-dot ${hb.state}` }),
           hb.text

@@ -138,7 +138,7 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
   }
 
   const doClearAll = async () => {
-    if (!window.confirm('清空全部网哨数据？（快照/历史桶/事件/测速记录；服务会自动重建默认目标）')) return
+    if (!window.confirm('清空全部网络哨兵数据？（快照/历史桶/事件/测速记录；服务会自动重建默认目标）')) return
     const n = await clearAllData().catch(() => 0)
     showToast(`已清空 ${n} 个键，服务将在下轮重建`)
     setTimeout(reload, 3000)

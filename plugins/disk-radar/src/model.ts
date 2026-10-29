@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（磁盘雷达面板）
+ * 通信层 + 数据访问（磁盘分析面板）
  *
  * 统一经宿主 invoke 通道调 router_dispatch；面板与后台服务、MCP server
  * 读写同一个 cap.kv（SqliteStorage domain=kv）的 diskrad.* 键空间。
@@ -253,7 +253,7 @@ async function runCmd<P>(op: string, body: Record<string, unknown>, waitMs: numb
       return r
     }
   }
-  return { ok: false, error: '等待服务响应超时——去 设置 Tab 确认磁盘雷达服务是否在运行' }
+  return { ok: false, error: '等待服务响应超时——去 设置 Tab 确认磁盘分析服务是否在运行' }
 }
 
 export function cmdScan(path?: string, deep = false, label?: string) {
@@ -307,7 +307,7 @@ export async function serviceAction(action: 'start' | 'stop' | 'restart'): Promi
     )
     const self = (r.plugins || []).find((p) => p.id === PLUGIN_ID)
     const svc = self?.contributes?.services?.find((s) => s.id === SERVICE_ID)
-    if (!self || !svc) throw new Error('插件发现结果里找不到磁盘雷达服务——请确认插件已正确安装')
+    if (!self || !svc) throw new Error('插件发现结果里找不到磁盘分析服务——请确认插件已正确安装')
     await capDispatch('cap.pluginServiceManager', {
       action: 'start', pluginId: PLUGIN_ID,
       installPath: self.installPath,

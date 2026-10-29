@@ -1,5 +1,5 @@
 /**
- * 入口：磁盘雷达面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：磁盘分析面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import DiskRadarPanel from './Panel'
 

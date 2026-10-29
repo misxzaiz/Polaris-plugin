@@ -1,5 +1,5 @@
 /**
- * 入口：问灶面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：食材管家面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import AskStovePanel from './Panel'
 

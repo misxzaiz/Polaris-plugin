@@ -86,7 +86,7 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
   }
 
   const clearAll = async () => {
-    if (!window.confirm('删除订阅雷达的全部数据（订阅源/文章/正文/设置）？不可恢复。')) return
+    if (!window.confirm('删除RSS 订阅的全部数据（订阅源/文章/正文/设置）？不可恢复。')) return
     setBusy('clearAll')
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith('radar.'))
@@ -194,7 +194,7 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
       <div className="fr-sec"><i className="fr-bar" />关于</div>
       <div className="fr-card">
         <div className="fr-card-b fr-sub">
-          订阅雷达 feed-radar v0.1.0 —— RSS/Atom 订阅 + AI 读报。
+          RSS 订阅 feed-radar v0.1.0 —— RSS/Atom 订阅 + AI 读报。
           <br />· 浏览器有同源策略，本插件把抓取下沉到后台服务原生执行，天然无跨域问题；
           <br />· 条件请求（ETag / If-Modified-Since）：源没更新时零成本回跳；
           <br />· 手机端访问时面板经宿主统一通道（自动带 token）读写 cap.kv，与桌面看到同一份数据；

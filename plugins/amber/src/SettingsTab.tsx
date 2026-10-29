@@ -71,7 +71,7 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
   }
 
   const purge = async () => {
-    if (!window.confirm('清空全部琥珀条目、正文与摘录（设置保留）。确定？')) return
+    if (!window.confirm('清空全部网页封存条目、正文与摘录（设置保留）。确定？')) return
     setBusy('purge')
     try {
       await purgeAll()
@@ -84,13 +84,13 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
   }
 
   const clearAll = async () => {
-    if (!window.confirm('删除琥珀插件的全部数据（条目/正文/摘录/设置/信箱）？不可恢复。')) return
+    if (!window.confirm('删除网页封存插件的全部数据（条目/正文/摘录/设置/信箱）？不可恢复。')) return
     setBusy('clearAll')
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith('amber.'))
       await Promise.all(keys.map((k) => kvDel(k)))
       await reload()
-      showToast('已清空全部琥珀数据')
+      showToast('已清空全部网页封存数据')
     } catch (e) {
       showToast(`清理失败：${(e as Error).message}`, true)
     }
@@ -172,14 +172,14 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
       <div className="am-card">
         <div className="am-card-b">
           <div className="am-state" style={{ marginTop: 0 }}>
-            <span className="am-kv">琥珀 <b>{data?.items.length ?? 0}</b></span>
+            <span className="am-kv">网页封存 <b>{data?.items.length ?? 0}</b></span>
             <span className="am-kv">· 未读 <b>{data?.items.filter((a) => !a.read).length ?? 0}</b></span>
             <span className="am-kv">· 星标 <b>{data?.items.filter((a) => a.star).length ?? 0}</b></span>
             <span className="am-kv">· 摘录 <b>{data?.quotes.length ?? 0}</b></span>
             <span className="am-kv">· 存储 <b>cap.kv（amber.* 键空间）</b></span>
           </div>
           <div className="am-actions">
-            <button className="am-btn sm ghost" disabled={!!busy} onClick={purge}>{busy === 'purge' ? <span className="am-spin" /> : '清空全部琥珀（保留设置）'}</button>
+            <button className="am-btn sm ghost" disabled={!!busy} onClick={purge}>{busy === 'purge' ? <span className="am-spin" /> : '清空全部网页封存（保留设置）'}</button>
             <button className="am-btn sm danger" disabled={!!busy} onClick={clearAll}>{busy === 'clearAll' ? <span className="am-spin" /> : '清空全部数据'}</button>
           </div>
         </div>
@@ -188,11 +188,11 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
       <div className="am-sec"><i className="am-bar" />关于</div>
       <div className="am-card">
         <div className="am-card-b am-sub">
-          琥珀 amber v0.1.0 —— 把网页封进琥珀：永久可读快照 + 全文检索 + 金句摘录。
+          网页封存 amber v0.1.0 —— 把网页封进网页封存：永久可读快照 + 全文检索 + 金句摘录。
           <br />· 浏览器有同源策略，本插件把抓取下沉到后台服务原生执行，天然无跨域问题；
           <br />· 字符集探测（BOM/响应头/meta）：GBK 等历史编码页面也能正确封存；
           <br />· 同一 URL 重复封存 = 快照更新 + 封存次数层积，阅读状态与标签保留；
-          <br />· 封存失败永不摧毁旧快照——已封存的琥珀是你永久遗产；
+          <br />· 封存失败永不摧毁旧快照——已封存的网页封存是你永久遗产；
           <br />· 在聊天里可直接让 AI 代你操作（amber_save / amber_search / amber_read / amber_quote…）。
         </div>
       </div>

@@ -38,7 +38,7 @@ export default function TodayTab({ data, reload, showToast }: {
   if (!snap) {
     return (
       <div className="tt-empty">
-        刻漏服务未运行。<br />
+        时间统计服务未运行。<br />
         <span className="tt-sub">到「设置」Tab 启动 trail-service 后，本页开始显示今日时间流向。</span>
       </div>
     )

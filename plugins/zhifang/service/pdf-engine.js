@@ -1,6 +1,6 @@
 'use strict';
 /**
- * pdf-engine.js —— 纸坊 PDF 操作引擎（service 与 MCP 共用的唯一实现）
+ * pdf-engine.js —— PDF 工坊 PDF 操作引擎（service 与 MCP 共用的唯一实现）
  *
  * 设计约束：
  *   - 输入只读：所有 op 读内存字节 → 新建文档 → 返回输出字节缓冲；落盘由调用方

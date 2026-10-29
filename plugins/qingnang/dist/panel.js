@@ -1423,7 +1423,7 @@ function CabinetTab({ data, reload, showToast, pluginId }) {
       ] }),
       /* @__PURE__ */ jsx2("div", { style: { marginTop: 10 }, children: /* @__PURE__ */ jsx2("button", { className: "qn-btn", disabled: busy || !form.name.trim(), onClick: addMed, children: "\u5165\u5E93" }) })
     ] }) }),
-    !data.meds.length && !showAdd && /* @__PURE__ */ jsx2("div", { className: "qn-card", children: /* @__PURE__ */ jsx2("div", { className: "qn-card-b qn-empty", children: "\u836F\u7BB1\u8FD8\u662F\u7A7A\u7684\u3002\u628A\u5BB6\u91CC\u5E38\u5907\u836F\u767B\u8BB0\u8FDB\u6765\uFF0C\u6548\u671F\u548C\u5B58\u91CF\u9752\u56CA\u66FF\u4F60\u76EF\u7740\u3002" }) }),
+    !data.meds.length && !showAdd && /* @__PURE__ */ jsx2("div", { className: "qn-card", children: /* @__PURE__ */ jsx2("div", { className: "qn-card-b qn-empty", children: "\u836F\u7BB1\u8FD8\u662F\u7A7A\u7684\u3002\u628A\u5BB6\u91CC\u5E38\u5907\u836F\u767B\u8BB0\u8FDB\u6765\uFF0C\u6548\u671F\u548C\u5B58\u91CF\u7528\u836F\u7BA1\u5BB6\u66FF\u4F60\u76EF\u7740\u3002" }) }),
     data.meds.map((med) => {
       const st = stocks ? stocks.meds[med.id] : null;
       const isOpen = expanded === med.id;
@@ -1968,12 +1968,12 @@ function SettingsTab({ data, reload, showToast, pluginId, onSendToChat }) {
     onSendToChat && /* @__PURE__ */ jsx4("div", { className: "qn-card", children: /* @__PURE__ */ jsxs4("div", { className: "qn-card-b", children: [
       /* @__PURE__ */ jsx4("div", { className: "qn-sub", style: { marginBottom: 8 }, children: "\u8DDF AI \u7BA1\u5BB6\u8BF4\u4E00\u53E5\u8BDD\u5C31\u80FD\u5EFA\u6863\u6392\u65B9\u6848\uFF1A" }),
       /* @__PURE__ */ jsxs4("div", { className: "qn-row", style: { flexWrap: "wrap", gap: 6 }, children: [
-        /* @__PURE__ */ jsx4("button", { className: "qn-btn ghost sm", onClick: () => onSendToChat("\u6211\u5988\u6BCF\u5929\u65E9\u665A\u5404\u5403\u4E00\u7247\u6C28\u6C2F\u5730\u5E73\uFF0C\u5BB6\u91CC\u8FD8\u5269\u4E00\u76D224\u7247\uFF0C\u6548\u671F2027\u5E746\u6708\uFF0C\u5E2E\u6211\u8BB0\u5230\u9752\u56CA"), children: "\u793A\u4F8B\uFF1A\u7ED9\u5988\u5988\u6392\u964D\u538B\u836F" }),
-        /* @__PURE__ */ jsx4("button", { className: "qn-btn ghost sm", onClick: () => onSendToChat("\u770B\u770B\u9752\u56CA\u91CC\u54EA\u4E9B\u836F\u5FEB\u8FC7\u671F\u4E86\u3001\u54EA\u4E9B\u8BE5\u4E70\u4E86"), children: "\u793A\u4F8B\uFF1A\u67E5\u6548\u671F\u548C\u8865\u8D27" })
+        /* @__PURE__ */ jsx4("button", { className: "qn-btn ghost sm", onClick: () => onSendToChat("\u6211\u5988\u6BCF\u5929\u65E9\u665A\u5404\u5403\u4E00\u7247\u6C28\u6C2F\u5730\u5E73\uFF0C\u5BB6\u91CC\u8FD8\u5269\u4E00\u76D224\u7247\uFF0C\u6548\u671F2027\u5E746\u6708\uFF0C\u5E2E\u6211\u8BB0\u5230\u7528\u836F\u7BA1\u5BB6"), children: "\u793A\u4F8B\uFF1A\u7ED9\u5988\u5988\u6392\u964D\u538B\u836F" }),
+        /* @__PURE__ */ jsx4("button", { className: "qn-btn ghost sm", onClick: () => onSendToChat("\u770B\u770B\u7528\u836F\u7BA1\u5BB6\u91CC\u54EA\u4E9B\u836F\u5FEB\u8FC7\u671F\u4E86\u3001\u54EA\u4E9B\u8BE5\u4E70\u4E86"), children: "\u793A\u4F8B\uFF1A\u67E5\u6548\u671F\u548C\u8865\u8D27" })
       ] })
     ] }) }),
     /* @__PURE__ */ jsxs4("div", { className: "qn-foot", style: { fontSize: 11, color: "#8B95A7" }, children: [
-      "\u9752\u56CA\u53EA\u505A\u5BB6\u5EAD\u836F\u4E8B\u8BB0\u5F55\u4E0E\u63D0\u9192\uFF0C",
+      "\u7528\u836F\u7BA1\u5BB6\u53EA\u505A\u5BB6\u5EAD\u836F\u4E8B\u8BB0\u5F55\u4E0E\u63D0\u9192\uFF0C",
       /* @__PURE__ */ jsx4("b", { children: "\u4E0D\u63D0\u4F9B\u533B\u7597\u5EFA\u8BAE" }),
       "\uFF1B\u836F\u7269\u76F8\u4E92\u4F5C\u7528\u3001\u5242\u91CF\u8C03\u6574\u3001\u505C\u836F\u51B3\u5B9A\u8BF7\u54A8\u8BE2\u533B\u751F\u6216\u836F\u5E08\u3002"
     ] })
@@ -2131,7 +2131,7 @@ function QingnanPanel({ pluginId, onSendToChat }) {
     const age = Date.now() - last;
     if (age < 180 * 1e3) {
       const c = data.meta?.counts;
-      return { cls: "ok", text: `\u9752\u56CA\u5728\u7EBF \xB7 ${c ? `${c.profiles}\u6210\u5458 ${c.meds}\u836F ${c.regimens}\u65B9\u6848` : ""} \xB7 \u6865 ${data.meta?.bridge || "?"}` };
+      return { cls: "ok", text: `\u7528\u836F\u7BA1\u5BB6\u5728\u7EBF \xB7 ${c ? `${c.profiles}\u6210\u5458 ${c.meds}\u836F ${c.regimens}\u65B9\u6848` : ""} \xB7 \u6865 ${data.meta?.bridge || "?"}` };
     }
     return { cls: "stale", text: `\u5FC3\u8DF3\u505C\u6EDE ${Math.round(age / 6e4)} \u5206\u949F` };
   })();
@@ -2141,7 +2141,7 @@ function QingnanPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs5("div", { className: "qn-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "qn-logo", children: "\u{1F48A}" }),
       /* @__PURE__ */ jsxs5("div", { className: "qn-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u9752\u56CA" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u7528\u836F\u7BA1\u5BB6" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           /* @__PURE__ */ jsx5("i", { className: `qn-dot ${heartbeat.cls}` }),
           heartbeat.text
@@ -2167,7 +2167,7 @@ function QingnanPanel({ pluginId, onSendToChat }) {
       tab === "cabinet" && /* @__PURE__ */ jsx5(CabinetTab, { data, reload, showToast, pluginId }),
       tab === "plans" && /* @__PURE__ */ jsx5(PlansTab, { data, reload, showToast, pluginId }),
       tab === "settings" && /* @__PURE__ */ jsx5(SettingsTab, { data, reload, showToast, pluginId, onSendToChat }),
-      /* @__PURE__ */ jsx5("div", { className: "qn-foot", children: "\u9752\u56CA\u662F\u5BB6\u5EAD\u836F\u4E8B\u8BB0\u5F55\u5DE5\u5177\uFF0C\u4E0D\u63D0\u4F9B\u533B\u7597\u5EFA\u8BAE\u2014\u2014\u76F8\u4E92\u4F5C\u7528\u4E0E\u5242\u91CF\u8C03\u6574\u8BF7\u54A8\u8BE2\u533B\u751F\u836F\u5E08\u3002\u6570\u636E\u4EC5\u5B58\u672C\u673A\uFF08cap.kv\uFF09\u3002" })
+      /* @__PURE__ */ jsx5("div", { className: "qn-foot", children: "\u7528\u836F\u7BA1\u5BB6\u662F\u5BB6\u5EAD\u836F\u4E8B\u8BB0\u5F55\u5DE5\u5177\uFF0C\u4E0D\u63D0\u4F9B\u533B\u7597\u5EFA\u8BAE\u2014\u2014\u76F8\u4E92\u4F5C\u7528\u4E0E\u5242\u91CF\u8C03\u6574\u8BF7\u54A8\u8BE2\u533B\u751F\u836F\u5E08\u3002\u6570\u636E\u4EC5\u5B58\u672C\u673A\uFF08cap.kv\uFF09\u3002" })
     ] }) }),
     toast && /* @__PURE__ */ jsx5("div", { className: `qn-toast ${toast.bad ? "bad" : ""}`, children: toast.msg })
   ] });

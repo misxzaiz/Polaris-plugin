@@ -2,7 +2,7 @@
   "name": "ask-stove-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "ask-stove 插件面板（打包用）：问灶灶房管家",
+  "description": "ask-stove 插件面板（打包用）：食材管家灶房管家",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit",

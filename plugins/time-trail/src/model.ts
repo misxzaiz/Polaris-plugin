@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（刻漏面板）
+ * 通信层 + 数据访问（时间统计面板）
  *
  * 面板经宿主 invoke 通道调 router_dispatch，与后台服务、MCP server 读写
  * 同一个 cap.kv 的 timetrail.* 键空间。归集/落盘的唯一写者是后台服务

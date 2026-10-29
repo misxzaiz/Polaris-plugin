@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * zhifang MCP Server —— 纸坊（本地 PDF 工坊）的 AI 工具层
+ * zhifang MCP Server —— PDF 工坊（本地 PDF 工坊）的 AI 工具层
  *
  * 把 AI 的「操作 PDF」意图变成真实落盘文件：路径进 → pdf-engine 处理 →
  * 输出自动命名落盘（永不覆盖）→ 返回路径与摘要。与面板服务共用同一引擎

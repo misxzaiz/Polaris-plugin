@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（观止面板专用，与 changqi / pocket-ledger 同一模式）
+ * 宿主 API 访问层（书影音账本面板专用，与 changqi / pocket-ledger 同一模式）
  *
  * 统一经宿主 invoke 通道（window.__POLARIS_HOST_INVOKE__，主应用 main.tsx 挂载）：
  *   - 桌面 Tauri：直连后端 IPC

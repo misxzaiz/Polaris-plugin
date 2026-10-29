@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * net-sentinel MCP Server —— 网哨的 AI 工具层（零依赖 stdio）
+ * net-sentinel MCP Server —— 网络哨兵的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 netmon.* 键空间的读写。探测/聚合/告警/测速全部由后台服务单权威执行——
@@ -65,11 +65,11 @@ function snapshotAge(snap) {
 async function loadSnapshotOrErr() {
   const snap = await kv.kvGet(K.snapshot).catch(() => null);
   if (!snap || typeof snap !== 'object') {
-    return { error: '暂无网络快照：网哨后台服务可能未运行（Polaris 设置→插件→网哨 查看服务状态；面板可一键启动）' };
+    return { error: '暂无网络快照：网络哨兵后台服务可能未运行（Polaris 设置→插件→网络哨兵 查看服务状态；面板可一键启动）' };
   }
   const age = snapshotAge(snap);
   if (age > 120) {
-    return { error: `快照已停滞 ${age}s（>120s）：后台服务可能已停止或桥不可达。请打开面板「网哨」→ 设置 检查服务状态。` };
+    return { error: `快照已停滞 ${age}s（>120s）：后台服务可能已停止或桥不可达。请打开面板「网络哨兵」→ 设置 检查服务状态。` };
   }
   return { snap, age };
 }
@@ -178,7 +178,7 @@ const tools = [
   },
   {
     name: 'net_events',
-    description: '回读网哨记录的网络事件流：断网/恢复、单目标失联/恢复、延迟劣化/回落（边沿触发、带时间与持续时长）。适用于「昨晚有没有断网」「这周网络什么时候不稳」「github 最近是不是老连不上」。',
+    description: '回读网络哨兵记录的网络事件流：断网/恢复、单目标失联/恢复、延迟劣化/回落（边沿触发、带时间与持续时长）。适用于「昨晚有没有断网」「这周网络什么时候不稳」「github 最近是不是老连不上」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -237,12 +237,12 @@ const tools = [
           return err(r.error || '测速失败');
         }
       }
-      return err('测速结果等待超时（后台服务可能未运行——面板「网哨」→ 设置 可查看/启动服务；测速大文件时也可能超过 60s）。');
+      return err('测速结果等待超时（后台服务可能未运行——面板「网络哨兵」→ 设置 可查看/启动服务；测速大文件时也可能超过 60s）。');
     },
   },
   {
     name: 'net_targets',
-    description: '查看或管理网哨的探测目标（网关/DNS/站点列表，每 10s 探测一轮）。action=list 列出全部；action=add 增加（target:{label,host,port,kind?}）；action=remove/enable/disable 按 id 操作。适用于「帮我盯一下 xyz.com」「把 github 加进监控」。',
+    description: '查看或管理网络哨兵的探测目标（网关/DNS/站点列表，每 10s 探测一轮）。action=list 列出全部；action=add 增加（target:{label,host,port,kind?}）；action=remove/enable/disable 按 id 操作。适用于「帮我盯一下 xyz.com」「把 github 加进监控」。',
     inputSchema: {
       type: 'object',
       properties: {

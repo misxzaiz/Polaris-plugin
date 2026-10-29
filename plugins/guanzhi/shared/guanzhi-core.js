@@ -1,6 +1,6 @@
 'use strict';
 /**
- * 观止 guanzhi-core —— 书影音消费账本的唯一计算权威（CommonJS，零依赖）
+ * 书影音账本 guanzhi-core —— 书影音消费账本的唯一计算权威（CommonJS，零依赖）
  *
  * 面板（esbuild 打包进 bundle）与 MCP（require）与测试三方共用，
  * 保证「归一化校验 / 状态-日期语义 / 透视聚合 / 年报 / 推荐评分」口径不漂移。

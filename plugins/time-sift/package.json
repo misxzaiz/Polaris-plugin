@@ -2,7 +2,7 @@
   "name": "time-sift-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "time-sift 插件面板（打包用）：拾光机",
+  "description": "time-sift 插件面板（打包用）：会话记忆",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

@@ -99,7 +99,7 @@ export default function SettingsTab({ data, reload, showToast }: {
   }
 
   const clearAll = async () => {
-    if (!window.confirm('清空口袋账本全部数据（账单+设置+附件）？不可恢复，建议先导出。')) return
+    if (!window.confirm('清空日常记账全部数据（账单+设置+附件）？不可恢复，建议先导出。')) return
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith('ledger.'))
       await Promise.all(keys.map((k) => kvDel(k)))
@@ -197,7 +197,7 @@ export default function SettingsTab({ data, reload, showToast }: {
       <div className="pl-sec"><i className="pl-bar" />关于</div>
       <div className="pl-card">
         <div className="pl-card-b pl-sub">
-          口袋账本 pocket-ledger v0.2.0 —— 对话式记账：聊天里说"午饭 35"就入账，"上月咖啡花了多少"就能查。
+          日常记账 pocket-ledger v0.2.0 —— 对话式记账：聊天里说"午饭 35"就入账，"上月咖啡花了多少"就能查。
           <br />· 零后台服务、零网络请求，纯本地账本（插件规范推荐的无状态模式）；
           <br />· 支持"不参与汇总"分类（如工资）与附件（小票/截图，点开才取，默认不拉图）；
           <br />· 面板与 AI（MCP）走同一套计算核心，口径永远一致；

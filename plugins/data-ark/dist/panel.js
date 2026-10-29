@@ -1126,7 +1126,7 @@ function SettingsTab({ data, reload, showToast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx4("div", { className: "da-card", children: /* @__PURE__ */ jsxs4("div", { className: "da-card-b da-sub", children: [
-      "\u6570\u636E\u65B9\u821F data-ark v0.1.0 \u2014\u2014 Polaris \u6570\u636E\u6839\u7684\u5907\u4EFD/\u6062\u590D\u5F15\u64CE\u3002",
+      "\u6570\u636E\u5907\u4EFD data-ark v0.1.0 \u2014\u2014 Polaris \u6570\u636E\u6839\u7684\u5907\u4EFD/\u6062\u590D\u5F15\u64CE\u3002",
       /* @__PURE__ */ jsx4("br", {}),
       "\xB7 \u5185\u5BB9\u5BFB\u5740\u53BB\u91CD\uFF08CAS+gzip\uFF09\uFF1A\u4E0D\u53D8\u6587\u4EF6\u5168\u5E93\u53EA\u5B58\u4E00\u4EFD\uFF0C\u589E\u91CF\u5FEB\u7167\u53EA\u8BB0\u53D8\u5316\uFF1B",
       /* @__PURE__ */ jsx4("br", {}),
@@ -1285,7 +1285,7 @@ function ArkPanel(_props) {
     /* @__PURE__ */ jsxs5("div", { className: "da-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "da-logo", children: "\u{1F6E1}\uFE0F" }),
       /* @__PURE__ */ jsxs5("div", { className: "da-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u6570\u636E\u65B9\u821F" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u6570\u636E\u5907\u4EFD" }),
         /* @__PURE__ */ jsx5("small", { className: typeof head === "string" ? "" : head.cls, children: typeof head === "string" ? head : head.text })
       ] }),
       /* @__PURE__ */ jsx5("div", { className: "da-tabs", children: [

@@ -15,7 +15,7 @@ const AI_GUIDE = [
   '· 「https://… 这篇文章提炼 15 张卡」（AI 会先抓正文再制卡）',
   '· 「出 10 张英语词汇卡：abandon / terse / pragmatic …」',
   '· 「今天该复习什么？」→ AI 出题，你口头作答，AI 帮你评分',
-  '· 「记忆熔炉现在什么情况？」→ 到期/留存/连击一览',
+  '· 「记忆卡片现在什么情况？」→ 到期/留存/连击一览',
 ].join('\n')
 
 export default function SettingsTab({ snap, reload, showToast }: {
@@ -95,7 +95,7 @@ export default function SettingsTab({ snap, reload, showToast }: {
   }
 
   const clearAll = async () => {
-    if (!window.confirm('清空记忆熔炉全部数据（卡片+牌组+设置+连击）？不可恢复，建议先导出。')) return
+    if (!window.confirm('清空记忆卡片全部数据（卡片+牌组+设置+连击）？不可恢复，建议先导出。')) return
     try {
       const n = await wipeAll()
       await reload()
@@ -178,7 +178,7 @@ export default function SettingsTab({ snap, reload, showToast }: {
       <div className="mf-sec"><i className="mf-bar" />关于</div>
       <div className="mf-card">
         <div className="mf-card-b mf-sub">
-          记忆熔炉 memoryforge v0.1.0 —— 把读过的、聊过的、学过的，炼成记得住的。
+          记忆卡片 memoryforge v0.1.0 —— 把读过的、聊过的、学过的，炼成记得住的。
           <br />· AI 对话式制卡（MCP 工具）+ 面板 SM-2 间隔重复复习；
           <br />· 面板与 AI 走同一计算核心（shared/srs-core），调度口径永远一致；
           <br />· 网页抓取由 MCP 进程原生执行，绕开浏览器同源限制（面板零跨域请求）；

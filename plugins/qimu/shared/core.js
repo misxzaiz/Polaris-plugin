@@ -1,6 +1,6 @@
 'use strict';
 /**
- * core.js —— 启幕（AI PPT 工厂）共享核心（单一权威，零依赖）
+ * core.js —— PPT 工坊（AI PPT 工厂）共享核心（单一权威，零依赖）
  *
  * 被 MCP 渲染器（CJS require）与面板（esbuild 打包）共用。
  * 职责链：Deck Spec 归一化（容量护栏）→ 几何布局（确定性数学）→ 主题 token。

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * clip-relay MCP Server —— 接力板的 AI 工具层（零依赖 stdio）
+ * clip-relay MCP Server —— 文本接力的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 relay.* 键空间的读写。条目规范化与推送是本进程直接完成（写路径与
@@ -9,7 +9,7 @@
  * （外网抓取下沉服务，无跨域限制）——推送后条目先显示 URL，几秒内补上标题。
  *
  * 工具一览：
- *   relay_push   推送文本/链接到所有设备的接力板（"把这个链接发到我手机上"）
+ *   relay_push   推送文本/链接到所有设备的文本接力（"把这个链接发到我手机上"）
  *   relay_list   看板上的条目（可过滤、限条数）
  *   relay_read   读某条全文（按 id）
  *   relay_clear  清空整块板子（必须 confirm:true）
@@ -74,7 +74,7 @@ function fmtItem(it, withFull) {
 const tools = [
   {
     name: 'relay_push',
-    description: '把一段文本或一个链接推送到接力板（clip-relay），用户在手机/桌面/Web 打开 Polaris「接力板」面板即可一键复制。适用：「把这个链接发到我手机上」「把这段报错栈推过去」「记个口令到接力板」。链接会由后台服务自动抓取网页标题摘要（几秒内补全）。单条上限 8000 字符。',
+    description: '把一段文本或一个链接推送到文本接力（clip-relay），用户在手机/桌面/Web 打开 Polaris「文本接力」面板即可一键复制。适用：「把这个链接发到我手机上」「把这段报错栈推过去」「记个口令到文本接力」。链接会由后台服务自动抓取网页标题摘要（几秒内补全）。单条上限 8000 字符。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -90,12 +90,12 @@ const tools = [
       const it = r.item;
       await kv.kvSet(ITEM_PREFIX + it.id, it);
       const kindHint = it.kind === 'url' ? '链接条目，后台服务正在抓取标题摘要（几秒后面板刷新可见）' : '文本条目';
-      return ok(`已推送到接力板（${kindHint}）：\n${fmtItem(it)}\n所有设备打开「接力板」面板即可看到并一键复制。`);
+      return ok(`已推送到文本接力（${kindHint}）：\n${fmtItem(it)}\n所有设备打开「文本接力」面板即可看到并一键复制。`);
     },
   },
   {
     name: 'relay_list',
-    description: '列出接力板上的条目（最新在前，置顶优先展示），可按内容子串过滤。用于「我之前往接力板发过什么」「看看板子上有没有那个链接」。',
+    description: '列出文本接力上的条目（最新在前，置顶优先展示），可按内容子串过滤。用于「我之前往文本接力发过什么」「看看板子上有没有那个链接」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -107,15 +107,15 @@ const tools = [
       let items = await listItems();
       const f = String(args.filter || '').trim().toLowerCase();
       if (f) items = items.filter((it) => (it.text || '').toLowerCase().includes(f) || (it.title || '').toLowerCase().includes(f));
-      if (!items.length) return ok(f ? `接力板上没有匹配「${args.filter}」的条目。` : '接力板是空的（面板或 relay_push 可推送）。');
+      if (!items.length) return ok(f ? `文本接力上没有匹配「${args.filter}」的条目。` : '文本接力是空的（面板或 relay_push 可推送）。');
       const limit = Math.min(50, Math.max(1, Number(args.limit) || 15));
       const shown = [...items.filter((it) => it.pinned), ...items.filter((it) => !it.pinned)].slice(0, limit);
-      return ok(`接力板共 ${items.length} 条（显示 ${shown.length} 条，置顶优先）：\n${shown.map((it) => fmtItem(it)).join('\n')}`);
+      return ok(`文本接力共 ${items.length} 条（显示 ${shown.length} 条，置顶优先）：\n${shown.map((it) => fmtItem(it)).join('\n')}`);
     },
   },
   {
     name: 'relay_read',
-    description: '按 id 读接力板某条的完整内容（relay_list 可查 id）。用于条目被列表截断后取全文。',
+    description: '按 id 读文本接力某条的完整内容（relay_list 可查 id）。用于条目被列表截断后取全文。',
     inputSchema: { type: 'object', properties: { id: { type: 'string', description: '条目 id' } }, required: ['id'] },
     async call(args) {
       const it = await kv.kvGet(ITEM_PREFIX + args.id).catch(() => null);
@@ -125,7 +125,7 @@ const tools = [
   },
   {
     name: 'relay_clear',
-    description: '清空接力板全部条目（含置顶，危险操作，必须 confirm:true）。',
+    description: '清空文本接力全部条目（含置顶，危险操作，必须 confirm:true）。',
     inputSchema: {
       type: 'object',
       properties: { confirm: { type: 'boolean', description: '必须为 true 才执行' } },
@@ -136,7 +136,7 @@ const tools = [
       const items = await listItems();
       for (const it of items) await kv.kvDel(ITEM_PREFIX + it.id).catch(() => {});
       await kv.kvDel(K.readAt).catch(() => {});
-      return ok(`已清空接力板（删除 ${items.length} 条）。`);
+      return ok(`已清空文本接力（删除 ${items.length} 条）。`);
     },
   },
 ];

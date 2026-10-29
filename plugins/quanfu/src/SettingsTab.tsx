@@ -66,7 +66,7 @@ export default function SettingsTab({ data, reload, showToast, onSendToChat }: T
   }
 
   const clearAll = async () => {
-    if (!window.confirm('清空泉府全部数据（贷款/事件/设置）？不可恢复。建议先导出备份。')) return
+    if (!window.confirm('清空贷款台账全部数据（贷款/事件/设置）？不可恢复。建议先导出备份。')) return
     setBusy(true)
     try {
       const { kvKeys, kvDel } = await import('./host')
@@ -139,14 +139,14 @@ export default function SettingsTab({ data, reload, showToast, onSendToChat }: T
 
       <div className="qf-card">
         <div className="qf-card-b qf-sub">
-          <b style={{ color: '#E6EAF2' }}>关于泉府</b><br />
-          《周礼·地官》泉府掌市之征布与赊贷——泉者钱也，古之官办借贷机构；今之家庭负债台账。<br />
+          <b style={{ color: '#E6EAF2' }}>关于贷款台账</b><br />
+          《周礼·地官》贷款台账掌市之征布与赊贷——泉者钱也，古之官办借贷机构；今之家庭负债台账。<br />
           · 数据：cap.kv 纯本地存储，无服务进程、零外网请求、零账号。<br />
           · 引擎：等额本息/等额本金/先息后本标准公式，事件分段重放（利率变更、提前还款、对账点），逐期分级舍入。<br />
           · 边界：不构成金融建议；不算违约金（各行合同不同）；不抓取 LPR（利率一律以你的合同为准手工记录）。
           {onSendToChat && (
             <div style={{ marginTop: 8 }}>
-              <button className="qf-btn ghost sm" onClick={() => onSendToChat('我想聊聊我的房贷还款计划（泉府已有我的贷款台账）。')}>和 AI 聊聊还款计划</button>
+              <button className="qf-btn ghost sm" onClick={() => onSendToChat('我想聊聊我的房贷还款计划（贷款台账已有我的贷款台账）。')}>和 AI 聊聊还款计划</button>
             </div>
           )}
         </div>

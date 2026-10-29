@@ -2,7 +2,7 @@
   "name": "time-trail-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "time-trail 插件面板（打包用）：刻漏——机器时间流向追踪",
+  "description": "time-trail 插件面板（打包用）：时间统计——机器时间流向追踪",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

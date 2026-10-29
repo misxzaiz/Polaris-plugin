@@ -1,6 +1,6 @@
 'use strict';
 /**
- * dig-core.js —— 书签考古纯函数核心（零依赖，CommonJS）
+ * dig-core.js —— 书签体检纯函数核心（零依赖，CommonJS）
  *
  * 面板（esbuild bundle）与 MCP / 服务（node require）共用同一份计算，
  * 三端口径一致（shared core 模式）。可测逻辑全部在这里，test/run-tests.mjs 直测。

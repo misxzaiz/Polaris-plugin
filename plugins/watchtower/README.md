@@ -1,14 +1,14 @@
-# 守望台（watchtower）
+# 插件运营（watchtower）
 
 > 插件运营台：用量计量（谁在被用 / 谁在浪费）+ 生命周期治理（服务启停 / 冷热分级 / 清理建议）。
 
-- 面板（ActivityBar → 👁 守望台）：**总览**（活跃榜 / 冷门榜）/ **服务**（后台服务状态与启停）/ **治理**（冷门清理建议）/ **口径**（计量边界如实声明）
+- 面板（ActivityBar → 👁 插件运营）：**总览**（活跃榜 / 冷门榜）/ **服务**（后台服务状态与启停）/ **治理**（冷门清理建议）/ **口径**（计量边界如实声明）
 - AI 工具（MCP 9 个 `watchtower_*`）：聊天里说「看看哪个插件在用」「停掉 XX 的后台服务」「帮我清理冷门插件」即可
 - **纯本地**：账本只在 cap.kv（`watchtower.*`），仅依赖宿主 `cap.kv` / `cap.pluginDiscovery` / `cap.pluginServiceManager` 三能力，零后台服务、零外网请求
 
 ## 为什么是它
 
-插件越装越多，但**没人知道谁真的在被用**。marketplace 管「发现与安装」，守望台管「运行与健康」：
+插件越装越多，但**没人知道谁真的在被用**。marketplace 管「发现与安装」，插件运营管「运行与健康」：
 **统计是价值锚点，生命周期操作只是结果按钮**。
 
 1. **让用量可见** —— 每个插件累计/近 1/7/30 天/末次/冷热分级
@@ -21,7 +21,7 @@
 
 | 通道 | 记的账 | 说明 |
 |---|---|---|
-| **面板打开（宿主观测）** | 用户打开任何插件面板 +1 | 宿主在面板挂载点自动观测（cap.kv `plugin.usage.*`，宿主自有键空间），守望台读时合并——**打开其它插件也自动记账** |
+| **面板打开（宿主观测）** | 用户打开任何插件面板 +1 | 宿主在面板挂载点自动观测（cap.kv `plugin.usage.*`，宿主自有键空间），插件运营读时合并——**打开其它插件也自动记账** |
 | **MCP 工具调用** | 每次 `watchtower_*` 被调先自记 `source=mcp` | 经本插件触发的 AI 使用自动入账 |
 | **补记（MCP 通道）** | `watchtower_report_usage` | 其它插件的 MCP 工具调用直连插件子进程、宿主不在链路，需 AI 主动补记 |
 
@@ -30,7 +30,7 @@
 ## 口径边界（如实交代）
 
 - 统计是**观测量**，不是宿主权威审计：面板打开由宿主观测自动覆盖；**其它插件 MCP 工具调用**仍需 AI 主动 `watchtower_report_usage` 补记——不经任何观测点的使用会漏记。
-- 合并是**读时派生**：宿主观测（`plugin.usage.*`）永不回写守望台自有账本（`watchtower.usage.*`），两处键空间各自单写者，重复读取结果幂等。
+- 合并是**读时派生**：宿主观测（`plugin.usage.*`）永不回写插件运营自有账本（`watchtower.usage.*`），两处键空间各自单写者，重复读取结果幂等。
 
 ## AI 工具（MCP）
 
@@ -55,10 +55,10 @@
 
 ## 数据契约（cap.kv，权威描述）
 
-- `watchtower.usage.<pluginId>` → `UsageRecord`（守望台自有账本，守望台写）：
+- `watchtower.usage.<pluginId>` → `UsageRecord`（插件运营自有账本，插件运营写）：
   - `{ pluginId, count, panelOpens, firstUsed, lastUsed, trends }`
   - `trends`：`{ 'YYYY-MM-DD': { mcp, panel } }`（日级分账）
-- `plugin.usage.<pluginId>` → 宿主面板打开观测（宿主 `pluginUsageObserver` 写，守望台只读合并）：
+- `plugin.usage.<pluginId>` → 宿主面板打开观测（宿主 `pluginUsageObserver` 写，插件运营只读合并）：
   - `{ v: 1, pluginId, count, firstUsed, lastUsed, days: { 'YYYY-MM-DD': n } }`（days 只留近 90 天，count/first/last 累计语义）
 - `watchtower.settings` → `{ schemaVersion: 1 }`（v1 预留）
 

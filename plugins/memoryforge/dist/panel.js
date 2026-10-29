@@ -1219,7 +1219,7 @@ var AI_GUIDE = [
   "\xB7 \u300Chttps://\u2026 \u8FD9\u7BC7\u6587\u7AE0\u63D0\u70BC 15 \u5F20\u5361\u300D\uFF08AI \u4F1A\u5148\u6293\u6B63\u6587\u518D\u5236\u5361\uFF09",
   "\xB7 \u300C\u51FA 10 \u5F20\u82F1\u8BED\u8BCD\u6C47\u5361\uFF1Aabandon / terse / pragmatic \u2026\u300D",
   "\xB7 \u300C\u4ECA\u5929\u8BE5\u590D\u4E60\u4EC0\u4E48\uFF1F\u300D\u2192 AI \u51FA\u9898\uFF0C\u4F60\u53E3\u5934\u4F5C\u7B54\uFF0CAI \u5E2E\u4F60\u8BC4\u5206",
-  "\xB7 \u300C\u8BB0\u5FC6\u7194\u7089\u73B0\u5728\u4EC0\u4E48\u60C5\u51B5\uFF1F\u300D\u2192 \u5230\u671F/\u7559\u5B58/\u8FDE\u51FB\u4E00\u89C8"
+  "\xB7 \u300C\u8BB0\u5FC6\u5361\u7247\u73B0\u5728\u4EC0\u4E48\u60C5\u51B5\uFF1F\u300D\u2192 \u5230\u671F/\u7559\u5B58/\u8FDE\u51FB\u4E00\u89C8"
 ].join("\n");
 function SettingsTab({ snap, reload, showToast }) {
   const [draftNew, setDraftNew] = useState3(null);
@@ -1289,7 +1289,7 @@ function SettingsTab({ snap, reload, showToast }) {
     }
   };
   const clearAll = async () => {
-    if (!window.confirm("\u6E05\u7A7A\u8BB0\u5FC6\u7194\u7089\u5168\u90E8\u6570\u636E\uFF08\u5361\u7247+\u724C\u7EC4+\u8BBE\u7F6E+\u8FDE\u51FB\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\uFF0C\u5EFA\u8BAE\u5148\u5BFC\u51FA\u3002")) return;
+    if (!window.confirm("\u6E05\u7A7A\u8BB0\u5FC6\u5361\u7247\u5168\u90E8\u6570\u636E\uFF08\u5361\u7247+\u724C\u7EC4+\u8BBE\u7F6E+\u8FDE\u51FB\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\uFF0C\u5EFA\u8BAE\u5148\u5BFC\u51FA\u3002")) return;
     try {
       const n = await wipeAll();
       await reload();
@@ -1393,7 +1393,7 @@ function SettingsTab({ snap, reload, showToast }) {
       "\u5173\u4E8E"
     ] }),
     /* @__PURE__ */ jsx4("div", { className: "mf-card", children: /* @__PURE__ */ jsxs4("div", { className: "mf-card-b mf-sub", children: [
-      "\u8BB0\u5FC6\u7194\u7089 memoryforge v0.1.0 \u2014\u2014 \u628A\u8BFB\u8FC7\u7684\u3001\u804A\u8FC7\u7684\u3001\u5B66\u8FC7\u7684\uFF0C\u70BC\u6210\u8BB0\u5F97\u4F4F\u7684\u3002",
+      "\u8BB0\u5FC6\u5361\u7247 memoryforge v0.1.0 \u2014\u2014 \u628A\u8BFB\u8FC7\u7684\u3001\u804A\u8FC7\u7684\u3001\u5B66\u8FC7\u7684\uFF0C\u70BC\u6210\u8BB0\u5F97\u4F4F\u7684\u3002",
       /* @__PURE__ */ jsx4("br", {}),
       "\xB7 AI \u5BF9\u8BDD\u5F0F\u5236\u5361\uFF08MCP \u5DE5\u5177\uFF09+ \u9762\u677F SM-2 \u95F4\u9694\u91CD\u590D\u590D\u4E60\uFF1B",
       /* @__PURE__ */ jsx4("br", {}),
@@ -1569,7 +1569,7 @@ function ForgePanel(_props) {
     /* @__PURE__ */ jsxs5("div", { className: "mf-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "mf-logo", children: "\u{1F525}" }),
       /* @__PURE__ */ jsxs5("div", { className: "mf-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u8BB0\u5FC6\u7194\u7089" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u8BB0\u5FC6\u5361\u7247" }),
         /* @__PURE__ */ jsx5("small", { children: head })
       ] }),
       /* @__PURE__ */ jsx5("div", { className: "mf-tabs", children: [

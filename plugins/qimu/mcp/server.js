@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * qimu MCP Server —— 启幕（AI PPT 工厂）的 AI 工具层（零依赖，自发现）
+ * qimu MCP Server —— PPT 工坊（AI PPT 工厂）的 AI 工具层（零依赖，自发现）
  *
  * 职责：把 AI 的"做一套 PPT"意图变成真实交付物——deck spec 经 shared/core.js
  * 归一化（容量护栏）+ 几何布局，经 render.js 产出原生可编辑 PPTX 落盘到用户
@@ -171,7 +171,7 @@ function resolveExportDir(settings) {
 function ok(text) { return { content: [{ type: 'text', text }], isError: false }; }
 function err(text) { return { content: [{ type: 'text', text }], isError: true }; }
 
-const GUIDE_TEXT = `启幕 · deck spec 版式说明书（ppt_build 的 deck 参数）
+const GUIDE_TEXT = `PPT 工坊 · deck spec 版式说明书（ppt_build 的 deck 参数）
 
 顶层：{ title(必填≤60字), subtitle?, author?, theme?, slides[] }
 theme 可选：${core.THEME_KEYS.join(' / ')}
@@ -204,7 +204,7 @@ theme 可选：${core.THEME_KEYS.join(' / ')}
 const tools = [
   {
     name: 'ppt_guide',
-    description: '启幕·版式说明书。做 PPT 前先读本工具：7 类版式的容量规则、主题清单与最小完整 deck spec 示例。读完再用 ppt_build 提交。',
+    description: 'PPT 工坊·版式说明书。做 PPT 前先读本工具：7 类版式的容量规则、主题清单与最小完整 deck spec 示例。读完再用 ppt_build 提交。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       return ok(GUIDE_TEXT);
@@ -212,7 +212,7 @@ const tools = [
   },
   {
     name: 'ppt_build',
-    description: '启幕·核心工具：把 deck spec 渲染成真实可编辑的 .pptx 文件并落盘（默认桌面）。构建前建议先读 ppt_guide。返回文件路径、页数与主题；超限时返回具体拆页建议。',
+    description: 'PPT 工坊·核心工具：把 deck spec 渲染成真实可编辑的 .pptx 文件并落盘（默认桌面）。构建前建议先读 ppt_guide。返回文件路径、页数与主题；超限时返回具体拆页建议。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -264,7 +264,7 @@ const tools = [
   },
   {
     name: 'ppt_reveal',
-    description: '启幕·在系统文件管理器中定位一个已生成的 PPTX（用户说"打开/找到它"时调用）。可用 id（ppt_build/ppt_recent 返回）或绝对路径。',
+    description: 'PPT 工坊·在系统文件管理器中定位一个已生成的 PPTX（用户说"打开/找到它"时调用）。可用 id（ppt_build/ppt_recent 返回）或绝对路径。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -297,7 +297,7 @@ const tools = [
   },
   {
     name: 'ppt_recent',
-    description: '启幕·最近生成的 PPT 作品列表（标题/页数/主题/路径/时间）。',
+    description: 'PPT 工坊·最近生成的 PPT 作品列表（标题/页数/主题/路径/时间）。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const keys = (await kvKeys()).filter((k) => k.startsWith(core.K.deckPrefix));
@@ -314,7 +314,7 @@ const tools = [
   },
   {
     name: 'ppt_forget',
-    description: '启幕·删除一条作品登记（面板/最近列表不再显示）。只删登记，不删文件本身。confirm=true 才执行。',
+    description: 'PPT 工坊·删除一条作品登记（面板/最近列表不再显示）。只删登记，不删文件本身。confirm=true 才执行。',
     inputSchema: {
       type: 'object',
       properties: {

@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（订阅雷达面板专用，与 clip-relay / page-sentinel 同一模式）
+ * 宿主 API 访问层（RSS 订阅面板专用，与 clip-relay / page-sentinel 同一模式）
  *
  * 面板数据全部走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__）：
  *   - 桌面 Tauri：直连后端 IPC（Source::Bootstrap）

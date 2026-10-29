@@ -283,7 +283,7 @@ function PaperRadarPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs("div", { className: "pr-top", children: [
       /* @__PURE__ */ jsx("div", { className: "pr-logo", children: "\u{1F4DA}" }),
       /* @__PURE__ */ jsxs("div", { className: "pr-tt", children: [
-        /* @__PURE__ */ jsx("b", { children: "\u8BBA\u6587\u96F7\u8FBE" }),
+        /* @__PURE__ */ jsx("b", { children: "\u8BBA\u6587\u901F\u9012" }),
         /* @__PURE__ */ jsxs("small", { children: [
           /* @__PURE__ */ jsx("i", { className: `pr-dot ${heartbeat.cls}` }),
           heartbeat.text
@@ -304,7 +304,7 @@ function PaperRadarPanel({ pluginId, onSendToChat }) {
         feeds.length === 0 && !loadErr && /* @__PURE__ */ jsxs("div", { className: "pr-empty", children: [
           "\u4ECA\u65E5\u699C\u5355\u8FD8\u6CA1\u751F\u6210\u3002",
           /* @__PURE__ */ jsx("br", {}),
-          "\xB7 \u9996\u6B21\u9700\u8981\u540E\u53F0\u670D\u52A1\u542F\u52A8\u540E\u8DD1\u4E00\u6B21\u626B\u63CF\uFF08\u8BBE\u7F6E \u2192 \u63D2\u4EF6 \u2192 \u8BBA\u6587\u96F7\u8FBE\uFF09",
+          "\xB7 \u9996\u6B21\u9700\u8981\u540E\u53F0\u670D\u52A1\u542F\u52A8\u540E\u8DD1\u4E00\u6B21\u626B\u63CF\uFF08\u8BBE\u7F6E \u2192 \u63D2\u4EF6 \u2192 \u8BBA\u6587\u901F\u9012\uFF09",
           /* @__PURE__ */ jsx("br", {}),
           "\xB7 \u6216\u5BF9 AI \u8BF4\u300C\u5E2E\u6211\u641C\u4ECA\u5929\u7684\u8BBA\u6587\u300D\uFF0CAI \u4F1A\u89E6\u53D1\u626B\u63CF",
           /* @__PURE__ */ jsx("br", {}),

@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（青囊面板）
+ * 通信层 + 数据访问（用药管家面板）
  *
  * 面板经宿主 invoke 通道调 router_dispatch，与后台服务、MCP server 读写
  * 同一个 cap.kv 的 qingnang.* 键空间。

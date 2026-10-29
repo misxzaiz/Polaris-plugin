@@ -1,6 +1,6 @@
 'use strict';
 /**
- * render.js —— 启幕渲染器：core.layout() 的几何盒 → 原生 PPTX（pptxgenjs 适配层）
+ * render.js —— PPT 工坊渲染器：core.layout() 的几何盒 → 原生 PPTX（pptxgenjs 适配层）
  *
  * 只做映射不做计算：位置/字号/颜色/数据全部来自 shared/core.js 的几何输出，
  * 主题 token 在此解析为十六进制色。文本"透明度"用向背景色的确定性混色实现
@@ -122,7 +122,7 @@ async function renderDeck(deck, { outputType = 'nodebuffer' } = {}) {
   const pptx = new PptxGenJS();
   pptx.defineLayout({ name: 'QIMU_W16x9', width: g.W, height: g.H });
   pptx.layout = 'QIMU_W16x9';
-  pptx.author = deck.author || 'Polaris 启幕';
+  pptx.author = deck.author || 'Polaris PPT 工坊';
   pptx.title = deck.title;
   pptx.subject = deck.subtitle || deck.title;
   pptx.company = 'Polaris';

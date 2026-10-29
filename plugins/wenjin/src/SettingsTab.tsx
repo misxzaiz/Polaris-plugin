@@ -149,7 +149,7 @@ export default function SettingsTab({ data, reload, toast }: {
         toast(`已写入 ${n} 条（识别为原始数据）`)
         await reload()
       } else {
-        toast('不是问津的备份文件', true)
+        toast('不是求职台账的备份文件', true)
       }
     } catch (e) {
       toast((e as Error).message, true)
@@ -236,7 +236,7 @@ export default function SettingsTab({ data, reload, toast }: {
 
       <div className="wj-sec"><span className="wj-bar" />关于</div>
       <div className="wj-card"><div className="wj-card-b wj-sub">
-        <b>问津</b>——使子路问津。津者，渡口也；求职就是找渡口，每一份投递都值得有账可查。<br />
+        <b>求职台账</b>——使子路求职台账。津者，渡口也；求职就是找渡口，每一份投递都值得有账可查。<br />
         只做记录、派生与提醒：不抓取招聘平台、不自动投递、不承诺「ATS 通过率」。<br />
         跟进提醒与 offer 对比基于你自己的记录，不构成职业建议。
       </div></div>

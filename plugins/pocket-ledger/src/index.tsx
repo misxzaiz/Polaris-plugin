@@ -1,5 +1,5 @@
 /**
- * 入口：口袋账本面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：日常记账面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import LedgerPanel from './Panel'
 

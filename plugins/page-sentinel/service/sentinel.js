@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * sentinel.js —— 网页哨兵后台服务（零依赖，node >= 18，需有全局 fetch）
+ * sentinel.js —— 网页监测后台服务（零依赖，node >= 18，需有全局 fetch）
  *
  * 职责（单一抓取路径的唯一权威）：
  *   - 周期调度 watch 目标：原生 fetch（无浏览器同源策略，无 CORS）——

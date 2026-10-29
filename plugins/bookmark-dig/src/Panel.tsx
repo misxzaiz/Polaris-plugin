@@ -1,5 +1,5 @@
 /**
- * 书签考古面板（Tab 组装 + 全局数据加载）
+ * 书签体检面板（Tab 组装 + 全局数据加载）
  *
  * 数据流：面板只读（records/run/meta/reports 轮询），一切写走命令键；
  * 外网链接体检由后台服务原生 fetch（跨域根治点）。
@@ -117,7 +117,7 @@ export default function BookmarkDigPanel(props: { pluginId: string; onSendToChat
   return (
     <div style={{ padding: 16, fontFamily: 'inherit', fontSize: 13, color: 'var(--p-text, inherit)', maxWidth: 880, margin: '0 auto' }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' as const }}>
-        <strong style={{ fontSize: 15 }}>📖 书签考古</strong>
+        <strong style={{ fontSize: 15 }}>📖 书签体检</strong>
         {run && <span style={{ padding: '2px 10px', borderRadius: 999, background: 'var(--p-accent, #4a7dff)', color: '#fff', fontSize: 11 }}>
           检查中 {run.cursor}/{run.queue.length}
         </span>}

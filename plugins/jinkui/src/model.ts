@@ -1,5 +1,5 @@
 /**
- * 通信层 + 数据访问（金匮面板）
+ * 通信层 + 数据访问（保单台账面板）
  *
  * 面板经宿主 invoke 通道调 router_dispatch，与 MCP server 读写
  * 同一个 cap.kv 的 jinkui.* 键空间（无后台服务，派生一律 shared/core 现算）。
@@ -157,7 +157,7 @@ export async function importAll(json: string): Promise<{ members: number; polici
   try { parsed = JSON.parse(json) } catch { throw new Error('不是合法 JSON') }
   const p = parsed as { kind?: string; members?: Member[]; policies?: Policy[]; events?: PolicyEvent[]; settings?: Settings }
   if (!p || p.kind !== 'jinkui-export' || !Array.isArray(p.policies)) {
-    throw new Error('不是金匮导出文件（缺 kind: jinkui-export）')
+    throw new Error('不是保单台账导出文件（缺 kind: jinkui-export）')
   }
   let nMember = 0
   let nPolicy = 0

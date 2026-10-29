@@ -1,5 +1,5 @@
 /**
- * 入口：格致面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：Excel 工坊面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import GezhiPanel from './Panel'
 

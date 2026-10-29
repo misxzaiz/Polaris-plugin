@@ -4,6 +4,7 @@ package.json
 package-lock.json
 *.tsx
 *.ts
+*.log
 .eslintrc*
 .prettierrc*
 .gitignore

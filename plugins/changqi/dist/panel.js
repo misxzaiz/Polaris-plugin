@@ -943,7 +943,7 @@ function SettingsTab({ data, reload, showToast }) {
         await kvDel(k);
       }
       await reload();
-      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u5E38\u5951\u6570\u636E");
+      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u8BA2\u9605\u53F0\u8D26\u6570\u636E");
     } catch (e) {
       showToast(`\u6E05\u7A7A\u5931\u8D25\uFF1A${e.message}`, "bad");
     }
@@ -1040,7 +1040,7 @@ function SettingsTab({ data, reload, showToast }) {
     /* @__PURE__ */ jsx3("div", { className: "cq-card", children: /* @__PURE__ */ jsxs3("div", { className: "cq-card-b", children: [
       clearArmed ? /* @__PURE__ */ jsxs3("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [
         /* @__PURE__ */ jsxs3("button", { className: "cq-btn sm danger", onClick: async () => {
-          if (window.confirm("\u518D\u6B21\u786E\u8BA4\uFF1A\u6E05\u7A7A\u5E38\u5951\u5168\u90E8\u6570\u636E\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) {
+          if (window.confirm("\u518D\u6B21\u786E\u8BA4\uFF1A\u6E05\u7A7A\u8BA2\u9605\u53F0\u8D26\u5168\u90E8\u6570\u636E\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) {
             setClearArmed(false);
             await clearAll();
           } else setClearArmed(false);
@@ -1203,7 +1203,7 @@ function ChangqiPanel(_props) {
     /* @__PURE__ */ jsxs4("div", { className: "cq-top", children: [
       /* @__PURE__ */ jsx4("div", { className: "cq-logo", children: "\u{1F5D3}\uFE0F" }),
       /* @__PURE__ */ jsxs4("div", { className: "cq-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u5E38\u5951" }),
+        /* @__PURE__ */ jsx4("b", { children: "\u8BA2\u9605\u53F0\u8D26" }),
         /* @__PURE__ */ jsx4("small", { children: headInfo.text })
       ] }),
       /* @__PURE__ */ jsx4("div", { className: "cq-tabs", children: [

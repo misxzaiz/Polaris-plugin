@@ -1,5 +1,5 @@
 /**
- * model.ts —— 通信层 + 数据访问（拾光机面板）
+ * model.ts —— 通信层 + 数据访问（会话记忆面板）
  *
  * 面板经宿主 invoke 通道调 router_dispatch，与后台服务、MCP server 读写
  * 同一个 cap.kv 的 sift.* 键空间。键空间契约（与 service/sift.js、mcp/server.js

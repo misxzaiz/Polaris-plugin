@@ -217,7 +217,7 @@ export default function ListTab({ ctx, focusId, onFocusConsumed }: {
   const askAi = (d: Decision) => {
     if (!onSendToChat) { showToast('当前宿主不支持送入聊天', 'bad'); return }
     const exp = d.expected ? `原预期（把握 ${d.expected.confidence}%）：${d.expected.text}` : ''
-    void onSendToChat(`帮我复盘谋定里的这条决策（id=${d.id}）：${d.title}。${exp}对照现实帮我打分（兑现/部分/落空/作废），找偏差来源，沉淀一句教训。`)
+    void onSendToChat(`帮我复盘决策日志里的这条决策（id=${d.id}）：${d.title}。${exp}对照现实帮我打分（兑现/部分/落空/作废），找偏差来源，沉淀一句教训。`)
     showToast('已送入聊天输入框', 'good')
   }
 

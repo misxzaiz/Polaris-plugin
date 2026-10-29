@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * qingnang.js —— 青囊后台服务（零依赖，node >= 18）
+ * qingnang.js —— 用药管家后台服务（零依赖，node >= 18）
  *
  * 职责（qingnang.* 键空间里「派生投影」的单写权威；实体与打卡记录由面板/MCP 直写）：
  *   - 今日应服投影 qingnang.doses：某日「未打卡且已到点」（now/overdue），

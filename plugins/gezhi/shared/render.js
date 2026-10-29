@@ -1,6 +1,6 @@
 'use strict';
 /**
- * render.js —— 格致的渲染适配层（sheet spec + layout → exceljs Workbook）
+ * render.js —— Excel 工坊的渲染适配层（sheet spec + layout → exceljs Workbook）
  *
  * 只消费 shared/core.js 的 layout() 输出，不做任何计算——
  * 与面板预览同一几何权威，预览≈成品的保证来源。
@@ -43,7 +43,7 @@ function safeTextValue(v) {
 function buildWorkbook(book, g) {
   const t = g.themes;
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Polaris 格致';
+  wb.creator = 'Polaris Excel 工坊';
   wb.created = new Date();
   // 引擎不写公式缓存值：让 Excel/WPS 打开时全量重算（否则新公式显示 0）
   wb.calcProperties.fullCalcOnLoad = true;

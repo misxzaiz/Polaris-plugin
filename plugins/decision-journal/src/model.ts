@@ -1,5 +1,5 @@
 /**
- * 通信层 + 决策数据访问（谋定面板）
+ * 通信层 + 决策数据访问（决策日志面板）
  *
  * 计算逻辑全部复用 shared/decision-core.js（与 MCP 同一权威，esbuild 打包进
  * bundle）；本文件只做 cap.kv IO 与面板视图模型组装。

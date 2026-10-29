@@ -1,8 +1,8 @@
 {
   "id": "weibian",
-  "name": "韦编",
+  "name": "文档检索",
   "version": "0.1.0",
-  "description": "韦编——本地文档全文检索与 AI 检索工具：把散落在本地文件夹里的 md/txt/PDF/docx/网页/代码变成一条命令可搜、AI 可引用、手机可查的全文索引。配置一次目录，之后零录入：后台增量扫描（mtime+size 指纹对账、预算化提取不卡盘），CJK bigram+unigram 双层分词 + BM25 排序 + 片段高亮。AI 侧 4 工具（weibian_search/weibian_read/weibian_status/weibian_reindex）——宿主 AI 首次拥有本地内容检索；面板三端同读，手机同局域网直连 PC 检索。安全底线：只索引用户显式配置的目录；读取严格限制在索引目录内（防穿越/防符号链接逃逸）；零外网请求（未申请 network 权限）；文件只读永不修改。",
+  "description": "文档检索——本地文档全文检索与 AI 检索工具：把散落在本地文件夹里的 md/txt/PDF/docx/网页/代码变成一条命令可搜、AI 可引用、手机可查的全文索引。配置一次目录，之后零录入：后台增量扫描（mtime+size 指纹对账、预算化提取不卡盘），CJK bigram+unigram 双层分词 + BM25 排序 + 片段高亮。AI 侧 4 工具（weibian_search/weibian_read/weibian_status/weibian_reindex）——宿主 AI 首次拥有本地内容检索；面板三端同读，手机同局域网直连 PC 检索。安全底线：只索引用户显式配置的目录；读取严格限制在索引目录内（防穿越/防符号链接逃逸）；零外网请求（未申请 network 权限）；文件只读永不修改。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -12,7 +12,7 @@
         "panelType": "weibian",
         "icon": "BookOpen",
         "labelKey": "plugins.weibian",
-        "labelDefault": "韦编",
+        "labelDefault": "文档检索",
         "order": 90
       }
     ],

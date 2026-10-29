@@ -1,6 +1,6 @@
 'use strict';
 /**
- * srs-core.js —— 记忆熔炉共享核心（单一权威，零依赖）
+ * srs-core.js —— 记忆卡片共享核心（单一权威，零依赖）
  *
  * 被 MCP server（CJS require）与面板（esbuild 打包进 bundle）共用：
  * 键空间、卡片归一化、SM-2 间隔重复调度、每日队列（限额）、统计/留存/连击、

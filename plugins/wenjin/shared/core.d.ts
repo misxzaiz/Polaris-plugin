@@ -1,4 +1,4 @@
-/** 问津 shared/core.js 的类型面（CJS 实现的严格映射，字段以实现为准） */
+/** 求职台账 shared/core.js 的类型面（CJS 实现的严格映射，字段以实现为准） */
 export interface Company {
   id: string
   name: string

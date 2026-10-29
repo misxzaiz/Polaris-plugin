@@ -511,7 +511,7 @@ function TodayTab({ data, reload, showToast }) {
   const { snap, today } = data;
   if (!snap) {
     return /* @__PURE__ */ jsxs("div", { className: "tt-empty", children: [
-      "\u523B\u6F0F\u670D\u52A1\u672A\u8FD0\u884C\u3002",
+      "\u65F6\u95F4\u7EDF\u8BA1\u670D\u52A1\u672A\u8FD0\u884C\u3002",
       /* @__PURE__ */ jsx("br", {}),
       /* @__PURE__ */ jsx("span", { className: "tt-sub", children: "\u5230\u300C\u8BBE\u7F6E\u300DTab \u542F\u52A8 trail-service \u540E\uFF0C\u672C\u9875\u5F00\u59CB\u663E\u793A\u4ECA\u65E5\u65F6\u95F4\u6D41\u5411\u3002" })
     ] });
@@ -848,7 +848,7 @@ function CatsTab({ pluginId, data, reload, showToast, onSendToChat }) {
   const aiClassify = useCallback(() => {
     if (!unknown || !unknown.length) return;
     const list = unknown.slice(0, 20).map((u) => `${u.app}\uFF08${displayName(u.app)}\uFF0C${fmtDur(u.sec)}\uFF09`).join("\u3001");
-    const msg = `\u8BF7\u7528 timetrail_apps(unknownOnly=true) \u548C timetrail_set_categories \u5E2E\u6211\u628A\u523B\u6F0F\u91CC\u8FD9\u4E9B\u672A\u5206\u7C7B\u5E94\u7528\u5F52\u7C7B\uFF08\u4E03\u7C7B\uFF1Adev/create/meet/browse/media/play/other\uFF09\uFF1A${list}\u3002\u5F52\u7C7B\u65F6\u7ED9\u51FA\u4F60\u7684\u7406\u7531\u3002`;
+    const msg = `\u8BF7\u7528 timetrail_apps(unknownOnly=true) \u548C timetrail_set_categories \u5E2E\u6211\u628A\u65F6\u95F4\u7EDF\u8BA1\u91CC\u8FD9\u4E9B\u672A\u5206\u7C7B\u5E94\u7528\u5F52\u7C7B\uFF08\u4E03\u7C7B\uFF1Adev/create/meet/browse/media/play/other\uFF09\uFF1A${list}\u3002\u5F52\u7C7B\u65F6\u7ED9\u51FA\u4F60\u7684\u7406\u7531\u3002`;
     if (onSendToChat) {
       onSendToChat(msg);
       showToast("\u5DF2\u53D1\u9001\u5230\u804A\u5929\uFF0C\u7B49 AI \u5F52\u7C7B");
@@ -1452,7 +1452,7 @@ function TimeTrailPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs5("div", { className: "tt-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "tt-logo", children: "\u{1F570}\uFE0F" }),
       /* @__PURE__ */ jsxs5("div", { className: "tt-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u523B\u6F0F" }),
+        /* @__PURE__ */ jsx5("b", { children: "\u65F6\u95F4\u7EDF\u8BA1" }),
         /* @__PURE__ */ jsxs5("small", { children: [
           /* @__PURE__ */ jsx5("i", { className: `tt-dot ${hbState}` }),
           hbText

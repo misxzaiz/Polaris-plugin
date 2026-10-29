@@ -103,7 +103,7 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
       <div className="sd-card">
         <div className="sd-field" style={{ borderTop: 'none' }}>
           <div className="sd-field-l">
-            <b>日晷服务（ICS 抓取 / 提醒投影）</b>
+            <b>日程提醒服务（ICS 抓取 / 提醒投影）</b>
             <small>
               {svc === null && '状态未知（宿主通道不可用？）'}
               {svc && svc.running && `运行中${meta ? ` · ${meta.events ?? '?'} 事件 · ${meta.icsCount ?? 0} 订阅` : ''}`}
@@ -172,7 +172,7 @@ export default function SettingsTab({ pluginId, data, reload, showToast }: {
       <div className="sd-sec"><i className="sd-bar" />说明</div>
       <div className="sd-card">
         <div className="sd-note" style={{ borderTop: 'none' }}>
-          <b>对话式用法</b>：聊天里对 AI 说「周五下午3点提醒我取快递」「每天晚上10点提醒背单词并打卡」「距离高考还有几天」「订阅我的课表 ICS 链接」，AI 会调用日晷的 MCP 工具直接落库。<br />
+          <b>对话式用法</b>：聊天里对 AI 说「周五下午3点提醒我取快递」「每天晚上10点提醒背单词并打卡」「距离高考还有几天」「订阅我的课表 ICS 链接」，AI 会调用日程提醒的 MCP 工具直接落库。<br />
           <b>提醒触达</b>：到期提醒显示在本面板横幅（带提示音）+ AI 的 sundial_today 可见。主应用暂未提供系统级通知通道，拿到后本插件会跟进。<br />
           <b>跨域说明</b>：面板零外网请求；ICS 订阅抓取由后台服务原生 fetch（带 SSRF 守卫与 ETag 条件请求），桌面 / 手机 / Web 三端经 cap.kv 看到同一份数据。<br />
           <b>排障</b>：服务日志在 <code>{'{appConfigDir}'}/sundial.log</code>（512KB 轮转）。

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * sift.js —— 拾光机后台服务（会话索引/检索的唯一权威）
+ * sift.js —— 会话记忆后台服务（会话索引/检索的唯一权威）
  *
  * 职责与边界：
  *  - 唯一读源：四路数据源（polaris dialogs / session-v2 / claude 原生 / zcode）只由本进程读取

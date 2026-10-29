@@ -193,7 +193,7 @@ export default function CabinetTab({ data, reload, showToast, pluginId }: TabPro
       )}
 
       {!data.meds.length && !showAdd && (
-        <div className="qn-card"><div className="qn-card-b qn-empty">药箱还是空的。把家里常备药登记进来，效期和存量青囊替你盯着。</div></div>
+        <div className="qn-card"><div className="qn-card-b qn-empty">药箱还是空的。把家里常备药登记进来，效期和存量用药管家替你盯着。</div></div>
       )}
 
       {data.meds.map((med) => {

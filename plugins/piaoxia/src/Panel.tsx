@@ -1,5 +1,5 @@
 /**
- * Panel.tsx —— 票匣外壳：CSS 注入 + 状态灯 + 四 Tab + 15s 轮询（可见时）+ toast。
+ * Panel.tsx —— 发票保险库外壳：CSS 注入 + 状态灯 + 四 Tab + 15s 轮询（可见时）+ toast。
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import * as core from '../shared/core'
@@ -152,7 +152,7 @@ export default function PiaoxiaPanel(props: { pluginId?: string, onSendToChat?: 
         <span className="px-sub">个人电子发票保险库</span>
         <span style={{ marginLeft: 'auto' }} className="px-sub">
           <span className={'px-dot ' + (metaAgeOk ? 'ok' : loaded ? 'warn' : 'off')} />
-          {metaAgeOk ? `票匣就绪 · ${data.invoices.size} 张票` : loaded ? '等待解析服务（面板收票功能暂不可用，AI 收票不受影响）' : '连接中…'}
+          {metaAgeOk ? `发票保险库就绪 · ${data.invoices.size} 张票` : loaded ? '等待解析服务（面板收票功能暂不可用，AI 收票不受影响）' : '连接中…'}
         </span>
       </div>
       <div className="px-tabs">

@@ -1,5 +1,5 @@
 /**
- * 网哨面板外壳：头部（心跳）+ 四 Tab（概览 / 历史 / 动态 / 设置）
+ * 网络哨兵面板外壳：头部（心跳）+ 四 Tab（概览 / 历史 / 动态 / 设置）
  *
  * 数据源：cap.kv netmon.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零网络请求（探测在后台原生服务执行）；快照由后台服务单权威写入，
@@ -159,7 +159,7 @@ export default function NetSentinelPanel({ pluginId, onSendToChat }: {
       <div className="ns-top">
         <div className="ns-logo">📡</div>
         <div className="ns-tt">
-          <b>网哨</b>
+          <b>网络哨兵</b>
           <small>
             <i className={`ns-dot ${hb.state}`} />
             {hb.text}

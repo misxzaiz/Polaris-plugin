@@ -1,0 +1,8 @@
+{
+  "id": "duzhi",
+  "name": "消费账单",
+  "version": "0.1.0",
+  "description": "家庭账单透视：微信/支付宝官方账单 → 本地可对话消费账。拖入即去重入库，月度现金流/分类/商户透视，AI 即问即答，按批次撤销。纯本地零网络。",
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/duzhi.zip",
+  "sha256": "PENDING"
+}

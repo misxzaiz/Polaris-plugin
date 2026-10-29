@@ -186,7 +186,7 @@ async function runServiceCommand(cmdKey, resultKey, payload, { timeoutMs = 15e3,
       return r;
     }
   }
-  throw new Error("\u540E\u53F0\u670D\u52A1\u672A\u54CD\u5E94\uFF08\u53EF\u80FD\u672A\u8FD0\u884C\uFF1A\u8BBE\u7F6E \u2192 \u63D2\u4EF6 \u2192 \u76D8\u54E8 \u67E5\u770B\u670D\u52A1\u72B6\u6001\uFF09");
+  throw new Error("\u540E\u53F0\u670D\u52A1\u672A\u54CD\u5E94\uFF08\u53EF\u80FD\u672A\u8FD0\u884C\uFF1A\u8BBE\u7F6E \u2192 \u63D2\u4EF6 \u2192 \u884C\u60C5\u54E8\u5175 \u67E5\u770B\u670D\u52A1\u72B6\u6001\uFF09");
 }
 async function searchWithService(q) {
   const nonce = uid().slice(1) + "s";
@@ -1114,7 +1114,7 @@ function Panel({ pluginId }) {
       /* @__PURE__ */ jsxs5("div", { className: "qs-ttrow", children: [
         /* @__PURE__ */ jsx5("div", { className: "qs-logo", children: "\u76E4" }),
         /* @__PURE__ */ jsxs5("div", { className: "qs-tt", children: [
-          /* @__PURE__ */ jsx5("b", { children: "\u76D8\u54E8" }),
+          /* @__PURE__ */ jsx5("b", { children: "\u884C\u60C5\u54E8\u5175" }),
           /* @__PURE__ */ jsxs5("small", { children: [
             /* @__PURE__ */ jsx5("span", { className: `qs-dot ${dotCls}` }),
             meta ? `${meta.inSession ? "\u76D8\u4E2D" : "\u76D8\u5916"} \xB7 ${meta.lastSource || "\u65E0\u6570\u636E"} \xB7 ${meta.lastPollAt ? agoStr(meta.lastPollAt) : "\u672A\u8F6E\u8BE2"}${meta.lastError ? ` \xB7 ${meta.lastError}` : ""}` : "\u540E\u53F0\u670D\u52A1\u672A\u8FDE\u63A5"

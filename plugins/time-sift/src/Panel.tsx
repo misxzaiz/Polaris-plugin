@@ -1,5 +1,5 @@
 /**
- * 拾光机面板外壳：头部（状态点/心跳）+ 四 Tab（搜索 / 足迹 / 时光机 / 设置）
+ * 会话记忆面板外壳：头部（状态点/心跳）+ 四 Tab（搜索 / 足迹 / 时光机 / 设置）
  *
  * 数据面：cap.kv sift.* 键空间（经宿主 invoke → router_dispatch），跨端一致。
  * 检索/阅读走命令信箱（索引在服务进程），目录/统计直读 kv（服务离线可浏览）。
@@ -120,7 +120,7 @@ export default function TimeSiftPanel({ pluginId }: { pluginId: string }) {
       <div className="ts-top">
         <div className="ts-logo">⏳</div>
         <div className="ts-tt">
-          <b>拾光机</b>
+          <b>会话记忆</b>
           <small>
             <span className={`ts-dot ${status}`} />
             {statusText}

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * vault.js —— 票匣 IO 助手（service 与 MCP 共用的唯一实现；engine 保持零 IO）
+ * vault.js —— 发票保险库 IO 助手（service 与 MCP 共用的唯一实现；engine 保持零 IO）
  *
  * 职责：目录扫描（只读）、原件归档（复制非移动、永不覆盖）、文件指纹。
  * 安全约束：

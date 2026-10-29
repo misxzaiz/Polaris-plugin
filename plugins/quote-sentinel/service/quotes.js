@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * quotes.js —— 盘哨后台服务（零依赖，node >= 18，需有全局 fetch）
+ * quotes.js —— 行情哨兵后台服务（零依赖，node >= 18，需有全局 fetch）
  *
  * 职责（行情状态的唯一写权威）：
  *   - 周期批量拉取自选+指数行情：腾讯 qt.gtimg.cn 主源 → 东财 push2 备源
@@ -12,7 +12,7 @@
  *   - 状态写回 cap.kv（qsent.* 键空间，契约见 README）
  *
  * 面板/AI 永不直连外网——外网抓取全部由本服务原生 fetch 执行，
- * 这是「盘哨」解决浏览器跨域/同源限制的核心设计。
+ * 这是「行情哨兵」解决浏览器跨域/同源限制的核心设计。
  *
  * 生命周期由宿主 PluginServiceManager 管理（type=http + healthCheck=/__health，
  * 任何 2xx 视为健康；桥不可达时健康端点仍返回 200，避免被误杀重启循环，
@@ -369,7 +369,7 @@ function createService(opts = {}) {
 
   let timer = null;
   function start() {
-    log('info', `盘哨服务 v${VERSION} 启动 (pid ${process.pid})`);
+    log('info', `行情哨兵服务 v${VERSION} 启动 (pid ${process.pid})`);
     timer = setTimeout(tick, 300);
   }
   function stop() {

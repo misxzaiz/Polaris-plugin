@@ -1,8 +1,8 @@
 'use strict';
 /**
- * charset.js —— 响应字节 → 字符串（琥珀服务专用）
+ * charset.js —— 响应字节 → 字符串（网页封存服务专用）
  *
- * feed-radar 直接 Buffer.toString('utf8')，GBK 页面到手就是乱码——琥珀是收藏库，
+ * feed-radar 直接 Buffer.toString('utf8')，GBK 页面到手就是乱码——网页封存是收藏库，
  * 封错编码 = 永久乱码，必须把 legacy 编码读对。探测顺序：
  *   1. BOM（utf-8 / utf-16le / utf-16be）
  *   2. Content-Type 响应头的 charset=

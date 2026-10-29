@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * ask-stove MCP Server —— 问灶的 AI 工具层（零依赖，node >= 18）
+ * ask-stove MCP Server —— 食材管家的 AI 工具层（零依赖，node >= 18）
  *
  * 职责：把 AI 的灶房意图翻译为 cap.kv 的 stove.* 读写（复用 service/kvclient
  * 自发现）；菜谱 URL 抓取经命令邮箱下发后台服务（服务是唯一外联点，SSRF
@@ -95,7 +95,7 @@ const tools = [
   {
     name: 'stove_overview',
     description: [
-      '问灶总览：今日灶签（带理由的吃啥推荐）、临期红榜、今日计划、采购待办数、库存概数。',
+      '食材管家总览：今日灶签（带理由的吃啥推荐）、临期红榜、今日计划、采购待办数、库存概数。',
       '用户问「今天吃什么/家里还有啥」时的对话入口；之后按需用 stove_suggest / stove_pantry_list / stove_shopping 深入。',
     ].join('\n'),
     inputSchema: { type: 'object', properties: {} },

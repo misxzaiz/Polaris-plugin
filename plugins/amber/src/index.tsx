@@ -1,5 +1,5 @@
 /**
- * 入口：琥珀面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：网页封存面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import AmberPanel from './Panel'
 

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * kvclient.js —— Polaris IPC Bridge 客户端（刻漏服务专用，零依赖）
+ * kvclient.js —— Polaris IPC Bridge 客户端（时间统计服务专用，零依赖）
  *
  * 与 pocket-host / page-sentinel 的 kvclient 同一套路（实测可靠样板，勿改协议）：
  * 全部数据读写经 router_dispatch（target=cap.kv）透传到宿主 SqliteStorage

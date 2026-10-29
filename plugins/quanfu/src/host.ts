@@ -1,11 +1,11 @@
 /**
- * 宿主 API 访问层（泉府面板；与 qingnang/sundial 同一验证过的模式）
+ * 宿主 API 访问层（贷款台账面板；与 qingnang/sundial 同一验证过的模式）
  *
  * 面板数据全部走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__）：
  *   - 桌面 Tauri：直连后端 IPC
  *   - 手机浏览器 / Web：自动取正确服务地址并携带 Bearer token（Remote 源）
  *
- * 面板自身绝不直接 fetch 任何地址——泉府零外网依赖，无需任何跨域面。
+ * 面板自身绝不直接 fetch 任何地址——贷款台账零外网依赖，无需任何跨域面。
  */
 export type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>
 

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * ark-core.js —— 数据方舟共享核心（单一权威，零依赖）
+ * ark-core.js —— 数据备份共享核心（单一权威，零依赖）
  *
  * 被后台服务（CJS require）、MCP server（CJS require）与面板（esbuild 打包）
  * 共用：键空间、设置归一化、排除匹配（glob）、GFS 保留轮换、调度与错过补偿、

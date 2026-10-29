@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * amber.js —— 琥珀后台服务（零依赖，node >= 18，需全局 fetch）
+ * amber.js —— 网页封存后台服务（零依赖，node >= 18，需全局 fetch）
  *
  * 职责（amber.* 键空间里"条目/正文/检索结果"的单写权威；条目的用户状态
  * 与 pending 登记可由面板/MCP 写）：

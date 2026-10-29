@@ -1,6 +1,6 @@
 'use strict';
 /**
- * core.js —— 票匣三方同源唯一计算权威（面板 / MCP / service 共用）
+ * core.js —— 发票保险库三方同源唯一计算权威（面板 / MCP / service 共用）
  *
  * 设计约束（对齐 wenjin 范式）：
  *   - 零 IO、零 Node 内建依赖（require sha256.js 除外），浏览器与 node 同源一致。

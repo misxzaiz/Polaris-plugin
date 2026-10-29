@@ -1035,7 +1035,7 @@ function PeopleTab({ data, reload, showToast, selectedPersonId, setSelectedPerso
     return true;
   }).sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || a.name.localeCompare(b.name, "zh"));
   return /* @__PURE__ */ jsxs3("div", { children: [
-    /* @__PURE__ */ jsx3(Section, { title: "\u6545\u4EBA", hint: `${list.length} \u4F4D` }),
+    /* @__PURE__ */ jsx3(Section, { title: "\u4EBA\u60C5\u8D26\u672C", hint: `${list.length} \u4F4D` }),
     /* @__PURE__ */ jsxs3("div", { className: "tr-card", children: [
       /* @__PURE__ */ jsxs3("div", { className: "tr-card-b", children: [
         /* @__PURE__ */ jsxs3("div", { className: "tr-row", children: [
@@ -1110,7 +1110,7 @@ function PromisesTab({ data, reload, showToast }) {
       return;
     }
     if (!personId) {
-      showToast("\u9009\u4E00\u4E2A\u4EBA\uFF08\u5148\u53BB\u300C\u6545\u4EBA\u300D\u5EFA\u6863\uFF09", "bad");
+      showToast("\u9009\u4E00\u4E2A\u4EBA\uFF08\u5148\u53BB\u300C\u4EBA\u60C5\u8D26\u672C\u300D\u5EFA\u6863\uFF09", "bad");
       return;
     }
     const norm = normalizePromise2({ personId, direction: pDir, text: t, due: due.trim() || void 0 });
@@ -1443,7 +1443,7 @@ function SettingsTab({ data, reload, showToast }) {
     try {
       const dump = exportAll2(s, data.peopleBook, data.promisesBook, data.journalBook);
       await navigator.clipboard.writeText(JSON.stringify(dump, null, 2));
-      showToast(`\u5DF2\u590D\u5236 ${Object.keys(dump.people).length} \u4F4D\u6545\u4EBA + ${Object.keys(dump.promises).length} \u6761\u627F\u8BFA + ${dump.journal.length} \u6761\u5F80\u6765 JSON \u5230\u526A\u8D34\u677F`, "good");
+      showToast(`\u5DF2\u590D\u5236 ${Object.keys(dump.people).length} \u4F4D\u4EBA\u60C5\u8D26\u672C + ${Object.keys(dump.promises).length} \u6761\u627F\u8BFA + ${dump.journal.length} \u6761\u5F80\u6765 JSON \u5230\u526A\u8D34\u677F`, "good");
     } catch (e) {
       showToast(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e.message}`, "bad");
     }
@@ -1457,7 +1457,7 @@ function SettingsTab({ data, reload, showToast }) {
       for (const k of [K2.settings, K2.people, K2.promises, K2.journal]) await kvDel(k);
       await reload();
       setConfirmingClear(false);
-      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u6545\u4EBA\u6570\u636E");
+      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u4EBA\u60C5\u8D26\u672C\u6570\u636E");
     } catch (e) {
       showToast(`\u6E05\u7A7A\u5931\u8D25\uFF1A${e.message}`, "bad");
     }
@@ -1502,7 +1502,7 @@ function SettingsTab({ data, reload, showToast }) {
     ] }) }),
     /* @__PURE__ */ jsx7(Section, { title: "\u5173\u4E8E" }),
     /* @__PURE__ */ jsx7("div", { className: "tr-card", children: /* @__PURE__ */ jsxs7("div", { className: "tr-card-b tr-sub", children: [
-      "\u6545\u4EBA tether v0.1.0 \u2014\u2014 \u4EBA\u8109\u4E0E\u627F\u8BFA\u8D26\u672C\uFF1A\u628A\u300C\u4EBA\u300D\u53D8\u6210\u53EF\u5BF9\u8BDD\u7684\u8D44\u4EA7\u3002",
+      "\u4EBA\u60C5\u8D26\u672C tether v0.1.0 \u2014\u2014 \u4EBA\u8109\u4E0E\u627F\u8BFA\u8D26\u672C\uFF1A\u628A\u300C\u4EBA\u300D\u53D8\u6210\u53EF\u5BF9\u8BDD\u7684\u8D44\u4EA7\u3002",
       /* @__PURE__ */ jsx7("br", {}),
       "\xB7 \u96F6\u540E\u53F0\u670D\u52A1\u3001\u96F6\u7F51\u7EDC\u8BF7\u6C42\uFF1A\u4EBA\u8109\u662F\u6700\u79C1\u4EBA\u7684\u6570\u636E\uFF0C\u4E0D\u51FA\u8BBE\u5907\uFF1B",
       /* @__PURE__ */ jsx7("br", {}),
@@ -1666,7 +1666,7 @@ function TetherPanel(_props) {
     const warn = drift.filter((d) => d.level === "warn").length;
     const openN = board.overdue.length + board.dueSoon.length + board.scheduled.length + board.openNoDue.length;
     const active = Object.values(data.peopleBook.byId).filter((p) => !p.archivedAt).length;
-    return `${active} \u4F4D\u6545\u4EBA \xB7 ${openN} \u6761\u5F85\u95ED\u73AF \xB7 \u9884\u8B66 ${lost ? `${lost} \u7EA2` : ""}${lost && warn ? "+" : ""}${warn ? `${warn} \u9EC4` : ""}${!lost && !warn ? "\u65E0" : ""}`;
+    return `${active} \u4F4D\u4EBA\u60C5\u8D26\u672C \xB7 ${openN} \u6761\u5F85\u95ED\u73AF \xB7 \u9884\u8B66 ${lost ? `${lost} \u7EA2` : ""}${lost && warn ? "+" : ""}${warn ? `${warn} \u9EC4` : ""}${!lost && !warn ? "\u65E0" : ""}`;
   })();
   const tabProps = {
     data,
@@ -1681,12 +1681,12 @@ function TetherPanel(_props) {
     /* @__PURE__ */ jsxs8("div", { className: "tr-top", children: [
       /* @__PURE__ */ jsx8("div", { className: "tr-logo", children: "\u{1F3EE}" }),
       /* @__PURE__ */ jsxs8("div", { className: "tr-tt", children: [
-        /* @__PURE__ */ jsx8("b", { children: "\u6545\u4EBA" }),
+        /* @__PURE__ */ jsx8("b", { children: "\u4EBA\u60C5\u8D26\u672C" }),
         /* @__PURE__ */ jsx8("small", { children: summary })
       ] }),
       /* @__PURE__ */ jsx8("div", { className: "tr-tabs", children: [
         ["today", "\u4ECA\u65E5"],
-        ["people", "\u6545\u4EBA"],
+        ["people", "\u4EBA\u60C5\u8D26\u672C"],
         ["promises", "\u627F\u8BFA"],
         ["journal", "\u5F80\u6765"],
         ["stats", "\u900F\u89C6"],

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * qingnang MCP Server —— 青囊的 AI 工具层（零依赖 stdio）
+ * qingnang MCP Server —— 用药管家的 AI 工具层（零依赖 stdio）
  *
  * 职责：把 AI 的 tools/call 翻译为对 cap.kv（经 Polaris IPC bridge 自发现）
  * 中 qingnang.* 键空间的读写。本进程零外网请求；派生投影（qingnang.doses /
@@ -149,7 +149,7 @@ async function toolToday(args) {
   const date = args.date ? String(args.date) : core.dayKey(Date.now());
   if (core.parseDayKey(date) == null) return err(`日期不合法：${date}（YYYY-MM-DD）`);
   const c = await fullCtx();
-  if (!c.profiles.length) return ok('青囊还没有家庭成员。请用 qingnang_add kind=profile 建档，或引导用户说「给妈妈建个档案」。');
+  if (!c.profiles.length) return ok('用药管家还没有家庭成员。请用 qingnang_add kind=profile 建档，或引导用户说「给妈妈建个档案」。');
   const now = Date.now();
   const plan = core.todayPlan(c, date, now);
   const sections = [];
@@ -183,7 +183,7 @@ async function toolToday(args) {
     if (expired) alerts.push(`🔴 ${expired} 个批次已过期（qingnang_query scope=expiry 看清单）`);
     if (soon) alerts.push(`🟡 ${soon} 个批次效期临近`);
   }
-  return ok(`${date} 药单\n${sections.join('\n')}\n\n${alerts.join('\n')}\n\n（青囊只做药事记录，不提供医疗建议。）`);
+  return ok(`${date} 药单\n${sections.join('\n')}\n\n${alerts.join('\n')}\n\n（用药管家只做药事记录，不提供医疗建议。）`);
 }
 
 async function toolAdd(args) {
@@ -243,7 +243,7 @@ async function toolAdd(args) {
         if (f && f.daysLeft != null) lines.push(`当前库存${fmtStockLine(mr.med, { ...stock, daysLeft: f.daysLeft })}。`);
       }
     }
-    lines.push('（青囊只做药事记录，不提供医疗建议；剂量请遵医嘱。）');
+    lines.push('（用药管家只做药事记录，不提供医疗建议；剂量请遵医嘱。）');
     return ok(lines.join('\n'));
   }
   return err(`kind 不合法：${kind}（profile/med/batch/regimen）`);
@@ -459,7 +459,7 @@ const FREQ_HINT = '五型：{type:"daily"} 每天｜{type:"weekly",weekdays:[0-6
 const tools = [
   {
     name: 'qingnang_today',
-    description: '青囊·今日药单：全家成员今天各自要吃什么药、几点吃、吃了没；当前应服未打卡提醒；库存/效期预警数；近7天依从率。用户问「今天要吃什么药」「现在该吃哪颗」时用。',
+    description: '用药管家·今日药单：全家成员今天各自要吃什么药、几点吃、吃了没；当前应服未打卡提醒；库存/效期预警数；近7天依从率。用户问「今天要吃什么药」「现在该吃哪颗」时用。',
     inputSchema: {
       type: 'object',
       properties: { date: { type: 'string', description: 'YYYY-MM-DD，缺省今天' } },
@@ -467,7 +467,7 @@ const tools = [
   },
   {
     name: 'qingnang_add',
-    description: '青囊·建档：kind=profile 建家庭成员（human/pet）；kind=med 建药品（可带 batchQty/batchExpiry 顺手首批入库）；kind=batch 给已有药补货入库（新买一盒）；kind=regimen 立用药方案（谁+什么药+每次剂量+每天几点+频次，支持 profileName/medName 按名自动建/配）。用户说「我妈每天早晚各一片氨氯地平」→ kind=regimen, profileName=妈妈, medName=氨氯地平, dose=1, times=["08:00","20:00"], freq={"type":"daily"}, unit=片。剂量必须来自用户/医嘱，不得自行推断推荐。',
+    description: '用药管家·建档：kind=profile 建家庭成员（human/pet）；kind=med 建药品（可带 batchQty/batchExpiry 顺手首批入库）；kind=batch 给已有药补货入库（新买一盒）；kind=regimen 立用药方案（谁+什么药+每次剂量+每天几点+频次，支持 profileName/medName 按名自动建/配）。用户说「我妈每天早晚各一片氨氯地平」→ kind=regimen, profileName=妈妈, medName=氨氯地平, dose=1, times=["08:00","20:00"], freq={"type":"daily"}, unit=片。剂量必须来自用户/医嘱，不得自行推断推荐。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -497,7 +497,7 @@ const tools = [
   },
   {
     name: 'qingnang_log',
-    description: '青囊·打卡：记录某次服药「已服(taken)/跳过(skip)/撤销(none)」。从 qingnang_today 的 occKey 直接回填；也可 regId+date+time。支持补记（date 传过去的日子）。打卡会自动按 FEFO 消耗库存并在回复里报剩余。用户说「今晚的药吃了」→ 找到对应 occKey → status=taken。',
+    description: '用药管家·打卡：记录某次服药「已服(taken)/跳过(skip)/撤销(none)」。从 qingnang_today 的 occKey 直接回填；也可 regId+date+time。支持补记（date 传过去的日子）。打卡会自动按 FEFO 消耗库存并在回复里报剩余。用户说「今晚的药吃了」→ 找到对应 occKey → status=taken。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -511,7 +511,7 @@ const tools = [
   },
   {
     name: 'qingnang_query',
-    description: '青囊·查询：scope=stock 药箱库存全表｜refill 补货清单（紧的在前）｜expiry 效期红黄榜（过期/临期批次）｜regimens 用药方案（可按成员）｜profiles 成员档案｜meds 药品目录｜logs 打卡流水（可按日期/成员/药品过滤）｜adherence 依从率（默认近7天）。用户问「布洛芬还有几粒」「哪些药快过期」「该买什么药」时用。',
+    description: '用药管家·查询：scope=stock 药箱库存全表｜refill 补货清单（紧的在前）｜expiry 效期红黄榜（过期/临期批次）｜regimens 用药方案（可按成员）｜profiles 成员档案｜meds 药品目录｜logs 打卡流水（可按日期/成员/药品过滤）｜adherence 依从率（默认近7天）。用户问「布洛芬还有几粒」「哪些药快过期」「该买什么药」时用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -527,7 +527,7 @@ const tools = [
   },
   {
     name: 'qingnang_update',
-    description: '青囊·修改：kind+id+patch 部分更新。方案（改剂量/时刻/频次/停用 active:false/延长 endDate）、批次（盘点后改 qty、改效期）、药品（名称/规格/单位）、成员（备注等）。停药建议用 active:false 而非删除（保留历史与依从统计）。',
+    description: '用药管家·修改：kind+id+patch 部分更新。方案（改剂量/时刻/频次/停用 active:false/延长 endDate）、批次（盘点后改 qty、改效期）、药品（名称/规格/单位）、成员（备注等）。停药建议用 active:false 而非删除（保留历史与依从统计）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -540,7 +540,7 @@ const tools = [
   },
   {
     name: 'qingnang_delete',
-    description: '青囊·删除（需 confirm=true）：profile（有方案时需 purge=true 连带删）、med（有引用时拒删）、batch（过期清理用）、regimen（连带清其打卡记录；仅暂停请用 update active:false）。',
+    description: '用药管家·删除（需 confirm=true）：profile（有方案时需 purge=true 连带删）、med（有引用时拒删）、batch（过期清理用）、regimen（连带清其打卡记录；仅暂停请用 update active:false）。',
     inputSchema: {
       type: 'object',
       properties: {

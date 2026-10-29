@@ -269,9 +269,10 @@ var require_core = __commonJS({
       }
       const startDate = clip(src.startDate != null ? src.startDate : prevLoan && prevLoan.startDate, 10);
       if (parseDayKey(startDate) == null) return { error: `\u5F00\u59CB\u65E5\u671F\u4E0D\u5408\u6CD5\uFF1A${startDate || "\uFF08\u7A7A\uFF09"}\uFF08YYYY-MM-DD\uFF0C\u7B2C\u4E00\u671F\u8FD8\u6B3E\u65E5\uFF09` };
-      const termMonths = Math.round(+(src.termMonths != null ? src.termMonths : prevLoan && prevLoan.termMonths) || 0);
-      if (!Number.isInteger(termMonths) || termMonths < 1 || termMonths > MAX_TERM_MONTHS) {
-        return { error: `\u671F\u6570\u4E0D\u5408\u6CD5\uFF081 ~ ${MAX_TERM_MONTHS} \u4E2A\u6708\uFF09` };
+      const tmRaw = +(src.termMonths != null ? src.termMonths : prevLoan && prevLoan.termMonths);
+      const termMonths = Math.round(tmRaw || 0);
+      if (!Number.isFinite(tmRaw) || Math.round(tmRaw) !== tmRaw || termMonths < 1 || termMonths > MAX_TERM_MONTHS) {
+        return { error: `\u671F\u6570\u987B\u4E3A\u6574\u6570\u6708\uFF081 ~ ${MAX_TERM_MONTHS}\uFF09` };
       }
       let repricing = null;
       const rpSrc = src.repricing !== void 0 ? src.repricing : prevLoan && prevLoan.repricing;
@@ -418,7 +419,7 @@ var require_core = __commonJS({
             rederive(k);
           } else {
             const effBal = bal;
-            if (ev.amount < effBal - EPS_BAL) {
+            if (ev.amount < round2(effBal - 0.01)) {
               bal = round2(effBal - ev.amount);
               plan = ev.mode;
               if (loan.method === "annuity") {
@@ -497,9 +498,8 @@ var require_core = __commonJS({
       const eff = sim.periods.find((p) => p.date >= date);
       if (!eff) return { error: "\u627E\u4E0D\u5230\u751F\u6548\u8FD8\u6B3E\u671F" };
       if (!(amount >= PREPAY_MIN)) return { error: `\u91D1\u989D\u81F3\u5C11 ${PREPAY_MIN} \u5143` };
-      const avail = round2(eff.opening - EPS_BAL);
-      if (amount > avail) {
-        return { error: `\u91D1\u989D\u8D85\u8FC7\u8BE5\u671F\u671F\u521D\u4F59\u989D\uFF08\u751F\u6548\u671F ${eff.date}\uFF0C\u4F59\u989D ${fmtMoney4(avail)}\uFF09\u3002\u5168\u989D\u7ED3\u6E05\u8BF7\u5728\u8D37\u6B3E\u8BE6\u60C5\u91CC\u505C\u7528\u5E76\u5907\u6CE8\u3002` };
+      if (amount >= round2(eff.opening - 5e-3)) {
+        return { error: `\u91D1\u989D\u8FBE\u5230\u8BE5\u671F\u4F59\u989D\uFF08\u751F\u6548\u671F ${eff.date}\uFF0C\u4F59\u989D ${fmtMoney4(eff.opening)}\uFF09\u3002\u5168\u989D\u7ED3\u6E05\u8BF7\u5728\u8D37\u6B3E\u8BE6\u60C5\u91CC\u505C\u7528\u5E76\u5907\u6CE8\uFF0C\u63D0\u524D\u8FD8\u6B3E\u8BF7\u5C11\u8FD8\u4E00\u70B9\u3002` };
       }
       return { ok: true, effectiveDate: eff.date, balanceAtEff: eff.opening };
     }
@@ -639,7 +639,7 @@ var require_core = __commonJS({
         remainingInterest: r2(live.reduce((s, x) => s + x.remainingInterest, 0)),
         paidThisYearInterest: r2(states.reduce((s, x) => s + x.paidThisYearInterest, 0)),
         loanCount: live.length,
-        settledCount: states.length - live.length
+        settledCount: states.filter((s) => s && s.settled).length
       };
     }
     module.exports = {
@@ -831,7 +831,7 @@ async function importAll(json) {
   }
   const p = parsed;
   if (!p || p.kind !== "quanfu-export" || !Array.isArray(p.loans) || !Array.isArray(p.events)) {
-    throw new Error("\u4E0D\u662F\u6CC9\u5E9C\u5BFC\u51FA\u6587\u4EF6\uFF08\u7F3A kind: quanfu-export\uFF09");
+    throw new Error("\u4E0D\u662F\u8D37\u6B3E\u53F0\u8D26\u5BFC\u51FA\u6587\u4EF6\uFF08\u7F3A kind: quanfu-export\uFF09");
   }
   let nLoan = 0;
   let nEv = 0;
@@ -940,7 +940,7 @@ function OverviewTab({ data, states, onSendToChat }) {
           "button",
           {
             className: "qf-btn ghost sm",
-            onClick: () => onSendToChat(`\u5E2E\u6211\u770B\u770B\u8D37\u6B3E\u53F0\u8D26\uFF1A\u73B0\u5728\u5BB6\u5EAD\u6708\u4F9B\u3001\u5269\u4F59\u672C\u91D1\u548C\u5269\u4F59\u5229\u606F\u662F\u4EC0\u4E48\u60C5\u51B5\uFF1F\uFF08\u6CC9\u5E9C\uFF09`),
+            onClick: () => onSendToChat(`\u5E2E\u6211\u770B\u770B\u8D37\u6B3E\u53F0\u8D26\uFF1A\u73B0\u5728\u5BB6\u5EAD\u6708\u4F9B\u3001\u5269\u4F59\u672C\u91D1\u548C\u5269\u4F59\u5229\u606F\u662F\u4EC0\u4E48\u60C5\u51B5\uFF1F\uFF08\u8D37\u6B3E\u53F0\u8D26\uFF09`),
             children: "\u95EE AI"
           }
         )
@@ -1145,7 +1145,7 @@ function WhatifTab({ data, states, showToast }) {
         col("\u51CF\u6708\u4F9B\uFF08\u671F\u9650\u4E0D\u53D8\uFF09", result.w.payment, result.w.saved.payment, result.w.saved.payment > result.w.saved.term)
       ] }),
       /* @__PURE__ */ jsxs3("div", { className: "qf-sub", style: { marginTop: 8 }, children: [
-        "\u4E8B\u5B9E\u5BF9\u6BD4\uFF1A\u540C\u6837\u4E00\u7B14\u94B1\uFF0C\u7F29\u671F\u901A\u5E38\u7701\u606F\u66F4\u591A\u3001\u51CF\u6708\u4F9B\u73B0\u91D1\u6D41\u66F4\u677E\u2014\u2014\u9009\u54EA\u4E2A\u53D6\u51B3\u4E8E\u4F60\u7684\u73B0\u91D1\u6D41\u4E0E\u5408\u540C\u6761\u6B3E\uFF0C\u6CC9\u5E9C\u4E0D\u4EE3\u4F5C\u51B3\u5B9A\u3002 \u6EE1\u610F\u7684\u8BDD\u5728\u804A\u5929\u91CC\u8BF4\u300C\u63D0\u524D\u8FD8 ",
+        "\u4E8B\u5B9E\u5BF9\u6BD4\uFF1A\u540C\u6837\u4E00\u7B14\u94B1\uFF0C\u7F29\u671F\u901A\u5E38\u7701\u606F\u66F4\u591A\u3001\u51CF\u6708\u4F9B\u73B0\u91D1\u6D41\u66F4\u677E\u2014\u2014\u9009\u54EA\u4E2A\u53D6\u51B3\u4E8E\u4F60\u7684\u73B0\u91D1\u6D41\u4E0E\u5408\u540C\u6761\u6B3E\uFF0C\u8D37\u6B3E\u53F0\u8D26\u4E0D\u4EE3\u4F5C\u51B3\u5B9A\u3002 \u6EE1\u610F\u7684\u8BDD\u5728\u804A\u5929\u91CC\u8BF4\u300C\u63D0\u524D\u8FD8 ",
         unit === "wan" ? `${amount} \u4E07` : `${amount} \u5143`,
         "\u9009",
         result.w.saved.term >= result.w.saved.payment ? "\u7F29\u671F" : "\u51CF\u6708\u4F9B",
@@ -1506,7 +1506,7 @@ function SettingsTab({ data, reload, showToast, onSendToChat }) {
     }
   };
   const clearAll = async () => {
-    if (!window.confirm("\u6E05\u7A7A\u6CC9\u5E9C\u5168\u90E8\u6570\u636E\uFF08\u8D37\u6B3E/\u4E8B\u4EF6/\u8BBE\u7F6E\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002\u5EFA\u8BAE\u5148\u5BFC\u51FA\u5907\u4EFD\u3002")) return;
+    if (!window.confirm("\u6E05\u7A7A\u8D37\u6B3E\u53F0\u8D26\u5168\u90E8\u6570\u636E\uFF08\u8D37\u6B3E/\u4E8B\u4EF6/\u8BBE\u7F6E\uFF09\uFF1F\u4E0D\u53EF\u6062\u590D\u3002\u5EFA\u8BAE\u5148\u5BFC\u51FA\u5907\u4EFD\u3002")) return;
     setBusy(true);
     try {
       const { kvKeys: kvKeys2, kvDel: kvDel2 } = await Promise.resolve().then(() => (init_host(), host_exports));
@@ -1579,16 +1579,16 @@ function SettingsTab({ data, reload, showToast, onSendToChat }) {
       ] })
     ] }) }),
     /* @__PURE__ */ jsx5("div", { className: "qf-card", children: /* @__PURE__ */ jsxs5("div", { className: "qf-card-b qf-sub", children: [
-      /* @__PURE__ */ jsx5("b", { style: { color: "#E6EAF2" }, children: "\u5173\u4E8E\u6CC9\u5E9C" }),
+      /* @__PURE__ */ jsx5("b", { style: { color: "#E6EAF2" }, children: "\u5173\u4E8E\u8D37\u6B3E\u53F0\u8D26" }),
       /* @__PURE__ */ jsx5("br", {}),
-      "\u300A\u5468\u793C\xB7\u5730\u5B98\u300B\u6CC9\u5E9C\u638C\u5E02\u4E4B\u5F81\u5E03\u4E0E\u8D4A\u8D37\u2014\u2014\u6CC9\u8005\u94B1\u4E5F\uFF0C\u53E4\u4E4B\u5B98\u529E\u501F\u8D37\u673A\u6784\uFF1B\u4ECA\u4E4B\u5BB6\u5EAD\u8D1F\u503A\u53F0\u8D26\u3002",
+      "\u300A\u5468\u793C\xB7\u5730\u5B98\u300B\u8D37\u6B3E\u53F0\u8D26\u638C\u5E02\u4E4B\u5F81\u5E03\u4E0E\u8D4A\u8D37\u2014\u2014\u6CC9\u8005\u94B1\u4E5F\uFF0C\u53E4\u4E4B\u5B98\u529E\u501F\u8D37\u673A\u6784\uFF1B\u4ECA\u4E4B\u5BB6\u5EAD\u8D1F\u503A\u53F0\u8D26\u3002",
       /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u6570\u636E\uFF1Acap.kv \u7EAF\u672C\u5730\u5B58\u50A8\uFF0C\u65E0\u670D\u52A1\u8FDB\u7A0B\u3001\u96F6\u5916\u7F51\u8BF7\u6C42\u3001\u96F6\u8D26\u53F7\u3002",
       /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u5F15\u64CE\uFF1A\u7B49\u989D\u672C\u606F/\u7B49\u989D\u672C\u91D1/\u5148\u606F\u540E\u672C\u6807\u51C6\u516C\u5F0F\uFF0C\u4E8B\u4EF6\u5206\u6BB5\u91CD\u653E\uFF08\u5229\u7387\u53D8\u66F4\u3001\u63D0\u524D\u8FD8\u6B3E\u3001\u5BF9\u8D26\u70B9\uFF09\uFF0C\u9010\u671F\u5206\u7EA7\u820D\u5165\u3002",
       /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u8FB9\u754C\uFF1A\u4E0D\u6784\u6210\u91D1\u878D\u5EFA\u8BAE\uFF1B\u4E0D\u7B97\u8FDD\u7EA6\u91D1\uFF08\u5404\u884C\u5408\u540C\u4E0D\u540C\uFF09\uFF1B\u4E0D\u6293\u53D6 LPR\uFF08\u5229\u7387\u4E00\u5F8B\u4EE5\u4F60\u7684\u5408\u540C\u4E3A\u51C6\u624B\u5DE5\u8BB0\u5F55\uFF09\u3002",
-      onSendToChat && /* @__PURE__ */ jsx5("div", { style: { marginTop: 8 }, children: /* @__PURE__ */ jsx5("button", { className: "qf-btn ghost sm", onClick: () => onSendToChat("\u6211\u60F3\u804A\u804A\u6211\u7684\u623F\u8D37\u8FD8\u6B3E\u8BA1\u5212\uFF08\u6CC9\u5E9C\u5DF2\u6709\u6211\u7684\u8D37\u6B3E\u53F0\u8D26\uFF09\u3002"), children: "\u548C AI \u804A\u804A\u8FD8\u6B3E\u8BA1\u5212" }) })
+      onSendToChat && /* @__PURE__ */ jsx5("div", { style: { marginTop: 8 }, children: /* @__PURE__ */ jsx5("button", { className: "qf-btn ghost sm", onClick: () => onSendToChat("\u6211\u60F3\u804A\u804A\u6211\u7684\u623F\u8D37\u8FD8\u6B3E\u8BA1\u5212\uFF08\u8D37\u6B3E\u53F0\u8D26\u5DF2\u6709\u6211\u7684\u8D37\u6B3E\u53F0\u8D26\uFF09\u3002"), children: "\u548C AI \u804A\u804A\u8FD8\u6B3E\u8BA1\u5212" }) })
     ] }) })
   ] });
 }
@@ -1727,7 +1727,7 @@ function QuanfuPanel({ pluginId, onSendToChat }) {
     /* @__PURE__ */ jsxs6("div", { className: "qf-top", children: [
       /* @__PURE__ */ jsx6("div", { className: "qf-logo", children: "\u{1F3DB}\uFE0F" }),
       /* @__PURE__ */ jsxs6("div", { className: "qf-tt", children: [
-        /* @__PURE__ */ jsx6("b", { children: "\u6CC9\u5E9C" }),
+        /* @__PURE__ */ jsx6("b", { children: "\u8D37\u6B3E\u53F0\u8D26" }),
         /* @__PURE__ */ jsxs6("small", { children: [
           "\u8D37\u6B3E\u53F0\u8D26 \xB7 ",
           states.filter((s) => s.active && !s.settled).length,
@@ -1755,7 +1755,7 @@ function QuanfuPanel({ pluginId, onSendToChat }) {
       tab === "loans" && /* @__PURE__ */ jsx6(LoansTab, { ...tabProps, states }),
       tab === "settings" && /* @__PURE__ */ jsx6(SettingsTab, { ...tabProps }),
       /* @__PURE__ */ jsxs6("div", { className: "qf-foot", children: [
-        "\u6CC9\u5E9C\u53EA\u505A\u8D37\u6B3E\u8BB0\u5F55\u4E0E\u6D4B\u7B97\uFF1A\u6807\u51C6\u7B49\u989D\u672C\u606F/\u7B49\u989D\u672C\u91D1/\u5148\u606F\u540E\u672C\u516C\u5F0F\u3001\u9010\u671F\u5206\u7EA7\u820D\u5165\uFF0C",
+        "\u8D37\u6B3E\u53F0\u8D26\u53EA\u505A\u8D37\u6B3E\u8BB0\u5F55\u4E0E\u6D4B\u7B97\uFF1A\u6807\u51C6\u7B49\u989D\u672C\u606F/\u7B49\u989D\u672C\u91D1/\u5148\u606F\u540E\u672C\u516C\u5F0F\u3001\u9010\u671F\u5206\u7EA7\u820D\u5165\uFF0C",
         /* @__PURE__ */ jsx6("br", {}),
         "\u4E0E\u94F6\u884C\u5B9E\u9645\u8BA1\u606F\u53EF\u80FD\u6709\u5206\u7EA7\u51FA\u5165\uFF1B\u4E0D\u6784\u6210\u91D1\u878D\u5EFA\u8BAE\u3002\u6570\u636E\u4EC5\u5B58\u672C\u673A\uFF08cap.kv\uFF09\u3002"
       ] })

@@ -2,7 +2,7 @@
   "name": "lingxi-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "lingxi 插件面板（打包用）：灵犀灵感孵化池",
+  "description": "lingxi 插件面板（打包用）：灵感池灵感孵化池",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * data-ark MCP Server —— 数据方舟的 AI 工具层（零依赖，node >= 18）
+ * data-ark MCP Server —— 数据备份的 AI 工具层（零依赖，node >= 18）
  *
  * 职责：把 AI 的备份/恢复意图翻译为 cap.kv 的 dataark.* 读写（命令键 → 服务消费
  * → 结果键轮询）。策略计算走 shared/ark-core.js（与面板/服务同一权威）。
@@ -153,7 +153,7 @@ async function kvKeys() {
   return (res.result && Array.isArray(res.result.keys)) ? res.result.keys : [];
 }
 
-// ── 数据方舟数据访问 ───────────────────────────────────────────────────────
+// ── 数据备份数据访问 ───────────────────────────────────────────────────────
 async function loadSettings() {
   const s = await kvGet(core.K.settings).catch(() => null);
   const r = core.normalizeSettings(s);
@@ -209,13 +209,13 @@ const fmtTime = (ts) => (Number.isFinite(Number(ts)) && ts > 0
 const tools = [
   {
     name: 'ark_status',
-    description: '数据方舟·状态总览。数据根保护范围、上次/下次备份、备份库占用、降级原因、最近事件。适合「备份状态怎么样」「上次备份是什么时候」。',
+    description: '数据备份·状态总览。数据根保护范围、上次/下次备份、备份库占用、降级原因、最近事件。适合「备份状态怎么样」「上次备份是什么时候」。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const [settings, state, snaps, events] = await Promise.all([loadSettings(), loadState(), loadSnapshots(3), loadEvents(6)]);
       if (!snaps.length && !state.lastSnapshotAt) {
         return ok([
-          `数据方舟已就绪，还没有任何快照。`,
+          `数据备份已就绪，还没有任何快照。`,
           `保护对象（数据根）：${state.resolvedTarget ? '已定位' : '待服务首次心跳'}；调度：${describeSchedule(settings.schedule)}`,
           `备份库：${state.resolvedTarget || '（服务启动后自动解析为 <数据根>/../polaris-ark）'}`,
           '说「备份一下」我立即触发首次快照。',
@@ -237,7 +237,7 @@ const tools = [
   },
   {
     name: 'ark_backup_now',
-    description: '数据方舟·立即触发一次备份快照（异步：命令下发即返回，几秒到几分钟后完成；随后用 ark_status 查询结果）。全库内容寻址去重，第二份起只存变化。',
+    description: '数据备份·立即触发一次备份快照（异步：命令下发即返回，几秒到几分钟后完成；随后用 ark_status 查询结果）。全库内容寻址去重，第二份起只存变化。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const state = await loadState();
@@ -250,7 +250,7 @@ const tools = [
   },
   {
     name: 'ark_list_snapshots',
-    description: '数据方舟·快照清单。每份快照的时间、全量/增量、文件数/变更数、逻辑大小、耗时。',
+    description: '数据备份·快照清单。每份快照的时间、全量/增量、文件数/变更数、逻辑大小、耗时。',
     inputSchema: {
       type: 'object',
       properties: { limit: { type: 'integer', description: '最多返回条数（默认 10，上限 50）' } },
@@ -264,7 +264,7 @@ const tools = [
   },
   {
     name: 'ark_list_files',
-    description: '数据方舟·浏览快照里的文件清单（恢复前检索用）。按子串过滤，返回相对路径与大小。',
+    description: '数据备份·浏览快照里的文件清单（恢复前检索用）。按子串过滤，返回相对路径与大小。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -287,7 +287,7 @@ const tools = [
   },
   {
     name: 'ark_verify',
-    description: '数据方舟·完整性校验。quick=对象存在性检查（秒级）；deep=逐对象解压重算 sha256（慢，全量核对）。结果稍后可用 ark_status 的事件查看。',
+    description: '数据备份·完整性校验。quick=对象存在性检查（秒级）；deep=逐对象解压重算 sha256（慢，全量核对）。结果稍后可用 ark_status 的事件查看。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -302,7 +302,7 @@ const tools = [
   },
   {
     name: 'ark_restore',
-    description: '数据方舟·恢复文件。把快照中的文件解压到备份库的 restored/暂存目录（保持相对结构，绝不直写数据根）。paths 缺省=整份快照全部文件。返回暂存目录路径——替换进数据根前必须先关闭 Polaris，由用户手动完成（这是防止覆盖活跃数据的安全设计）。',
+    description: '数据备份·恢复文件。把快照中的文件解压到备份库的 restored/暂存目录（保持相对结构，绝不直写数据根）。paths 缺省=整份快照全部文件。返回暂存目录路径——替换进数据根前必须先关闭 Polaris，由用户手动完成（这是防止覆盖活跃数据的安全设计）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -326,7 +326,7 @@ const tools = [
   },
   {
     name: 'ark_settings',
-    description: '数据方舟·查看/修改设置：排期（off/interval/daily）、保留策略（日/周/月）、一级排除、额外排除 glob、库上限。用户说「改成每天凌晨3点备份」「以后只留5份周备」时用。',
+    description: '数据备份·查看/修改设置：排期（off/interval/daily）、保留策略（日/周/月）、一级排除、额外排除 glob、库上限。用户说「改成每天凌晨3点备份」「以后只留5份周备」时用。',
     inputSchema: {
       type: 'object',
       properties: {

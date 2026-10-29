@@ -315,7 +315,7 @@ export async function importAllJSON(text: string): Promise<{ invoices: number, t
   } catch (_) {
     throw new Error('不是合法 JSON')
   }
-  if (!payload || payload.kind !== 'piaoxia-export') throw new Error('不是票匣导出的备份文件（缺 kind 标识）')
+  if (!payload || payload.kind !== 'piaoxia-export') throw new Error('不是发票保险库导出的备份文件（缺 kind 标识）')
   let nInv = 0
   let nTitle = 0
   const warns: string[] = []

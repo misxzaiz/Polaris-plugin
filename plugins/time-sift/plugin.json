@@ -1,8 +1,8 @@
 {
   "id": "time-sift",
-  "name": "拾光机",
+  "name": "会话记忆",
   "version": "0.1.0",
-  "description": "拾光机：把 Polaris 已拥有却从未被开采的资产——历史 AI 会话——变成可检索、可回忆、可视化的个人记忆库。后台服务只读本地四路数据源（Polaris dialogs JSONL、session-v2 消息库、~/.claude 原生会话、~/.zcode 会话库，只索引对话散文不索引工具 I/O），建 CJK 双元倒排索引与足迹统计；面板全文检索（命中片段+阅读器）、GitHub 风格热力图、按天时光列表；AI 经 sift_* 工具直接「回忆」——「我之前怎么解决的」当场翻历史。数据不出设备、零外网请求、零跨域面；跨端经 cap.kv 单事实库，手机上同样可搜可看。装上即有全部历史价值，零冷启动。",
+  "description": "会话记忆：把 Polaris 已拥有却从未被开采的资产——历史 AI 会话——变成可检索、可回忆、可视化的个人记忆库。后台服务只读本地四路数据源（Polaris dialogs JSONL、session-v2 消息库、~/.claude 原生会话、~/.zcode 会话库，只索引对话散文不索引工具 I/O），建 CJK 双元倒排索引与足迹统计；面板全文检索（命中片段+阅读器）、GitHub 风格热力图、按天时光列表；AI 经 sift_* 工具直接「回忆」——「我之前怎么解决的」当场翻历史。数据不出设备、零外网请求、零跨域面；跨端经 cap.kv 单事实库，手机上同样可搜可看。装上即有全部历史价值，零冷启动。",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -12,7 +12,7 @@
         "panelType": "timeSift",
         "icon": "Clock",
         "labelKey": "plugins.timeSift",
-        "labelDefault": "拾光机",
+        "labelDefault": "会话记忆",
         "order": 78
       }
     ],
@@ -25,7 +25,11 @@
         "id": "sift-service",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/service/sift.js", "{{port}}", "{{appConfigDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/service/sift.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
         "autoStart": true,
@@ -39,7 +43,10 @@
         "id": "time-sift",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * guanzhi MCP Server —— 观止（书影音消费账本）的 AI 工具层（无状态透传，零依赖）
+ * guanzhi MCP Server —— 书影音账本（书影音消费账本）的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的「记录/查询/推荐」意图翻译为 cap.kv 的 guanzhi.* 读写；
  * 全部计算逻辑走 shared/guanzhi-core.js（与面板同一权威，口径不漂移）。
@@ -14,7 +14,7 @@
  *   guanzhi_recommend 今晚看/读/玩什么（从想看清单与进行中给确定性推荐）
  *   guanzhi_update    改字段（部分补丁；评分传 null 清除）
  *   guanzhi_delete    彻底删除（需 confirm=true）
- *   guanzhi_import    批量导入（AI 批量入账 / 观止 JSON dump，≤500 条）
+ *   guanzhi_import    批量导入（AI 批量入账 / 书影音账本 JSON dump，≤500 条）
  *
  * 连接方式与 changqi / pocket-ledger 相同：
  *   env POLARIS_HOST/PORT/TOKEN → anchor.json → config.json → 端口扫描
@@ -195,7 +195,7 @@ function stripUndefined(obj) {
 const tools = [
   {
     name: 'guanzhi_log',
-    description: '观止·记一笔书影音。用户提到看/读完或想看某部作品时调用（"昨晚看完《流浪地球2》打9分"→ title=流浪地球2 kind=movie status=done rating=9；"想看《沙丘3》"→ status=wish；"开始读《三体》"→ status=active）。kind 必填（book/movie/tv/anime/music/game/podcast/other）；status 缺省 done；评分 0-10。同体裁同名记录已存在则自动更新状态/评分（如从想看改为看完）。AI 可凭常识补全 year/creator（作品年份、作者/导演/开发组）与 genre，用户没说的不要编造评分和短评。返回会带账本上下文（今年第几部）。',
+    description: '书影音账本·记一笔书影音。用户提到看/读完或想看某部作品时调用（"昨晚看完《流浪地球2》打9分"→ title=流浪地球2 kind=movie status=done rating=9；"想看《沙丘3》"→ status=wish；"开始读《三体》"→ status=active）。kind 必填（book/movie/tv/anime/music/game/podcast/other）；status 缺省 done；评分 0-10。同体裁同名记录已存在则自动更新状态/评分（如从想看改为看完）。AI 可凭常识补全 year/creator（作品年份、作者/导演/开发组）与 genre，用户没说的不要编造评分和短评。返回会带账本上下文（今年第几部）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -264,7 +264,7 @@ const tools = [
   },
   {
     name: 'guanzhi_search',
-    description: '观止·查记录。按关键词（标题/作者/类型/短评模糊）与体裁/状态/心头好过滤，按最近更新排序。适合"我看过什么科幻""上次给《X》打几分""我的想看清单""心头好有哪些"。',
+    description: '书影音账本·查记录。按关键词（标题/作者/类型/短评模糊）与体裁/状态/心头好过滤，按最近更新排序。适合"我看过什么科幻""上次给《X》打几分""我的想看清单""心头好有哪些"。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -285,7 +285,7 @@ const tools = [
   },
   {
     name: 'guanzhi_stats',
-    description: '观止·问账。台账透视（总数/想看/进行中/今年本月完成/评分均值/体裁分布/评分档）+ 指定年份的年度报告（完成数/分体裁/十佳/心头好/月度分布）。适合"我今年看了多少电影""我的平均分""2025 年度报告""什么类型我看得最多"。',
+    description: '书影音账本·问账。台账透视（总数/想看/进行中/今年本月完成/评分均值/体裁分布/评分档）+ 指定年份的年度报告（完成数/分体裁/十佳/心头好/月度分布）。适合"我今年看了多少电影""我的平均分""2025 年度报告""什么类型我看得最多"。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -326,7 +326,7 @@ const tools = [
   },
   {
     name: 'guanzhi_recommend',
-    description: '观止·今晚看/读/玩什么。从想看清单（躺得越久越优先+逐日轮换）与进行中项（先收尾）给确定性推荐，附用户口味画像（分体裁均分/高频类型）。适合"今晚看什么""推荐一部电影""接下来读什么"。kind 传体裁可定向推荐。',
+    description: '书影音账本·今晚看/读/玩什么。从想看清单（躺得越久越优先+逐日轮换）与进行中项（先收尾）给确定性推荐，附用户口味画像（分体裁均分/高频类型）。适合"今晚看什么""推荐一部电影""接下来读什么"。kind 传体裁可定向推荐。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -365,7 +365,7 @@ const tools = [
   },
   {
     name: 'guanzhi_update',
-    description: '观止·修改记录字段（部分补丁）。可改 title/kind/status/rating/startDate/finishDate/year/creator/genre/note/link/favorite；rating 传 null 清除评分；status 改为 wish 会清掉日期、改为 done 缺完成日会记今天。先 guanzhi_search 拿 id 再调用。',
+    description: '书影音账本·修改记录字段（部分补丁）。可改 title/kind/status/rating/startDate/finishDate/year/creator/genre/note/link/favorite；rating 传 null 清除评分；status 改为 wish 会清掉日期、改为 done 缺完成日会记今天。先 guanzhi_search 拿 id 再调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -409,7 +409,7 @@ const tools = [
   },
   {
     name: 'guanzhi_delete',
-    description: '观止·彻底删除记录（不可恢复）。必须 confirm=true 才执行；一般改错状态/评分请用 guanzhi_update。',
+    description: '书影音账本·彻底删除记录（不可恢复）。必须 confirm=true 才执行；一般改错状态/评分请用 guanzhi_update。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -428,7 +428,7 @@ const tools = [
   },
   {
     name: 'guanzhi_import',
-    description: '观止·批量导入。AI 把一批作品（如用户贴来的豆瓣导出、自己整理的清单）整理成 works 数组后一次写入；也接受观止设置页导出的 JSON dump。同体裁同名同年份判重跳过，逐条校验并回报拒绝原因。单次 ≤500 条。',
+    description: '书影音账本·批量导入。AI 把一批作品（如用户贴来的豆瓣导出、自己整理的清单）整理成 works 数组后一次写入；也接受书影音账本设置页导出的 JSON dump。同体裁同名同年份判重跳过，逐条校验并回报拒绝原因。单次 ≤500 条。',
     inputSchema: {
       type: 'object',
       properties: {

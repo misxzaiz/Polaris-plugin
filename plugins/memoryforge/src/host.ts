@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（记忆熔炉面板专用，与 page-sentinel / pocket-ledger 同一模式）
+ * 宿主 API 访问层（记忆卡片面板专用，与 page-sentinel / pocket-ledger 同一模式）
  *
  * 数据读写统一走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__，
  * 主应用 main.tsx 挂载，即 @/services/transport 的统一 invoke）：
@@ -8,7 +8,7 @@
  *     与主应用聊天等功能同通道（Source::Remote）
  *
  * 面板自身绝不直接 fetch 外网——外网抓取（memoryforge_extract_url）由
- * MCP 进程原生执行，这是「记忆熔炉」规避浏览器跨域/同源限制的核心设计。
+ * MCP 进程原生执行，这是「记忆卡片」规避浏览器跨域/同源限制的核心设计。
  */
 export type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>
 

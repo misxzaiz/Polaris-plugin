@@ -1027,7 +1027,7 @@ function PondTab({ ideas, reload, showToast, onOpenIdea, onSendToChat }) {
             {
               className: "lx-btn ghost sm",
               onClick: () => onSendToChat(
-                `\u7075\u7280\uFF0C\u6211\u521A\u5165\u6C60\u4E86\u300C${capResult.title}\u300D\uFF0C\u6C60\u91CC\u8BF4\u6709\u51E0\u4E2A\u76F8\u5173\u65E7\u60F3\u6CD5\uFF0C\u5E2E\u6211\u4E00\u8D77\u76D8\u4E00\u76D8\uFF1A\u5B83\u4EEC\u662F\u91CD\u590D\u3001\u53EF\u5408\u5E76\uFF0C\u8FD8\u662F\u8BE5\u4E92\u76F8\u94FE\u63A5\uFF1F`
+                `\u7075\u611F\u6C60\uFF0C\u6211\u521A\u5165\u6C60\u4E86\u300C${capResult.title}\u300D\uFF0C\u6C60\u91CC\u8BF4\u6709\u51E0\u4E2A\u76F8\u5173\u65E7\u60F3\u6CD5\uFF0C\u5E2E\u6211\u4E00\u8D77\u76D8\u4E00\u76D8\uFF1A\u5B83\u4EEC\u662F\u91CD\u590D\u3001\u53EF\u5408\u5E76\uFF0C\u8FD8\u662F\u8BE5\u4E92\u76F8\u94FE\u63A5\uFF1F`
               ),
               children: "\u53BB\u5BF9\u8BDD\u91CC\u76D8\u4E00\u76D8"
             }
@@ -1376,7 +1376,7 @@ function DetailDrawer({ id, reload, showToast, onClose, onSendToChat }) {
           "button",
           {
             className: "lx-btn ghost sm",
-            onClick: () => onSendToChat(`\u7075\u7280\uFF0C\u5E2E\u6211\u6DF1\u5316\u8FD9\u4E2A\u60F3\u6CD5\uFF1A${fmtIdeaLine2(idea, Date.now())}\u3002\u5148\u7ED9\u6211\u4E09\u4E2A\u8FFD\u95EE\uFF0C\u518D\u4E00\u8D77\u628A\u8F6E\u5ED3\u804A\u51FA\u6765\u3002`),
+            onClick: () => onSendToChat(`\u7075\u611F\u6C60\uFF0C\u5E2E\u6211\u6DF1\u5316\u8FD9\u4E2A\u60F3\u6CD5\uFF1A${fmtIdeaLine2(idea, Date.now())}\u3002\u5148\u7ED9\u6211\u4E09\u4E2A\u8FFD\u95EE\uFF0C\u518D\u4E00\u8D77\u628A\u8F6E\u5ED3\u804A\u51FA\u6765\u3002`),
             children: "\u8BA9 AI \u6DF1\u5316"
           }
         )
@@ -1542,7 +1542,7 @@ function LingxiPanel(props) {
   const subtitle = ideas === null ? "\u8F7D\u5165\u4E2D\u2026" : `\u5728\u6C60 ${activeCount} \xB7 \u4ECA\u65E5\u56DE\u8BBF ${dueCount}${dueCount > 0 ? " \xB7 \u70B9\u6B64\u7FFB\u724C" : ""}`;
   const sendToChat = useCallback((msg) => {
     if (onSendToChat) return onSendToChat(msg);
-    showToast("\u8BE5\u5165\u53E3\u4E0D\u652F\u6301\u5524\u8D77\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u5BF9\u8BDD\u91CC\u76F4\u63A5 @\u7075\u7280", "bad");
+    showToast("\u8BE5\u5165\u53E3\u4E0D\u652F\u6301\u5524\u8D77\u5BF9\u8BDD\uFF0C\u8BF7\u5728\u5BF9\u8BDD\u91CC\u76F4\u63A5 @\u7075\u611F\u6C60", "bad");
     return void 0;
   }, [onSendToChat, showToast]);
   const openIdea = useCallback((id) => setOpenId(id), []);
@@ -1551,7 +1551,7 @@ function LingxiPanel(props) {
     /* @__PURE__ */ jsxs6("div", { className: "lx-top", children: [
       /* @__PURE__ */ jsx6("div", { className: "lx-logo", children: "\u{1F30C}" }),
       /* @__PURE__ */ jsxs6("div", { className: "lx-tt", children: [
-        /* @__PURE__ */ jsx6("b", { children: "\u7075\u7280" }),
+        /* @__PURE__ */ jsx6("b", { children: "\u7075\u611F\u6C60" }),
         /* @__PURE__ */ jsx6("small", { className: subtitleCls, onClick: () => setTab("revisit"), children: subtitle })
       ] }),
       /* @__PURE__ */ jsx6("div", { className: "lx-tabs", children: [

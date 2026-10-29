@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * wenjin MCP Server —— 问津（求职投递与面试作战台账）的 AI 工具层
+ * wenjin MCP Server —— 求职台账（求职投递与面试作战台账）的 AI 工具层
  *
  * 职责：把 AI 的求职记录意图翻译为 cap.kv 的 wenjin.* 读写；
  * 全部计算逻辑走 shared/core.js（与面板同一权威，口径不漂移）。
@@ -238,7 +238,7 @@ function statusNote(before, after) {
 const tools = [
   {
     name: 'wenjin_today',
-    description: '问津·今日作战板。返回：状态分布、跟进到期（N 天无进展的投递，该催了）、近期面试/笔试日程与到点提醒、渠道一句话洞察、offer 概况。适合「今天求职上有什么要注意的」「有什么该跟进的」。',
+    description: '求职台账·今日作战板。返回：状态分布、跟进到期（N 天无进展的投递，该催了）、近期面试/笔试日程与到点提醒、渠道一句话洞察、offer 概况。适合「今天求职上有什么要注意的」「有什么该跟进的」。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const d = await loadAll();
@@ -287,13 +287,13 @@ const tools = [
         lines.push(`💰 offer 档案 ${offers.length} 份，当前最优年化 ${offers[0].annual} 元（${offers[0].companyName}）`);
       }
       lines.push('');
-      lines.push('（问津只做求职记录与提醒，洞察不构成职业建议）');
+      lines.push('（求职台账只做求职记录与提醒，洞察不构成职业建议）');
       return ok(lines.join('\n'));
     },
   },
   {
     name: 'wenjin_add_app',
-    description: '问津·建档投递。从对话提取后调用（"投了字节的前端岗"→ company=字节跳动 title=前端工程师 channel=boss；给了 JD 全文就存 jd）。同公司同职位重复建档会报错并提示改用 log_event/update。status=wish 表「想投还没投」；给了 appliedAt 或 status 非 wish 会自动补一条投递事件。',
+    description: '求职台账·建档投递。从对话提取后调用（"投了字节的前端岗"→ company=字节跳动 title=前端工程师 channel=boss；给了 JD 全文就存 jd）。同公司同职位重复建档会报错并提示改用 log_event/update。status=wish 表「想投还没投」；给了 appliedAt 或 status 非 wish 会自动补一条投递事件。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -352,7 +352,7 @@ const tools = [
   },
   {
     name: 'wenjin_log_event',
-    description: '问津·记进展事件。面试/笔试/HR沟通/offer/被拒/备注全走这里（"字节二面过了"→ company=字节跳动 title=前端工程师 type=interview label=二面 detail=通过 outcome=pass）。title 永远是职位名（用于定位投递），事件的短标题用 label。事件会联动推进投递状态（offer 事件→已有offer；result+fail→被拒）。remindAt 可挂提醒（如"一周后还没回音提醒我问下"）。投递不存在时用 company+title 自动建档（status=applied）。',
+    description: '求职台账·记进展事件。面试/笔试/HR沟通/offer/被拒/备注全走这里（"字节二面过了"→ company=字节跳动 title=前端工程师 type=interview label=二面 detail=通过 outcome=pass）。title 永远是职位名（用于定位投递），事件的短标题用 label。事件会联动推进投递状态（offer 事件→已有offer；result+fail→被拒）。remindAt 可挂提醒（如"一周后还没回音提醒我问下"）。投递不存在时用 company+title 自动建档（status=applied）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -428,7 +428,7 @@ const tools = [
   },
   {
     name: 'wenjin_add_offer',
-    description: '问津·录 offer。baseMonthly 必填（元/月）；months 总月数（缺省 12）、bonusMonths 年终奖月数；commuteMin 单程通勤分钟、remoteDays 每周远程天数、stockNote 期权/股票说明（只记文本不计价）。同一投递重复调用=更新该 offer。返回年化对比。',
+    description: '求职台账·录 offer。baseMonthly 必填（元/月）；months 总月数（缺省 12）、bonusMonths 年终奖月数；commuteMin 单程通勤分钟、remoteDays 每周远程天数、stockNote 期权/股票说明（只记文本不计价）。同一投递重复调用=更新该 offer。返回年化对比。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -489,7 +489,7 @@ const tools = [
   },
   {
     name: 'wenjin_query',
-    description: '问津·查询。kind=apps（缺省）按状态/渠道/关键词/最近天数过滤投递，附每条最新进展；kind=funnel 渠道与简历版本漏斗；kind=questions 复盘问题库；kind=offers offer 对比。适合"投了 60 份有多少回音""哪版简历回复率高""被问过哪些问题"。',
+    description: '求职台账·查询。kind=apps（缺省）按状态/渠道/关键词/最近天数过滤投递，附每条最新进展；kind=funnel 渠道与简历版本漏斗；kind=questions 复盘问题库；kind=offers offer 对比。适合"投了 60 份有多少回音""哪版简历回复率高""被问过哪些问题"。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -573,7 +573,7 @@ const tools = [
   },
   {
     name: 'wenjin_update',
-    description: '问津·改字段。kind 定实体，id 或 find 定位（app 的 find={company,title}，resume 的 find={label}），patch 为部分补丁。app 可改：title/channel/status/jd/salaryPosted/location/appliedAt/resumeLabel/note/archived。',
+    description: '求职台账·改字段。kind 定实体，id 或 find 定位（app 的 find={company,title}，resume 的 find={label}），patch 为部分补丁。app 可改：title/channel/status/jd/salaryPosted/location/appliedAt/resumeLabel/note/archived。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -660,7 +660,7 @@ const tools = [
   },
   {
     name: 'wenjin_delete',
-    description: '问津·删除（不可恢复，需 confirm=true）。kind=app 级联删除其事件与 offer 并回报删除数；kind=resume 会先解除投递引用再删；kind=company 只允许删无投递的空公司。',
+    description: '求职台账·删除（不可恢复，需 confirm=true）。kind=app 级联删除其事件与 offer 并回报删除数；kind=resume 会先解除投递引用再删；kind=company 只允许删无投递的空公司。',
     inputSchema: {
       type: 'object',
       properties: {

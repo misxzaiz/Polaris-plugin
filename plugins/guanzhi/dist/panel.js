@@ -1248,7 +1248,7 @@ function SettingsTab({ data, reload, showToast }) {
         await kvDel(k);
       }
       await reload();
-      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u89C2\u6B62\u6570\u636E");
+      showToast("\u5DF2\u6E05\u7A7A\u5168\u90E8\u4E66\u5F71\u97F3\u8D26\u672C\u6570\u636E");
     } catch (e) {
       showToast(`\u6E05\u7A7A\u5931\u8D25\uFF1A${e.message}`, "bad");
     }
@@ -1270,7 +1270,7 @@ function SettingsTab({ data, reload, showToast }) {
     /* @__PURE__ */ jsxs6("div", { className: "gz-sec", children: [
       /* @__PURE__ */ jsx6("span", { className: "gz-bar" }),
       "\u5BFC\u5165 JSON",
-      /* @__PURE__ */ jsx6("span", { className: "gz-hint", children: "\u89C2\u6B62\u5BFC\u51FA\u683C\u5F0F\uFF1B\u540C\u4F53\u88C1\u540C\u540D\u540C\u5E74\u5224\u91CD" })
+      /* @__PURE__ */ jsx6("span", { className: "gz-hint", children: "\u4E66\u5F71\u97F3\u8D26\u672C\u5BFC\u51FA\u683C\u5F0F\uFF1B\u540C\u4F53\u88C1\u540C\u540D\u540C\u5E74\u5224\u91CD" })
     ] }),
     /* @__PURE__ */ jsx6("div", { className: "gz-card", children: /* @__PURE__ */ jsxs6("div", { className: "gz-card-b", children: [
       /* @__PURE__ */ jsx6(
@@ -1292,7 +1292,7 @@ function SettingsTab({ data, reload, showToast }) {
     /* @__PURE__ */ jsx6("div", { className: "gz-card", children: /* @__PURE__ */ jsxs6("div", { className: "gz-card-b", children: [
       clearArmed ? /* @__PURE__ */ jsxs6("div", { style: { display: "flex", gap: 8, alignItems: "center" }, children: [
         /* @__PURE__ */ jsxs6("button", { className: "gz-btn sm danger", onClick: async () => {
-          if (window.confirm("\u518D\u6B21\u786E\u8BA4\uFF1A\u6E05\u7A7A\u89C2\u6B62\u5168\u90E8\u6570\u636E\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) {
+          if (window.confirm("\u518D\u6B21\u786E\u8BA4\uFF1A\u6E05\u7A7A\u4E66\u5F71\u97F3\u8D26\u672C\u5168\u90E8\u6570\u636E\uFF1F\u4E0D\u53EF\u6062\u590D\u3002")) {
             setClearArmed(false);
             await clearAll();
           } else setClearArmed(false);
@@ -1449,7 +1449,7 @@ function GuanzhiPanel(_props) {
     /* @__PURE__ */ jsxs7("div", { className: "gz-top", children: [
       /* @__PURE__ */ jsx7("div", { className: "gz-logo", children: "\u{1F39E}\uFE0F" }),
       /* @__PURE__ */ jsxs7("div", { className: "gz-tt", children: [
-        /* @__PURE__ */ jsx7("b", { children: "\u89C2\u6B62" }),
+        /* @__PURE__ */ jsx7("b", { children: "\u4E66\u5F71\u97F3\u8D26\u672C" }),
         /* @__PURE__ */ jsx7("small", { children: headInfo.text })
       ] }),
       /* @__PURE__ */ jsx7("div", { className: "gz-tabs", children: [

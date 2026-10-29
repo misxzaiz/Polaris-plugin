@@ -1,6 +1,6 @@
 /**
  * 总览 Tab：三榜（逾期待对账 / 即将扣费 / 试用转正）+ 成本速览 + 未来 12 个月现金流
- * 对账动作在这里一键完成——这是守闸区别于记账与提醒工具的核心闭环。
+ * 对账动作在这里一键完成——这是续费管家区别于记账与提醒工具的核心闭环。
  */
 import { useState } from 'react'
 import type { TabProps, Tab as TabKey } from './Panel'
@@ -117,7 +117,7 @@ export default function OverviewTab({ data, reload, showToast, goTab }: TabProps
         <div className="sz-card"><div className="sz-card-b" style={{ textAlign: 'center', padding: '22px 13px' }}>
           <div style={{ fontSize: 22 }}>🟢</div>
           <b style={{ display: 'block', margin: '6px 0 2px' }}>当前一切干净</b>
-          <span className="sz-sub">没有逾期、近期扣费或试用转正。<br />在「订阅」Tab 登记你的第一笔订阅，守闸开始替你盯防。</span>
+          <span className="sz-sub">没有逾期、近期扣费或试用转正。<br />在「订阅」Tab 登记你的第一笔订阅，续费管家开始替你盯防。</span>
         </div></div>
       )}
 

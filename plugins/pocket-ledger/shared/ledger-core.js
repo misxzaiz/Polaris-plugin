@@ -1,6 +1,6 @@
 'use strict';
 /**
- * ledger-core.js —— 口袋账本共享核心（单一权威，零依赖）
+ * ledger-core.js —— 日常记账共享核心（单一权威，零依赖）
  *
  * 被 MCP server（CJS require）与面板（esbuild 打包进 bundle）共用：
  * 键空间、账单归一化、日键追加（幂等去重）、月度统计/预算、CSV 导出。
@@ -148,7 +148,7 @@ function filterBills(bills, { category, type, keyword, minAmount, maxAmount } = 
 /**
  * 月度统计。
  * @param bills 该月全部账单
- * @param settings 口袋账本设置（预算/币种/排除汇总分类）
+ * @param settings 日常记账设置（预算/币种/排除汇总分类）
  * @param month 'YYYY-MM'
  *
  * excludeFromStats（如工资）语义：账单照记、明细照见，但不参与收入/支出/结余/排行/逐日。

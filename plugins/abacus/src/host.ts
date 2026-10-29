@@ -1,10 +1,10 @@
 /**
- * 宿主 API 访问层（算盘面板专用，与 decision-journal / pocket-ledger 同一模式）
+ * 宿主 API 访问层（AI 用量账面板专用，与 decision-journal / pocket-ledger 同一模式）
  *
  * 统一经宿主 invoke 通道（window.__POLARIS_HOST_INVOKE__，主应用 main.tsx 挂载）：
  *   - 桌面 Tauri：直连后端 IPC
  *   - 手机浏览器 / Web：自动取正确服务地址并携带 token，跨端看到同一份台账
- * 算盘面板只读聚合面 + 写价目/设置（cap.kv abacus.* 键空间），零外网请求、零 CORS 面。
+ * AI 用量账面板只读聚合面 + 写价目/设置（cap.kv abacus.* 键空间），零外网请求、零 CORS 面。
  */
 export type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>
 

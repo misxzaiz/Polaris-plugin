@@ -1,6 +1,6 @@
 'use strict';
 /**
- * core.js —— 韦编纯函数核心（零依赖；服务 / MCP / 面板 / 测试四方同源）
+ * core.js —— 文档检索纯函数核心（零依赖；服务 / MCP / 面板 / 测试四方同源）
  *
  * 职责边界：只做纯计算，不碰 fs / 网络 / kv。
  *   - tokenize：ASCII 词元（len≥2）+ CJK unigram/bigram 双层（bigram 保相邻精度，

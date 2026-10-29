@@ -18,7 +18,7 @@ export default function SettingsTab({ ctx }: { ctx: PanelCtx }) {
           <li><b style={{ color: '#d7dde6' }}>纯本地</b>：票据数据存宿主 cap.kv，原件归档到数据根 piaoxia/ 目录，全程零外网请求。</li>
           <li><b style={{ color: '#d7dde6' }}>判重口径</b>：发票号码（数电票 20 位 / 旧票 8 位+12 位代码）全局唯一；手录无号码的票按「日期+销方+金额+品名」内容寻址。</li>
           <li><b style={{ color: '#d7dde6' }}>不做 OCR</b>：扫描件/图片型 PDF/纸质票无法解析，请手动录入；OFD 版式暂不支持（请从电子税务局下载 PDF 或 XML）。</li>
-          <li><b style={{ color: '#d7dde6' }}>不做发票查验</b>：不对接税务查验接口；真伪请走官方查验平台，票匣只做本地台账。</li>
+          <li><b style={{ color: '#d7dde6' }}>不做发票查验</b>：不对接税务查验接口；真伪请走官方查验平台，发票保险库只做本地台账。</li>
           <li><b style={{ color: '#d7dde6' }}>解析不确定时会明说</b>：带 ⚠ 提示的票请人工核对金额与号码；解析失败的票不会被静默丢弃。</li>
           <li><b style={{ color: '#d7dde6' }}>删除双保险</b>：面板两击确认；AI 删除必须先向你确认。归档原件不随台账删除。</li>
         </ul>
@@ -138,7 +138,7 @@ function ImportCard({ ctx }: { ctx: PanelCtx }) {
 
   return (
     <div className="px-card">
-      <h3>导入 <span className="px-hint">JSON = 票匣备份恢复；CSV = 从其他台账迁移（表头须匹配票匣导出格式）</span></h3>
+      <h3>导入 <span className="px-hint">JSON = 发票保险库备份恢复；CSV = 从其他台账迁移（表头须匹配发票保险库导出格式）</span></h3>
       <div className="px-row">
         <button className="px-btn" disabled={busy} onClick={() => fileRef.current?.click()}>选择 .json / .csv 文件</button>
         <span className="px-dim">导入按发票号码自动判重，已有票不会被覆盖。</span>

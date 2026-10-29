@@ -1,5 +1,5 @@
 /**
- * 入口：韦编面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：文档检索面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import WeibianPanel from './Panel'
 

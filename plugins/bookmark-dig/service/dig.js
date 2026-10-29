@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * dig.js —— 书签考古后台服务（零依赖，node >= 18，需全局 fetch）
+ * dig.js —— 书签体检后台服务（零依赖，node >= 18，需全局 fetch）
  *
  * 单写者权威：bmd.rec.* / bmd.run / bmd.report.* 只由本进程写；
  * 面板/MCP 一切变更经命令键（先删后做，见 consumeCommands）。

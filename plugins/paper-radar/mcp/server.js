@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * paper-radar MCP Server —— 论文雷达的 AI 工具层（stdio，零依赖）
+ * paper-radar MCP Server —— 论文速递的 AI 工具层（stdio，零依赖）
  *
  * 职责：
  *   - 向 AI 暴露论文检索/解读/收藏工具，全部经 Polaris bus 透传：
@@ -278,7 +278,7 @@ async function listFavs() {
 const tools = [
   {
     name: 'paper_search',
-    description: '搜索 arXiv 论文（论文雷达）。支持关键词/Lucene 语法（如 "LLM agent"、"cat:cs.CL AND langchain"）。返回按相关性排序的前若干条，含标题/作者/分类/日期/链接/一句话解读。搜索走宿主 cap.http 转发，无跨域限制；结果不会落库。',
+    description: '搜索 arXiv 论文（论文速递）。支持关键词/Lucene 语法（如 "LLM agent"、"cat:cs.CL AND langchain"）。返回按相关性排序的前若干条，含标题/作者/分类/日期/链接/一句话解读。搜索走宿主 cap.http 转发，无跨域限制；结果不会落库。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -384,14 +384,14 @@ const tools = [
         out.push(`【${date}】共 ${feed.items.length} 篇（主题：${(feed.topicNames || []).join('/') || '各主题'}）\n${lines.join('\n')}`);
       }
       if (!out.length) {
-        return ok('今日榜单还没生成。可先用后台服务（设置→插件→论文雷达 查看服务状态），或在对话里说「帮我搜今天的论文」。生成后会自动出现在这里。');
+        return ok('今日榜单还没生成。可先用后台服务（设置→插件→论文速递 查看服务状态），或在对话里说「帮我搜今天的论文」。生成后会自动出现在这里。');
       }
       return ok(out.join('\n\n'));
     },
   },
   {
     name: 'paper_list_topics',
-    description: '查看当前论文雷达关注的主题列表（含关键词与启停状态）。',
+    description: '查看当前论文速递关注的主题列表（含关键词与启停状态）。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const topics = await getTopics();
@@ -401,7 +401,7 @@ const tools = [
   },
   {
     name: 'paper_add_topic',
-    description: '添加一个关注主题（论文雷达会定时抓取相关新论文）。keywords 是匹配词，标题命中权重高。',
+    description: '添加一个关注主题（论文速递会定时抓取相关新论文）。keywords 是匹配词，标题命中权重高。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -417,7 +417,7 @@ const tools = [
       if (!t) return err('至少需要一个非空关键词');
       topics.push(t);
       await kvSet(K.topics, topics);
-      return ok(`已添加主题「${t.name}」（${t.id}），关键词：${t.keywords.join(', ')}。后台服务下次扫描会抓取相关论文。可在面板「论文雷达」或 paper_list_topics 查看。`);
+      return ok(`已添加主题「${t.name}」（${t.id}），关键词：${t.keywords.join(', ')}。后台服务下次扫描会抓取相关论文。可在面板「论文速递」或 paper_list_topics 查看。`);
     },
   },
   {
@@ -438,7 +438,7 @@ const tools = [
   },
   {
     name: 'paper_favorite',
-    description: '收藏一篇论文到论文雷达（本地，cap.kv），可写笔记。之后面板/工具可见。',
+    description: '收藏一篇论文到论文速递（本地，cap.kv），可写笔记。之后面板/工具可见。',
     inputSchema: {
       type: 'object',
       properties: {

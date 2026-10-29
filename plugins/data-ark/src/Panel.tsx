@@ -1,5 +1,5 @@
 /**
- * 数据方舟面板外壳：头部（保护状态速览）+ 四 Tab（快照 / 恢复 / 服务 / 设置）
+ * 数据备份面板外壳：头部（保护状态速览）+ 四 Tab（快照 / 恢复 / 服务 / 设置）
  * 数据面：cap.kv dataark.*（经宿主 invoke → router_dispatch），跨端一致。
  * 磁盘操作（快照/校验/恢复）经命令键下发后台服务，面板不直接碰文件。
  */
@@ -151,7 +151,7 @@ export default function ArkPanel(_props: { pluginId: string; onSendToChat?: (m: 
       <div className="da-top">
         <div className="da-logo">🛡️</div>
         <div className="da-tt">
-          <b>数据方舟</b>
+          <b>数据备份</b>
           <small className={typeof head === 'string' ? '' : head.cls}>{typeof head === 'string' ? head : head.text}</small>
         </div>
         <div className="da-tabs">

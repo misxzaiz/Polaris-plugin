@@ -1,6 +1,6 @@
 {
   "id": "gezhi",
-  "name": "格致",
+  "name": "Excel 工坊",
   "version": "0.1.0",
   "description": "常驻工作台的 AI Excel 工厂：在对话里把数据、清单或资料变成一套排版完整、可继续编辑的真实 .xlsx 文件（原生表头样式/列宽/数字格式/真公式/条件格式/冻结表头/筛选，而不是 CSV 裸数据——UTF-8 CSV 在 Excel 按 GBK 打开即乱码，本引擎从根上解决）。零额度零会员：构建在本地直生 OOXML，成本只是自己的 LLM token，内容不出设备；面板无需 AI 也能用——粘贴 CSV/TSV（自动定界符/GB18030 编码探测/列类型推断）实时预览并本地构建下载。以 = + - @ 开头的文本强制按文本存储（杜绝公式注入）。作品登记与导出目录由面板与 AI（5 个 MCP 工具）经 cap.kv 共享。纯本地：零后台服务、零网络请求，桌面与手机 Web 同看一份。",
   "enabledByDefault": true,
@@ -12,7 +12,7 @@
         "panelType": "gezhi",
         "icon": "CheckSquare",
         "labelKey": "plugins.gezhi",
-        "labelDefault": "格致",
+        "labelDefault": "Excel 工坊",
         "order": 92
       }
     ],
@@ -25,7 +25,10 @@
         "id": "gezhi",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

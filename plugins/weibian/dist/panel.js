@@ -452,11 +452,11 @@ var ServiceUnavailableError = class extends Error {
 };
 async function svc(api, body, timeoutMs) {
   const meta = await getMeta();
-  if (!meta) throw new ServiceUnavailableError("\u97E6\u7F16\u670D\u52A1\u672A\u5C31\u7EEA\uFF1A\u9996\u6B21\u4F7F\u7528\u8BF7\u7A0D\u5019\u51E0\u79D2\uFF08\u5BBF\u4E3B\u81EA\u52A8\u62C9\u8D77\u540E\u53F0\u670D\u52A1\uFF09\uFF0C\u6216\u91CD\u65B0\u6253\u5F00\u9762\u677F\u3002");
+  if (!meta) throw new ServiceUnavailableError("\u6587\u6863\u68C0\u7D22\u670D\u52A1\u672A\u5C31\u7EEA\uFF1A\u9996\u6B21\u4F7F\u7528\u8BF7\u7A0D\u5019\u51E0\u79D2\uFF08\u5BBF\u4E3B\u81EA\u52A8\u62C9\u8D77\u540E\u53F0\u670D\u52A1\uFF09\uFF0C\u6216\u91CD\u65B0\u6253\u5F00\u9762\u677F\u3002");
   try {
     return await svcFetch(meta, api, body, timeoutMs);
   } catch (e) {
-    throw new ServiceUnavailableError("\u97E6\u7F16\u670D\u52A1\u4E0D\u53EF\u8FBE\uFF1A" + String(e.message) + "\uFF08\u624B\u673A\u7AEF\u8BF7\u786E\u8BA4\u4E0E\u7535\u8111\u540C\u4E00\u5C40\u57DF\u7F51\uFF09");
+    throw new ServiceUnavailableError("\u6587\u6863\u68C0\u7D22\u670D\u52A1\u4E0D\u53EF\u8FBE\uFF1A" + String(e.message) + "\uFF08\u624B\u673A\u7AEF\u8BF7\u786E\u8BA4\u4E0E\u7535\u8111\u540C\u4E00\u5C40\u57DF\u7F51\uFF09");
   }
 }
 function apiSearch(query, limit = 20) {
@@ -758,7 +758,7 @@ function IndexTab({ stats, onStats }) {
       const r = await apiProbe(newRoot.trim() || void 0);
       setProbe(r);
       if (r.checked && !r.checked.exists) setErr("\u8DEF\u5F84\u4E0D\u5B58\u5728\uFF0C\u8BF7\u68C0\u67E5\u76D8\u7B26\u4E0E\u62FC\u5199");
-      else if (r.checked && !r.checked.isDir) setErr("\u8FD9\u662F\u4E00\u4E2A\u6587\u4EF6\u2014\u2014\u97E6\u7F16\u6309\u6587\u4EF6\u5939\u6536\u5F55\uFF08\u7D22\u5F15\u5176\u6240\u5728\u6587\u4EF6\u5939\u5373\u53EF\uFF09");
+      else if (r.checked && !r.checked.isDir) setErr("\u8FD9\u662F\u4E00\u4E2A\u6587\u4EF6\u2014\u2014\u6587\u6863\u68C0\u7D22\u6309\u6587\u4EF6\u5939\u6536\u5F55\uFF08\u7D22\u5F15\u5176\u6240\u5728\u6587\u4EF6\u5939\u5373\u53EF\uFF09");
       else if (r.checked && r.checked.isDir) await addRoot(r.checked.path);
     } catch (e) {
       setErr(e instanceof ServiceUnavailableError ? e.message : String(e.message || e));
@@ -978,7 +978,7 @@ function GuideTab() {
       "\u5728 AI \u5BF9\u8BDD\u91CC\u7528"
     ] }),
     /* @__PURE__ */ jsx3("div", { className: "wb-card", children: /* @__PURE__ */ jsxs3("div", { className: "wb-card-b", children: [
-      /* @__PURE__ */ jsx3("div", { className: "wb-sub", children: "\u97E6\u7F16\u7ED9 AI \u63D0\u4F9B\u4E86 4 \u4E2A\u5DE5\u5177\uFF0C\u76F4\u63A5\u7528\u81EA\u7136\u8BED\u8A00\u5373\u53EF\uFF1A" }),
+      /* @__PURE__ */ jsx3("div", { className: "wb-sub", children: "\u6587\u6863\u68C0\u7D22\u7ED9 AI \u63D0\u4F9B\u4E86 4 \u4E2A\u5DE5\u5177\uFF0C\u76F4\u63A5\u7528\u81EA\u7136\u8BED\u8A00\u5373\u53EF\uFF1A" }),
       /* @__PURE__ */ jsx3("div", { className: "wb-code", children: "\u300C\u5E2E\u6211\u5728\u6587\u6863\u91CC\u627E\u5173\u4E8E\u7F13\u5B58\u7B56\u7565\u7684\u8BBA\u8FF0\u300D" }),
       /* @__PURE__ */ jsx3("div", { className: "wb-code", children: "\u300C\u6211\u4E4B\u524D\u5199\u8FC7\u4E00\u4EFD\u4E24\u603B\u7EBF\u67B6\u6784\u7684 spec\uFF0C\u627E\u51FA\u6765\u770B\u770B\u300D" }),
       /* @__PURE__ */ jsxs3("div", { className: "wb-sub", children: [
@@ -1141,7 +1141,7 @@ function WeibianPanel(_props) {
     /* @__PURE__ */ jsxs4("div", { className: "wb-top", children: [
       /* @__PURE__ */ jsx4("div", { className: "wb-logo", children: "\u{1F4D6}" }),
       /* @__PURE__ */ jsxs4("div", { className: "wb-tt", children: [
-        /* @__PURE__ */ jsx4("b", { children: "\u97E6\u7F16" }),
+        /* @__PURE__ */ jsx4("b", { children: "\u6587\u6863\u68C0\u7D22" }),
         /* @__PURE__ */ jsxs4("small", { children: [
           "\u672C\u5730\u6587\u6863\u5168\u6587\u68C0\u7D22 \xB7 ",
           statusLine

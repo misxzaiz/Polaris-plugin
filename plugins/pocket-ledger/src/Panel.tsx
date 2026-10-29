@@ -1,5 +1,5 @@
 /**
- * 口袋账本面板外壳：头部（本月余额速览）+ 四 Tab（记账 / 明细 / 统计 / 设置）
+ * 日常记账面板外壳：头部（本月余额速览）+ 四 Tab（记账 / 明细 / 统计 / 设置）
  * 数据面：cap.kv ledger.*（经宿主 invoke → router_dispatch），跨端同一本账。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -168,7 +168,7 @@ export default function LedgerPanel(_props: { pluginId: string; onSendToChat?: (
       <div className="pl-top">
         <div className="pl-logo">📒</div>
         <div className="pl-tt">
-          <b>口袋账本</b>
+          <b>日常记账</b>
           <small className={`pl-balance ${todayBalance.cls}`}>{todayBalance.text}</small>
         </div>
         <div className="pl-tabs">

@@ -1,5 +1,5 @@
 /**
- * 算盘面板外壳：头部（台账状态）+ 五 Tab（总览 / 模型 / 项目 / 质量 / 设置）
+ * AI 用量账面板外壳：头部（台账状态）+ 五 Tab（总览 / 模型 / 项目 / 质量 / 设置）
  * 数据面：cap.kv abacus.*（经宿主 invoke → router_dispatch），跨端同一份账。
  * 轮询 10s：聚合面由后台服务写，面板只读；价目/设置写后 30s 内服务热加载。
  */
@@ -175,7 +175,7 @@ export default function AbacusPanel(_props: { pluginId: string; onSendToChat?: (
         <div className="ab-headrow">
           <div className="ab-logo">🧮</div>
           <div className="ab-tt">
-            <b>算盘 · AI 花销账房</b>
+            <b>AI 用量账 · AI 花销账房</b>
             <small>{loadErr ? `加载失败：${loadErr}` : statusLine}</small>
           </div>
           <div className="ab-status">

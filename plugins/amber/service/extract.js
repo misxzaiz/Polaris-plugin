@@ -1,9 +1,9 @@
 'use strict';
 /**
- * extract.js —— 琥珀化正文抽取（零依赖 readability）
+ * extract.js —— 网页封存化正文抽取（零依赖 readability）
  *
  * 为什么不用 feed-radar 的 extractReadable：订阅流「宁可全量」——article→main→body
- * 硬切片，混进导航/推荐也不伤大雅。琥珀是收藏库，**抽错容器 = 永久封错**，
+ * 硬切片，混进导航/推荐也不伤大雅。网页封存是收藏库，**抽错容器 = 永久封错**，
  * 所以做候选打分（Readability 思路的简化版）：
  *   1. 按标签剥噪声子树（script/style/nav/aside/footer/form/…）
  *   2. 收集候选段落（p/pre/blockquote），向 parent/grandparent 记分

@@ -1,5 +1,5 @@
 /**
- * 日晷面板外壳：头部（状态/心跳）+ 四 Tab（今日 / 日历 / 事件 / 设置）
+ * 日程提醒面板外壳：头部（状态/心跳）+ 四 Tab（今日 / 日历 / 事件 / 设置）
  *
  * 数据源：cap.kv sundial.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；ICS 订阅抓取由后台服务原生执行（跨域问题的根本解法）。
@@ -159,7 +159,7 @@ export default function SundialPanel({ pluginId, onSendToChat }: {
     const last = data.meta?.lastTickAt
     if (!last) return { cls: 'down', text: '服务未报告心跳' }
     const age = Date.now() - last
-    if (age < 180 * 1000) return { cls: 'ok', text: `日晷在线 · ${data.events.length} 事件 · 桥 ${data.meta?.bridge || '?'}` }
+    if (age < 180 * 1000) return { cls: 'ok', text: `日程提醒在线 · ${data.events.length} 事件 · 桥 ${data.meta?.bridge || '?'}` }
     return { cls: 'stale', text: `心跳停滞 ${Math.round(age / 60000)} 分钟` }
   })()
 
@@ -173,7 +173,7 @@ export default function SundialPanel({ pluginId, onSendToChat }: {
       <div className="sd-top">
         <div className="sd-logo">🌞</div>
         <div className="sd-tt">
-          <b>日晷</b>
+          <b>日程提醒</b>
           <small>
             <i className={`sd-dot ${heartbeat.cls}`} />
             {heartbeat.text}

@@ -1,5 +1,5 @@
 /**
- * 守望台面板：插件用量计量 + 生命周期治理
+ * 插件运营面板：插件用量计量 + 生命周期治理
  *
  * 数据面：cap.kv / cap.pluginDiscovery / cap.pluginServiceManager
  *   （经宿主 invoke → router_dispatch，跨端同一个账本）
@@ -179,7 +179,7 @@ export default function WatchtowerPanel(props: {
       <div className="wt-top">
         <div className="wt-logo">👁</div>
         <div className="wt-tt">
-          <b>守望台</b>
+          <b>插件运营</b>
           <small onClick={() => setTab('overview')}>
             {loading ? '加载中…' : `${summary?.totals.plugins ?? 0} 插件 · ${topLines.active} 活跃 · ${topLines.running} 服务在跑`}
           </small>

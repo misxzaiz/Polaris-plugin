@@ -1,6 +1,6 @@
 'use strict';
 /**
- * xml.js —— 订阅雷达用极小 XML 树解析器（零依赖，容错优先）
+ * xml.js —— RSS 订阅用极小 XML 树解析器（零依赖，容错优先）
  *
  * 为什么手写而不用正则一把梭：RSS/Atom 里标题、正文常含 CDATA 与实体、
  * 属性值里会有 ">"、标签名带命名空间前缀（content:encoded / atom:link /

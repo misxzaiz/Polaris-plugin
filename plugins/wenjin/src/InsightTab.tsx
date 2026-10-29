@@ -35,7 +35,7 @@ function FunnelTable({ rows, resumeNames }: {
           ))}
         </tbody>
       </table>
-      {small ? <div className="wj-sub" style={{ marginTop: 6 }}>样本 &lt;5 的行只给计数不给出百分比——样本会撒谎，问津选择诚实。</div> : null}
+      {small ? <div className="wj-sub" style={{ marginTop: 6 }}>样本 &lt;5 的行只给计数不给出百分比——样本会撒谎，求职台账选择诚实。</div> : null}
       <div className="wj-sub" style={{ marginTop: 4 }}>口径：投递→回音→面试→offer 逐级转化；被拒也算「有回音」。</div>
     </div></div>
   )

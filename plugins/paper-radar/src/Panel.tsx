@@ -1,5 +1,5 @@
 /**
- * 论文雷达面板外壳：头部（状态）+ 三 Tab（今日 / 收藏 / 主题）
+ * 论文速递面板外壳：头部（状态）+ 三 Tab（今日 / 收藏 / 主题）
  *
  * 数据源：cap.kv paper.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；外网抓取由后台服务原生执行（跨域问题的根本解法）。
@@ -163,7 +163,7 @@ export default function PaperRadarPanel({ pluginId, onSendToChat }: {
       <div className="pr-top">
         <div className="pr-logo">📚</div>
         <div className="pr-tt">
-          <b>论文雷达</b>
+          <b>论文速递</b>
           <small><i className={`pr-dot ${heartbeat.cls}`} />{heartbeat.text}</small>
         </div>
         <div className="pr-tabs">
@@ -186,7 +186,7 @@ export default function PaperRadarPanel({ pluginId, onSendToChat }: {
             {feeds.length === 0 && !loadErr && (
               <div className="pr-empty">
                 今日榜单还没生成。<br />
-                · 首次需要后台服务启动后跑一次扫描（设置 → 插件 → 论文雷达）<br />
+                · 首次需要后台服务启动后跑一次扫描（设置 → 插件 → 论文速递）<br />
                 · 或对 AI 说「帮我搜今天的论文」，AI 会触发扫描<br />
                 · 已配置主题后，每日自动生成榜单
               </div>

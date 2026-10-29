@@ -1,4 +1,4 @@
-/** 金匮 shared/core.js 的类型声明（面板 tsc strict 用；与 core.js 保持同步） */
+/** 保单台账 shared/core.js 的类型声明（面板 tsc strict 用；与 core.js 保持同步） */
 export declare const DAY_MS: number
 export declare const RELATIONS: string[]
 export declare const RELATION_NAMES: Record<string, string>

@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（盘哨面板专用，与 news-curator 同一模式）
+ * 宿主 API 访问层（行情哨兵面板专用，与 news-curator 同一模式）
  *
  * 数据读写统一走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__，
  * 主应用 main.tsx 挂载，即 @/services/transport 的统一 invoke）：
@@ -8,7 +8,7 @@
  *     与主应用聊天等功能同通道（Source::Remote）
  *
  * 面板自身绝不直接 fetch 外网——外网抓取全部由后台服务原生执行，
- * 这是「盘哨」解决浏览器跨域/同源限制的核心设计。
+ * 这是「行情哨兵」解决浏览器跨域/同源限制的核心设计。
  */
 export type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>
 

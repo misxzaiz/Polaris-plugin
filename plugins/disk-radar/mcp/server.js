@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * disk-radar MCP Server —— 磁盘雷达的 AI 工具层（全只读，零依赖）
+ * disk-radar MCP Server —— 磁盘分析的 AI 工具层（全只读，零依赖）
  *
  * 把 AI 的 tools/call 翻译为 Polaris IPC bridge 的 router_dispatch
  * （target=cap.kv）读 diskrad.* 键空间 + 写命令键，与面板/服务共享同一事实库。
@@ -135,7 +135,7 @@ const NO_DATA_HINT = '（还没有快照——先用 disk_scan_start 发起扫�
 const tools = [
   {
     name: 'disk_overview',
-    description: '磁盘雷达总览：列出所有已登记扫描根的总占用、卷剩余空间、距上次完整快照的增量、可回收垃圾量与最近扫描时间；有扫描进行中时返回实时进度。适用：用户问「磁盘还剩多少」「D 盘什么情况」「空间有没有变化」。',
+    description: '磁盘分析总览：列出所有已登记扫描根的总占用、卷剩余空间、距上次完整快照的增量、可回收垃圾量与最近扫描时间；有扫描进行中时返回实时进度。适用：用户问「磁盘还剩多少」「D 盘什么情况」「空间有没有变化」。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const [roots, state, meta, scan] = await Promise.all([
@@ -146,7 +146,7 @@ const tools = [
         lines.push(`▶ 扫描进行中：${scan.path}${scan.deep ? '（深扫）' : ''}——已扫 ${fmtSize(scan.bytes)} / ${scan.files} 文件，当前 ${scan.currentPath || '…'}`);
       }
       if (!roots.length) {
-        lines.push('尚无登记的扫描根。让用户在面板「磁盘雷达 → 设置」添加（如 D:\\space），或调 disk_scan_start 传 path 自动登记。');
+        lines.push('尚无登记的扫描根。让用户在面板「磁盘分析 → 设置」添加（如 D:\\space），或调 disk_scan_start 传 path 自动登记。');
         return ok(lines.join('\n'));
       }
       for (const r of roots) {
@@ -160,13 +160,13 @@ const tools = [
         lines.push(`◆ ${r.label}（${r.path}）：占用 ${fmtSize(st.total)}（${core.fmtCount(st.files)} 文件）${vol}${delta}\n   垃圾 ${st.junkCount || 0} 项 ${fmtSize(st.junkBytes || 0)}；扫描于 ${ageStr(st.lastScanAt)}${st.lastError ? `；上次错误：${st.lastError}` : ''}`);
       }
       if (meta && meta.lastTickAt) lines.push(`（服务 ${ageStr(meta.lastTickAt)}在线${meta.bridge ? '，桥 ' + meta.bridge : ''}）`);
-      else lines.push('（服务心跳缺失——服务可能未运行，让用户到 设置→插件 检查磁盘雷达服务状态）');
+      else lines.push('（服务心跳缺失——服务可能未运行，让用户到 设置→插件 检查磁盘分析服务状态）');
       return ok(lines.join('\n'));
     },
   },
   {
     name: 'disk_top',
-    description: '磁盘雷达空间大头：列出某扫描根下最占空间的目录（快照树，depth≤2，含百分比）。适用：用户问「什么最占空间」「哪个目录最肥」「C 盘满是什么吃的」。',
+    description: '磁盘分析空间大头：列出某扫描根下最占空间的目录（快照树，depth≤2，含百分比）。适用：用户问「什么最占空间」「哪个目录最肥」「C 盘满是什么吃的」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -190,7 +190,7 @@ const tools = [
   },
   {
     name: 'disk_growth',
-    description: '磁盘雷达增量归因：对比最近两份完整快照，按目录列出增减 Top——「谁偷了我的磁盘」。适用：用户问「最近什么占了这么多」「磁盘怎么又满了」「哪些目录在变大」。',
+    description: '磁盘分析增量归因：对比最近两份完整快照，按目录列出增减 Top——「谁偷了我的磁盘」。适用：用户问「最近什么占了这么多」「磁盘怎么又满了」「哪些目录在变大」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -232,7 +232,7 @@ const tools = [
   },
   {
     name: 'disk_junk',
-    description: '磁盘雷达可回收清单：某扫描根下的开发垃圾（依赖包/构建产物/缓存，按兄弟文件锚定判定）分组列表 + 隔离区当前状态。只读——删除必须由用户在面板操作（先移入隔离区，确认后才彻底删除）。适用：用户问「有什么能删的」「清理开发垃圾」「node_modules 占多少」。',
+    description: '磁盘分析可回收清单：某扫描根下的开发垃圾（依赖包/构建产物/缓存，按兄弟文件锚定判定）分组列表 + 隔离区当前状态。只读——删除必须由用户在面板操作（先移入隔离区，确认后才彻底删除）。适用：用户问「有什么能删的」「清理开发垃圾」「node_modules 占多少」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -282,7 +282,7 @@ const tools = [
   },
   {
     name: 'disk_scan_start',
-    description: '磁盘雷达发起扫描（立即返回，不等待完成）。传 path 可顺带把新目录登记为扫描根；deep=true 深扫（不限深度、预算更长、可补全不完整快照）。之后用 disk_overview 跟进度、disk_top/disk_junk 看结果。适用：用户说「扫一下 D:\\space」「重新扫」「深扫一遍」。',
+    description: '磁盘分析发起扫描（立即返回，不等待完成）。传 path 可顺带把新目录登记为扫描根；deep=true 深扫（不限深度、预算更长、可补全不完整快照）。之后用 disk_overview 跟进度、disk_top/disk_junk 看结果。适用：用户说「扫一下 D:\\space」「重新扫」「深扫一遍」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -306,7 +306,7 @@ const tools = [
   },
   {
     name: 'disk_report',
-    description: '磁盘雷达细查任意目录（不必是已登记根）：有预算地遍历并返回目录树/垃圾/无权限计数，内联等待结果（≤40 秒）。适用：用户说「看看这个文件夹里面有什么」「这个目录多大」。',
+    description: '磁盘分析细查任意目录（不必是已登记根）：有预算地遍历并返回目录树/垃圾/无权限计数，内联等待结果（≤40 秒）。适用：用户说「看看这个文件夹里面有什么」「这个目录多大」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -324,7 +324,7 @@ const tools = [
         maxDepth: Math.min(4, Math.max(1, Number(args.maxDepth) || 2)),
         budgetMs: Math.min(30000, Math.max(2000, Number(args.budgetMs) || 15000)),
       }, { waitMs: 40000, stepMs: 1200 });
-      if (!result) return err('细查超时（服务可能未运行——设置→插件 检查磁盘雷达服务状态）');
+      if (!result) return err('细查超时（服务可能未运行——设置→插件 检查磁盘分析服务状态）');
       if (result.ok === false) return err(result.error || '细查失败');
       const pl = result.payload || {};
       const lines = [

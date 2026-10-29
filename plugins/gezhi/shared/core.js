@@ -1,6 +1,6 @@
 'use strict';
 /**
- * gezhi-core —— 格致（AI Excel 工厂）的唯一计算权威（CommonJS，零依赖）
+ * gezhi-core —— Excel 工坊（AI Excel 工厂）的唯一计算权威（CommonJS，零依赖）
  *
  * 被 MCP（require）与面板（esbuild 打包）与测试三方共用，
  * 保证「CSV 解析 / 类型推断 / spec 归一化 / 列宽与格式数学 / 主题」口径不漂移。

@@ -2,7 +2,7 @@
   "name": "watchtower-panel",
   "version": "0.2.0",
   "private": true,
-  "description": "watchtower 插件面板（打包用）：守望台插件运营台",
+  "description": "watchtower 插件面板（打包用）：插件运营插件运营台",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

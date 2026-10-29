@@ -2,7 +2,7 @@
   "name": "zhifang-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "zhifang 插件面板（打包用）：纸坊本地 PDF 工坊",
+  "description": "zhifang 插件面板（打包用）：PDF 工坊本地 PDF 工坊",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

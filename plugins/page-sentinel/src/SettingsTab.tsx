@@ -79,7 +79,7 @@ export default function SettingsTab({ pluginId, snap, reload, showToast }: {
   }
 
   const clearAll = async () => {
-    if (!window.confirm('删除网页哨兵的全部数据（目标/状态/快照/事件/设置）？不可恢复。')) return
+    if (!window.confirm('删除网页监测的全部数据（目标/状态/快照/事件/设置）？不可恢复。')) return
     try {
       const keys = (await kvKeys()).filter((k) => k.startsWith('sentinel.'))
       await Promise.all(keys.map((k) => kvDel(k)))
@@ -185,7 +185,7 @@ export default function SettingsTab({ pluginId, snap, reload, showToast }: {
       <div className="ps-sec"><i className="ps-bar" />关于</div>
       <div className="ps-card">
         <div className="ps-card-b ps-sub">
-          网页哨兵 page-sentinel v0.1.0 —— 盯网页变化的后台哨兵：价格 / 库存 / 放号 / 考位 / release / 文档更新。
+          网页监测 page-sentinel v0.1.0 —— 盯网页变化的后台哨兵：价格 / 库存 / 放号 / 考位 / release / 文档更新。
           <br />· 浏览器有同源策略，本插件把抓取下沉到后台服务原生执行，天然无跨域问题；
           <br />· 手机端访问时面板经宿主统一通道（自动带 token）读写 cap.kv，与桌面看到同一份数据；
           <br />· 在聊天里可直接让 AI 管理监控（sentinel_add_watch 等工具）；

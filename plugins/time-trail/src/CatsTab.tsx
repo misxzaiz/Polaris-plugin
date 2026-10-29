@@ -78,7 +78,7 @@ export default function CatsTab({ pluginId, data, reload, showToast, onSendToCha
   const aiClassify = useCallback(() => {
     if (!unknown || !unknown.length) return
     const list = unknown.slice(0, 20).map((u) => `${u.app}（${displayName(u.app)}，${fmtDur(u.sec)}）`).join('、')
-    const msg = `请用 timetrail_apps(unknownOnly=true) 和 timetrail_set_categories 帮我把刻漏里这些未分类应用归类（七类：dev/create/meet/browse/media/play/other）：${list}。归类时给出你的理由。`
+    const msg = `请用 timetrail_apps(unknownOnly=true) 和 timetrail_set_categories 帮我把时间统计里这些未分类应用归类（七类：dev/create/meet/browse/media/play/other）：${list}。归类时给出你的理由。`
     if (onSendToChat) {
       onSendToChat(msg)
       showToast('已发送到聊天，等 AI 归类')

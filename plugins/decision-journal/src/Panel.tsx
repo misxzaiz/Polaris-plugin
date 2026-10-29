@@ -1,5 +1,5 @@
 /**
- * 谋定面板外壳：头部（台账速览）+ 四 Tab（总览 / 决策 / 校准 / 设置）
+ * 决策日志面板外壳：头部（台账速览）+ 四 Tab（总览 / 决策 / 校准 / 设置）
  * 数据面：cap.kv decision.*（经宿主 invoke → router_dispatch），跨端同一份台账。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -161,10 +161,10 @@ export default function DecisionPanel(props: { pluginId: string; onSendToChat?: 
       <div className="dj-top">
         <div className="dj-logo">🎯</div>
         <div className="dj-tt">
-          <b>谋定</b>
+          <b>决策日志</b>
           <small>{decisions
             ? `到期复盘 ${overview.due.length} · 纠结中 ${overview.counts.open} · 已复盘 ${overview.counts.resolved}`
-            : '谋定而后动，知止而有得'}</small>
+            : '决策日志而后动，知止而有得'}</small>
         </div>
         <div className="dj-tabs">
           {([['home', '总览'], ['list', '决策'], ['stats', '校准'], ['settings', '设置']] as [Tab, string][]).map(([k, label]) => (

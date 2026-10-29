@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * tether MCP Server —— 故人的 AI 工具层（无状态透传，零依赖）
+ * tether MCP Server —— 人情账本的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的记人/记往来/立诺/查简报意图翻译为 cap.kv 的 tether.* 读写；
  * 全部计算逻辑走 shared/tether-core.js（与面板同一权威，口径不漂移）。
@@ -211,7 +211,7 @@ function fmtPromiseLine(p, now, settings) {
 const tools = [
   {
     name: 'ren_overview',
-    description: '故人·今日人情速览（对话入口）：逾期/临期承诺、未来生日、失联预警 top3、档案汇总。用户问「有什么人情上的事」「该联系谁」时先调这个。',
+    description: '人情账本·今日人情速览（对话入口）：逾期/临期承诺、未来生日、失联预警 top3、档案汇总。用户问「有什么人情上的事」「该联系谁」时先调这个。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const [settings, people, promises, journal] = await Promise.all([loadSettings(), loadPeople(), loadPromises(), loadJournal()]);
@@ -221,7 +221,7 @@ const tools = [
       const drift = core.driftList(people.byId, journal.events, settings, now).filter((d) => d.level !== 'ok');
       const active = Object.values(people.byId).filter((p) => p && !p.archivedAt);
       const lines = [];
-      lines.push(`故人 ${active.length} 人（归档 ${Object.values(people.byId).length - active.length}）· 待闭环承诺 ${board.overdue.length + board.dueSoon.length + board.scheduled.length + board.openNoDue.length} 条 · 失联预警 ${drift.length} 人`);
+      lines.push(`人情账本 ${active.length} 人（归档 ${Object.values(people.byId).length - active.length}）· 待闭环承诺 ${board.overdue.length + board.dueSoon.length + board.scheduled.length + board.openNoDue.length} 条 · 失联预警 ${drift.length} 人`);
       if (board.overdue.length) {
         lines.push(`⛔ 逾期承诺 ${board.overdue.length} 条：`);
         for (const p of board.overdue.slice(0, 5)) lines.push(`  ${fmtPromiseLine(p, now, settings)} · 对象 ${p.personName}`);
@@ -251,7 +251,7 @@ const tools = [
   },
   {
     name: 'ren_person_save',
-    description: '故人·建档/更新档案。传 id 或与现有精确同名=更新（缺的字段保持原值），否则新建。字段：name、alias（称呼）、relation（家人/伴侣/朋友/同事/客户/导师/同学/其他）、tags、howMet（怎么认识）、birthday（MM-DD 或 YYYY-MM-DD，仅阳历）、contacts{phone,wechat,email,other}、cadenceDays（想多久联系一次，7..365）、note。',
+    description: '人情账本·建档/更新档案。传 id 或与现有精确同名=更新（缺的字段保持原值），否则新建。字段：name、alias（称呼）、relation（家人/伴侣/朋友/同事/客户/导师/同学/其他）、tags、howMet（怎么认识）、birthday（MM-DD 或 YYYY-MM-DD，仅阳历）、contacts{phone,wechat,email,other}、cadenceDays（想多久联系一次，7..365）、note。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -307,7 +307,7 @@ const tools = [
   },
   {
     name: 'ren_person_list',
-    description: '故人·检索档案。支持关键词（名/别名/标签/备注）、关系、标签过滤；默认排除已归档。返回 id、关系、最近联系与失联态——提人前先查这里。',
+    description: '人情账本·检索档案。支持关键词（名/别名/标签/备注）、关系、标签过滤；默认排除已归档。返回 id、关系、最近联系与失联态——提人前先查这里。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -356,7 +356,7 @@ const tools = [
   },
   {
     name: 'ren_person_remove',
-    description: '故人·删除档案（连同其全部往来记录与承诺，不可恢复）。必须 confirm:true 才执行；不确定时先 ren_person_list 查证。',
+    description: '人情账本·删除档案（连同其全部往来记录与承诺，不可恢复）。必须 confirm:true 才执行；不确定时先 ren_person_list 查证。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -385,7 +385,7 @@ const tools = [
   },
   {
     name: 'ren_log',
-    description: '故人·记一笔往来。type=contact（联系，channel：见面/电话/微信/视频/邮件/其他）、note（便签，如对方的喜好/重要信息）、favor（人情，direction：gave=我帮了他/got=他帮了我）。date 支持 today/yesterday/YYYY-MM-DD 补记。「昨天和张三吃饭聊了孩子上学」→ contact+见面。',
+    description: '人情账本·记一笔往来。type=contact（联系，channel：见面/电话/微信/视频/邮件/其他）、note（便签，如对方的喜好/重要信息）、favor（人情，direction：gave=我帮了他/got=他帮了我）。date 支持 today/yesterday/YYYY-MM-DD 补记。「昨天和张三吃饭聊了孩子上学」→ contact+见面。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -416,7 +416,7 @@ const tools = [
   },
   {
     name: 'ren_journal',
-    description: '故人·查往来流水。按人/关键词/类型/最近 N 天过滤，倒序返回。「上周和王总聊了啥」「我帮过他什么」用这个。',
+    description: '人情账本·查往来流水。按人/关键词/类型/最近 N 天过滤，倒序返回。「上周和王总聊了啥」「我帮过他什么」用这个。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -459,7 +459,7 @@ const tools = [
   },
   {
     name: 'ren_promises',
-    description: '故人·承诺（双向）操作。add：{personId/name, direction:iowe我许的|owedme我等的, text, due?(YYYY-MM-DD)}；close：{id, note?} 闭环兑现；cancel：{id} 作废；reopen：{id} 重开；list：{direction?, status?:open|done|cancelled|all}。「我答应小张周五给方案」→ add iowe；「小张欠我一个答复」→ add owedme。',
+    description: '人情账本·承诺（双向）操作。add：{personId/name, direction:iowe我许的|owedme我等的, text, due?(YYYY-MM-DD)}；close：{id, note?} 闭环兑现；cancel：{id} 作废；reopen：{id} 重开；list：{direction?, status?:open|done|cancelled|all}。「我答应小张周五给方案」→ add iowe；「小张欠我一个答复」→ add owedme。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -534,7 +534,7 @@ const tools = [
   },
   {
     name: 'ren_drift',
-    description: '故人·失联预警榜：每个人按自己的节奏（cadenceDays 或全局默认）算「N 天未联系 vs 节奏 M 天」，超节奏进黄榜、超宽限进红榜。用户问「谁好久没联系了」用这个。',
+    description: '人情账本·失联预警榜：每个人按自己的节奏（cadenceDays 或全局默认）算「N 天未联系 vs 节奏 M 天」，超节奏进黄榜、超宽限进红榜。用户问「谁好久没联系了」用这个。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -559,7 +559,7 @@ const tools = [
   },
   {
     name: 'ren_birthdays',
-    description: '故人·未来 N 天生日（默认设置里的 birthdayDays 窗口，含今天）。带年份的算年龄；平年 02-29 按 03-01 过。仅阳历——用户说农历生日时如实告知暂不支持阳历换算。',
+    description: '人情账本·未来 N 天生日（默认设置里的 birthdayDays 窗口，含今天）。带年份的算年龄；平年 02-29 按 03-01 过。仅阳历——用户说农历生日时如实告知暂不支持阳历换算。',
     inputSchema: {
       type: 'object',
       properties: { days: { type: 'integer', description: '窗口天数（默认设置的 birthdayDays）' } },
@@ -579,7 +579,7 @@ const tools = [
   },
   {
     name: 'ren_prep',
-    description: '故人·见面简报：见人前一份上下文包——档案（怎么认识/渠道/生日临近）、最近 5 笔往来（上次聊到哪）、未闭环承诺（别答应重复的事）、人情天平、联系状态。用户说「明天见张总」「要给妈妈打电话」时调。',
+    description: '人情账本·见面简报：见人前一份上下文包——档案（怎么认识/渠道/生日临近）、最近 5 笔往来（上次聊到哪）、未闭环承诺（别答应重复的事）、人情天平、联系状态。用户说「明天见张总」「要给妈妈打电话」时调。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -596,7 +596,7 @@ const tools = [
   },
   {
     name: 'ren_stats',
-    description: '故人·人情透视：按关系分组的人数与失联态、近 12 个月联系趋势、人情天平 top、承诺构成。用户问「我的人脉面怎么样」用这个。',
+    description: '人情账本·人情透视：按关系分组的人数与失联态、近 12 个月联系趋势、人情天平 top、承诺构成。用户问「我的人脉面怎么样」用这个。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const [settings, people, promises, journal] = await Promise.all([loadSettings(), loadPeople(), loadPromises(), loadJournal()]);
@@ -648,7 +648,7 @@ const tools = [
   },
   {
     name: 'ren_settings',
-    description: '故人·节奏参数：defaultCadenceDays（默认联系节奏 7..365）、driftGraceDays（超节奏宽限天数 3..90）、birthdayDays（生日预告窗口 1..90）、dueWarnDays（承诺临期窗口 1..30）。action=get 查看 / update 修改。',
+    description: '人情账本·节奏参数：defaultCadenceDays（默认联系节奏 7..365）、driftGraceDays（超节奏宽限天数 3..90）、birthdayDays（生日预告窗口 1..90）、dueWarnDays（承诺临期窗口 1..30）。action=get 查看 / update 修改。',
     inputSchema: {
       type: 'object',
       properties: {

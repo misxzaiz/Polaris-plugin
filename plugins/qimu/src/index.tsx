@@ -1,5 +1,5 @@
 /**
- * 入口：启幕（AI PPT 工厂）面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：PPT 工坊（AI PPT 工厂）面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import QimuPanel from './Panel'
 

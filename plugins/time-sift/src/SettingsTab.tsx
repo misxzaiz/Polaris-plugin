@@ -222,7 +222,7 @@ export default function SettingsTab({ meta, onMetaRefresh }: Props) {
       </div>
       <div className="ts-card">
         <div className="ts-card-b ts-sub">
-          拾光机是纯本地插件：数据源只读，索引缓存落在应用配置目录（time-sift/），对外零网络请求。
+          会话记忆是纯本地插件：数据源只读，索引缓存落在应用配置目录（time-sift/），对外零网络请求。
           可见数据经 cap.kv 在你的设备之间同步（桌面/手机/Web 同一账号），不经任何第三方。
         </div>
       </div>

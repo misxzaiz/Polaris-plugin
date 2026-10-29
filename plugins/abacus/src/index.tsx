@@ -1,5 +1,5 @@
 /**
- * 入口：算盘面板（dist/panel.js，宿主按 mod.default 加载）
+ * 入口：AI 用量账面板（dist/panel.js，宿主按 mod.default 加载）
  */
 import AbacusPanel from './Panel'
 

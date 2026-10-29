@@ -122,7 +122,7 @@ export default function SearchTab({ meta }: Props) {
 
       {!searched && !error && (
         <div className="ts-empty">
-          <b>拾光机：找回你和 AI 聊过的一切</b>
+          <b>会话记忆：找回你和 AI 聊过的一切</b>
           输入关键词搜历史会话——「上次那个 JSONL 解析 bug 怎么修的」「我聊过 XX 方案的会话」。
           <br />
           也可以直接在聊天里对 AI 说「帮我找找以前关于 XX 的会话」（sift_search 工具）。

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * extract.js —— 订阅雷达正文抽取（零依赖 readability-lite）
+ * extract.js —— RSS 订阅正文抽取（零依赖 readability-lite）
  *
  * 用途：面板「阅读视图」与 AI 工具 radar_read_article 拉取文章正文时，
  * 服务端把 HTML 变成干净的分段文本。为什么要下沉到服务做：

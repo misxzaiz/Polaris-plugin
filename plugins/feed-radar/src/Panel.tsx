@@ -1,5 +1,5 @@
 /**
- * 订阅雷达面板外壳：头部（状态/心跳）+ 三 Tab（文章 / 订阅源 / 设置）
+ * RSS 订阅面板外壳：头部（状态/心跳）+ 三 Tab（文章 / 订阅源 / 设置）
  *
  * 数据源：cap.kv radar.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网请求；订阅抓取与正文抽取由后台服务原生执行（跨域问题的根本解法）。
@@ -172,7 +172,7 @@ export default function RadarPanel({ pluginId, onSendToChat }: {
       <div className="fr-top">
         <div className="fr-logo">📡</div>
         <div className="fr-tt">
-          <b>订阅雷达</b>
+          <b>RSS 订阅</b>
           <small>
             <i className={`fr-dot ${heartbeat.cls}`} />
             {heartbeat.text}

@@ -553,8 +553,8 @@ function confidenceWord(c) {
 // src/HomeTab.tsx
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 var SAMPLE_PROMPTS = [
-  "\u5E2E\u6211\u7ACB\u6B64\u5B58\u7167\uFF1A\u6211\u5728\u7EA0\u7ED3\u8981\u4E0D\u8981\u628A X \u8FC1\u5230 RouterBus\uFF08\u5E2E\u6211\u628A\u8FD9\u4E2A\u4E24\u96BE\u8BB0\u8FDB\u8C0B\u5B9A\uFF09",
-  "\u8C0B\u5B9A\u91CC\u6709\u4EC0\u4E48\u51B3\u5B9A\u5FEB\u5230\u671F\u8BE5\u590D\u76D8\u4E86\uFF1F",
+  "\u5E2E\u6211\u7ACB\u6B64\u5B58\u7167\uFF1A\u6211\u5728\u7EA0\u7ED3\u8981\u4E0D\u8981\u628A X \u8FC1\u5230 RouterBus\uFF08\u5E2E\u6211\u628A\u8FD9\u4E2A\u4E24\u96BE\u8BB0\u8FDB\u51B3\u7B56\u65E5\u5FD7\uFF09",
+  "\u51B3\u7B56\u65E5\u5FD7\u91CC\u6709\u4EC0\u4E48\u51B3\u5B9A\u5FEB\u5230\u671F\u8BE5\u590D\u76D8\u4E86\uFF1F",
   "\u6211\u6700\u8FD1\u7684\u5224\u65AD\u51C6\u4E0D\u51C6\uFF1F\u770B\u770B\u6211\u7684\u51B3\u7B56\u6821\u51C6\u62A5\u544A"
 ];
 function HomeTab({ ctx }) {
@@ -901,7 +901,7 @@ function ListTab({ ctx, focusId, onFocusConsumed }) {
       return;
     }
     const exp = d.expected ? `\u539F\u9884\u671F\uFF08\u628A\u63E1 ${d.expected.confidence}%\uFF09\uFF1A${d.expected.text}` : "";
-    void onSendToChat(`\u5E2E\u6211\u590D\u76D8\u8C0B\u5B9A\u91CC\u7684\u8FD9\u6761\u51B3\u7B56\uFF08id=${d.id}\uFF09\uFF1A${d.title}\u3002${exp}\u5BF9\u7167\u73B0\u5B9E\u5E2E\u6211\u6253\u5206\uFF08\u5151\u73B0/\u90E8\u5206/\u843D\u7A7A/\u4F5C\u5E9F\uFF09\uFF0C\u627E\u504F\u5DEE\u6765\u6E90\uFF0C\u6C89\u6DC0\u4E00\u53E5\u6559\u8BAD\u3002`);
+    void onSendToChat(`\u5E2E\u6211\u590D\u76D8\u51B3\u7B56\u65E5\u5FD7\u91CC\u7684\u8FD9\u6761\u51B3\u7B56\uFF08id=${d.id}\uFF09\uFF1A${d.title}\u3002${exp}\u5BF9\u7167\u73B0\u5B9E\u5E2E\u6211\u6253\u5206\uFF08\u5151\u73B0/\u90E8\u5206/\u843D\u7A7A/\u4F5C\u5E9F\uFF09\uFF0C\u627E\u504F\u5DEE\u6765\u6E90\uFF0C\u6C89\u6DC0\u4E00\u53E5\u6559\u8BAD\u3002`);
     showToast("\u5DF2\u9001\u5165\u804A\u5929\u8F93\u5165\u6846", "good");
   };
   if (view === "detail" && active) {
@@ -1600,8 +1600,8 @@ function DecisionPanel(props) {
     /* @__PURE__ */ jsxs5("div", { className: "dj-top", children: [
       /* @__PURE__ */ jsx5("div", { className: "dj-logo", children: "\u{1F3AF}" }),
       /* @__PURE__ */ jsxs5("div", { className: "dj-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u8C0B\u5B9A" }),
-        /* @__PURE__ */ jsx5("small", { children: decisions ? `\u5230\u671F\u590D\u76D8 ${overview.due.length} \xB7 \u7EA0\u7ED3\u4E2D ${overview.counts.open} \xB7 \u5DF2\u590D\u76D8 ${overview.counts.resolved}` : "\u8C0B\u5B9A\u800C\u540E\u52A8\uFF0C\u77E5\u6B62\u800C\u6709\u5F97" })
+        /* @__PURE__ */ jsx5("b", { children: "\u51B3\u7B56\u65E5\u5FD7" }),
+        /* @__PURE__ */ jsx5("small", { children: decisions ? `\u5230\u671F\u590D\u76D8 ${overview.due.length} \xB7 \u7EA0\u7ED3\u4E2D ${overview.counts.open} \xB7 \u5DF2\u590D\u76D8 ${overview.counts.resolved}` : "\u51B3\u7B56\u65E5\u5FD7\u800C\u540E\u52A8\uFF0C\u77E5\u6B62\u800C\u6709\u5F97" })
       ] }),
       /* @__PURE__ */ jsx5("div", { className: "dj-tabs", children: [["home", "\u603B\u89C8"], ["list", "\u51B3\u7B56"], ["stats", "\u6821\u51C6"], ["settings", "\u8BBE\u7F6E"]].map(([k, label]) => /* @__PURE__ */ jsxs5("button", { className: `dj-tab${tab === k ? " on" : ""}`, onClick: () => setTab(k), children: [
         label,

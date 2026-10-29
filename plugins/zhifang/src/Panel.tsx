@@ -117,7 +117,7 @@ export default function ZhifangPanel(_props: { pluginId?: string, onSendToChat?:
       <div className="zf-top">
         <div className="zf-logo">📄</div>
         <div className="zf-tt">
-          <b>纸坊 · 本地 PDF 工坊</b>
+          <b>PDF 工坊 · 本地 PDF 工坊</b>
           <small>
             {meta
               ? `服务在线 :${meta.port} · 文件全程不出本机`

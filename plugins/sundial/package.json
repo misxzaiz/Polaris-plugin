@@ -2,7 +2,7 @@
   "name": "sundial-panel",
   "version": "0.1.0",
   "private": true,
-  "description": "sundial 插件面板（打包用）：日晷——个人日程/提醒/倒计时",
+  "description": "sundial 插件面板（打包用）：日程提醒——个人日程/提醒/倒计时",
   "scripts": {
     "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
     "typecheck": "tsc --noEmit"

@@ -1,5 +1,5 @@
 /**
- * 通信层 + 账房数据访问（算盘面板）
+ * 通信层 + 账房数据访问（AI 用量账面板）
  *
  * 聚合面（summary/daily/models/projects/quality/sessions/meta）由后台服务唯一
  * 写入，面板只读；prices / settings 由面板（或 MCP 显式工具）写入、服务 30s

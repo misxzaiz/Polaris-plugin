@@ -39,7 +39,7 @@ export default function SettingsTab({ data, reload, showToast }: {
     try {
       const dump = exportAll(s, data.peopleBook, data.promisesBook, data.journalBook)
       await navigator.clipboard.writeText(JSON.stringify(dump, null, 2))
-      showToast(`已复制 ${Object.keys(dump.people as object).length} 位故人 + ${Object.keys(dump.promises as object).length} 条承诺 + ${(dump.journal as unknown[]).length} 条往来 JSON 到剪贴板`, 'good')
+      showToast(`已复制 ${Object.keys(dump.people as object).length} 位人情账本 + ${Object.keys(dump.promises as object).length} 条承诺 + ${(dump.journal as unknown[]).length} 条往来 JSON 到剪贴板`, 'good')
     } catch (e) {
       showToast(`导出失败：${(e as Error).message}`, 'bad')
     }
@@ -51,7 +51,7 @@ export default function SettingsTab({ data, reload, showToast }: {
       for (const k of [K.settings, K.people, K.promises, K.journal]) await kvDel(k)
       await reload()
       setConfirmingClear(false)
-      showToast('已清空全部故人数据')
+      showToast('已清空全部人情账本数据')
     } catch (e) {
       showToast(`清空失败：${(e as Error).message}`, 'bad')
     }
@@ -105,7 +105,7 @@ export default function SettingsTab({ data, reload, showToast }: {
       <Section title="关于" />
       <div className="tr-card">
         <div className="tr-card-b tr-sub">
-          故人 tether v0.1.0 —— 人脉与承诺账本：把「人」变成可对话的资产。
+          人情账本 tether v0.1.0 —— 人脉与承诺账本：把「人」变成可对话的资产。
           <br />· 零后台服务、零网络请求：人脉是最私人的数据，不出设备；
           <br />· 双向承诺（我许的/我等的）+ 逾期红/临期黄，人情 open loop 终于有地方落；
           <br />· 失联预警按每人的节奏算（N 天未联系 vs 节奏 M 天），不是黑盒分数；

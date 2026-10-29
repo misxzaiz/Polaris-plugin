@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * pocket-ledger MCP Server —— 口袋账本的 AI 工具层（无状态透传，零依赖）
+ * pocket-ledger MCP Server —— 日常记账的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的记账/查账意图翻译为 cap.kv 的 ledger.* 读写；
  * 全部计算逻辑走 shared/ledger-core.js（与面板同一权威，口径不漂移）。
@@ -223,7 +223,7 @@ async function loadAttachment(id) {
 const tools = [
   {
     name: 'ledger_attach_save',
-    description: '口袋账本·保存附件（小票/截图/PDF/文本），返回附件 id 供 ledger_add 的 attachmentId 引用。data 为 base64（不含 data: 前缀）；单张上限 2MB；默认不拉图，仅记账/查询返回引用，需 ledger_attach_get 才取主体。',
+    description: '日常记账·保存附件（小票/截图/PDF/文本），返回附件 id 供 ledger_add 的 attachmentId 引用。data 为 base64（不含 data: 前缀）；单张上限 2MB；默认不拉图，仅记账/查询返回引用，需 ledger_attach_get 才取主体。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -248,7 +248,7 @@ const tools = [
   },
   {
     name: 'ledger_attach_get',
-    description: '口袋账本·读取附件主体（base64 + 元数据）。默认不查询图片，仅在有需要（如向用户展示小票）时调用。',
+    description: '日常记账·读取附件主体（base64 + 元数据）。默认不查询图片，仅在有需要（如向用户展示小票）时调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -267,7 +267,7 @@ const tools = [
   },
   {
     name: 'ledger_attach_delete',
-    description: '口袋账本·删除附件（脱离账单引用后清理；记账删除账单时也会级联删附件）。',
+    description: '日常记账·删除附件（脱离账单引用后清理；记账删除账单时也会级联删附件）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -282,7 +282,7 @@ const tools = [
   },
   {
     name: 'ledger_exclude',
-    description: '口袋账本·设置"不参与汇总"分类（如工资）：账单照记、明细照见，但统计/结余/排行/逐日不计入。on=true 排除，false 恢复。',
+    description: '日常记账·设置"不参与汇总"分类（如工资）：账单照记、明细照见，但统计/结余/排行/逐日不计入。on=true 排除，false 恢复。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -308,7 +308,7 @@ const tools = [
   },
   {
     name: 'ledger_add',
-    description: '口袋账本·记一笔。从对话中提取金额/分类/备注后调用。amount 为正数；type 缺省 expense（支出），income 为收入；category 从账本分类中选（月度预算超额会得到提示）。date 支持 "today"/"yesterday"/"YYYY-MM-DD"（补记），缺省今天。',
+    description: '日常记账·记一笔。从对话中提取金额/分类/备注后调用。amount 为正数；type 缺省 expense（支出），income 为收入；category 从账本分类中选（月度预算超额会得到提示）。date 支持 "today"/"yesterday"/"YYYY-MM-DD"（补记），缺省今天。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -355,7 +355,7 @@ const tools = [
   },
   {
     name: 'ledger_query',
-    description: '口袋账本·查账单。可按月/日/分类/收支类型/关键词过滤，返回账单列表与小计。适合"上个月咖啡花了多少""这周打车支出"这类问题。',
+    description: '日常记账·查账单。可按月/日/分类/收支类型/关键词过滤，返回账单列表与小计。适合"上个月咖啡花了多少""这周打车支出"这类问题。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -383,7 +383,7 @@ const tools = [
   },
   {
     name: 'ledger_stats',
-    description: '口袋账本·月度统计：总收入/总支出/结余、分类排行（含预算使用率）、日趋势要点。适合"这个月花得怎么样""哪个分类超预算了"。',
+    description: '日常记账·月度统计：总收入/总支出/结余、分类排行（含预算使用率）、日趋势要点。适合"这个月花得怎么样""哪个分类超预算了"。',
     inputSchema: {
       type: 'object',
       properties: { month: { type: 'string', description: 'YYYY-MM / "current" / "last"，缺省本月' } },
@@ -417,7 +417,7 @@ const tools = [
   },
   {
     name: 'ledger_delete',
-    description: '口袋账本·删除一笔账单（按 id，列表见 ledger_query）。',
+    description: '日常记账·删除一笔账单（按 id，列表见 ledger_query）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -443,7 +443,7 @@ const tools = [
   },
   {
     name: 'ledger_categories',
-    description: '口袋账本·分类管理：list 查看全部分类与预算；add/remove 增删自定义分类（写入设置，立即对记账校验生效）。',
+    description: '日常记账·分类管理：list 查看全部分类与预算；add/remove 增删自定义分类（写入设置，立即对记账校验生效）。',
     inputSchema: {
       type: 'object',
       properties: {

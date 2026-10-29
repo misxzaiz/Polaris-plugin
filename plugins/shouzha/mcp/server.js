@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * shouzha MCP Server —— 守闸（订阅与续费管家）的 AI 工具层（无状态透传，零依赖）
+ * shouzha MCP Server —— 续费管家（订阅与续费管家）的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的登记/查询/对账/透视意图翻译为 cap.kv 的 shouzha.* 读写；
  * 全部计算逻辑走 shared/core.js（与面板同一权威，口径不漂移）。
@@ -197,7 +197,7 @@ function err(text) { return { content: [{ type: 'text', text }], isError: true }
 const tools = [
   {
     name: 'sub_add',
-    description: '守闸·登记订阅。用户说「我订了 xx 月费/年费 xx 元」「开了 xx 会员」时调用。amount 为每周期金额；cycle 周期；nextRenewalDate 缺省=今天推进一周期；status=trial 时必须给 trialEndsAt。返回登记结果与当前订阅成本概况。',
+    description: '续费管家·登记订阅。用户说「我订了 xx 月费/年费 xx 元」「开了 xx 会员」时调用。amount 为每周期金额；cycle 周期；nextRenewalDate 缺省=今天推进一周期；status=trial 时必须给 trialEndsAt。返回登记结果与当前订阅成本概况。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -238,7 +238,7 @@ const tools = [
   },
   {
     name: 'sub_list',
-    description: '守闸·检索订阅列表。可按关键字/分类/状态过滤，返回每条的金额、周期、月均、年化、下次扣费日与对账状态。用户问「我有哪些订阅」「视频会员有哪些」时调用。',
+    description: '续费管家·检索订阅列表。可按关键字/分类/状态过滤，返回每条的金额、周期、月均、年化、下次扣费日与对账状态。用户问「我有哪些订阅」「视频会员有哪些」时调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -260,7 +260,7 @@ const tools = [
   },
   {
     name: 'sub_due',
-    description: '守闸·到期三榜：逾期待对账（扣费日已过未确认，沉默扣款高危）/ 即将扣费 / 试用转正红榜。用户问「最近要扣哪些钱」「有没有快到期的」「有没有忘关的试用」时调用；也建议在其他订阅话题收尾时顺带检查。',
+    description: '续费管家·到期三榜：逾期待对账（扣费日已过未确认，沉默扣款高危）/ 即将扣费 / 试用转正红榜。用户问「最近要扣哪些钱」「有没有快到期的」「有没有忘关的试用」时调用；也建议在其他订阅话题收尾时顺带检查。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const settings = await loadSettings();
@@ -299,7 +299,7 @@ const tools = [
   },
   {
     name: 'sub_renew',
-    description: '守闸·对账与状态操作。op=renew 确认续费（推进下一周期，可记实付金额，价格变化会记入价格史）；op=skip 逾期对账时「这次没续」（转取消）；op=cancel 主动取消（记原因）；op=pause 暂停；op=resume 恢复（必须给 nextRenewalDate）。',
+    description: '续费管家·对账与状态操作。op=renew 确认续费（推进下一周期，可记实付金额，价格变化会记入价格史）；op=skip 逾期对账时「这次没续」（转取消）；op=cancel 主动取消（记原因）；op=pause 暂停；op=resume 恢复（必须给 nextRenewalDate）。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -351,7 +351,7 @@ const tools = [
   },
   {
     name: 'sub_update',
-    description: '守闸·修改订阅字段。改价（会记价格史）、改周期、改下次扣费日、改分类/支付方式/备注等。金额变化自动记价格史与 price 事件。',
+    description: '续费管家·修改订阅字段。改价（会记价格史）、改周期、改下次扣费日、改分类/支付方式/备注等。金额变化自动记价格史与 price 事件。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -388,7 +388,7 @@ const tools = [
   },
   {
     name: 'sub_stats',
-    description: '守闸·成本透视。回答「我订阅一年花多少」「哪个订阅最贵」「下个月要扣多少」「取消后省了多少」这类问题。返回月均/年化、分类占比、年化排行、未来逐月现金流、已取消节省、价格变动。',
+    description: '续费管家·成本透视。回答「我订阅一年花多少」「哪个订阅最贵」「下个月要扣多少」「取消后省了多少」这类问题。返回月均/年化、分类占比、年化排行、未来逐月现金流、已取消节省、价格变动。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -427,7 +427,7 @@ const tools = [
   },
   {
     name: 'sub_history',
-    description: '守闸·单订阅档案：价格史（开通价→现价）与事件流水（续费/取消/暂停/调价…）。用户问「xx 涨价了吗」「xx 我什么时候订的」时调用。',
+    description: '续费管家·单订阅档案：价格史（开通价→现价）与事件流水（续费/取消/暂停/调价…）。用户问「xx 涨价了吗」「xx 我什么时候订的」时调用。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: '订阅 id 或唯一名称' } },
@@ -454,7 +454,7 @@ const tools = [
   },
   {
     name: 'sub_delete',
-    description: '守闸·彻底删除订阅档案（不可恢复）。与取消不同：删除会连价格史一起清掉。需要 confirm=true 才执行；一般建议用 sub_renew op=cancel（可逆、可统计止损）。',
+    description: '续费管家·彻底删除订阅档案（不可恢复）。与取消不同：删除会连价格史一起清掉。需要 confirm=true 才执行；一般建议用 sub_renew op=cancel（可逆、可统计止损）。',
     inputSchema: {
       type: 'object',
       properties: {

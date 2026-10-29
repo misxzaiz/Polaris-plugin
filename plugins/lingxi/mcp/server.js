@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * lingxi MCP Server —— 灵犀灵感孵化池的 AI 工具层（无状态透传，零依赖）
+ * lingxi MCP Server —— 灵感池灵感孵化池的 AI 工具层（无状态透传，零依赖）
  *
  * 职责：把 AI 的捕获/孵化/回访意图翻译为 cap.kv 的 lingxi.* 读写；
  * 全部计算逻辑走 shared/pond-core.js（与面板同一权威，口径不漂移）。
@@ -196,7 +196,7 @@ const EVENT_LABELS = {
 const tools = [
   {
     name: 'lingxi_catch',
-    description: '灵犀·捕获想法入池。用户冒出任何念头/点子/问题/素材时调用（一句「我突然想到…」「记个想法」即触发）。title 为一句话概括；tags 建议 1-3 个主题词（决定星图星系归属）；question 建议留一个你生成的深化追问（下次回访时帮用户重启思考）。捕获结果会自动附上池中可能相关的旧想法——务必向用户提及，避免重复、促成相遇。',
+    description: '灵感池·捕获想法入池。用户冒出任何念头/点子/问题/素材时调用（一句「我突然想到…」「记个想法」即触发）。title 为一句话概括；tags 建议 1-3 个主题词（决定星图星系归属）；question 建议留一个你生成的深化追问（下次回访时帮用户重启思考）。捕获结果会自动附上池中可能相关的旧想法——务必向用户提及，避免重复、促成相遇。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -238,7 +238,7 @@ const tools = [
   },
   {
     name: 'lingxi_search',
-    description: '灵犀·检索想法池。可按关键词/标签/类型/成熟度过滤。适合「我之前是不是想过…」「把关于 XX 的想法都列出来」「看看已经到轮廓以上的想法」。',
+    description: '灵感池·检索想法池。可按关键词/标签/类型/成熟度过滤。适合「我之前是不是想过…」「把关于 XX 的想法都列出来」「看看已经到轮廓以上的想法」。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -263,7 +263,7 @@ const tools = [
   },
   {
     name: 'lingxi_get',
-    description: '灵犀·看一个想法的完整卡片：正文、标签、成熟度、回访状态、时间线（含历次深化/推进记录与捕获时留下的追问）。讨论某个想法之前先调它。',
+    description: '灵感池·看一个想法的完整卡片：正文、标签、成熟度、回访状态、时间线（含历次深化/推进记录与捕获时留下的追问）。讨论某个想法之前先调它。',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: '想法 id' } },
@@ -289,7 +289,7 @@ const tools = [
   },
   {
     name: 'lingxi_deepen',
-    description: '灵犀·深化一个想法：把讨论中新产生的理解/补充/方案沉淀进去（追加时间线，回访间隔翻倍）。与用户聊完某个想法有新结论时调用。',
+    description: '灵感池·深化一个想法：把讨论中新产生的理解/补充/方案沉淀进去（追加时间线，回访间隔翻倍）。与用户聊完某个想法有新结论时调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -312,7 +312,7 @@ const tools = [
   },
   {
     name: 'lingxi_promote',
-    description: '灵犀·推进成熟度：种子→嫩芽→轮廓→蓝图→落地。用户对想法有了更进一步的把握（怎么做清楚了/决定动手了）时调用。到「落地」即收口，不再回访。',
+    description: '灵感池·推进成熟度：种子→嫩芽→轮廓→蓝图→落地。用户对想法有了更进一步的把握（怎么做清楚了/决定动手了）时调用。到「落地」即收口，不再回访。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -340,7 +340,7 @@ const tools = [
   },
   {
     name: 'lingxi_revisit',
-    description: '灵犀·到期回访。action=list 列出今天到期待访的想法（含捕获时留下的追问，帮用户重启思考）；action=record 记录回访结果。用户说「翻翻旧想法」「回访」「这个想法再等等/归档了吧」时走这里。',
+    description: '灵感池·到期回访。action=list 列出今天到期待访的想法（含捕获时留下的追问，帮用户重启思考）；action=record 记录回访结果。用户说「翻翻旧想法」「回访」「这个想法再等等/归档了吧」时走这里。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -388,7 +388,7 @@ const tools = [
   },
   {
     name: 'lingxi_constellation',
-    description: '灵犀·星系报告：池中想法按主标签聚类成星系，每簇给数量/成熟度分布/存龄；并标出「值得合并成项目」的候选星系（≥3 条且 ≥2 条到轮廓以上）。适合定期盘点「池子里哪些想法可以合流了」。',
+    description: '灵感池·星系报告：池中想法按主标签聚类成星系，每簇给数量/成熟度分布/存龄；并标出「值得合并成项目」的候选星系（≥3 条且 ≥2 条到轮廓以上）。适合定期盘点「池子里哪些想法可以合流了」。',
     inputSchema: { type: 'object', properties: {} },
     async call() {
       const now = Date.now();
@@ -414,7 +414,7 @@ const tools = [
   },
   {
     name: 'lingxi_collide',
-    description: '灵犀·随机碰撞头脑风暴：从池中随机抽几个想法 + 一张创意视角卡（强制嫁接/反转假设/缩放/减半/迁地他用…），由你主持这场碰撞并给出具体碰撞产出。用户说「头脑风暴」「来一场碰撞」「帮我把旧想法盘出点新东西」时调用。',
+    description: '灵感池·随机碰撞头脑风暴：从池中随机抽几个想法 + 一张创意视角卡（强制嫁接/反转假设/缩放/减半/迁地他用…），由你主持这场碰撞并给出具体碰撞产出。用户说「头脑风暴」「来一场碰撞」「帮我把旧想法盘出点新东西」时调用。',
     inputSchema: {
       type: 'object',
       properties: {
@@ -439,7 +439,7 @@ const tools = [
   },
   {
     name: 'lingxi_archive',
-    description: '灵犀·归档/恢复想法。归档＝沉寂（不删除，可检索可恢复，退出回访）；restore=true 从归档恢复入池（回访重置为 3 天节奏）。用户说「这个先放着/没兴趣了」→归档；「把 XX 捞回来」→恢复。',
+    description: '灵感池·归档/恢复想法。归档＝沉寂（不删除，可检索可恢复，退出回访）；restore=true 从归档恢复入池（回访重置为 3 天节奏）。用户说「这个先放着/没兴趣了」→归档；「把 XX 捞回来」→恢复。',
     inputSchema: {
       type: 'object',
       properties: {

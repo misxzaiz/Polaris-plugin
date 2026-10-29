@@ -1,5 +1,5 @@
 /**
- * 数据层（韦编面板）
+ * 数据层（文档检索面板）
  *   kv 面：cap.kv weibian.settings / weibian.meta / weibian.stats / weibian.recent
  *   服务面：127.0.0.1（桌面）或当前 origin 主机（手机经局域网访问 PC 时）
  */
@@ -164,7 +164,7 @@ export function serviceBase(meta: WeibianMeta): string {
   const loc = window.location
   const host = loc.hostname || '127.0.0.1'
   const isLocal = host === '127.0.0.1' || host === 'localhost'
-  // 手机经局域网地址打开 Polaris Web 时，同主机直连 PC 的韦编服务端口
+  // 手机经局域网地址打开 Polaris Web 时，同主机直连 PC 的文档检索服务端口
   return `${isLocal ? 'http' : loc.protocol.startsWith('https') ? 'https' : 'http'}://${isLocal ? '127.0.0.1' : host}:${meta.port}`
 }
 
@@ -188,11 +188,11 @@ export class ServiceUnavailableError extends Error {}
 
 async function svc<T>(api: string, body?: unknown, timeoutMs?: number): Promise<T> {
   const meta = await getMeta()
-  if (!meta) throw new ServiceUnavailableError('韦编服务未就绪：首次使用请稍候几秒（宿主自动拉起后台服务），或重新打开面板。')
+  if (!meta) throw new ServiceUnavailableError('文档检索服务未就绪：首次使用请稍候几秒（宿主自动拉起后台服务），或重新打开面板。')
   try {
     return await svcFetch<T>(meta, api, body, timeoutMs)
   } catch (e) {
-    throw new ServiceUnavailableError('韦编服务不可达：' + String((e as Error).message) + '（手机端请确认与电脑同一局域网）')
+    throw new ServiceUnavailableError('文档检索服务不可达：' + String((e as Error).message) + '（手机端请确认与电脑同一局域网）')
   }
 }
 
