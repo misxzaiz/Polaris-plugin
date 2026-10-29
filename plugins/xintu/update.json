@@ -1,0 +1,44 @@
+{
+  "id": "xintu",
+  "name": "心图画布",
+  "version": "0.1.0",
+  "description": "心图 AI 画布：一块持久的无限画布，AI 在对话里把想法画上去（脑暴图/架构图/思维导图/对比板），人继续拖拽共编。MCP 六工具（list/create/read/edit/delete/export）：AI 批量 op 整批原子落板（试算通过才提交，防半截图）；确定性布局（radial 环形 / LR、TB 分层）兜底可读性；整板 cap.kv 存储，桌面/手机/Web 三端同看同一块板。纯本地零网络、零后台服务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "xintu.panel",
+        "area": "activityBar",
+        "panelType": "xintu",
+        "icon": "Beaker",
+        "labelKey": "plugins.xintu",
+        "labelDefault": "心图画布",
+        "order": 76
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "xintu",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/xintu",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/xintu/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/xintu/xintu.zip"
+  }
+}

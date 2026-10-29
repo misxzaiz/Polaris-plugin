@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-28T22:58:16.106Z",
+  "updated": "2026-10-29T16:54:00.869Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -1977,6 +1977,42 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@weibian-v0.1.0/plugins/weibian/weibian.zip"
+        }
+      ]
+    },
+    {
+      "id": "xintu",
+      "name": "心图画布",
+      "version": "0.1.0",
+      "description": "心图 AI 画布：一块持久的无限画布，AI 在对话里把想法画上去（脑暴图/架构图/思维导图/对比板），人继续拖拽共编。MCP 六工具批量 op 整批原子落板；确定性布局（radial/LR/TB）兜底可读性；整板 cap.kv 三端同看。纯本地零网络、零后台服务。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "canvas",
+        "whiteboard",
+        "mindmap",
+        "ai-tools",
+        "visual",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Beaker",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/xintu",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/xintu/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@xintu-v0.1.0/plugins/xintu/xintu.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/xintu/update.json",
+      "sha256": "312b5b9707bacdbed6d890be39ceaa47db7df94973ce8c7f2162708191d33eaa",
+      "tier": "production",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 心图画布\n\n持久无限画布：AI 对话里画（MCP 六工具），人拖拽共编；跨端 cap.kv 同步。\n\n- AI 侧：\"把这几个创意画到画布上\" → xintu_create + xintu_edit（批量 op 整批原子）\n- 人侧：平移/缩放/拖节点/连线/成组/6 档颜色/撤销重做/确定性重排\n- xintu_export 导出大纲回对话\n- 已知限制：5s 轮询同步；双端同改同板 last-write-wins；详见 README\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@xintu-v0.1.0/plugins/xintu/xintu.zip"
         }
       ]
     }
