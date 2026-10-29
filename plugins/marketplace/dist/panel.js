@@ -373,15 +373,6 @@ function MarketView(props) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sourceDraft, setSourceDraft] = useState("");
   const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith("\\\\");
-  if (loading) return /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93" }, children: "\u52A0\u8F7D\u5546\u57CE\u7D22\u5F15\u4E2D\u2026" });
-  if (error) return /* @__PURE__ */ jsxs("div", { style: { padding: 24, display: "flex", flexDirection: "column", gap: 12 }, children: [
-    /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444", wordBreak: "break-all" }, children: [
-      "\u52A0\u8F7D\u5931\u8D25\uFF1A",
-      error
-    ] }),
-    /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#8E8E93", lineHeight: 1.5 }, children: "\u81EA\u5B9A\u4E49\u6E90\u4F18\u5148\u3001\u5B98\u65B9\u955C\u50CF\u515C\u5E95\uFF08raw.githubusercontent \u2192 cdn.jsdelivr\uFF09\u3002\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5\u3002" }),
-    /* @__PURE__ */ jsx("button", { onClick: onReload, style: s.btn, children: "\u91CD\u8BD5" })
-  ] });
   const plugins = index?.plugins ?? [];
   const categories = Array.from(new Set(plugins.map((p) => p.category).filter(Boolean)));
   const filtered = useMemo(() => {
@@ -407,6 +398,15 @@ function MarketView(props) {
   const tierOrder = ["production", "beta", "demo"];
   const tierLabels = { production: "\u751F\u4EA7\u53EF\u7528", beta: "\u6D4B\u8BD5\u9636\u6BB5", demo: "\u6F14\u793A\u73A9\u5177" };
   const hasAny = tierOrder.some((t) => grouped[t].length > 0);
+  if (loading) return /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93" }, children: "\u52A0\u8F7D\u5546\u57CE\u7D22\u5F15\u4E2D\u2026" });
+  if (error) return /* @__PURE__ */ jsxs("div", { style: { padding: 24, display: "flex", flexDirection: "column", gap: 12 }, children: [
+    /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444", wordBreak: "break-all" }, children: [
+      "\u52A0\u8F7D\u5931\u8D25\uFF1A",
+      error
+    ] }),
+    /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#8E8E93", lineHeight: 1.5 }, children: "\u81EA\u5B9A\u4E49\u6E90\u4F18\u5148\u3001\u5B98\u65B9\u955C\u50CF\u515C\u5E95\uFF08raw.githubusercontent \u2192 cdn.jsdelivr\uFF09\u3002\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5\u3002" }),
+    /* @__PURE__ */ jsx("button", { onClick: onReload, style: s.btn, children: "\u91CD\u8BD5" })
+  ] });
   return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { style: { padding: "12px 12px 8px", display: "flex", gap: 8, alignItems: "center" }, children: [
       /* @__PURE__ */ jsx(

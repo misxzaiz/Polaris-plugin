@@ -471,17 +471,8 @@ function MarketView(props: MarketViewProps) {
   const [sourceDraft, setSourceDraft] = useState('')
   const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith('\\\\')
 
-  if (loading) return <div style={{ padding: 24, color: '#8E8E93' }}>加载商城索引中…</div>
-  if (error) return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ color: '#EF4444', wordBreak: 'break-all' }}>加载失败：{error}</div>
-      <div style={{ fontSize: 11, color: '#8E8E93', lineHeight: 1.5 }}>
-        自定义源优先、官方镜像兜底（raw.githubusercontent → cdn.jsdelivr）。请检查网络后重试。
-      </div>
-      <button onClick={onReload} style={s.btn}>重试</button>
-    </div>
-  )
-
+  // —— 派生数据（所有 hooks 必须在条件 return 之前，否则跨渲染 hook 数量
+  //     不一致 → React Rules of Hooks 违规 #310）——
   const plugins = index?.plugins ?? []
   const categories = Array.from(new Set(plugins.map(p => p.category).filter(Boolean) as string[]))
 
@@ -512,6 +503,17 @@ function MarketView(props: MarketViewProps) {
   const tierOrder: PluginTier[] = ['production', 'beta', 'demo']
   const tierLabels: Record<PluginTier, string> = { production: '生产可用', beta: '测试阶段', demo: '演示玩具' }
   const hasAny = tierOrder.some(t => grouped[t].length > 0)
+
+  if (loading) return <div style={{ padding: 24, color: '#8E8E93' }}>加载商城索引中…</div>
+  if (error) return (
+    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ color: '#EF4444', wordBreak: 'break-all' }}>加载失败：{error}</div>
+      <div style={{ fontSize: 11, color: '#8E8E93', lineHeight: 1.5 }}>
+        自定义源优先、官方镜像兜底（raw.githubusercontent → cdn.jsdelivr）。请检查网络后重试。
+      </div>
+      <button onClick={onReload} style={s.btn}>重试</button>
+    </div>
+  )
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
