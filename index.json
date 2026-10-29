@@ -67,7 +67,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "315c3b5e9678b555b81386179193bc8e1af08291f1073f154ce34a49ab7f8c51",
+      "sha256": "d0e57e1221bc96f78833fa0617de5ca767c3084d08fc5434d008d2485798d871",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true,
@@ -80,7 +80,7 @@
         {
           "version": "1.2.1",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
-          "sha256": "315c3b5e9678b555b81386179193bc8e1af08291f1073f154ce34a49ab7f8c51"
+          "sha256": "d0e57e1221bc96f78833fa0617de5ca767c3084d08fc5434d008d2485798d871"
         }
       ]
     },

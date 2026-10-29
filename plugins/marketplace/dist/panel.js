@@ -10,18 +10,87 @@ var OFFICIAL_INDEX_SOURCES = [
   "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/index.json"
 ];
 var INDEX_SOURCE_KEY = "polaris.marketplace.indexUrl";
-function getCustomIndexSource() {
+var SOURCES_KEY = "polaris.marketplace.sources";
+var ACTIVE_SOURCE_KEY = "polaris.marketplace.activeSourceId";
+var OFFICIAL_SOURCE_ID = "__official__";
+function defaultSourceName(url) {
+  if (!url) return "\u5B98\u65B9";
   try {
-    return (localStorage.getItem(INDEX_SOURCE_KEY) || "").trim();
+    const u = new URL(url);
+    if (u.hostname === "127.0.0.1" || u.hostname === "localhost") return `\u672C\u5730 ${u.port || 80}`;
+    return u.hostname;
   } catch {
-    return "";
+    return url.split("/").filter(Boolean).pop() || url;
   }
 }
-function setCustomIndexSource(value) {
+function getSources() {
+  const official = { id: OFFICIAL_SOURCE_ID, name: "\u5B98\u65B9", url: "", builtin: true, lastUsed: 0 };
   try {
-    const v = (value || "").trim();
-    if (v) localStorage.setItem(INDEX_SOURCE_KEY, v);
-    else localStorage.removeItem(INDEX_SOURCE_KEY);
+    const raw = localStorage.getItem(SOURCES_KEY);
+    if (!raw) return [official];
+    const list = JSON.parse(raw);
+    const valid = list.filter((s2) => s2 && typeof s2.id === "string" && typeof s2.url === "string" && s2.id !== OFFICIAL_SOURCE_ID);
+    return [official, ...valid].sort((a, b) => b.lastUsed - a.lastUsed);
+  } catch {
+    return [official];
+  }
+}
+function saveSources(list) {
+  const user = list.filter((s2) => !s2.builtin);
+  try {
+    localStorage.setItem(SOURCES_KEY, JSON.stringify(user));
+  } catch {
+  }
+}
+function getActiveSourceId() {
+  try {
+    return localStorage.getItem(ACTIVE_SOURCE_KEY) || OFFICIAL_SOURCE_ID;
+  } catch {
+    return OFFICIAL_SOURCE_ID;
+  }
+}
+function setActiveSourceId(id) {
+  try {
+    localStorage.setItem(ACTIVE_SOURCE_KEY, id);
+  } catch {
+  }
+}
+function touchSource(id) {
+  const list = getSources().filter((s2) => s2.id !== OFFICIAL_SOURCE_ID);
+  const hit = list.find((s2) => s2.id === id);
+  if (!hit) return;
+  hit.lastUsed = Date.now();
+  saveSources(list);
+}
+function upsertSource(name, url) {
+  const list = getSources().filter((s2) => s2.id !== OFFICIAL_SOURCE_ID);
+  const existing = list.find((s2) => s2.url === url);
+  const id = existing?.id ?? `src-${Date.now().toString(36)}`;
+  const entry = {
+    id,
+    name: name.trim() || defaultSourceName(url),
+    url,
+    lastUsed: Date.now()
+  };
+  const next = [entry, ...list.filter((s2) => s2.id !== id)];
+  saveSources(next);
+  return entry;
+}
+function removeSource(id) {
+  const list = getSources().filter((s2) => s2.id !== OFFICIAL_SOURCE_ID);
+  const next = list.filter((s2) => s2.id !== id);
+  if (next.length === list.length) return false;
+  saveSources(next);
+  return true;
+}
+function migrateLegacySingleSource() {
+  try {
+    if (localStorage.getItem(SOURCES_KEY)) return;
+    const legacy = (localStorage.getItem(INDEX_SOURCE_KEY) || "").trim();
+    if (!legacy) return;
+    upsertSource(defaultSourceName(legacy), legacy);
+    setActiveSourceId(getSources().find((s2) => s2.url === legacy)?.id || OFFICIAL_SOURCE_ID);
+    localStorage.removeItem(INDEX_SOURCE_KEY);
   } catch {
   }
 }
@@ -192,19 +261,25 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const [installing, setInstalling] = useState(null);
   const [installMsg, setInstallMsg] = useState(null);
   const [sourceUsed, setSourceUsed] = useState("");
+  const [sources, setSources] = useState(() => {
+    migrateLegacySingleSource();
+    return getSources();
+  });
+  const [activeSourceId, setActiveId] = useState(() => getActiveSourceId());
   const [installed, setInstalled] = useState([]);
   const [iLoading, setILoading] = useState(false);
   const [iError, setIError] = useState(null);
   const [updates, setUpdates] = useState({});
   const [opLoading, setOpLoading] = useState(null);
   const [opMsg, setOpMsg] = useState(null);
-  const loadIndex = useCallback(async () => {
+  const loadIndex = useCallback(async (sourceId) => {
+    const sid = sourceId ?? getActiveSourceId();
+    const src = getSources().find((s2) => s2.id === sid) || getSources()[0];
     setMLoading(true);
     setMError(null);
     setSourceUsed("");
     try {
-      const custom = getCustomIndexSource();
-      const candidates = custom ? [custom, ...OFFICIAL_INDEX_SOURCES] : OFFICIAL_INDEX_SOURCES;
+      const candidates = src.url ? [src.url] : OFFICIAL_INDEX_SOURCES;
       let lastError = "";
       for (const source of candidates) {
         try {
@@ -214,7 +289,9 @@ function MarketplacePanel({ pluginId: _pluginId }) {
           if (!Array.isArray(data?.plugins)) throw new Error("\u7D22\u5F15\u683C\u5F0F\u65E0\u6548\uFF08\u7F3A\u5C11 plugins \u6570\u7EC4\uFF09");
           resolveIndexUrls(data, source);
           setIndex(data);
-          setSourceUsed(source);
+          setSourceUsed(src.url ? source : src.name);
+          touchSource(sid);
+          setActiveId(sid);
           return;
         } catch (e) {
           lastError = e instanceof DOMException && e.name === "AbortError" ? `${source} \u8D85\u65F6\uFF0810s\uFF09` : `${source}\uFF1A${e instanceof Error ? e.message : String(e)}`;
@@ -227,9 +304,33 @@ function MarketplacePanel({ pluginId: _pluginId }) {
       setMLoading(false);
     }
   }, []);
-  const applyIndexSource = useCallback((value) => {
-    setCustomIndexSource(value);
-    void loadIndex();
+  const switchSource = useCallback((id) => {
+    setActiveId(id);
+    setActiveSourceId(id);
+    setSelected(null);
+    setSelectedVersion("");
+    setInstallMsg(null);
+    void loadIndex(id);
+  }, [loadIndex]);
+  const applyIndexSource = useCallback((name, url) => {
+    const entry = upsertSource(name, url);
+    setSources(getSources());
+    setActiveId(entry.id);
+    setActiveSourceId(entry.id);
+    setSelected(null);
+    setSelectedVersion("");
+    setInstallMsg(null);
+    void loadIndex(entry.id);
+  }, [loadIndex]);
+  const deleteSource = useCallback((id) => {
+    if (id === OFFICIAL_SOURCE_ID) return;
+    if (!removeSource(id)) return;
+    setSources(getSources());
+    if (getActiveSourceId() === id) {
+      setActiveId(OFFICIAL_SOURCE_ID);
+      setActiveSourceId(OFFICIAL_SOURCE_ID);
+      void loadIndex(OFFICIAL_SOURCE_ID);
+    }
   }, [loadIndex]);
   const loadInstalled = useCallback(async () => {
     setILoading(true);
@@ -326,9 +427,13 @@ function MarketplacePanel({ pluginId: _pluginId }) {
         installing,
         installMsg,
         onInstall: handleInstall,
-        onReload: loadIndex,
+        onReload: () => void loadIndex(),
         sourceUsed,
-        onApplySource: applyIndexSource
+        sources,
+        activeSourceId,
+        onSwitchSource: switchSource,
+        onAddSource: applyIndexSource,
+        onDeleteSource: deleteSource
       }
     ) : /* @__PURE__ */ jsx(
       InstalledView,
@@ -368,11 +473,12 @@ function MarketView(props) {
     onInstall,
     onReload,
     sourceUsed,
-    onApplySource
+    sources,
+    activeSourceId,
+    onSwitchSource,
+    onAddSource,
+    onDeleteSource
   } = props;
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const [sourceDraft, setSourceDraft] = useState("");
-  const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith("\\\\");
   const plugins = index?.plugins ?? [];
   const categories = Array.from(new Set(plugins.map((p) => p.category).filter(Boolean)));
   const filtered = useMemo(() => {
@@ -398,14 +504,40 @@ function MarketView(props) {
   const tierOrder = ["production", "beta", "demo"];
   const tierLabels = { production: "\u751F\u4EA7\u53EF\u7528", beta: "\u6D4B\u8BD5\u9636\u6BB5", demo: "\u6F14\u793A\u73A9\u5177" };
   const hasAny = tierOrder.some((t) => grouped[t].length > 0);
-  if (loading) return /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93" }, children: "\u52A0\u8F7D\u5546\u57CE\u7D22\u5F15\u4E2D\u2026" });
-  if (error) return /* @__PURE__ */ jsxs("div", { style: { padding: 24, display: "flex", flexDirection: "column", gap: 12 }, children: [
-    /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444", wordBreak: "break-all" }, children: [
-      "\u52A0\u8F7D\u5931\u8D25\uFF1A",
-      error
-    ] }),
-    /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#8E8E93", lineHeight: 1.5 }, children: "\u81EA\u5B9A\u4E49\u6E90\u4F18\u5148\u3001\u5B98\u65B9\u955C\u50CF\u515C\u5E95\uFF08raw.githubusercontent \u2192 cdn.jsdelivr\uFF09\u3002\u8BF7\u68C0\u67E5\u7F51\u7EDC\u540E\u91CD\u8BD5\u3002" }),
-    /* @__PURE__ */ jsx("button", { onClick: onReload, style: s.btn, children: "\u91CD\u8BD5" })
+  if (loading) return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%" }, children: [
+    /* @__PURE__ */ jsx(
+      SourceBar,
+      {
+        sources,
+        activeSourceId,
+        onSwitchSource,
+        onAddSource,
+        onDeleteSource,
+        sourceUsed
+      }
+    ),
+    /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93" }, children: "\u52A0\u8F7D\u5546\u57CE\u7D22\u5F15\u4E2D\u2026" })
+  ] });
+  if (error) return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%" }, children: [
+    /* @__PURE__ */ jsx(
+      SourceBar,
+      {
+        sources,
+        activeSourceId,
+        onSwitchSource,
+        onAddSource,
+        onDeleteSource,
+        sourceUsed
+      }
+    ),
+    /* @__PURE__ */ jsxs("div", { style: { padding: 24, display: "flex", flexDirection: "column", gap: 12 }, children: [
+      /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444", wordBreak: "break-all" }, children: [
+        "\u52A0\u8F7D\u5931\u8D25\uFF1A",
+        error
+      ] }),
+      /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#8E8E93", lineHeight: 1.5 }, children: "\u5207\u6362\u5176\u4ED6\u5546\u57CE\u6E90\u91CD\u8BD5\uFF0C\u6216\u68C0\u67E5\u7F51\u7EDC\u540E\u5237\u65B0\u3002" }),
+      /* @__PURE__ */ jsx("button", { onClick: onReload, style: s.btn, children: "\u91CD\u8BD5" })
+    ] })
   ] });
   return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%" }, children: [
     /* @__PURE__ */ jsxs("div", { style: { padding: "12px 12px 8px", display: "flex", gap: 8, alignItems: "center" }, children: [
@@ -418,51 +550,19 @@ function MarketView(props) {
           style: { flex: 1, padding: "6px 10px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 12, outline: "none" }
         }
       ),
-      /* @__PURE__ */ jsx("button", { onClick: onReload, title: "\u5237\u65B0\u7D22\u5F15", style: { ...s.btn, padding: "6px 10px" }, children: "\u21BB" }),
-      /* @__PURE__ */ jsx("button", { onClick: () => {
-        setSourceDraft(sourceUsed);
-        setSettingsOpen((o) => !o);
-      }, title: "\u5546\u57CE\u6E90\u8BBE\u7F6E\uFF08\u5B98\u65B9/\u672C\u5730\u955C\u50CF\uFF09", style: { ...s.btn, padding: "6px 10px" }, children: "\u2699" })
+      /* @__PURE__ */ jsx("button", { onClick: onReload, title: "\u5237\u65B0\u7D22\u5F15", style: { ...s.btn, padding: "6px 10px" }, children: "\u21BB" })
     ] }),
-    settingsOpen && /* @__PURE__ */ jsxs("div", { style: { margin: "0 12px 8px", padding: 10, borderRadius: 8, background: "#1F1F24", border: "1px solid #3F3F46", display: "flex", flexDirection: "column", gap: 8 }, children: [
-      /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#B4B4B8", fontWeight: 600 }, children: "\u5546\u57CE\u6E90" }),
-      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            value: sourceDraft,
-            onChange: (e) => setSourceDraft(e.target.value),
-            placeholder: "\u81EA\u5B9A\u4E49\u7D22\u5F15 URL\uFF08\u7559\u7A7A = \u5B98\u65B9\u6E90\uFF09\uFF0C\u5982 http://127.0.0.1:8787/index.json",
-            style: { flex: 1, padding: "5px 8px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 11, outline: "none", wordBreak: "break-all" }
-          }
-        ),
-        /* @__PURE__ */ jsx("button", { onClick: () => {
-          onApplySource(sourceDraft);
-          setSettingsOpen(false);
-        }, style: { ...s.btn, padding: "4px 10px" }, children: "\u4FDD\u5B58" }),
-        /* @__PURE__ */ jsx("button", { onClick: () => {
-          setSourceDraft("");
-          onApplySource("");
-          setSettingsOpen(false);
-        }, title: "\u6062\u590D\u5B98\u65B9\u6E90", style: { ...s.miniBtn, padding: "4px 10px" }, children: "\u5B98\u65B9" })
-      ] }),
-      isLocalSource && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#F59E0B", lineHeight: 1.5 }, children: [
-        "\u26A0 \u6D4F\u89C8\u5668/\u9762\u677F\u65E0\u6CD5\u76F4\u63A5 fetch \u672C\u5730\u8DEF\u5F84\uFF08file:// \u6216\u76D8\u7B26\u8DEF\u5F84\uFF09\u3002\u8BF7\u5148\u5728\u5546\u57CE\u76EE\u5F55\u542F\u52A8\u672C\u5730\u9759\u6001\u670D\u52A1\uFF1A",
-        /* @__PURE__ */ jsx("code", { style: { color: "#F8F8F8" }, children: "node scripts/serve-market.js D:\\\u4F60\u7684\u5546\u57CE\u76EE\u5F55 8787" }),
-        "\uFF0C\u7136\u540E\u586B ",
-        /* @__PURE__ */ jsx("code", { style: { color: "#F8F8F8" }, children: "http://127.0.0.1:8787/index.json" }),
-        "\u3002"
-      ] }),
-      /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#6B7280", lineHeight: 1.5 }, children: [
-        "\u2022 \u672C\u5730\u5546\u57CE\uFF1A\u7D22\u5F15\u91CC\u7684 downloadUrl \u53EF\u5199\u76F8\u5BF9\u8DEF\u5F84\uFF08\u76F8\u5BF9 index.json\uFF09\u6216\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\uFF08zip \u6216\u63D2\u4EF6\u76EE\u5F55\uFF1B\u684C\u9762\u7AEF\u76F4\u63A5\u672C\u673A\u5B89\u88C5\uFF0C\u4EC5 Tauri \u751F\u6548\uFF09",
-        /* @__PURE__ */ jsx("br", {}),
-        "\u2022 \u5B98\u65B9\u6E90\u5931\u8D25\u81EA\u52A8\u5207\u955C\u50CF\uFF08raw.githubusercontent \u2192 cdn.jsdelivr\uFF09"
-      ] }),
-      sourceUsed && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#10B981", wordBreak: "break-all" }, children: [
-        "\u5F53\u524D\u6E90\uFF1A",
+    /* @__PURE__ */ jsx(
+      SourceBar,
+      {
+        sources,
+        activeSourceId,
+        onSwitchSource,
+        onAddSource,
+        onDeleteSource,
         sourceUsed
-      ] })
-    ] }),
+      }
+    ),
     /* @__PURE__ */ jsxs("div", { style: { padding: "0 12px 8px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }, children: [
       /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#6B7280", marginRight: 2 }, children: "\u7B49\u7EA7" }),
       ["all", "production", "beta", "demo"].map((t) => /* @__PURE__ */ jsx(
@@ -527,6 +627,116 @@ function MarketView(props) {
         onInstall
       }
     )
+  ] });
+}
+function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDeleteSource, sourceUsed }) {
+  const [adding, setAdding] = useState(false);
+  const [sourceDraft, setSourceDraft] = useState("");
+  const [sourceNameDraft, setSourceNameDraft] = useState("");
+  const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith("\\\\");
+  const submitAdd = () => {
+    const url = sourceDraft.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      setAdding(true);
+      return;
+    }
+    onAddSource(sourceNameDraft, url);
+    setSourceDraft("");
+    setSourceNameDraft("");
+    setAdding(false);
+  };
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsxs("div", { style: { padding: "0 12px 8px", display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#6B7280", marginRight: 2 }, children: "\u6E90" }),
+      sources.map((src) => {
+        const active = src.id === activeSourceId;
+        const isOfficial = src.id === OFFICIAL_SOURCE_ID;
+        return /* @__PURE__ */ jsxs("span", { style: { display: "inline-flex", alignItems: "center", gap: 3 }, children: [
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => onSwitchSource(src.id),
+              title: src.url || "\u5B98\u65B9\u591A\u955C\u50CF",
+              style: {
+                fontSize: 10,
+                padding: "2px 8px",
+                borderRadius: 10,
+                cursor: "pointer",
+                border: `1px solid ${active ? "#3B82F6" : "#3F3F46"}`,
+                background: active ? "#3B82F622" : "transparent",
+                color: active ? "#3B82F6" : "#8E8E93"
+              },
+              children: src.name
+            }
+          ),
+          !isOfficial && /* @__PURE__ */ jsx(
+            "button",
+            {
+              onClick: () => onDeleteSource(src.id),
+              title: "\u5220\u9664\u8BE5\u6E90",
+              style: { fontSize: 9, padding: "1px 4px", borderRadius: 8, cursor: "pointer", border: "none", background: "transparent", color: "#6B7280" },
+              children: "\xD7"
+            }
+          )
+        ] }, src.id);
+      }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          onClick: () => setAdding((o) => !o),
+          title: "\u6DFB\u52A0\u5546\u57CE\u6E90",
+          style: { fontSize: 10, padding: "2px 8px", borderRadius: 10, cursor: "pointer", border: "1px dashed #3F3F46", background: "transparent", color: "#6B7280" },
+          children: "+ \u6DFB\u52A0\u6E90"
+        }
+      )
+    ] }),
+    adding && /* @__PURE__ */ jsxs("div", { style: { margin: "0 12px 8px", padding: 10, borderRadius: 8, background: "#1F1F24", border: "1px solid #3F3F46", display: "flex", flexDirection: "column", gap: 8 }, children: [
+      /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#B4B4B8", fontWeight: 600 }, children: "\u6DFB\u52A0\u5546\u57CE\u6E90" }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8 }, children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            value: sourceNameDraft,
+            onChange: (e) => setSourceNameDraft(e.target.value),
+            placeholder: "\u540D\u79F0\uFF08\u53EF\u9009\uFF0C\u5982 \u672C\u5730\u5546\u57CE\uFF09",
+            style: { width: "32%", padding: "5px 8px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 11, outline: "none" }
+          }
+        ),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            value: sourceDraft,
+            onChange: (e) => setSourceDraft(e.target.value),
+            placeholder: "\u7D22\u5F15 URL\uFF08\u5FC5\u586B\uFF0Chttp/https\uFF09\uFF0C\u5982 http://127.0.0.1:8787/index.json",
+            style: { flex: 1, padding: "5px 8px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 11, outline: "none", wordBreak: "break-all" }
+          }
+        ),
+        /* @__PURE__ */ jsx("button", { onClick: submitAdd, style: { ...s.btn, padding: "4px 10px" }, children: "\u6DFB\u52A0" }),
+        /* @__PURE__ */ jsx("button", { onClick: () => {
+          setAdding(false);
+          setSourceDraft("");
+          setSourceNameDraft("");
+        }, style: { ...s.miniBtn, padding: "4px 10px" }, children: "\u53D6\u6D88" })
+      ] }),
+      isLocalSource && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#F59E0B", lineHeight: 1.5 }, children: [
+        "\u26A0 \u6D4F\u89C8\u5668/\u9762\u677F\u65E0\u6CD5\u76F4\u63A5 fetch \u672C\u5730\u8DEF\u5F84\uFF08file:// \u6216\u76D8\u7B26\u8DEF\u5F84\uFF09\u3002\u8BF7\u5148\u5728\u5546\u57CE\u76EE\u5F55\u542F\u52A8\u672C\u5730\u9759\u6001\u670D\u52A1\uFF1A",
+        /* @__PURE__ */ jsx("code", { style: { color: "#F8F8F8" }, children: "node scripts/serve-market.js D:\\\u4F60\u7684\u5546\u57CE\u76EE\u5F55 8787" }),
+        "\uFF0C\u7136\u540E\u586B ",
+        /* @__PURE__ */ jsx("code", { style: { color: "#F8F8F8" }, children: "http://127.0.0.1:8787/index.json" }),
+        "\u3002"
+      ] }),
+      /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#6B7280", lineHeight: 1.5 }, children: [
+        "\u2022 \u672C\u5730\u5546\u57CE\uFF1A\u7D22\u5F15\u91CC\u7684 downloadUrl \u53EF\u5199\u76F8\u5BF9\u8DEF\u5F84\uFF08\u76F8\u5BF9 index.json\uFF09\u6216\u672C\u5730\u7EDD\u5BF9\u8DEF\u5F84\uFF08zip \u6216\u63D2\u4EF6\u76EE\u5F55\uFF1B\u684C\u9762\u7AEF\u76F4\u63A5\u672C\u673A\u5B89\u88C5\uFF0C\u4EC5 Tauri \u751F\u6548\uFF09",
+        /* @__PURE__ */ jsx("br", {}),
+        "\u2022 \u5B98\u65B9\u6E90\uFF08\u591A\u955C\u50CF raw.githubusercontent \u2192 cdn.jsdelivr\uFF09\u6052\u5728\u5217\u8868\u9996\u9879\uFF0C\u70B9\u51FB\u5373\u56DE",
+        /* @__PURE__ */ jsx("br", {}),
+        "\u2022 \u5207\u6362\u6E90\u53EA\u52A0\u8F7D\u5F53\u524D\u6E90\u7D22\u5F15\uFF08\u4E0D\u805A\u5408\u591A\u6E90\u63D2\u4EF6\uFF09"
+      ] }),
+      sourceUsed && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#10B981", wordBreak: "break-all" }, children: [
+        "\u5F53\u524D\u6E90\uFF1A",
+        sourceUsed
+      ] })
+    ] })
   ] });
 }
 function MarketItem({ plugin, tier, selected, onClick }) {

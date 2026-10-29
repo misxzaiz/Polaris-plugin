@@ -87,18 +87,119 @@ const OFFICIAL_INDEX_SOURCES = [
 /** 本地/自定义商城源持久化 key（localStorage：面板与主前端同 window，随应用持久） */
 const INDEX_SOURCE_KEY = 'polaris.marketplace.indexUrl'
 
-/** 读用户自定义源（空 = 未设置，走官方多镜像） */
-function getCustomIndexSource(): string {
-  try { return (localStorage.getItem(INDEX_SOURCE_KEY) || '').trim() } catch { return '' }
+/** 多源列表持久化 key（JSON 数组，替代 INDEX_SOURCE_KEY 的单源模式） */
+const SOURCES_KEY = 'polaris.marketplace.sources'
+/** 当前激活源 id 持久化 key */
+const ACTIVE_SOURCE_KEY = 'polaris.marketplace.activeSourceId'
+
+/** 商城源条目 */
+interface MarketSource {
+  id: string
+  /** 显示名（默认从 URL 推导，可自定义） */
+  name: string
+  /** 索引 URL（http/https；官方源为 ''，走 OFFICIAL_INDEX_SOURCES 多镜像兜底） */
+  url: string
+  /** 内置官方源标记（不可删除、不可改名） */
+  builtin?: boolean
+  /** 最近使用时间戳（ms，用于快速回排序） */
+  lastUsed: number
 }
 
-/** 写用户自定义源（空串 = 清除，恢复官方源） */
-function setCustomIndexSource(value: string): void {
+/** 官方源固定 id */
+const OFFICIAL_SOURCE_ID = '__official__'
+
+/** 从 URL 推导默认显示名 */
+function defaultSourceName(url: string): string {
+  if (!url) return '官方'
   try {
-    const v = (value || '').trim()
-    if (v) localStorage.setItem(INDEX_SOURCE_KEY, v)
-    else localStorage.removeItem(INDEX_SOURCE_KEY)
-  } catch { /* 无痕/受限存储：静默忽略（本次会话仍可用自选源） */ }
+    const u = new URL(url)
+    // 本地服务：127.0.0.1:8787 → "本地 8787"
+    if (u.hostname === '127.0.0.1' || u.hostname === 'localhost') return `本地 ${u.port || 80}`
+    return u.hostname
+  } catch { return url.split('/').filter(Boolean).pop() || url }
+}
+
+/** 读全部商城源（含官方源占位；按 lastUsed 倒序） */
+function getSources(): MarketSource[] {
+  const official: MarketSource = { id: OFFICIAL_SOURCE_ID, name: '官方', url: '', builtin: true, lastUsed: 0 }
+  try {
+    const raw = localStorage.getItem(SOURCES_KEY)
+    if (!raw) return [official]
+    const list = JSON.parse(raw) as MarketSource[]
+    const valid = list.filter(s => s && typeof s.id === 'string' && typeof s.url === 'string' && s.id !== OFFICIAL_SOURCE_ID)
+    return [official, ...valid].sort((a, b) => b.lastUsed - a.lastUsed)
+  } catch { return [official] }
+}
+
+/** 写全部用户源（不含官方占位；官方始终由 getSources 注入） */
+function saveSources(list: MarketSource[]): void {
+  const user = list.filter(s => !s.builtin)
+  try { localStorage.setItem(SOURCES_KEY, JSON.stringify(user)) } catch { /* 受限存储静默 */ }
+}
+
+/** 读当前激活源 id（缺省官方） */
+function getActiveSourceId(): string {
+  try { return localStorage.getItem(ACTIVE_SOURCE_KEY) || OFFICIAL_SOURCE_ID } catch { return OFFICIAL_SOURCE_ID }
+}
+
+/** 写当前激活源 id */
+function setActiveSourceId(id: string): void {
+  try { localStorage.setItem(ACTIVE_SOURCE_KEY, id) } catch { /* 静默 */ }
+}
+
+/** 记录某源最近使用（更新 lastUsed 并持久化） */
+function touchSource(id: string): void {
+  const list = getSources().filter(s => s.id !== OFFICIAL_SOURCE_ID)
+  const hit = list.find(s => s.id === id)
+  if (!hit) return
+  hit.lastUsed = Date.now()
+  saveSources(list)
+}
+
+/** 新增/更新一个用户源（同名 URL 去重更新） */
+function upsertSource(name: string, url: string): MarketSource {
+  const list = getSources().filter(s => s.id !== OFFICIAL_SOURCE_ID)
+  const existing = list.find(s => s.url === url)
+  const id = existing?.id ?? `src-${Date.now().toString(36)}`
+  const entry: MarketSource = {
+    id,
+    name: name.trim() || defaultSourceName(url),
+    url,
+    lastUsed: Date.now(),
+  }
+  const next = [entry, ...list.filter(s => s.id !== id)]
+  saveSources(next)
+  return entry
+}
+
+/** 删除用户源（官方/不存在返回 false） */
+function removeSource(id: string): boolean {
+  const list = getSources().filter(s => s.id !== OFFICIAL_SOURCE_ID)
+  const next = list.filter(s => s.id !== id)
+  if (next.length === list.length) return false
+  saveSources(next)
+  return true
+}
+
+/**
+ * 迁移旧单源（INDEX_SOURCE_KEY）到多源结构。
+ * 返回是否迁移了（幂等：旧 key 存在且非空且未迁移过才执行）。
+ */
+function migrateLegacySingleSource(): void {
+  try {
+    if (localStorage.getItem(SOURCES_KEY)) return // 已迁移过
+    const legacy = (localStorage.getItem(INDEX_SOURCE_KEY) || '').trim()
+    if (!legacy) return
+    upsertSource(defaultSourceName(legacy), legacy)
+    setActiveSourceId(getSources().find(s => s.url === legacy)?.id || OFFICIAL_SOURCE_ID)
+    localStorage.removeItem(INDEX_SOURCE_KEY)
+  } catch { /* 静默 */ }
+}
+
+/** 读当前激活源对象（找不到回退官方） */
+function getActiveSource(): MarketSource {
+  const id = getActiveSourceId()
+  return getSources().find(s => s.id === id) || getSources()[0]
 }
 
 /** 带超时的 fetch（单源 10s，超时切下一镜像） */
@@ -299,6 +400,13 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [installMsg, setInstallMsg] = useState<string | null>(null)
   const [sourceUsed, setSourceUsed] = useState<string>('')
 
+  // 多源状态：源列表 + 当前激活 id（挂载时迁移旧单源）
+  const [sources, setSources] = useState<MarketSource[]>(() => {
+    migrateLegacySingleSource()
+    return getSources()
+  })
+  const [activeSourceId, setActiveId] = useState<string>(() => getActiveSourceId())
+
   // 已装状态
   const [installed, setInstalled] = useState<InstalledPlugin[]>([])
   const [iLoading, setILoading] = useState(false)
@@ -307,12 +415,17 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [opLoading, setOpLoading] = useState<string | null>(null)
   const [opMsg, setOpMsg] = useState<string | null>(null)
 
-  const loadIndex = useCallback(async () => {
+  /**
+   * 加载索引（单源语义：只拉当前激活源，不聚合多源插件）。
+   * sourceId 缺省用当前激活源；官方源（url=''）走 OFFICIAL_INDEX_SOURCES 多镜像。
+   */
+  const loadIndex = useCallback(async (sourceId?: string) => {
+    const sid = sourceId ?? getActiveSourceId()
+    const src = getSources().find(s => s.id === sid) || getSources()[0]
     setMLoading(true); setMError(null); setSourceUsed('')
     try {
-      // 候选源：自定义源（本地商城/镜像）优先，官方多镜像兜底，全部失败才报错
-      const custom = getCustomIndexSource()
-      const candidates = custom ? [custom, ...OFFICIAL_INDEX_SOURCES] : OFFICIAL_INDEX_SOURCES
+      // 候选源：激活源是官方 → 官方多镜像；自定义 → 该源 URL（失败不自动落官方，保持语义清晰）
+      const candidates = src.url ? [src.url] : OFFICIAL_INDEX_SOURCES
       let lastError = ''
       for (const source of candidates) {
         try {
@@ -322,7 +435,9 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
           if (!Array.isArray(data?.plugins)) throw new Error('索引格式无效（缺少 plugins 数组）')
           // 相对 downloadUrl/manifestUrl 等相对索引源解析为绝对地址（本地商城支持的关键）
           resolveIndexUrls(data, source)
-          setIndex(data); setSourceUsed(source)
+          setIndex(data); setSourceUsed(src.url ? source : src.name)
+          touchSource(sid)
+          setActiveId(sid)
           return
         } catch (e) {
           lastError = e instanceof DOMException && e.name === 'AbortError' ? `${source} 超时（10s）` : `${source}：${e instanceof Error ? e.message : String(e)}`
@@ -333,10 +448,34 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     finally { setMLoading(false) }
   }, [])
 
-  /** 应用自定义商城源（本地商城/镜像入口；空串恢复官方源） */
-  const applyIndexSource = useCallback((value: string) => {
-    setCustomIndexSource(value)
-    void loadIndex()
+  /** 切换激活商城源（快速回：更新 lastUsed + 重新加载该源） */
+  const switchSource = useCallback((id: string) => {
+    setActiveId(id)
+    setActiveSourceId(id)
+    setSelected(null); setSelectedVersion(''); setInstallMsg(null)
+    void loadIndex(id)
+  }, [loadIndex])
+
+  /** 添加/更新一个用户源并切换过去（同名 URL 去重） */
+  const applyIndexSource = useCallback((name: string, url: string) => {
+    const entry = upsertSource(name, url)
+    setSources(getSources())
+    setActiveId(entry.id)
+    setActiveSourceId(entry.id)
+    setSelected(null); setSelectedVersion(''); setInstallMsg(null)
+    void loadIndex(entry.id)
+  }, [loadIndex])
+
+  /** 删除一个用户源；若删的是激活源则回退官方 */
+  const deleteSource = useCallback((id: string) => {
+    if (id === OFFICIAL_SOURCE_ID) return
+    if (!removeSource(id)) return
+    setSources(getSources())
+    if (getActiveSourceId() === id) {
+      setActiveId(OFFICIAL_SOURCE_ID)
+      setActiveSourceId(OFFICIAL_SOURCE_ID)
+      void loadIndex(OFFICIAL_SOURCE_ID)
+    }
   }, [loadIndex])
 
   const loadInstalled = useCallback(async () => {
@@ -417,8 +556,11 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
           tierFilter={tierFilter} setTierFilter={setTierFilter}
           selected={selected} setSelected={(p) => { setSelected(p); setSelectedVersion(''); setInstallMsg(null) }}
           selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
-          installing={installing} installMsg={installMsg} onInstall={handleInstall} onReload={loadIndex}
-          sourceUsed={sourceUsed} onApplySource={applyIndexSource}
+          installing={installing} installMsg={installMsg} onInstall={handleInstall}
+          onReload={() => void loadIndex()}
+          sourceUsed={sourceUsed}
+          sources={sources} activeSourceId={activeSourceId}
+          onSwitchSource={switchSource} onAddSource={applyIndexSource} onDeleteSource={deleteSource}
         />
       ) : (
         <InstalledView
@@ -456,8 +598,16 @@ interface MarketViewProps {
   onReload: () => void
   /** 当前生效的索引源（空 = 加载中/失败未定），展示 + 设置面板 */
   sourceUsed: string
-  /** 应用自定义索引源（本地商城/镜像；空串恢复官方多镜像） */
-  onApplySource: (value: string) => void
+  /** 全部商城源（含官方占位，按 lastUsed 倒序） */
+  sources: MarketSource[]
+  /** 当前激活源 id */
+  activeSourceId: string
+  /** 切换激活源（快速回） */
+  onSwitchSource: (id: string) => void
+  /** 添加/更新用户源（name + url）并切换 */
+  onAddSource: (name: string, url: string) => void
+  /** 删除用户源 */
+  onDeleteSource: (id: string) => void
 }
 
 function MarketView(props: MarketViewProps) {
@@ -465,11 +615,7 @@ function MarketView(props: MarketViewProps) {
     tierFilter, setTierFilter, selected, setSelected,
     selectedVersion, setSelectedVersion,
     installing, installMsg, onInstall, onReload,
-    sourceUsed, onApplySource } = props
-  // 源设置面板（本组件局部 UI 状态）
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const [sourceDraft, setSourceDraft] = useState('')
-  const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith('\\\\')
+    sourceUsed, sources, activeSourceId, onSwitchSource, onAddSource, onDeleteSource } = props
 
   // —— 派生数据（所有 hooks 必须在条件 return 之前，否则跨渲染 hook 数量
   //     不一致 → React Rules of Hooks 违规 #310）——
@@ -504,14 +650,24 @@ function MarketView(props: MarketViewProps) {
   const tierLabels: Record<PluginTier, string> = { production: '生产可用', beta: '测试阶段', demo: '演示玩具' }
   const hasAny = tierOrder.some(t => grouped[t].length > 0)
 
-  if (loading) return <div style={{ padding: 24, color: '#8E8E93' }}>加载商城索引中…</div>
+  if (loading) return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SourceBar sources={sources} activeSourceId={activeSourceId}
+        onSwitchSource={onSwitchSource} onAddSource={onAddSource} onDeleteSource={onDeleteSource} sourceUsed={sourceUsed} />
+      <div style={{ padding: 24, color: '#8E8E93' }}>加载商城索引中…</div>
+    </div>
+  )
   if (error) return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ color: '#EF4444', wordBreak: 'break-all' }}>加载失败：{error}</div>
-      <div style={{ fontSize: 11, color: '#8E8E93', lineHeight: 1.5 }}>
-        自定义源优先、官方镜像兜底（raw.githubusercontent → cdn.jsdelivr）。请检查网络后重试。
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <SourceBar sources={sources} activeSourceId={activeSourceId}
+        onSwitchSource={onSwitchSource} onAddSource={onAddSource} onDeleteSource={onDeleteSource} sourceUsed={sourceUsed} />
+      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ color: '#EF4444', wordBreak: 'break-all' }}>加载失败：{error}</div>
+        <div style={{ fontSize: 11, color: '#8E8E93', lineHeight: 1.5 }}>
+          切换其他商城源重试，或检查网络后刷新。
+        </div>
+        <button onClick={onReload} style={s.btn}>重试</button>
       </div>
-      <button onClick={onReload} style={s.btn}>重试</button>
     </div>
   )
 
@@ -522,37 +678,11 @@ function MarketView(props: MarketViewProps) {
         <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索插件…"
           style={{ flex: 1, padding: '6px 10px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none' }} />
         <button onClick={onReload} title="刷新索引" style={{ ...s.btn, padding: '6px 10px' }}>↻</button>
-        <button onClick={() => { setSourceDraft(sourceUsed); setSettingsOpen(o => !o) }} title="商城源设置（官方/本地镜像）" style={{ ...s.btn, padding: '6px 10px' }}>⚙</button>
       </div>
 
-      {/* 商城源设置面板 */}
-      {settingsOpen && (
-        <div style={{ margin: '0 12px 8px', padding: 10, borderRadius: 8, background: '#1F1F24', border: '1px solid #3F3F46', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 11, color: '#B4B4B8', fontWeight: 600 }}>商城源</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={sourceDraft}
-              onChange={e => setSourceDraft(e.target.value)}
-              placeholder="自定义索引 URL（留空 = 官方源），如 http://127.0.0.1:8787/index.json"
-              style={{ flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none', wordBreak: 'break-all' }}
-            />
-            <button onClick={() => { onApplySource(sourceDraft); setSettingsOpen(false) }} style={{ ...s.btn, padding: '4px 10px' }}>保存</button>
-            <button onClick={() => { setSourceDraft(''); onApplySource(''); setSettingsOpen(false) }} title="恢复官方源" style={{ ...s.miniBtn, padding: '4px 10px' }}>官方</button>
-          </div>
-          {isLocalSource && (
-            <div style={{ fontSize: 10, color: '#F59E0B', lineHeight: 1.5 }}>
-              ⚠ 浏览器/面板无法直接 fetch 本地路径（file:// 或盘符路径）。请先在商城目录启动本地静态服务：
-              <code style={{ color: '#F8F8F8' }}>node scripts/serve-market.js D:\你的商城目录 8787</code>
-              ，然后填 <code style={{ color: '#F8F8F8' }}>http://127.0.0.1:8787/index.json</code>。
-            </div>
-          )}
-          <div style={{ fontSize: 10, color: '#6B7280', lineHeight: 1.5 }}>
-            • 本地商城：索引里的 downloadUrl 可写相对路径（相对 index.json）或本地绝对路径（zip 或插件目录；桌面端直接本机安装，仅 Tauri 生效）<br />
-            • 官方源失败自动切镜像（raw.githubusercontent → cdn.jsdelivr）
-          </div>
-          {sourceUsed && <div style={{ fontSize: 10, color: '#10B981', wordBreak: 'break-all' }}>当前源：{sourceUsed}</div>}
-        </div>
-      )}
+      {/* 商城源切换条（常驻，快速回）：官方 + 用户源 chips + 添加 */}
+      <SourceBar sources={sources} activeSourceId={activeSourceId}
+        onSwitchSource={onSwitchSource} onAddSource={onAddSource} onDeleteSource={onDeleteSource} sourceUsed={sourceUsed} />
 
       {/* 过滤栏：等级 + 分类 */}
       <div style={{ padding: '0 12px 8px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -625,6 +755,102 @@ function MarketView(props: MarketViewProps) {
         />
       )}
     </div>
+  )
+}
+
+/* ========================================================================
+   商城源切换条（常驻：官方 + 用户源 chips + 添加/删除）
+   ======================================================================== */
+
+interface SourceBarProps {
+  sources: MarketSource[]
+  activeSourceId: string
+  onSwitchSource: (id: string) => void
+  onAddSource: (name: string, url: string) => void
+  onDeleteSource: (id: string) => void
+  sourceUsed: string
+}
+
+function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDeleteSource, sourceUsed }: SourceBarProps) {
+  const [adding, setAdding] = useState(false)
+  const [sourceDraft, setSourceDraft] = useState('')
+  const [sourceNameDraft, setSourceNameDraft] = useState('')
+  const isLocalSource = /^file:\/\//i.test(sourceDraft) || /^[a-zA-Z]:[\\/]/.test(sourceDraft) || sourceDraft.startsWith('\\\\')
+
+  const submitAdd = () => {
+    const url = sourceDraft.trim()
+    if (!/^https?:\/\//i.test(url)) { setAdding(true); return }
+    onAddSource(sourceNameDraft, url)
+    setSourceDraft(''); setSourceNameDraft(''); setAdding(false)
+  }
+
+  return (
+    <>
+      {/* 源 chips 条（快速回）：官方 + 用户源 + 添加 */}
+      <div style={{ padding: '0 12px 8px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: 10, color: '#6B7280', marginRight: 2 }}>源</span>
+        {sources.map(src => {
+          const active = src.id === activeSourceId
+          const isOfficial = src.id === OFFICIAL_SOURCE_ID
+          return (
+            <span key={src.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <button
+                onClick={() => onSwitchSource(src.id)}
+                title={src.url || '官方多镜像'}
+                style={{
+                  fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer',
+                  border: `1px solid ${active ? '#3B82F6' : '#3F3F46'}`,
+                  background: active ? '#3B82F622' : 'transparent',
+                  color: active ? '#3B82F6' : '#8E8E93',
+                }}
+              >{src.name}</button>
+              {!isOfficial && (
+                <button onClick={() => onDeleteSource(src.id)} title="删除该源"
+                  style={{ fontSize: 9, padding: '1px 4px', borderRadius: 8, cursor: 'pointer', border: 'none', background: 'transparent', color: '#6B7280' }}>×</button>
+              )}
+            </span>
+          )
+        })}
+        <button onClick={() => setAdding(o => !o)} title="添加商城源"
+          style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer', border: '1px dashed #3F3F46', background: 'transparent', color: '#6B7280' }}>+ 添加源</button>
+      </div>
+
+      {/* 添加源表单 */}
+      {adding && (
+        <div style={{ margin: '0 12px 8px', padding: 10, borderRadius: 8, background: '#1F1F24', border: '1px solid #3F3F46', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 11, color: '#B4B4B8', fontWeight: 600 }}>添加商城源</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              value={sourceNameDraft}
+              onChange={e => setSourceNameDraft(e.target.value)}
+              placeholder="名称（可选，如 本地商城）"
+              style={{ width: '32%', padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none' }}
+            />
+            <input
+              value={sourceDraft}
+              onChange={e => setSourceDraft(e.target.value)}
+              placeholder="索引 URL（必填，http/https），如 http://127.0.0.1:8787/index.json"
+              style={{ flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none', wordBreak: 'break-all' }}
+            />
+            <button onClick={submitAdd} style={{ ...s.btn, padding: '4px 10px' }}>添加</button>
+            <button onClick={() => { setAdding(false); setSourceDraft(''); setSourceNameDraft('') }} style={{ ...s.miniBtn, padding: '4px 10px' }}>取消</button>
+          </div>
+          {isLocalSource && (
+            <div style={{ fontSize: 10, color: '#F59E0B', lineHeight: 1.5 }}>
+              ⚠ 浏览器/面板无法直接 fetch 本地路径（file:// 或盘符路径）。请先在商城目录启动本地静态服务：
+              <code style={{ color: '#F8F8F8' }}>node scripts/serve-market.js D:\你的商城目录 8787</code>
+              ，然后填 <code style={{ color: '#F8F8F8' }}>http://127.0.0.1:8787/index.json</code>。
+            </div>
+          )}
+          <div style={{ fontSize: 10, color: '#6B7280', lineHeight: 1.5 }}>
+            • 本地商城：索引里的 downloadUrl 可写相对路径（相对 index.json）或本地绝对路径（zip 或插件目录；桌面端直接本机安装，仅 Tauri 生效）<br />
+            • 官方源（多镜像 raw.githubusercontent → cdn.jsdelivr）恒在列表首项，点击即回<br />
+            • 切换源只加载当前源索引（不聚合多源插件）
+          </div>
+          {sourceUsed && <div style={{ fontSize: 10, color: '#10B981', wordBreak: 'break-all' }}>当前源：{sourceUsed}</div>}
+        </div>
+      )}
+    </>
   )
 }
 
