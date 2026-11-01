@@ -1,0 +1,63 @@
+{
+  "id": "pdf-tables",
+  "name": "表格提取台",
+  "version": "0.1.0",
+  "description": "把 PDF 里的表格（银行流水/对账单/报表/论文附表）变成真正可求和的 Excel/CSV 数据——纯本地坐标级提取（pdfjs 文本项 → 行聚类 → 列对齐），逐页预览勾选、跨页续表合并、数字列自动转数值，AI 三工具（检测/提取落盘/预览读数）共用同一引擎。文件全程不出本机（服务只绑 127.0.0.1 + token，零外网请求），扫描件/加密 PDF 明确拒绝（不破解、不做 OCR）。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "pdf-tables.panel",
+        "area": "activityBar",
+        "panelType": "pdfTables",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.pdfTables",
+        "labelDefault": "表格提取台",
+        "order": 89
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "pdf-tables-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "面板表格提取引擎（127.0.0.1 + token）：上传字节→pdfjs 坐标提取→列对齐→exceljs 落盘输出目录，登记任务历史"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "pdf-tables",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pdf-tables",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pdf-tables/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pdf-tables/pdf-tables.zip"
+  }
+}

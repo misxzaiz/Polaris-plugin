@@ -1,0 +1,12 @@
+{
+  "id": "pdf-tables",
+  "name": "表格提取台",
+  "version": "0.1.0",
+  "description": "把 PDF 里的表格（银行流水/对账单/报表/论文附表）变成真正可求和的 Excel/CSV 数据——纯本地坐标级提取，逐页预览勾选、跨页续表合并、数字列自动转数值，AI 三工具共用同一引擎。文件全程不出本机。",
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pdf-tables",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pdf-tables/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pdf-tables/pdf-tables.zip"
+  }
+}
