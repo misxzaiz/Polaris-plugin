@@ -42,7 +42,7 @@
 | 键 | 写者 | 内容 |
 |---|---|---|
 | `taskrun.settings` | 面板（低频，last-write-wins） | retentionRuns / timeoutCommandSec / timeoutHttpSec / timeoutAiSec |
-| `taskrun.providers` | 面板 | AI 供应商数组 [{id,name,baseUrl,apiKey,model,wire}]；**一切出口掩码 `****后4`** |
+| `taskrun.providers` | 面板（手填）/ 服务（宿主导入 importHost 命令） | AI 供应商数组 [{id,name,baseUrl,apiKey,model,wire,hostId?,source?}]；**一切出口掩码 `****后4`**；掩码占位 key 拒收 |
 | `taskrun.jobs` | **服务单写者** | { jobs: [...] }，≤100 个任务 |
 | `taskrun.run.<n>` | **服务单写者** | 历史分块（25 条/块，摘录 ≤4KB）+ `taskrun.runsIdx` {chunkCount,total} |
 | `taskrun.cmd.<op>.<nonce>` | 面板/MCP 写 | 命令键（add/update/remove/runNow/setEnabled），服务**先删后做** |
@@ -52,7 +52,7 @@
 
 ## AI 供应商接入
 
-- 面板「设置 → AI 供应商 → 从宿主导入」：经 `cap.config` 读取宿主 modelProfiles，零重录
+- 面板「设置 → AI 供应商 → 从宿主导入」：**服务进程读宿主 config.json**（与 kvclient 同文件同信任域）拿原始密钥，按宿主档案 id 幂等合并（重复导入整组替换，手填保留）；面板侧 cap.config 只有 `__POLARIS_*` 掩码占位，故不走面板路径（实测 2026-11-02）
 - 手动新增：baseUrl（OpenAI 风格自动拼 `/chat/completions`；Anthropic 拼 `/v1/messages`）+ apiKey + 模型 + 协议
 - 密钥只存本机 cap.kv（与模型体检台同信任域），面板与 AI 侧一律掩码显示
 

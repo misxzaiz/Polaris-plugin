@@ -219,55 +219,6 @@ export const commands = {
   removeJob: (id: string) => sendCommand('remove', { id }),
   setEnabled: (id: string, enabled: boolean) => sendCommand('setEnabled', { id, enabled }),
   runNow: (id: string) => sendCommand('runNow', { id }, 60000),
-}
-
-// ── 宿主供应商导入（cap.config get → modelProfiles，multichat 同源）─────────
-interface HostProfile {
-  id?: unknown
-  name?: unknown
-  baseUrl?: unknown
-  apiKey?: unknown
-  model?: unknown
-  wire?: unknown
-}
-
-/** 从宿主配置里提取供应商形态的对象数组（多壳兼容，取不到返回空数组） */
-export async function importHostProfiles(): Promise<AiProvider[]> {
-  const res = await getHostInvoke()<{ ok: boolean; result?: unknown; error?: string }>('router_dispatch', {
-    req: { target: 'cap.config', payload: { action: 'get' } },
-  })
-  if (!res.ok) throw new Error(res.error || 'cap.config 读取失败（宿主未放行或版本过旧）')
-  const profiles = findModelProfiles(res.result)
-  return profiles.map((p, i) => ({
-    id: `prov_${Date.now().toString(36)}${i}`,
-    name: String(p.name || p.id || `供应商${i + 1}`).slice(0, 40),
-    baseUrl: String(p.baseUrl || ''),
-    apiKey: String(p.apiKey || ''),
-    model: String(p.model || ''),
-    wire: p.wire === 'anthropic-messages' ? 'anthropic-messages' as const : 'openai-chat-completions' as const,
-  })).filter((p) => p.baseUrl)
-}
-
-function findModelProfiles(result: unknown): HostProfile[] {
-  const seen = new Set<unknown>()
-  const walk = (node: unknown, depth: number): HostProfile[] => {
-    if (!node || typeof node !== 'object' || depth > 4 || seen.has(node)) return []
-    seen.add(node)
-    if (Array.isArray(node)) {
-      // 供应商数组形态：元素含 baseUrl 字段
-      if (node.length && node.every((x) => x && typeof x === 'object' && ('baseUrl' in (x as object) || 'base_url' in (x as object)))) {
-        return node as HostProfile[]
-      }
-      return node.flatMap((x) => walk(x, depth + 1))
-    }
-    const obj = node as Record<string, unknown>
-    for (const key of ['modelProfiles', 'profiles', 'providers']) {
-      if (obj[key]) {
-        const found = walk(obj[key], depth + 1)
-        if (found.length) return found
-      }
-    }
-    return []
-  }
-  return walk(result, 0)
+  /** 从宿主 config.json 导入供应商（服务读盘拿原始密钥；面板侧 cap.config 只有掩码占位） */
+  importHost: () => sendCommand('importHost', {}, 20000) as Promise<CmdResult & { imported?: number; total?: number; dryRun?: boolean }>,
 }

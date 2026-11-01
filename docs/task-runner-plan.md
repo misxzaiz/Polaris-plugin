@@ -122,14 +122,16 @@ MCP(stdio) ─ task_list/add/run/history/set/remove → 命令键/结果键
 | 键 | 写者 | 内容 |
 |---|---|---|
 | `taskrun.settings` | 面板（last-write-wins，低频低冲突） | retention/超时/上限 |
-| `taskrun.providers` | 面板 | AI 供应商 [{id,name,baseUrl,apiKey,model,wire}]，**出口全掩码** |
+| `taskrun.providers` | 面板（手填）/ 服务（importHost 宿主导入） | AI 供应商 [{id,name,baseUrl,apiKey,model,wire,hostId?}]，**出口全掩码**；掩码占位 key 拒收 |
 | `taskrun.jobs` | **服务单写者** | { jobs:[{id,name,type,schedule,payload,enabled,nextRunAt,createdAt,...}] } |
-| `taskrun.run.<n>` | 服务单写者 | 历史分块（50/块）+ `taskrun.runsIdx` 索引，默认保留 200 条 |
-| `taskrun.cmd.<op>.<nonce>` | 面板/MCP | add/update/remove/runNow/setEnabled |
+| `taskrun.run.<n>` | 服务单写者 | 历史分块（25/块）+ `taskrun.runsIdx` 索引，默认保留 200 条 |
+| `taskrun.cmd.<op>.<nonce>` | 面板/MCP | add/update/remove/runNow/setEnabled/importHost |
 | `taskrun.result.<nonce>` | 服务 | 命令回执（面板 1200ms 轮询 ≤30s） |
 | `taskrun.meta` | 服务 | 心跳 {version,pid,degraded,lastTickAt,...} |
 
 ### 3.4 安全设计
+
+> 供应商导入路径（2026-11-02 实测定案）：面板侧 `cap.config get` 的 apiKey 是宿主脱敏占位（`__POLARIS_*`），直接入库会让 AI 任务鉴权失败——导入下沉服务进程读宿主 config.json（kvclient 同文件同信任域，llm-probe `import_host` 同款先例），按宿主档案 id 幂等合并，`dryRun` 只算不写（冒烟/预览）。
 
 - **command**：创建与手动执行均需 confirm（面板勾选 + MCP `confirm:true` 双闸）；`powershell -NoProfile -Command` / `cmd /c`；超时（默认 120s 上限 600s）+ 输出截尾 8KB + 退出码记录；不自动重试。
 - **http**：仅 http/https；默认拒私网（127/10/172.16-31/192.168/169.254/0.0.0.0/localhost/.local），`allowPrivate:true` 显式放行（本机服务心跳是合法场景，与公网抓取类插件的硬拒绝语义不同，理由记录于此）。
@@ -142,4 +144,4 @@ MCP(stdio) ─ task_list/add/run/history/set/remove → 命令键/结果键
 1. **core 单测**（零依赖 node:assert）：四调度 nextRunAt 全边界（月末/闰年/周几列表/cron 步长）、advance 防风暴、补跑一次语义、SSRF 私网分类、payload 校验、掩码、历史分块轮换、设置归一。
 2. **MCP 协议**：stdio spawn → initialize/tools/list 全 schema；confirm 拒绝路径（handler 注入 kv stub）。
 3. **SSR 渲染**：react-dom/server 渲染面板（invoke stub），断言四 Tab/护栏文案/空态。
-4. **真桥冒烟**：护栏（已有 taskrun.jobs 拒跑）→ 命令键建 notify+command+http(本地 allowPrivate mock) 三任务 → 起真服务进程 waitFor 运行记录 → MCP 全闭环 → 补跑注入验证 → finally 清场。
+4. **真桥冒烟**（含 importHost dryRun 不落盘用例）：护栏（已有 taskrun.jobs 拒跑）→ 命令键建 notify+command+http(本地 allowPrivate mock) 三任务 → 起真服务进程 waitFor 运行记录 → MCP 全闭环 → 补跑注入验证 → finally 清场。

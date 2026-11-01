@@ -3,7 +3,7 @@
  * settings/providers 面板直接写（低频、last-write-wins 可接受，README 注明）。
  */
 import { useState } from 'react'
-import { saveSettings, saveProviders, importHostProfiles, type Toast } from './model'
+import { saveSettings, saveProviders, commands, type Toast } from './model'
 import { fmtTime, type PanelData, type Notifier, type Settings, type AiProvider } from './ui'
 
 export default function SettingsTab({ data, notify, refresh }: {
@@ -31,12 +31,11 @@ export default function SettingsTab({ data, notify, refresh }: {
   const startImport = async () => {
     setBusy(true)
     try {
-      const hosts = await importHostProfiles()
-      if (!hosts.length) { notify('宿主配置里没找到可用供应商（或字段缺失）——可手动新增', true); return }
-      // 导入 = 追加（id 重新生成，apiKey 原值落本插件 kv，面板显示掩码）
-      const next = [...data.providers, ...hosts]
-      await saveProviders(next)
-      notify(`已导入 ${hosts.length} 个宿主供应商（密钥只存本机）`)
+      // 服务读宿主 config.json（原始密钥，仅存本机）；重复导入按宿主档案整组替换
+      const r = await commands.importHost()
+      if (!r.ok) { notify(r.error || '导入失败（服务未回执）', true); return }
+      if (!r.imported) { notify('宿主配置里没找到可用供应商（缺 baseUrl/密钥或全为占位）——可手动新增', true); return }
+      notify(`已导入 ${r.imported} 个宿主供应商（合并后共 ${r.total} 个，密钥只存本机）`)
       await refresh()
     } catch (e) { notify((e as Error).message, true) } finally { setBusy(false) }
   }

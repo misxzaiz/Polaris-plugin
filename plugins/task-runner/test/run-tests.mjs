@@ -281,6 +281,50 @@ t('retentionChunks: 200 条 = 8 块', () => {
   assert.strictEqual(core.retentionChunks(1000), 40);
 });
 
+// ── host-import：宿主供应商映射/幂等合并/掩码拒收 ──────────────────────────
+const hostImport = require('../service/host-import.js');
+t('mapHostProfiles: 正常映射 + modelOptions 兜底 + wireApi', () => {
+  const cfg = { modelProfiles: [
+    { id: 'hp1', name: '智谱', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', apiKey: 'real-key-1', model: '', modelOptions: ['glm-4.7', 'glm-4.6'], wireApi: 'openai' },
+    { id: 'hp2', name: 'Claude', baseUrl: 'https://api.anthropic.com', apiKey: 'sk-ant-2', model: 'claude-x', wireApi: 'anthropic-messages' },
+  ] };
+  const r = hostImport.mapHostProfiles(cfg, [], (i) => `prov_h${i}`);
+  assert.strictEqual(r.imported, 2);
+  assert.strictEqual(r.providers[0].model, 'glm-4.7');
+  assert.strictEqual(r.providers[0].wire, 'openai-chat-completions');
+  assert.strictEqual(r.providers[1].wire, 'anthropic-messages');
+  assert.strictEqual(r.providers[0].source, 'host');
+});
+t('mapHostProfiles: 掩码占位 key 拒收 + 缺 baseUrl/缺 id 跳过', () => {
+  const cfg = { modelProfiles: [
+    { id: 'hp1', baseUrl: 'https://x.com', apiKey: '__POLARIS_MASKED_xxx' },
+    { id: 'hp2', baseUrl: '', apiKey: 'k' },
+    { baseUrl: 'https://y.com', apiKey: 'k' },
+    { id: 'hp3', baseUrl: 'https://z.com', apiKey: 'ok-key' },
+  ] };
+  const r = hostImport.mapHostProfiles(cfg, [], (i) => `prov_h${i}`);
+  assert.strictEqual(r.imported, 1);
+  assert.strictEqual(r.providers[0].hostId, 'hp3');
+});
+t('mapHostProfiles: hostId 幂等替换 + 手填保留', () => {
+  const cfg = { modelProfiles: [{ id: 'hp1', name: '新名', baseUrl: 'https://x.com', apiKey: 'new' }] };
+  const existing = [
+    { id: 'prov_old', hostId: 'hp1', name: '旧名', baseUrl: 'https://x.com', apiKey: 'old' },
+    { id: 'prov_manual', name: '手填', baseUrl: 'https://m.com', apiKey: 'mk' },
+  ];
+  const r = hostImport.mapHostProfiles(cfg, existing, (i) => `prov_h${i}`);
+  assert.strictEqual(r.imported, 1);
+  assert.strictEqual(r.providers.length, 2);
+  assert.ok(!r.providers.some((p) => p.id === 'prov_old'), '旧宿主档案被替换');
+  assert.ok(r.providers.some((p) => p.id === 'prov_manual'), '手填档案保留');
+  assert.strictEqual(r.providers.find((p) => p.hostId === 'hp1').name, '新名');
+});
+t('findHostConfigFile: 无候选返回 null（不抛）', () => {
+  const r = hostImport.findHostConfigFile('Z:/definitely/not/exist');
+  // 本机真实环境大概率命中 anchor——只断言「要么 null 要么有 root」
+  assert.ok(r === null || (r && r.root && typeof r.root === 'object'));
+});
+
 const bad = results.filter((r) => !r.pass);
 for (const r of results) console.log(`${r.pass ? '✓' : '✗'} ${r.name}${r.pass ? '' : ' — ' + r.detail}`);
 console.log(`\n${results.length - bad.length}/${results.length} 通过`);

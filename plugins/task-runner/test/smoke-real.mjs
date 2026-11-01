@@ -202,6 +202,16 @@ try {
     if (!/smoke-ok-12345/.test(r.excerpt || '')) throw new Error(`摘录缺 stdout: ${(r.excerpt || '').slice(0, 80)}`);
   });
 
+  // ── 6a. 宿主供应商导入（dryRun 只算不写）─────────────────────────────────
+  await t('importHost dryRun：回执 imported/total 且不落 providers 键', async () => {
+    const r = await sendCmd('importHost', { dryRun: true }, 20000);
+    if (!r.ok) throw new Error(r.error || 'importHost 未回执 ok');
+    if (typeof r.imported !== 'number' || typeof r.total !== 'number') throw new Error('回执缺计数: ' + JSON.stringify(r));
+    if (r.dryRun !== true) throw new Error('dryRun 标志丢失');
+    const prov = await kvGet(`${KPREFIX}providers`);
+    if (prov) throw new Error('dryRun 不应写 providers 键');
+  });
+
   // ── 6b. SSRF 闸：未开 allowPrivate 的私网目标被拒 ─────────────────────────
   await t('SSRF 闸：私网目标未开 allowPrivate → fail 且不出网', async () => {
     const r = await sendCmd('add', { job: { name: '冒烟私网', type: 'http', schedule: { type: 'daily', time: '23:58' }, payload: { url: `http://127.0.0.1:${mockPort}/should-deny`, method: 'GET' } } });

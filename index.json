@@ -2845,7 +2845,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/task-runner.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/update.json",
-      "sha256": "e7b22c6e93f7d1c30ae5668cd04867ba3d5368e0f4a313de674737989c4fda38",
+      "sha256": "b62b779761fc7db9a4e2a9cc862467b89063438412d5233a3054bd26a90f7e6b",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -2857,7 +2857,7 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/task-runner.zip",
-          "sha256": "e7b22c6e93f7d1c30ae5668cd04867ba3d5368e0f4a313de674737989c4fda38"
+          "sha256": "b62b779761fc7db9a4e2a9cc862467b89063438412d5233a3054bd26a90f7e6b"
         }
       ],
       "createdAt": "2026-11-01T19:57:01.147Z",

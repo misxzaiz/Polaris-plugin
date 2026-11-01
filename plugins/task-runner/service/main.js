@@ -22,6 +22,7 @@ const engine = require('../shared/engine');
 const core = require('../shared/exec-core');
 const { createStore, K } = require('./store');
 const { executeJob } = require('./executors');
+const { findHostConfigFile, mapHostProfiles } = require('./host-import');
 const { createKvClient } = require('./kvclient');
 
 const VERSION = '0.1.0';
@@ -221,6 +222,20 @@ async function handleCommand(op, cmd, nonce) {
     if (!job) throw new Error(`任务不存在：${cmd.id}`);
     runQueue.push({ job, trigger: 'manual', missed: false, nonce });
     await store.writeResult(nonce, { ok: true, queued: true, jobId: job.id });
+    return;
+  }
+  if (op === 'importHost') {
+    // 从宿主 config.json 导入 modelProfiles（面板侧 cap.config 只有掩码占位 key）
+    const found = findHostConfigFile(APP_CONFIG_DIR);
+    if (!found) throw new Error('未找到宿主 config.json（anchor/dataRoot/appConfigDir 候选均未命中）');
+    const existing = await store.getProviders();
+    const merged = mapHostProfiles(found.root, existing, (i) => `prov_h${Date.now().toString(36)}${i}`);
+    const dry = cmd.dryRun === true;
+    if (!dry) {
+      await kv.kvSet(K.providers, merged.providers);
+      log('info', `导入宿主供应商 ${merged.imported} 个（合并后共 ${merged.providers.length}）`);
+    }
+    await store.writeResult(nonce, { ok: true, imported: merged.imported, total: merged.providers.length, dryRun: dry });
     return;
   }
   throw new Error(`未知命令 ${op}`);

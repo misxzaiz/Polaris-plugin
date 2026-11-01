@@ -120,45 +120,10 @@ var commands = {
   updateJob: (id, patch) => sendCommand("update", { id, patch }),
   removeJob: (id) => sendCommand("remove", { id }),
   setEnabled: (id, enabled) => sendCommand("setEnabled", { id, enabled }),
-  runNow: (id) => sendCommand("runNow", { id }, 6e4)
+  runNow: (id) => sendCommand("runNow", { id }, 6e4),
+  /** 从宿主 config.json 导入供应商（服务读盘拿原始密钥；面板侧 cap.config 只有掩码占位） */
+  importHost: () => sendCommand("importHost", {}, 2e4)
 };
-async function importHostProfiles() {
-  const res = await getHostInvoke()("router_dispatch", {
-    req: { target: "cap.config", payload: { action: "get" } }
-  });
-  if (!res.ok) throw new Error(res.error || "cap.config \u8BFB\u53D6\u5931\u8D25\uFF08\u5BBF\u4E3B\u672A\u653E\u884C\u6216\u7248\u672C\u8FC7\u65E7\uFF09");
-  const profiles = findModelProfiles(res.result);
-  return profiles.map((p, i) => ({
-    id: `prov_${Date.now().toString(36)}${i}`,
-    name: String(p.name || p.id || `\u4F9B\u5E94\u5546${i + 1}`).slice(0, 40),
-    baseUrl: String(p.baseUrl || ""),
-    apiKey: String(p.apiKey || ""),
-    model: String(p.model || ""),
-    wire: p.wire === "anthropic-messages" ? "anthropic-messages" : "openai-chat-completions"
-  })).filter((p) => p.baseUrl);
-}
-function findModelProfiles(result) {
-  const seen = /* @__PURE__ */ new Set();
-  const walk = (node, depth) => {
-    if (!node || typeof node !== "object" || depth > 4 || seen.has(node)) return [];
-    seen.add(node);
-    if (Array.isArray(node)) {
-      if (node.length && node.every((x) => x && typeof x === "object" && ("baseUrl" in x || "base_url" in x))) {
-        return node;
-      }
-      return node.flatMap((x) => walk(x, depth + 1));
-    }
-    const obj = node;
-    for (const key of ["modelProfiles", "profiles", "providers"]) {
-      if (obj[key]) {
-        const found = walk(obj[key], depth + 1);
-        if (found.length) return found;
-      }
-    }
-    return [];
-  };
-  return walk(result, 0);
-}
 
 // src/JobsTab.tsx
 import { useMemo, useState } from "react";
@@ -626,14 +591,16 @@ function SettingsTab({ data, notify, refresh }) {
   const startImport = async () => {
     setBusy(true);
     try {
-      const hosts = await importHostProfiles();
-      if (!hosts.length) {
-        notify("\u5BBF\u4E3B\u914D\u7F6E\u91CC\u6CA1\u627E\u5230\u53EF\u7528\u4F9B\u5E94\u5546\uFF08\u6216\u5B57\u6BB5\u7F3A\u5931\uFF09\u2014\u2014\u53EF\u624B\u52A8\u65B0\u589E", true);
+      const r = await commands.importHost();
+      if (!r.ok) {
+        notify(r.error || "\u5BFC\u5165\u5931\u8D25\uFF08\u670D\u52A1\u672A\u56DE\u6267\uFF09", true);
         return;
       }
-      const next = [...data.providers, ...hosts];
-      await saveProviders(next);
-      notify(`\u5DF2\u5BFC\u5165 ${hosts.length} \u4E2A\u5BBF\u4E3B\u4F9B\u5E94\u5546\uFF08\u5BC6\u94A5\u53EA\u5B58\u672C\u673A\uFF09`);
+      if (!r.imported) {
+        notify("\u5BBF\u4E3B\u914D\u7F6E\u91CC\u6CA1\u627E\u5230\u53EF\u7528\u4F9B\u5E94\u5546\uFF08\u7F3A baseUrl/\u5BC6\u94A5\u6216\u5168\u4E3A\u5360\u4F4D\uFF09\u2014\u2014\u53EF\u624B\u52A8\u65B0\u589E", true);
+        return;
+      }
+      notify(`\u5DF2\u5BFC\u5165 ${r.imported} \u4E2A\u5BBF\u4E3B\u4F9B\u5E94\u5546\uFF08\u5408\u5E76\u540E\u5171 ${r.total} \u4E2A\uFF0C\u5BC6\u94A5\u53EA\u5B58\u672C\u673A\uFF09`);
       await refresh();
     } catch (e) {
       notify(e.message, true);
