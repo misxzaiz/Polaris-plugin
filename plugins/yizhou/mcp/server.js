@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * server.js —— 译舟 MCP server（stdio JSON-RPC，零依赖）
+ * server.js —— 双语阅读 MCP server（stdio JSON-RPC，零依赖）
  *
  * 六个工具：yz_fetch / yz_more / yz_save / yz_list / yz_read / yz_delete
  *
@@ -110,7 +110,7 @@ function contractLines(entry) {
     '4) ``` 代码段：系统自动原样收编，你无需返回。',
     '5) 含 " ｜ " 的表格行：逐格翻译并保留 " ｜ " 分隔。',
     '6) 每译完一批就调用 yz_save（items=[{i,dst}]，dst=该段译文）。',
-    '7) 全部批次保存完成后：告诉用户「打开译舟面板阅读」即可，不要在对话里粘贴全文。',
+    '7) 全部批次保存完成后：告诉用户「打开双语阅读面板阅读」即可，不要在对话里粘贴全文。',
   ];
 }
 
@@ -164,7 +164,7 @@ async function toolFetch(args) {
   if (!f.ok) return errText(`抓取失败：${f.error}`);
   const ct = f.contentType || '';
   if (ct && !/text\/html|application\/xhtml\+xml|text\/plain/i.test(ct)) {
-    return errText(`不支持的内容类型：${oneLine(ct, 80)}（译舟只翻译网页正文；PDF/图片请用对应工具）`);
+    return errText(`不支持的内容类型：${oneLine(ct, 80)}（双语阅读只翻译网页正文；PDF/图片请用对应工具）`);
   }
   const decoded = charset.decodeBuffer(f.buffer, ct);
   const r = ex.extractBlocks(decoded.text);
@@ -218,7 +218,7 @@ async function toolMore(args) {
   const batches = core.planBatches(segs); // 与入库同规则重算，段长未变则边界一致
   if (b < 0) b = nextUntranslatedBatch(segs, batches);
   if (b < 0) {
-    return okText(`${renderBatchHeader(entry, { start: 0, end: 0 }, 0)}\n\n全部段落已翻译完成，打开译舟面板阅读即可。`);
+    return okText(`${renderBatchHeader(entry, { start: 0, end: 0 }, 0)}\n\n全部段落已翻译完成，打开双语阅读面板阅读即可。`);
   }
   const batch = batches[b];
   if (!batch) return errText(`批号 ${b} 不存在（共 ${entry.batches} 批）`);
@@ -253,7 +253,7 @@ async function toolSave(args) {
     + `${merged.invalid ? `，拒收空译文 ${merged.invalid} 条` : ''}${merged.skipped ? `，未命中 ${merged.skipped} 条` : ''}。`];
   lines.push(renderBatchHeader(entry, { start: 0, end: 0 }, 0));
   if (pct >= 100) {
-    lines.push('✅ 全部翻译完成！告诉用户：打开「译舟」面板即可阅读双语全文（手机端同库）。');
+    lines.push('✅ 全部翻译完成！告诉用户：打开「双语阅读」面板即可阅读双语全文（手机端同库）。');
   } else {
     const nb = nextUntranslatedBatch(merged.segs, batches);
     lines.push(`进度 ${pct}%。还有剩余批次${nb >= 0 ? `（下一批=第 ${nb} 批，用 yz_more 取）` : ''}，继续翻译。`);
@@ -264,9 +264,9 @@ async function toolSave(args) {
 async function toolList() {
   const idx = await loadIdx();
   if (!idx.length) {
-    return okText('译舟暂无文章。对用户说：发我一个网页链接，说「帮我把这篇翻译成双语」即可。');
+    return okText('双语阅读暂无文章。对用户说：发我一个网页链接，说「帮我把这篇翻译成双语」即可。');
   }
-  const lines = [`译舟共 ${idx.length} 篇（新→旧）：`];
+  const lines = [`双语阅读共 ${idx.length} 篇（新→旧）：`];
   for (const e of idx) {
     const pct = e.segCount ? Math.round(((e.translated || 0) / e.segCount) * 100) : 0;
     lines.push(`[${e.id}] ${oneLine(e.title, 60)} ｜ ${e.site} ｜ ${e.segCount}段 ｜ 已译${pct}% ｜ ${String(e.addedAt || '').slice(0, 10)}`);
@@ -288,7 +288,7 @@ async function toolRead(args) {
   let note = '';
   if (text.length > READ_CAP_CHARS) {
     text = text.slice(0, READ_CAP_CHARS);
-    note = `\n\n（全文超 ${READ_CAP_CHARS} 字符已截断；完整版请让用户打开译舟面板）`;
+    note = `\n\n（全文超 ${READ_CAP_CHARS} 字符已截断；完整版请让用户打开双语阅读面板）`;
   }
   const pct = core.progressPct(segs);
   return okText(`《${entry.title}》（${pct}% 已译，mode=${mode}）\n\n${text}${note}`);
@@ -329,7 +329,7 @@ const TOOLS = [
   },
   {
     name: 'yz_more',
-    description: '取译舟文章的下一批原文段（batch 缺省=第一个还有未译段的批，即断点续译）。'
+    description: '取双语阅读文章的下一批原文段（batch 缺省=第一个还有未译段的批，即断点续译）。'
       + '适用：yz_fetch/yz_save 返回提示取下一批时；用户说「继续翻译」时先 yz_list 找到 id 再用本工具。',
     inputSchema: {
       type: 'object',
@@ -365,7 +365,7 @@ const TOOLS = [
   },
   {
     name: 'yz_list',
-    description: '列出译舟全部文章（id/标题/站点/翻译进度）。适用：「我翻译过哪些」「译舟里有什么」「继续翻译之前那篇」。',
+    description: '列出双语阅读全部文章（id/标题/站点/翻译进度）。适用：「我翻译过哪些」「双语阅读里有什么」「继续翻译之前那篇」。',
     inputSchema: { type: 'object', properties: {} },
   },
   {
@@ -382,7 +382,7 @@ const TOOLS = [
   },
   {
     name: 'yz_delete',
-    description: '从译舟删除一篇文章（连同全部译文，不可恢复）。confirm 必须为 true；删前先与用户确认。',
+    description: '从双语阅读删除一篇文章（连同全部译文，不可恢复）。confirm 必须为 true；删前先与用户确认。',
     inputSchema: {
       type: 'object',
       properties: {

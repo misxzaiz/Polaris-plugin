@@ -211,7 +211,7 @@ async function main() {
     // 8. yz_list
     const lst = await mcp.call('yz_list', {});
     assert.equal(lst.isError, false, lst.text);
-    assert.match(lst.text, /\[测试时不会出现这一行\]|译舟共 1 篇/);
+    assert.match(lst.text, /\[测试时不会出现这一行\]|双语阅读共 1 篇/);
     assert.match(lst.text, new RegExp(`\\[${id}\\] Bridge Fixture Article`));
     assert.match(lst.text, /已译100%/);
     console.log('✔ yz_list');

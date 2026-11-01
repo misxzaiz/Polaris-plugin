@@ -476,7 +476,7 @@ function Library(props) {
     /* @__PURE__ */ jsx("div", { className: "yz-top", children: /* @__PURE__ */ jsxs("div", { className: "yz-top-in", children: [
       /* @__PURE__ */ jsx("div", { className: "yz-logo", children: "\u8BD1" }),
       /* @__PURE__ */ jsxs("div", { className: "yz-tt", children: [
-        /* @__PURE__ */ jsx("b", { children: "\u8BD1\u821F" }),
+        /* @__PURE__ */ jsx("b", { children: "\u53CC\u8BED\u9605\u8BFB" }),
         /* @__PURE__ */ jsx("span", { children: "\u53CC\u8BED\u6C89\u6D78\u9605\u8BFB \xB7 \u5BF9\u8BDD\u5373\u5165\u53E3" })
       ] }),
       /* @__PURE__ */ jsxs("div", { className: "yz-count", children: [

@@ -1,6 +1,6 @@
 'use strict';
 /**
- * lib.js —— 译舟共享工具（Node 侧；面板不引用本文件）
+ * lib.js —— 双语阅读共享工具（Node 侧；面板不引用本文件）
  *
  * 常量与 clip 精简自 amber service/lib.js（语义一致）；
  * isFetchableUrl 与 fetchUrl 拷贝自 amber（feed-radar/clip-relay 同源的 SSRF 守卫与

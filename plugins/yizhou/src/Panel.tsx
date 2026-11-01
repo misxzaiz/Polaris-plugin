@@ -1,5 +1,5 @@
 /**
- * 译舟面板：书架（库）+ 阅读器（双语/译文/原文三态）
+ * 双语阅读面板：书架（库）+ 阅读器（双语/译文/原文三态）
  *
  * 数据源：cap.kv yz.* 键空间（经宿主 invoke → router_dispatch）。
  * 面板零外网、零服务进程——正文与译文由 MCP 进程（AI 对话流）写入，面板只读 art 块；
@@ -159,7 +159,7 @@ function Library(props: {
       <div className="yz-top">
         <div className="yz-top-in">
           <div className="yz-logo">译</div>
-          <div className="yz-tt"><b>译舟</b><span>双语沉浸阅读 · 对话即入口</span></div>
+          <div className="yz-tt"><b>双语阅读</b><span>双语沉浸阅读 · 对话即入口</span></div>
           <div className="yz-count">{entries.length} 篇</div>
         </div>
       </div>

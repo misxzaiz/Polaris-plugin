@@ -2174,7 +2174,7 @@
     },
     {
       "id": "yizhou",
-      "name": "译舟",
+      "name": "双语阅读",
       "version": "0.1.0",
       "description": "双语沉浸阅读：把网页链接抓取、抽出干净正文（琥珀同款打分抽取+三级字符集探测），AI 对话式逐段翻译成中外对照，存进本地跨端阅读器。对话即入口（「帮我把这篇翻译成双语」），逐批断点续译幂等可恢复；面板双语/译文/原文三态切换、字号调节、阅读进度三端同步（手机 PWA 同库）；译文可被 AI 检索引用。数据面 yz.*（cap.kv），零服务进程，数据不出设备。",
       "author": "Polaris",
@@ -2194,7 +2194,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/yizhou.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/update.json",
-      "sha256": "836ee516b9ed02367c89ee51112e2da9cf62eb19a077091b85312593a91532da",
+      "sha256": "87ef77f6850b483c58c2641ff8baadec40d3131ae530b02bf10bfa64c58f392a",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true

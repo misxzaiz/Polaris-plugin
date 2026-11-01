@@ -1,5 +1,5 @@
 /**
- * 宿主 API 访问层（译舟面板（与 sundial/maian 同一验证过的模式））
+ * 宿主 API 访问层（双语阅读面板（与 sundial/maian 同一验证过的模式））
  *
  * 面板数据全部走宿主暴露的 invoke 通道（window.__POLARIS_HOST_INVOKE__）：
  *   - 桌面 Tauri：直连后端 IPC

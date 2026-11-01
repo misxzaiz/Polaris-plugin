@@ -4,8 +4,8 @@
  *
  * 来源：amber service/extract.js（打分容器抽取，生产验证数月）逐行拷贝，
  * 仅新增 extractBlocks()：把同一管线的结果以「分段数组」返回——每段是一个
- * markdown-lite 块（# 标题 / - 列表 / > 引用 / ``` 代码），即译舟的翻译单元。
- * 译舟用分段而不整文的原因：AI 逐段翻译需要稳定段号（i）做幂等 upsert 与断点续译。
+ * markdown-lite 块（# 标题 / - 列表 / > 引用 / ``` 代码），即双语阅读的翻译单元。
+ * 双语阅读用分段而不整文的原因：AI 逐段翻译需要稳定段号（i）做幂等 upsert 与断点续译。
  *
  * 为什么不用 feed-radar 的 extractReadable：订阅流「宁可全量」——article→main→body
  * 硬切片，混进导航/推荐也不伤大雅。网页封存是收藏库，**抽错容器 = 永久封错**，
@@ -359,7 +359,7 @@ function extractArticle(html) {
 }
 
 /**
- * 译舟专用：与 extractArticle 同一管线，但返回「分段数组」而非拼接整文。
+ * 双语阅读专用：与 extractArticle 同一管线，但返回「分段数组」而非拼接整文。
  * 段 = 一个翻译单元；去重与空行压缩沿用 finalize 的规则（数组版）。
  * @returns {{ok:true, title, byline, publishedAt, img, blocks:string[], wordCount}
  *           |{ok:false, error:string}}
