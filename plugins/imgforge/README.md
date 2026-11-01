@@ -79,7 +79,8 @@ shared/core.js: 魔数识别/EXIF-GPS 解析/设置与管道归一/永不覆盖�
 npm install            # sharp 会拉取平台原生二进制（win32-x64 + wasm32 兜底）
 npm run build          # esbuild → dist/panel.js（react 走宿主 shim）
 npm run typecheck      # tsc --noEmit
-node test/run-tests.mjs  # core/engine/mcp/render 四层验证
+node test/run-tests.mjs  # 五层验证：core/engine/mcp/service/render
+node test/smoke-real.mjs # 真宿主桥冒烟（需本机 Polaris 运行中；全绿自清理 imgforge.* 键）
 ```
 
-打包前 `npm prune --omit=dev`（node_modules 随 zip 出货，devDeps 裁掉）。
+打包前 `npm prune --omit=dev`（node_modules 随 zip 出货，devDeps 裁掉）。注意：prune 之后 render 层测试会缺 esbuild，需 `npm install` 恢复后再跑测试。
