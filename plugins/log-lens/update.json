@@ -1,0 +1,57 @@
+{
+  "id": "log-lens",
+  "name": "日志透视台",
+  "version": "0.1.0",
+  "description": "把本机散落的日志文件变成可透视、可取证的诊断资产：流式读取不整载（GB 级文件只读尾部）、级别/关键词/正则三维过滤、错误聚类（数字/UUID/IP 归一化分组）、实时 tail、GBK/UTF-16 字符集回退；AI 经 MCP 六工具直接取证（「看看今天的日志哪里不对劲」）。默认源自动发现 Polaris 数据根日志，装完即有价值。服务仅绑 127.0.0.1、全程只读、零外部请求，数据不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "log-lens.panel",
+        "area": "activityBar",
+        "panelType": "logLens",
+        "icon": "Files",
+        "labelKey": "plugins.logLens",
+        "labelDefault": "日志透视台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "log-lens-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9870,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 3000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "本机日志流式读取服务（仅绑 127.0.0.1，只读，零外部请求；面板经 cap.http 宿主通道访问）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "log-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/log-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/log-lens.zip"
+  }
+}

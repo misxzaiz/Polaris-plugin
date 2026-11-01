@@ -2595,6 +2595,44 @@
         }
       ],
       "createdAt": "2026-11-01T15:35:08.216Z"
+    },
+    {
+      "id": "log-lens",
+      "name": "日志透视台",
+      "version": "0.1.0",
+      "description": "把本机散落的日志文件变成可透视、可取证的诊断资产：流式读取不整载（GB 级文件只读尾部）、级别/关键词/正则三维过滤、错误聚类（数字/UUID/IP 归一化分组）、实时 tail、GBK/UTF-16 字符集回退；AI 经 MCP 六工具直接取证（「看看今天的日志哪里不对劲」）。默认源自动发现 Polaris 数据根日志，装完即有价值。服务仅绑 127.0.0.1、全程只读、零外部请求，数据不出本机。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "log",
+        "logs",
+        "debug",
+        "diagnostics",
+        "devtools",
+        "tail"
+      ],
+      "icon": "Files",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/log-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/log-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/update.json",
+      "sha256": "d212017a3e80cefbd69bb51c3660d0c9ce87c77d13a980458c57ca03746312eb",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 日志透视台（log-lens）\n\n把本机散落的日志文件变成**可透视、可取证、可对话**的诊断资产。流式读取不整载（GB 级文件只读尾部）、级别/关键词/正则三维过滤、错误聚类、实时 tail；AI 经 MCP 六工具直接取证（「看看今天的日志哪里不对劲」）。\n\n## 为什么需要它\n\n- 排查/过滤日志是开发者公认的日常重活（多 GB 日志打不开、Windows 没有顺手工具）\n- 免费方案缺口：lnav 强但 Windows 支持实验性、grep 门槛高、编辑器整载崩溃\n- 商业方案 LogViewPlus $93/人——本插件免费、本地、且独有 **AI 取证**（免费工具里无人做）\n- Polaris 宿主与插件服务本身持续产日志（数据根 `logs/`），**装完即有真实语料，零配置上手**\n\n## 功能\n\n**面板（活动栏 → 日志透视台）**\n- 默认源自动发现：数据根 `logs/`（app.log.\\*）+ 数据根散落 `*.log`；设置里可添加任意目录/文件\n- 虚拟滚动列表（时间/级别/目标/消息），从文件尾反读，秒开大文件\n- 三维过滤：级别多选 + 关键词 + 正则（服务端执行，窗口分页不占内存）\n- 透视统计：级别直方图、小时时间线（问题时段标红）、错误聚类 Top N（数字/UUID/IP/路径归一化，同类报错归并），点聚类跳到第一处现场\n- 详情抽屉：多行消息/调用栈展开、上下文 ±20 行、复制原文/复制脱敏（token/key 自动打码）\n- Live 模式：轮询文件增量，只吐完整行（写入中的半行不显示），轮转自动重置\n\n**AI 六工具（MCP，全只读）**\n| 工具 | 用途 | 适用句式 |\n|---|---|---|\n| `log_overview` | 服务状态 + 日志文件清单 | 「日志在哪」「今天有哪些日志」 |\n| `log_tail` | 文件末尾 N 行（可过滤） | 「看最新日志」「服务起来了吗」 |\n| `log_search` | 跨文件关键词/正则搜索 | 「找出所有 timeout」 |\n| `log_stats` | 直方图 + 高发时段 + 错误聚类 | 「日志哪里不对劲」 |\n| `log_errors` | 末尾窗口 WARN/ERROR/FATAL 聚类 | 「为什么失败」「把报错归个类」 |\n| `log_context` | 某行前后上下文（堆栈展开） | 「这条报错前后发生了什么」 |\n\n## 架构\n\n```\n面板 ──宿主 invoke→ cap.http ──→ 日志服务(node, 127.0.0.1:9870) ── 流式读文件\nMCP(stdio) ──本机直连──────────↗        │ 心跳/设置 → cap.kv (lls.*)\n```\n\n- **单一读路径权威**：解析/统计只在服务进程发生；面板与 MCP 都是客户端\n- **安全边界**：服务仅绑 127.0.0.1、零 CORS 头（浏览器直连一律拒）、全程只读（无写文件代码，单测断言守护）、零外部网络请求、响应行数/字节双上限\n- **字符集**：BOM（UTF-8/UTF-16LE）→ UTF-8 校验 → GBK 回退（中文 Windows PowerShell 日志实测坑）\n- **格式**：Rust tracing（Polaris 原生）/ 通用时间戳头 / JSONL / 纯文本 + 多行归并（span、栈帧不拆行）\n\n## 实测性能（本机 81MB 真实宿主日志，30.6 万行）\n\n| 操作 | 耗时 |\n|---|---|\n| tail 300 行 | 206ms |\n| read 500 行（首屏） | 66ms |\n| 全量透视（30.6 万行全扫） | ~4-6s |\n\n日常日志文件（0.3–4.5MB/天）全量透视 <0.5s。>512MB 时扫描封顶自动近似（响应带 `approximate` 标注）。\n\n## 已知边界（如实）\n\n- **Web/手机端不可用**：插件读取的是桌面端本机文件，宿主对 Remote 来源默认拒绝 cap.http——面板会显式提示，不假装修可用\n- kv 不可达时自加源降级为进程内存（服务重启后丢失，默认源不受影响）\n- UTF-16BE 不支持（极少见）；>64KB 单行（超长 pretty JSON）反读窗口可能截断\n- AI 读日志的内容会进入对话上下文（与 cap.fs 读文件同等暴露面）；工具描述已提示 AI 摘要时脱敏，面板复制提供一键脱敏\n\n## 验证\n\n```bash\ncd plugins/log-lens\nnpm install\nnpm run typecheck        # tsc --noEmit\nnpm run build            # esbuild → dist/panel.js\nnpm test                 # 离线单测 26 项（解析/读取/聚类/字符集/安全断言）\nnode test/smoke-real.mjs # 真桥冒烟 19 项（需 node；真实日志语料 + MCP 握手 + 宿主桥）\n```\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/log-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T16:45:21.331Z",
+      "updatedAt": "2026-11-01T16:45:21.335Z"
     }
   ]
 }
