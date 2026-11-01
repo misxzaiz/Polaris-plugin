@@ -3,12 +3,15 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  addBill, deleteBill, loadDay, dayKeyOf, billTime, timeAgo, fmtMoney,
-  saveAttachment, getAttachment, isImageMime, MAX_ATTACHMENT_BYTES,
+  addBill, deleteBill, updateBill, loadDay, dayKeyOf, billTime, timeAgo, fmtMoney,
+  saveAttachment, getAttachment, isImageMime, MAX_ATTACHMENT_BYTES, TIME_SLOTS,
   type Bill, type PanelData, type Attachment,
 } from './model'
+import EditModal from './EditModal'
 
 type Toast = (msg: string, kind?: 'bad' | 'good') => void
+
+type AddBillTimeOfDay = 'early_morning' | 'morning' | 'noon' | 'afternoon' | 'evening' | 'night'
 
 export default function QuickTab({ data, reload, showToast }: {
   data: PanelData | null
@@ -21,10 +24,12 @@ export default function QuickTab({ data, reload, showToast }: {
   const [note, setNote] = useState('')
   const [date, setDate] = useState('today')
   const [customDate, setCustomDate] = useState('')
+  const [timeOfDay, setTimeOfDay] = useState('auto')
   const [saving, setSaving] = useState(false)
   const [today, setToday] = useState<Bill[] | null>(null)
   const [attachment, setAttachment] = useState<{ name: string; mime: string; data: string; size: number } | null>(null)
   const [viewing, setViewing] = useState<Attachment | null>(null)
+  const [editing, setEditing] = useState<Bill | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const settings = data?.settings
@@ -69,10 +74,9 @@ export default function QuickTab({ data, reload, showToast }: {
   const save = async () => {
     const amt = Number(amount)
     if (!Number.isFinite(amt) || amt <= 0) { showToast('请输入大于 0 的金额', 'bad'); return }
+    if (date === 'custom' && !customDate) { showToast('请先选择补记日期', 'bad'); return }
     setSaving(true)
-    const ts = date === 'custom' && customDate
-      ? new Date(`${customDate}T${new Date().toTimeString().slice(0, 8)}`).getTime() || Date.now()
-      : date === 'yesterday' ? Date.now() - 24 * 3600 * 1000 : Date.now()
+    const dateStr = date === 'custom' ? customDate : date
     try {
       let attachmentId: string | undefined
       if (attachment) {
@@ -80,7 +84,11 @@ export default function QuickTab({ data, reload, showToast }: {
         if (!r.ok) { showToast(r.error || '附件保存失败', 'bad'); return }
         attachmentId = r.att!.id
       }
-      const r = await addBill({ amount: amt, type, category, note: note.trim(), ts, attachmentId })
+      const r = await addBill({
+        amount: amt, type, category, note: note.trim(),
+        date: dateStr, timeOfDay: timeOfDay === 'auto' ? undefined : (timeOfDay as AddBillTimeOfDay),
+        attachmentId,
+      })
       if (!r.ok) {
         if (attachmentId) await deleteAttachmentLocal(attachmentId)
         showToast(r.error || '记账失败', 'bad'); return
@@ -88,6 +96,7 @@ export default function QuickTab({ data, reload, showToast }: {
       setAmount('')
       setNote('')
       setAttachment(null)
+      setTimeOfDay('auto')
       await Promise.all([reloadToday(), reload()])
       const sym = settings?.currencySymbol || '¥'
       showToast(`已记${type === 'income' ? '收入' : '支出'} ${fmtMoney(amt, sym)}`, 'good')
@@ -109,6 +118,30 @@ export default function QuickTab({ data, reload, showToast }: {
       showToast('已删除')
     } catch (e) {
       showToast(`删除失败：${(e as Error).message}`, 'bad')
+    }
+  }
+
+  /** 编辑弹窗保存：按 id 改字段，跨日/跨月自动迁移 */
+  const saveEdit = async (b: Bill, fields: { amount: string; type: 'expense' | 'income'; category: string; note: string; date: string; timeOfDay: string; customDate: string }) => {
+    const amt = Number(fields.amount)
+    if (!Number.isFinite(amt) || amt <= 0) { showToast('请输入大于 0 的金额', 'bad'); return }
+    const dateStr = fields.date === 'custom' ? fields.customDate : fields.date
+    if (fields.date === 'custom' && !fields.customDate) { showToast('请先选择补记日期', 'bad'); return }
+    try {
+      const r = await updateBill(b.id, {
+        amount: amt,
+        type: fields.type,
+        category: fields.category,
+        note: fields.note.trim(),
+        date: dateStr,
+        timeOfDay: fields.timeOfDay === 'auto' ? undefined : (fields.timeOfDay as AddBillTimeOfDay),
+      }, data?.month || '')
+      if (!r.ok) { showToast(r.error || '修改失败', 'bad'); return }
+      setEditing(null)
+      await Promise.all([reloadToday(), reload()])
+      showToast('已更新', 'good')
+    } catch (e) {
+      showToast(`修改失败：${(e as Error).message}`, 'bad')
     }
   }
 
@@ -166,6 +199,15 @@ export default function QuickTab({ data, reload, showToast }: {
             {attachment && <button className="pl-btn sm danger" onClick={() => setAttachment(null)}>清除</button>}
           </div>
           {attachment && <div className="pl-sub" style={{ marginTop: 6 }}>{Math.round(attachment.size / 1024)}KB · 随这笔账一起保存</div>}
+          <label className="pl-lbl">时段</label>
+          <div className="pl-row">
+            <button className={`pl-chip ${timeOfDay === 'auto' ? 'on' : ''}`} onClick={() => setTimeOfDay('auto')}>自动</button>
+            {TIME_SLOTS.map((t) => (
+              <button key={t.key} className={`pl-chip ${timeOfDay === t.key ? 'on' : ''}`} onClick={() => setTimeOfDay(t.key)}>
+                {t.label} {t.hour}
+              </button>
+            ))}
+          </div>
           <label className="pl-lbl">日期</label>
           <div className="pl-row">
             {[['today', '今天'], ['yesterday', '昨天'], ['custom', '选日期']].map(([v, label]) => (
@@ -202,6 +244,7 @@ export default function QuickTab({ data, reload, showToast }: {
                 <span className={`pl-bill-amt ${b.type === 'income' ? 'pl-amt-inc' : 'pl-amt-exp'}`}>
                   {b.type === 'income' ? '+' : '-'}{fmtMoney(b.amount, sym)}
                 </span>
+                <button className="pl-btn sm ghost" onClick={() => setEditing(b)}>改</button>
                 <button className="pl-btn sm danger" onClick={() => del(b)}>删</button>
               </div>
             ))}
@@ -222,6 +265,15 @@ export default function QuickTab({ data, reload, showToast }: {
             </div>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <EditModal
+          bill={editing}
+          categories={categories}
+          onClose={() => setEditing(null)}
+          onSave={(fields) => saveEdit(editing, fields)}
+        />
       )}
     </div>
   )

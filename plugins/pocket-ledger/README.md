@@ -3,7 +3,7 @@
 > 对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查，「这个月哪个分类超预算了」就有答案。
 
 - 面板（ActivityBar → 📋 日常记账）：记账 / 明细 / 统计 / 设置 四 Tab
-- AI 工具（MCP 5 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账
+- AI 工具（MCP 6 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账；支持「大概时间」档位推导与 `ledger_update` 改账
 - **纯本地**：数据只在 cap.kv（`ledger.*`），零后台服务、零网络请求、不出设备
 
 ## 设计取舍（与 page-sentinel 互补）
@@ -28,15 +28,30 @@ page-sentinel 是"重服务"插件（抓取必须下沉后台）；日常记账�
 - **设置**：自定义分类增删、分类月预算、月度总预算、导出全部 JSON、清空账本。
 
 ### 让 AI 代劳（聊天示例）
-- 「午饭 35 块，还有杯咖啡 22」→ AI 调 `ledger_add` ×2（自动选分类「餐饮」）
+- 「午饭 35 块，还有杯咖啡 22」→ AI 调 `ledger_add` ×2（自动选分类「餐饮」；note 含「午饭」自动落中午档 12:00）
 - 「昨天打车花了 48 补记一下」→ `ledger_add {date:'yesterday'}`
 - 「上个月咖啡花了多少？」→ `ledger_query {month:'last', keyword:'咖啡'}`
 - 「这个月花得怎么样？」→ `ledger_stats`
 - 「刚才记错了，删掉」→ AI 从 `ledger_query` 拿 id 后 `ledger_delete`
+- 「午饭记错了，改成晚饭」→ `ledger_update {id, timeOfDay:'evening'}`（金额/备注可同改，跨日自动迁移）
 - 「加一个『宠物』分类」→ `ledger_categories {action:'add'}`
 
-MCP 工具：`ledger_add` / `ledger_query` / `ledger_stats` / `ledger_delete` / `ledger_categories`。
+MCP 工具：`ledger_add` / `ledger_query` / `ledger_stats` / `ledger_delete` / `ledger_update` / `ledger_categories`。
 入账响应会自动带上**预算提醒**（总预算 ≥90% 提醒、超支警告）。
+
+### 时段档位（「大概时间」）
+AI 记账没给具体时分时，按对话语境推导档位；不确定则按当前时刻就近归档：
+
+| 档位 | 时刻 | 触发词 |
+|---|---|---|
+| 凌晨 | 00:00 | 凌晨、深夜、半夜、通宵 |
+| 早上 | 09:00 | 早饭、早餐、早班、清晨、早上、早点 |
+| 中午 | 12:00 | 午饭、午餐、中午、中饭、正午 |
+| 下午 | 16:00 | 下午、下午茶、午后 |
+| 傍晚 | 18:00 | 晚饭、晚餐、傍晚、晚班、下班饭 |
+| 晚上 | 20:00 | 夜宵、宵夜、晚上、晚点 |
+
+优先级：`time`(HH:MM) > `timeOfDay`(档位) > `note` 触发词 > 当前时刻就近归档。
 
 ### 预算
 在设置里给分类设月预算（如 餐饮 2000）+ 月度总预算；统计页显示进度条（>90% 黄、超支红）；AI 入账时即时收到同样口径的提醒。
@@ -52,6 +67,7 @@ MCP 工具：`ledger_add` / `ledger_query` / `ledger_stats` / `ledger_delete` / 
 - 双端**同一毫秒**并发记两笔理论上可能丢一笔（cap.kv 无原子 append；同 id 幂等去重已覆盖重试场景）。日常使用影响可忽略。
 - 日期按设备本地时区归属；跨时区使用时"昨天"以当前设备为准。
 - 金额精度 2 位小数，上限 1e9（防误输入）。
+- **时段归档是行为变化**：`ledger_add` 不传 `time`/`timeOfDay`/`date` 时，时间不再是精确当前时刻，而是按当前时刻就近归档到档位（如 21:16 → 晚上 20:00）。若需精确时刻，显式传 `time:'HH:MM'`。
 
 ## License
 

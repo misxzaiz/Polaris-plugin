@@ -181,7 +181,9 @@ t('periodConsumption：加满锚定法——两次加满之间含中途部分补
   assert.equal(r.estimated, false, '两次加满 → 教科书口径');
   assert.equal(r.per100, 9, `per100=${r.per100}`);
   assert.equal(r.amount, 45);
-  assert.ok(Math.abs(r.costPerKm - 680 / 500) < 0.01, `costPerKm=${r.costPerKm}`);
+  // 锚定窗成本 = A 之后到 B（含 B）的补能花费 = 120+240=360（锚 A 那次属于上一周期，
+  // 与 amount 不含锚 A 的口径一致）；360/500=0.72 元/km
+  assert.ok(Math.abs(r.costPerKm - 360 / 500) < 0.01, `costPerKm=${r.costPerKm}`);
 });
 t('periodConsumption：无两次加满 → 毛估退化（首条只做锚点）', () => {
   const car = mkCar({ name: '锚定车', initialOdometer: 9500 });

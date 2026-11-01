@@ -170,3 +170,80 @@ test('normalizeAttachment：元数据校验与大小上限', () => {
   assert.equal(core.isImageMime('image/png'), true);
   assert.equal(core.isImageMime('application/pdf'), false);
 });
+
+test('TIME_SLOTS / slotOfNow：时段定义与就近归档边界', () => {
+  assert.equal(core.TIME_SLOTS.length, 6);
+  assert.equal(core.TIME_SLOTS[1].key, 'morning');
+  assert.equal(core.TIME_SLOTS[1].hour, 9);
+  // 各小时边界 → 就近档位
+  assert.equal(core.slotOfNow(new Date(2026, 9, 27, 0, 30).getTime()).key, 'early_morning');
+  assert.equal(core.slotOfNow(new Date(2026, 9, 27, 9, 30).getTime()).key, 'morning');
+  assert.equal(core.slotOfNow(new Date(2026, 9, 27, 12, 30).getTime()).key, 'noon');
+  assert.equal(core.slotOfNow(new Date(2026, 9, 27, 16, 30).getTime()).key, 'afternoon');
+  assert.equal(core.slotOfNow(new Date(2026, 9, 27, 18, 30).getTime()).key, 'evening');
+  assert.equal(core.slotOfNow(new Date(2026, 9, 27, 21, 30).getTime()).key, 'night');
+  // findSlot：key 与中文标签都命中
+  assert.equal(core.findSlot('noon').key, 'noon');
+  assert.equal(core.findSlot('中午').key, 'noon');
+  assert.equal(core.findSlot('不存在'), null);
+});
+
+test('resolveBillTime：优先级与档位推导', () => {
+  const now = new Date(2026, 9, 27, 21, 16).getTime(); // 晚上 21:16
+  // 1) 显式 time 优先
+  let r = core.resolveBillTime({ date: 'today', time: '12:30' }, now);
+  assert.equal(new Date(r.ts).getHours(), 12);
+  assert.equal(new Date(r.ts).getMinutes(), 30);
+  // 2) timeOfDay 档位
+  r = core.resolveBillTime({ date: 'today', timeOfDay: 'noon' }, now);
+  assert.equal(new Date(r.ts).getHours(), 12);
+  assert.equal(new Date(r.ts).getMinutes(), 0);
+  // 3) hint 触发词
+  r = core.resolveBillTime({ date: 'today', hint: '午饭 35' }, now);
+  assert.equal(new Date(r.ts).getHours(), 12);
+  // 4) 无信号 → 就近归档（now=21:16 → 晚上 20:00）
+  r = core.resolveBillTime({ date: 'today' }, now);
+  assert.equal(new Date(r.ts).getHours(), 20);
+  // 5) 非法 time / timeOfDay
+  assert.ok(core.resolveBillTime({ date: 'today', time: '25:00' }, now).error);
+  assert.ok(core.resolveBillTime({ date: 'today', timeOfDay: '深夜' }, now).error);
+  // 6) yesterday 跨日
+  r = core.resolveBillTime({ date: 'yesterday', timeOfDay: 'morning' }, now);
+  assert.equal(new Date(r.ts).getDate(), 26);
+  assert.equal(new Date(r.ts).getHours(), 9);
+  // 7) 自定义日期补记
+  r = core.resolveBillTime({ date: '2026-10-01', timeOfDay: 'evening' }, now);
+  assert.equal(core.dayKeyOf(r.ts), '2026-10-01');
+  assert.equal(new Date(r.ts).getHours(), 18);
+  // 8) 非法 date
+  assert.ok(core.resolveBillTime({ date: '2026/10/01' }, now).error);
+});
+
+test('updateBill：原地替换 / found=false / 跨日迁移 / 附件保留', () => {
+  const bills = [
+    { id: 'b1', ts: new Date(2026, 9, 27, 12).getTime(), type: 'expense', amount: 35, category: '餐饮', note: '午饭', source: 'ai', attachmentId: 'att_x' },
+    { id: 'b2', ts: new Date(2026, 9, 28, 9).getTime(), type: 'expense', amount: 5, category: '交通', note: '地铁', source: 'panel' },
+  ];
+  // 原地替换（同 ts）
+  let u = core.updateBill(bills, 'b1', { amount: 40, note: '晚饭' });
+  assert.ok(u.found);
+  assert.equal(u.moved, null);
+  assert.equal(u.bill.amount, 40);
+  assert.equal(u.bill.note, '晚饭');
+  assert.equal(u.bill.attachmentId, 'att_x', '附件引用保留');
+  const nb1 = u.arr.find((b) => b.id === 'b1');
+  assert.equal(nb1.amount, 40, '同日替换后旧日数组含更新后的 bill');
+  // 未命中
+  assert.equal(core.updateBill(bills, 'zzz', { amount: 1 }).found, false);
+  // 跨日迁移（ts 变到 10-29）
+  const newTs = new Date(2026, 9, 29, 18).getTime();
+  u = core.updateBill(bills, 'b1', { ts: newTs });
+  assert.ok(u.found);
+  assert.equal(u.moved, '2026-10-29');
+  assert.ok(!u.arr.find((b) => b.id === 'b1'), '旧日数组已移除该 id（跨日迁移）');
+  assert.equal(u.bill.ts, newTs, 'bill 返回应用新 ts');
+  // ts 不变 → moved null
+  u = core.updateBill(bills, 'b2', { amount: 6 });
+  assert.equal(u.moved, null);
+  assert.equal(u.bill.amount, 6);
+});

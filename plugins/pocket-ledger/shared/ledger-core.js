@@ -78,6 +78,104 @@ function currentMonth(now) {
   return monthOf(typeof now === 'number' ? now : Date.now());
 }
 
+// ── 时段档位（AI 记账「大概时间」）────────────────────────────────────────
+/**
+ * 一天 6 个时段档位，每档对应一个「显示时刻」。
+ * 档位时刻仅决定账单的显示时分；日期归属仍由 date（或当天）决定。
+ * AI 从对话语境推导时段；不确定时按当前时刻就近归档。
+ */
+const TIME_SLOTS = [
+  { key: 'early_morning', label: '凌晨', hour: 0 },
+  { key: 'morning',       label: '早上', hour: 9 },
+  { key: 'noon',          label: '中午', hour: 12 },
+  { key: 'afternoon',     label: '下午', hour: 16 },
+  { key: 'evening',       label: '傍晚', hour: 18 },
+  { key: 'night',         label: '晚上', hour: 20 },
+];
+
+/** 触发词 → 档位 key（AI 推导与面板快捷钮共用）；子串匹配 */
+const TIME_SLOT_HINTS = {
+  early_morning: ['凌晨', '深夜', '半夜', '通宵'],
+  morning:       ['早饭', '早餐', '早班', '清晨', '早上', '早点'],
+  noon:          ['午饭', '午餐', '中午', '中饭', '正午'],
+  afternoon:     ['下午', '下午茶', '午后'],
+  evening:       ['晚饭', '晚餐', '傍晚', '晚班', '下班饭'],
+  night:         ['夜宵', '宵夜', '晚上', '晚点'],
+};
+
+/** 档位 key / 中文标签 → 档位对象；非法返回 null */
+function findSlot(keyOrLabel) {
+  const s = String(keyOrLabel || '').trim();
+  if (!s) return null;
+  return TIME_SLOTS.find((t) => t.key === s || t.label === s) || null;
+}
+
+/** 当前时刻 → 就近档位（半开区间 [slot, nextSlot)）；凌晨 0 点起为一天起点 */
+function slotOfNow(ts) {
+  const h = new Date(ts).getHours();
+  if (h < 9) return TIME_SLOTS[0];  // [00,09) 凌晨
+  if (h < 12) return TIME_SLOTS[1]; // [09,12) 早上
+  if (h < 16) return TIME_SLOTS[2]; // [12,16) 中午
+  if (h < 18) return TIME_SLOTS[3]; // [16,18) 下午
+  if (h < 20) return TIME_SLOTS[4]; // [18,20) 傍晚
+  return TIME_SLOTS[5];             // [20,24) 晚上
+}
+
+/** 取某档位的「显示时刻」对象（hour, minute=0） */
+function slotClock(slot) {
+  return { hour: slot.hour, minute: 0 };
+}
+
+/**
+ * 解析账单时间 → { ts } | { error }
+ * raw: { date?, time?, timeOfDay?, hint? }；now = Date.now()
+ *
+ * 优先级（高→低）：显式 time(HH:MM) > timeOfDay(档位) > hint 触发词 > now 就近归档。
+ * date 支持 'today' | 'yesterday' | 'YYYY-MM-DD'（补记）。
+ * 合成：目标日期（年月日）+ 档位时刻（本地时区，分钟固定 0）。
+ */
+function resolveBillTime(raw, now) {
+  const base = typeof now === 'number' ? now : Date.now();
+  // ── 日期部分 ──
+  const dateStr = String((raw && raw.date) || '').trim();
+  const baseDate = new Date(base);
+  let y = baseDate.getFullYear();
+  let m = baseDate.getMonth();
+  let d = baseDate.getDate();
+  if (dateStr === 'yesterday' || dateStr === '昨天') {
+    const t = new Date(base - 24 * 3600 * 1000);
+    y = t.getFullYear(); m = t.getMonth(); d = t.getDate();
+  } else if (dateStr && dateStr !== 'today' && dateStr !== '今天') {
+    const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+    if (!dm) return { error: 'date 格式应为 today / yesterday / YYYY-MM-DD' };
+    y = Number(dm[1]); m = Number(dm[2]) - 1; d = Number(dm[3]);
+    if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return { error: 'date 非法' };
+  }
+  // ── 时刻部分（优先级：time > timeOfDay > hint > 就近归档）──
+  const timeStr = String((raw && raw.time) || '').trim();
+  if (timeStr) {
+    const tm = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeStr);
+    if (!tm) return { error: `time 应为 HH:MM（24h），收到：${timeStr}` };
+    const clock = { hour: Number(tm[1]), minute: Number(tm[2]) };
+    return { ts: new Date(y, m, d, clock.hour, clock.minute, 0).getTime() };
+  }
+  let slot = null;
+  const tod = (raw && raw.timeOfDay) || '';
+  if (tod) {
+    slot = findSlot(tod);
+    if (!slot) return { error: `timeOfDay 应为档位 key 或中文（凌晨/早上/中午/下午/傍晚/晚上），收到：${tod}` };
+  } else {
+    // hint 触发词子串匹配（默认取 note；未命中走就近归档）
+    const hint = String((raw && raw.hint) || '');
+    for (const t of TIME_SLOTS) {
+      if ((TIME_SLOT_HINTS[t.key] || []).some((w) => hint.includes(w))) { slot = t; break; }
+    }
+    if (!slot) slot = slotOfNow(base);
+  }
+  const clock = slotClock(slot);
+  return { ts: new Date(y, m, d, clock.hour, clock.minute, 0).getTime() };
+}
+
 // ── 账单归一化 ─────────────────────────────────────────────────────────────
 function makeId(now) {
   const t = typeof now === 'number' ? now : Date.now();
@@ -128,6 +226,38 @@ function appendBills(existing, bills) {
 function removeBill(existing, id) {
   const arr = (existing || []).filter((b) => b && b.id !== id);
   return { arr, removed: arr.length !== (existing || []).length };
+}
+
+/**
+ * 原地替换一笔：按 id 找，应用 patch（type/amount/category/note/ts/attachmentId）。
+ * 返回 { arr, found, moved, bill }：
+ *   arr   旧日数组应用 patch 后（若跨日迁移则已移除该 bill，避免旧日键残留）
+ *   found 是否命中
+ *   moved 若新 ts 落到的日键与旧不同 → 目标日键字符串；否则 null（调用方负责跨日迁移）
+ *   bill  更新后的完整账单对象（应用 patch；未命中为 null）
+ * 未命中返回 { arr: existing, found: false, moved: null, bill: null }。
+ */
+function updateBill(existing, id, patch) {
+  const target = (existing || []).find((b) => b && b.id === id);
+  if (!target) return { arr: existing, found: false, moved: null, bill: null };
+  const next = { ...target };
+  if (patch && typeof patch === 'object') {
+    if (patch.type === 'income' || patch.type === 'expense') next.type = patch.type;
+    if (patch.amount !== undefined) next.amount = patch.amount;
+    if (patch.category !== undefined) next.category = patch.category;
+    if (patch.note !== undefined) next.note = patch.note;
+    if (patch.ts !== undefined) next.ts = patch.ts;
+    // attachmentId：仅显式传字符串且非空时替换；空串/非法保持原值
+    if (typeof patch.attachmentId === 'string' && patch.attachmentId) next.attachmentId = patch.attachmentId;
+  }
+  const oldDay = dayKeyOf(target.ts);
+  const newDay = dayKeyOf(next.ts);
+  const moved = oldDay === newDay ? null : newDay;
+  // arr：跨日 → 旧日数组移除该 id；同日 → 原地替换为 next
+  const arr = moved
+    ? (existing || []).filter((b) => b && b.id !== id)
+    : (existing || []).map((b) => (b && b.id === id ? next : b));
+  return { arr, found: true, moved, bill: next };
 }
 
 // ── 查询与统计 ─────────────────────────────────────────────────────────────
@@ -298,7 +428,8 @@ function isImageMime(mime) {
 module.exports = {
   K, DEFAULT_CATEGORIES, INCOME_CATEGORIES, DEFAULT_SETTINGS, MAX_ATTACHMENT_BYTES,
   dayKeyOf, monthOf, shiftMonth, currentMonth,
-  makeId, normalizeBill, appendBills, removeBill,
+  makeId, normalizeBill, appendBills, removeBill, updateBill,
   filterBills, computeStats, budgetHint, toCsv, fmtMoney,
   isExcludedFromStats, normalizeAttachment, isImageMime,
+  TIME_SLOTS, TIME_SLOT_HINTS, findSlot, slotOfNow, slotClock, resolveBillTime,
 };

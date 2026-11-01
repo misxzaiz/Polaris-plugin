@@ -3,10 +3,11 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  deleteBill, toCsv, fmtMoney, billTime, fmtMonthTitle,
-  getAttachment, isImageMime,
+  deleteBill, updateBill, toCsv, fmtMoney, billTime, fmtMonthTitle,
+  getAttachment, isImageMime, TIME_SLOTS,
   type Bill, type PanelData, type Attachment,
 } from './model'
+import EditModal from './EditModal'
 
 type Toast = (msg: string, kind?: 'bad' | 'good') => void
 
@@ -20,6 +21,7 @@ export default function ListTab({ data, month, switchMonth, reload, showToast }:
   const [catFilter, setCatFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
   const [viewing, setViewing] = useState<Attachment | null>(null)
+  const [editing, setEditing] = useState<Bill | null>(null)
 
   const sym = data?.settings.currencySymbol || '¥'
   const categories = useMemo(() => {
@@ -64,6 +66,30 @@ export default function ListTab({ data, month, switchMonth, reload, showToast }:
       setViewing(a)
     } catch (e) {
       showToast(`读取附件失败：${(e as Error).message}`, 'bad')
+    }
+  }
+
+  /** 编辑弹窗保存：按 id 改字段，跨日/跨月自动迁移 */
+  const saveEdit = async (b: Bill, fields: { amount: string; type: 'expense' | 'income'; category: string; note: string; date: string; timeOfDay: string; customDate: string }) => {
+    const amt = Number(fields.amount)
+    if (!Number.isFinite(amt) || amt <= 0) { showToast('请输入大于 0 的金额', 'bad'); return }
+    const dateStr = fields.date === 'custom' ? fields.customDate : fields.date
+    if (fields.date === 'custom' && !fields.customDate) { showToast('请先选择补记日期', 'bad'); return }
+    try {
+      const r = await updateBill(b.id, {
+        amount: amt,
+        type: fields.type,
+        category: fields.category,
+        note: fields.note.trim(),
+        date: dateStr,
+        timeOfDay: fields.timeOfDay === 'auto' ? undefined : (fields.timeOfDay as 'early_morning' | 'morning' | 'noon' | 'afternoon' | 'evening' | 'night'),
+      }, month)
+      if (!r.ok) { showToast(r.error || '修改失败', 'bad'); return }
+      setEditing(null)
+      await reload(month)
+      showToast('已更新', 'good')
+    } catch (e) {
+      showToast(`修改失败：${(e as Error).message}`, 'bad')
     }
   }
 
@@ -123,6 +149,7 @@ export default function ListTab({ data, month, switchMonth, reload, showToast }:
                   <span className={`pl-bill-amt ${b.type === 'income' ? 'pl-amt-inc' : 'pl-amt-exp'}`}>
                     {b.type === 'income' ? '+' : '-'}{fmtMoney(b.amount, sym)}
                   </span>
+                  <button className="pl-btn sm ghost" onClick={() => setEditing(b)}>改</button>
                   <button className="pl-btn sm danger" onClick={() => del(b)}>删</button>
                 </div>
               ))}
@@ -151,6 +178,15 @@ export default function ListTab({ data, month, switchMonth, reload, showToast }:
             </div>
           </div>
         </div>
+      )}
+
+      {editing && (
+        <EditModal
+          bill={editing}
+          categories={categories}
+          onClose={() => setEditing(null)}
+          onSave={(fields) => saveEdit(editing, fields)}
+        />
       )}
     </div>
   )

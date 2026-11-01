@@ -27,6 +27,8 @@ export const normalizeAttachment = core.normalizeAttachment as (raw: {
 }) => { error?: string; att?: AttachmentMeta }
 export const isImageMime = core.isImageMime as (mime: string) => boolean
 export const MAX_ATTACHMENT_BYTES = core.MAX_ATTACHMENT_BYTES as number
+/** 时段档位（面板「时段」chips 与 AI 推导共用同一权威） */
+export const TIME_SLOTS = core.TIME_SLOTS as { key: string; label: string; hour: number }[]
 
 // ── 类型（与 core 输出对齐）────────────────────────────────────────────────
 export interface Bill {
@@ -166,7 +168,12 @@ export interface AddBillInput {
   type: 'expense' | 'income'
   category?: string
   note?: string
+  /** 直接给 ts（向后兼容）；若给 date/timeOfDay/time 则优先用档位解析 */
   ts?: number
+  /** date: 'today'|'yesterday'|'YYYY-MM-DD'；与 timeOfDay/time 一起经 resolveBillTime 合成 ts */
+  date?: string
+  timeOfDay?: 'early_morning' | 'morning' | 'noon' | 'afternoon' | 'evening' | 'night'
+  time?: string
   attachmentId?: string
 }
 
@@ -182,7 +189,14 @@ export interface AddBillResult {
 export async function addBill(input: AddBillInput): Promise<AddBillResult> {
   const settings = await loadSettings()
   const valid = [...new Set([...(settings.categories || []), ...(settings.incomeCategories || [])])]
-  const norm = core.normalizeBill({ ...input, source: 'panel' }, valid)
+  // ts 优先：显式传 ts 直接用；否则经 resolveBillTime（date/timeOfDay/time/note 推导档位）
+  let ts: number | undefined = input.ts
+  if (ts === undefined) {
+    const resolved = core.resolveBillTime({ date: input.date, time: input.time, timeOfDay: input.timeOfDay, hint: input.note }, Date.now())
+    if (resolved.error) return { ok: false, error: resolved.error }
+    ts = resolved.ts as number
+  }
+  const norm = core.normalizeBill({ ...input, ts, source: 'panel' }, valid)
   if (norm.error || !norm.bill) return { ok: false, error: norm.error || '账单不合法' }
   const bill = norm.bill as Bill
   const dk = K.day(core.dayKeyOf(bill.ts))
@@ -212,6 +226,69 @@ export async function deleteBill(id: string, month: string): Promise<boolean> {
     }
   }
   return false
+}
+
+export interface UpdateBillInput {
+  type?: 'expense' | 'income'
+  amount?: number
+  category?: string
+  note?: string
+  date?: string
+  timeOfDay?: 'early_morning' | 'morning' | 'noon' | 'afternoon' | 'evening' | 'night'
+  time?: string
+}
+
+/** 修改一笔：按 id 定位（先 month 内，未命中全量扫 ledger.day.*），跨日/跨月自动迁移 */
+export async function updateBill(id: string, patch: UpdateBillInput, month: string): Promise<{ ok: boolean; error?: string; bill?: Bill }> {
+  const settings = await loadSettings()
+  const valid = [...new Set([...(settings.categories || []), ...(settings.incomeCategories || [])])]
+  // 定位：先 month 内，未命中全量扫描所有日键（跨月迁移后兜底）
+  let loc: { dk: string; arr: Bill[] } | null = null
+  const { dayKeys: monthKeys } = await loadMonth(month)
+  for (const dk of monthKeys) {
+    const arr = await kvGet<Bill[]>(dk)
+    if (Array.isArray(arr) && arr.some((b) => b && b.id === id)) { loc = { dk, arr }; break }
+  }
+  if (!loc) {
+    const allKeys = await kvKeys()
+    for (const dk of allKeys.filter((k) => k.startsWith(K.dayPrefix)).sort()) {
+      const arr = await kvGet<Bill[]>(dk)
+      if (Array.isArray(arr) && arr.some((b) => b && b.id === id)) { loc = { dk, arr }; break }
+    }
+  }
+  if (!loc) return { ok: false, error: `未找到账单 ${id}` }
+  const target = loc.arr.find((b) => b && b.id === id)!
+  // 新 ts：传了 date/time/timeOfDay → resolveBillTime；否则保持原 ts
+  let newTs = target.ts
+  if (patch.date || patch.time || patch.timeOfDay) {
+    const resolved = core.resolveBillTime({ date: patch.date || core.dayKeyOf(target.ts), time: patch.time, timeOfDay: patch.timeOfDay, hint: patch.note !== undefined ? patch.note : target.note }, Date.now())
+    if (resolved.error) return { ok: false, error: resolved.error }
+    newTs = resolved.ts as number
+  }
+  // 组装 patch
+  const cp: Record<string, unknown> = { ts: newTs }
+  if (patch.type === 'income' || patch.type === 'expense') cp.type = patch.type
+  if (patch.amount !== undefined) {
+    const amt = Number(patch.amount)
+    if (!Number.isFinite(amt) || amt <= 0) return { ok: false, error: '金额必须是正数' }
+    cp.amount = Math.round(amt * 100) / 100
+  }
+  if (patch.category !== undefined) {
+    if (!valid.includes(patch.category)) return { ok: false, error: `未知分类「${patch.category}」，可用：${valid.join('/')}` }
+    cp.category = patch.category
+  }
+  if (patch.note !== undefined) cp.note = String(patch.note).slice(0, 200)
+  const updated = core.updateBill(loc.arr, id, cp) as { arr: Bill[]; found: boolean; moved: string | null; bill: Bill }
+  if (!updated.found) return { ok: false, error: `未找到账单 ${id}` }
+  if (updated.moved) {
+    await kvSet(loc.dk, updated.arr)
+    const newArr = await kvGet<Bill[]>(K.day(updated.moved))
+    const merged = core.appendBills(Array.isArray(newArr) ? newArr : [], [updated.bill])
+    await kvSet(K.day(updated.moved), merged)
+  } else {
+    await kvSet(loc.dk, updated.arr)
+  }
+  return { ok: true, bill: updated.bill }
 }
 
 // ── 附件 ───────────────────────────────────────────────────────────────────

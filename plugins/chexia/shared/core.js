@@ -525,7 +525,7 @@ function carSnapshot(car, energies, items, svcs, docs, nowTs, settings) {
     unit: unitOf(car),
     odometer: odo,
     kmPerDay: rate.rate != null ? r1(rate.rate) : null, rateSource: rate.source,
-    consumption: cons.ok ? { per100: cons.per100, costPerKm: cons.costPerKm, unit: cons.unit, since: cons.since, until: cons.until, kmSpan: cons.kmSpan } : null,
+    consumption: cons.ok ? { per100: cons.per100, costPerKm: cons.costPerKm, unit: cons.unit, since: cons.since, until: cons.until, kmSpan: cons.kmSpan, estimated: cons.estimated === true } : null,
     consumptionNote: cons.ok ? '' : cons.reason,
     items: itemsProj,
     docsDue: docRows,

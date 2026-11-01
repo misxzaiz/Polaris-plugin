@@ -8,10 +8,11 @@
  * 无后台服务、无网络请求——纯本地账本。
  *
  * 工具一览：
- *   ledger_add          记一笔（AI 从对话里提取金额/分类/备注）
+ *   ledger_add          记一笔（AI 从对话里提取金额/分类/备注；支持时段档位推导）
  *   ledger_query        查账单（月/日/分类/关键词）
  *   ledger_stats        月度统计与预算
  *   ledger_delete       删除一笔
+ *   ledger_update       修改一笔（按 id，可改金额/分类/备注/时间，跨日迁移）
  *   ledger_categories   查看/增删自定义分类
  *   ledger_attach_save  保存附件（返回 id 供 ledger_add 引用）
  *   ledger_attach_get   读取附件主体（默认不拉图，按需取）
@@ -29,7 +30,7 @@ const os = require('os');
 const core = require('../shared/ledger-core.js');
 
 const SERVER_NAME = 'pocket-ledger';
-const SERVER_VERSION = '0.2.0';
+const SERVER_VERSION = '0.3.0';
 const PROTOCOL_VERSION = '2024-11-05';
 
 function log(level, msg) {
@@ -183,6 +184,20 @@ async function loadMonth(month) {
   return { dayKeys, byDay, all };
 }
 
+/** 跨月全量扫描定位一笔：扫全部 ledger.day.* 键，返回 { dk, bill } | null */
+async function findBillAnywhere(id) {
+  const keys = await kvKeys();
+  const dayKeys = keys.filter((k) => k.startsWith(core.K.dayPrefix)).sort();
+  for (const dk of dayKeys) {
+    // eslint-disable-next-line no-await-in-loop
+    const arr = await kvGet(dk);
+    if (!Array.isArray(arr)) continue;
+    const bill = arr.find((b) => b && b.id === id);
+    if (bill) return { dk, bill };
+  }
+  return null;
+}
+
 function parseMonth(input) {
   if (!input || input === 'current' || input === 'this') return core.currentMonth();
   if (input === 'last' || input === 'prev') return core.shiftMonth(core.currentMonth(), -1);
@@ -190,20 +205,6 @@ function parseMonth(input) {
   if (/^\d{4}-\d{2}$/.test(s)) return s;
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s.slice(0, 7);
   return core.currentMonth();
-}
-
-/** 'today'|'yesterday'|'YYYY-MM-DD' → epoch ms（保留当前时分秒便于排序展示） */
-function resolveDate(input, now) {
-  if (!input || input === 'today' || input === '今天') return now;
-  if (input === 'yesterday' || input === '昨天') return now - 24 * 3600 * 1000;
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(input).trim());
-  if (m) {
-    const d = new Date(now);
-    const target = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), d.getHours(), d.getMinutes(), d.getSeconds());
-    if (Number.isNaN(target.getTime())) return null;
-    return target.getTime();
-  }
-  return null;
 }
 
 function fmtBillLine(b, symbol) {
@@ -308,15 +309,17 @@ const tools = [
   },
   {
     name: 'ledger_add',
-    description: '日常记账·记一笔。从对话中提取金额/分类/备注后调用。amount 为正数；type 缺省 expense（支出），income 为收入；category 从账本分类中选（月度预算超额会得到提示）。date 支持 "today"/"yesterday"/"YYYY-MM-DD"（补记），缺省今天。',
+    description: '日常记账·记一笔。从对话中提取金额/分类/备注后调用。amount 为正数；type 缺省 expense（支出），income 为收入；category 从账本分类中选（月度预算超额会得到提示）。date 支持 "today"/"yesterday"/"YYYY-MM-DD"（补记），缺省今天。timeOfDay 给"大概时段"（凌晨/早上/中午/下午/傍晚/晚上，AI 从对话推导）；time 给精确 HH:MM（优先于 timeOfDay）；两者都不给且 note 含时段词则按触发词归档，否则按当前时刻就近归档。',
     inputSchema: {
       type: 'object',
       properties: {
         amount: { type: 'number', description: '金额（正数）' },
         type: { type: 'string', enum: ['expense', 'income'], description: '支出/收入，缺省支出' },
         category: { type: 'string', description: '分类，缺省"其他"；建议从 ledger_categories 结果中选' },
-        note: { type: 'string', description: '备注（如"午饭""打车"）' },
+        note: { type: 'string', description: '备注（如"午饭""打车"）；含时段词时也会用于推导 timeOfDay' },
         date: { type: 'string', description: 'today / yesterday / YYYY-MM-DD，缺省 today' },
+        timeOfDay: { type: 'string', enum: ['early_morning', 'morning', 'noon', 'afternoon', 'evening', 'night'], description: '大概时段（档位 key）；不确定时不传' },
+        time: { type: 'string', description: '精确时刻 HH:MM（24h），优先于 timeOfDay' },
         source: { type: 'string', enum: ['ai', 'panel'], description: '来源标记，AI 调用保持缺省' },
         attachmentId: { type: 'string', description: '附件引用（ledger_attach_save 返回的 id，可选）' },
       },
@@ -325,8 +328,9 @@ const tools = [
     async call(args) {
       const settings = await loadSettings();
       const now = Date.now();
-      const ts = resolveDate(args.date, now);
-      if (ts === null) return err('date 格式应为 today / yesterday / YYYY-MM-DD');
+      const resolved = core.resolveBillTime({ date: args.date, time: args.time, timeOfDay: args.timeOfDay, hint: args.note }, now);
+      if (resolved.error) return err(resolved.error);
+      const ts = resolved.ts;
       const norm = core.normalizeBill({ ...args, ts, source: args.source || 'ai' }, validCategories(settings));
       if (norm.error) return err(norm.error);
       const bill = norm.bill;
@@ -439,6 +443,95 @@ const tools = [
         }
       }
       return err(`本月未找到账单 ${args.id}（可尝试指定 month，或用 ledger_query 确认 id）。`);
+    },
+  },
+  {
+    name: 'ledger_update',
+    description: '日常记账·修改一笔（按 id）。可改 type/amount/category/note/date/time/timeOfDay。改时间跨日自动迁移日键（跨月全量扫描兜底）；附件引用保留（除非传 attachmentId）。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: '账单 id（ledger_query 可得）' },
+        type: { type: 'string', enum: ['expense', 'income'], description: '支出/收入' },
+        amount: { type: 'number', description: '金额（正数）' },
+        category: { type: 'string', description: '新分类' },
+        note: { type: 'string', description: '新备注' },
+        date: { type: 'string', description: 'today / yesterday / YYYY-MM-DD（配合 timeOfDay/time 重算 ts）' },
+        timeOfDay: { type: 'string', enum: ['early_morning', 'morning', 'noon', 'afternoon', 'evening', 'night'], description: '大概时段（档位 key）' },
+        time: { type: 'string', description: '精确时刻 HH:MM（优先于 timeOfDay）' },
+        month: { type: 'string', description: 'YYYY-MM，缺省本月（id 所在月不确定时建议先 query 确认）' },
+      },
+      required: ['id'],
+    },
+    async call(args) {
+      const settings = await loadSettings();
+      // 1) 定位：先按 month 扫，未命中则全量扫描（跨月迁移后兜底）
+      let loc = null;
+      if (args.month) {
+        const { byDay } = await loadMonth(parseMonth(args.month));
+        for (const [dk, arr] of byDay) {
+          if (arr.some((b) => b && b.id === args.id)) { loc = { dk, arr }; break; }
+        }
+      }
+      if (!loc) {
+        const keys = await kvKeys();
+        for (const dk of keys.filter((k) => k.startsWith(core.K.dayPrefix)).sort()) {
+          // eslint-disable-next-line no-await-in-loop
+          const arr = await kvGet(dk);
+          if (Array.isArray(arr) && arr.some((b) => b && b.id === args.id)) { loc = { dk, arr }; break; }
+        }
+      }
+      if (!loc) return err(`未找到账单 ${args.id}（可用 ledger_query 确认 id）。`);
+      const target = loc.arr.find((b) => b && b.id === args.id);
+      // 2) 计算新 ts：传了 date/time/timeOfDay → resolveBillTime；否则保持原 ts
+      let newTs = target.ts;
+      if (args.date || args.time || args.timeOfDay) {
+        const resolved = core.resolveBillTime({
+          date: args.date || core.dayKeyOf(target.ts),
+          time: args.time, timeOfDay: args.timeOfDay, hint: args.note !== undefined ? args.note : target.note,
+        }, Date.now());
+        if (resolved.error) return err(resolved.error);
+        newTs = resolved.ts;
+      }
+      // 3) 组装 patch（amount/category/note 归一化校验）
+      const patch = { ts: newTs };
+      if (args.type === 'income' || args.type === 'expense') patch.type = args.type;
+      if (args.amount !== undefined) {
+        const amt = Number(args.amount);
+        if (!Number.isFinite(amt) || amt <= 0) return err('金额必须是正数');
+        patch.amount = Math.round(amt * 100) / 100;
+      }
+      if (args.category !== undefined) {
+        const valid = validCategories(settings);
+        if (!valid.includes(args.category)) return err(`未知分类「${args.category}」，可用：${valid.join('/')}（可先在设置里添加自定义分类）`);
+        patch.category = args.category;
+      }
+      if (args.note !== undefined) patch.note = String(args.note).slice(0, 200);
+      // 4) 应用 updateBill；跨日迁移
+      const updated = core.updateBill(loc.arr, args.id, patch);
+      if (!updated.found) return err(`未找到账单 ${args.id}。`);
+      if (updated.moved) {
+        await kvSet(loc.dk, updated.arr);
+        const newArr = await kvGet(core.K.day(updated.moved));
+        const merged = core.appendBills(Array.isArray(newArr) ? newArr : [], [updated.bill]);
+        await kvSet(core.K.day(updated.moved), merged);
+      } else {
+        await kvSet(loc.dk, updated.arr);
+      }
+      // 5) 反馈：更新后账单 + 日/月小计（复用 ledger_add 口径）
+      const newBill = updated.bill;
+      const monthBills = (await loadMonth(core.monthOf(newTs))).all;
+      const stats = core.computeStats(monthBills, settings, core.monthOf(newTs));
+      const hint = core.budgetHint(stats);
+      const dayKey = core.dayKeyOf(newTs);
+      const dayArr = await kvGet(core.K.day(dayKey));
+      const dayExpense = (Array.isArray(dayArr) ? dayArr : []).filter((b) => b.type === 'expense').reduce((s, b) => s + b.amount, 0);
+      return ok([
+        `已更新账单 ${args.id}：${newBill.type === 'income' ? '收入' : '支出'} ${core.fmtMoney(newBill.amount, settings.currencySymbol)}「${newBill.category}」${newBill.note ? `（${newBill.note}）` : ''} · ${dayKey}`,
+        `本${newBill.type === 'income' ? '日收入' : '日支出小计'} ${core.fmtMoney(dayExpense, settings.currencySymbol)}`,
+        `本月：支出 ${core.fmtMoney(stats.expense, settings.currencySymbol)} / 收入 ${core.fmtMoney(stats.income, settings.currencySymbol)}${stats.excludedSum ? `（另有 ${core.fmtMoney(stats.excludedSum, settings.currencySymbol)} 不参与汇总）` : ''}`,
+        hint,
+      ].filter(Boolean).join('\n'));
     },
   },
   {

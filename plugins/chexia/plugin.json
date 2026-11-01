@@ -1,0 +1,63 @@
+{
+  "id": "chexia",
+  "name": "车辆养护台账",
+  "version": "0.1.0",
+  "description": "家庭车辆养护与补能账本：把「车该保养了吗、保险年检什么时候到期、这车百公里多少钱」变成可对话、会主动提醒的家庭车辆档案。对 AI 说「刚加油 350 块 42.3 升，里程 45230」自动算期间油耗、刷新保养里程倒计时；加油不要求加满（期间口径），充电按 kWh；证件红黄榜盯交强险/商业险/年检/驾驶证到期；一家多车多成员三端同读（手机浏览器打开同一面板互相代记）。纯本地零网络（cap.kv），零账号零广告，不推荐任何商家。只做车务记录，不构成维修/保险建议。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "chexia.panel",
+        "area": "activityBar",
+        "panelType": "chexia",
+        "icon": "Target",
+        "labelKey": "plugins.chexia",
+        "labelDefault": "车辆养护台账",
+        "order": 79
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "chexia-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/chexia.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "全家快照重算（里程/能耗/养护投影/证件榜/费用）+ 心跳（纯本地，零外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "chexia",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/chexia",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/chexia.zip"
+  }
+}

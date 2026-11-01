@@ -103,6 +103,84 @@ var require_ledger_core = __commonJS({
     function currentMonth3(now) {
       return monthOf3(typeof now === "number" ? now : Date.now());
     }
+    var TIME_SLOTS4 = [
+      { key: "early_morning", label: "\u51CC\u6668", hour: 0 },
+      { key: "morning", label: "\u65E9\u4E0A", hour: 9 },
+      { key: "noon", label: "\u4E2D\u5348", hour: 12 },
+      { key: "afternoon", label: "\u4E0B\u5348", hour: 16 },
+      { key: "evening", label: "\u508D\u665A", hour: 18 },
+      { key: "night", label: "\u665A\u4E0A", hour: 20 }
+    ];
+    var TIME_SLOT_HINTS = {
+      early_morning: ["\u51CC\u6668", "\u6DF1\u591C", "\u534A\u591C", "\u901A\u5BB5"],
+      morning: ["\u65E9\u996D", "\u65E9\u9910", "\u65E9\u73ED", "\u6E05\u6668", "\u65E9\u4E0A", "\u65E9\u70B9"],
+      noon: ["\u5348\u996D", "\u5348\u9910", "\u4E2D\u5348", "\u4E2D\u996D", "\u6B63\u5348"],
+      afternoon: ["\u4E0B\u5348", "\u4E0B\u5348\u8336", "\u5348\u540E"],
+      evening: ["\u665A\u996D", "\u665A\u9910", "\u508D\u665A", "\u665A\u73ED", "\u4E0B\u73ED\u996D"],
+      night: ["\u591C\u5BB5", "\u5BB5\u591C", "\u665A\u4E0A", "\u665A\u70B9"]
+    };
+    function findSlot(keyOrLabel) {
+      const s = String(keyOrLabel || "").trim();
+      if (!s) return null;
+      return TIME_SLOTS4.find((t) => t.key === s || t.label === s) || null;
+    }
+    function slotOfNow(ts) {
+      const h = new Date(ts).getHours();
+      if (h < 9) return TIME_SLOTS4[0];
+      if (h < 12) return TIME_SLOTS4[1];
+      if (h < 16) return TIME_SLOTS4[2];
+      if (h < 18) return TIME_SLOTS4[3];
+      if (h < 20) return TIME_SLOTS4[4];
+      return TIME_SLOTS4[5];
+    }
+    function slotClock(slot) {
+      return { hour: slot.hour, minute: 0 };
+    }
+    function resolveBillTime2(raw, now) {
+      const base = typeof now === "number" ? now : Date.now();
+      const dateStr = String(raw && raw.date || "").trim();
+      const baseDate = new Date(base);
+      let y = baseDate.getFullYear();
+      let m = baseDate.getMonth();
+      let d = baseDate.getDate();
+      if (dateStr === "yesterday" || dateStr === "\u6628\u5929") {
+        const t = new Date(base - 24 * 3600 * 1e3);
+        y = t.getFullYear();
+        m = t.getMonth();
+        d = t.getDate();
+      } else if (dateStr && dateStr !== "today" && dateStr !== "\u4ECA\u5929") {
+        const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+        if (!dm) return { error: "date \u683C\u5F0F\u5E94\u4E3A today / yesterday / YYYY-MM-DD" };
+        y = Number(dm[1]);
+        m = Number(dm[2]) - 1;
+        d = Number(dm[3]);
+        if (Number.isNaN(y) || Number.isNaN(m) || Number.isNaN(d)) return { error: "date \u975E\u6CD5" };
+      }
+      const timeStr = String(raw && raw.time || "").trim();
+      if (timeStr) {
+        const tm = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(timeStr);
+        if (!tm) return { error: `time \u5E94\u4E3A HH:MM\uFF0824h\uFF09\uFF0C\u6536\u5230\uFF1A${timeStr}` };
+        const clock2 = { hour: Number(tm[1]), minute: Number(tm[2]) };
+        return { ts: new Date(y, m, d, clock2.hour, clock2.minute, 0).getTime() };
+      }
+      let slot = null;
+      const tod = raw && raw.timeOfDay || "";
+      if (tod) {
+        slot = findSlot(tod);
+        if (!slot) return { error: `timeOfDay \u5E94\u4E3A\u6863\u4F4D key \u6216\u4E2D\u6587\uFF08\u51CC\u6668/\u65E9\u4E0A/\u4E2D\u5348/\u4E0B\u5348/\u508D\u665A/\u665A\u4E0A\uFF09\uFF0C\u6536\u5230\uFF1A${tod}` };
+      } else {
+        const hint = String(raw && raw.hint || "");
+        for (const t of TIME_SLOTS4) {
+          if ((TIME_SLOT_HINTS[t.key] || []).some((w) => hint.includes(w))) {
+            slot = t;
+            break;
+          }
+        }
+        if (!slot) slot = slotOfNow(base);
+      }
+      const clock = slotClock(slot);
+      return { ts: new Date(y, m, d, clock.hour, clock.minute, 0).getTime() };
+    }
     function makeId(now) {
       const t = typeof now === "number" ? now : Date.now();
       const rand = Math.random().toString(36).slice(2, 8);
@@ -142,6 +220,24 @@ var require_ledger_core = __commonJS({
     function removeBill2(existing, id) {
       const arr = (existing || []).filter((b) => b && b.id !== id);
       return { arr, removed: arr.length !== (existing || []).length };
+    }
+    function updateBill3(existing, id, patch) {
+      const target = (existing || []).find((b) => b && b.id === id);
+      if (!target) return { arr: existing, found: false, moved: null, bill: null };
+      const next = { ...target };
+      if (patch && typeof patch === "object") {
+        if (patch.type === "income" || patch.type === "expense") next.type = patch.type;
+        if (patch.amount !== void 0) next.amount = patch.amount;
+        if (patch.category !== void 0) next.category = patch.category;
+        if (patch.note !== void 0) next.note = patch.note;
+        if (patch.ts !== void 0) next.ts = patch.ts;
+        if (typeof patch.attachmentId === "string" && patch.attachmentId) next.attachmentId = patch.attachmentId;
+      }
+      const oldDay = dayKeyOf3(target.ts);
+      const newDay = dayKeyOf3(next.ts);
+      const moved = oldDay === newDay ? null : newDay;
+      const arr = moved ? (existing || []).filter((b) => b && b.id !== id) : (existing || []).map((b) => b && b.id === id ? next : b);
+      return { arr, found: true, moved, bill: next };
     }
     function filterBills(bills, { category, type, keyword, minAmount, maxAmount } = {}) {
       return (bills || []).filter((b) => {
@@ -287,6 +383,7 @@ var require_ledger_core = __commonJS({
       normalizeBill: normalizeBill2,
       appendBills: appendBills2,
       removeBill: removeBill2,
+      updateBill: updateBill3,
       filterBills,
       computeStats: computeStats3,
       budgetHint,
@@ -294,7 +391,13 @@ var require_ledger_core = __commonJS({
       fmtMoney: fmtMoney3,
       isExcludedFromStats,
       normalizeAttachment: normalizeAttachment3,
-      isImageMime: isImageMime3
+      isImageMime: isImageMime3,
+      TIME_SLOTS: TIME_SLOTS4,
+      TIME_SLOT_HINTS,
+      findSlot,
+      slotOfNow,
+      slotClock,
+      resolveBillTime: resolveBillTime2
     };
   }
 });
@@ -305,6 +408,7 @@ __export(model_exports, {
   DEFAULT_SETTINGS: () => DEFAULT_SETTINGS2,
   K: () => K2,
   MAX_ATTACHMENT_BYTES: () => MAX_ATTACHMENT_BYTES2,
+  TIME_SLOTS: () => TIME_SLOTS2,
   addBill: () => addBill,
   billTime: () => billTime,
   computeStats: () => computeStats2,
@@ -329,7 +433,8 @@ __export(model_exports, {
   saveSettings: () => saveSettings,
   shiftMonth: () => shiftMonth2,
   timeAgo: () => timeAgo,
-  toCsv: () => toCsv2
+  toCsv: () => toCsv2,
+  updateBill: () => updateBill2
 });
 async function capDispatch(target, payload) {
   const res = await getHostInvoke()("router_dispatch", { req: { target, payload } });
@@ -378,7 +483,13 @@ async function loadDay(dayKey) {
 async function addBill(input) {
   const settings = await loadSettings();
   const valid = [.../* @__PURE__ */ new Set([...settings.categories || [], ...settings.incomeCategories || []])];
-  const norm = core.normalizeBill({ ...input, source: "panel" }, valid);
+  let ts = input.ts;
+  if (ts === void 0) {
+    const resolved = core.resolveBillTime({ date: input.date, time: input.time, timeOfDay: input.timeOfDay, hint: input.note }, Date.now());
+    if (resolved.error) return { ok: false, error: resolved.error };
+    ts = resolved.ts;
+  }
+  const norm = core.normalizeBill({ ...input, ts, source: "panel" }, valid);
   if (norm.error || !norm.bill) return { ok: false, error: norm.error || "\u8D26\u5355\u4E0D\u5408\u6CD5" };
   const bill = norm.bill;
   const dk = K2.day(core.dayKeyOf(bill.ts));
@@ -406,6 +517,60 @@ async function deleteBill(id, month) {
     }
   }
   return false;
+}
+async function updateBill2(id, patch, month) {
+  const settings = await loadSettings();
+  const valid = [.../* @__PURE__ */ new Set([...settings.categories || [], ...settings.incomeCategories || []])];
+  let loc = null;
+  const { dayKeys: monthKeys } = await loadMonth(month);
+  for (const dk of monthKeys) {
+    const arr = await kvGet(dk);
+    if (Array.isArray(arr) && arr.some((b) => b && b.id === id)) {
+      loc = { dk, arr };
+      break;
+    }
+  }
+  if (!loc) {
+    const allKeys = await kvKeys();
+    for (const dk of allKeys.filter((k) => k.startsWith(K2.dayPrefix)).sort()) {
+      const arr = await kvGet(dk);
+      if (Array.isArray(arr) && arr.some((b) => b && b.id === id)) {
+        loc = { dk, arr };
+        break;
+      }
+    }
+  }
+  if (!loc) return { ok: false, error: `\u672A\u627E\u5230\u8D26\u5355 ${id}` };
+  const target = loc.arr.find((b) => b && b.id === id);
+  let newTs = target.ts;
+  if (patch.date || patch.time || patch.timeOfDay) {
+    const resolved = core.resolveBillTime({ date: patch.date || core.dayKeyOf(target.ts), time: patch.time, timeOfDay: patch.timeOfDay, hint: patch.note !== void 0 ? patch.note : target.note }, Date.now());
+    if (resolved.error) return { ok: false, error: resolved.error };
+    newTs = resolved.ts;
+  }
+  const cp = { ts: newTs };
+  if (patch.type === "income" || patch.type === "expense") cp.type = patch.type;
+  if (patch.amount !== void 0) {
+    const amt = Number(patch.amount);
+    if (!Number.isFinite(amt) || amt <= 0) return { ok: false, error: "\u91D1\u989D\u5FC5\u987B\u662F\u6B63\u6570" };
+    cp.amount = Math.round(amt * 100) / 100;
+  }
+  if (patch.category !== void 0) {
+    if (!valid.includes(patch.category)) return { ok: false, error: `\u672A\u77E5\u5206\u7C7B\u300C${patch.category}\u300D\uFF0C\u53EF\u7528\uFF1A${valid.join("/")}` };
+    cp.category = patch.category;
+  }
+  if (patch.note !== void 0) cp.note = String(patch.note).slice(0, 200);
+  const updated = core.updateBill(loc.arr, id, cp);
+  if (!updated.found) return { ok: false, error: `\u672A\u627E\u5230\u8D26\u5355 ${id}` };
+  if (updated.moved) {
+    await kvSet(loc.dk, updated.arr);
+    const newArr = await kvGet(K2.day(updated.moved));
+    const merged = core.appendBills(Array.isArray(newArr) ? newArr : [], [updated.bill]);
+    await kvSet(K2.day(updated.moved), merged);
+  } else {
+    await kvSet(loc.dk, updated.arr);
+  }
+  return { ok: true, bill: updated.bill };
 }
 async function saveAttachment(raw) {
   const norm = core.normalizeAttachment({ name: raw.name, mime: raw.mime, size: raw.size });
@@ -436,7 +601,7 @@ function fmtMonthTitle(month) {
   const [y, m] = month.split("-");
   return `${y} \u5E74 ${Number(m)} \u6708`;
 }
-var core, K2, DEFAULT_SETTINGS2, fmtMoney2, monthOf2, currentMonth2, shiftMonth2, computeStats2, toCsv2, dayKeyOf2, normalizeAttachment2, isImageMime2, MAX_ATTACHMENT_BYTES2;
+var core, K2, DEFAULT_SETTINGS2, fmtMoney2, monthOf2, currentMonth2, shiftMonth2, computeStats2, toCsv2, dayKeyOf2, normalizeAttachment2, isImageMime2, MAX_ATTACHMENT_BYTES2, TIME_SLOTS2;
 var init_model = __esm({
   "src/model.ts"() {
     "use strict";
@@ -454,28 +619,95 @@ var init_model = __esm({
     normalizeAttachment2 = core.normalizeAttachment;
     isImageMime2 = core.isImageMime;
     MAX_ATTACHMENT_BYTES2 = core.MAX_ATTACHMENT_BYTES;
+    TIME_SLOTS2 = core.TIME_SLOTS;
   }
 });
 
 // src/Panel.tsx
 init_model();
-import { useCallback, useEffect as useEffect2, useRef as useRef2, useState as useState4 } from "react";
+import { useCallback, useEffect as useEffect2, useRef as useRef2, useState as useState5 } from "react";
 
 // src/QuickTab.tsx
 init_model();
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState as useState2 } from "react";
+
+// src/EditModal.tsx
+init_model();
+import { useState } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
-function QuickTab({ data, reload, showToast }) {
-  const [amount, setAmount] = useState("");
-  const [type, setType] = useState("expense");
-  const [category, setCategory] = useState("");
-  const [note, setNote] = useState("");
+var EXPENSE_CATS = ["\u9910\u996E", "\u4EA4\u901A", "\u8D2D\u7269", "\u5C45\u4F4F", "\u5A31\u4E50", "\u533B\u7597", "\u5B66\u4E60", "\u4EBA\u60C5", "\u5176\u4ED6"];
+function EditModal({ bill, categories, onClose, onSave }) {
+  const [amount, setAmount] = useState(String(bill.amount));
+  const [type, setType] = useState(bill.type);
+  const [category, setCategory] = useState(bill.category);
+  const [note, setNote] = useState(bill.note || "");
   const [date, setDate] = useState("today");
   const [customDate, setCustomDate] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [today, setToday] = useState(null);
-  const [attachment, setAttachment] = useState(null);
-  const [viewing, setViewing] = useState(null);
+  const [timeOfDay, setTimeOfDay] = useState("auto");
+  const cats = type === "income" ? categories.filter((c) => !EXPENSE_CATS.includes(c)) : categories;
+  return /* @__PURE__ */ jsx("div", { className: "pl-attmodal", onClick: onClose, children: /* @__PURE__ */ jsxs("div", { className: "pl-attmodal-box", onClick: (e) => e.stopPropagation(), children: [
+    /* @__PURE__ */ jsxs("div", { className: "pl-attmodal-head", children: [
+      /* @__PURE__ */ jsxs("b", { children: [
+        "\u7F16\u8F91\u8D26\u5355 \xB7 ",
+        bill.id.slice(0, 12)
+      ] }),
+      /* @__PURE__ */ jsx("button", { className: "pl-btn sm ghost", onClick: onClose, children: "\u53D6\u6D88" })
+    ] }),
+    /* @__PURE__ */ jsxs("div", { className: "pl-attmodal-body", style: { flexDirection: "column", alignItems: "stretch" }, children: [
+      /* @__PURE__ */ jsxs("div", { className: "pl-row", style: { marginBottom: 8 }, children: [
+        /* @__PURE__ */ jsx("button", { className: `pl-chip ${type === "expense" ? "on" : ""}`, onClick: () => setType("expense"), children: "\u652F\u51FA" }),
+        /* @__PURE__ */ jsx("button", { className: `pl-chip ${type === "income" ? "on" : ""}`, onClick: () => setType("income"), children: "\u6536\u5165" })
+      ] }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          className: "pl-inp",
+          inputMode: "decimal",
+          placeholder: "0.00",
+          value: amount,
+          onChange: (e) => {
+            if (/^\d*\.?\d{0,2}$/.test(e.target.value)) setAmount(e.target.value);
+          }
+        }
+      ),
+      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u5206\u7C7B" }),
+      /* @__PURE__ */ jsx("div", { className: "pl-row", children: (cats.length ? cats : [category]).map((c) => /* @__PURE__ */ jsx("button", { className: `pl-chip ${category === c ? "on" : ""}`, onClick: () => setCategory(c), children: c }, c)) }),
+      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u5907\u6CE8" }),
+      /* @__PURE__ */ jsx("input", { className: "pl-inp", value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u5907\u6CE8" }),
+      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u65F6\u6BB5" }),
+      /* @__PURE__ */ jsxs("div", { className: "pl-row", children: [
+        /* @__PURE__ */ jsx("button", { className: `pl-chip ${timeOfDay === "auto" ? "on" : ""}`, onClick: () => setTimeOfDay("auto"), children: "\u81EA\u52A8" }),
+        TIME_SLOTS2.map((t) => /* @__PURE__ */ jsxs("button", { className: `pl-chip ${timeOfDay === t.key ? "on" : ""}`, onClick: () => setTimeOfDay(t.key), children: [
+          t.label,
+          " ",
+          t.hour
+        ] }, t.key))
+      ] }),
+      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u65E5\u671F" }),
+      /* @__PURE__ */ jsxs("div", { className: "pl-row", children: [
+        [["today", "\u4ECA\u5929"], ["yesterday", "\u6628\u5929"], ["custom", "\u9009\u65E5\u671F"]].map(([v, label]) => /* @__PURE__ */ jsx("button", { className: `pl-chip ${date === v ? "on" : ""}`, onClick: () => setDate(v), children: label }, v)),
+        date === "custom" && /* @__PURE__ */ jsx("input", { type: "date", className: "pl-sel", value: customDate, onChange: (e) => setCustomDate(e.target.value) })
+      ] }),
+      /* @__PURE__ */ jsx("div", { className: "pl-row", style: { marginTop: 12 }, children: /* @__PURE__ */ jsx("button", { className: "pl-btn", style: { flex: 1 }, onClick: () => onSave({ amount, type, category, note, date, timeOfDay, customDate }), children: "\u4FDD\u5B58\u4FEE\u6539" }) })
+    ] })
+  ] }) });
+}
+
+// src/QuickTab.tsx
+import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+function QuickTab({ data, reload, showToast }) {
+  const [amount, setAmount] = useState2("");
+  const [type, setType] = useState2("expense");
+  const [category, setCategory] = useState2("");
+  const [note, setNote] = useState2("");
+  const [date, setDate] = useState2("today");
+  const [customDate, setCustomDate] = useState2("");
+  const [timeOfDay, setTimeOfDay] = useState2("auto");
+  const [saving, setSaving] = useState2(false);
+  const [today, setToday] = useState2(null);
+  const [attachment, setAttachment] = useState2(null);
+  const [viewing, setViewing] = useState2(null);
+  const [editing, setEditing] = useState2(null);
   const fileRef = useRef(null);
   const settings = data?.settings;
   const categories = useMemo(() => {
@@ -521,8 +753,12 @@ function QuickTab({ data, reload, showToast }) {
       showToast("\u8BF7\u8F93\u5165\u5927\u4E8E 0 \u7684\u91D1\u989D", "bad");
       return;
     }
+    if (date === "custom" && !customDate) {
+      showToast("\u8BF7\u5148\u9009\u62E9\u8865\u8BB0\u65E5\u671F", "bad");
+      return;
+    }
     setSaving(true);
-    const ts = date === "custom" && customDate ? (/* @__PURE__ */ new Date(`${customDate}T${(/* @__PURE__ */ new Date()).toTimeString().slice(0, 8)}`)).getTime() || Date.now() : date === "yesterday" ? Date.now() - 24 * 3600 * 1e3 : Date.now();
+    const dateStr = date === "custom" ? customDate : date;
     try {
       let attachmentId;
       if (attachment) {
@@ -533,7 +769,15 @@ function QuickTab({ data, reload, showToast }) {
         }
         attachmentId = r2.att.id;
       }
-      const r = await addBill({ amount: amt, type, category, note: note.trim(), ts, attachmentId });
+      const r = await addBill({
+        amount: amt,
+        type,
+        category,
+        note: note.trim(),
+        date: dateStr,
+        timeOfDay: timeOfDay === "auto" ? void 0 : timeOfDay,
+        attachmentId
+      });
       if (!r.ok) {
         if (attachmentId) await deleteAttachmentLocal(attachmentId);
         showToast(r.error || "\u8BB0\u8D26\u5931\u8D25", "bad");
@@ -542,6 +786,7 @@ function QuickTab({ data, reload, showToast }) {
       setAmount("");
       setNote("");
       setAttachment(null);
+      setTimeOfDay("auto");
       await Promise.all([reloadToday(), reload()]);
       const sym2 = settings?.currencySymbol || "\xA5";
       showToast(`\u5DF2\u8BB0${type === "income" ? "\u6536\u5165" : "\u652F\u51FA"} ${fmtMoney2(amt, sym2)}`, "good");
@@ -566,6 +811,37 @@ function QuickTab({ data, reload, showToast }) {
       showToast(`\u5220\u9664\u5931\u8D25\uFF1A${e.message}`, "bad");
     }
   };
+  const saveEdit = async (b, fields) => {
+    const amt = Number(fields.amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      showToast("\u8BF7\u8F93\u5165\u5927\u4E8E 0 \u7684\u91D1\u989D", "bad");
+      return;
+    }
+    const dateStr = fields.date === "custom" ? fields.customDate : fields.date;
+    if (fields.date === "custom" && !fields.customDate) {
+      showToast("\u8BF7\u5148\u9009\u62E9\u8865\u8BB0\u65E5\u671F", "bad");
+      return;
+    }
+    try {
+      const r = await updateBill2(b.id, {
+        amount: amt,
+        type: fields.type,
+        category: fields.category,
+        note: fields.note.trim(),
+        date: dateStr,
+        timeOfDay: fields.timeOfDay === "auto" ? void 0 : fields.timeOfDay
+      }, data?.month || "");
+      if (!r.ok) {
+        showToast(r.error || "\u4FEE\u6539\u5931\u8D25", "bad");
+        return;
+      }
+      setEditing(null);
+      await Promise.all([reloadToday(), reload()]);
+      showToast("\u5DF2\u66F4\u65B0", "good");
+    } catch (e) {
+      showToast(`\u4FEE\u6539\u5931\u8D25\uFF1A${e.message}`, "bad");
+    }
+  };
   const viewAtt = async (b) => {
     if (!b.attachmentId) return;
     try {
@@ -584,23 +860,23 @@ function QuickTab({ data, reload, showToast }) {
   const sym = settings?.currencySymbol || "\xA5";
   const chipOf = (c) => {
     const excluded = settings?.excludeFromStats?.includes(c);
-    return /* @__PURE__ */ jsxs("button", { className: `pl-chip ${category === c ? "on" : ""}`, onClick: () => setCategory(c), title: excluded ? "\u5DF2\u8BBE\u4E3A\u4E0D\u53C2\u4E0E\u6C47\u603B\uFF08\u7EDF\u8BA1\u6392\u9664\uFF0C\u660E\u7EC6\u4ECD\u89C1\uFF09" : void 0, children: [
+    return /* @__PURE__ */ jsxs2("button", { className: `pl-chip ${category === c ? "on" : ""}`, onClick: () => setCategory(c), title: excluded ? "\u5DF2\u8BBE\u4E3A\u4E0D\u53C2\u4E0E\u6C47\u603B\uFF08\u7EDF\u8BA1\u6392\u9664\uFF0C\u660E\u7EC6\u4ECD\u89C1\uFF09" : void 0, children: [
       c,
       excluded ? " \u2298" : ""
     ] }, c);
   };
-  return /* @__PURE__ */ jsxs("div", { children: [
-    /* @__PURE__ */ jsxs("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx("i", { className: "pl-bar" }),
+  return /* @__PURE__ */ jsxs2("div", { children: [
+    /* @__PURE__ */ jsxs2("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx2("i", { className: "pl-bar" }),
       "\u8BB0\u4E00\u7B14",
-      /* @__PURE__ */ jsx("span", { className: "pl-hint", children: "AI \u804A\u5929\u91CC\u4E5F\u80FD\u8BB0" })
+      /* @__PURE__ */ jsx2("span", { className: "pl-hint", children: "AI \u804A\u5929\u91CC\u4E5F\u80FD\u8BB0" })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: "pl-card", children: /* @__PURE__ */ jsxs("div", { className: "pl-card-b", children: [
-      /* @__PURE__ */ jsx("div", { className: "pl-row", style: { justifyContent: "center" }, children: /* @__PURE__ */ jsxs("div", { className: "pl-toggle", children: [
-        /* @__PURE__ */ jsx("button", { className: type === "expense" ? "on-exp" : "", onClick: () => setType("expense"), children: "\u652F\u51FA" }),
-        /* @__PURE__ */ jsx("button", { className: type === "income" ? "on-inc" : "", onClick: () => setType("income"), children: "\u6536\u5165" })
+    /* @__PURE__ */ jsx2("div", { className: "pl-card", children: /* @__PURE__ */ jsxs2("div", { className: "pl-card-b", children: [
+      /* @__PURE__ */ jsx2("div", { className: "pl-row", style: { justifyContent: "center" }, children: /* @__PURE__ */ jsxs2("div", { className: "pl-toggle", children: [
+        /* @__PURE__ */ jsx2("button", { className: type === "expense" ? "on-exp" : "", onClick: () => setType("expense"), children: "\u652F\u51FA" }),
+        /* @__PURE__ */ jsx2("button", { className: type === "income" ? "on-inc" : "", onClick: () => setType("income"), children: "\u6536\u5165" })
       ] }) }),
-      /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx2(
         "input",
         {
           className: "pl-amount-inp",
@@ -612,79 +888,99 @@ function QuickTab({ data, reload, showToast }) {
           }
         }
       ),
-      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u5206\u7C7B" }),
-      /* @__PURE__ */ jsx("div", { className: "pl-row", children: categories.map(chipOf) }),
-      settings?.excludeFromStats?.includes(category) && /* @__PURE__ */ jsx("div", { className: "pl-sub", style: { marginTop: 6 }, children: '\u2298 \u8BE5\u5206\u7C7B\u5DF2\u8BBE\u4E3A"\u4E0D\u53C2\u4E0E\u6C47\u603B"\uFF1A\u8D26\u5355\u7167\u8BB0\u3001\u660E\u7EC6\u7167\u89C1\uFF0C\u4F46\u7EDF\u8BA1/\u7ED3\u4F59/\u6392\u884C\u4E0D\u8BA1\u5165\u3002' }),
-      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u5907\u6CE8" }),
-      /* @__PURE__ */ jsx("input", { className: "pl-inp", value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u5348\u996D / \u6253\u8F66 / \u732B\u7CAE\u2026" }),
-      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u9644\u4EF6\uFF08\u5C0F\u7968/\u622A\u56FE\uFF0C\u53EF\u9009\uFF09" }),
-      /* @__PURE__ */ jsxs("div", { className: "pl-row", children: [
-        /* @__PURE__ */ jsx("input", { ref: fileRef, type: "file", hidden: true, accept: "image/*,.pdf,.txt,.md", onChange: pickAttachment }),
-        /* @__PURE__ */ jsx("button", { className: "pl-btn sm ghost", onClick: () => fileRef.current?.click(), children: attachment ? `\u5DF2\u9009\uFF1A${attachment.name}` : "\u9009\u62E9\u9644\u4EF6" }),
-        attachment && /* @__PURE__ */ jsx("button", { className: "pl-btn sm danger", onClick: () => setAttachment(null), children: "\u6E05\u9664" })
+      /* @__PURE__ */ jsx2("label", { className: "pl-lbl", children: "\u5206\u7C7B" }),
+      /* @__PURE__ */ jsx2("div", { className: "pl-row", children: categories.map(chipOf) }),
+      settings?.excludeFromStats?.includes(category) && /* @__PURE__ */ jsx2("div", { className: "pl-sub", style: { marginTop: 6 }, children: '\u2298 \u8BE5\u5206\u7C7B\u5DF2\u8BBE\u4E3A"\u4E0D\u53C2\u4E0E\u6C47\u603B"\uFF1A\u8D26\u5355\u7167\u8BB0\u3001\u660E\u7EC6\u7167\u89C1\uFF0C\u4F46\u7EDF\u8BA1/\u7ED3\u4F59/\u6392\u884C\u4E0D\u8BA1\u5165\u3002' }),
+      /* @__PURE__ */ jsx2("label", { className: "pl-lbl", children: "\u5907\u6CE8" }),
+      /* @__PURE__ */ jsx2("input", { className: "pl-inp", value: note, onChange: (e) => setNote(e.target.value), placeholder: "\u5348\u996D / \u6253\u8F66 / \u732B\u7CAE\u2026" }),
+      /* @__PURE__ */ jsx2("label", { className: "pl-lbl", children: "\u9644\u4EF6\uFF08\u5C0F\u7968/\u622A\u56FE\uFF0C\u53EF\u9009\uFF09" }),
+      /* @__PURE__ */ jsxs2("div", { className: "pl-row", children: [
+        /* @__PURE__ */ jsx2("input", { ref: fileRef, type: "file", hidden: true, accept: "image/*,.pdf,.txt,.md", onChange: pickAttachment }),
+        /* @__PURE__ */ jsx2("button", { className: "pl-btn sm ghost", onClick: () => fileRef.current?.click(), children: attachment ? `\u5DF2\u9009\uFF1A${attachment.name}` : "\u9009\u62E9\u9644\u4EF6" }),
+        attachment && /* @__PURE__ */ jsx2("button", { className: "pl-btn sm danger", onClick: () => setAttachment(null), children: "\u6E05\u9664" })
       ] }),
-      attachment && /* @__PURE__ */ jsxs("div", { className: "pl-sub", style: { marginTop: 6 }, children: [
+      attachment && /* @__PURE__ */ jsxs2("div", { className: "pl-sub", style: { marginTop: 6 }, children: [
         Math.round(attachment.size / 1024),
         "KB \xB7 \u968F\u8FD9\u7B14\u8D26\u4E00\u8D77\u4FDD\u5B58"
       ] }),
-      /* @__PURE__ */ jsx("label", { className: "pl-lbl", children: "\u65E5\u671F" }),
-      /* @__PURE__ */ jsxs("div", { className: "pl-row", children: [
-        [["today", "\u4ECA\u5929"], ["yesterday", "\u6628\u5929"], ["custom", "\u9009\u65E5\u671F"]].map(([v, label]) => /* @__PURE__ */ jsx("button", { className: `pl-chip ${date === v ? "on" : ""}`, onClick: () => setDate(v), children: label }, v)),
-        date === "custom" && /* @__PURE__ */ jsx("input", { type: "date", className: "pl-sel", value: customDate, onChange: (e) => setCustomDate(e.target.value) })
+      /* @__PURE__ */ jsx2("label", { className: "pl-lbl", children: "\u65F6\u6BB5" }),
+      /* @__PURE__ */ jsxs2("div", { className: "pl-row", children: [
+        /* @__PURE__ */ jsx2("button", { className: `pl-chip ${timeOfDay === "auto" ? "on" : ""}`, onClick: () => setTimeOfDay("auto"), children: "\u81EA\u52A8" }),
+        TIME_SLOTS2.map((t) => /* @__PURE__ */ jsxs2("button", { className: `pl-chip ${timeOfDay === t.key ? "on" : ""}`, onClick: () => setTimeOfDay(t.key), children: [
+          t.label,
+          " ",
+          t.hour
+        ] }, t.key))
       ] }),
-      /* @__PURE__ */ jsx("div", { className: "pl-row", style: { marginTop: 12 }, children: /* @__PURE__ */ jsx("button", { className: "pl-btn", style: { flex: 1 }, disabled: saving, onClick: save, children: saving ? "\u4FDD\u5B58\u4E2D\u2026" : `\u8BB0\u4E00\u7B14${date !== "today" ? "\uFF08\u8865\u8BB0\uFF09" : ""}` }) })
+      /* @__PURE__ */ jsx2("label", { className: "pl-lbl", children: "\u65E5\u671F" }),
+      /* @__PURE__ */ jsxs2("div", { className: "pl-row", children: [
+        [["today", "\u4ECA\u5929"], ["yesterday", "\u6628\u5929"], ["custom", "\u9009\u65E5\u671F"]].map(([v, label]) => /* @__PURE__ */ jsx2("button", { className: `pl-chip ${date === v ? "on" : ""}`, onClick: () => setDate(v), children: label }, v)),
+        date === "custom" && /* @__PURE__ */ jsx2("input", { type: "date", className: "pl-sel", value: customDate, onChange: (e) => setCustomDate(e.target.value) })
+      ] }),
+      /* @__PURE__ */ jsx2("div", { className: "pl-row", style: { marginTop: 12 }, children: /* @__PURE__ */ jsx2("button", { className: "pl-btn", style: { flex: 1 }, disabled: saving, onClick: save, children: saving ? "\u4FDD\u5B58\u4E2D\u2026" : `\u8BB0\u4E00\u7B14${date !== "today" ? "\uFF08\u8865\u8BB0\uFF09" : ""}` }) })
     ] }) }),
-    /* @__PURE__ */ jsxs("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs2("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx2("i", { className: "pl-bar" }),
       "\u4ECA\u65E5",
-      /* @__PURE__ */ jsxs("span", { className: "pl-hint", children: [
+      /* @__PURE__ */ jsxs2("span", { className: "pl-hint", children: [
         "\u652F\u51FA ",
         fmtMoney2(expSum, sym),
         " \xB7 \u6536\u5165 ",
         fmtMoney2(incSum, sym)
       ] })
     ] }),
-    /* @__PURE__ */ jsx("div", { className: "pl-card", children: /* @__PURE__ */ jsx("div", { className: "pl-card-b", children: !today || !today.length ? /* @__PURE__ */ jsx("div", { className: "pl-empty", style: { padding: "14px 0" }, children: "\u4ECA\u5929\u8FD8\u6CA1\u6709\u8D26\u5355\u3002" }) : today.slice().sort((a, b) => b.ts - a.ts).map((b) => /* @__PURE__ */ jsxs("div", { className: "pl-bill", children: [
-      /* @__PURE__ */ jsxs("div", { className: "pl-bill-main", children: [
-        /* @__PURE__ */ jsxs("b", { children: [
+    /* @__PURE__ */ jsx2("div", { className: "pl-card", children: /* @__PURE__ */ jsx2("div", { className: "pl-card-b", children: !today || !today.length ? /* @__PURE__ */ jsx2("div", { className: "pl-empty", style: { padding: "14px 0" }, children: "\u4ECA\u5929\u8FD8\u6CA1\u6709\u8D26\u5355\u3002" }) : today.slice().sort((a, b) => b.ts - a.ts).map((b) => /* @__PURE__ */ jsxs2("div", { className: "pl-bill", children: [
+      /* @__PURE__ */ jsxs2("div", { className: "pl-bill-main", children: [
+        /* @__PURE__ */ jsxs2("b", { children: [
           b.category,
           b.note ? ` \xB7 ${b.note}` : ""
         ] }),
-        /* @__PURE__ */ jsxs("small", { children: [
+        /* @__PURE__ */ jsxs2("small", { children: [
           billTime(b.ts),
           " \xB7 ",
           timeAgo(b.ts),
           b.source === "ai" ? " \xB7 AI \u8BB0" : "",
-          b.attachmentId && /* @__PURE__ */ jsx("button", { className: "pl-attlink", onClick: () => viewAtt(b), children: " \xB7 \u{1F4CE} \u67E5\u770B\u9644\u4EF6" })
+          b.attachmentId && /* @__PURE__ */ jsx2("button", { className: "pl-attlink", onClick: () => viewAtt(b), children: " \xB7 \u{1F4CE} \u67E5\u770B\u9644\u4EF6" })
         ] })
       ] }),
-      /* @__PURE__ */ jsxs("span", { className: `pl-bill-amt ${b.type === "income" ? "pl-amt-inc" : "pl-amt-exp"}`, children: [
+      /* @__PURE__ */ jsxs2("span", { className: `pl-bill-amt ${b.type === "income" ? "pl-amt-inc" : "pl-amt-exp"}`, children: [
         b.type === "income" ? "+" : "-",
         fmtMoney2(b.amount, sym)
       ] }),
-      /* @__PURE__ */ jsx("button", { className: "pl-btn sm danger", onClick: () => del(b), children: "\u5220" })
+      /* @__PURE__ */ jsx2("button", { className: "pl-btn sm ghost", onClick: () => setEditing(b), children: "\u6539" }),
+      /* @__PURE__ */ jsx2("button", { className: "pl-btn sm danger", onClick: () => del(b), children: "\u5220" })
     ] }, b.id)) }) }),
-    viewing && /* @__PURE__ */ jsx("div", { className: "pl-attmodal", onClick: () => setViewing(null), children: /* @__PURE__ */ jsxs("div", { className: "pl-attmodal-box", onClick: (e) => e.stopPropagation(), children: [
-      /* @__PURE__ */ jsxs("div", { className: "pl-attmodal-head", children: [
-        /* @__PURE__ */ jsx("b", { children: viewing.name }),
-        /* @__PURE__ */ jsx("button", { className: "pl-btn sm ghost", onClick: () => setViewing(null), children: "\u5173\u95ED" })
+    viewing && /* @__PURE__ */ jsx2("div", { className: "pl-attmodal", onClick: () => setViewing(null), children: /* @__PURE__ */ jsxs2("div", { className: "pl-attmodal-box", onClick: (e) => e.stopPropagation(), children: [
+      /* @__PURE__ */ jsxs2("div", { className: "pl-attmodal-head", children: [
+        /* @__PURE__ */ jsx2("b", { children: viewing.name }),
+        /* @__PURE__ */ jsx2("button", { className: "pl-btn sm ghost", onClick: () => setViewing(null), children: "\u5173\u95ED" })
       ] }),
-      /* @__PURE__ */ jsx("div", { className: "pl-attmodal-body", children: isImageMime2(viewing.mime) ? /* @__PURE__ */ jsx("img", { src: `data:${viewing.mime};base64,${viewing.data}`, alt: viewing.name }) : /* @__PURE__ */ jsxs("a", { className: "pl-btn sm ghost", href: `data:${viewing.mime};base64,${viewing.data}`, download: viewing.name, children: [
+      /* @__PURE__ */ jsx2("div", { className: "pl-attmodal-body", children: isImageMime2(viewing.mime) ? /* @__PURE__ */ jsx2("img", { src: `data:${viewing.mime};base64,${viewing.data}`, alt: viewing.name }) : /* @__PURE__ */ jsxs2("a", { className: "pl-btn sm ghost", href: `data:${viewing.mime};base64,${viewing.data}`, download: viewing.name, children: [
         "\u4E0B\u8F7D ",
         viewing.name
       ] }) })
-    ] }) })
+    ] }) }),
+    editing && /* @__PURE__ */ jsx2(
+      EditModal,
+      {
+        bill: editing,
+        categories,
+        onClose: () => setEditing(null),
+        onSave: (fields) => saveEdit(editing, fields)
+      }
+    )
   ] });
 }
 
 // src/ListTab.tsx
 init_model();
-import { useMemo as useMemo2, useState as useState2 } from "react";
-import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+import { useMemo as useMemo2, useState as useState3 } from "react";
+import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 function ListTab({ data, month, switchMonth, reload, showToast }) {
-  const [catFilter, setCatFilter] = useState2("");
-  const [typeFilter, setTypeFilter] = useState2("");
-  const [viewing, setViewing] = useState2(null);
+  const [catFilter, setCatFilter] = useState3("");
+  const [typeFilter, setTypeFilter] = useState3("");
+  const [viewing, setViewing] = useState3(null);
+  const [editing, setEditing] = useState3(null);
   const sym = data?.settings.currencySymbol || "\xA5";
   const categories = useMemo2(() => {
     const set = /* @__PURE__ */ new Set();
@@ -728,6 +1024,37 @@ function ListTab({ data, month, switchMonth, reload, showToast }) {
       showToast(`\u8BFB\u53D6\u9644\u4EF6\u5931\u8D25\uFF1A${e.message}`, "bad");
     }
   };
+  const saveEdit = async (b, fields) => {
+    const amt = Number(fields.amount);
+    if (!Number.isFinite(amt) || amt <= 0) {
+      showToast("\u8BF7\u8F93\u5165\u5927\u4E8E 0 \u7684\u91D1\u989D", "bad");
+      return;
+    }
+    const dateStr = fields.date === "custom" ? fields.customDate : fields.date;
+    if (fields.date === "custom" && !fields.customDate) {
+      showToast("\u8BF7\u5148\u9009\u62E9\u8865\u8BB0\u65E5\u671F", "bad");
+      return;
+    }
+    try {
+      const r = await updateBill2(b.id, {
+        amount: amt,
+        type: fields.type,
+        category: fields.category,
+        note: fields.note.trim(),
+        date: dateStr,
+        timeOfDay: fields.timeOfDay === "auto" ? void 0 : fields.timeOfDay
+      }, month);
+      if (!r.ok) {
+        showToast(r.error || "\u4FEE\u6539\u5931\u8D25", "bad");
+        return;
+      }
+      setEditing(null);
+      await reload(month);
+      showToast("\u5DF2\u66F4\u65B0", "good");
+    } catch (e) {
+      showToast(`\u4FEE\u6539\u5931\u8D25\uFF1A${e.message}`, "bad");
+    }
+  };
   const copyCsv = async () => {
     const csv = toCsv2(shown, sym);
     try {
@@ -737,122 +1064,132 @@ function ListTab({ data, month, switchMonth, reload, showToast }) {
       showToast("\u526A\u8D34\u677F\u4E0D\u53EF\u7528\uFF08HTTPS/\u6743\u9650\u53D7\u9650\uFF09", "bad");
     }
   };
-  return /* @__PURE__ */ jsxs2("div", { children: [
-    /* @__PURE__ */ jsxs2("div", { className: "pl-monthnav", children: [
-      /* @__PURE__ */ jsx2("button", { className: "pl-navbtn", onClick: () => switchMonth(-1), children: "\u2039" }),
-      /* @__PURE__ */ jsx2("b", { children: fmtMonthTitle(month) }),
-      /* @__PURE__ */ jsx2("button", { className: "pl-navbtn", onClick: () => switchMonth(1), children: "\u203A" })
-    ] }),
-    /* @__PURE__ */ jsxs2("div", { className: "pl-row", style: { padding: "0 18px 8px" }, children: [
-      /* @__PURE__ */ jsxs2("select", { className: "pl-sel", value: catFilter, onChange: (e) => setCatFilter(e.target.value), children: [
-        /* @__PURE__ */ jsx2("option", { value: "", children: "\u5168\u90E8\u5206\u7C7B" }),
-        categories.map((c) => /* @__PURE__ */ jsx2("option", { value: c, children: c }, c))
-      ] }),
-      /* @__PURE__ */ jsxs2("select", { className: "pl-sel", value: typeFilter, onChange: (e) => setTypeFilter(e.target.value), children: [
-        /* @__PURE__ */ jsx2("option", { value: "", children: "\u652F\u51FA+\u6536\u5165" }),
-        /* @__PURE__ */ jsx2("option", { value: "expense", children: "\u4EC5\u652F\u51FA" }),
-        /* @__PURE__ */ jsx2("option", { value: "income", children: "\u4EC5\u6536\u5165" })
-      ] }),
-      /* @__PURE__ */ jsx2("button", { className: "pl-btn sm ghost", onClick: copyCsv, children: "\u5BFC\u51FA CSV" })
-    ] }),
-    !groups.length && /* @__PURE__ */ jsx2("div", { className: "pl-empty", children: "\u672C\u6708\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684\u8D26\u5355\u3002" }),
-    groups.map(([day, bills]) => {
-      const dayNet = bills.reduce((s, b) => s + (b.type === "income" ? b.amount : -b.amount), 0);
-      return /* @__PURE__ */ jsx2("div", { className: "pl-card", children: /* @__PURE__ */ jsxs2("div", { className: "pl-card-b", children: [
-        /* @__PURE__ */ jsxs2("div", { className: "pl-dayhead", children: [
-          /* @__PURE__ */ jsx2("b", { children: day.slice(5).replace("-", "/") }),
-          /* @__PURE__ */ jsx2("span", { children: (/* @__PURE__ */ new Date(day + "T12:00:00")).toLocaleDateString("zh-CN", { weekday: "short" }) }),
-          /* @__PURE__ */ jsxs2("span", { className: "sum", children: [
-            "\u51C0 ",
-            dayNet >= 0 ? "+" : "",
-            fmtMoney2(dayNet, sym)
-          ] })
-        ] }),
-        bills.slice().sort((a, b) => b.ts - a.ts).map((b) => /* @__PURE__ */ jsxs2("div", { className: "pl-bill", children: [
-          /* @__PURE__ */ jsxs2("div", { className: "pl-bill-main", children: [
-            /* @__PURE__ */ jsxs2("b", { children: [
-              b.category,
-              b.note ? ` \xB7 ${b.note}` : ""
-            ] }),
-            /* @__PURE__ */ jsxs2("small", { children: [
-              billTime(b.ts),
-              b.source === "ai" ? " \xB7 AI \u8BB0" : "",
-              b.source === "panel" ? " \xB7 \u9762\u677F\u8BB0" : "",
-              b.attachmentId && /* @__PURE__ */ jsx2("button", { className: "pl-attlink", onClick: () => viewAtt(b), children: " \xB7 \u{1F4CE} \u67E5\u770B\u9644\u4EF6" })
-            ] })
-          ] }),
-          /* @__PURE__ */ jsxs2("span", { className: `pl-bill-amt ${b.type === "income" ? "pl-amt-inc" : "pl-amt-exp"}`, children: [
-            b.type === "income" ? "+" : "-",
-            fmtMoney2(b.amount, sym)
-          ] }),
-          /* @__PURE__ */ jsx2("button", { className: "pl-btn sm danger", onClick: () => del(b), children: "\u5220" })
-        ] }, b.id))
-      ] }) }, day);
-    }),
-    !!shown.length && /* @__PURE__ */ jsxs2("div", { className: "pl-sub", style: { textAlign: "center", padding: "4px 0 12px" }, children: [
-      "\u5171 ",
-      shown.length,
-      " \u7B14 \xB7 \u51C0\u989D ",
-      net >= 0 ? "+" : "",
-      fmtMoney2(net, sym)
-    ] }),
-    viewing && /* @__PURE__ */ jsx2("div", { className: "pl-attmodal", onClick: () => setViewing(null), children: /* @__PURE__ */ jsxs2("div", { className: "pl-attmodal-box", onClick: (e) => e.stopPropagation(), children: [
-      /* @__PURE__ */ jsxs2("div", { className: "pl-attmodal-head", children: [
-        /* @__PURE__ */ jsx2("b", { children: viewing.name }),
-        /* @__PURE__ */ jsx2("button", { className: "pl-btn sm ghost", onClick: () => setViewing(null), children: "\u5173\u95ED" })
-      ] }),
-      /* @__PURE__ */ jsx2("div", { className: "pl-attmodal-body", children: isImageMime2(viewing.mime) ? /* @__PURE__ */ jsx2("img", { src: `data:${viewing.mime};base64,${viewing.data}`, alt: viewing.name }) : /* @__PURE__ */ jsxs2("a", { className: "pl-btn sm ghost", href: `data:${viewing.mime};base64,${viewing.data}`, download: viewing.name, children: [
-        "\u4E0B\u8F7D ",
-        viewing.name
-      ] }) })
-    ] }) })
-  ] });
-}
-
-// src/StatsTab.tsx
-init_model();
-import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
-function StatsTab({ data, month, switchMonth }) {
-  if (!data) return /* @__PURE__ */ jsx3("div", { className: "pl-empty", children: "\u8F7D\u5165\u4E2D\u2026" });
-  const s = data.stats;
-  const sym = s.currencySymbol;
-  const maxDay = Math.max(...s.byDay.map((d) => d.expense), 1);
-  const peakDay = s.byDay.slice().sort((a, b) => b.expense - a.expense)[0];
   return /* @__PURE__ */ jsxs3("div", { children: [
     /* @__PURE__ */ jsxs3("div", { className: "pl-monthnav", children: [
       /* @__PURE__ */ jsx3("button", { className: "pl-navbtn", onClick: () => switchMonth(-1), children: "\u2039" }),
       /* @__PURE__ */ jsx3("b", { children: fmtMonthTitle(month) }),
       /* @__PURE__ */ jsx3("button", { className: "pl-navbtn", onClick: () => switchMonth(1), children: "\u203A" })
     ] }),
-    /* @__PURE__ */ jsxs3("div", { className: "pl-card", children: [
-      /* @__PURE__ */ jsxs3("div", { className: "pl-card-b", style: { display: "flex", textAlign: "center" }, children: [
-        /* @__PURE__ */ jsxs3("div", { style: { flex: 1 }, children: [
-          /* @__PURE__ */ jsx3("div", { className: "pl-sub", children: "\u652F\u51FA" }),
-          /* @__PURE__ */ jsx3("b", { className: "pl-amt-exp", style: { fontSize: 16 }, children: fmtMoney2(s.expense, sym) })
+    /* @__PURE__ */ jsxs3("div", { className: "pl-row", style: { padding: "0 18px 8px" }, children: [
+      /* @__PURE__ */ jsxs3("select", { className: "pl-sel", value: catFilter, onChange: (e) => setCatFilter(e.target.value), children: [
+        /* @__PURE__ */ jsx3("option", { value: "", children: "\u5168\u90E8\u5206\u7C7B" }),
+        categories.map((c) => /* @__PURE__ */ jsx3("option", { value: c, children: c }, c))
+      ] }),
+      /* @__PURE__ */ jsxs3("select", { className: "pl-sel", value: typeFilter, onChange: (e) => setTypeFilter(e.target.value), children: [
+        /* @__PURE__ */ jsx3("option", { value: "", children: "\u652F\u51FA+\u6536\u5165" }),
+        /* @__PURE__ */ jsx3("option", { value: "expense", children: "\u4EC5\u652F\u51FA" }),
+        /* @__PURE__ */ jsx3("option", { value: "income", children: "\u4EC5\u6536\u5165" })
+      ] }),
+      /* @__PURE__ */ jsx3("button", { className: "pl-btn sm ghost", onClick: copyCsv, children: "\u5BFC\u51FA CSV" })
+    ] }),
+    !groups.length && /* @__PURE__ */ jsx3("div", { className: "pl-empty", children: "\u672C\u6708\u6CA1\u6709\u7B26\u5408\u6761\u4EF6\u7684\u8D26\u5355\u3002" }),
+    groups.map(([day, bills]) => {
+      const dayNet = bills.reduce((s, b) => s + (b.type === "income" ? b.amount : -b.amount), 0);
+      return /* @__PURE__ */ jsx3("div", { className: "pl-card", children: /* @__PURE__ */ jsxs3("div", { className: "pl-card-b", children: [
+        /* @__PURE__ */ jsxs3("div", { className: "pl-dayhead", children: [
+          /* @__PURE__ */ jsx3("b", { children: day.slice(5).replace("-", "/") }),
+          /* @__PURE__ */ jsx3("span", { children: (/* @__PURE__ */ new Date(day + "T12:00:00")).toLocaleDateString("zh-CN", { weekday: "short" }) }),
+          /* @__PURE__ */ jsxs3("span", { className: "sum", children: [
+            "\u51C0 ",
+            dayNet >= 0 ? "+" : "",
+            fmtMoney2(dayNet, sym)
+          ] })
         ] }),
-        /* @__PURE__ */ jsxs3("div", { style: { flex: 1, borderLeft: "1px solid #1d2330" }, children: [
-          /* @__PURE__ */ jsx3("div", { className: "pl-sub", children: "\u6536\u5165" }),
-          /* @__PURE__ */ jsx3("b", { className: "pl-amt-inc", style: { fontSize: 16 }, children: fmtMoney2(s.income, sym) })
+        bills.slice().sort((a, b) => b.ts - a.ts).map((b) => /* @__PURE__ */ jsxs3("div", { className: "pl-bill", children: [
+          /* @__PURE__ */ jsxs3("div", { className: "pl-bill-main", children: [
+            /* @__PURE__ */ jsxs3("b", { children: [
+              b.category,
+              b.note ? ` \xB7 ${b.note}` : ""
+            ] }),
+            /* @__PURE__ */ jsxs3("small", { children: [
+              billTime(b.ts),
+              b.source === "ai" ? " \xB7 AI \u8BB0" : "",
+              b.source === "panel" ? " \xB7 \u9762\u677F\u8BB0" : "",
+              b.attachmentId && /* @__PURE__ */ jsx3("button", { className: "pl-attlink", onClick: () => viewAtt(b), children: " \xB7 \u{1F4CE} \u67E5\u770B\u9644\u4EF6" })
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs3("span", { className: `pl-bill-amt ${b.type === "income" ? "pl-amt-inc" : "pl-amt-exp"}`, children: [
+            b.type === "income" ? "+" : "-",
+            fmtMoney2(b.amount, sym)
+          ] }),
+          /* @__PURE__ */ jsx3("button", { className: "pl-btn sm ghost", onClick: () => setEditing(b), children: "\u6539" }),
+          /* @__PURE__ */ jsx3("button", { className: "pl-btn sm danger", onClick: () => del(b), children: "\u5220" })
+        ] }, b.id))
+      ] }) }, day);
+    }),
+    !!shown.length && /* @__PURE__ */ jsxs3("div", { className: "pl-sub", style: { textAlign: "center", padding: "4px 0 12px" }, children: [
+      "\u5171 ",
+      shown.length,
+      " \u7B14 \xB7 \u51C0\u989D ",
+      net >= 0 ? "+" : "",
+      fmtMoney2(net, sym)
+    ] }),
+    viewing && /* @__PURE__ */ jsx3("div", { className: "pl-attmodal", onClick: () => setViewing(null), children: /* @__PURE__ */ jsxs3("div", { className: "pl-attmodal-box", onClick: (e) => e.stopPropagation(), children: [
+      /* @__PURE__ */ jsxs3("div", { className: "pl-attmodal-head", children: [
+        /* @__PURE__ */ jsx3("b", { children: viewing.name }),
+        /* @__PURE__ */ jsx3("button", { className: "pl-btn sm ghost", onClick: () => setViewing(null), children: "\u5173\u95ED" })
+      ] }),
+      /* @__PURE__ */ jsx3("div", { className: "pl-attmodal-body", children: isImageMime2(viewing.mime) ? /* @__PURE__ */ jsx3("img", { src: `data:${viewing.mime};base64,${viewing.data}`, alt: viewing.name }) : /* @__PURE__ */ jsxs3("a", { className: "pl-btn sm ghost", href: `data:${viewing.mime};base64,${viewing.data}`, download: viewing.name, children: [
+        "\u4E0B\u8F7D ",
+        viewing.name
+      ] }) })
+    ] }) }),
+    editing && /* @__PURE__ */ jsx3(
+      EditModal,
+      {
+        bill: editing,
+        categories,
+        onClose: () => setEditing(null),
+        onSave: (fields) => saveEdit(editing, fields)
+      }
+    )
+  ] });
+}
+
+// src/StatsTab.tsx
+init_model();
+import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+function StatsTab({ data, month, switchMonth }) {
+  if (!data) return /* @__PURE__ */ jsx4("div", { className: "pl-empty", children: "\u8F7D\u5165\u4E2D\u2026" });
+  const s = data.stats;
+  const sym = s.currencySymbol;
+  const maxDay = Math.max(...s.byDay.map((d) => d.expense), 1);
+  const peakDay = s.byDay.slice().sort((a, b) => b.expense - a.expense)[0];
+  return /* @__PURE__ */ jsxs4("div", { children: [
+    /* @__PURE__ */ jsxs4("div", { className: "pl-monthnav", children: [
+      /* @__PURE__ */ jsx4("button", { className: "pl-navbtn", onClick: () => switchMonth(-1), children: "\u2039" }),
+      /* @__PURE__ */ jsx4("b", { children: fmtMonthTitle(month) }),
+      /* @__PURE__ */ jsx4("button", { className: "pl-navbtn", onClick: () => switchMonth(1), children: "\u203A" })
+    ] }),
+    /* @__PURE__ */ jsxs4("div", { className: "pl-card", children: [
+      /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", style: { display: "flex", textAlign: "center" }, children: [
+        /* @__PURE__ */ jsxs4("div", { style: { flex: 1 }, children: [
+          /* @__PURE__ */ jsx4("div", { className: "pl-sub", children: "\u652F\u51FA" }),
+          /* @__PURE__ */ jsx4("b", { className: "pl-amt-exp", style: { fontSize: 16 }, children: fmtMoney2(s.expense, sym) })
         ] }),
-        /* @__PURE__ */ jsxs3("div", { style: { flex: 1, borderLeft: "1px solid #1d2330" }, children: [
-          /* @__PURE__ */ jsx3("div", { className: "pl-sub", children: "\u7ED3\u4F59" }),
-          /* @__PURE__ */ jsx3("b", { style: { fontSize: 16 }, className: s.balance < 0 ? "pl-amt-exp" : "pl-amt-inc", children: fmtMoney2(s.balance, sym) })
+        /* @__PURE__ */ jsxs4("div", { style: { flex: 1, borderLeft: "1px solid #1d2330" }, children: [
+          /* @__PURE__ */ jsx4("div", { className: "pl-sub", children: "\u6536\u5165" }),
+          /* @__PURE__ */ jsx4("b", { className: "pl-amt-inc", style: { fontSize: 16 }, children: fmtMoney2(s.income, sym) })
         ] }),
-        /* @__PURE__ */ jsxs3("div", { style: { flex: 0.8, borderLeft: "1px solid #1d2330" }, children: [
-          /* @__PURE__ */ jsx3("div", { className: "pl-sub", children: "\u7B14\u6570" }),
-          /* @__PURE__ */ jsx3("b", { style: { fontSize: 16 }, children: s.count })
+        /* @__PURE__ */ jsxs4("div", { style: { flex: 1, borderLeft: "1px solid #1d2330" }, children: [
+          /* @__PURE__ */ jsx4("div", { className: "pl-sub", children: "\u7ED3\u4F59" }),
+          /* @__PURE__ */ jsx4("b", { style: { fontSize: 16 }, className: s.balance < 0 ? "pl-amt-exp" : "pl-amt-inc", children: fmtMoney2(s.balance, sym) })
+        ] }),
+        /* @__PURE__ */ jsxs4("div", { style: { flex: 0.8, borderLeft: "1px solid #1d2330" }, children: [
+          /* @__PURE__ */ jsx4("div", { className: "pl-sub", children: "\u7B14\u6570" }),
+          /* @__PURE__ */ jsx4("b", { style: { fontSize: 16 }, children: s.count })
         ] })
       ] }),
-      !!s.excludedSum && /* @__PURE__ */ jsxs3("div", { className: "pl-sub", style: { textAlign: "center", padding: "6px 0 2px", borderTop: "1px solid #1d2330" }, children: [
+      !!s.excludedSum && /* @__PURE__ */ jsxs4("div", { className: "pl-sub", style: { textAlign: "center", padding: "6px 0 2px", borderTop: "1px solid #1d2330" }, children: [
         "\u53E6\u6709 ",
         fmtMoney2(s.excludedSum, sym),
         " \u4E0D\u53C2\u4E0E\u6C47\u603B\uFF08\u5DF2\u6392\u9664\u5206\u7C7B\uFF0C\u5982\u5DE5\u8D44\uFF09\uFF0C\u672A\u8BA1\u5165\u4E0A\u65B9\u7ED3\u4F59"
       ] })
     ] }),
-    s.totalBudget != null && s.totalBudget > 0 && /* @__PURE__ */ jsx3("div", { className: "pl-card", children: /* @__PURE__ */ jsxs3("div", { className: "pl-card-b", children: [
-      /* @__PURE__ */ jsxs3("div", { className: "pl-row", children: [
-        /* @__PURE__ */ jsx3("b", { style: { fontSize: 12.5 }, children: "\u6708\u5EA6\u603B\u9884\u7B97" }),
-        /* @__PURE__ */ jsxs3("span", { className: "pl-hint", children: [
+    s.totalBudget != null && s.totalBudget > 0 && /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", children: [
+      /* @__PURE__ */ jsxs4("div", { className: "pl-row", children: [
+        /* @__PURE__ */ jsx4("b", { style: { fontSize: 12.5 }, children: "\u6708\u5EA6\u603B\u9884\u7B97" }),
+        /* @__PURE__ */ jsxs4("span", { className: "pl-hint", children: [
           fmtMoney2(s.expense, sym),
           " / ",
           fmtMoney2(s.totalBudget, sym),
@@ -861,49 +1198,49 @@ function StatsTab({ data, month, switchMonth }) {
           "%"
         ] })
       ] }),
-      /* @__PURE__ */ jsx3("div", { className: "pl-budget", children: /* @__PURE__ */ jsx3("i", { className: (s.totalBudgetUsed || 0) > 1 ? "over" : (s.totalBudgetUsed || 0) > 0.9 ? "warn" : "", style: { width: `${Math.min(100, (s.totalBudgetUsed || 0) * 100)}%` } }) })
+      /* @__PURE__ */ jsx4("div", { className: "pl-budget", children: /* @__PURE__ */ jsx4("i", { className: (s.totalBudgetUsed || 0) > 1 ? "over" : (s.totalBudgetUsed || 0) > 0.9 ? "warn" : "", style: { width: `${Math.min(100, (s.totalBudgetUsed || 0) * 100)}%` } }) })
     ] }) }),
-    /* @__PURE__ */ jsxs3("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx3("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
       "\u5206\u7C7B\u6392\u884C",
-      /* @__PURE__ */ jsx3("span", { className: "pl-hint", children: "\u6309\u652F\u51FA\u91D1\u989D" })
+      /* @__PURE__ */ jsx4("span", { className: "pl-hint", children: "\u6309\u652F\u51FA\u91D1\u989D" })
     ] }),
-    /* @__PURE__ */ jsx3("div", { className: "pl-card", children: /* @__PURE__ */ jsxs3("div", { className: "pl-card-b", children: [
-      s.byCategory.filter((c) => c.type === "expense").length === 0 && /* @__PURE__ */ jsx3("div", { className: "pl-empty", style: { padding: "10px 0" }, children: "\u672C\u6708\u8FD8\u6CA1\u6709\u652F\u51FA\u3002" }),
+    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", children: [
+      s.byCategory.filter((c) => c.type === "expense").length === 0 && /* @__PURE__ */ jsx4("div", { className: "pl-empty", style: { padding: "10px 0" }, children: "\u672C\u6708\u8FD8\u6CA1\u6709\u652F\u51FA\u3002" }),
       s.byCategory.filter((c) => c.type === "expense").map((c) => {
         const used = c.budget != null && c.budget > 0 ? c.sum / c.budget : null;
-        return /* @__PURE__ */ jsxs3("div", { style: { padding: "7px 0", borderTop: "1px solid #1d2330" }, children: [
-          /* @__PURE__ */ jsxs3("div", { className: "pl-row", children: [
-            /* @__PURE__ */ jsxs3("b", { style: { fontSize: 12.5, flex: 1 }, children: [
+        return /* @__PURE__ */ jsxs4("div", { style: { padding: "7px 0", borderTop: "1px solid #1d2330" }, children: [
+          /* @__PURE__ */ jsxs4("div", { className: "pl-row", children: [
+            /* @__PURE__ */ jsxs4("b", { style: { fontSize: 12.5, flex: 1 }, children: [
               c.category,
               " ",
-              c.excluded && /* @__PURE__ */ jsx3("span", { className: "pl-sub", children: "\u2298 \u4E0D\u53C2\u4E0E\u6C47\u603B" }),
+              c.excluded && /* @__PURE__ */ jsx4("span", { className: "pl-sub", children: "\u2298 \u4E0D\u53C2\u4E0E\u6C47\u603B" }),
               " ",
-              /* @__PURE__ */ jsxs3("span", { className: "pl-sub", children: [
+              /* @__PURE__ */ jsxs4("span", { className: "pl-sub", children: [
                 "\xD7",
                 c.count
               ] })
             ] }),
-            /* @__PURE__ */ jsx3("span", { style: { fontVariantNumeric: "tabular-nums", fontWeight: 700 }, children: fmtMoney2(c.sum, sym) }),
-            c.budget != null && /* @__PURE__ */ jsxs3("span", { className: "pl-sub", children: [
+            /* @__PURE__ */ jsx4("span", { style: { fontVariantNumeric: "tabular-nums", fontWeight: 700 }, children: fmtMoney2(c.sum, sym) }),
+            c.budget != null && /* @__PURE__ */ jsxs4("span", { className: "pl-sub", children: [
               Math.round((used || 0) * 100),
               "% \u9884\u7B97"
             ] })
           ] }),
-          used != null && /* @__PURE__ */ jsx3("div", { className: "pl-budget", children: /* @__PURE__ */ jsx3("i", { className: used > 1 ? "over" : used > 0.9 ? "warn" : "", style: { width: `${Math.min(100, used * 100)}%` } }) })
+          used != null && /* @__PURE__ */ jsx4("div", { className: "pl-budget", children: /* @__PURE__ */ jsx4("i", { className: used > 1 ? "over" : used > 0.9 ? "warn" : "", style: { width: `${Math.min(100, used * 100)}%` } }) })
         ] }, c.category);
       })
     ] }) }),
-    /* @__PURE__ */ jsxs3("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx3("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
       "\u6BCF\u65E5\u652F\u51FA",
-      /* @__PURE__ */ jsx3("span", { className: "pl-hint", children: peakDay && peakDay.expense > 0 ? `\u5CF0\u503C ${peakDay.date.slice(5)} ${fmtMoney2(peakDay.expense, sym)}` : "" })
+      /* @__PURE__ */ jsx4("span", { className: "pl-hint", children: peakDay && peakDay.expense > 0 ? `\u5CF0\u503C ${peakDay.date.slice(5)} ${fmtMoney2(peakDay.expense, sym)}` : "" })
     ] }),
-    /* @__PURE__ */ jsx3("div", { className: "pl-card", children: /* @__PURE__ */ jsxs3("div", { className: "pl-card-b", children: [
-      /* @__PURE__ */ jsx3("div", { className: "pl-bars", children: s.byDay.map((d) => /* @__PURE__ */ jsx3("div", { className: "pl-barcol", title: `${d.date}\uFF1A${fmtMoney2(d.expense, sym)}`, children: /* @__PURE__ */ jsx3("i", { style: { height: `${Math.max(2, d.expense / maxDay * 100)}%`, opacity: d.expense > 0 ? 1 : 0.25 } }) }, d.date)) }),
-      /* @__PURE__ */ jsxs3("div", { className: "pl-row", style: { justifyContent: "space-between", marginTop: 4 }, children: [
-        /* @__PURE__ */ jsx3("small", { className: "pl-sub", children: "1" }),
-        /* @__PURE__ */ jsx3("small", { className: "pl-sub", children: s.byDay.length })
+    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", children: [
+      /* @__PURE__ */ jsx4("div", { className: "pl-bars", children: s.byDay.map((d) => /* @__PURE__ */ jsx4("div", { className: "pl-barcol", title: `${d.date}\uFF1A${fmtMoney2(d.expense, sym)}`, children: /* @__PURE__ */ jsx4("i", { style: { height: `${Math.max(2, d.expense / maxDay * 100)}%`, opacity: d.expense > 0 ? 1 : 0.25 } }) }, d.date)) }),
+      /* @__PURE__ */ jsxs4("div", { className: "pl-row", style: { justifyContent: "space-between", marginTop: 4 }, children: [
+        /* @__PURE__ */ jsx4("small", { className: "pl-sub", children: "1" }),
+        /* @__PURE__ */ jsx4("small", { className: "pl-sub", children: s.byDay.length })
       ] })
     ] }) })
   ] });
@@ -911,14 +1248,14 @@ function StatsTab({ data, month, switchMonth }) {
 
 // src/SettingsTab.tsx
 init_model();
-import { useState as useState3 } from "react";
-import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+import { useState as useState4 } from "react";
+import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
 function SettingsTab({ data, reload, showToast }) {
-  const [newCat, setNewCat] = useState3("");
-  const [newCatType, setNewCatType] = useState3("expense");
-  const [draftBudgets, setDraftBudgets] = useState3(null);
-  const [draftTotal, setDraftTotal] = useState3(null);
-  if (!data) return /* @__PURE__ */ jsx4("div", { className: "pl-empty", children: "\u8F7D\u5165\u4E2D\u2026" });
+  const [newCat, setNewCat] = useState4("");
+  const [newCatType, setNewCatType] = useState4("expense");
+  const [draftBudgets, setDraftBudgets] = useState4(null);
+  const [draftTotal, setDraftTotal] = useState4(null);
+  if (!data) return /* @__PURE__ */ jsx5("div", { className: "pl-empty", children: "\u8F7D\u5165\u4E2D\u2026" });
   const s = data.settings;
   const sym = s.currencySymbol;
   const budgets = draftBudgets ?? Object.fromEntries(
@@ -1011,23 +1348,23 @@ function SettingsTab({ data, reload, showToast }) {
     }
   };
   const excluded = s.excludeFromStats || [];
-  const excludeChip = (c, isIncome) => /* @__PURE__ */ jsxs4("span", { className: `pl-chip ${excluded.includes(c) ? "on" : ""}`, onClick: () => toggleExclude(c), title: "\u70B9\u51FB\u5207\u6362\uFF1A\u8D26\u5355\u7167\u8BB0\u3001\u660E\u7EC6\u7167\u89C1\uFF0C\u4F46\u7EDF\u8BA1/\u7ED3\u4F59/\u6392\u884C\u4E0D\u8BA1\u5165", children: [
+  const excludeChip = (c, isIncome) => /* @__PURE__ */ jsxs5("span", { className: `pl-chip ${excluded.includes(c) ? "on" : ""}`, onClick: () => toggleExclude(c), title: "\u70B9\u51FB\u5207\u6362\uFF1A\u8D26\u5355\u7167\u8BB0\u3001\u660E\u7EC6\u7167\u89C1\uFF0C\u4F46\u7EDF\u8BA1/\u7ED3\u4F59/\u6392\u884C\u4E0D\u8BA1\u5165", children: [
     excluded.includes(c) ? "\u2298 " : "",
     c
   ] }, c);
-  return /* @__PURE__ */ jsxs4("div", { children: [
-    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
+  return /* @__PURE__ */ jsxs5("div", { children: [
+    /* @__PURE__ */ jsxs5("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx5("i", { className: "pl-bar" }),
       "\u652F\u51FA\u5206\u7C7B",
-      /* @__PURE__ */ jsxs4("span", { className: "pl-hint", children: [
+      /* @__PURE__ */ jsxs5("span", { className: "pl-hint", children: [
         s.categories.length,
         " \u4E2A"
       ] })
     ] }),
-    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", children: [
-      /* @__PURE__ */ jsx4("div", { className: "pl-row", children: s.categories.map((c) => /* @__PURE__ */ jsxs4("span", { className: "pl-chip", style: { paddingRight: 6 }, children: [
+    /* @__PURE__ */ jsx5("div", { className: "pl-card", children: /* @__PURE__ */ jsxs5("div", { className: "pl-card-b", children: [
+      /* @__PURE__ */ jsx5("div", { className: "pl-row", children: s.categories.map((c) => /* @__PURE__ */ jsxs5("span", { className: "pl-chip", style: { paddingRight: 6 }, children: [
         c,
-        /* @__PURE__ */ jsx4(
+        /* @__PURE__ */ jsx5(
           "button",
           {
             onClick: () => removeCategory(c, false),
@@ -1036,43 +1373,43 @@ function SettingsTab({ data, reload, showToast }) {
           }
         )
       ] }, c)) }),
-      /* @__PURE__ */ jsxs4("div", { className: "pl-row", style: { marginTop: 10 }, children: [
-        /* @__PURE__ */ jsx4("input", { className: "pl-inp", style: { maxWidth: 140 }, value: newCat, onChange: (e) => setNewCat(e.target.value), placeholder: "\u65B0\u5206\u7C7B\u540D" }),
-        /* @__PURE__ */ jsxs4("button", { className: "pl-btn sm", onClick: addCategory, children: [
+      /* @__PURE__ */ jsxs5("div", { className: "pl-row", style: { marginTop: 10 }, children: [
+        /* @__PURE__ */ jsx5("input", { className: "pl-inp", style: { maxWidth: 140 }, value: newCat, onChange: (e) => setNewCat(e.target.value), placeholder: "\u65B0\u5206\u7C7B\u540D" }),
+        /* @__PURE__ */ jsxs5("button", { className: "pl-btn sm", onClick: addCategory, children: [
           "\u6DFB\u52A0",
           newCatType === "income" ? "\u6536\u5165\u7C7B" : "\u652F\u51FA\u7C7B"
         ] }),
-        /* @__PURE__ */ jsx4("button", { className: `pl-chip ${newCatType === "income" ? "on" : ""}`, onClick: () => setNewCatType(newCatType === "income" ? "expense" : "income"), children: newCatType === "income" ? "\u6536 \u2192 \u652F" : "\u652F \u2192 \u6536" })
+        /* @__PURE__ */ jsx5("button", { className: `pl-chip ${newCatType === "income" ? "on" : ""}`, onClick: () => setNewCatType(newCatType === "income" ? "expense" : "income"), children: newCatType === "income" ? "\u6536 \u2192 \u652F" : "\u652F \u2192 \u6536" })
       ] }),
-      /* @__PURE__ */ jsxs4("div", { className: "pl-sub", style: { marginTop: 8 }, children: [
+      /* @__PURE__ */ jsxs5("div", { className: "pl-sub", style: { marginTop: 8 }, children: [
         "\u6536\u5165\u5206\u7C7B\uFF1A",
         s.incomeCategories.join(" / ")
       ] })
     ] }) }),
-    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs5("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx5("i", { className: "pl-bar" }),
       "\u4E0D\u53C2\u4E0E\u6C47\u603B",
-      /* @__PURE__ */ jsx4("span", { className: "pl-hint", children: "\u70B9\u51FB\u5207\u6362\uFF0C\u5982\u5DE5\u8D44" })
+      /* @__PURE__ */ jsx5("span", { className: "pl-hint", children: "\u70B9\u51FB\u5207\u6362\uFF0C\u5982\u5DE5\u8D44" })
     ] }),
-    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", children: [
-      /* @__PURE__ */ jsx4("div", { className: "pl-sub", style: { marginBottom: 8 }, children: '\u8BBE\u4E3A"\u4E0D\u53C2\u4E0E\u6C47\u603B"\u7684\u5206\u7C7B\uFF0C\u8D26\u5355\u7167\u8BB0\u3001\u660E\u7EC6\u7167\u89C1\uFF0C\u4F46\u7EDF\u8BA1/\u7ED3\u4F59/\u5206\u7C7B\u6392\u884C/\u9010\u65E5\u8D8B\u52BF\u5168\u90E8\u4E0D\u8BA1\u5165\uFF08\u907F\u514D\u5DE5\u8D44\u865A\u9AD8\u7ED3\u4F59\uFF09\u3002' }),
-      /* @__PURE__ */ jsxs4("div", { className: "pl-row", children: [
+    /* @__PURE__ */ jsx5("div", { className: "pl-card", children: /* @__PURE__ */ jsxs5("div", { className: "pl-card-b", children: [
+      /* @__PURE__ */ jsx5("div", { className: "pl-sub", style: { marginBottom: 8 }, children: '\u8BBE\u4E3A"\u4E0D\u53C2\u4E0E\u6C47\u603B"\u7684\u5206\u7C7B\uFF0C\u8D26\u5355\u7167\u8BB0\u3001\u660E\u7EC6\u7167\u89C1\uFF0C\u4F46\u7EDF\u8BA1/\u7ED3\u4F59/\u5206\u7C7B\u6392\u884C/\u9010\u65E5\u8D8B\u52BF\u5168\u90E8\u4E0D\u8BA1\u5165\uFF08\u907F\u514D\u5DE5\u8D44\u865A\u9AD8\u7ED3\u4F59\uFF09\u3002' }),
+      /* @__PURE__ */ jsxs5("div", { className: "pl-row", children: [
         s.categories.map((c) => excludeChip(c, false)),
         s.incomeCategories.map((c) => excludeChip(c, true))
       ] })
     ] }) }),
-    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs5("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx5("i", { className: "pl-bar" }),
       "\u6708\u9884\u7B97",
-      /* @__PURE__ */ jsx4("span", { className: "pl-hint", children: "AI \u8BB0\u8D26\u4F1A\u5373\u65F6\u63D0\u9192" })
+      /* @__PURE__ */ jsx5("span", { className: "pl-hint", children: "AI \u8BB0\u8D26\u4F1A\u5373\u65F6\u63D0\u9192" })
     ] }),
-    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", style: { padding: 0 }, children: [
-      s.categories.map((c) => /* @__PURE__ */ jsxs4("div", { className: "pl-field", children: [
-        /* @__PURE__ */ jsxs4("div", { className: "pl-field-l", children: [
-          /* @__PURE__ */ jsx4("b", { children: c }),
-          /* @__PURE__ */ jsx4("small", { children: "\u6708\u9884\u7B97\uFF08\u7559\u7A7A\u4E0D\u9650\u5236\uFF09" })
+    /* @__PURE__ */ jsx5("div", { className: "pl-card", children: /* @__PURE__ */ jsxs5("div", { className: "pl-card-b", style: { padding: 0 }, children: [
+      s.categories.map((c) => /* @__PURE__ */ jsxs5("div", { className: "pl-field", children: [
+        /* @__PURE__ */ jsxs5("div", { className: "pl-field-l", children: [
+          /* @__PURE__ */ jsx5("b", { children: c }),
+          /* @__PURE__ */ jsx5("small", { children: "\u6708\u9884\u7B97\uFF08\u7559\u7A7A\u4E0D\u9650\u5236\uFF09" })
         ] }),
-        /* @__PURE__ */ jsx4(
+        /* @__PURE__ */ jsx5(
           "input",
           {
             className: "pl-num",
@@ -1083,12 +1420,12 @@ function SettingsTab({ data, reload, showToast }) {
           }
         )
       ] }, c)),
-      /* @__PURE__ */ jsxs4("div", { className: "pl-field", children: [
-        /* @__PURE__ */ jsxs4("div", { className: "pl-field-l", children: [
-          /* @__PURE__ */ jsx4("b", { children: "\u6708\u5EA6\u603B\u9884\u7B97" }),
-          /* @__PURE__ */ jsx4("small", { children: "\u6240\u6709\u652F\u51FA\u5408\u8BA1\u7684\u4E0A\u9650" })
+      /* @__PURE__ */ jsxs5("div", { className: "pl-field", children: [
+        /* @__PURE__ */ jsxs5("div", { className: "pl-field-l", children: [
+          /* @__PURE__ */ jsx5("b", { children: "\u6708\u5EA6\u603B\u9884\u7B97" }),
+          /* @__PURE__ */ jsx5("small", { children: "\u6240\u6709\u652F\u51FA\u5408\u8BA1\u7684\u4E0A\u9650" })
         ] }),
-        /* @__PURE__ */ jsx4(
+        /* @__PURE__ */ jsx5(
           "input",
           {
             className: "pl-num",
@@ -1099,46 +1436,46 @@ function SettingsTab({ data, reload, showToast }) {
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs4("div", { className: "pl-actions", style: { padding: "10px 13px" }, children: [
-        /* @__PURE__ */ jsx4("button", { className: "pl-btn sm", onClick: commitBudgets, children: "\u4FDD\u5B58\u9884\u7B97" }),
-        /* @__PURE__ */ jsxs4("span", { className: "pl-sub", children: [
+      /* @__PURE__ */ jsxs5("div", { className: "pl-actions", style: { padding: "10px 13px" }, children: [
+        /* @__PURE__ */ jsx5("button", { className: "pl-btn sm", onClick: commitBudgets, children: "\u4FDD\u5B58\u9884\u7B97" }),
+        /* @__PURE__ */ jsxs5("span", { className: "pl-sub", children: [
           "\u793A\u4F8B\uFF1A\u9910\u996E 2000 = \u6BCF\u6708\u9910\u996E\u5230 ",
           fmtMoney2(2e3, sym),
           " \u63D0\u9192"
         ] })
       ] })
     ] }) }),
-    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs5("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx5("i", { className: "pl-bar" }),
       "\u6570\u636E"
     ] }),
-    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b", children: [
-      /* @__PURE__ */ jsx4("div", { className: "pl-state pl-sub", children: "\u8D26\u672C\u5B8C\u5168\u5B58\u4E8E\u672C\u673A\uFF08cap.kv ledger.*\uFF09\uFF0C\u4E0D\u51FA\u8BBE\u5907\uFF1BAI \u4E0E\u9762\u677F\u8BFB\u5199\u540C\u4E00\u4EFD\u3002" }),
-      /* @__PURE__ */ jsxs4("div", { className: "pl-actions", children: [
-        /* @__PURE__ */ jsx4("button", { className: "pl-btn sm ghost", onClick: exportAll, children: "\u5BFC\u51FA\u5168\u90E8 JSON" }),
-        /* @__PURE__ */ jsx4("button", { className: "pl-btn sm danger", onClick: clearAll, children: "\u6E05\u7A7A\u8D26\u672C" })
+    /* @__PURE__ */ jsx5("div", { className: "pl-card", children: /* @__PURE__ */ jsxs5("div", { className: "pl-card-b", children: [
+      /* @__PURE__ */ jsx5("div", { className: "pl-state pl-sub", children: "\u8D26\u672C\u5B8C\u5168\u5B58\u4E8E\u672C\u673A\uFF08cap.kv ledger.*\uFF09\uFF0C\u4E0D\u51FA\u8BBE\u5907\uFF1BAI \u4E0E\u9762\u677F\u8BFB\u5199\u540C\u4E00\u4EFD\u3002" }),
+      /* @__PURE__ */ jsxs5("div", { className: "pl-actions", children: [
+        /* @__PURE__ */ jsx5("button", { className: "pl-btn sm ghost", onClick: exportAll, children: "\u5BFC\u51FA\u5168\u90E8 JSON" }),
+        /* @__PURE__ */ jsx5("button", { className: "pl-btn sm danger", onClick: clearAll, children: "\u6E05\u7A7A\u8D26\u672C" })
       ] })
     ] }) }),
-    /* @__PURE__ */ jsxs4("div", { className: "pl-sec", children: [
-      /* @__PURE__ */ jsx4("i", { className: "pl-bar" }),
+    /* @__PURE__ */ jsxs5("div", { className: "pl-sec", children: [
+      /* @__PURE__ */ jsx5("i", { className: "pl-bar" }),
       "\u5173\u4E8E"
     ] }),
-    /* @__PURE__ */ jsx4("div", { className: "pl-card", children: /* @__PURE__ */ jsxs4("div", { className: "pl-card-b pl-sub", children: [
+    /* @__PURE__ */ jsx5("div", { className: "pl-card", children: /* @__PURE__ */ jsxs5("div", { className: "pl-card-b pl-sub", children: [
       '\u65E5\u5E38\u8BB0\u8D26 pocket-ledger v0.2.0 \u2014\u2014 \u5BF9\u8BDD\u5F0F\u8BB0\u8D26\uFF1A\u804A\u5929\u91CC\u8BF4"\u5348\u996D 35"\u5C31\u5165\u8D26\uFF0C"\u4E0A\u6708\u5496\u5561\u82B1\u4E86\u591A\u5C11"\u5C31\u80FD\u67E5\u3002',
-      /* @__PURE__ */ jsx4("br", {}),
+      /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u96F6\u540E\u53F0\u670D\u52A1\u3001\u96F6\u7F51\u7EDC\u8BF7\u6C42\uFF0C\u7EAF\u672C\u5730\u8D26\u672C\uFF08\u63D2\u4EF6\u89C4\u8303\u63A8\u8350\u7684\u65E0\u72B6\u6001\u6A21\u5F0F\uFF09\uFF1B",
-      /* @__PURE__ */ jsx4("br", {}),
+      /* @__PURE__ */ jsx5("br", {}),
       '\xB7 \u652F\u6301"\u4E0D\u53C2\u4E0E\u6C47\u603B"\u5206\u7C7B\uFF08\u5982\u5DE5\u8D44\uFF09\u4E0E\u9644\u4EF6\uFF08\u5C0F\u7968/\u622A\u56FE\uFF0C\u70B9\u5F00\u624D\u53D6\uFF0C\u9ED8\u8BA4\u4E0D\u62C9\u56FE\uFF09\uFF1B',
-      /* @__PURE__ */ jsx4("br", {}),
+      /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u9762\u677F\u4E0E AI\uFF08MCP\uFF09\u8D70\u540C\u4E00\u5957\u8BA1\u7B97\u6838\u5FC3\uFF0C\u53E3\u5F84\u6C38\u8FDC\u4E00\u81F4\uFF1B",
-      /* @__PURE__ */ jsx4("br", {}),
+      /* @__PURE__ */ jsx5("br", {}),
       "\xB7 \u684C\u9762\u4E0E\u624B\u673A Web \u7ECF cap.kv \u770B\u5230\u540C\u4E00\u672C\u8D26\uFF1B\u53CC\u7AEF\u540C\u65F6\u8BB0\u8D26\u7684\u5408\u5E76\u6309\u8D26\u5355 id \u5E42\u7B49\u53BB\u91CD\u3002"
     ] }) })
   ] });
 }
 
 // src/Panel.tsx
-import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
+import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
 var css = `
 .pl-root{position:relative;font:13px/1.55 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#E6EAF2;height:100%;display:flex;flex-direction:column;background:transparent}
 .pl-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -1229,11 +1566,11 @@ var css = `
 .pl-attmodal-body img{max-width:100%;max-height:70vh;border-radius:8px;display:block}
 `;
 function LedgerPanel(_props) {
-  const [tab, setTab] = useState4("quick");
-  const [month, setMonth] = useState4(currentMonth2());
-  const [data, setData] = useState4(null);
-  const [loadErr, setLoadErr] = useState4("");
-  const [toast, setToast] = useState4(null);
+  const [tab, setTab] = useState5("quick");
+  const [month, setMonth] = useState5(currentMonth2());
+  const [data, setData] = useState5(null);
+  const [loadErr, setLoadErr] = useState5("");
+  const [toast, setToast] = useState5(null);
   const toastTimer = useRef2(null);
   const showToast = useCallback((msg, kind) => {
     setToast({ msg, kind });
@@ -1282,39 +1619,39 @@ function LedgerPanel(_props) {
     const b = data.stats.balance;
     return { cls: b < 0 ? "neg" : "pos", text: `\u672C\u6708\u7ED3\u4F59 ${fmtMoney2(Math.abs(b), data.settings.currencySymbol)}${b < 0 ? " \u8D85\u652F" : ""}` };
   })();
-  return /* @__PURE__ */ jsxs5("div", { className: "pl-root", children: [
-    /* @__PURE__ */ jsx5("style", { children: css }),
-    /* @__PURE__ */ jsxs5("div", { className: "pl-top", children: [
-      /* @__PURE__ */ jsx5("div", { className: "pl-logo", children: "\u{1F4D2}" }),
-      /* @__PURE__ */ jsxs5("div", { className: "pl-tt", children: [
-        /* @__PURE__ */ jsx5("b", { children: "\u65E5\u5E38\u8BB0\u8D26" }),
-        /* @__PURE__ */ jsx5("small", { className: `pl-balance ${todayBalance.cls}`, children: todayBalance.text })
+  return /* @__PURE__ */ jsxs6("div", { className: "pl-root", children: [
+    /* @__PURE__ */ jsx6("style", { children: css }),
+    /* @__PURE__ */ jsxs6("div", { className: "pl-top", children: [
+      /* @__PURE__ */ jsx6("div", { className: "pl-logo", children: "\u{1F4D2}" }),
+      /* @__PURE__ */ jsxs6("div", { className: "pl-tt", children: [
+        /* @__PURE__ */ jsx6("b", { children: "\u65E5\u5E38\u8BB0\u8D26" }),
+        /* @__PURE__ */ jsx6("small", { className: `pl-balance ${todayBalance.cls}`, children: todayBalance.text })
       ] }),
-      /* @__PURE__ */ jsx5("div", { className: "pl-tabs", children: [
+      /* @__PURE__ */ jsx6("div", { className: "pl-tabs", children: [
         ["quick", "\u8BB0\u8D26"],
         ["list", "\u660E\u7EC6"],
         ["stats", "\u7EDF\u8BA1"],
         ["settings", "\u8BBE\u7F6E"]
-      ].map(([k, label]) => /* @__PURE__ */ jsx5("button", { className: `pl-tab ${tab === k ? "on" : ""}`, onClick: () => setTab(k), children: label }, k)) })
+      ].map(([k, label]) => /* @__PURE__ */ jsx6("button", { className: `pl-tab ${tab === k ? "on" : ""}`, onClick: () => setTab(k), children: label }, k)) })
     ] }),
-    /* @__PURE__ */ jsx5("div", { className: "pl-body", children: /* @__PURE__ */ jsxs5("div", { className: "pl-page", children: [
-      loadErr && /* @__PURE__ */ jsxs5("div", { className: "pl-sub", style: { color: "#F85149", padding: "8px 16px" }, children: [
+    /* @__PURE__ */ jsx6("div", { className: "pl-body", children: /* @__PURE__ */ jsxs6("div", { className: "pl-page", children: [
+      loadErr && /* @__PURE__ */ jsxs6("div", { className: "pl-sub", style: { color: "#F85149", padding: "8px 16px" }, children: [
         "\u6570\u636E\u52A0\u8F7D\u5931\u8D25\uFF1A",
         loadErr
       ] }),
-      tab === "quick" && /* @__PURE__ */ jsx5(QuickTab, { data, reload, showToast }),
-      tab === "list" && /* @__PURE__ */ jsx5(ListTab, { data, month, switchMonth, reload, showToast }),
-      tab === "stats" && /* @__PURE__ */ jsx5(StatsTab, { data, month, switchMonth }),
-      tab === "settings" && /* @__PURE__ */ jsx5(SettingsTab, { data, reload, showToast })
+      tab === "quick" && /* @__PURE__ */ jsx6(QuickTab, { data, reload, showToast }),
+      tab === "list" && /* @__PURE__ */ jsx6(ListTab, { data, month, switchMonth, reload, showToast }),
+      tab === "stats" && /* @__PURE__ */ jsx6(StatsTab, { data, month, switchMonth }),
+      tab === "settings" && /* @__PURE__ */ jsx6(SettingsTab, { data, reload, showToast })
     ] }) }),
-    toast && /* @__PURE__ */ jsx5("div", { className: `pl-toast ${toast.kind || ""}`, children: toast.msg })
+    toast && /* @__PURE__ */ jsx6("div", { className: `pl-toast ${toast.kind || ""}`, children: toast.msg })
   ] });
 }
 
 // src/index.tsx
-import { jsx as jsx6 } from "react/jsx-runtime";
+import { jsx as jsx7 } from "react/jsx-runtime";
 function PocketLedgerEntry(props) {
-  return /* @__PURE__ */ jsx6(LedgerPanel, { ...props });
+  return /* @__PURE__ */ jsx7(LedgerPanel, { ...props });
 }
 export {
   PocketLedgerEntry as default
