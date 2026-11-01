@@ -1,0 +1,19 @@
+{
+  "name": "site-audit-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "site-audit 插件面板（打包用）：站点体检台——整站爬取/断链/SEO 基础体检",
+  "type": "commonjs",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/render-verify.mjs && node test/service-tests.mjs && node test/mcp-tests.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "id": "site-audit",
+  "name": "站点体检台",
+  "version": "0.1.0",
+  "description": "把「我的网站有没有死链、重定向链、缺 meta、图缺 alt、混合内容、慢页面」变成一次 30 秒发起、分钟级出结果的整站体检：输入种子 URL → 后台礼貌爬取整站（默认遵守 robots.txt，同站间隔+并发+页数/时长护栏）→ 0-100 健康分 + 中文报告（断链/重定向链/缺标题描述/重复标题/图片缺 alt/混合内容/noindex/慢页 TOP/状态码分布/外链失效按域聚合/robots 排除与 sitemap 孤岛），报告留档可回看、可导出 JSON/CSV。AI 六工具一句话体检并逐类取证（site_audit_run/status/stop/report/issues/history）。内置试金石站（404/重定向链/缺alt/慢页/robots排除/sitemap孤岛）零配置验证工具链。全程本机执行、零外部服务；公网种子场景下跨 host 核查带 SSRF 围栏（拒内网与云元数据）。不执行 JS、不支持登录后页面（报告会如实标注 SPA 疑似）。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "site-audit.panel",
+        "area": "activityBar",
+        "panelType": "siteAudit",
+        "icon": "Globe2",
+        "labelKey": "plugins.siteAudit",
+        "labelDefault": "站点体检台",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "site-audit-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "站点体检引擎（127.0.0.1 + token）：零依赖爬虫 + robots/sitemap + 内置试金石站 + 报告落 kv（site-audit.* 单写者）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "site-audit",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/site-audit",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/site-audit/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/site-audit/site-audit.zip"
+  }
+}
