@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T22:52:48.980Z",
+  "updated": "2026-11-01T23:33:49.380Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3098,6 +3098,45 @@
       ],
       "createdAt": "2026-11-01T22:52:48.980Z",
       "updatedAt": "2026-11-01T22:52:48.980Z"
+    },
+    {
+      "id": "prompt-matrix",
+      "name": "提示词矩阵台",
+      "version": "0.1.0",
+      "description": "把「这套提示词/这几个模型到底谁答得好」变成一张矩阵：数据集（JSONL 样本）× 变体（模型+提示词模板+参数）批量执行，逐格结果 + 确定性检查器（包含/正则/JSON 有效等 7 种）+ 可选 LLM 评判（pointwise 1-10 分）+ 同行字级 diff + 人工标注，Markdown/JSONL 报告导出，AI 经 MCP 六工具一句话发起评测。宿主已配置的模型供应商一键导入，key 全程掩码，数据不出本机；成本护栏：发起前显式预估格子数并确认，无任何定时任务。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "llm",
+        "prompt",
+        "evaluation",
+        "batch",
+        "testing",
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/prompt-matrix",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/prompt-matrix.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/update.json",
+      "sha256": "2f4433ef37388d6043b754b1332ef07cdc432d686041054324731e7e19d9b7ef",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 提示词矩阵台（prompt-matrix）\n\n把「这套提示词 / 这几个模型到底谁答得好」变成**一张矩阵**：数据集（JSONL 样本）× 变体（模型 + 提示词模板 + 参数）批量执行真实 LLM 请求，逐格结果、确定性检查器、可选 LLM 评判（LLM-as-judge）、同行字级 diff，AI 经 MCP 一句话驱动评测。**数据不出本机。**\n\n## 它解决什么\n\n调提示词、选模型的日常是：开 N 个聊天窗、手改手跑、肉眼对比、凭印象下结论。本插件把这件事变成一次可复现的矩阵运行：\n\n- **模型对比**：同一份模板 + 数据集，多个 `profileId` 并排跑\n- **提示词 A/B**：同一模型，不同 system/user 模板并排跑\n- **回归测试**：换模型/改提示词后重跑老数据集，检查器逐格自动验证\n- **批量处理 + 验收**：20 条翻译/摘要/抽取样本一次跑完，JSON 有效、关键词命中自动判\n\n## 快速上手\n\n1. **档案**页 → 「导入宿主已配置的供应商」（零重录；也可手动添加任意 OpenAI/Anthropic 兼容端点）\n2. **数据集**页 → 粘贴 JSONL（每行一个 `{\"vars\": {...}}`，模板里 `{{变量名}}` 插值；可带 `expect` 检查器）\n3. **运行**页 → 加变体（名称/档案/系统词/用户词/max_tokens/温度）→ 预估格子数 → 确认花费 → 发起\n4. **结果**页 → 矩阵视图逐格看全文/检查/judge，同行格子字级 diff，👍👎 人工标注，导出 Markdown\n\n### 数据集格式（JSONL）\n\n```jsonc\n// 形态一：显式 vars + 期望检查器\n{\"vars\": {\"text\": \"1+1等于几？只回答数字\"}, \"expect\": [{\"type\": \"equals\", \"value\": \"2\"}]}\n// 形态二：顶层键直接作为变量\n{\"text\": \"今天天气怎么样？\", \"lang\": \"英语\"}\n// 检查器 7 种：contains / not_contains / regex / json_valid / equals / min_length / max_length\n{\"vars\": {\"text\": \"输出一个 JSON\"}, \"expect\": [{\"type\": \"json_valid\", \"extract\": true}]}\n```\n\n`json_valid` 的 `extract: true` 会先从 ```` ```json ```` 代码块提取再校验——适合「要求模型输出 JSON」类任务。\n\n### LLM 评判（可选）\n\n运行时勾选评判档案，每个输出由 judge 模型按 1-10 打分并给理由（pointwise，`{\"score\": n, \"reason\"}`，容错解析）。judge 提示词可自定义（`{{output}}` 与样本变量可用）。**judge 是额外调用，显式配置才跑。**\n\n## AI 驱动（MCP 六工具）\n\n| 工具 | 用途 |\n|---|---|\n| `pmtx_profiles` | 列可评测模型档案（key 掩码） |\n| `pmtx_datasets` | 列数据集 |\n| `pmtx_run` | 发起矩阵（variants + datasetId/jsonl；调用前须向用户确认花费） |\n| `pmtx_status` | 运行进度（完成格数/评判进度/耗时） |\n| `pmtx_result` | 读结果（聚合 + 矩阵总览；`cell: \"r0c1\"` 取单格全文与检查明细） |\n| `pmtx_history` | 历史运行列表 |\n\n对话里可以直接说：「用我的测试集对比这两个模型」「把这段 JSONL 的 10 句话批量翻译并检查 JSON 有效」「跑一遍新提示词，judge 打分」。\n\n## 架构\n\n```\nshared/matrix-core.js   纯逻辑零依赖：插值/数据集解析/检查器/字级diff/聚合/judge/双协议调用\nservice/main.js         单权威执行器：单槽信箱(pmtx.cmd→pmtx.res)/并发池(1-8)/重试/中止/落盘\nservice/kvclient.js     桥客户端（端点自发现，与家规样板同款）\nmcp/server.js           stdio MCP：六工具，只投递命令并读 kv，不携带 key\nsrc/                    面板六 Tab：运行/数据集/结果/档案/历史/设置（esbuild 打包）\n```\n\n- **结果分层**：全文落 `{appConfigDir}/prompt-matrix/runs/{runId}.json`（原子写，保留最近 10 份）；kv 只存瘦身投影（单格文本按规模 200B~1.2KB）——历史可复现，kv 不爆。\n- **档案安全**：完整 apiKey 只在服务内存 + `{appConfigDir}/prompt-matrix/profiles.json`（与宿主 config.json 同信任域）；kv/面板/MCP 一切形态全掩码（`****last4` / `env:NAME`）。\n- **双 wire API**：OpenAI Chat Completions（Bearer）与 Anthropic Messages（x-api-key），`[1m]` 等 CLI 后缀自动剥离，`max_completion_tokens` 兼容重试。\n\n## 护栏与隐私\n\n- 成本：发起前显式预估「样本 × 变体 = 格子数」并确认；MCP 工具描述要求 AI 先征得同意；无任何定时任务。\n- 重试：仅限流 429 / 5xx / 网络层错误退避重试（0-2 次可配）；401/400 等语义错误不重试。\n- 中止：AbortController 全链生效，中止后已完格保留、未跑格标「已取消」。\n- 并发：1-8 可配（默认 3），对供应商友好。\n- 隐私：数据集与结果不出本机；日志不落 key。\n\n## 开发\n\n```bash\nnpm install\nnpm run typecheck          # tsc --noEmit（strict）\nnpm run build              # esbuild → dist/panel.js\nnode test/run-tests.mjs    # 离线单测（零网络）\nnode test/service-tests.mjs # 假桥 + 真实子进程集成（零外网）\nnode test/smoke-real.mjs   # 真桥冒烟（需宿主运行中；产生少量真实 token 消费）\n```\n\n## 已知边界\n\n- 非流式执行（不测 TTFT/TPS——那是模型体检台 llm-probe 的域）。\n- 检查器的 `regex` 有 500 字符模式上限（防灾难回溯的轻护栏）；`contains` 关键词 ≤20 个。\n- 数据集 ≤200 样本 / 256KB；单格输出存储 ≤64KB（超出截断并标注）。\n- 大规模运行（>200 格）kv 投影逐格文本收敛到 200-400B，全文以落盘文件为准。\n- 结果保留最近 10 份（更早的投影与文件随索引清理）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/prompt-matrix.zip",
+          "sha256": "2f4433ef37388d6043b754b1332ef07cdc432d686041054324731e7e19d9b7ef"
+        }
+      ],
+      "createdAt": "2026-11-01T23:33:49.380Z",
+      "updatedAt": "2026-11-01T23:33:49.380Z"
     }
   ]
 }

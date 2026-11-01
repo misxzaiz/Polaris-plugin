@@ -1,0 +1,63 @@
+{
+  "id": "prompt-matrix",
+  "name": "提示词矩阵台",
+  "version": "0.1.0",
+  "description": "把「这套提示词/这几个模型到底谁答得好」变成一张矩阵：数据集（JSONL 样本）× 变体（模型+提示词模板+参数）批量执行，逐格结果 + 确定性检查器（包含/正则/JSON 有效等 7 种）+ 可选 LLM 评判（pointwise 1-10 分）+ 同行字级 diff + 人工标注，Markdown/JSONL 报告导出，AI 经 MCP 六工具一句话发起评测。宿主已配置的模型供应商一键导入，key 全程掩码，数据不出本机；成本护栏：发起前显式预估格子数并确认，无任何定时任务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "promptmatrix.panel",
+        "area": "activityBar",
+        "panelType": "promptmatrix",
+        "icon": "Target",
+        "labelKey": "plugins.promptmatrix",
+        "labelDefault": "提示词矩阵台",
+        "order": 83
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "promptmatrix-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "提示词矩阵执行引擎（矩阵编排/双协议调用/档案管理/单槽命令信箱）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "prompt-matrix",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/prompt-matrix",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/prompt-matrix.zip"
+  }
+}
