@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T20:51:45.681Z",
+  "updated": "2026-11-01T21:03:09.555Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2901,6 +2901,46 @@
       ],
       "createdAt": "2026-11-01T20:51:45.681Z",
       "updatedAt": "2026-11-01T20:51:45.681Z"
+    },
+    {
+      "id": "ocr-bench",
+      "name": "文字识别台",
+      "version": "0.1.0",
+      "description": "把「图片/扫描版 PDF 里的文字」变成可复制、可搜索、可交给 AI 继续加工的文本——全本地 Tesseract 识别零上传，内置简体中文+英语（16 语言按需下载），批量目录与扫描 PDF 整卷（DCT/Flate/1bpp 传真形态，页旋转自动转正），文字版 PDF 自动检测直读不烧 OCR；结果一键导出 txt 或直接进对话加工。AI 六工具一句话识别并取全文（ocr_scan/status/stop/result/history/langs）。护栏（单任务≤200 文件/PDF≤500 页/单图≤50MB/单任务互斥可中止）+ 输出目录根边界校验；唯一外网流量是语言包模型文件本身，图像数据永不外发。手写体与严重模糊件不在可靠范围（置信度如实标注）。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "ocr",
+        "pdf",
+        "scan",
+        "tesseract",
+        "text",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Languages",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ocr-bench",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ocr-bench/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ocr-bench/ocr-bench.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ocr-bench/update.json",
+      "sha256": "3f7a7839bcdee20b3436946ad98f504b932e865263a9e40893782757c296d8d6",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 文字识别台（ocr-bench）\n\n把「图片/扫描版 PDF 里的文字」变成可复制、可搜索、可交给 AI 继续加工的文本——全本地 Tesseract 识别，图像数据永不外发。内置简体中文+英语离线即用，扫描 PDF 整卷识别（文字版自动直读），批量目录、txt 导出、AI 六工具对话式取文。手写体与严重模糊件不在可靠范围（置信度如实标注）。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ocr-bench/ocr-bench.zip",
+          "sha256": "3f7a7839bcdee20b3436946ad98f504b932e865263a9e40893782757c296d8d6"
+        }
+      ],
+      "createdAt": "2026-11-01T21:03:09.555Z",
+      "updatedAt": "2026-11-01T21:03:09.555Z"
     }
   ]
 }

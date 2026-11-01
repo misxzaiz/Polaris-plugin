@@ -1,0 +1,32 @@
+# 版本控制 / IDE
+.git/
+.gitignore
+
+# 依赖管理文件（node_modules 本体随包出货：tesseract.js 运行时必需，已裁剪
+# 非 relaxedsimd 的 wasm 变体与文档/测试媒体，LSTM fast 模型本就无 legacy 档）
+package.json
+package-lock.json
+
+# 面板构建工具链（仅本机构建 dist/panel.js 用，不随包）
+node_modules/typescript
+node_modules/esbuild
+node_modules/@esbuild
+node_modules/@types
+node_modules/react
+node_modules/react-dom
+node_modules/scheduler
+node_modules/csstype
+
+# 面板源码（dist/panel.js 已是构建产物；shared/ 是运行时代码必须保留）
+src/
+tsconfig.json
+
+# 测试
+test/
+
+# 文档
+README.md
+*.md
+
+# 打包产物自身
+*.zip

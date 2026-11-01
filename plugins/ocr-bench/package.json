@@ -1,0 +1,22 @@
+{
+  "name": "ocr-bench-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ocr-bench 插件（打包用）：文字识别台 图片/扫描PDF→文本。dependencies 是服务运行时必需（随包出货，已裁剪），devDependencies 仅面板构建。",
+  "type": "commonjs",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.5.0"
+  }
+}
