@@ -2365,6 +2365,118 @@
       ],
       "createdAt": "2026-11-01T12:51:16.000Z",
       "updatedAt": "2026-11-01T12:51:26.726Z"
+    },
+    {
+      "id": "zhuangxiu",
+      "name": "装修台账",
+      "version": "0.1.0",
+      "description": "家庭装修对账本：把「装修公司的报价单、记不全的每笔开销、总在涨的增项、说不清的工期节点」变成可对话、会对比预算、能盯住增项的装修账。聊天里说「瓷砖买了 3200，张师傅装的」一句话入账并自动归科目；每科目预算 vs 实际红黄绿对比（超支红/≥90% 黄）；报价单外科目一步建「增项科目」，增项单独合计——装修公司漏报=后期增项，常见漏项检查（垃圾清运/防水/美缝/包立管等 7 项）直接内嵌标准科目模板；供应商档案记谁干了啥、合同额与已付；工期节点红黄榜（逾期红/3 天内黄）；一键对账小结可直接发家人。数据纯本地（cap.kv）零服务进程。对账结果用于家庭自查，不构成造价咨询或法律建议。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "renovation",
+        "budget",
+        "family",
+        "home",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "ClipboardList",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zhuangxiu",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/zhuangxiu.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/update.json",
+      "sha256": "22aa9ee79fd8fd493acc262392ce2cca6a3bf433b5982acd730ed2d386011f00",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 装修台账 zhuangxiu —— 家庭装修对账本\n\n> 把「装修公司的报价单、记不全的每笔开销、总在涨的增项、说不清的工期节点」变成**可对话、会对比预算、能盯住增项**的装修账。\n> 聊天里说「瓷砖买了 3200，张师傅装的」一句话入账；超支标红、临超标黄；报价单外科目一步建「增项科目」并单独合计。\n> 对账结果用于家庭自查，**不构成造价咨询或法律建议**。\n\n## 为什么要有装修台账\n\n- **装修超支是普遍痛**：新华网报道低价签约后增项致预算超支 30%+；千库网有 13368 个装修记账 Excel 模板——PC 侧无好工具，手工 Excel 是主流且难坚持。\n- **增项是装修公司的主要利润手段**：报价单故意漏项（垃圾清运/包立管/防水/过门石/美缝……），后期以「合同里没包含」加钱。破解方法论（豆瓣装修账簿帖）：**逐项报价预算表 + 每笔当天入账 + 与报价比对盯增项**——正是本插件的三个核心能力。\n- 现有方案缺口：专用 App 手机端为主且小众；通用记账无「科目预算对比 / 增项口径 / 供应商档案 / 工期节点」维度；Excel 手动汇总易错难坚持。\n- 装修涉及价格敏感信息：**纯本地存储**（cap.kv，不出设备），无账号、无上传、零外网请求、零服务进程。\n\n## 核心能力\n\n| 能力 | 说明 |\n|---|---|\n| 标准科目模板 | 30 项预置科目（10 分组），**内嵌防漏项清单**——垃圾清运/包立管/防水/过门石/美缝/物业押金管理费/开荒保洁，一键采用 |\n| 预算 vs 实际 | 每科目预算/已花/进度条，**超支红 / ≥90% 黄 / 未定灰 / 正常绿**；总预算优先于科目合计 |\n| 增项口径 | 科目 `isExtra=true` ⇒ 支出计入增项合计；`asExtra:true` 一步建增项科目并记账；asExtra 模糊命中已有科目时拒绝（不静默改记普通科目） |\n| 对话式记账 | 「瓷砖买了 3200，张师傅装的」→ 自动归科目 + 供应商自动建档 + 返回该科目预算执行快照 |\n| 幂等防双写 | 传 `id` 覆盖同 id 记录；覆盖时**未提供的字段继承旧值**（重试丢字段不抹数据） |\n| 供应商档案 | 角色/电话/合同额 + 已付统计（谁干了啥、付了多少） |\n| 工期节点 | 红黄榜：逾期红 / 3 天内黄 / 完成绿（记录与提示，不推送） |\n| 常见漏项检查 | 预算单缺防漏项清单科目时，总览与小结都会提醒（漏报=后期增项） |\n| 对账小结 | 一键 markdown：总执行/分科目表/超支榜/漏项提醒/供应商付款/节点——可直接发家人 |\n| 多端同录 | 手机浏览器打开同一面板记账；面板+AI 共读同一份 cap.kv 事实库 |\n\n## 快速开始\n\n1. 插件中心安装「装修台账」→ 左侧 ActivityBar 出现 📋 面板（零后台服务，打开即用）。\n2. 「科目」页点**一键采用标准科目模板**（或直接对 AI 说「用装修台账给我建标准科目」），再按报价单逐科目录预算（`zx_category action=set` 或面板点科目改预算）。\n3. 之后每笔开销对 AI 说，或面板「流水」页手工记：\n\n```\n瓷砖买了 3200，张师傅装的，微信付的\n记一笔增项：窗台大理石加固 600\n```\n\n4. 随时问「装修花了多少了/哪个科目超支了/增项一共多少钱」，或「生成对账小结」发给家人。\n\n## 与 AI 的对话约定（MCP 工具）\n\n| 工具 | 用途 |\n|---|---|\n| `zx_record` | 记一笔支出（科目按名解析；报价单外科目拒单并引导 asExtra；vendor 按名自动建档；`id` 幂等覆盖） |\n| `zx_category` | 科目 add / set（录预算）/ remove（有支出拒删）/ list / **template**（一键标准科目）/ project（项目档案与总预算） |\n| `zx_query` | 查询（只查不建）：`budget` 预算执行 / `recent` 流水 / `extra` 增项 / `vendors` 供应商 / `milestones` 节点红黄榜 / `missing` 常见漏项 |\n| `zx_vendor` | 供应商 add / set / list |\n| `zx_milestone` | 工期节点 add / set / done / list |\n| `zx_update` | 按 id 改支出（金额/科目迁移/日期/供应商/备注） |\n| `zx_delete` | 删支出/科目/供应商/节点（`confirm:true` 门） |\n| `zx_summary` | 对账小结 markdown（只查不建） |\n\n**口径纪律**：增项口径唯一 = 科目 `isExtra:true`；标色唯一 = `spent>budget` 红 / `≥90%` 黄 / 未定灰；节点唯一 = 逾期红 / 3 天内黄。全部在 `shared/core.js` 单一权威实现，面板与 MCP 结论永远一致。\n\n## 架构\n\n```\n┌────────────── 面板（总览/科目/流水/档案）────────────────┐\n│  __POLARIS_HOST_INVOKE__ → router_dispatch → cap.kv     │\n│  零外网、零服务进程；预算对比/增项/漏项/小结全部 core 现算  │\n└──────────────────────────┬──────────────────────────────┘\n                           │ 读写 zhuangxiu.* 键空间\n┌──────────────────────────┴──────────────────────────────┐\n│ shared/core.js 纯函数核心（双方同源，同一口径）             │\n│  normalize×5 · resolveCatName · budgetCompare            │\n│  missingCheck · milestoneLevel · buildSummary · TEMPLATE │\n├──────────────────────────────────────────────────────────┤\n│ mcp/server.js（stdio JSON-RPC；零依赖）                   │\n│  AI 工具层：翻译 tools/call → cap.kv zhuangxiu.* 读写      │\n│  （经 kvclient 自发现桥端点；查/小结只查不建）              │\n└──────────────────────────────────────────────────────────┘\n```\n\n**为什么零服务进程**：核心是「记录 → 对比 → 提示 → 小结」，全部可在读取时现算（单项目量级：科目 ~30 / 支出数百，远低于任何分块阈值）。提醒类需求由面板红黄榜 + AI 查询承担，不建常驻服务、不多一个故障面。\n\n**键空间契约**（双方一致）：\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `zhuangxiu.project` | 面板/MCP | 面板/MCP | 单项目档案（v1 单项目）`{id,name,house?,totalBudget?,status,startDate?}` |\n| `zhuangxiu.cat.<id>` | 面板/MCP | 面板/MCP | 科目 `{id,name,group,budget?,isExtra,order,…}` |\n| `zhuangxiu.exp.<id>` | 面板/MCP | 面板/MCP | 支出 `{id,catId,amount,ts,vendorId?,payMethod?,note?,src,…}` |\n| `zhuangxiu.ven.<id>` | 面板/MCP | 面板/MCP | 供应商 `{id,name,role?,phone?,contractAmount?,note?,…}` |\n| `zhuangxiu.mile.<id>` | 面板/MCP | 面板/MCP | 节点 `{id,title,date,done,note?,…}` |\n\n每记录一键：写入为单命令原子操作，无数组读改写、无跨日迁移；删除供应商保留历史流水（仅解除关联）。\n\n## 开发与验证\n\n```bash\nnpm install\nnpm run typecheck          # tsc --noEmit（strict）\nnpm run build              # esbuild → dist/panel.js（React external）\nnode test/run-tests.mjs    # 离线单测 23 组（纯函数行为级）\nnode test/mcp-bridge.mjs   # MCP 内存桥全链路 51 组（stub 宿主 + 真实 stdio/server）\nnode test/harness-run.mjs  # jsdom 无头渲染冒烟 32 断言（真 bundle + 内存 kv）\nnode test/smoke-real.mjs   # 真实宿主桥冒烟（宿主未运行则 SKIP；自清理不留数据）\n```\n\n## 已知边界\n\n- v1 **单项目**（多项目/多套房留待后续）；不做报价单 OCR/文件导入、账单分摊、支付对接。\n- 节点只做红黄榜记录与提示，**不做主动推送**（可用「日程提醒」插件对节点日期设提醒）。\n- 无地图/材料价格行情等外部数据；对账结果用于家庭自查，不构成造价咨询或法律建议。\n- 供应商删除为「解除关联」语义（历史流水保留），防误删账。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/zhuangxiu.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T13:33:34.000Z",
+      "updatedAt": "2026-11-01T13:33:34.000Z"
+    },
+    {
+      "id": "imgforge",
+      "name": "图片工坊",
+      "version": "0.1.0",
+      "description": "本地批量图片变换引擎：压缩、转格式（WebP/AVIF/JPEG/PNG/TIFF）、限宽高缩放、EXIF/GPS 隐私剥离（默认开启）、「压到目标体积」二分逼近。面板选目录批量执行，或对 AI 说一句话（imgforge_scan/info/process/jobs 四工具）完成，报告节省多少。文件全程不出本机（服务只绑 127.0.0.1 + token，零外网请求），TinyPNG 的上传隐私焦虑与 20 张/5MB 限额从根上不存在；Squoosh 单张手动的低效也被批处理取代。输入永不修改删除、输出永不覆盖（重名自动 -2/-3）。明确不做动图重编码（GIF 按首帧）、OCR、水印。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "image",
+        "compression",
+        "webp",
+        "privacy",
+        "exif",
+        "mcp"
+      ],
+      "icon": "Film",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/imgforge",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/imgforge/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@imgforge-v0.1.0/plugins/imgforge/imgforge.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/imgforge/update.json",
+      "sha256": "b26ac96adb52f530b69433cf89b98332e0f34c9454258eeb41956ef48e9df7f1",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 图片工坊（imgforge）\n\n本地批量图片变换引擎：**压缩、转格式（WebP/AVIF/JPEG/PNG/TIFF）、限宽高缩放、EXIF/GPS 隐私剥离、「压到目标体积」二分逼近**。\n\n面板里选个目录批量执行，或者直接对 AI 说一句话。文件全程不出本机。\n\n## 为什么\n\n- **TinyPNG 类在线工具**：图片要上传到别人的服务器（隐私焦虑）、免费版 20 张/5MB 限额 + 批量节流。\n- **Squoosh**：质量最好的网页工具，但一次只能处理一张；CLI 已被 Google 弃维护且带未修 bug。\n- **桌面工具**：碎片化——压缩一个、转格式一个、去 EXIF 又一个。\n- **AI 时代的新诉求**：处理图片这件事应该像说一句话一样自然——「把下载目录里超过 200KB 的截图压到 200KB 以内」。\n\n图片工坊把以上收进一个本地引擎：**批量 + 全格式 + 目标体积 + 隐私剥离 + AI 编排**。\n\n## 核心动作（变换，不是记录）\n\n| 能力 | 说明 |\n|---|---|\n| 批量压缩 | JPEG（mozjpeg）/WebP/PNG（调色板量化）/AVIF/TIFF，按质量滑杆 |\n| 目标体积 | 「压到 200KB 以内」——自动二分质量逼近；质量到底仍超标时按比例降尺寸并如实注明 |\n| 转格式 | 保持原格式 或 显式转 WebP/JPEG/PNG/AVIF/TIFF |\n| 缩放 | 最大宽/高限制，等比缩小、绝不放大 |\n| 隐私剥离 | EXIF/GPS 定位/设备信息默认剥离（先按 EXIF orientation 回正再剥）；显式可保留 |\n| 目录扫描 | 数量/格式分布/总大小/GPS 计数/最大文件 Top——先看清再动手 |\n\n## 使用\n\n### 面板（工作台）\n\n1. 填目录（或点「填入桌面」）→ 扫描 → 看概览（格式分布、GPS 计数）。\n2. 勾选文件（全选/只选含 GPS）。\n3. 配管道（格式/质量/最大宽高/目标体积/EXIF 策略）→ 开始变换。\n4. 进度条 → 报告（前后体积对比、节省百分比、失败原因）→ 可一键发到聊天。\n\n### AI（MCP 四工具）\n\n| 工具 | 干什么 | 适用句式 |\n|---|---|---|\n| `imgforge_scan` | 目录概览（只读） | 「看看这个文件夹里有多少图片/多大」「有没有带位置信息的照片」 |\n| `imgforge_info` | 单图元信息（只读） | 「这张图多大/什么格式」「这张照片有没有位置隐私」 |\n| `imgforge_process` | 批量变换落盘 | 「把这个文件夹的 PNG 全转 WebP」「这批截图压到 200KB 以内」「这些照片抹掉位置信息」 |\n| `imgforge_jobs` | 最近任务历史 | 「刚才处理了多少张/省了多少」 |\n\n## 安全与隐私\n\n- 服务只绑 `127.0.0.1` + token（cap.kv `imgforge.meta`），**零外网请求**（sharp 纯本地处理）。\n- **输入永不修改/删除**；**输出永不覆盖**——输出目录默认 `<输入目录>/imgforge-out/`，重名自动 `-2/-3`。\n- 权限仅 `appConfigRead`（定位宿主桥）+ `aiToolAccess`，不声明 network。\n- 单文件 ≤100MB、单批 ≤300 张（可调）、并发 1-8（默认 3）——防误操作拖垮机器。\n\n## 边界（如实说明，不做假装能做到的事）\n\n- **不动图**：GIF 变换按首帧输出静态图；不做动图重编码。\n- **无 OCR**：图片里的文字读不出来（PDF 工坊同样不做 OCR）。\n- **无水印/裁剪**：v0.1 不含，在路线图上。\n- **AVIF 较慢**：libvips effort=4，大批量建议 WebP。\n- **SVG 变换** = 渲染成位图；**BMP 无编码器**（会明确报错并建议 PNG/WebP）。\n- **GPS 检测覆盖** JPEG/PNG/WebP/TIFF 的 EXIF；AVIF/GIF/BMP/SVG 显示「未知」（容器不携带可解析 EXIF），但**剥离动作仍然执行**（重新编码天然丢元数据）。\n- HEIC 解码视宿主 libvips 编译情况，不承诺。\n\n## 架构\n\n```\n面板 (React, dist/panel.js)\n  ├─ 数据面: __POLARIS_HOST_INVOKE__ → cap.kv imgforge.*（设置/历史/meta）\n  └─ 字节面: POST http://127.0.0.1:<port>/api/*（token）\n服务 (service/main.js, 宿主托管): /api/scan /api/process /api/job /api/probe /api/ping /__health\n  └─ engine.js: sharp 扫描/探测/并发管线/目标体积二分\nMCP (mcp/server.js, stdio): 四工具直连同一 engine.js（口径不漂移）\nshared/core.js: 魔数识别/EXIF-GPS 解析/设置与管道归一/永不覆盖命名（三端同源）\n```\n\n历史台账：cap.kv `imgforge.history.*`（环形，面板可清空）。\n\n## 开发\n\n```bash\nnpm install            # sharp 会拉取平台原生二进制（win32-x64 + wasm32 兜底）\nnpm run build          # esbuild → dist/panel.js（react 走宿主 shim）\nnpm run typecheck      # tsc --noEmit\nnode test/run-tests.mjs  # core/engine/mcp/render 四层验证\n```\n\n打包前 `npm prune --omit=dev`（node_modules 随 zip 出货，devDeps 裁掉）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@imgforge-v0.1.0/plugins/imgforge/imgforge.zip"
+        }
+      ]
+    },
+    {
+      "id": "webhook-station",
+      "name": "Webhook 调试台",
+      "version": "0.1.0",
+      "description": "把本机变成常驻的回调接收工作站：支付回调/CI 钩子/IoT 上报/机器人通知先落进本机捕获器（多桶分流、全量留痕、数据不出本机），再转发或一键重放到本地应用；配合任意内网穿透隧道稳定联调（隧道换域名捕获器不动）。AI 经 MCP 六工具排查回调：看全文/搜字段/重放，敏感头自动脱敏。零外部服务零依赖。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "webhook",
+        "debug",
+        "http",
+        "payment",
+        "tunnel",
+        "devtools"
+      ],
+      "icon": "Globe2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/webhook-station",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/webhook-station.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/update.json",
+      "sha256": "562ff803bcb26becffda7319af8a46ec3c2b72e95879b3f9d57762fd2b16f0fd",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Webhook 调试台\n\n把本机变成常驻的回调接收工作站：支付回调/CI 钩子/IoT 上报先落进本机捕获器（多桶分流、全量留痕、数据不出本机），再转发或一键重放到本地应用；配合任意内网穿透隧道稳定联调（隧道换域名捕获器不动）。AI 经 MCP 六工具排查回调：看全文/搜字段/重放，敏感头自动脱敏。\n\n- 桶=专属捕获路径 /hook/<secret>，固定应答（自定义状态码/应答体，支付宝答 success 就填 success）或转发模式（镜像上游响应，转发失败调用方收 502 触发平台重试）\n- 全量留痕 captures.jsonl（8MB 轮转），面板预览跨端一致，AI hook_search/hook_get 跨全量检索（敏感头自动脱敏）\n- 端口固定 9869；不内置隧道（ngrok/natapp/cpolar 自备，指向 127.0.0.1:9869 即可）；数据零外发，服务无任何 CORS 开放读 API\n\n键空间契约与已知边界见插件 README；选型依据 docs/webhook-station-plan.md。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/webhook-station.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T14:19:56.054Z"
     }
   ]
 }
