@@ -1,0 +1,57 @@
+{
+  "id": "webhook-station",
+  "name": "Webhook 调试台",
+  "version": "0.1.0",
+  "description": "把本机变成常驻的回调接收工作站：支付回调/CI 钩子/IoT 上报/机器人通知先落进本机捕获器（多桶分流、全量留痕、数据不出本机），再转发或一键重放到本地应用；配合任意内网穿透隧道稳定联调（隧道换域名捕获器不动）。AI 经 MCP 六工具排查回调：看全文/搜字段/重放，敏感头自动脱敏。零外部服务零依赖。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "webhook-station.panel",
+        "area": "activityBar",
+        "panelType": "webhookStation",
+        "icon": "Globe2",
+        "labelKey": "plugins.webhookStation",
+        "labelDefault": "Webhook 调试台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "webhook-station-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9869,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "本机 webhook 捕获服务（0.0.0.0 监听供隧道/局域网设备/第三方经隧道回调；数据只落本机）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "webhook-station",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/webhook-station",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/webhook-station.zip"
+  }
+}
