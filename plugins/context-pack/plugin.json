@@ -1,0 +1,58 @@
+{
+  "id": "context-pack",
+  "name": "上下文打包台",
+  "version": "0.1.0",
+  "description": "把本地代码仓库/目录打包成 LLM 可直接消化的文本上下文包：树形勾选 + token 预算条 + 一键复制/导出/发送到 Polaris 聊天；遵循 .gitignore，二进制与超限文件自动排除。AI 可经 MCP 三工具（扫描/估算/打包）自助打包任意目录。全部本机完成，代码不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "context-pack.panel",
+        "area": "activityBar",
+        "panelType": "contextPack",
+        "icon": "Files",
+        "labelKey": "plugins.contextPack",
+        "labelDefault": "上下文打包台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "context-pack-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9872,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "上下文扫描/打包服务（仅 127.0.0.1 健康检查面，交互走 cap.kv；bundle 落 polaris-context/bundles/）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "context-pack",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/context-pack",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip"
+  }
+}
