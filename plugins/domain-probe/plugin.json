@@ -1,0 +1,62 @@
+{
+  "id": "domain-probe",
+  "name": "域名诊断台",
+  "version": "0.1.0",
+  "description": "把「我的域名配置对不对、邮件为什么进垃圾箱、证书什么时候过期、刚改的解析国内外生效一致吗」变成一次 30 秒的本机体检：DNS 基础（NS/SOA/A/CAA/DNSSEC）+ 邮件身份（SPF 语法与 RFC 7208 十次查询上限计数 / DMARC 策略 lint / DKIM 常见 selector 探测 / MX 体检）+ TLS 证书（有效期/SAN 覆盖/链校验），打 0-100 分并给每条问题中文修复建议；多解析器一致性对比（阿里/DNSPod/Cloudflare/Google）验证解析变更全球生效。全只读 DoH 查询零依赖零密钥，数据不出本机；证书探测前双重守卫（域名形态 + 解析 IP 逐个复核）拒私网与元数据目标。AI 经 MCP 六工具一句话驱动体检（dom_diagnose/emailauth/cert/lookup/report/history），报告落 cap.kv 三端可看；可配合定时任务台做证书到期盯防。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "domain-probe.panel",
+        "area": "activityBar",
+        "panelType": "domainProbe",
+        "icon": "Globe2",
+        "labelKey": "plugins.domainProbe",
+        "labelDefault": "域名诊断台",
+        "order": 79
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "domain-probe-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "域名诊断引擎（DoH 多解析器查询/证书只读取证/单槽命令信箱）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "domain-probe",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/domain-probe",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/domain-probe/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/domain-probe/domain-probe.zip"
+  }
+}

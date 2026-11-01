@@ -1,0 +1,46 @@
+/* 域名诊断台面板样式（dp- 前缀防泄漏；色值与主题暗色面板族一致） */
+.dp-root{position:relative;font:13px/1.55 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#E6EAF2;height:100%;display:flex;flex-direction:column;background:transparent}
+.dp-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+.dp-body{flex:1;overflow-y:auto;padding:0 0 24px}
+.dp-body::-webkit-scrollbar{width:9px;height:9px}
+.dp-body::-webkit-scrollbar-track{background:transparent}
+.dp-body::-webkit-scrollbar-thumb{background:#2a2f3a;border-radius:5px;border:2px solid transparent;background-clip:content-box}
+.dp-top{position:sticky;top:0;z-index:20;padding:13px 16px 10px;display:flex;align-items:center;gap:10px;background:linear-gradient(180deg,#10141C 78%,rgba(16,20,28,0));flex-wrap:wrap}
+.dp-logo{width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,#2B6CB0,#3FB950);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.dp-tt{flex:1;min-width:130px}
+.dp-tt b{font-size:15px;display:block}
+.dp-tt small{color:#8B95A7;font-size:10.5px;display:flex;align-items:center;gap:5px;margin-top:1px}
+.dp-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+.dp-dot.ok{background:#3FB950;box-shadow:0 0 6px rgba(63,185,80,.7)}
+.dp-dot.stale{background:#D29922}
+.dp-dot.down{background:#F85149}
+.dp-run{font-size:10.5px;color:#D29922;background:#2a2410;border:1px solid #4d4316;border-radius:6px;padding:2px 8px;white-space:nowrap;max-width:40%;overflow:hidden;text-overflow:ellipsis}
+.dp-tabs{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.dp-tab{background:transparent;border:none;color:#8B95A7;font-size:12px;padding:6px 9px;border-radius:8px;cursor:pointer}
+.dp-tab:hover{color:#E6EAF2}
+.dp-tab.on{background:#1C2330;color:#E6EAF2;font-weight:600}
+.dp-card{background:#161B22;border:1px solid #242C3A;border-radius:13px;margin:0 16px 10px;overflow:hidden;min-width:0}
+.dp-card-b{padding:11px 13px}
+.dp-sub{font-size:10.5px;color:#8B95A7;line-height:1.6}
+.dp-tag{background:#1C2330;border:1px solid #242C3A;border-radius:5px;padding:1px 7px;font-size:9.5px;color:#8B95A7;white-space:nowrap}
+.dp-btn{background:#2b6cb0;border:none;color:#fff;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600}
+.dp-btn:hover{filter:brightness(1.1)}
+.dp-btn:disabled{opacity:.45;cursor:not-allowed}
+.dp-btn.ghost{background:#232834;color:#E6EAF2;border:1px solid #2a2f3a}
+.dp-btn.danger{background:#3a1d22;color:#F85149;border:1px solid #54262c}
+.dp-btn.sm{padding:3px 9px;font-size:11px;border-radius:7px}
+.dp-inp{background:#12151c;border:1px solid #2a2f3a;border-radius:8px;color:#E6EAF2;padding:7px 10px;font-size:12px;width:100%;min-width:0}
+.dp-inp:focus{outline:none;border-color:#2b6cb0}
+.dp-inp::placeholder{color:#4d5566}
+.dp-sel{background:#12151c;border:1px solid #2a2f3a;border-radius:8px;color:#E6EAF2;padding:6px 9px;font-size:12px}
+.dp-empty{color:#8B95A7;font-size:12px;padding:26px 16px;text-align:center;line-height:1.9}
+.dp-err{color:#F85149;font-size:11.5px;padding:8px 16px;word-break:break-all}
+.dp-warn{color:#E3B341;font-size:11.5px;word-break:break-all}
+.dp-mono{font-family:Consolas,Menlo,monospace}
+.dp-row{padding:9px 13px;border-top:1px solid #1d2330}
+.dp-row:hover{background:#12151c}
+.dp-row-h{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.dp-muted{color:#5C6678}
+.dp-badge{border-radius:5px;padding:0 6px;font-size:9.5px;font-weight:700;white-space:nowrap}
+.dp-badge.good{background:#122b1a;color:#3FB950;border:1px solid #1f4729}
+.dp-badge.bad{background:#3d1218;color:#FF8A9A;border:1px solid #67252e}
