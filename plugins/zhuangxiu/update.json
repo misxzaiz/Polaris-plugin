@@ -1,0 +1,45 @@
+{
+  "id": "zhuangxiu",
+  "name": "装修台账",
+  "version": "0.1.0",
+  "description": "家庭装修对账本：把「装修公司的报价单、记不全的每笔开销、总在涨的增项、说不清的工期节点」变成可对话、会对比预算、能盯住增项的装修账。聊天里说「瓷砖买了 3200，张师傅装的」一句话入账并自动归科目；每科目预算 vs 实际红黄绿对比（超支红/≥90% 黄）；报价单外科目一步建「增项科目」，增项单独合计——装修公司漏报=后期增项，常见漏项检查（垃圾清运/防水/美缝/包立管等 7 项）直接内嵌标准科目模板；供应商档案记谁干了啥、合同额与已付；工期节点红黄榜（逾期红/3 天内黄）；一键对账小结可直接发家人。数据纯本地（cap.kv）零服务进程。对账结果用于家庭自查，不构成造价咨询或法律建议。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "zhuangxiu.panel",
+        "area": "activityBar",
+        "panelType": "zhuangxiu",
+        "icon": "ClipboardList",
+        "labelKey": "plugins.zhuangxiu",
+        "labelDefault": "装修台账",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "zhuangxiu",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/zhuangxiu",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/zhuangxiu.zip"
+  }
+}
