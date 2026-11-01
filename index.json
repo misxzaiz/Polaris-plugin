@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T21:03:09.555Z",
+  "updated": "2026-11-01T21:18:44.676Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2941,6 +2941,45 @@
       ],
       "createdAt": "2026-11-01T21:03:09.555Z",
       "updatedAt": "2026-11-01T21:03:09.555Z"
+    },
+    {
+      "id": "sqlite-lens",
+      "name": "SQLite 检查台",
+      "version": "0.1.0",
+      "description": "把散落在磁盘各处的 .db/.sqlite 文件变成可打开、可对话的本地数据库检查台：库雷达自动发现库文件（读魔数区分真库，标注 Chrome/微信/VS Code 等已知签名）、数据浏览翻表看数据（分页/过滤/排序，连接永久只读）、SQL 即跑即得（无 LIMIT 自动包裹防全量倾泻，写语句自动转两步写）、AI 经八工具对话式查库/两步安全写/导出 CSV-JSON、维护页看清文件膨胀（空闲页/VACUUM 可回收）与完整性。安全模型：浏览只读、UPDATE/DELETE 无 WHERE 拒绝、写前自动整库备份、审计全留痕——针对 DB4S「Write Changes 丢工作」类事故的针对性设计。零 npm 依赖（node:sqlite 内置），零外网，桌面与手机看同一份库清单。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "sqlite",
+        "database",
+        "devtools",
+        "sql",
+        "browser",
+        "mcp"
+      ],
+      "icon": "Beaker",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/sqlite-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/sqlite-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/update.json",
+      "sha256": "a370216c5e09f6def70d59bb0981583428d6629ea22667b0873cef11c1f76036",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# SQLite 检查台\n\n把散落在磁盘各处的 .db / .sqlite / .sqlite3 文件变成可打开、可对话的本地数据库检查台。\n\n- 库雷达：预算制扫描常见目录，读文件头区分真 SQLite 库与碰巧同名的文件，一键打开。\n- 数据浏览：表清单 + 数据网格（分页 / WHERE 过滤 / 点列头排序），NULL 与 BLOB 显式标注——连接永久只读。\n- SQL 查询：只读通道即跑即得；无 LIMIT 自动包裹防全量倾泻；写语句被闸门拒绝并自动转两步写预览；查询历史跨端共享。\n- AI 八工具（MCP）：sqlite_radar / sqlite_open / sqlite_schema / sqlite_query / sqlite_stats / sqlite_write / sqlite_confirm / sqlite_export。\n- 维护：页统计（VACUUM 可回收空间）、quick_check 完整性、手动备份、VACUUM（先强制备份）。\n\n安全模型（针对 DB4S「Write Changes 丢工作」类事故的针对性设计）：浏览连接永久只读；两步写（预览回滚验证→待确认单→用户确认才提交）；UPDATE/DELETE 无 WHERE 拒绝；写前自动整库备份到数据根 sqlite-lens/backups/；审计全留痕；零外网（127.0.0.1 + token）。\n\n需要 node ≥ 22.5（node:sqlite 内置，零 npm 依赖）。不支持加密库（SQLCipher）——魔数校验直接拒绝。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/sqlite-lens.zip",
+          "sha256": "a370216c5e09f6def70d59bb0981583428d6629ea22667b0873cef11c1f76036"
+        }
+      ],
+      "createdAt": "2026-11-01T21:18:44.676Z",
+      "updatedAt": "2026-11-01T21:18:44.676Z"
     }
   ]
 }

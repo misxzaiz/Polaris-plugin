@@ -1,0 +1,63 @@
+{
+  "id": "sqlite-lens",
+  "name": "SQLite 检查台",
+  "version": "0.1.0",
+  "description": "把散落在磁盘各处的 .db/.sqlite 文件变成可打开、可对话的本地数据库检查台：库雷达自动发现库文件（读魔数区分真库，标注 Chrome/微信/VS Code 等已知签名）、数据浏览翻表看数据（分页/过滤/排序，连接永久只读）、SQL 即跑即得（无 LIMIT 自动包裹防全量倾泻，写语句自动转两步写）、AI 经八工具对话式查库/两步安全写/导出 CSV-JSON、维护页看清文件膨胀（空闲页/VACUUM 可回收）与完整性。安全模型：浏览只读、UPDATE/DELETE 无 WHERE 拒绝、写前自动整库备份、审计全留痕——针对 DB4S「Write Changes 丢工作」类事故的针对性设计。零 npm 依赖（node:sqlite 内置），零外网，桌面与手机看同一份库清单。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "sqlite-lens.panel",
+        "area": "activityBar",
+        "panelType": "sqliteLens",
+        "icon": "Beaker",
+        "labelKey": "plugins.sqliteLens",
+        "labelDefault": "SQLite 检查台",
+        "order": 79
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "sqlite-lens-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/lens.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "SQLite 库雷达/只读浏览/两步写服务（本机文件，零外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "sqlite-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/sqlite-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/sqlite-lens.zip"
+  }
+}
