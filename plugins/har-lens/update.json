@@ -1,0 +1,64 @@
+{
+  "id": "har-lens",
+  "name": "HAR 分析台",
+  "version": "0.1.0",
+  "description": "把浏览器导出的 HAR 抓包变成不出本机的诊断资产：瀑布图与七段时相分解（排队/DNS/连接/TLS/发送/等待/下载）、慢请求/错误/大响应/疑似无缓存重复四类诊断、敏感信息八类审计（鉴权头/Cookie/Set-Cookie/URL 敏感参数/URL 内嵌凭据/云密钥特征/私钥/JWT）、一键脱敏导出安全分享版（sha256+复核审计）、双 HAR 对比找性能回归。AI 经 MCP 八工具对话式分析。零依赖零外联，数据永不离开本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "har-lens.panel",
+        "area": "activityBar",
+        "panelType": "harLens",
+        "icon": "Activity",
+        "labelKey": "plugins.harLens",
+        "labelDefault": "HAR 分析台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "har-lens-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "port": 9873,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "HAR 解析分析引擎（127.0.0.1 健康面；无数据面 API，控制面走 kv har.* 单槽命令信箱；文件护栏 150MB/2万条）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "har-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/har-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/har-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/har-lens/har-lens.zip"
+  }
+}
