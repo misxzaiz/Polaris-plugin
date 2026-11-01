@@ -1,0 +1,41 @@
+{
+  "id": "yizhou",
+  "name": "译舟",
+  "version": "0.1.0",
+  "description": "双语沉浸阅读：把网页链接抓取、抽出干净正文（琥珀同款打分抽取+三级字符集探测），AI 对话式逐段翻译成中外对照，存进本地跨端阅读器。对话即入口（「帮我把这篇翻译成双语」），逐批断点续译幂等可恢复；面板双语/译文/原文三态切换、字号调节、阅读进度三端同步（手机 PWA 同库）；译文可被 AI 检索引用。数据面 yz.*（cap.kv），零服务进程，数据不出设备。",
+  "enabledByDefault": true,
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/yizhou",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/yizhou.zip"
+  },
+  "contributes": {
+    "views": [
+      {
+        "id": "yizhou.panel",
+        "area": "activityBar",
+        "panelType": "yizhou",
+        "icon": "Languages",
+        "labelKey": "plugins.yizhou",
+        "labelDefault": "译舟",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "yizhou",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  }
+}
