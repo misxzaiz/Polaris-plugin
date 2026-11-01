@@ -141,6 +141,27 @@ function humanizeError(raw) {
   }
   return msg;
 }
+async function proxyFetchIndex(url) {
+  const res = await getInvoke()("router_dispatch", {
+    req: {
+      target: "cap.mcp",
+      payload: {
+        action: "call",
+        mcpServerId: "marketplace-server",
+        tool: "proxy_fetch",
+        arguments: { url }
+      }
+    }
+  });
+  if (!res.ok) throw new Error(res.error || "proxy_fetch \u8C03\u5EA6\u5931\u8D25");
+  const result = res.result;
+  if (result.error) throw new Error(`proxy_fetch: ${result.error}`);
+  if (result.isError || !result.resultJson) throw new Error("proxy_fetch \u8FD4\u56DE\u7A7A\u7ED3\u679C\uFF08\u5546\u57CE\u6E90\u4E0D\u53EF\u8FBE\u6216\u8FD4\u56DE\u975E JSON\uFF09");
+  const parsed = JSON.parse(result.resultJson);
+  if (parsed.error) throw new Error(parsed.error);
+  if (!parsed.data || !Array.isArray(parsed.data.plugins)) throw new Error("proxy_fetch \u8FD4\u56DE\u7684\u7D22\u5F15\u683C\u5F0F\u65E0\u6548");
+  return parsed.data;
+}
 async function dispatchPluginDiscovery(action, payload) {
   let res;
   try {
@@ -248,6 +269,39 @@ var s = {
     whiteSpace: "pre-wrap"
   }
 };
+var SORT_OPTIONS = [
+  { value: "default", label: "\u9ED8\u8BA4" },
+  { value: "updated-desc", label: "\u6700\u65B0\u66F4\u65B0" },
+  { value: "updated-asc", label: "\u6700\u65E9\u66F4\u65B0" },
+  { value: "created-desc", label: "\u6700\u65B0\u521B\u5EFA" },
+  { value: "created-asc", label: "\u6700\u65E9\u521B\u5EFA" }
+];
+function sortWithinTier(list, sort) {
+  if (sort === "default") return list;
+  const [field, dir] = sort.split("-");
+  const key = field === "updated" ? "updatedAt" : "createdAt";
+  const timeOf = (p) => {
+    const v = p[key] || (field === "updated" ? p.createdAt : null);
+    if (!v) return null;
+    const t = new Date(v).getTime();
+    return isNaN(t) ? null : t;
+  };
+  const withTime = list.filter((p) => timeOf(p) !== null);
+  const without = list.filter((p) => timeOf(p) === null);
+  withTime.sort((a, b) => {
+    const ta = timeOf(a), tb = timeOf(b);
+    return dir === "desc" ? tb - ta : ta - tb;
+  });
+  return [...withTime, ...without];
+}
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+}
 function MarketplacePanel({ pluginId: _pluginId }) {
   const [tab, setTab] = useState("market");
   const [index, setIndex] = useState(null);
@@ -256,6 +310,7 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [tierFilter, setTierFilter] = useState("all");
+  const [sort, setSort] = useState("default");
   const [selected, setSelected] = useState(null);
   const [selectedVersion, setSelectedVersion] = useState("");
   const [installing, setInstalling] = useState(null);
@@ -283,9 +338,18 @@ function MarketplacePanel({ pluginId: _pluginId }) {
       let lastError = "";
       for (const source of candidates) {
         try {
-          const res = await fetchWithTimeout(source);
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          const data = await res.json();
+          let data;
+          try {
+            const res = await fetchWithTimeout(source);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            data = await res.json();
+          } catch (directErr) {
+            try {
+              data = await proxyFetchIndex(source);
+            } catch {
+              throw directErr;
+            }
+          }
           if (!Array.isArray(data?.plugins)) throw new Error("\u7D22\u5F15\u683C\u5F0F\u65E0\u6548\uFF08\u7F3A\u5C11 plugins \u6570\u7EC4\uFF09");
           resolveIndexUrls(data, source);
           setIndex(data);
@@ -416,6 +480,8 @@ function MarketplacePanel({ pluginId: _pluginId }) {
         setCategory,
         tierFilter,
         setTierFilter,
+        sort,
+        setSort,
         selected,
         setSelected: (p) => {
           setSelected(p);
@@ -464,6 +530,8 @@ function MarketView(props) {
     setCategory,
     tierFilter,
     setTierFilter,
+    sort,
+    setSort,
     selected,
     setSelected,
     selectedVersion,
@@ -499,11 +567,16 @@ function MarketView(props) {
     for (const p of filtered) {
       groups[resolveTier(p)].push(p);
     }
+    groups.production = sortWithinTier(groups.production, sort);
+    groups.beta = sortWithinTier(groups.beta, sort);
+    groups.demo = sortWithinTier(groups.demo, sort);
     return groups;
-  }, [filtered]);
+  }, [filtered, sort]);
   const tierOrder = ["production", "beta", "demo"];
   const tierLabels = { production: "\u751F\u4EA7\u53EF\u7528", beta: "\u6D4B\u8BD5\u9636\u6BB5", demo: "\u6F14\u793A\u73A9\u5177" };
   const hasAny = tierOrder.some((t) => grouped[t].length > 0);
+  const showTime = sort !== "default";
+  const timeField = sort.startsWith("updated") ? "updated" : "created";
   if (loading) return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%" }, children: [
     /* @__PURE__ */ jsx(
       SourceBar,
@@ -578,7 +651,28 @@ function MarketView(props) {
       /* @__PURE__ */ jsx("span", { style: { width: 1, height: 14, background: "#3F3F46", margin: "0 2px" } }),
       /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#6B7280", marginRight: 2 }, children: "\u5206\u7C7B" }),
       /* @__PURE__ */ jsx(FilterChip, { active: !category, onClick: () => setCategory(""), label: "\u5168\u90E8", color: "#6B7280" }),
-      categories.map((c) => /* @__PURE__ */ jsx(FilterChip, { active: category === c, onClick: () => setCategory(c), label: c, color: CATEGORY_COLORS[c] || "#6B7280" }, c))
+      categories.map((c) => /* @__PURE__ */ jsx(FilterChip, { active: category === c, onClick: () => setCategory(c), label: c, color: CATEGORY_COLORS[c] || "#6B7280" }, c)),
+      /* @__PURE__ */ jsxs("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }, children: [
+        /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#6B7280" }, children: "\u6392\u5E8F" }),
+        /* @__PURE__ */ jsx(
+          "select",
+          {
+            value: sort,
+            onChange: (e) => setSort(e.target.value),
+            style: {
+              fontSize: 10,
+              padding: "3px 8px",
+              borderRadius: 8,
+              cursor: "pointer",
+              border: `1px solid ${sort === "default" ? "#3F3F46" : "#3B82F6"}`,
+              background: sort === "default" ? "#25252B" : "#3B82F622",
+              color: sort === "default" ? "#B4B4B8" : "#3B82F6",
+              outline: "none"
+            },
+            children: SORT_OPTIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.value, children: o.label }, o.value))
+          }
+        )
+      ] })
     ] }),
     /* @__PURE__ */ jsxs("div", { style: { margin: "0 12px 6px", padding: "4px 8px", borderRadius: 4, background: "#3F3F4622", fontSize: 10, color: "#6B7280", lineHeight: 1.4 }, children: [
       "\u{1F4A1} \u672A\u6807\u6CE8\u7B49\u7EA7\u7684\u63D2\u4EF6\u9ED8\u8BA4\u89C6\u4E3A ",
@@ -608,7 +702,9 @@ function MarketView(props) {
             plugin: p,
             tier: resolveTier(p),
             selected: selected?.id === p.id,
-            onClick: () => setSelected(p)
+            onClick: () => setSelected(p),
+            showTime,
+            timeField
           },
           p.id
         ))
@@ -739,9 +835,10 @@ function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDel
     ] })
   ] });
 }
-function MarketItem({ plugin, tier, selected, onClick }) {
+function MarketItem({ plugin, tier, selected, onClick, showTime, timeField }) {
   const cfg = TIER_CONFIG[tier];
   const isDemo = tier === "demo";
+  const timeVal = showTime ? timeField === "updated" ? plugin.updatedAt || plugin.createdAt : plugin.createdAt : void 0;
   return /* @__PURE__ */ jsxs(
     "div",
     {
@@ -788,6 +885,11 @@ function MarketItem({ plugin, tier, selected, onClick }) {
             /* @__PURE__ */ jsx(TierBadge, { tier })
           ] }),
           plugin.description && /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: isDemo ? "#6B7280" : "#8E8E93", marginTop: 3, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: plugin.description }),
+          showTime && (timeVal ? /* @__PURE__ */ jsxs("div", { style: { fontSize: 9, color: "#6B7280", marginTop: 4 }, children: [
+            timeField === "updated" ? "\u66F4\u65B0\u4E8E" : "\u521B\u5EFA\u4E8E",
+            " ",
+            fmtDate(timeVal)
+          ] }) : /* @__PURE__ */ jsx("div", { style: { fontSize: 9, color: "#EF4444", fontStyle: "italic", marginTop: 4 }, children: "\u24D8 \u65F6\u95F4\u672A\u77E5\uFF08\u7D22\u5F15\u7F3A\u5B57\u6BB5\uFF0C\u515C\u5E95\u5F52\u5165\u672B\u5C3E\uFF09" })),
           /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 4, marginTop: 5, flexWrap: "wrap" }, children: [
             plugin.category && /* @__PURE__ */ jsx("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, background: (CATEGORY_COLORS[plugin.category] || "#6B7280") + "33", color: CATEGORY_COLORS[plugin.category] || "#6B7280" }, children: plugin.category }),
             (plugin.tags || []).slice(0, 2).map((t) => /* @__PURE__ */ jsx("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, background: "#3F3F4633", color: "#6B7280" }, children: t }, t))
@@ -831,6 +933,16 @@ function DetailPanel({ plugin, tier, selectedVersion, setSelectedVersion, instal
       /* @__PURE__ */ jsx("button", { onClick: onClose, style: { background: "none", border: "none", color: "#8E8E93", cursor: "pointer", padding: "2px 6px", fontSize: 14 }, children: "\u2715" })
     ] }),
     plugin.description && /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: "#B4B4B8", lineHeight: 1.5 }, children: plugin.description }),
+    (plugin.createdAt || plugin.updatedAt) && /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#8E8E93", background: "#25252B", padding: "5px 8px", borderRadius: 4, lineHeight: 1.6 }, children: [
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("span", { style: { color: "#B4B4B8" }, children: "\u521B\u5EFA\u65F6\u95F4\uFF1A" }),
+        plugin.createdAt ? fmtDate(plugin.createdAt) : "\uFF08\u672A\u8BB0\u5F55\uFF09"
+      ] }),
+      /* @__PURE__ */ jsxs("div", { children: [
+        /* @__PURE__ */ jsx("span", { style: { color: "#B4B4B8" }, children: "\u6700\u540E\u66F4\u65B0\uFF1A" }),
+        plugin.updatedAt ? fmtDate(plugin.updatedAt) : "\uFF08\u672A\u8BB0\u5F55\uFF0C\u56DE\u9000\u521B\u5EFA\u65F6\u95F4\uFF09"
+      ] })
+    ] }),
     plugin.permissions && Object.keys(plugin.permissions).length > 0 && /* @__PURE__ */ jsxs("div", { children: [
       /* @__PURE__ */ jsx("div", { style: { fontSize: 10, color: "#8E8E93", marginBottom: 2 }, children: "\u6743\u9650" }),
       /* @__PURE__ */ jsx("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" }, children: Object.entries(plugin.permissions).filter(([, v]) => v).map(([k]) => /* @__PURE__ */ jsx("span", { style: { fontSize: 10, padding: "1px 6px", borderRadius: 4, background: "#3F3F46", color: "#F8B4B8" }, children: k }, k)) })

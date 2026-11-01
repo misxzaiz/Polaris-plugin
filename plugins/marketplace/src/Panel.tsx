@@ -40,6 +40,10 @@ interface MarketPlugin {
   screenshots?: string[]
   /** 历史版本列表（可选，由 index.json 的 versions 字段提供） */
   versions?: Array<{ version: string; downloadUrl: string; sha256?: string }>
+  /** 首次发布时间（ISO 8601，由 index.json 提供；缺失时前端兜底归入"未知"区） */
+  createdAt?: string
+  /** 最近发版时间（ISO 8601，由 index.json 提供；缺失时回退 createdAt） */
+  updatedAt?: string
 }
 
 interface IndexData {
@@ -264,6 +268,37 @@ function humanizeError(raw: unknown): string {
   return msg
 }
 
+/**
+ * 经 cap.mcp:call 调 marketplace-server 的 proxy_fetch 工具，
+ * 由桌面侧 MCP 进程代为 GET 索引并返回 JSON。
+ *
+ * 用途：手机/远程面板直 fetch 桌面本机商城源（如 http://127.0.0.1:8787）必失败——
+ * 127.0.0.1 指向手机自身（拓扑错位）、http 资源在安全上下文被混合内容拦截。
+ * cap.mcp:call 对已鉴权 Remote 放行（token 由 transport 注入），面板 invoke 桥已就绪，
+ * MCP 进程跑在桌面宿主侧，本地服务对它天然可达。
+ */
+async function proxyFetchIndex(url: string): Promise<IndexData> {
+  const res = await getInvoke()('router_dispatch', {
+    req: {
+      target: 'cap.mcp',
+      payload: {
+        action: 'call',
+        mcpServerId: 'marketplace-server',
+        tool: 'proxy_fetch',
+        arguments: { url },
+      },
+    },
+  }) as DispatchResponse
+  if (!res.ok) throw new Error(res.error || 'proxy_fetch 调度失败')
+  const result = res.result as { ok?: boolean; resultJson?: string | null; error?: string; isError?: boolean }
+  if (result.error) throw new Error(`proxy_fetch: ${result.error}`)
+  if (result.isError || !result.resultJson) throw new Error('proxy_fetch 返回空结果（商城源不可达或返回非 JSON）')
+  const parsed = JSON.parse(result.resultJson) as { error?: string; data?: IndexData }
+  if (parsed.error) throw new Error(parsed.error)
+  if (!parsed.data || !Array.isArray(parsed.data.plugins)) throw new Error('proxy_fetch 返回的索引格式无效')
+  return parsed.data
+}
+
 /** router_dispatch 返回形态（与 Polaris 后端 commands/router.rs RouterDispatchResponse 对应） */
 interface DispatchResponse {
   msgId: string
@@ -384,6 +419,52 @@ const s: Record<string, React.CSSProperties> = {
 
 /* ---------- 主面板 ---------- */
 
+/** 排序键：default=索引原序（tier 分组内）；其余按时间组内重排 */
+type SortKey = 'default' | 'updated-desc' | 'updated-asc' | 'created-desc' | 'created-asc'
+
+/** 排序选项配置（下拉用） */
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'default', label: '默认' },
+  { value: 'updated-desc', label: '最新更新' },
+  { value: 'updated-asc', label: '最早更新' },
+  { value: 'created-desc', label: '最新创建' },
+  { value: 'created-asc', label: '最早创建' },
+]
+
+/**
+ * 组内排序（保留 tier 分组结构，仅组内重排）。
+ * 缺字段兜底：updatedAt 缺失 → 回退 createdAt → 再缺失 → 视为"未知"区固定排末尾
+ * （无论升降序都排末尾，避免淹没在最旧区，也避免自定义源旧索引无字段时报错）。
+ */
+function sortWithinTier(list: MarketPlugin[], sort: SortKey): MarketPlugin[] {
+  if (sort === 'default') return list
+  const [field, dir] = sort.split('-') as ['updated' | 'created', 'desc' | 'asc']
+  const key = field === 'updated' ? 'updatedAt' : 'createdAt'
+  const timeOf = (p: MarketPlugin): number | null => {
+    const v = p[key] || (field === 'updated' ? p.createdAt : null)
+    if (!v) return null
+    const t = new Date(v).getTime()
+    return isNaN(t) ? null : t
+  }
+  const withTime = list.filter(p => timeOf(p) !== null)
+  const without = list.filter(p => timeOf(p) === null)
+  withTime.sort((a, b) => {
+    const ta = timeOf(a)!, tb = timeOf(b)!
+    return dir === 'desc' ? tb - ta : ta - tb
+  })
+  return [...withTime, ...without]
+}
+
+/** 把 ISO 时间格式化为 YYYY-MM-DD（列表内降噪） */
+function fmtDate(iso?: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
 export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: string }) {
   const [tab, setTab] = useState<'market' | 'installed'>('market')
 
@@ -394,6 +475,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('')
   const [tierFilter, setTierFilter] = useState<PluginTier | 'all'>('all')
+  const [sort, setSort] = useState<SortKey>('default')
   const [selected, setSelected] = useState<MarketPlugin | null>(null)
   const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [installing, setInstalling] = useState<string | null>(null)
@@ -429,9 +511,21 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
       let lastError = ''
       for (const source of candidates) {
         try {
-          const res = await fetchWithTimeout(source)
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const data: IndexData = await res.json()
+          let data: IndexData
+          try {
+            const res = await fetchWithTimeout(source)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            data = await res.json()
+          } catch (directErr) {
+            // 直 fetch 失败 → 桌面侧代理中转（cap.mcp:call → proxy_fetch）。
+            // 覆盖：手机/远程面板访问桌面本机源（拓扑错位/混合内容）、官方镜像全挂时
+            // 借桌面网络旁路。MCP server 不可用（旧版插件/宿主未启动 MCP）时抛原错误。
+            try {
+              data = await proxyFetchIndex(source)
+            } catch {
+              throw directErr
+            }
+          }
           if (!Array.isArray(data?.plugins)) throw new Error('索引格式无效（缺少 plugins 数组）')
           // 相对 downloadUrl/manifestUrl 等相对索引源解析为绝对地址（本地商城支持的关键）
           resolveIndexUrls(data, source)
@@ -554,6 +648,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
           query={query} setQuery={setQuery}
           category={category} setCategory={setCategory}
           tierFilter={tierFilter} setTierFilter={setTierFilter}
+          sort={sort} setSort={setSort}
           selected={selected} setSelected={(p) => { setSelected(p); setSelectedVersion(''); setInstallMsg(null) }}
           selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
           installing={installing} installMsg={installMsg} onInstall={handleInstall}
@@ -588,6 +683,8 @@ interface MarketViewProps {
   setCategory: (s: string) => void
   tierFilter: PluginTier | 'all'
   setTierFilter: (s: PluginTier | 'all') => void
+  sort: SortKey
+  setSort: (s: SortKey) => void
   selected: MarketPlugin | null
   setSelected: (p: MarketPlugin | null) => void
   selectedVersion: string
@@ -612,7 +709,7 @@ interface MarketViewProps {
 
 function MarketView(props: MarketViewProps) {
   const { index, loading, error, query, setQuery, category, setCategory,
-    tierFilter, setTierFilter, selected, setSelected,
+    tierFilter, setTierFilter, sort, setSort, selected, setSelected,
     selectedVersion, setSelectedVersion,
     installing, installMsg, onInstall, onReload,
     sourceUsed, sources, activeSourceId, onSwitchSource, onAddSource, onDeleteSource } = props
@@ -637,18 +734,25 @@ function MarketView(props: MarketViewProps) {
     })
   }, [plugins, tierFilter, category, query])
 
-  // 按 tier 分组
+  // 按 tier 分组，并在组内应用时间排序（保留分组结构，仅组内重排）
   const grouped = useMemo(() => {
     const groups: Record<PluginTier, MarketPlugin[]> = { production: [], beta: [], demo: [] }
     for (const p of filtered) {
       groups[resolveTier(p)].push(p)
     }
+    groups.production = sortWithinTier(groups.production, sort)
+    groups.beta = sortWithinTier(groups.beta, sort)
+    groups.demo = sortWithinTier(groups.demo, sort)
     return groups
-  }, [filtered])
+  }, [filtered, sort])
 
   const tierOrder: PluginTier[] = ['production', 'beta', 'demo']
   const tierLabels: Record<PluginTier, string> = { production: '生产可用', beta: '测试阶段', demo: '演示玩具' }
   const hasAny = tierOrder.some(t => grouped[t].length > 0)
+  // 排序非默认时列表项显示时间行
+  const showTime = sort !== 'default'
+  // 当前排序对应的时间字段（用于 MarketItem 显示对应时间）
+  const timeField = sort.startsWith('updated') ? 'updated' : 'created'
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -704,6 +808,25 @@ function MarketView(props: MarketViewProps) {
         {categories.map(c => (
           <FilterChip key={c} active={category === c} onClick={() => setCategory(c)} label={c} color={CATEGORY_COLORS[c] || '#6B7280'} />
         ))}
+        {/* 排序下拉：组内时间排序（保留 tier 分组） */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 10, color: '#6B7280' }}>排序</span>
+          <select
+            value={sort}
+            onChange={e => setSort(e.target.value as SortKey)}
+            style={{
+              fontSize: 10, padding: '3px 8px', borderRadius: 8, cursor: 'pointer',
+              border: `1px solid ${sort === 'default' ? '#3F3F46' : '#3B82F6'}`,
+              background: sort === 'default' ? '#25252B' : '#3B82F622',
+              color: sort === 'default' ? '#B4B4B8' : '#3B82F6',
+              outline: 'none',
+            }}
+          >
+            {SORT_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* 提示条：未设置 tier 的插件默认视为 demo */}
@@ -733,6 +856,8 @@ function MarketView(props: MarketViewProps) {
                     tier={resolveTier(p)}
                     selected={selected?.id === p.id}
                     onClick={() => setSelected(p)}
+                    showTime={showTime}
+                    timeField={timeField}
                   />
                 ))}
               </div>
@@ -856,14 +981,22 @@ function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDel
 
 /* ---------- 商城列表项 ---------- */
 
-function MarketItem({ plugin, tier, selected, onClick }: {
+function MarketItem({ plugin, tier, selected, onClick, showTime, timeField }: {
   plugin: MarketPlugin
   tier: PluginTier
   selected: boolean
   onClick: () => void
+  /** 排序非默认时显示时间行 */
+  showTime: boolean
+  /** 当前排序对应的时间字段：updated / created */
+  timeField: 'updated' | 'created'
 }) {
   const cfg = TIER_CONFIG[tier]
   const isDemo = tier === 'demo'
+  // 时间行：依据当前排序字段取对应时间；updatedAt 缺失回退 createdAt
+  const timeVal = showTime
+    ? (timeField === 'updated' ? (plugin.updatedAt || plugin.createdAt) : plugin.createdAt)
+    : undefined
 
   return (
     <div
@@ -898,6 +1031,18 @@ function MarketItem({ plugin, tier, selected, onClick }: {
           <div style={{ fontSize: 11, color: isDemo ? '#6B7280' : '#8E8E93', marginTop: 3, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {plugin.description}
           </div>
+        )}
+        {/* 时间行：仅排序非默认时显示，让排序依据可视化 */}
+        {showTime && (
+          timeVal ? (
+            <div style={{ fontSize: 9, color: '#6B7280', marginTop: 4 }}>
+              {timeField === 'updated' ? '更新于' : '创建于'} {fmtDate(timeVal)}
+            </div>
+          ) : (
+            <div style={{ fontSize: 9, color: '#EF4444', fontStyle: 'italic', marginTop: 4 }}>
+              ⓘ 时间未知（索引缺字段，兜底归入末尾）
+            </div>
+          )
         )}
         <div style={{ display: 'flex', gap: 4, marginTop: 5, flexWrap: 'wrap' }}>
           {plugin.category && (
@@ -957,6 +1102,14 @@ function DetailPanel({ plugin, tier, selectedVersion, setSelectedVersion, instal
 
       {plugin.description && (
         <div style={{ fontSize: 12, color: '#B4B4B8', lineHeight: 1.5 }}>{plugin.description}</div>
+      )}
+
+      {/* 时间信息：创建时间 / 最后更新（缺字段时显示回退说明） */}
+      {(plugin.createdAt || plugin.updatedAt) && (
+        <div style={{ fontSize: 10, color: '#8E8E93', background: '#25252B', padding: '5px 8px', borderRadius: 4, lineHeight: 1.6 }}>
+          <div><span style={{ color: '#B4B4B8' }}>创建时间：</span>{plugin.createdAt ? fmtDate(plugin.createdAt) : '（未记录）'}</div>
+          <div><span style={{ color: '#B4B4B8' }}>最后更新：</span>{plugin.updatedAt ? fmtDate(plugin.updatedAt) : '（未记录，回退创建时间）'}</div>
+        </div>
       )}
 
       {plugin.permissions && Object.keys(plugin.permissions).length > 0 && (

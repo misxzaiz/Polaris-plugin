@@ -9,6 +9,9 @@
  *   - list_plugin_versions(id)     列出某个插件的所有历史版本
  *   - install_plugin(id, scope, version?) 一键安装：可选指定版本，
  *                                  默认安装最新版
+ *   - proxy_fetch(url)             桌面侧代理 GET 一个索引 URL（手机/远程面板
+ *                                  访问桌面本机商城源的通道：本地源对手机
+ *                                  webview 不可达，由 MCP 进程代为请求）
  *
  * 索引地址通过环境变量 MARKETPLACE_INDEX 传入（默认指向本仓库 index.json）。
  * JSON-RPC 2.0 over stdin/stdout，与 Polaris MCP 规范一致。
@@ -170,10 +173,36 @@ const tools = [
       },
       required: ['installPath']
     }
+  },
+  {
+    name: 'proxy_fetch',
+    description: '桌面侧代理 GET 一个索引 URL 并返回解析后的 JSON。用于手机/远程面板访问桌面本机商城源（如 http://127.0.0.1:8787/index.json）——面板 webview 直 fetch 会因拓扑（127.0.0.1 指向手机自身）、CORS 或混合内容策略失败，本工具在桌面 MCP 进程内代为请求，天然可达桌面本地服务。',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: '索引 URL（http/https），如 http://127.0.0.1:8787/index.json' }
+      },
+      required: ['url']
+    }
   }
 ]
 
 async function handleCall(name, args) {
+  // proxy_fetch 不依赖商城索引（它正是索引不可达时的旁路），单独处理
+  if (name === 'proxy_fetch') {
+    const url = String(args.url || '').trim()
+    if (!/^https?:\/\//i.test(url)) {
+      return { error: `url 必须是 http/https 地址，收到: ${url || '(空)'}` }
+    }
+    // 只代理索引/元数据 JSON，拒绝可执行文件与安装包（防被当通用代理滥用）
+    const pathPart = url.split(/[?#]/)[0]
+    if (/\.(zip|exe|dll|bat|cmd|ps1|sh|msi)(\?|$)/i.test(pathPart)) {
+      return { error: 'proxy_fetch 仅用于索引/元数据 JSON，不代理可执行文件或安装包' }
+    }
+    const data = await fetchJson(url)
+    return { url, fetchedAt: new Date().toISOString(), data }
+  }
+
   const index = await getIndex()
   const plugins = Array.isArray(index.plugins) ? index.plugins : []
 

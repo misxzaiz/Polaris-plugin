@@ -53,8 +53,8 @@
     {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",
-      "version": "1.3.0",
-      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。提供 ActivityBar 面板与 MCP 工具。",
+      "version": "1.4.0",
+      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。列表支持按创建时间 / 最后更新时间排序（组内重排，保留等级分组）。手机/远程端直连商城源失败时自动经桌面 MCP proxy_fetch 中转，本地商城源（127.0.0.1:8787）远程可达。提供 ActivityBar 面板与 MCP 工具。",
       "author": "Polaris",
       "category": "productivity",
       "tags": [
@@ -69,7 +69,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "d0e57e1221bc96f78833fa0617de5ca767c3084d08fc5434d008d2485798d871",
+      "sha256": "5b30142eea57e0d5e73c4ac6465e65c2cb194ef87a2d018c13633c46fbe0141f",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true,
@@ -79,6 +79,11 @@
       "screenshots": [],
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
       "versions": [
+        {
+          "version": "1.4.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
+          "sha256": "5b30142eea57e0d5e73c4ac6465e65c2cb194ef87a2d018c13633c46fbe0141f"
+        },
         {
           "version": "1.3.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
@@ -91,7 +96,7 @@
         }
       ],
       "createdAt": "2026-08-04T17:07:23.000Z",
-      "updatedAt": "2026-11-01T12:50:28.279Z"
+      "updatedAt": "2026-11-01"
     },
     {
       "id": "relay-devkit",
