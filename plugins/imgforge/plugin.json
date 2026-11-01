@@ -1,0 +1,63 @@
+{
+  "id": "imgforge",
+  "name": "图片工坊",
+  "version": "0.1.0",
+  "description": "本地批量图片变换引擎：压缩、转格式（WebP/AVIF/JPEG/PNG/TIFF）、限宽高缩放、EXIF/GPS 隐私剥离（默认开启）、「压到目标体积」二分逼近。面板选目录批量执行，或对 AI 说一句话（imgforge_scan/info/process/jobs 四工具）完成，报告节省多少。文件全程不出本机（服务只绑 127.0.0.1 + token，零外网请求），TinyPNG 的上传隐私焦虑与 20 张/5MB 限额从根上不存在；Squoosh 单张手动的低效也被批处理取代。输入永不修改删除、输出永不覆盖（重名自动 -2/-3）。明确不做动图重编码（GIF 按首帧）、OCR、水印。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "imgforge.panel",
+        "area": "activityBar",
+        "panelType": "imgforge",
+        "icon": "Film",
+        "labelKey": "plugins.imgforge",
+        "labelDefault": "图片工坊",
+        "order": 86
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "imgforge-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 8000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "图片变换引擎（127.0.0.1 + token）：sharp 本地批处理，零外网请求"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "imgforge",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/imgforge",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/imgforge/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@imgforge-v0.1.0/plugins/imgforge/imgforge.zip"
+  }
+}
