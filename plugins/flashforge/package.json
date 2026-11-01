@@ -1,0 +1,15 @@
+{
+  "name": "flashforge-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "闪造应用作坊插件面板（打包用）：AI 一句话造小应用+随身应用花园",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}

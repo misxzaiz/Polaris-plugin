@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-10-29T16:54:00.869Z",
+  "updated": "2026-11-01",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -773,7 +773,7 @@
     {
       "id": "pocket-ledger",
       "name": "口袋账本",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查。面板四 Tab（记账/明细/统计/设置）+ 分类/月预算（AI 记账即时提醒超支）+ 逐日柱状图 + CSV/JSON 导出。纯本地账本（cap.kv，数据不出设备）：零后台服务、零网络请求，符合插件规范推荐的无状态模式；面板与 AI 经同一计算核心（shared/ledger-core）保证口径一致；桌面与手机 Web 看到同一本账，双端并发记账按账单 id 幂等去重。",
       "author": "Polaris",
       "category": "productivity",
@@ -788,9 +788,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/pocket-ledger",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.2.0/plugins/pocket-ledger/pocket-ledger.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.3.0/plugins/pocket-ledger/pocket-ledger.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
-      "sha256": "0acfa4ab5dd4a23fc251024d31f72df6c22ce52c7552a5f1cfabce72455848ae",
+      "sha256": "caca3c97778f9c33d01cc1561d12806082c7671a745b30dd1c17783619139d59",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -798,6 +798,10 @@
       "screenshots": [],
       "readme": "# 口袋账本（pocket-ledger）\n\n> 对话式记账：聊天里说「午饭 35」就入账，「上月咖啡花了多少」就能查，「这个月哪个分类超预算了」就有答案。\n\n- 面板（ActivityBar → 📋 口袋账本）：记账 / 明细 / 统计 / 设置 四 Tab\n- AI 工具（MCP 5 个 `ledger_*`）：AI 从对话提取金额/分类/备注直接入账与查账\n- **纯本地**：数据只在 cap.kv（`ledger.*`），零后台服务、零网络请求、不出设备\n\n## 设计取舍（与 page-sentinel 互补）\n",
       "versions": [
+        {
+          "version": "0.3.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.3.0/plugins/pocket-ledger/pocket-ledger.zip"
+        },
         {
           "version": "0.2.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.2.0/plugins/pocket-ledger/pocket-ledger.zip"
@@ -2013,6 +2017,158 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@xintu-v0.1.0/plugins/xintu/xintu.zip"
+        }
+      ]
+    },
+    {
+      "id": "chexia",
+      "name": "车辆养护台账",
+      "version": "0.1.0",
+      "description": "家庭车辆养护与补能账本：把「车该保养了吗、保险年检什么时候到期、这车百公里多少钱」变成可对话、会主动提醒的家庭车辆档案。对 AI 说「刚加油 350 块 42.3 升，里程 45230」自动算期间油耗、刷新保养里程倒计时；加油不要求加满（期间口径），充电按 kWh；证件红黄榜盯交强险/商业险/年检/驾驶证到期；一家多车多成员三端同读（手机浏览器打开同一面板互相代记）。纯本地零网络（cap.kv），零账号零广告，不推荐任何商家。只做车务记录，不构成维修/保险建议。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "vehicle",
+        "maintenance",
+        "fuel",
+        "family",
+        "ledger",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "Target",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/chexia",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/chexia.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/update.json",
+      "sha256": "0d316610e47cf7b40f7aff130a889137677dd8fa99359cae6036296f7a695715",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 车辖（chexia）—— 家庭车辆养护与补能台账\n\n> 辖者，车轴之键也（《左传》「抽其车辖」）；一枚小销钉管住全车大事小情。\n\n把「车该保养了吗、保险年检什么时候到期、这车百公里多少钱」变成**可对话、会主动提醒、数据不出本机**的家庭车辆档案。\n\n## 是什么\n\n- **对话式记账**：加完油对 AI 说「刚加油 350 块 42.3 升，里程 45230」→ 自动重算期间油耗、刷新保养里程倒计时；车不存在时顺手建档（以首条里程为基线），充电自动判纯电。\n- **期间口径能耗**：不要求「必须两次加满才能算油耗」——加满锚定法（两次加满之间教科书 full-to-full）为主，无两次加满时毛估退化并如实标注 `estimated`；里程跨度过小（<30km）拒绝出数，诚实不硬算。\n- **里程驱动养护预测**：从补能/维保流水里程序列推日均里程（30 天窗口 → 全跨度 → 建档以来三级回落），把「机油每 5000 km」换算成「约 N 天后到」，双周期（km+月）取更紧者。\n- **证件红黄榜**：交强险 / 商业险 / 年检 / 驾驶证 / 行驶证到期分层（expired / soon / ok）——交强险脱保上路罚 2 倍保费可扣车，年检逾期罚款，这是「忘一次就亏钱」的法定刚需。\n- **家庭多车多成员**：一家多车 / 夫妻共车各加油时「账在我手机上」无解——手机浏览器打开同一面板互相代记，三端同读。\n- **费用透视**：补能 + 维保按月分桶、按类小计、元/公里（与能耗同窗口口径）。\n- **维保联动**：记保养时填养护项名 → 自动推进其周期锚点；面板「做到今天」一键打卡同理。\n\n## 明确不做（边界）\n\n- **不做**违章查询、车辆估值、OBD 硬件接入、云端同步、保养商家/产品推荐。\n- 输出一律带「不构成维修/保险建议」口径；商家名仅作记录备注，不构成推荐。\n- 零外网请求：纯本地 cap.kv，无账号、无上传、无遥测。\n\n## 面板四 Tab\n\n| Tab | 内容 |\n|---|---|\n| 概览 | 每车卡片（里程表/日均里程/期间能耗/元每公里）+ 养护进度条 + 证件红黄榜 + 个人证件段 + 红黄预警横幅 |\n| 补能 | 记一笔（车/日期/里程/金额/量/是否加满/站点）+ 提交即回执期间口径 + 分车统计 + 流水列表（分车过滤、行内删） |\n| 车务 | 养护项（周期+锚点+倒计时+「做到今天」）/ 维保记录（联动锚点）/ 证件（红黄榜+续保改期） |\n| 设置 | 车辆档案（增改删，删车连带名下记录需确认）/ 提醒参数 / 导出 JSON / 后台服务状态 |\n\n服务快照缺失或降级（>5 分钟）时，概览自动回落本地同源现算（`shared/core.familySnapshot`），不假装在线。\n\n## MCP 工具（6 个，AI 对话式）\n\n| 工具 | 语义 |\n|---|---|\n| `chexia_today` | 全家今日总览：每车里程/日均/能耗(元每公里)/养护红黄/证件红黄榜/近期费用 + 预警摘要 |\n| `chexia_add` | kind=car 建车（车型/建档里程/车牌）；kind=item 立养护项（周期+锚点）；kind=doc 登记证件（carName 空=个人证件） |\n| `chexia_log` | kind=energy 补能（odometer 必填——生命线护栏）；kind=svc 维保（type=maintenance+itemName 命中自动推进锚点） |\n| `chexia_query` | scope=cars｜items｜svcs｜docs（红黄榜）｜energy｜cost（费用透视） |\n| `chexia_update` | 改车辆/养护项/证件/补能/维保（patch 部分更新；改证件到期=续保后改日期） |\n| `chexia_delete` | 删（confirm 门；删车名下有记录需 purge=true 连带删；删维保不自动回退锚点） |\n\n对话式友好层：`carName` 按名 find-or-create；补能顺手建档时以本次里程表读数为建档基线；`energyKind=charge` 自动判纯电。\n\n## 键空间契约（权威）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `chexia.car.<id>` | 面板/MCP | 面板/MCP/服务 | 车辆 `{id,name,kind:'fuel'\\|'ev'\\|'phev',plate?,initialOdometer,note,createdAt,updatedAt,rev}`；id=`sha256(\"car\\|车名\")[:12]` 按名幂等 |\n| `chexia.energy.<id>` | 面板/MCP | 同左 | 补能 `{id,carId,kind:'fuel'\\|'charge',date,odometer,amount,cost,filled,station?,note,…}`；**odometer 必填且 ≥ 建档里程**（normalizeEnergy 强制） |\n| `chexia.item.<id>` | 面板/MCP | 同左 | 养护项 `{id,carId,name,cycle:{kmInterval?,monthInterval?},lastOdometer?,lastDate?,active,note,…}`；id=`sha256(\"item\\|carId\\|name\")[:12]`；km 周期需 lastOdometer 锚、月周期需 lastDate 锚 |\n| `chexia.svc.<id>` | 面板/MCP | 同左 | 维保 `{id,carId,type,date,odometer?,desc,cost?,vendor?,itemName?,note,…}` |\n| `chexia.doc.<id>` | 面板/MCP | 同左 | 证件 `{id,carId(空=个人),type,expiry,remindDays?,note,…}`；id 按 carId+type+expiry 确定 |\n| `chexia.settings` | 面板/MCP | 三方 | `{docWarnDays:30,itemWatchKm:500,itemWatchDays:14,costWindowDays:90}`（越界钳制回落缺省） |\n| `chexia.snapshot` | **仅服务** | 面板/AI | 全家快照 `{at,cars:[{里程/日均/能耗/养护投影/证件榜/费用}],personalDocs}`（内容不变不写） |\n| `chexia.meta` | **仅服务** | 面板 | 心跳 `{version,pid,startedAt,lastTickAt,bridge,degraded,counts}` |\n\n派生口径全部在 `shared/core.js`（零依赖纯函数），面板 / MCP / 服务三方同源一致：\n期间能耗（加满锚定 → 毛估退化 → 里程差过小拒绝）、日均里程（窗口 → 全跨度 → 建档回落 → none）、\n养护投影（km 轴 daysLeft=kmLeft/日均、时间轴月加法月末钳制、双周期取紧、overdue/due/watch/ok）、\n证件榜（remindDays 覆盖全局 docWarnDays）、费用透视（月度分桶 + 元/公里同窗口）。\n\n## 数据与隐私\n\n- 纯本地：cap.kv 单事实库，零网络权限、零账号、零上传、零遥测。\n- 删除一律两击确认（面板 confirm）/ `confirm=true`（MCP）；删车连带名下记录需显式 purge。\n- 导出 JSON 剥离 rev，带免责声明与 kind 标记。\n\n## 开发\n\n```bash\nnpm install\nnpm run typecheck        # tsc strict\nnpm run build            # esbuild → dist/panel.js（React external）\nnode test/run-tests.mjs  # 离线单测 31 组（日期/归一化/里程回落链/期间口径/养护投影/证件榜/费用/快照/导出）\nnode test/mcp-verify.mjs # 内存桥 + spawn 真实 MCP 全流程 42 项\nnode test/harness-run.mjs# jsdom 无头渲染四 Tab（补能写库/做到今天联动/建档）\nnode test/smoke-real.mjs # 真宿主冒烟（需 Polaris 运行中；快照式清场）\n```\n\n## 语义锚（与 core.js/工具描述一致）\n\n- 补能 `date` = 加油/充电日；`odometer` = 该日里程表读数（油耗/养护倒计时生命线）\n- 养护项锚点：`lastOdometer` = 上次保养时里程表读数；`lastDate` = 上次保养日期；维保联动仅当记录更新（≥ 原锚点）才推进\n- 期间能耗窗口：近 90 天（`CONS_WINDOW_DAYS`）；日均里程窗口：近 30 天（`RATE_WINDOW_DAYS`）\n- 证件 `expiry` = 到期日（年检/保险按行驶证/保单EndDate 口径登记）\n\n## 已知边界（如实）\n\n- 油耗精度依赖里程表读数的准确与连续；漏记里程会让窗口锚定偏粗（毛估口径已如实标注）。\n- 电车「充到 80%」属未加满记录：期间口径天然支持，但满充锚定需两条 filled 才出教科书口径。\n- 日均里程在刚建档（<2 条流水）时回落建档天数口径，早期倒计时天数偏保守。\n- 快照由服务 15s 重算；服务未启动时面板本地现算（功能等价，仅少三端一跳缓存）。\n- AI 侧工具列表更新后需重启应用/重连 MCP 才可见（宿主缓存）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/chexia.zip",
+          "sha256": "0d316610e47cf7b40f7aff130a889137677dd8fa99359cae6036296f7a695715"
+        }
+      ]
+    },
+    {
+      "id": "duzhi",
+      "name": "消费账单",
+      "version": "0.1.0",
+      "description": "家庭账单透视：把微信/支付宝官方导出的账单，变成一本可对话、可透视、数据不出本机的消费账。邮箱账单 zip 拖进面板（微信需输解压密码）或对 AI 说「帮我导入下载目录里的账单」即自动去重入库；月度现金流/分类占比/商户 top/退款单列口径；聊天里问「上月奶茶花了多少」即查即答；按批次一键撤销；分类关键词规则可教。纯本地零网络（cap.kv，无服务进程），解压密码只在内存用一次，零账号零上传。只做统计透视，不构成理财建议。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "bills",
+        "alipay",
+        "wechat",
+        "expense",
+        "family",
+        "import",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "CheckSquare",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/duzhi",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/duzhi.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/update.json",
+      "sha256": "69dd5b9255b7274e148cb612f73f3295ceecce752cae9e208d67f6ce17577e3f",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/duzhi.zip",
+          "sha256": "69dd5b9255b7274e148cb612f73f3295ceecce752cae9e208d67f6ce17577e3f"
+        }
+      ]
+    },
+    {
+      "id": "maian",
+      "name": "脉案",
+      "version": "0.1.0",
+      "description": "家庭体征台账：把「爸妈的血压本、血糖记录、每次量的体温体重」变成可对话、会标色、能带走的家庭健康资产。聊天里说「妈早上血压152/95心率78」一句话入账；血糖分空腹/餐后2h/随机/睡前四时点；体重接身高自动 BMI 分带；红黄分带全部走通用参考区间并明确「请遵医嘱」；一键生成可带给医生的就诊小结（统计+分带+逐条明细）。数据纯本地（cap.kv）不出设备；测量提醒交给日晷，本插件零服务进程。只做记录与呈现，不提供医疗建议。",
+      "author": "Polaris",
+      "category": "life",
+      "tags": [
+        "health",
+        "vitals",
+        "family",
+        "blood-pressure",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "Activity",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/maian",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/maian.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/update.json",
+      "sha256": "40ad649362723b6f893423ae94b2fddc93cd8675bfbfdc804156b4ce5d97ca3c",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 脉案 maian —— 家庭体征台账\n\n> 把「爸妈的血压本、血糖记录、每次量的体温体重」变成**可对话、会标色、能带走**（就诊小结）的家庭健康资产。\n> 脉案者，医者所记之医案也——家人自测的每一个数字都值得被留下、被看见、被带去复诊。\n> 只做记录与呈现，**不提供医疗建议**；分带为通用参考区间，请遵医嘱。\n\n## 为什么要有脉案\n\n- 医疗流程**强制「记录」环节**：《中国高血压健康管理规范》建议初诊/调药期连续自测家庭血压 7 天、平稳期每周 1-2 天，测量后记录成册、**复诊时提供给医生**——医院至今在发纸质血压记录本（手写、易丢、难分析）。\n- 现有血压记录 App 的用户抱怨集中在：弹窗广告、会员墙、强制注册、老人不会用；且全部是「单人单设备」维度——**家庭维度**（子女替父母记、全家一册、桌面+手机同录）无主流产品（与青囊立项时同一论证）。\n- 健康数据极敏感：脉案**纯本地存储**（cap.kv，不出设备），无账号、无上传、零外网请求、零服务进程。\n\n## 核心能力\n\n| 能力 | 说明 |\n|---|---|\n| 家庭成员档案 | 全家一册；身高可选（用于 BMI 分带），备注随访背景 |\n| 四类指标 | 血压（收缩/舒张/心率）、血糖（空腹/餐后2h/随机/睡前四时点）、体温、体重 |\n| 通用参考分带 | 血压五态（绿 <130/85 · 黄 130-139/85-89 或偏低 · 红 ≥140/90 · 急 ≥180/120）、血糖按时点、体温、体重按中国成人 BMI；全部标注「请遵医嘱」 |\n| 对话式记录 | 「妈早上血压 152/95 心率 78」一句话入账；成员不存在按名自动建档；返回分带 + **较上次变化**（如「收缩压 -14」） |\n| 幂等防双写 | 传 `id` 覆盖同 id 记录——AI 重试不会双写 |\n| 趋势与统计 | 近 7/30 天（区间自选）均值/最高/最低/分带计数 + 手搓 SVG 折线（血压双系列，点色=分带） |\n| 就诊小结 | 成员+时间段 → 结构化 markdown（统计+分带+逐条明细表+免责），复制即可带给医生 |\n| 改错成本低 | 按 id 修改（值/时间/备注/成员），跨日/跨月自动迁移日键；删除有 confirm 门 |\n| 多端同录 | 手机浏览器打开同一面板替家人记录；面板+AI 共读同一份 cap.kv 事实库 |\n| 数据所有权 | 设置页一键全量导出 JSON |\n\n## 快速开始\n\n1. 插件中心安装「脉案」→ 左侧 ActivityBar 出现 💓 面板（零后台服务，打开即用）。\n2. 「设置」页建家庭成员（如「妈妈」，可填身高）——或者什么都不填，直接对 AI 说：\n\n```\n帮我记一下：妈妈早上血压 152/95，心率 78，服药前测的。\n```\n\n3. 复诊前对 AI 说「生成妈妈这个月的就诊小结」，复制结果带给医生。\n4. 测量提醒交给「日晷」日程插件（如「每天早上 8 点提醒我妈量血压」）——脉案专注记录与分析，不重复造提醒。\n\n## 与 AI 的对话约定（MCP 工具）\n\n| 工具 | 用途 |\n|---|---|\n| `maian_log` | 记一笔（血压/血糖/体重/体温；按名自动配档；`id` 幂等覆盖；返回分带+较上次变化） |\n| `maian_query` | 查询：`recent` 近期记录 / `stats` 区间统计（需成员）/ `flags` 黄红榜（需成员）/ `members` 成员一览 |\n| `maian_member` | 成员建档/列表/改档案（身高启用 BMI 分带） |\n| `maian_update` | 按 id 修改一笔（跨日自动迁移日键） |\n| `maian_delete` | 删除一笔（`confirm:true` 门） |\n| `maian_summary` | 就诊小结（成员+时间段 → markdown；只查不建，打错名字不会长出垃圾成员） |\n\n**分带是通用参考区间，不是诊断**——工具描述与输出明确不推断病情、不推荐用药；查询/小结视图只查不建档，只有记录动作才会自动建档。\n\n## 架构\n\n```\n┌─────────────── 面板（记录/趋势/台账/设置）────────────────┐\n│  __POLARIS_HOST_INVOKE__ → router_dispatch → cap.kv      │\n│  零外网、零服务进程；分带/统计/小结全部 core 现算           │\n└──────────────────────────┬───────────────────────────────┘\n                           │ 读写 maian.* 键空间\n┌──────────────────────────┴───────────────────────────────┐\n│ shared/core.js 纯函数核心（双方同源，同一口径）              │\n│  normalize×2 · bandOf 分带 · statsFor · trendPoints      │\n│  buildSummary 小结 · upsert/remove 日键操作               │\n├──────────────────────────────────────────────────────────┤\n│ mcp/server.js（stdio JSON-RPC；零依赖）                   │\n│  AI 工具层：翻译 tools/call → cap.kv maian.* 读写          │\n│  （经 kvclient 自发现桥端点；零外网；查/小结只查不建）        │\n└──────────────────────────────────────────────────────────┘\n```\n\n**为什么零服务进程**：青囊需要常驻服务算「应服投影」并主动提醒；脉案的核心是记录→分带→统计→小结，全部可在读取时现算（家庭量级：千人级记录/年，远低于分块阈值）。提醒类需求复用日晷，不重复建服务、不多一个故障面。\n\n**键空间契约**（双方一致）：\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `maian.member.<id>` | 面板/MCP | 面板/MCP | 成员档案 `{id,name,heightCm?,note,createdAt,updatedAt}` |\n| `maian.day.YYYY-MM-DD` | 面板/MCP | 面板/MCP | 该日全部记录数组（按 ts 升序，同 id 覆盖）|\n\n记录形状：`{id, profileId, kind: 'bp'\\|'bg'\\|'weight'\\|'temp', ts, sys?, dia?, pulse?, mmol?, slot?, kg?, c?, note, src: 'panel'\\|'ai', at}`。\n\n**口径纪律**：记录唯一写入口径 = `core.normalizeRecord`（校验范围/时间/裁剪）；分带唯一口径 = `core.bandOf`（血压家庭自测口径、血糖指尖时点口径、体温、中国成人 BMI 18.5/24/28）；面板与 MCP 不各自实现，结论永远一致。\n\n## 开发与验证\n\n```bash\nnpm install\nnpm run typecheck          # tsc --noEmit（strict）\nnpm run build              # esbuild → dist/panel.js（React external）\nnode test/run-tests.mjs    # 离线单测 34 组（纯函数行为级）\nnode test/mcp-bridge.mjs   # MCP 内存桥全链路 36 组（stub 宿主 + 真实 stdio/server）\nnode test/harness-run.mjs  # jsdom 无头渲染冒烟 28 断言（真 bundle + 内存 kv）\nnode test/smoke-real.mjs   # 真实宿主桥冒烟（宿主未运行则 SKIP；自清理不留数据）\n```\n\n## 已知边界\n\n- 只做记录/呈现/小结，**不做任何医疗推断**；分带阈值内置、暂不支持自定义个性化目标（医生给的个体目标请写进备注）。\n- 血糖为指尖血 mmol/L 口径（不做 mg/dL 换算）；连续血糖仪/血压计蓝牙对接、检验报告 OCR 不在 v1。\n- 提醒不做（复用日晷）；面板打开时才轮询（5s 键集 diff + 90s 全量兜底），不做推送。\n- 导出/小结为文本形态（复制/textarea），不做 PDF 排版（纸坊可承担排版需求）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/maian.zip"
+        }
+      ]
+    },
+    {
+      "id": "flashforge",
+      "name": "闪造应用作坊",
+      "version": "0.1.0",
+      "description": "闪造 FlashForge——私人 AI 应用作坊：聊天一句话，AI 现场造出能玩/能用的小应用（游戏/微工具/教具），存进随身应用花园。入库静态扫描拦联网与逃逸代码，沙箱 iframe 运行（无同源/无弹窗/无顶层导航）；版本树只增不改可回退；推送到手机「新造好」打开即玩；成绩经 postMessage 协议自动上跨端高分榜。数据全落 cap.kv 不出本机，三端同一座花园；纯本地零网络、零后台服务。",
+      "author": "Polaris",
+      "category": "creation",
+      "tags": [
+        "ai-apps",
+        "games",
+        "sandbox",
+        "creator",
+        "micro-tools",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/flashforge",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flashforge/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@flashforge-v0.1.0/plugins/flashforge/flashforge.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flashforge/update.json",
+      "sha256": "32e4de1c57eef1078988a94c86d790f395e32eaaca588868be6c418783fc7411",
+      "tier": "production",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 闪造 FlashForge\n\n私人 AI 应用作坊：AI 对话里一句话造小应用（MCP 七工具），面板/手机沙箱即开即玩；版本只增不改可回退；跨端高分榜。创作契约与安全模型（静态扫描+沙箱）详见插件 README。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@flashforge-v0.1.0/plugins/flashforge/flashforge.zip"
         }
       ]
     }

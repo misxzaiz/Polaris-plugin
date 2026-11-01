@@ -1,0 +1,44 @@
+{
+  "id": "flashforge",
+  "name": "闪造应用作坊",
+  "version": "0.1.0",
+  "description": "闪造 FlashForge——你的私人 AI 应用作坊：聊天里一句话，AI 现场造出一个真的能玩/能用的小应用（游戏/微工具/教具），存进随身应用花园。MCP 七工具（create/iterate/source/list/push/score/delete）：入库前静态扫描拦联网与逃逸代码，沙箱 iframe 运行（无同源、无弹窗、无顶层导航）；版本树只增不改可回退；推送到手机「新造好」徽标打开即玩；游戏成绩经 postMessage 协议自动上跨端高分榜。数据全落 cap.kv（数据不出本机），桌面/手机/Web 三端同一座花园；纯本地零网络、零后台服务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "flashforge.panel",
+        "area": "activityBar",
+        "panelType": "flashforge",
+        "icon": "Code2",
+        "labelKey": "plugins.flashforge",
+        "labelDefault": "闪造应用作坊",
+        "order": 94
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "flashforge",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/flashforge",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flashforge/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flashforge/flashforge.zip"
+  }
+}

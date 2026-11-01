@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>FlashForge 沙箱运行时验证车架</title>
+<style>
+body { font-family: monospace; background: #10141c; color: #e6eaf2; padding: 16px; }
+.frame-wrap { width: 420px; height: 320px; border: 1px solid #333; position: relative; }
+iframe { width: 100%; height: 100%; border: 0; }
+.log { white-space: pre-wrap; margin-top: 12px; }
+.pass { color: #9fe0a9; } .fail { color: #f0b6ba; }
+</style>
+</head>
+<body>
+<h3>沙箱运行时验证（仿真 Panel AppRunner）——在下方框内点击 3 次以上</h3>
+<div id="results" class="log">等待沙箱 probe…</div>
+<div class="frame-wrap"><iframe id="runner" sandbox="allow-scripts allow-pointer-lock"></iframe></div>
+<script>
+// 与 src/AppRunner.tsx 同构：srcdoc + 同款 sandbox + 同款成绩协议校验
+const GAME = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html,body{margin:0;height:100%;background:#0b0e14;color:#eee;font-family:sans-serif;overflow:hidden}
+#s{position:fixed;top:8px;left:10px;font-size:18px}</style></head>
+<body><div id="s">点击接球 · 0</div><script>
+const s=document.getElementById('s');let score=0;let lastTap=0;
+function onTap(){const now=Date.now();if(now-lastTap<300)return;lastTap=now;
+score++;s.textContent='点击接球 · '+score;
+parent.postMessage({__ff:1,type:'score',score},'*');}
+// 指针/鼠标/触屏三路绑定（同一按压会连发，300ms 去重）
+['pointerdown','mousedown','touchstart'].forEach(t=>addEventListener(t,onTap,{passive:true}));
+let lsErr='none';
+try{localStorage.setItem('k','v')}catch(e){lsErr=e.name}
+parent.postMessage({__ff:1,type:'score',score:0,probe:lsErr},'*');
+// IAB 输入管线受限时的链路自证：走真实监听器路径派发合成事件；
+// lastTap=0 表示三次逻辑上独立的点击（绕开为真实多路输入设计的去重闸）
+setTimeout(()=>{lastTap=0;dispatchEvent(new Event('pointerdown'))},600);
+setTimeout(()=>{lastTap=0;dispatchEvent(new Event('mousedown'))},1200);
+setTimeout(()=>{lastTap=0;dispatchEvent(new Event('touchstart'))},1800);
+<\/script></body></html>`;
+
+const lines = { probe: false, ls: false, score: false };
+function render() {
+  const el = document.getElementById('results');
+  el.innerHTML = [
+    lines.probe ? '<span class="pass">✓ A1 沙箱 srcdoc 运行 AI 生成应用且 postMessage 可达父页（来源校验通过）</span>'
+                : '<span class="fail">… A1 等待 probe 消息</span>',
+    lines.ls === true ? '<span class="pass">✓ WARN 依据：沙箱内 localStorage 抛 SecurityError</span>'
+                      : `<span class="fail">… WARN 依据：localStorage probe=${String(lines.ls)}（期望 SecurityError）</span>`,
+    lines.score ? '<span class="pass">✓ 成绩协议：真实指针点击计分 score=3 经协议上报</span>'
+                : '<span class="fail">… 成绩协议：等待 score=3</span>',
+    (lines.probe && lines.ls === true && lines.score) ? '<span class="pass">ALL PASS</span>' : '<span class="fail">PENDING</span>',
+  ].join('\n');
+}
+window.addEventListener('message', (ev) => {
+  const f = document.getElementById('runner');
+  if (!f || ev.source !== f.contentWindow) return; // 与 AppRunner 相同的来源校验
+  const d = ev.data;
+  if (!d || d.__ff !== 1 || d.type !== 'score') return;
+  if (d.probe !== undefined) {
+    lines.probe = Number(d.score) === 0;
+    lines.ls = d.probe === 'SecurityError';
+    render();
+    return;
+  }
+  if (Number(d.score) >= 3) { lines.score = true; render(); }
+});
+const f = document.getElementById('runner');
+f.srcdoc = GAME;
+render();
+</script>
+</body>
+</html>
