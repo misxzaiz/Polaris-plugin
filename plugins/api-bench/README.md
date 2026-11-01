@@ -66,12 +66,13 @@ MCP（stdio）：6 个 api_bench_* 工具 → kv 单槽信箱 api-bench.cmd
 | `api-bench.cmd` | 面板(备用)/MCP | 单槽命令信箱 {nonce, action, payload} |
 | `api-bench.res` | service | 回执（nonce 对齐，MCP 消费后删） |
 
-## 验证（三层全绿）
+## 验证（四层全绿）
 
 1. **离线单测** 42/42：`node test/run-tests.mjs`（校验矩阵/掩码/圈层/分位/摘要/结论/对比语义）。
-2. **假桥集成** 19/19 + **MCP 协议** 10/10：`node test/service-tests.mjs && node test/mcp-tests.mjs`（内存假桥 + 真实引擎 + 真实子进程）。
-3. **真桥冒烟** 6/6：`node test/smoke-real.mjs`（宿主在线时；meta 落真实 kv → 真实压测试金石 → MCP 真子进程 → 掩码不变量 → 全绿自清理）。
-4. 工程门槛：`tsc --noEmit`（strict）+ esbuild 面板构建通过；zip 打包根含 plugin.json。
+2. **SSR 渲染** 27/27：`node test/render-verify.mjs`（三 Tab 关键 UI/护栏文案/报告卡/图表骨架/离线态）。
+3. **假桥集成** 19/19 + **MCP 协议** 10/10：`node test/service-tests.mjs && node test/mcp-tests.mjs`（内存假桥 + 真实引擎 + 真实子进程）。
+4. **真桥冒烟** 6/6：`node test/smoke-real.mjs`（宿主在线时；meta 落真实 kv → 真实压测试金石 → MCP 真子进程 → 掩码不变量 → 全绿自清理）。
+5. 工程门槛：`tsc --noEmit`（strict）+ esbuild 面板构建通过；zip 打包根含 plugin.json。
 
 ## 已知限制
 
