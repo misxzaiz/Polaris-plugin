@@ -1,0 +1,22 @@
+{
+  "name": "stream-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "stream-desk 插件（构建用）：长连接调试台——WebSocket/SSE/流式 HTTP 客户端调试",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:vendor": "node build-vendor.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.5.10",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}

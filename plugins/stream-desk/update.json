@@ -1,0 +1,58 @@
+{
+  "id": "stream-desk",
+  "name": "长连接调试台",
+  "version": "0.1.0",
+  "description": "WebSocket / SSE / 流式 HTTP 客户端调试工作台：浏览器做不到的两件事在这里都行——① WS 握手带自定义头（Authorization 等，浏览器 API 禁止）；② SSE 用 POST+Bearer+body 抓取（EventSource 只能 GET 无头）。帧时间线（方向/间隔/大小/二进制 HEX）、TTFT 与事件间隔 p95 统计（流卡顿一眼可见）、导出 JSONL、掩码出站。AI 经 MCP 七工具代劳：连上→发送→等回复→解读（ws_connect/ws_send/ws_wait_frame/ws_close/sse_capture/session_list/transcript），适合一句话诊断 AI 流式接口与长连接后端。数据不出本机，零外部服务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "stream-desk.panel",
+        "area": "activityBar",
+        "panelType": "streamDesk",
+        "icon": "Terminal",
+        "labelKey": "plugins.streamDesk",
+        "labelDefault": "长连接调试台",
+        "order": 88
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "stream-desk-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9874,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "WS/SSE 客户端引擎（127.0.0.1 监听，出站连接调试目标；REST API + fetch-SSE 实时帧推送）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "stream-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/stream-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stream-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stream-desk/stream-desk.zip"
+  }
+}
