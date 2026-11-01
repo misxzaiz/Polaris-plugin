@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T19:28:22.754Z",
+  "updated": "2026-11-01T19:57:01.147Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2823,6 +2823,45 @@
         }
       ],
       "createdAt": "2026-11-01T19:28:22.752Z"
+    },
+    {
+      "id": "task-runner",
+      "name": "定时任务台",
+      "version": "0.1.0",
+      "description": "把「重复该做的事」变成 Polaris 常驻代办的定时执行器：提醒 / HTTP 探测 / AI 提示词 / 命令行四类任务按计划自动执行（间隔/每天/每周几/cron 五字段），错过只补一次不回放积压；运行历史留痕（状态/耗时/输出摘录）三端可查，手机打开同一面板看昨晚跑了没。AI 经六工具对话式管理（建任务/问结果/启停/删除），命令行与删除强制 confirm 双闸；HTTP 任务默认拒私网防 SSRF（本地心跳场景显式放行）；AI 任务直连已配置供应商（可从宿主一键导入，密钥只存本机全出口掩码）。数据全在 cap.kv 不出本机，服务仅绑 127.0.0.1，零外部服务。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "scheduler",
+        "automation",
+        "cron",
+        "tasks",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Clock",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/task-runner",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/task-runner.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/update.json",
+      "sha256": "e7b22c6e93f7d1c30ae5668cd04867ba3d5368e0f4a313de674737989c4fda38",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 定时任务台\n\n提醒 / HTTP 探测 / AI 提示词 / 命令行四类定时任务：按计划自动执行、错过只补一次、历史留痕三端可查；AI 六工具对话式管理（confirm 双闸 + SSRF 分级闸 + 输出截尾）。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/task-runner.zip",
+          "sha256": "e7b22c6e93f7d1c30ae5668cd04867ba3d5368e0f4a313de674737989c4fda38"
+        }
+      ],
+      "createdAt": "2026-11-01T19:57:01.147Z",
+      "updatedAt": "2026-11-01T19:57:01.147Z"
     }
   ]
 }

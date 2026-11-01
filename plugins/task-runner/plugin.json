@@ -1,0 +1,63 @@
+{
+  "id": "task-runner",
+  "name": "定时任务台",
+  "version": "0.1.0",
+  "description": "把「重复该做的事」变成 Polaris 常驻代办的定时执行器：提醒 / HTTP 探测 / AI 提示词 / 命令行四类任务按计划自动执行（间隔/每天/每周几/cron 五字段），错过只补一次不回放积压；运行历史留痕（状态/耗时/输出摘录）三端可查，手机打开同一面板看昨晚跑了没。AI 经六工具对话式管理（建任务/问结果/启停/删除），命令行与删除强制 confirm 双闸；HTTP 任务默认拒私网防 SSRF（本地心跳场景显式放行）；AI 任务直连已配置供应商（可从宿主一键导入，密钥只存本机全出口掩码）。数据全在 cap.kv 不出本机，服务仅绑 127.0.0.1，零外部服务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "task-runner.panel",
+        "area": "activityBar",
+        "panelType": "taskRunner",
+        "icon": "Clock",
+        "labelKey": "plugins.taskRunner",
+        "labelDefault": "定时任务台",
+        "order": 69
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "task-runner-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "调度执行引擎（127.0.0.1 + token）：租约防多实例双跑/命令键先删后做/错过补跑一次/taskrun.* kv 单写者，四类任务执行器（notify/http+SSRF 分级/ai 供应商直连/command spawn 护栏）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "task-runner",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/task-runner",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/task-runner.zip"
+  }
+}
