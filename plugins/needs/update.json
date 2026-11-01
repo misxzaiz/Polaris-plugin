@@ -1,0 +1,63 @@
+{
+  "id": "needs",
+  "name": "需求库",
+  "version": "0.2.0",
+  "description": "需求库——一需求一文件的插件需求台账，一库两端：白天在 Polaris 里记录（面板看板 + AI 一句话 needs_add，自动序号/模板/状态），夜里 ZCode 按同一份公约消化（分析→spec→实施）。面板：状态分组看板、卡片详情、拍板（approved 仅人工）、回答待澄清、追加决策记录、一键复制开工提示词、根目录设置与探测。AI 六工具（needs_config/add/list/show/update/handoff）：更新带 mtime 乐观锁防并发丢写，needs_handoff 把 prompts/ 阶段提示词渲染成开工任务书。逻辑核唯一（shared/core.js），MCP stdio 与面板 http 服务（127.0.0.1+token）共用；所有读写严格限制在根目录内（防穿越），写入原子（tmp+rename），UTF-8 无 BOM，零依赖、零外网请求。状态机与字段定义的唯一权威在需求库根目录 README.md。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "needs.panel",
+        "area": "activityBar",
+        "panelType": "needs",
+        "icon": "Files",
+        "labelKey": "plugins.needs",
+        "labelDefault": "需求库",
+        "order": 89
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "needs-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/needs-service.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "需求库面板数据面（127.0.0.1 + token）：看板/详情/拍板/待澄清/设置 → shared/core 条目读写（乐观锁+原子写）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "needs",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/needs",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/needs/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/needs/needs.zip"
+  }
+}
