@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T17:04:09.455Z",
+  "updated": "2026-11-01T17:56:01.426Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2709,6 +2709,44 @@
       ],
       "createdAt": "2026-11-01T17:04:09.455Z",
       "updatedAt": "2026-11-01T17:04:09.455Z"
+    },
+    {
+      "id": "api-bench",
+      "name": "接口压测台",
+      "version": "0.1.0",
+      "description": "把「我的接口能扛多少 QPS、p95 多少、这次改动有没有变快」变成一次 30 秒的本地压测：目标 URL + 并发/时长 → 实时 RPS/延迟图表 → 延迟分位（p50/p90/p97.5/p99）+ 状态码分布 + 中文结论，报告留档可 A/B 对比。autocannon 内核（Fastify 官方压测工具，vendored 纯 JS）本地执行，内网/本机接口直接可压，零数据外发；护栏（并发≤1000/时长≤300s/单任务互斥/可中止）+ 敏感头自动掩码（****后4位）。AI 六工具一句话压测并解读（run/status/stop/history/report/compare），内置试金石端点零配置验证工具链。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "api",
+        "benchmark",
+        "loadtest",
+        "performance",
+        "devtools",
+        "autocannon"
+      ],
+      "icon": "Target",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/api-bench",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/api-bench.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/update.json",
+      "sha256": "15e56fb9e96f00481fa03cedec24194cf333fab8867dbf156f2b5878c8abcf35",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 接口压测台 api-bench —— 本地 API 压测 / 实时图表 / A-B 对比\n\n> 把「我的接口能扛多少 QPS、p95 多少、这次改动有没有变快」变成一次 30 秒的本地压测：autocannon 内核、实时图表、报告留档、AI 一句话驱动。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/api-bench.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T17:56:01.426Z",
+      "updatedAt": "2026-11-01T17:56:01.426Z"
     }
   ]
 }

@@ -1,0 +1,63 @@
+{
+  "id": "api-bench",
+  "name": "接口压测台",
+  "version": "0.1.0",
+  "description": "把「我的接口能扛多少 QPS、p95 多少、这次改动有没有变快」变成一次 30 秒的本地压测：目标 URL + 并发/时长 → 实时 RPS/延迟图表 → 延迟分位（p50/p90/p97.5/p99）+ 状态码分布 + 中文结论，报告留档可 A/B 对比（优化前后差多少）。autocannon 内核（Fastify 官方压测工具，vendored 纯 JS）本地执行，内网/本机接口直接可压，零数据外发；护栏（并发≤1000/时长≤300s/单任务互斥/可中止）+ 敏感头自动掩码。AI 六工具一句话压测并解读（api_bench_run/status/stop/history/report/compare），内置试金石端点零配置验证工具链。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "api-bench.panel",
+        "area": "activityBar",
+        "panelType": "apiBench",
+        "icon": "Target",
+        "labelKey": "plugins.apiBench",
+        "labelDefault": "接口压测台",
+        "order": 86
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "api-bench-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "接口压测引擎（127.0.0.1 + token）：autocannon 本地压测 + 试金石端点 + 报告落 kv（api-bench.* 单写者）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "api-bench",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/api-bench",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/api-bench.zip"
+  }
+}
