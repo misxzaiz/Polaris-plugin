@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T17:56:01.426Z",
+  "updated": "2026-11-01T18:26:01.469Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2747,6 +2747,44 @@
       ],
       "createdAt": "2026-11-01T17:56:01.426Z",
       "updatedAt": "2026-11-01T17:56:01.426Z"
+    },
+    {
+      "id": "file-flow",
+      "name": "文件管家",
+      "version": "0.1.0",
+      "description": "把「下载文件夹永远乱糟糟」变成会自己收拾的工作台：规则常驻后台盯文件夹（安装包/压缩包/文档/图片/媒体按月归档、30天旧文件冷存、重复下载收走），动手前先给 dry-run 预览、动手后按批次可撤销、永不删除（回收=移入 _FileFlow回收站）。新文件护栏防搬正在写入的文件，占用文件自动跳过。AI 经 MCP 七工具一句话生成规则、预览计划、执行整理、撤销批次、回答「下载文件夹怎么样了」。后台原生服务（fs.watch + 预算内遍历，零外网请求），面板经宿主 invoke→cap.kv 三端同源（手机也能看整理了什么），全部数据不出本机。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "file-organizer",
+        "automation",
+        "downloads",
+        "file-management",
+        "devtools",
+        "undo"
+      ],
+      "icon": "Files",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/file-flow",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/file-flow/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/file-flow/file-flow.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/file-flow/update.json",
+      "sha256": "be38ca085f0cad27f1ea7a50ec61d15b146419d92515bc0e78c4096073f88646",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 文件管家（file-flow）\n\n把「下载文件夹永远乱糟糟」变成会自己收拾的工作台：规则常驻后台盯文件夹，动手前先预览、动手后可撤销、**永不删除**。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/file-flow/file-flow.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T18:26:01.467Z",
+      "updatedAt": "2026-11-01T18:26:01.469Z"
     }
   ]
 }

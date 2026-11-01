@@ -1,0 +1,63 @@
+{
+  "id": "file-flow",
+  "name": "文件管家",
+  "version": "0.1.0",
+  "description": "把「下载文件夹永远乱糟糟」变成会自己收拾的工作台：规则常驻后台盯文件夹（安装包/压缩包/文档/图片/媒体按月归档、30天旧文件冷存、重复下载收走），动手前先给 dry-run 预览、动手后按批次可撤销、永不删除（回收=移入 _FileFlow回收站）。新文件护栏防搬正在写入的文件，占用文件自动跳过。AI 经 MCP 七工具一句话生成规则、预览计划、执行整理、撤销批次、回答「下载文件夹怎么样了」。后台原生服务（fs.watch + 预算内遍历，零外网请求），面板经宿主 invoke→cap.kv 三端同源（手机也能看整理了什么），全部数据不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "file-flow.panel",
+        "area": "activityBar",
+        "panelType": "fileFlow",
+        "icon": "Files",
+        "labelKey": "plugins.fileFlow",
+        "labelDefault": "文件管家",
+        "order": 88
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "file-flow-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/flow.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "文件整理引擎（127.0.0.1）：规则计划/执行/撤销单权威 + fs.watch 监听 + fileflow.* kv 单写者"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "file-flow",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxsaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxsaiz/Polaris-plugin/tree/main/plugins/file-flow",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxsaiz/Polaris-plugin@main/plugins/file-flow/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxsaiz/Polaris-plugin@main/plugins/file-flow/file-flow.zip"
+  }
+}
