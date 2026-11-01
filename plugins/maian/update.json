@@ -1,0 +1,45 @@
+{
+  "id": "maian",
+  "name": "脉案",
+  "version": "0.1.0",
+  "description": "家庭体征台账：把「爸妈的血压本、血糖记录、每次量的体温体重」变成可对话、会标色、能带走的家庭健康资产。聊天里说「妈早上血压152/95心率78」一句话入账；血糖分空腹/餐后2h/随机/睡前四时点；体重接身高自动 BMI 分带；红黄分带全部走通用参考区间并明确「请遵医嘱」；一键生成可带给医生的就诊小结（统计+分带+逐条明细）。数据纯本地（cap.kv）不出设备；测量提醒交给日晷，本插件零服务进程。只做记录与呈现，不提供医疗建议。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "maian.panel",
+        "area": "activityBar",
+        "panelType": "maian",
+        "icon": "Activity",
+        "labelKey": "plugins.maian",
+        "labelDefault": "脉案",
+        "order": 77
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "maian",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/maian",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/maian.zip"
+  }
+}
