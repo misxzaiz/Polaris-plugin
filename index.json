@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01T19:57:01.147Z",
+  "updated": "2026-11-01T20:51:45.681Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2862,6 +2862,45 @@
       ],
       "createdAt": "2026-11-01T19:57:01.147Z",
       "updatedAt": "2026-11-01T19:57:01.147Z"
+    },
+    {
+      "id": "mock-server",
+      "name": "Mock 接口台",
+      "version": "0.1.0",
+      "description": "把本机 127.0.0.1:9868 变成一套随编随用的假接口：后端没就绪前端先开工、联调造不出边界数据、演示需要可控响应——对话或表单建路由（路径参数/通配符），{{模板}}造真实感数据（中文姓名/手机号/时间/请求回显），延迟+错误率注入造边界，未匹配路径回 404 诊断体，请求全留痕（敏感头自动脱敏）；OpenAPI JSON 一键导入成路由，内置试金石自检 7 项打真请求验证。AI 经 MCP 八工具对话式管理：建/改/删/试发/看历史/自检/导入。零外部服务零依赖，数据不出本机。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mock",
+        "api",
+        "frontend",
+        "testing",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mock-server",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mock-server/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mock-server/mock-server.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mock-server/update.json",
+      "sha256": "b189fbe5a71b9b8807fcb08fcd3e951b14013b4c0fbe66e315a1da4b9b89938f",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Mock 接口台\n\n本机假接口服务台：对话或表单建路由，{{模板}}造真实感数据，延迟/错误率注入造边界，请求全留痕（敏感头脱敏）；OpenAPI 一键导入，试金石自检 7 项打真请求验证；MCP 八工具对话式管理。数据不出本机。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mock-server/mock-server.zip",
+          "sha256": "b189fbe5a71b9b8807fcb08fcd3e951b14013b4c0fbe66e315a1da4b9b89938f"
+        }
+      ],
+      "createdAt": "2026-11-01T20:51:45.681Z",
+      "updatedAt": "2026-11-01T20:51:45.681Z"
     }
   ]
 }
