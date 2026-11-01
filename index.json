@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-01",
+  "updated": "2026-11-01T15:35:08.218Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -2477,6 +2477,120 @@
         }
       ],
       "createdAt": "2026-11-01T14:19:56.054Z"
+    },
+    {
+      "id": "mcp-probe",
+      "name": "MCP 调试台",
+      "version": "0.1.0",
+      "description": "MCP 服务器调试工作台：宿主已装插件的 MCP 工具零成本直查（cap.mcp 代理，零重复 spawn），外部 stdio/streamable-HTTP 服务器一键接入并常驻档案；工具清单→schema 自动表单→调用→看 JSON/耗时，体检（握手延迟/schema 卫生检查/绝不自动调用）、快照 diff 抓 schema 漂移、调用历史重放；Claude 式配置（~/.claude、.mcp.json）一键导入；AI 经七工具代劳全程调试。全程本机 127.0.0.1，零外部服务。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp",
+        "debug",
+        "inspector",
+        "devtools",
+        "ai"
+      ],
+      "icon": "SquareTerminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mcp-probe",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mcp-probe/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mcp-probe/mcp-probe.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mcp-probe/update.json",
+      "sha256": "a84478916c3d9bee859134d2aa20ea98fe7d987757e13e7ebc11705f9846a4ef",
+      "tier": "beta",
+      "permissions": {
+        "network": true,
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# MCP 调试台\n\n连接、枚举、调用、体检任意 MCP 服务器：宿主插件工具 cap.mcp 直查、外部 stdio/HTTP 档案、schema 自动表单、体检（零副作用）、快照漂移对比、调用历史重放、Claude 配置一键导入、AI 七工具代劳调试。\n\n详见插件目录 README 与 docs/mcp-probe-plan.md。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mcp-probe/mcp-probe.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T14:57:44.571Z",
+      "updatedAt": "2026-11-01T14:57:44.571Z"
+    },
+    {
+      "id": "context-pack",
+      "name": "上下文打包台",
+      "version": "0.1.0",
+      "description": "把本地代码仓库/目录打包成 LLM 可直接消化的文本上下文包：树形勾选 + token 预算条 + 一键复制/导出/发送到 Polaris 聊天；遵循 .gitignore，二进制与超限文件自动排除。AI 可经 MCP 三工具（扫描/估算/打包）自助打包任意目录。全部本机完成，代码不出本机。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "llm",
+        "context",
+        "prompt",
+        "developer-tools",
+        "panel",
+        "mcp"
+      ],
+      "icon": "Files",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/context-pack",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/update.json",
+      "sha256": "23e1577aa6c3e7c0c28c87cd12ec056a037466d196f48ca8aab4795d0499086d",
+      "tier": "beta",
+      "permissions": {
+        "workspaceRead": true,
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 上下文打包台\n\n把本地代码仓库/目录打包成 LLM 可直接消化的文本上下文包：树形勾选 + token 预算条 + 一键复制/导出/发送到 Polaris 聊天；遵循 .gitignore，二进制与超限文件自动排除。AI 经 MCP 三工具自助打包。全部本机完成，代码不出本机。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip",
+          "sha256": "23e1577aa6c3e7c0c28c87cd12ec056a037466d196f48ca8aab4795d0499086d"
+        }
+      ],
+      "createdAt": "2026-11-01T15:20:00.000Z",
+      "updatedAt": "2026-11-01T15:20:00.000Z"
+    },
+    {
+      "id": "keyscan",
+      "name": "密钥扫描台",
+      "version": "0.1.0",
+      "description": "把「项目里有没有裸奔的密钥」变成一次 30 秒的本地安检：AWS/GitHub/OpenAI/Anthropic/Google/Stripe/阿里云/腾讯云/智谱/DeepSeek/私钥文件/数据库连接串等 20 类凭据规则 + 香农熵检测，push 前扫一遍目录即得分级报告。报告全程掩码（前4后2，完整密钥值不落库不进日志不进 AI 返回），支持增量基线（两次扫描 diff 报「新增泄露」）、误报忽略表、扫描历史趋势；AI 经 MCP 五工具一句话驱动。服务只读零外网，真实仓实测 867 文件/s、存量代码接近零误报。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "security",
+        "secret-scanner",
+        "credentials",
+        "devtools",
+        "ai"
+      ],
+      "icon": "AlertCircle",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/keyscan",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/keyscan.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/update.json",
+      "sha256": "e84ebd54d4d3076c223e07aefd940a15b5b4a17fe3634c671ecfec3e622c9e31",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 密钥扫描台（keyscan）\n\n本地密钥泄露安检台：20 类凭据规则（国内外云/AI 厂商全覆盖）+ 香农熵检测 + 四层降噪，扫目录得分级报告；报告全程掩码（完整密钥值不落库不进 AI 返回），增量基线只报「新增泄露」，误报指纹级忽略；AI 经 keyscan_scan/findings/status/ignore/rules 五工具一句话驱动。服务只读、零外网，桌面/Web/手机三端同看。\n\n详见插件目录 README 与 docs/keyscan-plan.md。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/keyscan.zip"
+        }
+      ],
+      "createdAt": "2026-11-01T15:35:08.216Z"
     }
   ]
 }

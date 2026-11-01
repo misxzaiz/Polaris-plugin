@@ -1,0 +1,63 @@
+{
+  "id": "keyscan",
+  "name": "密钥扫描台",
+  "version": "0.1.0",
+  "description": "把「项目里有没有裸奔的密钥」变成一次 30 秒的本地安检：AWS/GitHub/OpenAI/Anthropic/Google/Stripe/阿里云/腾讯云/智谱/DeepSeek/私钥文件/数据库连接串等 20 类凭据规则 + 香农熵检测，push 前扫一遍目录即得分级报告。报告全程掩码（前4后2，完整密钥值不落库不进日志不进 AI 返回），支持增量基线（两次扫描 diff 报「新增泄露」）、误报忽略表、扫描历史趋势；AI 经 MCP 工具一句话驱动（keyscan_scan/findings/status/ignore/rules）。服务只读零外网，数据存 cap.kv 掩码形态，桌面/Web/手机三端同看。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "keyscan.panel",
+        "area": "activityBar",
+        "panelType": "keyscan",
+        "icon": "AlertCircle",
+        "labelKey": "plugins.keyscan",
+        "labelDefault": "密钥扫描台",
+        "order": 81
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "keyscan-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "密钥扫描引擎（本机只读遍历，零外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "keyscan",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/keyscan",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/keyscan.zip"
+  }
+}
