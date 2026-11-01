@@ -1,0 +1,63 @@
+{
+  "id": "llm-probe",
+  "name": "模型体检台",
+  "version": "0.1.0",
+  "description": "把「这个 LLM 接口到底通不通、快不快、支持什么」变成一次 30 秒的自动化体检：连通性/鉴权/模型表/非流式对话/流式 TTFT-TPS/工具调用五步逐项检查并打健康分（0-100），每个失败步骤给中文诊断与修复建议（OLLAMA_HOST 坑/模型 tag 不匹配/max_tokens 兼容等）。宿主已配置的模型供应商一键导入零重录，双协议（OpenAI Chat Completions + Anthropic Messages），基准测试分档测 TTFT/TPS，历史趋势与横向对比。报告全掩码（****后4位）落 cap.kv 三端可看，AI 经 MCP 五工具一句话驱动体检；成本护栏：体检每步 ≤16 token，基准显式发起，无定时任务。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "llmprobe.panel",
+        "area": "activityBar",
+        "panelType": "llmprobe",
+        "icon": "Activity",
+        "labelKey": "plugins.llmprobe",
+        "labelDefault": "模型体检台",
+        "order": 82
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "llmprobe-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "LLM 接口探针引擎（双协议探针/宿主档案导入/单槽命令信箱）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "llm-probe",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/llm-probe",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-probe/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-probe/llm-probe.zip"
+  }
+}
