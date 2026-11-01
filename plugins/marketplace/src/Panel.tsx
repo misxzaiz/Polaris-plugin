@@ -263,7 +263,7 @@ function humanizeError(raw: unknown): string {
     return '网络不可达：当前为远程/未连接模式，无法访问桌面端服务。请在手机 App 中先连接桌面端服务（设置 → 服务连接），或检查网络'
   }
   if (!/__POLARIS_HOST_INVOKE__/i.test(msg) && /deny|denied|拒绝|not allowed|permission/i.test(msg)) {
-    return `${msg}（远程模式下仅放行查看/检查更新等只读操作；安装/卸载/更新请在桌面端操作，或在 AI 会话中执行）`
+    return `${msg}（远程模式下放行查看/检查更新/安装远程插件；卸载/本地安装/更新等其余写操作请在桌面端操作，或在 AI 会话中执行）`
   }
   return msg
 }

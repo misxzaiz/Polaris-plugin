@@ -69,7 +69,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "5b30142eea57e0d5e73c4ac6465e65c2cb194ef87a2d018c13633c46fbe0141f",
+      "sha256": "10dd6029dc5e620717fe98325eec93c0f89d4b752d35c910aab8d9d482215987",
       "tier": "production",
       "permissions": {
         "aiToolAccess": true,
@@ -82,7 +82,7 @@
         {
           "version": "1.4.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
-          "sha256": "5b30142eea57e0d5e73c4ac6465e65c2cb194ef87a2d018c13633c46fbe0141f"
+          "sha256": "10dd6029dc5e620717fe98325eec93c0f89d4b752d35c910aab8d9d482215987"
         },
         {
           "version": "1.3.0",
@@ -2542,7 +2542,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/update.json",
-      "sha256": "23e1577aa6c3e7c0c28c87cd12ec056a037466d196f48ca8aab4795d0499086d",
+      "sha256": "45fe83a71b65e2164f14959f54668adcf8b7cb8a6ee6cf58cfc66ef7fc73b3dc",
       "tier": "beta",
       "permissions": {
         "workspaceRead": true,
@@ -2554,12 +2554,11 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip",
-          "sha256": "23e1577aa6c3e7c0c28c87cd12ec056a037466d196f48ca8aab4795d0499086d"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip"
         }
       ],
       "createdAt": "2026-11-01T15:20:00.000Z",
-      "updatedAt": "2026-11-01T15:20:00.000Z"
+      "updatedAt": "2026-11-01T16:12:22.093Z"
     },
     {
       "id": "keyscan",
