@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02T21:35:28.877Z",
+  "updated": "2026-11-02T23:07:45.784Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3652,6 +3652,44 @@
       ],
       "createdAt": "2026-11-02T21:35:28.877Z",
       "updatedAt": "2026-11-02T21:35:28.877Z"
+    },
+    {
+      "id": "llm-request-desk",
+      "name": "LLM 请求调试台",
+      "version": "0.1.0",
+      "description": "把「这个 LLM 端点为什么 400、流式为什么断、两个请求差在哪」从 grep 日志+手工 curl 变成可视化调试：双协议请求构造器（OpenAI Chat Completions / Anthropic Messages，含原始 JSON 透传与非标字段实验）→ 服务端真实发送（绕跨域）→ 流式 SSE chunk 时间线（TTFT/速率/用量/终止标记）→ 15+ 条中文诊断知识库（messages 以 assistant 结尾、max_tokens 必填、tool_use 配对、参数漂移、/v1 重复拼接、流中断等，每条带修复动作）→ 一键变异重放（补空 user/裁剪标准字段/最小请求/减半 messages 等 8 种，把「改字段重发对比」变成两次点击）。宿主已配置供应商一键导入零重录（key 只在服务内存与本地文件，kv/日志/AI 返回全掩码），AI 经 MCP 四工具代发请求带回诊断（只能引用已存端点、maxTokens≤256 护栏），请求历史可回读可双请求对比。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "llm",
+        "api",
+        "debug",
+        "diagnostics",
+        "devtools",
+        "ai"
+      ],
+      "icon": "Terminal",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/llm-request-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/llm-request-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/update.json",
+      "sha256": "08592d96bfaa3e9293974a45a3be85f6a1b2e45b4df2cc9c1136e8641b50acdb",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# LLM 请求调试台（llm-request-desk）\n\n把「这个 LLM 端点为什么 400、流式为什么断、两个请求差在哪」从 **grep 网关日志 + 手工 curl 变体重放** 变成可视化调试。\n\n## 它解决什么\n\n接「OpenAI 兼容」端点（DeepSeek / Qwen / 商汤 / 硅基流动 / Ollama / vLLM / one-api 网关……）的真实日常：参数语义漂移、协议校验差异、流式行为不一致——400 不告诉你哪个字段错，排查全靠改一个字段 curl 一次。本插件把这个手工流程产品化：\n\n1. **构造**：双协议请求构造器（OpenAI Chat Completions / Anthropic Messages），表单或原始 JSON（非标字段 `thinking`/`reasoning_effort` 等可透传做实验）。\n2. **发送**：插件",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/llm-request-desk.zip"
+        }
+      ],
+      "createdAt": "2026-11-02T23:07:45.784Z",
+      "updatedAt": "2026-11-02T23:07:45.784Z"
     }
   ]
 }

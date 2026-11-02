@@ -1,0 +1,63 @@
+{
+  "id": "llm-request-desk",
+  "name": "LLM 请求调试台",
+  "version": "0.1.0",
+  "description": "把「这个 LLM 端点为什么 400、流式为什么断、两个请求差在哪」从 grep 日志+手工 curl 变成可视化调试：双协议请求构造器（OpenAI Chat Completions / Anthropic Messages，含原始 JSON 透传与非标字段实验）→ 服务端真实发送（绕跨域）→ 流式 SSE chunk 时间线（TTFT/速率/用量/终止标记）→ 15+ 条中文诊断知识库（messages 以 assistant 结尾、max_tokens 必填、tool_use 配对、参数漂移、/v1 重复拼接、流中断等，每条带修复动作）→ 一键变异重放（补空 user/裁剪标准字段/最小请求/减半 messages 等 8 种，把「改字段重发对比」变成两次点击）。宿主已配置供应商一键导入零重录（key 只在服务内存与本地文件，kv/日志/AI 返回全掩码），AI 经 MCP 四工具代发请求带回诊断（只能引用已存端点、maxTokens≤256 护栏），请求历史可回读可双请求对比。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "llm-request-desk.panel",
+        "area": "activityBar",
+        "panelType": "llmRequestDesk",
+        "icon": "Terminal",
+        "labelKey": "plugins.llmRequestDesk",
+        "labelDefault": "LLM 请求调试台",
+        "order": 83
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "llm-request-desk-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "LLM 请求执行引擎（双协议发送/SSE 流采集/宿主端点导入/单槽命令信箱）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "llm-request-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/llm-request-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/llm-request-desk.zip"
+  }
+}

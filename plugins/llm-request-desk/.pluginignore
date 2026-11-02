@@ -1,0 +1,11 @@
+node_modules/
+package.json
+package-lock.json
+src/
+tsconfig.json
+test/
+README.md
+*.zip
+.git/
+llm-request-desk/.ssr-out/
+pnpm-lock.yaml
