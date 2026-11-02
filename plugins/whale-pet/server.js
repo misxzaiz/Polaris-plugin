@@ -48,19 +48,26 @@ function cors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-/** 解析 asset 名 → 安全文件名（防路径穿越） */
+/**
+ * 解析 asset 名 → 安全相对路径（防路径穿越）。
+ * 允许最多「子目录/文件」两段（面板/悬浮窗走 /asset/webm/<名>.webm，
+ * 文件实际存于 assets/webm/ 子目录）；逐段校验，拒绝反斜杠与 ..
+ * （v0.4.0 修的真 bug：单段 safeName 会把 'webm/<名>' 整个拒掉 → 全量 403）。
+ */
 function safeName(raw) {
   let decoded = raw;
   try { decoded = decodeURIComponent(raw); } catch { /* 保持原样 */ }
-  // 只允许单段文件名（不含 / 和 ..），防穿越
-  if (decoded.includes('/') || decoded.includes('\\') || decoded.includes('..')) return null;
+  if (decoded.includes('\\') || decoded.includes('..')) return null;
+  const segs = decoded.split('/');
+  if (segs.length > 2) return null;
+  if (segs.some((s) => !s || s.includes('\\') || s.includes('..'))) return null;
   return decoded;
 }
 
 /** 从 CDN 拉单个文件，返回 Buffer（失败 null） */
 function fetchCdn(filePath, mime) {
   return new Promise((resolve) => {
-    const url = `${CDN_BASE}/${encodeURIComponent(filePath)}`;
+    const url = `${CDN_BASE}/${filePath.split('/').map(encodeURIComponent).join('/')}`;
     https.get(url, (res) => {
       if (res.statusCode !== 200) { res.resume(); resolve(null); return; }
       const chunks = [];

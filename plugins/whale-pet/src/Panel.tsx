@@ -282,7 +282,7 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
     <div style={{ font: '13px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif', color: '#d7dde6', background: '#0a1428', minHeight: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: '#e6edf3' }}>ds<span style={{ color: '#3b82f6' }}>大肥鱼</span></span>
-        <span style={{ fontSize: 10, color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 6, padding: '1px 6px' }}>v0.4.0</span>
+        <span style={{ fontSize: 10, color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 6, padding: '1px 6px' }}>v0.4.1</span>
         {petOverlayApi && (
           <button
             onClick={openOverlay}

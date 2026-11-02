@@ -215,7 +215,7 @@ function WhalePetPanel(props) {
         "ds",
         /* @__PURE__ */ jsx("span", { style: { color: "#3b82f6" }, children: "\u5927\u80A5\u9C7C" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.4.0" }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.4.1" }),
       petOverlayApi && /* @__PURE__ */ jsx(
         "button",
         {
