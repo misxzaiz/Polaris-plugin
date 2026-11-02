@@ -115,6 +115,43 @@ git push origin main --tags
 > ⚠️ `plugin.json` 与 `update.json` 的版本号必须同步更新，否则更新检查失败。
 > ⚠️ `versions` 数组中的每个 `downloadUrl` 必须使用对应的 git tag（如 `@v0.1.2`），不可变，否则历史版本安装会失效。
 
+## 发布前自检清单（daw-studio v0.1.0→v0.1.1 三坑沉淀，逐项打勾）
+
+- [ ] **版本号四处同步**：`plugin.json` / `update.json` / `package.json` 之外，**源码里的 `VERSION` 硬编码常量也要改**（service/mcp 的 `const VERSION = 'x.y.z'`）——它只影响 meta/health 显示口径，不挡更新检查，最易漏（daw-studio 实证：装完 0.1.1 health 仍报 0.1.0 才发现）。发版前 `grep -rn "0\.1\.0" plugins/<id>/{service,mcp,src}/` 旧版本号应零命中。
+- [ ] **tag 钉住的内容不可再变**：tag 一旦 push，重指向会让 jsdelivr 吐旧缓存包（sha256 与 index 不一致，≤12h 才自愈）——发 tag 前把源码修完，别「先发再补」。
+- [ ] **zip 文件数核对**：首版打包 200+ 文件 = 忘建 `.pluginignore`（照抄 dep-probe 的即可），正确应为个位数到十几文件。
+- [ ] **`npm test` + `tsc --noEmit` 全绿后再打包**；`publish-plugin.mjs` 只更新已存在条目，**新插件首版要手工加 index.json 条目 + 建 update.json**（validate.js 会查两文件同在）。
+- [ ] **发布验证**：钉 tag URL 下载 zip 实算 sha256 与 index.json 比对一致（`curl -sL <tagged zip> | sha256sum`）。
+
+## 面板服务可达性（桌面/手机全端范式）
+
+面板访问自家 127.0.0.1 服务**禁止直连 fetch**，一律经宿主转发（needs/data-query/daw-studio v0.1.1 三方实证）：
+
+```
+面板 ──router_dispatch──▶ cap.http(request) ──宿主进程发出──▶ 127.0.0.1:<meta.port>
+```
+
+- **手机/Web webview 里 `127.0.0.1` 指手机自身**——直连桌面服务必 `Failed to fetch`，桌面测试全绿也发现不了，必须按此范式实现
+- 服务 `{port, token}` 自 kv `<plugin>.meta` 读（宿主通道，全端可达）；正式数据根 config 已有 `cap.http source=remote → allow`（P1-h 沉淀），手机端放行
+- 面板自救按钮勿裸调 `restart`——**热安装插件在下次 discover（autostart）前未注册，restart 必报 not registered**；正确降级：restart 失败 → `cap.pluginServiceManager autostart` 重扫
+- 演奏/画布等纯前端能力不经数据面，天然全端可用
+
+## 本地安装/更新可靠路径（绕 `@main` 缓存）
+
+`apply_update` 依赖 `@main` update.json——jsdelivr 12h 缓存期内会下载到旧包、版本比对失败。手动装新版：
+
+```bash
+# 1. 钉 tag 下载 + 校验
+curl -sL "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@<tag>/plugins/<id>/<id>.zip" -o <id>.zip
+# sha256 与 index.json 比对
+
+# 2. 经总线换包（曲谱/kv 数据在 appConfigDir，与插件目录分离，卸载无损）
+#    cap.pluginServiceManager: stop_for_plugin {pluginId}
+#    cap.pluginDiscovery: uninstall_local {installPath}
+#    cap.pluginDiscovery: install_package {packagePath}
+#    cap.pluginServiceManager: autostart   # 重扫注册新装服务
+```
+
 ## 分类建议（category）
 
 | 值 | 说明 |
