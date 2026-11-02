@@ -1,0 +1,17 @@
+{
+  "name": "daw-studio-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "daw-studio 插件（构建用）：AI 乐谱工作台——AI 谱写/算法展开/精确演奏/导出",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}
