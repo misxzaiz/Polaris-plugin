@@ -47,7 +47,7 @@ function rollNext(current) {
   }
   return { anim: pick(IDLE, current), once: false };
 }
-async function resolveCandidates(invoke) {
+async function resolvePort(invoke) {
   let port = FALLBACK_PORT;
   try {
     const res = await invoke("plugin_service_list", {});
@@ -57,8 +57,60 @@ async function resolveCandidates(invoke) {
     if (svc?.port) port = svc.port;
   } catch {
   }
-  return [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
+  return port;
 }
+function b64ToBlobUrl(b64, contentType) {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], { type: contentType || "video/webm" });
+  return URL.createObjectURL(blob);
+}
+async function loadAsset(base, channel, anim, ext, contentType, cache) {
+  if (channel === "direct") return `${base}/asset/webm/${encodeURIComponent(anim)}${ext}`;
+  const key = `${anim}${ext}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const r = await capHttpFetch("GET", `${base}/asset/webm/${encodeURIComponent(anim)}${ext}`, 6e4);
+  if (r.status !== 200) throw new Error(`\u8D44\u6E90\u52A0\u8F7D\u5931\u8D25 HTTP ${r.status}: ${anim}`);
+  if (!r.isBase64) throw new Error(`cap.http \u54CD\u5E94\u975E base64\uFF08${r.contentType || "\u672A\u77E5"}\uFF09: ${anim}`);
+  const url = b64ToBlobUrl(r.body, r.contentType || contentType);
+  cache.set(key, url);
+  return url;
+}
+async function capHttpFetch(method, url, timeoutMs = 6e4) {
+  const res = await getInvoke()(
+    "router_dispatch",
+    { req: { target: "cap.http", payload: { action: "request", method, url, timeoutMs } } }
+  );
+  if (!res || !res.ok) throw new Error(res && res.error || "cap.http \u8F6C\u53D1\u5931\u8D25");
+  const r = res.result || {};
+  return {
+    status: Number(r.status) || 0,
+    body: String(r.body ?? ""),
+    isBase64: !!r.isBase64,
+    contentType: String(r.contentType || "")
+  };
+}
+async function probeHealth(port) {
+  for (const base of [`http://localhost:${port}`, `http://127.0.0.1:${port}`]) {
+    const ok = await fetch(`${base}/__health`).then((r) => r.json()).then((j) => !!j?.ok).catch(() => false);
+    if (ok) return { channel: "direct", base };
+  }
+  const viaBase = `http://127.0.0.1:${port}`;
+  try {
+    const r = await capHttpFetch("GET", `${viaBase}/__health`, 8e3);
+    if (r.status === 200) return { channel: "viaCap", base: viaBase };
+  } catch {
+  }
+  return null;
+}
+var EXT_MIME = {
+  ".webm": "video/webm",
+  ".png": "image/png",
+  ".wav": "audio/wav",
+  ".ttf": "font/ttf"
+};
 function WhalePetPanel(props) {
   const videoRef = useRef(null);
   const [state, setState] = useState({ pokes: 0 });
@@ -66,20 +118,23 @@ function WhalePetPanel(props) {
   const [errMsg, setErrMsg] = useState(null);
   const [videoSrc, setVideoSrc] = useState(null);
   const currentAnimRef = useRef(IDLE[0]);
+  const channelRef = useRef("direct");
   const baseRef = useRef(null);
   const onPokeRef = useRef(() => {
   });
+  const blobCacheRef = useRef(/* @__PURE__ */ new Map());
   const switchTo = useCallback(async (anim, once) => {
     const base = baseRef.current;
     if (!base) return;
     const v = videoRef.current;
     if (!v) return;
-    v.src = `${base}/asset/webm/${encodeURIComponent(anim)}.webm`;
-    v.loop = !once;
-    currentAnimRef.current = anim;
     try {
+      const url = await loadAsset(base, channelRef.current, anim, ".webm", EXT_MIME[".webm"], blobCacheRef.current);
+      v.src = url;
+      v.loop = !once;
+      currentAnimRef.current = anim;
       await v.play();
-    } catch {
+    } catch (e) {
     }
   }, []);
   const handleEnded = useCallback(() => {
@@ -99,32 +154,27 @@ function WhalePetPanel(props) {
     void (async () => {
       try {
         const invoke = getInvoke();
-        const candidates = await resolveCandidates(invoke);
+        const port = await resolvePort(invoke);
         if (!alive) return;
         let working = null;
         for (let i = 0; i < 8 && !working; i++) {
-          for (const base of candidates) {
-            if (!alive) return;
-            const ok = await fetch(`${base}/__health`).then((r) => r.json()).then((j) => !!j?.ok).catch(() => false);
-            if (ok) {
-              working = base;
-              break;
-            }
-          }
+          if (!alive) return;
+          working = await probeHealth(port);
           if (!working && alive) setErrMsg(`\u8D44\u6E90\u670D\u52A1\u542F\u52A8\u4E2D\u2026\uFF08\u7B2C ${i + 1} \u8F6E\u63A2\u6D4B\uFF09`);
           if (!working) await new Promise((r) => setTimeout(r, 1500));
         }
         if (!alive) return;
         if (!working) {
           setPhase("error");
-          setErrMsg(`\u8D44\u6E90\u670D\u52A1\u672A\u5C31\u7EEA\uFF08${candidates[0]}\uFF09\u3002\u53EF\u70B9\u51FB\u6B64\u63D0\u793A\u91CD\u8BD5\uFF1B\u82E5\u53CD\u590D\u5931\u8D25\u8BF7\u91CD\u542F\u5E94\u7528\u3002`);
+          setErrMsg(`\u8D44\u6E90\u670D\u52A1\u672A\u5C31\u7EEA\uFF08localhost:${port}\uFF09\u3002\u53EF\u70B9\u51FB\u6B64\u63D0\u793A\u91CD\u8BD5\uFF1B\u82E5\u53CD\u590D\u5931\u8D25\u8BF7\u91CD\u542F\u5E94\u7528\u3002`);
           return;
         }
-        baseRef.current = working;
+        baseRef.current = working.base;
+        channelRef.current = working.channel;
         setPhase("ready");
         const v = videoRef.current;
         if (v) {
-          const url = `${working}/asset/webm/${encodeURIComponent(IDLE[0])}.webm`;
+          const url = await loadAsset(working.base, working.channel, IDLE[0], ".webm", EXT_MIME[".webm"], blobCacheRef.current);
           v.src = url;
           v.loop = true;
           currentAnimRef.current = IDLE[0];
@@ -141,6 +191,13 @@ function WhalePetPanel(props) {
     })();
     return () => {
       alive = false;
+      blobCacheRef.current.forEach((u) => {
+        try {
+          URL.revokeObjectURL(u);
+        } catch {
+        }
+      });
+      blobCacheRef.current.clear();
     };
   }, [retryTick]);
   return /* @__PURE__ */ jsxs("div", { style: { font: '13px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif', color: "#d7dde6", background: "#0a1428", minHeight: "100%", boxSizing: "border-box", display: "flex", flexDirection: "column" }, children: [

@@ -1,9 +1,15 @@
 /**
- * Panel.tsx —— v0.3.0 dsh 形象正式版：经插件 HTTP 服务加载 webm 动画。
+ * Panel.tsx —— ds大肥鱼桌面宠物：经插件 HTTP 服务加载 webm 动画。
  *
  * 为什么走插件服务：宿主面板 invoke 白名单（main.tsx HOST_INVOKE_ALLOWLIST）
  * 不放行 download_file_binary——面板无法直接读盘。插件服务进程不受限，
- * 面板 fetch 127.0.0.1:<port>/asset/webm/<动画名>.webm（animation-2d 同范式）。
+ * 面板经 127.0.0.1:<port>/asset/webm/<动画名>.webm 拉取（animation-2d 同范式）。
+ *
+ * 资源通道（Phase 0，APK 端修复）：
+ * - 桌面：面板直连 localhost:<port>（direct，流式边下边播）
+ * - 移动/Web：经宿主 cap.http 转发（viaCap，宿主的 Rust 进程在桌面机发起请求，
+ *   127.0.0.1 指向桌面 server.js——手机 webview 里 127.0.0.1 指手机自身，直连必失败）
+ * 通道自动探测：先试 direct，失败再试 viaCap，两候选健康检查后选命中者。
  *
  * 服务地址：优先 plugin_service_list 查宿主分配端口，兜底 manifest 声明的 9863。
  */
@@ -64,10 +70,8 @@ function rollNext(current: string): { anim: string; once: boolean } {
   return { anim: pick(IDLE, current), once: false }
 }
 
-/** 服务地址解析：宿主服务状态查端口，返回 localhost 与 127.0.0.1 两个候选。
- *  为什么两个：系统代理（Clash 7897）下 WebView fetch 127.0.0.1 可能被代理截走，
- *  而 localhost 走 Chromium 内置直连规则；宿主自身 fetch localhost:9820 可用是先例。 */
-async function resolveCandidates(invoke: HostInvoke): Promise<string[]> {
+/** 服务端口解析：宿主 plugin_service_list 查 whale-pet-assets 分配端口，兜底 9863。 */
+async function resolvePort(invoke: HostInvoke): Promise<number> {
   let port = FALLBACK_PORT
   try {
     const res = await invoke<{ ok?: boolean; result?: { services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> }; services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> }>('plugin_service_list', {})
@@ -76,7 +80,91 @@ async function resolveCandidates(invoke: HostInvoke): Promise<string[]> {
     const svc = services.find((s) => s.pluginId === 'whale-pet' && s.serviceId === 'whale-pet-assets' && s.port)
     if (svc?.port) port = svc.port
   } catch { /* 兜底端口 */ }
-  return [`http://localhost:${port}`, `http://127.0.0.1:${port}`]
+  return port
+}
+
+/**
+ * 资源通道：direct = 面板直连本地服务（桌面）；viaCap = 经宿主 cap.http 转发（移动/Web 端）。
+ *
+ * 为什么区分（Phase 0，APK 端修复）：手机 APK 是远程壳，面板 fetch localhost:port
+ * 连的是**手机本机**，而 server.js 跑在桌面 → 必然 Failed to fetch。cap.http 由宿主
+ * Rust 进程（桌面机）发起请求，127.0.0.1 指向桌面本机 server.js，任何环境都可达。
+ * cap.http 已 no_proxy()（主仓 http_capability.rs），不踩 Clash 系统代理截 127.0.0.1 的坑；
+ * 二进制（video/webm）返回 base64 + isBase64:true。
+ */
+type Channel = 'direct' | 'viaCap'
+
+/** base64 → Blob URL（cap.http 二进制响应是 base64 字符串） */
+function b64ToBlobUrl(b64: string, contentType: string): string {
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  const blob = new Blob([bytes], { type: contentType || 'video/webm' })
+  return URL.createObjectURL(blob)
+}
+
+/**
+ * 加载动画资源，返回可直接设给 <video>.src 的 URL。
+ * - direct：返回直连地址（流式，视频边下边播，桌面首选）
+ * - viaCap：cap.http 全量下载 → base64 → blob URL（移动/Web 端，127.0.0.1 连的是桌面）。
+ *   结果按 anim 缓存（同动画反复播放不重复下载）；缓存由调用方在卸载时统一 revoke。
+ */
+async function loadAsset(
+  base: string, channel: Channel, anim: string, ext: string, contentType: string,
+  cache: Map<string, string>,
+): Promise<string> {
+  if (channel === 'direct') return `${base}/asset/webm/${encodeURIComponent(anim)}${ext}`
+  const key = `${anim}${ext}`
+  const hit = cache.get(key)
+  if (hit) return hit
+  const r = await capHttpFetch('GET', `${base}/asset/webm/${encodeURIComponent(anim)}${ext}`, 60000)
+  if (r.status !== 200) throw new Error(`资源加载失败 HTTP ${r.status}: ${anim}`)
+  if (!r.isBase64) throw new Error(`cap.http 响应非 base64（${r.contentType || '未知'}）: ${anim}`)
+  const url = b64ToBlobUrl(r.body, r.contentType || contentType)
+  cache.set(key, url)
+  return url
+}
+
+/** 经宿主 cap.http 发起请求（cap.http 契约：二进制 body 为 base64，isBase64:true）。
+ *  调用链：__POLARIS_HOST_INVOKE__('router_dispatch') → RouterBus → cap.http → reqwest。 */
+async function capHttpFetch(method: string, url: string, timeoutMs = 60000): Promise<{ status: number; body: string; isBase64: boolean; contentType: string }> {
+  const res = await getInvoke()<{ ok: boolean; result?: Record<string, unknown>; error?: string | null }>(
+    'router_dispatch',
+    { req: { target: 'cap.http', payload: { action: 'request', method, url, timeoutMs } } },
+  )
+  if (!res || !res.ok) throw new Error((res && res.error) || 'cap.http 转发失败')
+  const r = (res.result || {}) as Record<string, unknown>
+  return {
+    status: Number(r.status) || 0,
+    body: String(r.body ?? ''),
+    isBase64: !!r.isBase64,
+    contentType: String(r.contentType || ''),
+  }
+}
+
+/** 单轮探测：先 direct（桌面直连，localhost 走内置直连规避系统代理），再 viaCap（宿主转发）。
+ *  返回命中的 { channel, base }，或 null（本轮未命中，调用方决定重试）。 */
+async function probeHealth(port: number): Promise<{ channel: Channel; base: string } | null> {
+  // direct：localhost 优先（系统代理 Clash 下 127.0.0.1 可能被代理截走，localhost 走内置直连）
+  for (const base of [`http://localhost:${port}`, `http://127.0.0.1:${port}`]) {
+    const ok = await fetch(`${base}/__health`).then((r) => r.json()).then((j) => !!j?.ok).catch(() => false)
+    if (ok) return { channel: 'direct', base }
+  }
+  // viaCap：宿主转发到桌面 127.0.0.1（移动/Web 端）
+  const viaBase = `http://127.0.0.1:${port}`
+  try {
+    const r = await capHttpFetch('GET', `${viaBase}/__health`, 8000)
+    if (r.status === 200) return { channel: 'viaCap', base: viaBase }
+  } catch { /* 本轮未命中 */ }
+  return null
+}
+
+/** 动画资源类型（server.js 白名单扩展名 → MIME；video 走 base64，其余 fetch 直读） */
+const EXT_MIME: Record<string, string> = {
+  '.webm': 'video/webm',
+  '.png': 'image/png',
+  '.wav': 'audio/wav',
+  '.ttf': 'font/ttf',
 }
 
 export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?: (message: string) => void | Promise<void> }) {
@@ -86,18 +174,27 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
   const [errMsg, setErrMsg] = useState<string | null>(null)
   const [videoSrc, setVideoSrc] = useState<string | null>(null)
   const currentAnimRef = useRef<string>(IDLE[0])
+  const channelRef = useRef<Channel>('direct')
   const baseRef = useRef<string | null>(null)
   const onPokeRef = useRef<() => void>(() => {})
+  // viaCap 通道的 blob URL 缓存（按 anim+ext 键；同动画复用）。卸载时统一 revoke。
+  const blobCacheRef = useRef<Map<string, string>>(new Map())
 
   const switchTo = useCallback(async (anim: string, once: boolean) => {
     const base = baseRef.current
     if (!base) return
     const v = videoRef.current
     if (!v) return
-    v.src = `${base}/asset/webm/${encodeURIComponent(anim)}.webm`
-    v.loop = !once
-    currentAnimRef.current = anim
-    try { await v.play() } catch { /* autoplay 拒绝静默 */ }
+    try {
+      const url = await loadAsset(base, channelRef.current, anim, '.webm', EXT_MIME['.webm'], blobCacheRef.current)
+      v.src = url
+      v.loop = !once
+      currentAnimRef.current = anim
+      await v.play()
+    } catch (e) {
+      // 播放失败不致命：保持上一帧，下轮 handleEnded 会再试
+      void e
+    }
   }, [])
 
   const handleEnded = useCallback(() => {
@@ -121,31 +218,30 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
     void (async () => {
       try {
         const invoke = getInvoke()
-        const candidates = await resolveCandidates(invoke)
+        const port = await resolvePort(invoke)
         if (!alive) return
-        // 健康检查：候选地址轮换 × 8 轮（宿主拉起服务有延迟 + 双地址适配代理/直连差异）
-        let working: string | null = null
+        // 通道探测：direct（桌面直连）→ viaCap（宿主转发）。各轮循环直到任一命中
+        // 或 8 轮耗尽（宿主拉起服务有延迟；通道间无需轮换——probeHealth 内部已测两候选）
+        let working: { channel: Channel; base: string } | null = null
         for (let i = 0; i < 8 && !working; i++) {
-          for (const base of candidates) {
-            if (!alive) return
-            const ok = await fetch(`${base}/__health`).then((r) => r.json()).then((j) => !!j?.ok).catch(() => false)
-            if (ok) { working = base; break }
-          }
+          if (!alive) return
+          working = await probeHealth(port)
           if (!working && alive) setErrMsg(`资源服务启动中…（第 ${i + 1} 轮探测）`)
           if (!working) await new Promise((r) => setTimeout(r, 1500))
         }
         if (!alive) return
         if (!working) {
           setPhase('error')
-          setErrMsg(`资源服务未就绪（${candidates[0]}）。可点击此提示重试；若反复失败请重启应用。`)
+          setErrMsg(`资源服务未就绪（localhost:${port}）。可点击此提示重试；若反复失败请重启应用。`)
           return
         }
-        baseRef.current = working
+        baseRef.current = working.base
+        channelRef.current = working.channel
         setPhase('ready')
         // 待机动画
         const v = videoRef.current
         if (v) {
-          const url = `${working}/asset/webm/${encodeURIComponent(IDLE[0])}.webm`
+          const url = await loadAsset(working.base, working.channel, IDLE[0], '.webm', EXT_MIME['.webm'], blobCacheRef.current)
           v.src = url
           v.loop = true
           currentAnimRef.current = IDLE[0]
@@ -159,7 +255,12 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
         }
       }
     })()
-    return () => { alive = false }
+    // 卸载时释放全部 blob URL（viaCap 通道产生；direct 直连地址非 blob 无需释放）
+    return () => {
+      alive = false
+      blobCacheRef.current.forEach((u) => { try { URL.revokeObjectURL(u) } catch { /* 忽略 */ } })
+      blobCacheRef.current.clear()
+    }
   }, [retryTick])
 
   return (
