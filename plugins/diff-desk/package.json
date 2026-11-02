@@ -1,0 +1,20 @@
+{
+  "name": "diff-desk",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Diff 对比台面板构建（服务/MCP 零 npm 依赖，仅面板用 esbuild+react）",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs",
+    "test:service": "node test/service-tests.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.24.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  }
+}

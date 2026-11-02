@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02T20:27:27.976Z",
+  "updated": "2026-11-02T20:39:57.307Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3532,6 +3532,46 @@
       ],
       "createdAt": "2026-11-02T20:27:03.231Z",
       "updatedAt": "2026-11-02T20:27:03.231Z"
+    },
+    {
+      "id": "diff-desk",
+      "name": "Diff 对比台",
+      "version": "0.1.0",
+      "description": "把「这两份文本/这两个 JSON/这两个目录/这两个接口响应到底差在哪」变成一次 30 秒、数据不出本机的结构化对比：行级 Myers diff + 键序无关、数组按内容对齐的 JSON 语义 diff（键序/缩进/数组重排不再误报）+ 差异路径清单 + 忽略路径（$.meta.updatedAt 式 glob）+ 并排/统一视图与行内字级高亮 + 目录对比（同大小文件 sha256 实比）+ 双 URL 在线对比（staging vs prod，SSRF 围栏：私网/元数据地址拒绝、DNS 逐 IP 复检、重定向逐跳重围栏、跨域剥鉴权头）。AI 经 MCP 七工具一句话发起对比并解释差异（df_diff_text/files/dirs/urls/history/status/selftest）。全只读、正文不落盘不上传、历史仅存元数据；装完即有价值。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "diff",
+        "json",
+        "semantic-diff",
+        "directory-diff",
+        "ssrf-fence",
+        "devtools",
+        "mcp",
+        "offline"
+      ],
+      "icon": "GitPullRequest",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/diff-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/diff-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/update.json",
+      "sha256": "9c54c019c254db66c7a32eef7db549390b26b46ca67d22976e130425838b1543",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Diff 对比台（diff-desk）\n\n把「这两份文本 / 这两个 JSON / 这两个目录 / 这两个接口响应到底差在哪」变成一次 30 秒、**数据不出本机**的结构化对比。\n\n## 它解决什么\n\n- **行级 diff 工具对 JSON 噪音巨大**：键序、缩进、数组重排全被误报。本插件的 JSON 语义对比直接给出「哪个路径的哪个值变了」——键序无关、数组按内容对齐（纯重排只报一条顺序提示）。\n- **敏感 payload 不能贴到在线 diff 工具**：带 token 的 API 响应、内网配置，贴出去即出域。本插件全流程本机执行，正文不落盘不上传。\n- **staging vs prod 一键比**：双 URL 对比会替你发两次请求（带鉴权头），SSRF 围栏拒绝私网/元数据地址。\n- **AI 驱动**：对话里说「比下这两个文件差在哪」，AI 经 MCP 七工具发起对比并解释差异。\n\n## 快速上手\n\n1. 面板 **对比** 页：粘贴两段内容（或填两个文件路径），模式选「自动 / 文本 / JSON」→ 对比\n2. **目录** 页：两个目录路径 → 对比（哪些文件变了/只在 A/只在 B，点击差异文件进文件对比）\n3. **接口** 页：两个 URL（可带请求头）→ 请求并对比\n4. **历史** 页：最近对比的元数据（时间/对象/统计）；运行自检\n\n### JSON 语义对比示例\n\n```jsonc\n// A\n{ \"meta\": { \"ts\": 1, \"v\": 1 }, \"list\": [{ \"k\": \"x\", \"v\": 1 }, { \"k\": \"y\", \"v\": 2 }] }\n// B（键序重排 + 数组重排 + y 的 v 改了 + ts 忽略）\n{ \"list\": [{ \"k\": \"y\", \"v\": 3 }, { \"k\": \"x\", \"v\": 1 }], \"meta\": { \"ts\": 99, \"v\": 1 } }\n// 忽略路径填 $.meta.ts → 只报一条：$.list[1].v 2 → 3\n```\n\n忽略路径语法：`$.meta.updatedAt`（精确）、`$.items[*].ts`（通配一层）、`$.**.traceId`（任意深度）。\n\n## AI 驱动（MCP 七工具）\n\n| 工具 | 用途 |\n|---|---|\n| `df_diff_text` | 两段文本/JSON 对比（≤100KB） |\n| `df_diff_files` | 两个本机文件对比（只读 ≤20MB，UTF-8/GBK 自动识别） |\n| `df_diff_dirs` | 两个目录对比（同大小文件 sha256 实比，默认跳过 node_modules/.git） |\n| `df_diff_urls` | 发两次真实请求并对比响应（**调用前 AI 须征得用户同意**；围栏拒绝私网） |\n| `df_history` | 最近对比记录（仅元数据） |\n| `df_status` | 服务运行状态 |\n| `df_selftest` | 内置试金石自检（零网络全链路断言） |\n\n## 架构\n\n```\nshared/core.js     纯逻辑零依赖：Myers 行 diff/字级行内 diff/语义 JSON diff（键序无关+数组 LCS 对齐）/目录对比/摘要\nservice/main.js    对比编排与护栏（127.0.0.1:9877）、历史（仅元数据）、心跳 dfx.meta、自检\nservice/files.js   只读文件/目录（UTF-8→GBK 回退、大小/条目上限）\nservice/fetcher.js SSRF 围栏抓取（DNS 逐 IP 复检、重定向逐跳重围栏、跨域剥鉴权头、15s/5MB）\nmcp/server.js      stdio MCP 七工具（端口经 dfx.meta 自发现，回退 9877）\nsrc/               React 面板四 Tab（对比/目录/接口/历史），全部经宿主 cap.http 通道\n```\n\n## 护栏与隐私\n\n- **全只读**：service/mcp 无任何写文件调用（测试静态断言守护）。\n- **正文不出机**：面板↔服务走宿主 cap.http 通道；kv 历史仅存元数据（URL 只留 origin+pathname，防 query 里的 token 入库）。\n- **SSRF 围栏**：仅 http/https；IP 字面量私网拒绝；域名 DNS 全地址逐 IP 复检（防 rebinding）；重定向逐跳重围栏、跨 host 剥 authorization/cookie；响应 ≤5MB、≤15s。\n- **上限**：粘贴 ≤5MB、文件 ≤20MB、目录 ≤2 万条目、diff 输出 ≤400 行、MCP 摘要截断。\n- 无定时任务、无密钥管理面、无外部固定依赖服务。\n\n## 开发\n\n```bash\nnpm install\nnpm run typecheck          # tsc --noEmit（strict）\nnpm run build              # esbuild → dist/panel.js\nnode test/run-tests.mjs    # 离线单测 + 静态安全断言（零网络）\nnode test/service-tests.mjs # 服务集成 + MCP stdio 全链路（真子进程，零外网）\nnode test/smoke-real.mjs   # 真桥冒烟（需 Polaris 宿主运行中）\n```\n\n## 已知边界\n\n- diff_urls 的真实请求路径只在真桥冒烟中抽测（离线测试只测围栏拒绝，零外网纪律）。\n- 语义 diff 的数组对齐在 n×m > 250,000 时退位置对齐（如实标注路径仍精确）。\n- 不做编辑/合并/三方合并、AST 级代码 diff、office/pdf 内容 diff（明确边界）。\n- 历史最多 30 条，仅元数据，清空即删。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/diff-desk.zip"
+        }
+      ],
+      "createdAt": "2026-11-02T20:39:57.307Z",
+      "updatedAt": "2026-11-02T20:39:57.307Z"
     }
   ]
 }

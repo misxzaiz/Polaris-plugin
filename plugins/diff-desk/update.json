@@ -1,0 +1,54 @@
+{
+  "id": "diff-desk",
+  "name": "Diff 对比台",
+  "version": "0.1.0",
+  "description": "把「这两份文本/这两个 JSON/这两个目录/这两个接口响应到底差在哪」变成一次 30 秒、数据不出本机的结构化对比：行级 Myers diff + 键序无关、数组按内容对齐的 JSON 语义 diff（键序/缩进/数组重排不再误报）+ 差异路径清单 + 忽略路径（$.meta.updatedAt 式 glob）+ 并排/统一视图与行内字级高亮 + 目录对比（同大小文件 sha256 实比）+ 双 URL 在线对比（staging vs prod，SSRF 围栏：私网/元数据地址拒绝、DNS 逐 IP 复检、重定向逐跳重围栏、跨域剥鉴权头）。AI 经 MCP 七工具一句话发起对比并解释差异（df_diff_text/files/dirs/urls/history/status/selftest）。全只读、正文不落盘不上传、历史仅存元数据；装完即有价值。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "diff-desk.panel",
+        "area": "activityBar",
+        "panelType": "diffDesk",
+        "icon": "GitPullRequest",
+        "labelKey": "plugins.diffDesk",
+        "labelDefault": "Diff 对比台",
+        "order": 99
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "diff-desk-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9877,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 3000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "本机对比引擎（仅绑 127.0.0.1，全只读，唯一出网口带 SSRF 围栏；面板经 cap.http 宿主通道访问）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "diff-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": { "appConfigRead": true, "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/diff-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/diff-desk.zip"
+  }
+}
