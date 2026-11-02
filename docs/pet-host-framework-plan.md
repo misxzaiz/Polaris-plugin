@@ -236,3 +236,60 @@ async function loadAsset(name: string): Promise<string> {
 - M2（Phase 2）：AI 双向交互 —— 1.5 天
 - M3（Phase 3）：桌面悬浮（动宿主）—— 3 天（含 spec + cargo 门槛）
 - M4（Phase 4）：宠物团交流 —— 2 天
+
+---
+
+## 十、继续实施方案（2026-11-02 规划复核）
+
+> 基于 v0.3.3 发布后的代码事实复核，修正第四节契约设计，给出继续顺序与闸门。
+
+### 10.1 契约修正：pet.json 不能走 `contributes.pets[]`
+实测（主仓 `models/plugin.rs:150`）：`PluginManifestContributes` 是封闭结构
+（views / mcp_servers / services / panel / engines / chat_cards / tool_providers /
+capabilities / skills），manifest 里自定义 `pets` 字段会被 serde 静默丢弃，
+`cap.pluginDiscovery:discover` 回传里拿不到。
+
+**修正**：pet.json 由各宠物插件自己的 server.js 提供（`GET /pet.json`），
+pet-host 经 `plugin_service_list` 发现全部宠物服务端口后逐个拉取。
+`plugin_service_list` 返回形状已验证（whale-pet `Panel.tsx:77` 生产在用）：
+`{ services: [{ pluginId, serviceId, port, state }] }`——含全量插件服务表，
+pet-host 可据此发现任意宠物插件。纯插件，零宿主改动。
+宿主侧 `contributes.pets` 字段留待 L4 动宿主时顺手加（可选，非依赖）。
+
+### 10.2 Step 0 闸门：APK 真机验证 v0.3.3（先于 Phase 1）
+M0 唯一未闭环验收项。Phase 1 会整体迁移资源加载路径，
+基线未验证就迁移会混淆归因（"到底是通道坏了还是迁移坏了"）。
+验收：插件市场更新 ds大肥鱼 → 0.3.3 → 打开面板蓝鲸播放。
+失败时面板有可见错误文案（v0.3.2+ 失败可见化），原样回传即可定位。
+
+### 10.3 Phase 1 开工前 spec 三决策（写入 spec 后动工）
+1. **pet.json 分发**：server.js `/pet.json`（10.1 已定）。
+2. **面板归属**：pet-host 独立 activityBar 入口（宠物选择器 + 通用渲染器）；
+   whale-pet 保留自身入口一个版本周期显示「已迁移至宠物框架」引导，之后删除。
+   附带验证点：`validate_manifest_fields` 是否允许「只有 services 无 views」的
+   纯资源插件——决定 whale-pet 最终形态能否彻底去面板。
+3. **代码搬迁**：通道探测 / video 双缓冲 / 状态机 / blob 缓存整体迁 pet-host；
+   whale-pet 瘦身为 server.js（+pet.json）+ assets + MIT 声明。
+
+### 10.4 Phase 2 通道定案
+走 daw-studio v0.1.2 已验证先例（AI 经 MCP 写 → 面板轮询服务）：
+MCP 工具 `pet.trigger` / `pet.state` / `pet.list` → 写 pet-host 服务
+（HTTP POST localhost，MCP 与服务同在桌面侧）→ 面板 2~5s 轮询 `/commands` 执行。
+MVP 只做 pull 状态 + trigger 动作；对话轮次联动（workStatus / balance 动画）
+为 stretch，依赖 chat-event 通道可行性验证后另立项。
+
+### 10.5 Phase 3 设计要点：悬浮窗自包含（新增）
+悬浮窗**不加载宿主前端路由**（blob 形态 panel.js 无法在独立窗口复用），改由
+`cap.window.overlay` 直接开 webview 指向 pet-host 服务自包含页：
+`http://127.0.0.1:<port>/overlay.html?pet=<id>`（server.js 提供，播放自身 assets webm）。
+拖拽 / 位置记忆经 Tauri IPC + cap.kv。宿主 spec 须写明插件形态不可行原因
+（悬浮窗是 Tauri window 能力，插件进程无法创建，AGENTS.md §五）。
+可与 Phase 2 并行启动 spec 撰写（spec 不依赖 Phase 1 代码）。
+
+### 10.6 执行顺序与并行度
+```
+Step 0 真机验证（用户） ──┐
+                          ├→ Phase 1 pet-host 框架 → Phase 2 AI 交互 → Phase 4 宠物团
+Phase 3 宿主 spec 撰写 ───┘（并行，spec 先行不依赖 Phase 1）
+```
+移动流量护栏（`pet.json` 声明 `mobileSubset`）随 Phase 1 顺手落地。
