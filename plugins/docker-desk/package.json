@@ -1,0 +1,18 @@
+{
+  "name": "docker-desk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "容器工作台 —— Docker Engine API 面板 + AI 只读 MCP",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/service-tests.mjs && node test/mcp-tests.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "esbuild": "^0.24.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  }
+}

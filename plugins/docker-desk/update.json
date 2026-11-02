@@ -1,0 +1,63 @@
+{
+  "id": "docker-desk",
+  "name": "容器工作台",
+  "version": "0.1.0",
+  "description": "不开 Docker Desktop，在 Polaris 里看容器/查日志/盯资源/清垃圾：Docker Engine API 直连（named pipe/unix socket/TCP，零 CLI 依赖），容器列表与 compose 项目分组、启停重启（面板确认）、日志 tail 与 live follow 流式、单容器 CPU/内存快照、镜像列表与删除、磁盘占用与可回收统计、事件流水。AI 经 MCP 八个只读工具（dk_status/ps/logs/inspect/stats/images/events/selftest）直接「看见」容器并解释报错——inspect 的 env 默认打码，日志与 inspect 不落盘。未装 Docker 时诚实降级并给出安装指引。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "docker-desk.panel",
+        "area": "activityBar",
+        "panelType": "dockerDesk",
+        "icon": "./assets/icon.svg",
+        "labelKey": "plugins.dockerDesk",
+        "labelDefault": "容器工作台",
+        "order": 73
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "docker-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "Docker Engine API 客户端服务（仅绑 127.0.0.1；默认连本机 docker named pipe/unix socket，不出外网）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "docker-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/docker-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/docker-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/docker-desk/docker-desk.zip"
+  }
+}
