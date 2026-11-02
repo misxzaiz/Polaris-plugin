@@ -293,3 +293,79 @@ Step 0 真机验证（用户） ──┐
 Phase 3 宿主 spec 撰写 ───┘（并行，spec 先行不依赖 Phase 1）
 ```
 移动流量护栏（`pet.json` 声明 `mobileSubset`）随 Phase 1 顺手落地。
+
+---
+
+## 十一、方案 v2：需求调研修订版（2026-11-02 定稿，**以此为准**，第十节排序作废）
+
+> 依据桌宠品类外部需求调研 + 主仓能力勘探复核。第十节的契约结论（10.1 pet.json 走
+> server.js、10.2 真机闸门、10.5 悬浮自包含页）继续有效；阶段顺序与重心重排。
+
+### 11.1 调研结论（需求信号）
+桌宠品类的核心价值收敛为四件事：
+1. **真桌面栖居**：悬浮桌面上自由活动（贴边/游走/置顶可关）——用户第一诉求，
+   也是 r/Windows11 高赞桌宠的差异点；"困在面板里"价值减半
+2. **与你正在做的事联动**：Bongo Cat 靠键鼠联动爆红；AI 桌宠新趋势是连
+   编程 agent（PetGen 连 Claude Code/Codex 完成任务主动通知、dsh-token-pet /
+   dsh-companion 状态联动、像素守护者按 App 切状态）——**这是 Polaris 桌宠的
+   天然差异化**，通用桌宠做不到
+3. **轻养成**：摸头亲密度、喂食、番茄钟结算奖励（DyberPet 200 级养成 +
+   番茄钟挂头顶）、《萌宠不摸鱼》掉落装扮
+4. **碎碎念情绪价值**：「陪你摸鱼」是核心情绪产品（LoFi 貓）；dsh-pet 的
+   余额气泡/窗口失焦系统通知同属此类
+
+**dsh-pet 本体功能清单**（素材同源，即我们的对标基线）：会话活动→9 态轨道、
+摸头亲密度 +1（10s 冷却）、拖拽悬空挣扎、自主游走朝向自适应、碎碎念气泡、
+多开同屏多只。
+
+**要避的坑**：性能（隐藏/遮挡时暂停渲染、全屏应用让路）、置顶要可关
+（"仅桌面模式"是 shimeji 社区高频诉求）、透明渲染兼容。
+
+### 11.2 重定位
+**ds大肥鱼 = 接在 AI 工作台上的桌宠**，不是 Shimeji 克隆。三支柱：
+桌面栖居（R1）+ AI 联动（R2，王牌）+ 轻养成（R4）。素材侧 109 个 webm 已
+自带 余额/工作状态/睡觉/碎碎念 动作——AI 联动等于把 dsh-pet 缺宿主通道
+做不了的部分补齐，素材利用率直接翻倍。
+
+### 11.3 阶段重排
+
+| 阶段 | 内容 | 对比 v1 |
+|---|---|---|
+| **Step 0** | APK 真机验证 v0.3.3（闸门不变） | 同 |
+| **R1 悬浮栖居** | 桌面悬浮窗 + 拖拽/位置记忆/点击回应/夜间睡觉。**先 1 天 spike** | 原 Phase 3 提前，勘探后工作量大降 |
+| **R2 AI 联动** | AIEvent→动画轨道（思考/工具执行/完成庆祝）、余额气泡、碎碎念、摸头亲密度 | 原 Phase 2 升级为王牌并扩容 |
+| **R3 pet-host 框架** | 抽象 pet.json + 通用渲染器（10.1 契约有效） | 原 Phase 1 后置 |
+| **R4 效率+养成** | 番茄钟/喝水提醒（service 定时+气泡）、cap.todo 联动（完成待办→庆祝） | 新增（调研产物） |
+| **R5 多宠/宠物团** | 多开同屏 + 宠物互动 | 原 Phase 4 |
+
+### 11.4 R1 关键勘探（2026-11-02 实测，改写工作量预估）
+主仓 `src-tauri/capabilities/default.json` **已**给 webviews `["main","floating"]`
+放行全套窗口操作权限：`set-always-on-top / set-skip-taskbar / set-decorations /
+start-dragging / set-position / set-size / webview:create`（描述即
+"Capability for the main window and floating window"，宿主悬浮岛已在用）。
+**缺的只有「新建窗口」一个口子**（无 `core:window:allow-create`，且面板受
+`__POLARIS_HOST_INVOKE__` 16 命令白名单限制）。两条路径，spike 后定：
+- **路径 A（最小宿主改动，推荐起点）**：Rust 加一个建窗命令
+  （transparent + alwaysOnTop + decorations:false + skipTaskbar，指向
+  server.js 的 `overlay.html?pet=<id>` 自包含页）+ `default.json` webviews
+  加 `"pet-overlay"` 一行 + 面板白名单加一项。约 1 个命令 + 2 行配置。
+- **路径 B（治理完整）**：cap.bus 正式 `cap.window.overlay` capability
+  （AGENTS.md 清单 28→29）。作为 R1 后续治理化演进，不阻塞首发。
+
+悬浮页 AI 联动通道：overlay.html（server.js 同源页）**直连后端 WS**
+（9820/9821，web.token 鉴权）订阅 AIEvent 流——spike 验证第三客户端
+鉴权与事件过滤；面板形态则复用 app 内事件或轮询。
+
+### 11.5 R1 spike 验收清单（1 天，决定 A/B 路径与 R2 通道）
+- [ ] 透明无边框置顶窗口显示待机 webm，肉眼无黑底/白框
+- [ ] start-dragging 拖拽顺滑，位置记忆（cap.kv）重启还原
+- [ ] 点击/拖拽动画回应在悬浮窗内正常
+- [ ] 隐藏/最小化 Polaris 主窗后悬浮窗独立存活；CPU 占用可接受（待机 <1%）
+- [ ] 全屏应用前台时自动隐藏或让路（可选，spike 评估）
+- [ ] overlay.html 连后端 WS 收到 AIEvent（R2 通道预研）
+
+### 11.6 v1→v2 重排理由
+v1 把框架（原 Phase 1）放在最前是"为多宠物优化"；调研显示**单宠物的
+栖居+联动价值密度远高于第二只宠物**（品类第一诉求是桌面栖居，AI 联动是
+差异化红利窗口）。先抽框架会把抽象押在"面板形态"上——悬浮形态定型后再
+抽 pet-host 才不返工。真机闸门与 pet.json 契约结论不受影响。
