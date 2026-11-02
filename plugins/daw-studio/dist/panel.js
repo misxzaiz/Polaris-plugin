@@ -595,32 +595,30 @@ async function readMeta(force = false) {
 var SvcError = class extends Error {
 };
 async function svcRequest(method, apiPath, body) {
-  let meta;
-  try {
-    meta = await readMeta();
-  } catch (e) {
-    if (e instanceof SvcError) throw e;
-    throw new SvcError(`\u670D\u52A1\u8FDE\u63A5\u5931\u8D25\uFF1A${e.message}`);
-  }
+  const meta = await readMeta();
   let res;
   try {
-    res = await fetch(`http://127.0.0.1:${meta.port}${apiPath}`, {
+    res = await capDispatch("cap.http", {
+      action: "request",
       method,
+      url: `http://127.0.0.1:${meta.port}${apiPath}`,
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${meta.token}` },
-      body: body != null ? JSON.stringify(body) : void 0
+      ...body != null ? { body: JSON.stringify(body), bodyType: "json" } : {},
+      timeoutMs: 3e4
     });
   } catch (e) {
     invalidateMeta();
-    throw new SvcError(`\u670D\u52A1\u4E0D\u53EF\u8FBE\uFF08${e.message}\uFF09\uFF1A\u53EF\u70B9\u300C\u91CD\u542F\u670D\u52A1\u300D\u81EA\u6551`);
+    throw new SvcError(`\u5BBF\u4E3B\u8F6C\u53D1\u901A\u9053\u4E0D\u53EF\u7528\uFF08${e.message}\uFF09\uFF1A\u53EF\u70B9\u300C\u91CD\u542F\u670D\u52A1\u300D\u81EA\u6551`);
   }
-  let parsed;
+  let parsed = null;
   try {
-    parsed = await res.json();
+    parsed = JSON.parse(String(res.body ?? ""));
   } catch (_) {
-    throw new SvcError(`\u670D\u52A1\u8FD4\u56DE\u975E JSON\uFF08HTTP ${res.status}\uFF09`);
+    parsed = null;
   }
-  if (!res.ok) {
-    const msg = parsed.errors ? parsed.errors.join("\uFF1B") : parsed.error || `HTTP ${res.status}`;
+  const status = res.status ?? 0;
+  if (!parsed || status >= 400) {
+    const msg = parsed?.errors ? parsed.errors.join("\uFF1B") : parsed?.error || `\u670D\u52A1 HTTP ${status || "\u65E0\u54CD\u5E94"}`;
     throw new SvcError(msg);
   }
   return parsed;
@@ -634,7 +632,19 @@ var api = {
   deleteScore: (id) => svcRequest("DELETE", `/api/scores/${encodeURIComponent(id)}`),
   analyze: (id) => svcRequest("POST", "/api/analyze", { id }),
   validate: (score2) => svcRequest("POST", "/api/validate", { score: score2 }),
-  restart: () => restartService(PLUGIN_ID, SERVICE_ID)
+  /**
+   * 自救：先试 restart（已注册场景）；not registered 时降级 autostart 重扫
+   * （热安装插件在下次 discover 前不会注册，restart 必报 not registered——
+   * daw-studio 实证，坑清单「平台权限与桥」节）。
+   */
+  restart: async () => {
+    try {
+      await restartService(PLUGIN_ID, SERVICE_ID);
+    } catch (e) {
+      if (!String(e.message).includes("not registered")) throw e;
+      await capDispatch("cap.pluginServiceManager", { action: "autostart" });
+    }
+  }
 };
 
 // src/engine.ts

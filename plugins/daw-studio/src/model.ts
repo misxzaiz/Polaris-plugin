@@ -4,7 +4,7 @@
  * 数据面：面板 → 127.0.0.1:{meta.port} 直连（Bearer token 头，meta 自 cap.kv 读）。
  * 谱面口径与 service/MCP 同源（shared/core 由 esbuild 打包进 bundle）。
  */
-import { kvGet, restartService } from './host'
+import { kvGet, restartService, capDispatch } from './host'
 
 // ── shared/core（打包进 bundle，与 service 同口径）─────────────────────────
 import * as core from '../shared/core.js'
@@ -65,29 +65,35 @@ async function readMeta(force = false): Promise<SvcMeta> {
 
 export class SvcError extends Error {}
 
+/**
+ * 数据面：经宿主 router_dispatch → cap.http 转发到 127.0.0.1:{meta.port}（needs/
+ * data-query/amber 已验证范式）。请求由宿主进程（桌面机）发出——手机/Web/桌面
+ * 任何环境都无跨域与可达性问题（手机 webview 里 127.0.0.1 指手机自身，直连必
+ * Failed to fetch，daw-studio v0.1.0 实证）；服务只绑 127.0.0.1 不暴露局域网。
+ */
+interface CapHttpResult { status?: number; body?: string }
+
 async function svcRequest<T>(method: string, apiPath: string, body?: unknown): Promise<T> {
-  let meta: SvcMeta
+  const meta = await readMeta()
+  let res: CapHttpResult
   try {
-    meta = await readMeta()
-  } catch (e) {
-    if (e instanceof SvcError) throw e
-    throw new SvcError(`服务连接失败：${(e as Error).message}`)
-  }
-  let res: Response
-  try {
-    res = await fetch(`http://127.0.0.1:${meta.port}${apiPath}`, {
+    res = await capDispatch<CapHttpResult>('cap.http', {
+      action: 'request',
       method,
+      url: `http://127.0.0.1:${meta.port}${apiPath}`,
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${meta.token}` },
-      body: body != null ? JSON.stringify(body) : undefined,
+      ...(body != null ? { body: JSON.stringify(body), bodyType: 'json' } : {}),
+      timeoutMs: 30_000,
     })
   } catch (e) {
     invalidateMeta()
-    throw new SvcError(`服务不可达（${(e as Error).message}）：可点「重启服务」自救`)
+    throw new SvcError(`宿主转发通道不可用（${(e as Error).message}）：可点「重启服务」自救`)
   }
-  let parsed: { errors?: string[]; error?: string } & Record<string, unknown>
-  try { parsed = await res.json() } catch (_) { throw new SvcError(`服务返回非 JSON（HTTP ${res.status}）`) }
-  if (!res.ok) {
-    const msg = parsed.errors ? parsed.errors.join('；') : parsed.error || `HTTP ${res.status}`
+  let parsed: ({ errors?: string[]; error?: string } & Record<string, unknown>) | null = null
+  try { parsed = JSON.parse(String(res.body ?? '')) } catch (_) { parsed = null }
+  const status = res.status ?? 0
+  if (!parsed || status >= 400) {
+    const msg = parsed?.errors ? parsed.errors.join('；') : parsed?.error || `服务 HTTP ${status || '无响应'}`
     throw new SvcError(msg)
   }
   return parsed as T
@@ -102,5 +108,17 @@ export const api = {
   deleteScore: (id: string) => svcRequest<{ deleted: string }>('DELETE', `/api/scores/${encodeURIComponent(id)}`),
   analyze: (id: string) => svcRequest<{ score: Score; analysis: Analysis }>('POST', '/api/analyze', { id }),
   validate: (score: Score) => svcRequest<{ ok: boolean; errors?: string[] }>('POST', '/api/validate', { score }),
-  restart: () => restartService(PLUGIN_ID, SERVICE_ID),
+  /**
+   * 自救：先试 restart（已注册场景）；not registered 时降级 autostart 重扫
+   * （热安装插件在下次 discover 前不会注册，restart 必报 not registered——
+   * daw-studio 实证，坑清单「平台权限与桥」节）。
+   */
+  restart: async () => {
+    try {
+      await restartService(PLUGIN_ID, SERVICE_ID)
+    } catch (e) {
+      if (!String((e as Error).message).includes('not registered')) throw e
+      await capDispatch('cap.pluginServiceManager', { action: 'autostart' })
+    }
+  },
 }
