@@ -1,0 +1,56 @@
+{
+  "id": "db-workbench",
+  "name": "数据库工作台",
+  "version": "0.1.0",
+  "description": "把「连本机/远程 MySQL·PostgreSQL·Redis 查数据、看表结构、让 AI 帮我查」变成 30 秒内的事：连接一次配置，面板即查即导出，AI 经 MCP 七工具用一句话查库——数据不出本机，护栏默认只读（写语句一律拦截，AI 通道强制只读），UPDATE/DELETE 无 WHERE 拒绝，长表自动 LIMIT。支持 schema 浏览（库/表/列/索引/DDL/估算行数）、Redis 键浏览（SCAN 分页/TTL/类型/值预览）与白名单命令行，FLUSHALL/CONFIG 等服务器级命令永久拒绝。连接密码只存本机服务侧文件，不进 kv、不进 AI 上下文。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "db-workbench.panel",
+        "area": "activityBar",
+        "panelType": "dbWorkbench",
+        "icon": "Target",
+        "labelKey": "plugins.dbWorkbench",
+        "labelDefault": "数据库工作台",
+        "order": 74
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "db-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "数据库连接与查询服务（仅绑 127.0.0.1；数据库出站连接按需建立，无外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "db-workbench",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/db-workbench",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/db-workbench/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/db-workbench/db-workbench.zip"
+  }
+}

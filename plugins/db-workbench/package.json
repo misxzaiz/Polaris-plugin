@@ -1,0 +1,23 @@
+{
+  "name": "db-workbench-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "db-workbench 插件面板（打包用）：数据库工作台",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:vendor": "node build-vendor.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/service-tests.mjs && node test/mcp-tests.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "mysql2": "^3.11.0",
+    "pg": "^8.13.0"
+  }
+}

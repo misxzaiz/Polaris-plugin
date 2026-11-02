@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02T17:47:47.600Z",
+  "updated": "2026-11-02T17:59:44.009Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3354,6 +3354,24 @@
       ],
       "createdAt": "2026-11-02T17:47:47.600Z",
       "updatedAt": "2026-11-02T17:47:47.600Z"
+    },
+    {
+      "id": "db-workbench",
+      "name": "数据库工作台",
+      "version": "0.1.0",
+      "description": "把「连本机/远程 MySQL·PostgreSQL·Redis 查数据、看表结构、让 AI 帮我查」变成 30 秒内的事：连接一次配置，面板即查即导出（CSV/JSON），AI 经 MCP 七工具一句话查库——数据不出本机，护栏默认只读（AI 通道强制只读；UPDATE/DELETE 无 WHERE 拒绝；DROP/TRUNCATE 需确认；多语句拒绝；SELECT INTO OUTFILE/FOR UPDATE 伪装读拦截；自动 LIMIT 1000）。结构浏览（库/表/列/索引/DDL/估算行数），Redis 键浏览（SCAN 强制 COUNT/TTL/类型/值预览）与白名单命令行，FLUSHALL/CONFIG 永久拒绝。密码只存本机服务侧文件，不进 kv 不进 AI。",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/db-workbench/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/db-workbench/db-workbench.zip",
+      "sha256": "73435789d2bcf4ef140b8c4af678c8ed8392248398017ded10a71d231af85a25",
+      "tags": [
+        "开发者工具",
+        "数据库",
+        "SQL",
+        "Redis",
+        "AI 工具"
+      ],
+      "enabledByDefault": true,
+      "addedAt": "2026-11-02T17:59:44.007Z"
     }
   ]
 }
