@@ -1,0 +1,56 @@
+{
+  "id": "query-plan-lens",
+  "name": "执行计划透视台",
+  "version": "0.1.0",
+  "description": "把「这条 SQL 为什么慢」从跑 EXPLAIN→复制→贴网页→肉眼对照变成一次点击：连上 MySQL·PostgreSQL 一键出执行计划树（耗时/成本/行数逐节点标注、估算与实际行数偏差高亮），内置中文诊断规则（全表扫描/统计信息过期/排序外排落盘/Using filesort·temporary/大比例过滤丢弃/热点节点定位），生产库连不上时可粘贴 EXPLAIN 文本或 JSON 离线解析——计划数据不出本机。AI 经 MCP 工具一句话解读计划与发现（连接名引用、凭据零出现），解读可一键直发聊天。写语句永久拒绝；EXPLAIN ANALYZE（真实执行）双重闸：默认关 + 仅 SELECT/WITH 放行；连接密码只存本机服务侧文件，不进 kv、不进 AI 上下文。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "query-plan-lens.panel",
+        "area": "activityBar",
+        "panelType": "queryPlanLens",
+        "icon": "Activity",
+        "labelKey": "plugins.queryPlanLens",
+        "labelDefault": "执行计划透视台",
+        "order": 75
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "qpl-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "执行计划服务（仅绑 127.0.0.1；数据库出站连接按需建立，无外网请求）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "query-plan-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/query-plan-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/query-plan-lens.zip"
+  }
+}

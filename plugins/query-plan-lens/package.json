@@ -1,0 +1,23 @@
+{
+  "name": "query-plan-lens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "执行计划透视台 —— MySQL/PostgreSQL EXPLAIN 可视化与诊断（仓库内开发用，不随包发布）",
+  "scripts": {
+    "build:vendor": "node build-vendor.js",
+    "build:panel": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --minify",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/run-tests.mjs test/mcp-tests.mjs"
+  },
+  "dependencies": {
+    "mysql2": "3.11.5",
+    "pg": "8.13.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "esbuild": "0.24.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.3"
+  }
+}

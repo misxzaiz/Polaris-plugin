@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02T23:07:45.784Z",
+  "updated": "2026-11-02",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3690,6 +3690,43 @@
       ],
       "createdAt": "2026-11-02T23:07:45.784Z",
       "updatedAt": "2026-11-02T23:07:45.784Z"
+    },
+    {
+      "id": "query-plan-lens",
+      "name": "执行计划透视台",
+      "version": "0.1.0",
+      "description": "把「这条 SQL 为什么慢」从跑 EXPLAIN→复制→贴网页→肉眼对照变成一次点击：连上 MySQL·PostgreSQL 一键出执行计划树（耗时/成本/行数逐节点标注、估算与实际行数偏差高亮），内置中文诊断规则（全表扫描/统计信息过期/排序外排落盘/Using filesort·temporary/大比例过滤丢弃/热点节点定位），生产库连不上时可粘贴 EXPLAIN 文本或 JSON 离线解析——计划数据不出本机。AI 经 MCP 工具一句话解读计划与发现（连接名引用、凭据零出现），解读可一键直发聊天。写语句永久拒绝；EXPLAIN ANALYZE（真实执行）双重闸：默认关 + 仅 SELECT/WITH 放行；连接密码只存本机服务侧文件，不进 kv、不进 AI 上下文。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "sql",
+        "explain",
+        "query-plan",
+        "database",
+        "performance",
+        "diagnostics",
+        "mysql",
+        "postgresql",
+        "mcp",
+        "offline"
+      ],
+      "icon": "Activity",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/query-plan-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/query-plan-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/update.json",
+      "sha256": "46104de90f9105b4e7e06181dca646649a914fe785a6d2998dc7f63793695d43",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "readme": "# 执行计划透视台\n\n连上 MySQL/PostgreSQL 一键出 EXPLAIN 计划树：估行→实行、自耗时条、成本逐节点标注；中文诊断规则（全表扫描/统计过期/排序落盘/filesort/临时表/过滤丢弃/热点节点）每条带建议；生产库连不上可粘贴 EXPLAIN 文本或 JSON 离线解析；AI 经 MCP 五工具一句话解读并直发聊天。写语句永久拒绝，ANALYZE 双重闸，密码只存本机。\n\n## 快速开始\n1. 连接页新增数据库连接\n2. 分析页贴 SQL 点「出执行计划」\n3. 看发现列表与计划树；PG 可勾「实际执行」拿真实耗时\n4. 「发到聊天让 AI 解读」一键直送对话\n\n对 AI 说：用 xx 连接解释这条 SQL 为什么慢：SELECT ...",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/query-plan-lens.zip"
+        }
+      ]
     }
   ]
 }
