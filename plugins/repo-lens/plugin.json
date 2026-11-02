@@ -1,0 +1,58 @@
+{
+  "id": "repo-lens",
+  "name": "仓库体检台",
+  "version": "0.1.0",
+  "description": "把「这个仓库哪里最该重构、哪里最危险」从手搓 git 命令变成一次 60 秒的本地体检：给定仓库路径，读取 git 历史与工作区文件，产出八维体检报告——热点（变更频率×复杂度，重构优先级）、时间耦合（总是被一起改的「假装独立」文件对=隐藏依赖）、重复代码块、历史大对象、提交卫生（conventional commits 遵循率/草率消息/巨提交）、巴士因子、陈旧分支、语言构成与综合健康分；热点气泡图 + 文件下钻（周粒度变更时间线/作者分布/共变伙伴）。AI 经 MCP 八工具对话式考古（repo_scan/repo_report/repo_hotspots/repo_file/repo_couples/repo_hygiene/repo_runs/repo_selftest）。git 子命令全只读白名单，零网络出站，零系统写入，数据不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "repo-lens.panel",
+        "area": "activityBar",
+        "panelType": "repoLens",
+        "icon": "Code2",
+        "labelKey": "plugins.repoLens",
+        "labelDefault": "仓库体检台",
+        "order": 94
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "repo-lens-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9879,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "仓库体检引擎（127.0.0.1 监听；git 只读采集 + churn/复杂度/耦合/重复分析 + kv 投影；REST API）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "repo-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/repo-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/repo-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/repo-lens/repo-lens.zip"
+  }
+}

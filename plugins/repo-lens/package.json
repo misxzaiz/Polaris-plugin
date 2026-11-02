@@ -1,0 +1,17 @@
+{
+  "name": "repo-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "repo-lens 插件（构建用）：仓库体检台——git 历史×工作区的重构热点/隐藏耦合/卫生体检",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}
