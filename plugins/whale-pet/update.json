@@ -1,6 +1,55 @@
 {
-  "version": "0.3.2",
+  "id": "whale-pet",
+  "name": "ds大肥鱼",
+  "version": "0.3.3",
+  "description": "Polaris 桌面/移动端通用的 ds 大肥鱼桌面宠物插件：活动栏面板内一只会游动、眨眼、被点击会回应、隔阵随机切换 80 余种动作的蓝色大肥鱼（复刻 dsh-pet 形象与动画链，webm 视频播放）。资源经插件自带 HTTP 服务加载（127.0.0.1 + localhost），零宿主改动。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "whale-pet.panel",
+        "area": "activityBar",
+        "panelType": "whale-pet",
+        "icon": "Bot",
+        "labelKey": "plugins.whale-pet",
+        "labelDefault": "ds大肥鱼",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "whale-pet-assets",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/server.js",
+          "{{port}}",
+          "{{pluginDir}}"
+        ],
+        "port": 9863,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "whale-pet 静态资源服务（127.0.0.1）：webm/png 读取，绕开面板 invoke 白名单对文件读取的限制"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/whale-pet",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/whale-pet.zip"
+  },
   "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/plugin.json",
-  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/whale-pet.zip",
-  "releasedAt": "2026-11-02T00:00:00Z"
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.3/plugins/whale-pet/whale-pet.zip",
+  "releasedAt": "2026-11-02T14:55:00.000Z"
 }

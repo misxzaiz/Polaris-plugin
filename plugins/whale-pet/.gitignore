@@ -1,0 +1,5 @@
+# 资源按发布形态拆分（webm 109 个 60MB 超 jsdelivr 50MB 单包上限），
+# 独立 tag whale-pet-assets-vX.Y.Z 分发，不进 git 树。
+# 本地 dev 直读 assets/ 时保留磁盘文件；发布 zip 经 .pluginignore 排除。
+assets/
+.asset-cache/

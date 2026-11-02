@@ -3228,7 +3228,7 @@
     {
       "id": "whale-pet",
       "name": "ds大肥鱼",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "description": "Polaris 桌面/移动端通用的鲸鱼桌面宠物插件：活动栏面板内一只会游动、眨眼、被点击会吐泡泡的蓝色小鲸鱼，纯前端 Canvas 动画，状态持久化到 cap.kv，零后端改动（宿主零改造）。",
       "author": "Polaris",
       "category": "fun",
@@ -3243,7 +3243,7 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/whale-pet",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.2/plugins/whale-pet/whale-pet.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.3/plugins/whale-pet/whale-pet.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/update.json",
       "tier": "beta",
       "permissions": {
@@ -3253,6 +3253,10 @@
       "readme": "# 鲸鱼宠物\n\nPolaris 活动栏面板内一只会游动、眨眼、被点击吐泡泡的蓝色小鲸鱼。纯前端 Canvas 动画，零后端改动，桌面/手机双端通用。\n\n- 游动/眨眼/喷水：requestAnimationFrame 驱动\n- 点击吐泡泡：Canvas 气泡粒子\n- 互动次数持久化：cap.kv (domain=whale-pet)\n- 和 AI 聊聊它：调宿主 onSendToChat",
       "versions": [
         {
+          "version": "0.3.3",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.3/plugins/whale-pet/whale-pet.zip"
+        },
+        {
           "version": "0.3.2",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.2/plugins/whale-pet/whale-pet.zip"
         },
@@ -3261,8 +3265,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/whale-pet.zip"
         }
       ],
-      "sha256": "bee118b383548ffef06d159d77bf22d728a0c13885e5d438a304676ff6baa003",
-      "updatedAt": "2026-11-02T13:54:43.163Z",
+      "sha256": "f132001ccc01b5e1ca300815bd5d3e5e507c4ea9a88ec4467eeb6bf4c9f793fa",
+      "updatedAt": "2026-11-02T14:55:00.000Z",
       "createdAt": "2026-11-02T13:42:42.144Z"
     }
   ]

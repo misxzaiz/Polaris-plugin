@@ -206,7 +206,7 @@ function WhalePetPanel(props) {
         "ds",
         /* @__PURE__ */ jsx("span", { style: { color: "#3b82f6" }, children: "\u5927\u80A5\u9C7C" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.3.2" }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.3.3" }),
       /* @__PURE__ */ jsxs("span", { style: { color: "#7d8590", fontSize: 11, marginLeft: "auto" }, children: [
         "\u5DF2\u966A\u4F34 ",
         state.pokes,

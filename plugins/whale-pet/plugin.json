@@ -1,7 +1,7 @@
 {
   "id": "whale-pet",
   "name": "ds大肥鱼",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Polaris 桌面/移动端通用的 ds 大肥鱼桌面宠物插件：活动栏面板内一只会游动、眨眼、被点击会回应、隔阵随机切换 80 余种动作的蓝色大肥鱼（复刻 dsh-pet 形象与动画链，webm 视频播放）。资源经插件自带 HTTP 服务加载（127.0.0.1 + localhost），零宿主改动。",
   "enabledByDefault": true,
   "contributes": {
