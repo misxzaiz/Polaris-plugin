@@ -1,0 +1,58 @@
+{
+  "id": "dep-probe",
+  "name": "依赖体检台",
+  "version": "0.1.0",
+  "description": "把「我的依赖有没有已知漏洞、升到哪一版能修掉」变成一次 30 秒的本机体检：选路径递归发现 lockfile（package-lock.json / pnpm-lock.yaml / Cargo.lock / requirements*.txt / go.mod 五种格式），解析全部依赖版本后经 OSV.dev（Google 开源漏洞库，聚合 GHSA/RustSec/PyPI）批量比对，按仓库出分级报告 + 最小修复版本方案（升到哪版消除全部已知漏洞）；支持忽略规则（锚定包名/漏洞 ID 留档理由）；漏洞详情磁盘缓存 7 天。AI 经 MCP 七工具对话式扫描与解读（dep_scan/dep_report/dep_findings/dep_fix_plan/dep_check_pkg/dep_runs/dep_selftest）。网络只出站 api.osv.dev，文件只读，零系统命令，数据不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "dep-probe.panel",
+        "area": "activityBar",
+        "panelType": "depProbe",
+        "icon": "Beaker",
+        "labelKey": "plugins.depProbe",
+        "labelDefault": "依赖体检台",
+        "order": 89
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "dep-probe-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9876,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "依赖体检引擎（127.0.0.1 监听；lockfile 发现解析 + OSV querybatch + 详情缓存 + kv 投影；REST API）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "dep-probe",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/dep-probe",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dep-probe/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dep-probe/dep-probe.zip"
+  }
+}
