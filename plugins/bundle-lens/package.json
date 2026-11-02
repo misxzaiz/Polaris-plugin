@@ -1,0 +1,17 @@
+{
+  "name": "bundle-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "bundle-lens 插件（构建用）：包体积透视台——sourcemap 字节级归因/包分组/重复检测/treemap/历史 diff",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}

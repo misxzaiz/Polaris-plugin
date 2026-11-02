@@ -3411,6 +3411,44 @@
       ],
       "createdAt": "2026-11-02T18:20:49.239Z",
       "updatedAt": "2026-11-02T18:20:49.239Z"
+    },
+    {
+      "id": "bundle-lens",
+      "name": "包体积透视台",
+      "version": "0.1.0",
+      "description": "把「这个前端包为什么这么大、谁占的、有没有重复依赖」从装插件改构建配置变成一次 60 秒的本地透视：指向任意构建产物目录（vite/webpack/esbuild/rollup 通吃，零配置零侵入），解析 sourcemap 做字节级归因——每个 chunk 里每个源文件/每个 npm 包占多少字节、vendor vs 应用代码占比、treemap 面积图；重复依赖三连检（同包多版本/多来源、同一源文件打进多个 chunk、不同路径完全相同内容）；确定性建议（moment 全量 locale、core-js 全量 polyfill、单 chunk 过大、未归因占比过高等）；扫描历史自动 diff（优化前后逐包对比）。sourcemap 含源码——全程不出本机。AI 经 MCP 八工具对话式透视（bundle_scan/report/packages/duplicates/chunks/diff/selftest/runs）。只读零外网，报告经 cap.kv 投影三端同看。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "devtools",
+        "bundle-analyzer",
+        "sourcemap",
+        "performance",
+        "frontend",
+        "ai"
+      ],
+      "icon": "Target",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/bundle-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/bundle-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/update.json",
+      "sha256": "9197769784e425f438c90a72d09e5a584e16fcd2d19e7343dbe72e7f79633090",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 包体积透视台（bundle-lens）\n\n零配置的前端包体积透视：指向任意 dist 目录，sourcemap 字节级归因（vite/webpack/esbuild/rollup 通吃）——每个 npm 包/源文件占多少字节、vendor vs 应用占比、treemap 面积图；重复依赖三连检（同包多份安装/同源多 chunk/异路径同内容）；moment 全量 locale 等 8 类确定性建议；扫描历史自动 diff 做优化前后验收；AI 经 MCP 八工具读真实字节。sourcemap 含源码——全程不出本机，只读扫描零外网。",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/bundle-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-03T00:00:00.000Z"
     }
   ]
 }
