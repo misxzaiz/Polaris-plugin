@@ -1,0 +1,17 @@
+{
+  "name": "deadcode-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "deadcode-lens 插件（构建用）：死代码透视台——源码级死文件/未使用导出/未使用依赖体检",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}

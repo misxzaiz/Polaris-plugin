@@ -1,0 +1,57 @@
+{
+  "id": "deadcode-lens",
+  "name": "死代码透视台",
+  "version": "0.1.0",
+  "description": "把「这个仓里哪些文件、导出、依赖其实没人用」变成一次 30 秒的本机体检：从入口追踪 import 图（自研状态机解析器，完整支持 TSX/JSX/别名/桶文件/动态导入/import.meta.glob），找出死文件（零引用 vs 仅被死文件引用）、未使用导出（区分「可删」与「去 export」）、未使用依赖（工具链类如实标注）、悬空导入（解析失败=真 bug）与循环依赖（Tarjan SCC）；每条发现都带证据（谁引用它/在哪找过），AI 经 MCP 六工具读报告、dl_why 复核单文件后动手清理，形成自清理闭环。引擎完全离线：零外部网络、文件只读、零系统命令，数据不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "deadcode-lens.panel",
+        "area": "activityBar",
+        "panelType": "deadcodeLens",
+        "icon": "ScanSearch",
+        "labelKey": "plugins.deadcodeLens",
+        "labelDefault": "死代码透视台",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "deadcode-lens-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9884,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "死代码体检引擎（127.0.0.1 监听；fs 走查 + import 图解析 + 四类发现 + kv 投影；REST API）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "deadcode-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/deadcode-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/deadcode-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/deadcode-lens/deadcode-lens.zip"
+  }
+}
