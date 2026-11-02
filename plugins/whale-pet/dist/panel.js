@@ -123,6 +123,15 @@ function WhalePetPanel(props) {
   const onPokeRef = useRef(() => {
   });
   const blobCacheRef = useRef(/* @__PURE__ */ new Map());
+  const petOverlayApi = window.__POLARIS_PET_OVERLAY__;
+  const [overlayBusy, setOverlayBusy] = useState(false);
+  const openOverlay = useCallback(() => {
+    if (!petOverlayApi || overlayBusy) return;
+    setOverlayBusy(true);
+    petOverlayApi.open().then((r) => {
+      if (String(r).startsWith("error")) window.alert(`\u60AC\u6D6E\u7A97\u6253\u5F00\u5931\u8D25\uFF1A${r}`);
+    }).catch((e) => window.alert(`\u60AC\u6D6E\u7A97\u6253\u5F00\u5931\u8D25\uFF1A${String(e instanceof Error ? e.message : e)}`)).finally(() => setOverlayBusy(false));
+  }, [overlayBusy]);
   const switchTo = useCallback(async (anim, once) => {
     const base = baseRef.current;
     if (!base) return;
@@ -206,7 +215,25 @@ function WhalePetPanel(props) {
         "ds",
         /* @__PURE__ */ jsx("span", { style: { color: "#3b82f6" }, children: "\u5927\u80A5\u9C7C" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.3.3" }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.4.0" }),
+      petOverlayApi && /* @__PURE__ */ jsx(
+        "button",
+        {
+          onClick: openOverlay,
+          disabled: overlayBusy,
+          style: {
+            fontSize: 11,
+            color: "#3b82f6",
+            background: "transparent",
+            border: "1px solid #3b82f6",
+            borderRadius: 6,
+            padding: "2px 8px",
+            cursor: overlayBusy ? "wait" : "pointer"
+          },
+          title: "\u5728\u684C\u9762\u4E0A\u6253\u5F00\u900F\u660E\u7F6E\u9876\u60AC\u6D6E\u7A97\uFF08R1 spike\uFF09",
+          children: overlayBusy ? "\u5F00\u7A97\u4E2D\u2026" : "\u{1F5A5} \u60AC\u6D6E\u684C\u9762"
+        }
+      ),
       /* @__PURE__ */ jsxs("span", { style: { color: "#7d8590", fontSize: 11, marginLeft: "auto" }, children: [
         "\u5DF2\u966A\u4F34 ",
         state.pokes,

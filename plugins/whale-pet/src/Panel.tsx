@@ -180,6 +180,21 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
   // viaCap 通道的 blob URL 缓存（按 anim+ext 键；同动画复用）。卸载时统一 revoke。
   const blobCacheRef = useRef<Map<string, string>>(new Map())
 
+  // R1 桌面悬浮（spike）：宿主 main.tsx 暴露 __POLARIS_PET_OVERLAY__ 桥（Tauri 桌面才有），
+  // 经固定配置 WebviewWindow 开透明置顶悬浮窗。桥不存在（旧宿主/移动/Web）则按钮隐藏。
+  const petOverlayApi = (window as unknown as {
+    __POLARIS_PET_OVERLAY__?: { open(): Promise<string>; close(): Promise<void> }
+  }).__POLARIS_PET_OVERLAY__
+  const [overlayBusy, setOverlayBusy] = useState(false)
+  const openOverlay = useCallback(() => {
+    if (!petOverlayApi || overlayBusy) return
+    setOverlayBusy(true)
+    petOverlayApi.open()
+      .then((r) => { if (String(r).startsWith('error')) window.alert(`悬浮窗打开失败：${r}`) })
+      .catch((e) => window.alert(`悬浮窗打开失败：${String(e instanceof Error ? e.message : e)}`))
+      .finally(() => setOverlayBusy(false))
+  }, [overlayBusy])
+
   const switchTo = useCallback(async (anim: string, once: boolean) => {
     const base = baseRef.current
     if (!base) return
@@ -267,7 +282,18 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
     <div style={{ font: '13px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif', color: '#d7dde6', background: '#0a1428', minHeight: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: '#e6edf3' }}>ds<span style={{ color: '#3b82f6' }}>大肥鱼</span></span>
-        <span style={{ fontSize: 10, color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 6, padding: '1px 6px' }}>v0.3.3</span>
+        <span style={{ fontSize: 10, color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 6, padding: '1px 6px' }}>v0.4.0</span>
+        {petOverlayApi && (
+          <button
+            onClick={openOverlay}
+            disabled={overlayBusy}
+            style={{
+              fontSize: 11, color: '#3b82f6', background: 'transparent', border: '1px solid #3b82f6',
+              borderRadius: 6, padding: '2px 8px', cursor: overlayBusy ? 'wait' : 'pointer',
+            }}
+            title="在桌面上打开透明置顶悬浮窗（R1 spike）"
+          >{overlayBusy ? '开窗中…' : '🖥 悬浮桌面'}</button>
+        )}
         <span style={{ color: '#7d8590', fontSize: 11, marginLeft: 'auto' }}>已陪伴 {state.pokes} 次</span>
       </div>
 
