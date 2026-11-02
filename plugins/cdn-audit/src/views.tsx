@@ -309,7 +309,7 @@ export function SriTab() {
       <div className="card">
         <input
           className="input"
-          placeholder="资源 URL（带版本号的 npm 系/cdnj s 系可获得官方口径）"
+          placeholder="资源 URL（带版本号的 npm 系/cdnjs 系可获得官方口径）"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !busy) run(); }}

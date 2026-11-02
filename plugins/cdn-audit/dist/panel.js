@@ -389,7 +389,7 @@ function SriTab() {
         "input",
         {
           className: "input",
-          placeholder: "\u8D44\u6E90 URL\uFF08\u5E26\u7248\u672C\u53F7\u7684 npm \u7CFB/cdnj s \u7CFB\u53EF\u83B7\u5F97\u5B98\u65B9\u53E3\u5F84\uFF09",
+          placeholder: "\u8D44\u6E90 URL\uFF08\u5E26\u7248\u672C\u53F7\u7684 npm \u7CFB/cdnjs \u7CFB\u53EF\u83B7\u5F97\u5B98\u65B9\u53E3\u5F84\uFF09",
           value: input,
           onChange: (e) => setInput(e.target.value),
           onKeyDown: (e) => {

@@ -3474,7 +3474,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/cdn-audit.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/update.json",
-      "sha256": "c413bef4e35571d74dd54f57f36687267740cbd237816f8b61590f5af3028b20",
+      "sha256": "f462c185174b6f60a468135bdb5a2f2cc8a1a4cc0a02f1931a6d10dc2c6b6d5b",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
@@ -3485,11 +3485,11 @@
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/cdn-audit.zip",
-          "sha256": "c413bef4e35571d74dd54f57f36687267740cbd237816f8b61590f5af3028b20"
+          "sha256": "f462c185174b6f60a468135bdb5a2f2cc8a1a4cc0a02f1931a6d10dc2c6b6d5b"
         }
       ],
       "createdAt": "2026-11-02T19:32:47.211Z",
-      "updatedAt": "2026-11-02T19:32:47.211Z"
+      "updatedAt": "2026-11-02T19:40:43.665Z"
     }
   ]
 }
