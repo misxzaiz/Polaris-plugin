@@ -2617,7 +2617,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/log-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/update.json",
-      "sha256": "d212017a3e80cefbd69bb51c3660d0c9ce87c77d13a980458c57ca03746312eb",
+      "sha256": "0c912207f2625eed753d87629b54b7d8c8dce562fdf6cfe8e3e3f63fced2bbc3",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
