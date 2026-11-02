@@ -3200,7 +3200,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/daw-studio/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@daw-studio-v0.1.1/plugins/daw-studio/daw-studio.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/daw-studio/update.json",
-      "sha256": "a175d613d829d6b163665824c0d3e6e3c6a3814ed9eb07e270cfd503132d8a72",
+      "sha256": "60b05b3e5213148006be0a25fe1626e858a2e2800027fcbf32812445ebf58475",
       "tier": "beta",
       "permissions": {
         "appConfigRead": true,
@@ -3219,7 +3219,7 @@
         }
       ],
       "createdAt": "2026-11-02T04:41:46.342Z",
-      "updatedAt": "2026-11-02T05:31:13.016Z"
+      "updatedAt": "2026-11-02T05:40:40.197Z"
     }
   ]
 }

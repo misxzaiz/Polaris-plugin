@@ -285,7 +285,7 @@ async function handleLine(line) {
   try { msg = JSON.parse(line); } catch (_) { return; }
   const { id, method, params } = msg;
   if (method === 'initialize') {
-    reply(id, { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'daw-studio', version: '0.1.0' } });
+    reply(id, { protocolVersion: '2024-11-05', capabilities: { tools: {} }, serverInfo: { name: 'daw-studio', version: '0.1.1' } });
     return;
   }
   if (method === 'notifications/initialized') return;

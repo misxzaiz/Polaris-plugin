@@ -30,7 +30,7 @@ const crypto = require('crypto');
 const { createKvClient } = require('./kvclient');
 const core = require('../shared/core');
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 const PORT = parseInt(process.argv[2] || '0', 10) || 0;
 const appConfigDir = process.argv[3] || '';
 const STARTED_AT = Date.now();
