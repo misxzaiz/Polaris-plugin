@@ -1,6 +1,6 @@
 {
   "name": "daw-studio-panel",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "daw-studio 插件（构建用）：AI 乐谱工作台——AI 谱写/算法展开/精确演奏/导出",
   "scripts": {

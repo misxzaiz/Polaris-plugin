@@ -62,6 +62,22 @@ export default function Panel(): JSX.Element {
 
   useEffect(() => { void loadScores() }, [loadScores])
 
+  // AI 经 MCP 生成的新谱要「即开即见」，无需退出重开：
+  // ① 轻量轮询索引（5s，~120B/条 × 200 条 = 24KB 成本可忽略）
+  // ② 窗口/标签页聚焦回前台立即刷（覆盖「AI 在别处生成 → 切回面板」场景）
+  // 编辑态曲谱是独立本地 state，轮询只刷列表不打断正在编辑的内容。
+  useEffect(() => {
+    const timer = window.setInterval(() => { if (tab === 'library') void loadScores() }, 5000)
+    const onFocus = () => { void loadScores() }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+    }
+  }, [loadScores, tab])
+
   // 切后台暂停（移动端纪律：iOS webview 挂起 audio context）
   useEffect(() => {
     const onVis = () => { if (document.hidden && isPlaying()) { stop(); setPlayStep(-1) } }

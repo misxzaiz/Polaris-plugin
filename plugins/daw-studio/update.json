@@ -1,7 +1,7 @@
 {
   "id": "daw-studio",
   "name": "AI 乐谱工作台",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "让 AI 用乐谱数据自动作曲与记谱：骨架（调式/BPM/和弦进行/风格）经确定性旋律引擎展开成 100% 在调上的乐谱，或 AI 直接精确记谱（strict validator 把关，MIDI 号/音名兼容）；score_analyze 谱面自查闭环（轨外音/同拍叠音/节奏密度/人话建议）。面板（桌面+手机）lookahead 精确调度演奏（波形/滤波/摆动/多八度钢琴卷帘）、试听微调、导出 WAV/MIDI（拖进 FL/Cubase）。MCP 七工具对话式谱写管理（score_create/write/get/list/analyze/delete/export）。语音合成 ≠ 音乐创作：mimo-tts 是说话，这里是音符级作曲。零出网，曲谱全文落本地。",
   "enabledByDefault": true,
   "contributes": {

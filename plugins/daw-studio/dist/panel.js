@@ -972,6 +972,21 @@ function Panel() {
     void loadScores();
   }, [loadScores]);
   useEffect(() => {
+    const timer2 = window.setInterval(() => {
+      if (tab === "library") void loadScores();
+    }, 5e3);
+    const onFocus = () => {
+      void loadScores();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+    return () => {
+      window.clearInterval(timer2);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [loadScores, tab]);
+  useEffect(() => {
     const onVis = () => {
       if (document.hidden && isPlaying()) {
         stop();
