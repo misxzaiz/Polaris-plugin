@@ -1,0 +1,47 @@
+{
+  "id": "stack-lens",
+  "name": "堆栈还原台",
+  "version": "0.1.0",
+  "description": "把「app.8f2a.js:1:88423」变回「src/api/user.ts:42:10」：粘贴 minified 错误栈 + 指定 sourcemap 来源，逐帧还原成原始源码位置与代码帧——线上排障、分析用户上报日志、还原客服工单里压缩栈的唯一动作。map 来源四种任选：构建产物目录扫描（*.map + sourceMappingURL 注释自动配对）/ 拖拽 .map / 粘贴 JSON / URL 抓取（60MB/15s 上限）；栈格式 Chrome/Node/Safari/Firefox 通吃，段式 index map 支持；sourcesContent 缺失时自动回退磁盘源文件；每帧三态明示（还原/未还原带原因/内部帧），绝不编造位置。全程本地计算，错误栈不落盘（sourcemap 含完整源码，不该进任何第三方网页工具）。AI 经 MCP 六工具对话式还原：整栈还原/从日志文件还原/扫 map/单点定位/看源码/体检 map。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "stack-lens.panel",
+        "area": "activityBar",
+        "panelType": "stackLens",
+        "icon": "AlertCircle",
+        "labelKey": "plugins.stackLens",
+        "labelDefault": "堆栈还原台",
+        "order": 91
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "stack-lens-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9890,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "堆栈还原引擎（127.0.0.1 监听；错误栈解析 + sourcemap 配对还原 + 代码帧 + map 体检 + kv 投影 meta；REST API）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "stack-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  }
+}

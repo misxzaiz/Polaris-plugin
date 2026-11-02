@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02T20:39:57.307Z",
+  "updated": "2026-11-02T21:32:39.900Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3572,6 +3572,46 @@
       ],
       "createdAt": "2026-11-02T20:39:57.307Z",
       "updatedAt": "2026-11-02T20:39:57.307Z"
+    },
+    {
+      "id": "stack-lens",
+      "name": "堆栈还原台",
+      "version": "0.1.0",
+      "description": "把「app.8f2a.js:1:88423」变回「src/api/user.ts:42:10」：粘贴 minified 错误栈 + 指定 sourcemap 来源，逐帧还原成原始源码位置与代码帧——线上排障、分析用户上报日志、还原客服工单里压缩栈的唯一动作。map 来源四种任选：构建产物目录扫描（*.map + sourceMappingURL 注释自动配对）/ 拖拽 .map / 粘贴 JSON / URL 抓取（60MB/15s 上限）；栈格式 Chrome/Node/Safari/Firefox 通吃，段式 index map 支持；sourcesContent 缺失时自动回退磁盘源文件；每帧三态明示（还原/未还原带原因/内部帧），绝不编造位置。全程本地计算，错误栈不落盘（sourcemap 含完整源码，不该进任何第三方网页工具）。AI 经 MCP 六工具对话式还原：整栈还原/从日志文件还原/扫 map/单点定位/看源码/体检 map。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "sourcemap",
+        "stack-trace",
+        "error-debugging",
+        "minified",
+        "codeframe",
+        "devtools",
+        "mcp",
+        "offline"
+      ],
+      "icon": "AlertCircle",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/stack-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stack-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stack-lens/stack-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stack-lens/update.json",
+      "sha256": "347739fcaa6ff1ad941a83f30bcd97f60393b8ec1edbdaf85018dcbfff27b82b",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 堆栈还原台（stack-lens）\n\n把「`app.8f2a.js:1:88423`」变回「`src/api/user.ts:42:10`」：粘贴 minified 错误栈 + 指定\nsourcemap 来源，逐帧还原成原始源码位置与代码帧。全程本地计算，错误栈不落盘。\n\n## 解决什么问题\n\n- **线上排障**：报错日志里的栈全是压缩后的 `file:1:88423`，无法下手——还原一帧往往直接\n  定位根因。\n- **用户上报/客服工单**：拿到一段 minified 栈，需要知道具体挂在哪个源码位置。\n- **不愿把 map 传第三方**：sourcemap 含完整源码，粘贴进网页工具=泄露；本插件全离线。\n\n**前提**：手上要有对应版本的 `.map` 文件（构建产物目录、CI 产物、或自己 dev server 的\n`/assets/*.js.map`）。没有 map 的帧会显式标注原因，绝不编造位置。\n\n## 使用\n\n### 面板（还原 / 地图 / 服务 三个 Tab）\n\n1. **还原**：粘贴错误栈 → 给 map 来源（四选一或组合）→ 点「还原」：\n   - 构建产物目录（自动扫 `*.map` + `.js` 尾部 `sourceMappingURL` 注释并配对）\n   - 拖拽 `.map` 文件 / 文件选择\n   - 粘贴 map JSON\n   - 从 URL 抓取（http/https，60MB/15s 上限）\n2. **地图**：扫描目录看有哪些 map（file 字段/源数/是否含 sourcesContent）；体检单个\n   map（映射段数/生成行数/覆盖率/警告）。\n3. **服务**：服务状态/重启。\n\n结果逐帧三态：`✓ 已还原（原始位置 + 函数原名 + 代码帧）` / `✗ 未还原（带原因）` /\n`○ 运行时内部帧（跳过）`；顶部汇总还原率。\n\n### AI（MCP 六工具）\n\n| 工具 | 用途 |\n|---|---|\n| `stack_resolve` | 整条错误栈还原（stack + mapsDir/mapPaths/fetchUrls） |\n| `stack_resolve_file` | 从日志/错误报告文件读栈还原 |\n| `maps_scan` | 扫描构建产物目录的 sourcemap 清单 |\n| `map_locate` | 单点定位：生成 行:列 → 原始 行:列 + 函数名 + 代码帧 |\n| `map_source` | 取 map 里某源文件内容渲染代码帧 |\n| `map_validate` | map 结构体检 |\n\n## 架构\n\n```\n面板（src/，esbuild → dist/panel.js）\n  │  127.0.0.1:{port} + Bearer token（meta 自 cap.kv 读 stacklens.meta）\n  ▼\nservice/main.js（端口 9890，REST；map 解析结果内存缓存 mtime 失效）\n  │  require ../shared/core.js        require ./kvclient.js\n  ▼                                      ▼\nshared/core.js（纯引擎）              宿主 cap.kv（stacklens.meta / stacklens.settings）\nmcp/server.js（stdio JSON-RPC，六工具 → 127.0.0.1 服务）\n```\n\n- `shared/core.js`：VLQ 解码 / sourcemap v3 + 段式 index map / 栈解析（Chrome·Node·\n  Safari·Firefox）/ map 配对（file 字段 → 同名 basename → sourceMappingURL）/ 逐帧\n  `originalPositionFor` / 代码帧渲染 / map 体检。零依赖。\n- 列口径：栈的列与 sourcemap 的列同为 UTF-16 code unit，直接可比；`originalPositionFor`\n  取同生成行内 ≤ 查询列的最大映射段（spec 左闭右开惯例）。\n- sourcesContent 缺失时回退磁盘：source 名按 map 所在目录相对解析（剥 webpack:// 前缀）。\n\n## 安全与隐私\n\n- 服务仅监听 `127.0.0.1`；除 `/__health` 外全部要求 Bearer token（timingSafe 比对）。\n- **错误栈与 map 内容一律不落盘**：cap.kv 只存 `stacklens.meta`（心跳）与\n  `stacklens.settings.recentDirs`（最近目录路径）。不使用 kv list（宿主已实测会楔死\n  dispatch 通道）。\n- 唯一出站网络 = 用户显式给出 map URL 的 GET（60MB/15s 上限、不带凭证）；本机\n  dev server 的 localhost map 属合法场景。\n- fs 只读；不写任何文件（selftest 用 `os.tmpdir()` 且 finally 清理）。\n\n## 开发\n\n```bash\npnpm install          # 仅 devDependencies（esbuild/tsc/types）\npnpm typecheck        # tsc --noEmit\npnpm build            # esbuild → dist/panel.js\npnpm test             # node --test test/\nSTACKLENS_SELFTEST=1 node service/main.js 9899   # 服务自检（离线全链路）\n```\n\n## 已知边界\n\n- 栈格式覆盖 Chrome/Node/Safari/Firefox 主流格式；奇特自定义格式走「unparsed」保底。\n- 无 sourcemap 的帧只标原因（构建时需开 sourcemap 输出）。\n- Web(https) 部署模式下浏览器会拦 `http://127.0.0.1` 混合内容（桌面/手机 WebView 正常，\n  与 bundle-lens/repo-lens 等直连面插件同款边界）。\n- 名字还原依赖 map 的 names 段；esbuild/terser 通常提供，部分构建器可能缺失。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stack-lens/stack-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-02T21:32:39.900Z",
+      "updatedAt": "2026-11-02T21:32:39.900Z"
     }
   ]
 }
