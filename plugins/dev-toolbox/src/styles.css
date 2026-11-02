@@ -1,0 +1,110 @@
+/* dev-toolbox 面板样式：dtb- 前缀防泄漏；色值与主题暗色面板族一致 */
+.dtb-root { display: flex; height: 100%; min-height: 0; background: #10141c; color: #e6eaf2; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 13px; container-type: inline-size; }
+.dtb-mono { font-family: Consolas, Menlo, 'Courier New', monospace; }
+.dtb-dim { color: #8b95a7; }
+.dtb-pad8 { padding: 8px; }
+.dtb-mt4 { margin-top: 4px; }
+.dtb-mt8 { margin-top: 8px; }
+.dtb-grow { flex: 1; }
+
+/* 侧栏 */
+.dtb-side { width: 218px; flex: none; display: flex; flex-direction: column; border-right: 1px solid #242c3a; background: #12161f; }
+.dtb-search { margin: 10px; padding: 6px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #161b22; color: #e6eaf2; outline: none; }
+.dtb-search:focus { border-color: #2b6cb0; }
+.dtb-toollist { flex: 1; overflow-y: auto; padding: 0 6px 6px; }
+.dtb-cat { margin-bottom: 10px; }
+.dtb-catlabel { padding: 4px 8px; font-size: 11px; color: #8b95a7; letter-spacing: 0.05em; }
+.dtb-toolbtn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: #cdd6e4; cursor: pointer; text-align: left; }
+.dtb-toolbtn:hover { background: #1a2130; }
+.dtb-toolbtn-on { background: #1c2940; color: #ffffff; }
+.dtb-toolicon { width: 20px; text-align: center; flex: none; }
+.dtb-toolname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dtb-star { flex: none; color: #4a5568; cursor: pointer; font-size: 12px; }
+.dtb-star-on { color: #e3b341; }
+.dtb-sidefoot { padding: 8px 12px; border-top: 1px solid #242c3a; color: #8b95a7; font-size: 11px; }
+
+/* 主区 */
+.dtb-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.dtb-head { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #242c3a; }
+.dtb-headicon { font-size: 22px; }
+.dtb-headtitle { margin: 0; font-size: 15px; font-weight: 600; }
+.dtb-headdesc { color: #8b95a7; font-size: 12px; margin-top: 2px; }
+.dtb-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.dtb-foot { padding: 6px 16px; border-top: 1px solid #242c3a; color: #5d6a7d; font-size: 11px; }
+
+/* 表单 */
+.dtb-input, .dtb-select { padding: 6px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #161b22; color: #e6eaf2; outline: none; min-width: 0; }
+.dtb-input:focus, .dtb-select:focus { border-color: #2b6cb0; }
+.dtb-area { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #161b22; color: #e6eaf2; outline: none; resize: vertical; line-height: 1.5; }
+.dtb-area:focus { border-color: #2b6cb0; }
+.dtb-row { display: flex; gap: 8px; align-items: center; }
+.dtb-wrap { flex-wrap: wrap; }
+.dtb-check { display: inline-flex; gap: 4px; align-items: center; color: #cdd6e4; cursor: pointer; }
+.dtb-btn { padding: 6px 14px; border: 0; border-radius: 6px; background: #2b6cb0; color: #fff; cursor: pointer; }
+.dtb-btn:hover { background: #3579c4; }
+.dtb-btn:disabled { opacity: 0.5; cursor: default; }
+.dtb-mini { padding: 3px 8px; border: 1px solid #242c3a; border-radius: 5px; background: #161b22; color: #9fb0c7; cursor: pointer; font-size: 12px; }
+.dtb-mini:hover { border-color: #2b6cb0; color: #e6eaf2; }
+.dtb-mini:disabled { opacity: 0.4; cursor: default; }
+
+/* 输出与列表 */
+.dtb-out { margin: 4px 0 12px; padding: 8px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #0d1117; white-space: pre-wrap; word-break: break-all; font-size: 12px; line-height: 1.5; overflow: auto; }
+.dtb-cardhead { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.dtb-cardhead b { font-size: 12px; color: #9fb0c7; }
+.dtb-lactions { display: inline-flex; gap: 6px; margin-left: 8px; }
+.dtb-cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dtb-card { min-width: 0; }
+.dtb-section { margin-top: 14px; }
+.dtb-section > b { display: block; font-size: 12px; color: #9fb0c7; margin-bottom: 4px; }
+.dtb-lrow { display: flex; gap: 10px; padding: 3px 0; align-items: baseline; }
+.dtb-llabel { width: 170px; flex: none; color: #8b95a7; }
+.dtb-lvalue { min-width: 0; word-break: break-all; display: inline-flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.dtb-kv, .dtb-kvrow { display: contents; }
+.dtb-hashrow, .dtb-caserow, .dtb-nextrow { display: flex; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px dashed #1c2330; }
+.dtb-hashalg, .dtb-casealg { width: 120px; flex: none; color: #8b95a7; font-size: 12px; }
+.dtb-hashval, .dtb-caseval { flex: 1; word-break: break-all; font-size: 12px; }
+.dtb-nextlist { margin-top: 2px; }
+.dtb-nextrow { color: #cdd6e4; }
+
+/* 徽标/提示 */
+.dtb-badges { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; flex-wrap: wrap; }
+.dtb-badge { padding: 2px 10px; border-radius: 10px; font-size: 12px; }
+.dtb-badge-ok { background: #12351c; color: #3fb950; }
+.dtb-badge-bad { background: #3d1418; color: #f85149; }
+.dtb-badge-warn { background: #38290f; color: #e3b341; }
+.dtb-badge-dim { background: #1a2130; color: #8b95a7; }
+.dtb-note { margin: 8px 0; padding: 8px 10px; border-radius: 6px; font-size: 12px; line-height: 1.6; }
+.dtb-note-error { background: #2d1216; color: #f28b82; border: 1px solid #55262b; }
+.dtb-note-warn { background: #2a2110; color: #e3b341; border: 1px solid #4d3b15; }
+.dtb-note-info { background: #14202d; color: #79b8ff; border: 1px solid #1f3a55; }
+.dtb-note-ok { background: #12261a; color: #56d364; border: 1px solid #1f4529; }
+
+/* 表格 */
+.dtb-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 12px; }
+.dtb-table th, .dtb-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #1c2330; vertical-align: top; word-break: break-all; }
+.dtb-table th { color: #8b95a7; font-weight: 500; }
+
+/* 正则高亮 */
+.dtb-hl { margin-top: 8px; padding: 8px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #0d1117; white-space: pre-wrap; word-break: break-all; line-height: 1.6; font-size: 12px; }
+.dtb-mark { background: #1c4a2a; color: #7ee787; border-radius: 3px; padding: 0 1px; }
+.dtb-mark-zero { background: #4d3b15; color: #e3b341; }
+
+/* Tab */
+.dtb-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+.dtb-tab { padding: 5px 12px; border: 1px solid #242c3a; border-radius: 6px; background: transparent; color: #9fb0c7; cursor: pointer; font-size: 12px; }
+.dtb-tab-on { background: #1c2940; border-color: #2b6cb0; color: #fff; }
+
+/* 颜色预览 */
+.dtb-swatch { margin: 10px 0; padding: 22px 14px; border-radius: 8px; border: 1px solid #242c3a; font-size: 14px; font-weight: 600; }
+
+/* 窄容器适配：宿主左面板可被拖得很窄（媒体查询按视口算，对元素宽度无效），用容器查询收缩为图标栏 */
+@container (max-width: 620px) {
+  .dtb-side { width: 54px; }
+  .dtb-search, .dtb-toolname, .dtb-catlabel, .dtb-sidefoot, .dtb-star { display: none; }
+  .dtb-toolbtn { justify-content: center; padding: 9px 0; }
+  .dtb-cat { margin-bottom: 6px; }
+  .dtb-cards2 { grid-template-columns: 1fr; }
+  .dtb-llabel { width: 96px; }
+  .dtb-head { padding: 10px 12px; }
+  .dtb-body { padding: 10px 12px; }
+}

@@ -1,0 +1,51 @@
+{
+  "id": "dev-toolbox",
+  "name": "开发者工具箱",
+  "version": "0.1.0",
+  "description": "把 13 个每天都要用的开发小工具装进 Polaris：JWT 解码、哈希（MD5/SHA/HMAC）、UUID 生成、Base64/URL 编解码、JSON/YAML 互转、正则测试、命名风格互转、时间戳转换、Cron 解析、进制转换、颜色转换。全部本地计算不上网，敏感输入（JWT/密钥）不持久化；同时把哈希/UUID/JWT/Cron 等 11 个确定性运算暴露为 MCP 工具（mcp__dev-toolbox__*），让 AI 直接调用真实计算结果而不是靠幻觉报值。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "dev-toolbox.panel",
+        "area": "activityBar",
+        "panelType": "devToolbox",
+        "icon": "Code2",
+        "labelKey": "plugins.devToolbox",
+        "labelDefault": "开发者工具箱",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "dev-toolbox",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ],
+    "styles": [
+      {
+        "id": "panel",
+        "target": "global",
+        "css": "/* dev-toolbox 面板样式：dtb- 前缀防泄漏；色值与主题暗色面板族一致 */\n.dtb-root { display: flex; height: 100%; min-height: 0; background: #10141c; color: #e6eaf2; font-family: -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 13px; container-type: inline-size; }\n.dtb-mono { font-family: Consolas, Menlo, 'Courier New', monospace; }\n.dtb-dim { color: #8b95a7; }\n.dtb-pad8 { padding: 8px; }\n.dtb-mt4 { margin-top: 4px; }\n.dtb-mt8 { margin-top: 8px; }\n.dtb-grow { flex: 1; }\n\n/* 侧栏 */\n.dtb-side { width: 218px; flex: none; display: flex; flex-direction: column; border-right: 1px solid #242c3a; background: #12161f; }\n.dtb-search { margin: 10px; padding: 6px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #161b22; color: #e6eaf2; outline: none; }\n.dtb-search:focus { border-color: #2b6cb0; }\n.dtb-toollist { flex: 1; overflow-y: auto; padding: 0 6px 6px; }\n.dtb-cat { margin-bottom: 10px; }\n.dtb-catlabel { padding: 4px 8px; font-size: 11px; color: #8b95a7; letter-spacing: 0.05em; }\n.dtb-toolbtn { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: #cdd6e4; cursor: pointer; text-align: left; }\n.dtb-toolbtn:hover { background: #1a2130; }\n.dtb-toolbtn-on { background: #1c2940; color: #ffffff; }\n.dtb-toolicon { width: 20px; text-align: center; flex: none; }\n.dtb-toolname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }\n.dtb-star { flex: none; color: #4a5568; cursor: pointer; font-size: 12px; }\n.dtb-star-on { color: #e3b341; }\n.dtb-sidefoot { padding: 8px 12px; border-top: 1px solid #242c3a; color: #8b95a7; font-size: 11px; }\n\n/* 主区 */\n.dtb-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }\n.dtb-head { display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-bottom: 1px solid #242c3a; }\n.dtb-headicon { font-size: 22px; }\n.dtb-headtitle { margin: 0; font-size: 15px; font-weight: 600; }\n.dtb-headdesc { color: #8b95a7; font-size: 12px; margin-top: 2px; }\n.dtb-body { flex: 1; overflow-y: auto; padding: 14px 16px; }\n.dtb-foot { padding: 6px 16px; border-top: 1px solid #242c3a; color: #5d6a7d; font-size: 11px; }\n\n/* 表单 */\n.dtb-input, .dtb-select { padding: 6px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #161b22; color: #e6eaf2; outline: none; min-width: 0; }\n.dtb-input:focus, .dtb-select:focus { border-color: #2b6cb0; }\n.dtb-area { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #161b22; color: #e6eaf2; outline: none; resize: vertical; line-height: 1.5; }\n.dtb-area:focus { border-color: #2b6cb0; }\n.dtb-row { display: flex; gap: 8px; align-items: center; }\n.dtb-wrap { flex-wrap: wrap; }\n.dtb-check { display: inline-flex; gap: 4px; align-items: center; color: #cdd6e4; cursor: pointer; }\n.dtb-btn { padding: 6px 14px; border: 0; border-radius: 6px; background: #2b6cb0; color: #fff; cursor: pointer; }\n.dtb-btn:hover { background: #3579c4; }\n.dtb-btn:disabled { opacity: 0.5; cursor: default; }\n.dtb-mini { padding: 3px 8px; border: 1px solid #242c3a; border-radius: 5px; background: #161b22; color: #9fb0c7; cursor: pointer; font-size: 12px; }\n.dtb-mini:hover { border-color: #2b6cb0; color: #e6eaf2; }\n.dtb-mini:disabled { opacity: 0.4; cursor: default; }\n\n/* 输出与列表 */\n.dtb-out { margin: 4px 0 12px; padding: 8px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #0d1117; white-space: pre-wrap; word-break: break-all; font-size: 12px; line-height: 1.5; overflow: auto; }\n.dtb-cardhead { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }\n.dtb-cardhead b { font-size: 12px; color: #9fb0c7; }\n.dtb-lactions { display: inline-flex; gap: 6px; margin-left: 8px; }\n.dtb-cards2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }\n.dtb-card { min-width: 0; }\n.dtb-section { margin-top: 14px; }\n.dtb-section > b { display: block; font-size: 12px; color: #9fb0c7; margin-bottom: 4px; }\n.dtb-lrow { display: flex; gap: 10px; padding: 3px 0; align-items: baseline; }\n.dtb-llabel { width: 170px; flex: none; color: #8b95a7; }\n.dtb-lvalue { min-width: 0; word-break: break-all; display: inline-flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }\n.dtb-kv, .dtb-kvrow { display: contents; }\n.dtb-hashrow, .dtb-caserow, .dtb-nextrow { display: flex; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px dashed #1c2330; }\n.dtb-hashalg, .dtb-casealg { width: 120px; flex: none; color: #8b95a7; font-size: 12px; }\n.dtb-hashval, .dtb-caseval { flex: 1; word-break: break-all; font-size: 12px; }\n.dtb-nextlist { margin-top: 2px; }\n.dtb-nextrow { color: #cdd6e4; }\n\n/* 徽标/提示 */\n.dtb-badges { display: flex; gap: 8px; align-items: center; margin: 10px 0 4px; flex-wrap: wrap; }\n.dtb-badge { padding: 2px 10px; border-radius: 10px; font-size: 12px; }\n.dtb-badge-ok { background: #12351c; color: #3fb950; }\n.dtb-badge-bad { background: #3d1418; color: #f85149; }\n.dtb-badge-warn { background: #38290f; color: #e3b341; }\n.dtb-badge-dim { background: #1a2130; color: #8b95a7; }\n.dtb-note { margin: 8px 0; padding: 8px 10px; border-radius: 6px; font-size: 12px; line-height: 1.6; }\n.dtb-note-error { background: #2d1216; color: #f28b82; border: 1px solid #55262b; }\n.dtb-note-warn { background: #2a2110; color: #e3b341; border: 1px solid #4d3b15; }\n.dtb-note-info { background: #14202d; color: #79b8ff; border: 1px solid #1f3a55; }\n.dtb-note-ok { background: #12261a; color: #56d364; border: 1px solid #1f4529; }\n\n/* 表格 */\n.dtb-table { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 12px; }\n.dtb-table th, .dtb-table td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #1c2330; vertical-align: top; word-break: break-all; }\n.dtb-table th { color: #8b95a7; font-weight: 500; }\n\n/* 正则高亮 */\n.dtb-hl { margin-top: 8px; padding: 8px 10px; border: 1px solid #242c3a; border-radius: 6px; background: #0d1117; white-space: pre-wrap; word-break: break-all; line-height: 1.6; font-size: 12px; }\n.dtb-mark { background: #1c4a2a; color: #7ee787; border-radius: 3px; padding: 0 1px; }\n.dtb-mark-zero { background: #4d3b15; color: #e3b341; }\n\n/* Tab */\n.dtb-tabs { display: flex; gap: 4px; margin-bottom: 8px; }\n.dtb-tab { padding: 5px 12px; border: 1px solid #242c3a; border-radius: 6px; background: transparent; color: #9fb0c7; cursor: pointer; font-size: 12px; }\n.dtb-tab-on { background: #1c2940; border-color: #2b6cb0; color: #fff; }\n\n/* 颜色预览 */\n.dtb-swatch { margin: 10px 0; padding: 22px 14px; border-radius: 8px; border: 1px solid #242c3a; font-size: 14px; font-weight: 600; }\n\n/* 窄容器适配：宿主左面板可被拖得很窄（媒体查询按视口算，对元素宽度无效），用容器查询收缩为图标栏 */\n@container (max-width: 620px) {\n  .dtb-side { width: 54px; }\n  .dtb-search, .dtb-toolname, .dtb-catlabel, .dtb-sidefoot, .dtb-star { display: none; }\n  .dtb-toolbtn { justify-content: center; padding: 9px 0; }\n  .dtb-cat { margin-bottom: 6px; }\n  .dtb-cards2 { grid-template-columns: 1fr; }\n  .dtb-llabel { width: 96px; }\n  .dtb-head { padding: 10px 12px; }\n  .dtb-body { padding: 10px 12px; }\n}\n",
+        "description": "dev-toolbox 面板样式（dtb- 前缀防泄漏；由 build.mjs 从 src/styles.css 同步）"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/dev-toolbox",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dev-toolbox/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dev-toolbox/dev-toolbox.zip"
+  }
+}
