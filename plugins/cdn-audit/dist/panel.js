@@ -105,8 +105,9 @@ function ScoreRing({ total }) {
   ] });
 }
 function FindingsList({ findings }) {
-  if (!findings.length) return /* @__PURE__ */ jsx("div", { className: "muted", children: "\u65E0\u7ED3\u8BBA\u9879" });
-  return /* @__PURE__ */ jsx("div", { className: "findings", children: findings.map((f, i) => /* @__PURE__ */ jsxs("div", { className: `finding sev-${f.sev}`, children: [
+  const list = findings || [];
+  if (!list.length) return /* @__PURE__ */ jsx("div", { className: "muted", children: "\u65E0\u7ED3\u8BBA\u9879" });
+  return /* @__PURE__ */ jsx("div", { className: "findings", children: list.map((f, i) => /* @__PURE__ */ jsxs("div", { className: `finding sev-${f.sev}`, children: [
     /* @__PURE__ */ jsxs("div", { className: "finding-title", children: [
       f.sev === "red" ? "\u274C" : f.sev === "yellow" ? "\u26A0\uFE0F" : f.sev === "green" ? "\u2713" : "\xB7",
       " ",

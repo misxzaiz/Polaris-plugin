@@ -32,10 +32,11 @@ function ScoreRing({ total }: { total: number }) {
 }
 
 export function FindingsList({ findings }: { findings: Finding[] }) {
-  if (!findings.length) return <div className="muted">无结论项</div>;
+  const list = findings || [];
+  if (!list.length) return <div className="muted">无结论项</div>;
   return (
     <div className="findings">
-      {findings.map((f, i) => (
+      {list.map((f, i) => (
         <div key={i} className={`finding sev-${f.sev}`}>
           <div className="finding-title">
             {f.sev === 'red' ? '❌' : f.sev === 'yellow' ? '⚠️' : f.sev === 'green' ? '✓' : '·'} {f.title}
