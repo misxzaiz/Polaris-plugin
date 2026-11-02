@@ -1,0 +1,64 @@
+{
+  "id": "mail-desk",
+  "name": "邮件调试台",
+  "version": "0.1.0",
+  "description": "把应用发往本机 SMTP(默认 127.0.0.1:1025)的测试邮件全部截下:面板看 HTML 渲染/纯文本/原始报文/附件,按主题/发件人/收件人/正文搜索;AI 经 MCP 一句话读邮件、提取验证码。零外发、零安装依赖(vendor 内联),数据不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "mail-desk.panel",
+        "area": "activityBar",
+        "panelType": "mailDesk",
+        "icon": "Mail",
+        "labelKey": "plugins.mailDesk",
+        "labelDefault": "邮件调试台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "mail-desk-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "port": 9875,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 8000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "邮件调试台服务(127.0.0.1 HTTP 数据面 + SMTP catch-all 收信;只收不发,零外发)"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "mail-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/mail-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mail-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mail-desk/mail-desk.zip"
+  }
+}

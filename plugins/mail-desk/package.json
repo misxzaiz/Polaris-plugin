@@ -1,0 +1,24 @@
+{
+  "name": "mail-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "mail-desk 插件面板(打包用):邮件调试台",
+  "scripts": {
+    "build:panel": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime --external:crypto",
+    "build:vendor": "esbuild service/vendor-entry.js --bundle --platform=node --format=cjs --outfile=service/vendor.cjs --external:crypto",
+    "build": "npm run build:vendor && npm run build:panel",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/service-tests.mjs && node test/mcp-tests.mjs"
+  },
+  "dependencies": {
+    "mailparser": "^3.14.1",
+    "smtp-server": "^3.21.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}
