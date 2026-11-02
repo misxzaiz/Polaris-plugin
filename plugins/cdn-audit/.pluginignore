@@ -1,0 +1,11 @@
+node_modules/
+package.json
+package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+src/
+tsconfig.json
+test/
+README.md
+*.zip
+.git/

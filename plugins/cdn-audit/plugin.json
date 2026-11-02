@@ -1,0 +1,62 @@
+{
+  "id": "cdn-audit",
+  "name": "CDN 体检台",
+  "version": "0.1.0",
+  "description": "把「我引用的公共库还是不是真身、从我的网络哪个镜像安全可用、CDN 边缘什么时候更新到最新」变成一次 30 秒的本机核验：资源完整性核验（逐个抓取 × npm tarball 真权威 + jsDelivr 自报口径双源 sha256 比对 / cdnjs 系官方 SRI 比对，篡改即红榜）、HTML 页面外链审计（script/link 逐条 SRI 属性核对 + 一键生成带 integrity 的替换标签）、镜像矩阵（jsDelivr 主域/gcore/testingcf/fastly、unpkg、npmmirror、cdnjs 系跨族）从本机网络实测可达性与一致性、传播观测（origin vs edge 哈希对账，发版后边缘何时同步一目了然）、jsDelivr purge 单发 + 冷却防呆（连发必被静默限流）。2024 年 polyfill.io/BootCDN 投毒波及数千万网站——「CDN 分发内容 ≠ 官方内容」必须可验证，而镜像可达性因网因时而异，只有跑在本机的探测器说真话。数据不出本机（只存哈希与元数据，不落正文），AI 经 MCP 八工具一句话发起核验/换源评估/传播对账。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "cdn-audit.panel",
+        "area": "activityBar",
+        "panelType": "cdnAudit",
+        "icon": "./assets/icon.svg",
+        "labelKey": "plugins.cdnAudit",
+        "labelDefault": "CDN 体检台",
+        "order": 78
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "cdn-audit-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "CDN 核验引擎（SSRF 围栏抓取/双源权威哈希/镜像矩阵/传播对账）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "cdn-audit",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cdn-audit",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/cdn-audit.zip"
+  }
+}
