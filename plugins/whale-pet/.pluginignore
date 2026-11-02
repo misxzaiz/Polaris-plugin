@@ -21,3 +21,11 @@ README.md
 
 # 打包产物自身
 *.zip
+
+# 资源缓存（CDN 拉取的临时文件，不进发布包）
+.asset-cache/
+
+# 资源按发布形态拆分：webm/png 等大资源走独立 tag whale-pet-assets-vX.Y.Z
+# （109 个 webm 合计 60MB，超 jsdelivr 50MB 单包上限），zip 只含代码。
+# 本地开发时如需直读资源，临时移除下行排除即可。
+assets/
