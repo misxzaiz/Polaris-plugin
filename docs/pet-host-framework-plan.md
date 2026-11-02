@@ -135,15 +135,17 @@ pet-host 读 `contributes.pets[]` 注册所有宠物，面板按 `petId` 渲染�
 
 ## 五、分阶段实施
 
-### Phase 0：APK 端修复（L0，纯插件，优先）
+### Phase 0：APK 端修复（L0，纯插件，优先）✅ v0.3.3 已发布
 **问题**：手机 `fetch localhost` 连手机本机，不是桌面。
-**方案**：面板资源加载增加 `cap.http` 路径——
-- 桌面：`fetch('http://localhost:<port>/asset/...')`（现状，保留）
-- 移动：`capDispatch('cap.http', { action: 'fetch', url: 'http://127.0.0.1:<port>/asset/...' })`（cap.http 在桌面执行，返回 base64/body）
-- 自动判断：`isMobileTauriRuntime()`（已有 `src/mobile/platform.ts`）走 cap.http，否则走 fetch
+**实际落地**（2026-11-02，commit `a4e0a3f` + 发布 `198d690`）：
+- **通道自动探测**替代 `isMobileTauriRuntime()` 判断：先试 direct（桌面直连 localhost 流式），失败再试 viaCap（宿主 cap.http 转发）——任何环境自动选命中通道，更鲁棒
+- viaCap 实际动作是 `cap.http` `action:"request"`（非 `fetch`），`url` 指向 `http://127.0.0.1:<port>/asset/webm/<anim>.webm`；`video/webm` MIME → 响应 `isBase64:true` → base64 转 Blob URL
+- **权限层已确认**（policy_permission.rs）：`cap.http` 对 Remote 内置 deny，但生产数据根 config 已有 `cap.http source=remote allow`（精确规则特异性 2 > 内置通配 deny）+ `web.token` 鉴权 → 手机已鉴权连接可调
+- **性能**：viaCap 结果按 anim 缓存（Map），同动画复用，避免高频切换反复下载 base64；组件卸载统一 revoke blob URL
+- **验证**：server.js 实测 `__health` 200 + `video/webm` 441KB + webm 魔数 `1a45dfa3`；base64 往返还原一致
 
 **改动**：仅 Panel.tsx 资源加载层 + server.js 无需改（cap.http 转发到同一个 localhost 服务）。
-**验收**：手机端打开鲸鱼面板，蓝鲸正常播放待机动画。
+**验收**：协议层已验证（health/webm/base64 往返）；手机端真机验收待用户确认（APK 需重装或插件更新触达）。
 
 ### Phase 1：统一宠物框架（L1 + L2）
 **方案**：抽 `pet-host` 插件——
@@ -229,7 +231,7 @@ async function loadAsset(name: string): Promise<string> {
 ---
 
 ## 九、里程碑
-- M0（Phase 0）：APK 端可达 —— 1 天
+- M0（Phase 0）：APK 端可达 —— ✅ 已发布 v0.3.3（协议层验证通过，真机待确认）
 - M1（Phase 1）：pet-host 框架 + whale-pet 迁移 —— 2 天
 - M2（Phase 2）：AI 双向交互 —— 1.5 天
 - M3（Phase 3）：桌面悬浮（动宿主）—— 3 天（含 spec + cargo 门槛）
