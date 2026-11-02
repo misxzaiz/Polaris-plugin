@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02T04:41:46.342Z",
+  "updated": "2026-11-02T11:10:13.998Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -3224,6 +3224,46 @@
       ],
       "createdAt": "2026-11-02T04:41:46.342Z",
       "updatedAt": "2026-11-02T05:58:28.131Z"
+    },
+    {
+      "id": "whale-pet",
+      "name": "ds大肥鱼",
+      "version": "0.3.2",
+      "description": "Polaris 桌面/移动端通用的鲸鱼桌面宠物插件：活动栏面板内一只会游动、眨眼、被点击会吐泡泡的蓝色小鲸鱼，纯前端 Canvas 动画，状态持久化到 cap.kv，零后端改动（宿主零改造）。",
+      "author": "Polaris",
+      "category": "fun",
+      "tags": [
+        "pet",
+        "whale",
+        "animation",
+        "canvas",
+        "panel"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/whale-pet",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.2/plugins/whale-pet/whale-pet.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/update.json",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 鲸鱼宠物\n\nPolaris 活动栏面板内一只会游动、眨眼、被点击吐泡泡的蓝色小鲸鱼。纯前端 Canvas 动画，零后端改动，桌面/手机双端通用。\n\n- 游动/眨眼/喷水：requestAnimationFrame 驱动\n- 点击吐泡泡：Canvas 气泡粒子\n- 互动次数持久化：cap.kv (domain=whale-pet)\n- 和 AI 聊聊它：调宿主 onSendToChat",
+      "versions": [
+        {
+          "version": "0.3.2",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.2/plugins/whale-pet/whale-pet.zip"
+        },
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/whale-pet.zip"
+        }
+      ],
+      "sha256": "e66b1784ba76b10fc0cab18ced86d1e66b6f38e35948f91199a79d6234400916",
+      "updatedAt": "2026-11-02T13:42:42.144Z",
+      "createdAt": "2026-11-02T13:42:42.144Z"
     }
   ]
 }
