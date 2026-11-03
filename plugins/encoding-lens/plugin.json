@@ -1,0 +1,41 @@
+{
+  "id": "encoding-lens",
+  "name": "编码透视台",
+  "version": "0.1.0",
+  "description": "编码识别与乱码修复台：字节级编码判定（UTF-8/GBK/Big5/Shift_JIS/EUC-KR/UTF-16/Latin-1，BOM+多候选评分+码域结构+环境先验）、mojibake 自动修复（六条误读链 + 四条终验不变式，不过不输出半成品）、乱码指纹（锟斤拷/烫烫烫/â€œ 型根因解释）、编码转换（strict 不降级）。纯本地零外联零 kv，MCP 四工具 + 面板三页签。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "encoding-lens.panel",
+        "area": "activityBar",
+        "panelType": "encoding-lens",
+        "icon": "Code2",
+        "labelKey": "plugins.encoding-lens",
+        "labelDefault": "编码透视台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "encoding-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxuzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxuzaiz/Polaris-plugin/tree/main/plugins/encoding-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxuzaiz/Polaris-plugin@main/plugins/encoding-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxuzaiz/Polaris-plugin@main/plugins/encoding-lens/encoding-lens.zip"
+  }
+}
