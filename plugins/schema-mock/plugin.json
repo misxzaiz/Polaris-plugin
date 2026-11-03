@@ -1,0 +1,41 @@
+{
+  "id": "schema-mock",
+  "name": "Mock 数据生成器",
+  "version": "0.1.0",
+  "description": "按 JSON Schema 生成随机合法假数据：Draft-07 高频子集约束反向生成（type/enum/const/数值范围/字符串长度/array 约束/additionalProperties），seed 可复现（确定性 PRNG）。与 schema-check（036）/json-repair（040）组成三件套工具链：mock→repair→validate——每组生成物经校验器闭环断言必过，校验不过=生成器 bug 如实报错。AI 测试数据/联调边界样本/演示素材的确定性来源；纯本地零外联零 kv，MCP 两工具 + 面板测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "schema-mock.panel",
+        "area": "activityBar",
+        "panelType": "schema-mock",
+        "icon": "Shuffle",
+        "labelKey": "plugins.schema-mock",
+        "labelDefault": "Mock 数据生成器",
+        "order": 99
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "schema-mock",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/schema-mock",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-mock/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-mock/schema-mock.zip"
+  }
+}
