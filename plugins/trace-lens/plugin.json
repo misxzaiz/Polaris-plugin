@@ -1,0 +1,57 @@
+{
+  "id": "trace-lens",
+  "name": "链路追踪台",
+  "version": "0.1.0",
+  "description": "把本机变成 OpenTelemetry 兼容的链路（trace）接收与排查工作站：任意 OTel SDK / 智能体运行时把 trace 经 OTLP/HTTP-JSON 发到本机接收器（127.0.0.1，数据不出本机），全量留痕落盘。面板瀑布图一眼看出慢在哪错在哪；AI 经 MCP 五工具读树诊断：看瀑布/搜慢链/查错误链。支持 Node/Python SDK 的 http/json 协议，零外部服务零依赖。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "trace-lens.panel",
+        "area": "activityBar",
+        "panelType": "traceLens",
+        "icon": "ScanSearch",
+        "labelKey": "plugins.traceLens",
+        "labelDefault": "链路追踪台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "trace-lens-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9871,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "OTLP/HTTP-JSON 链路接收服务（只绑 127.0.0.1；数据只落本机 spans.jsonl）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "trace-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/trace-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/trace-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/trace-lens/trace-lens.zip"
+  }
+}
