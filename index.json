@@ -3727,6 +3727,44 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/query-plan-lens.zip"
         }
       ]
+    },
+    {
+      "id": "openapi-desk",
+      "name": "OpenAPI 调试台",
+      "version": "0.1.0",
+      "description": "把 openapi.yaml/json 从「给人看的文档」变成「直接可调、可校验、可对比的活接口台」：拖入合同（粘贴/文件/URL 拉取，服务端拉取免跨域）→ 端点树浏览（$ref 按需解析、循环安全）→ 参数表单 + 按 schema 生成请求体示例 → 服务端真实发送（绕跨域）→ 响应与合同逐字段校验（状态码不在合同/类型漂移/必填缺失/枚举越界，breaking/告警/信息三级中文报告）→ 任选两版合同结构化对比（端点增删/参数变化/必填收紧/类型变更/响应码增删，breaking 标红）。AI 经 MCP 五工具自动联调：读合同、按合同调用、校验响应漂移、对比两版合同——文档即调试入口，验收不再靠肉眼。鉴权 token 只存服务内存与本地档案文件，kv/日志/AI 返回全掩码。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "openapi",
+        "api",
+        "http",
+        "debug",
+        "contract-testing",
+        "devtools"
+      ],
+      "icon": "Code2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/openapi-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/openapi-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/update.json",
+      "sha256": "a5eec5140389064a4ea92eb2c325de8b48c82aa65c31cbb65a88a79955e81b83",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# OpenAPI 调试台（openapi-desk）\n\n把 `openapi.yaml / openapi.json` 从「给人看的文档」变成「直接可调、可校验、可对比的活接口台」：\n\n- **拖入合同 30 秒发出第一个真实请求**——参数表单化、请求体按 schema 自动生成示例，不用再手工抄文档。\n- **响应与合同逐字段校验**——状态码不在合同、类型漂移、必填缺失、枚举越界、格式问题，自动产出 breaking/告警/信息三级中文报告。\n- **两版合同结构化对比**——端点增删、参数变化、必填收紧、类型变更、枚举收缩、响应码增删、鉴权变化，breaking 逐条标红并说明对调用方的影响。\n- **AI 自动联调**——AI 经 MCP 五工具读合同、按合同调用、校验响应漂移、对比版本，把「帮我把这些接口验收一遍」变成一句话。\n\n## 为什么是它\n\n| 场景 | 常见做法 | 本插件 |\n|---|---|---|\n| 拿到 openapi.yaml 想试接口 | 打开 Swagger UI 手展参数 / 导入 Postman（要登录） | 拖入合同 → 点端点即调 |\n| 怀疑接口返回和文档不一致 | 肉眼比对 JSON | 自动逐字段校验，三级报告 |\n| API 升级评估影响 | 人工翻 changelog / 装 oasdiff CLI | 新旧各导一次，breaking 清单直接出 |\n| 让 AI 帮忙联调 | AI 瞎猜参数 | AI 按合同构造请求，响应按合同校验 |\n\n## 使用\n\n1. **导入**：合同库页粘贴 YAML/JSON 文本、选择本地文件，或给 URL（由本机服务拉取，天然无跨域限制）。\n2. **调试**：选合同 → 选端点（参数/请求体/示例一目了然）→ 填服务器地址与鉴权（Bearer / API Key / Basic，只存本机）→ 发送 → 看响应 + 合同校验报告。\n3. **对比**：新旧两版合同各导入一次（同名不同版本会自动共存）→ 对比页选择 A→B → 看 breaking 清单。\n4. **AI 联调**：对 Polaris AI 说「用 SmokeFixture 合同调一下 GET /pets 看返回和文档一致吗」——AI 会用 `oadesk_verify` 完成并发回漂移报告。\n\n### MCP 工具（5 个）\n\n| 工具 | 用途 |\n|---|---|\n| `oadesk_specs` | 列出已导入合同（名称/版本/端点数/服务器） |\n| `oadesk_endpoints` | 列出某合同全部端点与参数概要 |\n| `oadesk_call` | 按合同构造并发送真实请求 |\n| `oadesk_verify` | 调用 + 按合同逐字段校验（漂移报告，核心工具） |\n| `oadesk_diff` | 两版合同结构化对比，breaking 标红 |\n\n## 安全与隐私\n\n- 鉴权值（token / API key / 密码）只存在于服务内存与本机档案文件（`{{appConfigDir}}/openapi-desk/envs.json`），落 kv / 进日志 / 返回 AI 的一切均为 `****last4` 掩码。\n- AI 通道护栏：只能对已导入合同的端点发请求（不接受任意 URL）；POST/PUT/PATCH/DELETE 等非安全方法必须用户确认（`confirm:true`）才发送。\n- 请求重定向不静默跟随（`redirect: manual`）——301/302 与 Location 直接可见。\n- 合同文本 ≤ 4MB，响应体落库截断 64KB；数据不出本机。\n\n## 支持范围\n\n- OpenAPI 3.0.x 完整支持；3.1 尽力解析（type 数组等降级处理）；Swagger 2.0 基础兼容（`in:body` → requestBody、`host+basePath` → servers）。\n- `$ref` 支持文档内部引用（`#/...`，循环引用安全）；外部文件/URL 引用暂不支持（导入时明确列出）。\n\n## 架构\n\n```\nplugins/openapi-desk/\n├── src/          面板（React，三 Tab：合同/调试/对比；纯 kv 读写，跨端可用）\n├── service/      执行引擎（YAML 解析[js-yaml 内置 vendor]/$ref 规范化/发送/校验/diff；\n│                 单槽信箱 oadesk.cmd→oadesk.res，面板与 MCP 共享同一事实库）\n├── shared/       openapi-core.js 纯函数核心（零依赖，core-tests 30 断言）\n├── mcp/          AI 工具层（stdio，只投递命令不执行）\n└── test/         core / service(假桥+mock上游) / mcp(三方) / panel-ssr / smoke-real(真桥)\n```\n\n## 测试\n\n```bash\nnode --test test/core-tests.mjs     # 30 断言：解析/示例/构造/校验/diff\nnode test/service-tests.mjs         # 19 断言：信箱全链路+AI 护栏+重启恢复\nnode test/mcp-tests.mjs             # 12 断言：五工具+护栏文案\nnode test/panel-ssr.mjs             # 面板 SSR 渲染冒烟\nnode test/smoke-real.mjs            # 真桥冒烟（需宿主在跑）\n```\n\n## 已知限制\n\n- 外部文件 `$ref` 不解析（导入时列出受影响位置）。\n- 请求体示例对极复杂 allOf/oneOf 组合取第一个可行分支，可能需手改。\n- 合同落库上限 2MB（超大型单体合同请拆分导入）。\n- `oneOf` 校验失败时只展示第一个候选的偏差摘要，完整分支差异见面板。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/openapi-desk.zip"
+        }
+      ],
+      "createdAt": "2026-11-03T00:09:28.084Z",
+      "updatedAt": "2026-11-03T00:09:28.087Z"
     }
   ]
 }

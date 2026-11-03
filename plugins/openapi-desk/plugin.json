@@ -1,0 +1,60 @@
+{
+  "id": "openapi-desk",
+  "name": "OpenAPI 调试台",
+  "version": "0.1.0",
+  "description": "把 openapi.yaml/json 从「给人看的文档」变成「直接可调、可校验、可对比的活接口台」：拖入合同（粘贴/文件/URL 拉取，服务端拉取免跨域）→ 端点树浏览（$ref 按需解析、循环安全）→ 参数表单 + 按 schema 生成请求体示例 → 服务端真实发送（绕跨域）→ 响应与合同逐字段校验（状态码不在合同/类型漂移/必填缺失/枚举越界，breaking/告警/信息三级中文报告）→ 任选两版合同结构化对比（端点增删/参数变化/必填收紧/类型变更/响应码增删，breaking 标红）。AI 经 MCP 五工具自动联调：读合同、按合同调用、校验响应漂移、对比两版合同——文档即调试入口，验收不再靠肉眼。鉴权 token 只存服务内存与本地档案文件，kv/日志/AI 返回全掩码。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "openapi-desk.panel",
+        "area": "activityBar",
+        "panelType": "openapiDesk",
+        "icon": "Code2",
+        "labelKey": "plugins.openapiDesk",
+        "labelDefault": "OpenAPI 调试台",
+        "order": 84
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "openapi-desk-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "OpenAPI 合同解析与请求执行引擎（YAML/JSON 解析/$ref 规范化/发送/schema 校验/diff/单槽命令信箱）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "openapi-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/openapi-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/openapi-desk.zip"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "openapi-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "openapi-desk 插件面板(打包用):OpenAPI 调试台",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:vendor": "esbuild build-yaml-entry.js --bundle --format=cjs --outfile=service/vendor/yaml-bundle.js --platform=node",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "js-yaml": "4.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "esbuild": "^0.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}

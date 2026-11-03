@@ -1,0 +1,13 @@
+node_modules/
+package.json
+package-lock.json
+pnpm-lock.yaml
+pnpm-workspace.yaml
+src/
+tsconfig.json
+build-yaml-entry.js
+test/
+README.md
+*.zip
+.git/
+openapi-desk/.ssr-out/
