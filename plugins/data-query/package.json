@@ -1,0 +1,25 @@
+{
+  "name": "polaris-plugin-data-query",
+  "version": "0.1.0",
+  "private": true,
+  "description": "数据查询台：本机数据文件 → 可 SQL 查询/JOIN/导出/对 AI 提问的本地表（@duckdb/node-api native，数据不出本机）",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:vendor": "node scripts/sync-vendor.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/run-tests.mjs",
+    "test:engine": "node test/engine-tests.mjs",
+    "test:mcp": "node test/mcp-verify.mjs"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "2.0.0-r.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "type": "commonjs"
+}

@@ -71,3 +71,12 @@
 - ECDSA JOSE r||s ↔ ASN.1 DER 互转三坑（jwt-desk 实证，ES256/384/512 全中过）：①INTEGER 必须写完整 0x02+len 头，漏头则 node 验签全红；②解析第二次 INTEGER 漏传 der 参数（intFromAsn1(r.next) 把游标当 der、pos=undefined，症状是「期望 INTEGER(0x02)」必炸而手推逻辑发现不了，插桩打印实参才定位）；③ES512/P-521 的 SEQUENCE 内容超 127 字节必走多字节长度头（0x81/0x82），解析器只支持短形式则 ES512 必炸。
 - WebCrypto ECDSA 的 verify/sign 算法参数是 EcdsaParams 必须带 hash（只给 namedCurve 报「hash is required in EcdsaParams」）；namedCurve 只在 importKey 时需要（jwt-desk 实证）。
 - RFC 7515 A.2 oct JWK 的 k 是原始 32 字节密钥：经 latin1 字符串再 UTF-8 编码会被改写致验签必败——HMAC 密钥材料接口应同时收 string（UTF-8）与 Uint8Array（原样）（jwt-desk 实证，双已知答案向量守护才抓得到）。
+- 「raw vs 解码」对照类工具：raw 必须取原始串编码原样，别拿解码产物再解一遍（两侧同值=对照无意义；url-lens 首版实证）——从原始串按分隔符切出编码形态，与标准解析产物按序 zip 配对。
+- shared 纯函数核心可以用全局 URL/URLSearchParams（浏览器+node 双端内置，esbuild 不打包全局 API，不违反零 node 内置 require 纪律）；要禁的是 require('os') 这类模块解析。
+- 编码正确性的最硬验证法是 round-trip 断言：重建→重解析→结构相等（url-lens 实证，比逐字符断言转义形态稳）。
+
+## 嵌入式引擎与重构（needs/013 data-query 实证）
+
+- 选嵌入式 SQL 引擎时，「支持进程重启恢复」必须做 writer/reader 进程分离实测：duckdb-wasm（尤其 dev 版）CHECKPOINT 后文件真实落盘（540KB、DUCK 魔数正确）但新实例/新进程重开 catalog 为空，且 DETACH 后同实例重 ATTACH 同文件必撞 "already locked exclusively"（实例内锁缓存）——11-02 尖峰全绿只测了单实例装配+查询正是漏网点；@duckdb/node-api native binding 重开实测无损（中文数据也在）。重开验证脚本别和「写入环境」共用状态（先 reset 清库再读会污染定位）。
+- native 底座结果出口语义：runAndReadAll 结果集 columnNames()/columnTypesJson() 是**方法**非属性；getRowObjectsJS 对超出 INT64 的 BIGINT 抛 Conversion Error——用 getRowObjectsJson（BIGINT→string 保精度）+ 整数族 typeId 判别后在安全整数范围内回归 Number（前端 numeric 右对齐/MCP markdown 数字字面量依赖 number 形态；VARCHAR 列不受影响）。
+- 「overwrite 可选」语义与护栏时序：先删旧文件再过路径护栏（护栏的「已存在」检查看到删后的世界），反序则 overwrite:true 永远被拒——半成品没跑过测试这类逻辑不会自己冒出来（export 用例首跑即红实证）。
