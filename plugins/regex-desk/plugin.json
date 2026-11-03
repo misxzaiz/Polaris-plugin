@@ -1,0 +1,43 @@
+{
+  "id": "regex-desk",
+  "name": "正则调试台",
+  "version": "0.1.0",
+  "description": "正则表达式调试台：JS RegExp 真实语义测试（匹配高亮/捕获组/命名组/耗时）、ReDoS 灾难性回溯检测（静态模式识别 + 静态可疑时输入长度阶梯真实计时复核 + 中文改写建议）、逐构造中文解释（类内 \\b 是退格这类语义细节也不漏）、替换预览。AI 生成正则先自检再用——2026 年 path-to-regexp/markdown-it 等 ReDoS CVE 连发，LLM 生成正则的回溯风险已有专研；纯本地零外联，文本不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "regex-desk.panel",
+        "area": "activityBar",
+        "panelType": "regex-desk",
+        "icon": "ScanSearch",
+        "labelKey": "plugins.regex-desk",
+        "labelDefault": "正则调试台",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "regex-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/regex-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex-desk/regex-desk.zip"
+  }
+}
