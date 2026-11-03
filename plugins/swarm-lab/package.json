@@ -1,0 +1,21 @@
+{
+  "name": "swarm-lab-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "swarm-lab 插件（构建用）：蜂群实验台——多智能体涌现行为实验沙盘",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/core.test.mjs",
+    "verify:mcp": "node test/mcp-verify.mjs",
+    "verify:render": "node test/render-verify.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}
