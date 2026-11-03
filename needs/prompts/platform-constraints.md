@@ -96,3 +96,14 @@
 - 本机 Node 的 `TextDecoder('windows-1252')` 退化为 latin1 恒等映射（0x80→U+0080 而非 €，encoding 属性却照报 windows-1252；多字节族 gbk/big5/shift_jis/euc-kr 实测正常）——凡依赖 cp1252 语义的 decode 必须自建高区映射表（32 项 [byte,char] 对），encode 方向自建表不受影响；「连写字符串 + indexOf 取 idx」反查表在跳位（0x8D/0x8F/0x90/0x9D 保留位）处 idx 会漂移（œ 被算成 0x9A），必须显式 byte→char 对表（encoding-lens 实证）。
 - `{fixed: `${x.best.chain}…`, clean: `…`}[status]` 对象字面量+动态取键会把**所有分支的模板串都求值**——status=clean 而 best=null 时 `${null.chain}` 直接 crash 且报错行指回对象定义处极具迷惑性——多态文案逐态 if/else（encoding-lens 实证）。
 - 「按字节特征选编码再解码修复」类多路径引擎：字节视角中间判定（detect）会选错路径（双重损坏文件判 GBK 也能读出假汉字）——须对高分候选各跑「解码→指纹→修复」全程后按**终态可读性**裁决；utf-8 strict 通过是结构性证据须始终纳入路径枚举，不能按分截断；同一字节流的重复率/分布特征是字节属性非解码属性，同源互串族（GBK↔EUC-KR 码域完全重叠）用字符级统计区分不开时只能靠语种构成奖励 + 环境先验（encoding-lens 实证：GBK 误读产物谚文占比实测可达 0.48，韩文语境奖励必须加「无汉字混杂」条件才能拦住）。
+- 生成器/修复器类工具的闭环自检要写进运行时本体（generateBatch 逐组过校验器），不只写在测试里——运行时假绿防线与测试防线是两道独立闸（schema-mock 先例）。
+- 约束生成器遇到矛盾约束（min>max）必须如实报错，静默"帮忙"修约束（抬上限）会生成被校验器拒绝的假绿产物——错误要前移到根因处报（schema-mock 实证）。
+- 断言「转义产物」类输出（本身含反斜杠/引号字面量，如 CSV→Markdown 的 `x\|y`）时，正则 `/x\|y/` 里的 `\|` 是正则转义、匹配字面 `|`，永远匹配不到含真实反斜杠的产物——这类断言一律用 includes 字符串比较别用正则（csv-lens 实证，三修才过）。
+- 测试样本三层引号嵌套（JS 字符串字面量 → CSV 内容 → SQL 转义）先画清每层谁转义谁：JS 单引号串里写 `''`（想表达 SQL/CSV 内容）会提前终止字符串报 SyntaxError missing ) 而非断言失败，报错行指回样本处极具迷惑性；嵌套样本一律 JS 双引号包串 + 显式 \'（csv-lens 实证）。
+- RFC 4180 歧义形态分界：`"a""b"` 整体是单字段 a"b（引号内 "" 恒为转义），trailing-after-quote 场景须引号闭合后隔非分隔符字符（`"a"x`）；解析器的「关闭后再遇引号」分支与「内部转义」分支极易混淆，状态机按「IN_QUOTED 遇引号先看下一字符」处理则两个形态天然分流（csv-lens 实证）。
+
+## 打包排除与文案保真（needs/044 cookie-lens 实证）
+
+- pack.js 只读插件级 .pluginignore、不读根 .gitignore：零运行时依赖插件的 devDeps node_modules（react/esbuild/typescript）会全量打进 zip（实测 10.6MB/273 文件）——插件目录放 .pluginignore 排 node_modules/ 后 49KB/13 文件；zip 是发布产物不入 git（根 .gitignore 无 zip 规则，git add 整目录会把 zip 暂存进去，须 unstage+删）。
+- 头名归一化（小写化）与展示必须分离：toHeaderList 把 name 统一小写后诊断文案里 Authorization 变 authorization——比对用归一名、展示留 raw 原样字段，两处断言红才抓到。
+- 插件 icon 内置白名单（src-tauri plugin_service.rs VALID_PLUGIN_ICONS 18 值）与存量插件实际 icon 名并不一致（url-lens 的 "Link" 不在白名单内仍在线）——新插件 icon 一律对照 Rust 单源现查，别抄存量插件。
