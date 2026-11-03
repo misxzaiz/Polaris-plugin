@@ -1,0 +1,41 @@
+{
+  "id": "env-drift",
+  "name": ".env 漂移检查器",
+  "version": "0.1.0",
+  "description": "对比 .env.example 与实际 .env 的键漂移：缺失键（example 有实际无）、多余键（实际有 example 无）、值差异（同名键值不同——脱敏报告不含实际值原文）、格式错误行（含行号）。支持引号值/export 前缀/行内注释/空值/重复键解析。AI 生成项目脚手架的 .env 漂移是部署翻车高频根因，push 前一键体检。纯本地零外联零 kv，MCP 两工具 + 面板双文本框对比测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "env-drift.panel",
+        "area": "activityBar",
+        "panelType": "env-drift",
+        "icon": "FileDiff",
+        "labelKey": "plugins.env-drift",
+        "labelDefault": ".env 漂移检查器",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "env-drift",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/env-drift",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/env-drift/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/env-drift/env-drift.zip"
+  }
+}
