@@ -1,0 +1,41 @@
+{
+  "id": "csv-lens",
+  "name": "CSV 检查台",
+  "version": "0.1.0",
+  "description": "把一份 CSV 拆开看清楚：RFC 4180 状态机严格解析（引号内逗号/换行/\"\"转义），定位列数漂移行与裸引号/引号后尾随字符/未闭合引号（带行号），检测分隔符/换行风格/BOM/方言，逐列类型推断统计，并转 JSON/SQL/Markdown 或输出 RFC 规范 CSV。调试「CSV 导入失败不知道哪一行哪个字符坏了」的数据管道高频痛点。纯本地零外联零 kv，MCP 四工具 + 面板四页签。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "csv-lens.panel",
+        "area": "activityBar",
+        "panelType": "csv-lens",
+        "icon": "Table",
+        "labelKey": "plugins.csv-lens",
+        "labelDefault": "CSV 检查台",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "csv-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/csv-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/csv-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/csv-lens/csv-lens.zip"
+  }
+}
