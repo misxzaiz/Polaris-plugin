@@ -1,0 +1,41 @@
+{
+  "id": "version-lens",
+  "name": "semver 版本范围调试台",
+  "version": "0.1.0",
+  "description": "「为什么 ^0.2.3 装不到 0.3.0」「为什么 beta 装不上」的依赖冲突调试刚需。解析 npm semver 范围并中文逐部分解释（插入符/波浪线/通配/部分版本跳段语义，上界以 -0 精确排他），逐版本判定匹配与否并给出原因（放行交集组/首个拒绝比较器/预发布门控），坑检测：0.x 插入符锁定次版本、0.0.x 锁定补丁、预发布门控、>1.2 跳段、空交集组、=1.2 并非精确等于、构建元数据被忽略。判定引擎与 node-semver 7 权威实现差分对拍全等（1700+ 组），纯本地零外联零 kv，MCP 三工具（explain/check/sort）+ 面板双框判定表。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "version-lens.panel",
+        "area": "activityBar",
+        "panelType": "version-lens",
+        "icon": "Target",
+        "labelKey": "plugins.version-lens",
+        "labelDefault": "semver 版本范围调试台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "version-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/version-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/version-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/version-lens/version-lens.zip"
+  }
+}
