@@ -80,3 +80,9 @@
 - 选嵌入式 SQL 引擎时，「支持进程重启恢复」必须做 writer/reader 进程分离实测：duckdb-wasm（尤其 dev 版）CHECKPOINT 后文件真实落盘（540KB、DUCK 魔数正确）但新实例/新进程重开 catalog 为空，且 DETACH 后同实例重 ATTACH 同文件必撞 "already locked exclusively"（实例内锁缓存）——11-02 尖峰全绿只测了单实例装配+查询正是漏网点；@duckdb/node-api native binding 重开实测无损（中文数据也在）。重开验证脚本别和「写入环境」共用状态（先 reset 清库再读会污染定位）。
 - native 底座结果出口语义：runAndReadAll 结果集 columnNames()/columnTypesJson() 是**方法**非属性；getRowObjectsJS 对超出 INT64 的 BIGINT 抛 Conversion Error——用 getRowObjectsJson（BIGINT→string 保精度）+ 整数族 typeId 判别后在安全整数范围内回归 Number（前端 numeric 右对齐/MCP markdown 数字字面量依赖 number 形态；VARCHAR 列不受影响）。
 - 「overwrite 可选」语义与护栏时序：先删旧文件再过路径护栏（护栏的「已存在」检查看到删后的世界），反序则 overwrite:true 永远被拒——半成品没跑过测试这类逻辑不会自己冒出来（export 用例首跑即红实证）。
+
+## MCP harness 与 CJS-TS 边界（needs/039 cron-lens 实证）
+
+- MCP 测试 harness 里 `notifications/initialized` 是通知（无 id）服务端不回包——按 rpc 等响应会永久挂起、呈现为「rpc 超时」假象；通知必须 write-only 不进 pending 表。
+- CJS shared core 的双分支返回（ok:true/false）形状不对称时，TS（allowJs 推断）把 ok 推成 boolean 无法判别收窄，属性访问全线报 possibly undefined——错误分支补齐同形空键（warnings:[] 等，运行时零成本）比 JSDoc typedef 轻。
+- 关键字拦截正则按整 token 匹配会误杀含相同字母的合法枚举名（/L/ 拦掉月份名 JUL）——拦截判定须锚定原子边界（^(l|w)$、#、数字后缀等形态），与 prompt-guard「同形词误杀」同族。
