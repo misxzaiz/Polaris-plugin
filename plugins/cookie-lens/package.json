@@ -1,0 +1,19 @@
+{
+  "name": "cookie-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "cookie-lens 插件面板（打包用）：Cookie & CORS 调试台",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "type": "commonjs"
+}

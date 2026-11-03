@@ -1,0 +1,41 @@
+{
+  "id": "cookie-lens",
+  "name": "Cookie & CORS 调试台",
+  "version": "0.1.0",
+  "description": "Cookie 与 CORS 确定性诊断台：Set-Cookie 逐属性诊断（SameSite=None 缺 Secure 拒收、__Host-/__Secure- 前缀、Domain 父域校验、Max-Age/Expires 优先级）、按 RFC 6265 domain-match/path-match 判定 cookie 会被发往哪些 URL、按 Fetch Standard 判定 CORS 场景（credentials 下通配符失效、重复 ACAO、预检 ACAM/ACAH 逐项核对）。排查「cookie 没种上」「blocked by CORS policy」的高频痛点。纯本地零外联，MCP 四工具 + 面板三页签。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "cookie-lens.panel",
+        "area": "activityBar",
+        "panelType": "cookie-lens",
+        "icon": "Target",
+        "labelKey": "plugins.cookie-lens",
+        "labelDefault": "Cookie & CORS 调试台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "cookie-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cookie-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cookie-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cookie-lens/cookie-lens.zip"
+  }
+}
