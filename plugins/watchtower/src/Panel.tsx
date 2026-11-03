@@ -455,7 +455,7 @@ function AboutTab() {
             <ul>
               <li><b>AI 经本插件 MCP 工具调用</b>：每次 watchtower_* 工具调用自动 +1（source=mcp）。</li>
               <li><b>插件面板打开（含其它插件）</b>：宿主在面板挂载点<b>自动观测</b>（cap.kv <code>plugin.usage.*</code>），本面板读时合并——打开即记账，无需 AI 补记。</li>
-              <li><b>其它插件的 MCP 工具调用</b>：调用直连插件子进程，宿主不在链路，需 AI 主动用 <code>watchtower_report_usage</code> 补记。</li>
+              <li><b>其它插件的 MCP 工具调用</b>：宿主从全局 AI 事件流观测 <code>tool_call_end</code>，按真实工具注册表归属插件自动记账（cap.kv <code>plugin.toolusage.*</code>，含工具名明细；needs/027）——本面板读时合并进工具调用通道。旧版本宿主无此观测时可由 AI 经 <code>watchtower_report_usage</code> 兜底补记。</li>
             </ul>
             <b>不吹的边界</b>
             <ul>

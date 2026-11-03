@@ -7,20 +7,27 @@
  * 所有"计算"必须放这里，两侧只做 IO（cap.kv / cap.pluginDiscovery /
  * cap.pluginServiceManager 读写），防止口径漂移。
  *
- * 计量口径（面板通道双源合并，分账记录避免混淆）：
+ * 计量口径（三通道读时合并，分账记录避免混淆）：
  *   source = 'mcp'  ：AI 经本插件 MCP 工具触发的一次调用（本插件自记）
  *   source = 'panel'：用户打开插件面板的一次打开
  *     - 宿主 0.x 观测版起，面板打开由宿主在 PluginPanelHost 挂载点自动观测
  *       （cap.kv `plugin.usage.<pluginId>`，宿主自有键空间），插件运营**读时合并**
  *       进 panel 通道，不回写自有账本（plans/plugin-usage-observation.md）；
  *     - 插件运营自身面板不再自记（同事实单写者=宿主）。
- * 两种来源写入同一账本的不同计数位，聚合时可选合并或分看。
+ *   toolCalls（宿主 0.x toolusage 观测版起）：**其它插件**的 MCP 工具调用由宿主
+ *     前端 AIEvent 观测（pluginToolUsageObserver 订阅 tool_call_end，按真实
+ *     注册表归属插件）自动记账（cap.kv `plugin.toolusage.<pluginId>`，含工具名
+ *     明细），读时合并进 mcp 通道——此前调用直连插件子进程宿主不可见、只能 AI
+ *     手动补记（needs/027 修复）。
+ * 各来源写入同一账本的不同计数位，聚合时可选合并或分看。
  *
  * 数据契约（cap.kv，权威描述见 README）：
  *   watchtower.usage.<pluginId> → UsageRecord
- *     { count, lastUsed, firstUsed, panelOpens, trends: { 'YYYY-MM-DD': { mcp, panel } } }
- *   plugin.usage.<pluginId> → 宿主观测
+ *     { count, lastUsed, firstUsed, panelOpens, toolCalls?, trends: { 'YYYY-MM-DD': { mcp, panel } } }
+ *   plugin.usage.<pluginId> → 宿主面板打开观测
  *     { v: 1, pluginId, count, firstUsed, lastUsed, days: { 'YYYY-MM-DD': n } }
+ *   plugin.toolusage.<pluginId> → 宿主工具调用观测（含工具名明细）
+ *     { v: 1, pluginId, count, tools: { <toolName>: n }, firstUsed, lastUsed, days: { 'YYYY-MM-DD': n } }
  *   watchtower.settings → { schemaVersion: 1 }
  *
  * 治理建议（派生自聚合结果，纯函数）：
@@ -84,6 +91,8 @@ const K = {
   },
   /** 宿主自有键空间（宿主 pluginUsageObserver 写入，插件运营只读）：面板打开观测 */
   hostUsagePrefix: 'plugin.usage.',
+  /** 宿主自有键空间（宿主 pluginToolUsageObserver 写入，插件运营只读）：其它插件 MCP 工具调用观测 */
+  hostToolUsagePrefix: 'plugin.toolusage.',
   settings: 'watchtower.settings',
 };
 
@@ -93,6 +102,7 @@ function emptyUsage(pluginId) {
     pluginId,
     count: 0,
     panelOpens: 0,
+    toolCalls: {},
     firstUsed: null,
     lastUsed: null,
     trends: {},
@@ -116,10 +126,19 @@ function normalizeUsage(raw) {
     pluginId: typeof raw.pluginId === 'string' ? raw.pluginId : 'unknown',
     count: toInt(raw.count),
     panelOpens: toInt(raw.panelOpens),
+    // 宿主 toolusage 观测合并产物（读时合并不落盘，二次 normalize 须保留明细）
+    toolCalls: {},
     firstUsed: toTs(raw.firstUsed),
     lastUsed: toTs(raw.lastUsed),
     trends: {},
   };
+  if (raw.toolCalls && typeof raw.toolCalls === 'object') {
+    for (const [tool, n] of Object.entries(raw.toolCalls)) {
+      if (typeof tool !== 'string' || !tool) continue;
+      const v = toInt(n);
+      if (v > 0) rec.toolCalls[tool] = v;
+    }
+  }
   if (raw.trends && typeof raw.trends === 'object') {
     for (const [day, val] of Object.entries(raw.trends)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
@@ -266,6 +285,75 @@ function mergeHostIntoUsage(rec, obs, pluginId) {
   return base;
 }
 
+/**
+ * 归一化宿主写入的**工具调用**观测（cap.kv `plugin.toolusage.<pluginId>`）。
+ *
+ * 宿主 pluginToolUsageObserver 订阅全局 AIEvent tool_call_end，按真实注册表
+ * （cap.mcp list_plugin_tools）把调用归属到插件后自动记账——覆盖"调用直连
+ * 插件子进程宿主不可见"的计量缺口（needs/027）。
+ * @param {unknown} raw cap.kv get 的 value
+ * @returns {{ pluginId:string, count:number, tools:Record<string,number>, firstUsed:number, lastUsed:number, days:Record<string,number> }|null}
+ */
+function normalizeHostToolObservation(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const pluginId = typeof raw.pluginId === 'string' ? raw.pluginId : null;
+  if (!pluginId) return null;
+  const count = toInt(raw.count);
+  const tools = {};
+  if (raw.tools && typeof raw.tools === 'object') {
+    for (const [tool, n] of Object.entries(raw.tools)) {
+      if (typeof tool !== 'string' || !tool) continue;
+      const v = toInt(n);
+      if (v > 0) tools[tool] = v;
+    }
+  }
+  const days = {};
+  if (raw.days && typeof raw.days === 'object') {
+    for (const [day, n] of Object.entries(raw.days)) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+      const v = toInt(n);
+      if (v > 0) days[day] = v;
+    }
+  }
+  return {
+    pluginId,
+    count,
+    tools,
+    firstUsed: toTs(raw.firstUsed),
+    lastUsed: toTs(raw.lastUsed),
+    days,
+  };
+}
+
+/**
+ * 把宿主**工具调用**观测合并进插件运营账本（**读时合并，不回写**）。
+ *
+ * 语义：宿主 toolusage 观测的就是"AI 调用了该插件的 MCP 工具"，计入 mcp 通道
+ * （trends[day].mcp 与 count），工具名明细聚入 toolCalls。与 mergeHostIntoUsage
+ * 同幂等纪律：只对"刚读出的自有账本"合并一次，结果不落盘。
+ * @param {UsageRecord|null} rec 插件运营自有账本（normalizeUsage 产物或 null）
+ * @param {{ count:number, tools:Record<string,number>, firstUsed:number|null, lastUsed:number|null, days:Record<string,number> }|null} obs normalizeHostToolObservation 产物
+ * @param {string} pluginId
+ * @returns {UsageRecord}
+ */
+function mergeHostToolsIntoUsage(rec, obs, pluginId) {
+  const base = normalizeUsage(rec) || emptyUsage(pluginId);
+  base.pluginId = pluginId;
+  if (!obs) return base;
+  for (const [day, n] of Object.entries(obs.days)) {
+    const slot = base.trends[day] || { mcp: 0, panel: 0 };
+    slot.mcp += n;
+    base.trends[day] = slot;
+  }
+  base.count += obs.count;
+  for (const [tool, n] of Object.entries(obs.tools)) {
+    base.toolCalls[tool] = (base.toolCalls[tool] || 0) + n;
+  }
+  if (obs.firstUsed && (base.firstUsed === null || obs.firstUsed < base.firstUsed)) base.firstUsed = obs.firstUsed;
+  if (obs.lastUsed && (base.lastUsed === null || obs.lastUsed > base.lastUsed)) base.lastUsed = obs.lastUsed;
+  return base;
+}
+
 // ── 活跃度分级 ──────────────────────────────────────────────────────────────
 /**
  * 插件活跃度分级。
@@ -373,7 +461,7 @@ function normalizeServiceStatus(raw) {
  * @param {object[]} [services] 归一化服务状态列表
  * @returns {object[]} 治理建议数组（按紧急度排序）
  */
-function governanceSuggestions(plugins, usageByPlugin, services = []) {
+function governanceSuggestions(plugins, usageByPlugin, services = [], now = nowMs()) {
   const out = [];
   const runningServices = new Set(
     services
@@ -382,7 +470,7 @@ function governanceSuggestions(plugins, usageByPlugin, services = []) {
   );
   for (const p of plugins) {
     const rec = usageByPlugin[p.id] || null;
-    const activity = activityOf(rec);
+    const activity = activityOf(rec, now);
     // 冷门且后台服务在跑 → 最值得停用（省资源）
     if ((activity === 'cold' || activity === 'never') && runningServices.has(p.id)) {
       out.push({
@@ -427,7 +515,7 @@ function governanceSuggestions(plugins, usageByPlugin, services = []) {
  * @param {Record<string, UsageRecord>} usageByPlugin
  * @param {object[]} [services] 服务状态列表
  */
-function summarize(plugins, usageByPlugin, services = []) {
+function summarize(plugins, usageByPlugin, services = [], now = nowMs()) {
   const serviceByPlugin = new Map();
   for (const s of services) {
     if (!serviceByPlugin.has(s.pluginId)) serviceByPlugin.set(s.pluginId, []);
@@ -438,16 +526,16 @@ function summarize(plugins, usageByPlugin, services = []) {
     // 无记录插件兜底为空账本：normalizeUsage(undefined)=null，会令后续
     // aggregateWindow/costOf 读 null.trends 崩溃（真桥冒烟实测踩到）。
     const rec = normalizeUsage(usageByPlugin[p.id]) || emptyUsage(p.id);
-    const activity = activityOf(rec);
-    const wins = TREND_WINDOWS.map((n) => ({ days: n, ...aggregateWindow(rec, n) }));
+    const activity = activityOf(rec, now);
+    const wins = TREND_WINDOWS.map((n) => ({ days: n, ...aggregateWindow(rec, n, now) }));
     return {
       plugin: p,
       usage: rec,
       activity,
       activityMeta: activityLabel(activity),
       windows: wins,
-      cost30: costOf(rec, 30),
-      cost7: costOf(rec, 7),
+      cost30: costOf(rec, 30, now),
+      cost7: costOf(rec, 7, now),
       services: serviceByPlugin.get(p.id) || [],
       hasServices: hasServices(p),
       serviceIds: serviceIdsOf(p),
@@ -468,7 +556,7 @@ function summarize(plugins, usageByPlugin, services = []) {
     rows,
     byActivity,
     byCold,
-    suggestions: governanceSuggestions(plugins, usageByPlugin, services),
+    suggestions: governanceSuggestions(plugins, usageByPlugin, services, now),
     windows: TREND_WINDOWS,
     totals: {
       plugins: rows.length,
@@ -488,6 +576,7 @@ module.exports = {
   emptyUsage, normalizeUsage, recordUsage, dayBreakdown,
   daysWithData, aggregateWindow, costOf,
   normalizeHostObservation, mergeHostIntoUsage,
+  normalizeHostToolObservation, mergeHostToolsIntoUsage,
   activityOf, ACTIVITY_LABELS, activityLabel,
   normalizePlugin, hasServices, mcpServerCount, serviceIdsOf,
   normalizeServiceStatus, governanceSuggestions, summarize,

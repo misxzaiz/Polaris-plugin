@@ -127,14 +127,14 @@ test('costOf: 工具调用权重大于面板打开', () => {
 })
 
 test('activityOf: 活跃/沉睡/冷门/从未', () => {
-  assert.equal(core.activityOf(null), 'never')
-  assert.equal(core.activityOf(core.emptyUsage('x')), 'never')
+  assert.equal(core.activityOf(null, NOW), 'never')
+  assert.equal(core.activityOf(core.emptyUsage('x'), NOW), 'never')
   // 活跃：3 天前用过
-  assert.equal(core.activityOf({ ...core.emptyUsage('x'), lastUsed: NOW - 3 * DAY }), 'active')
+  assert.equal(core.activityOf({ ...core.emptyUsage('x'), lastUsed: NOW - 3 * DAY }, NOW), 'active')
   // 沉睡：10 天前用过（7 天窗口外，30 天内）
-  assert.equal(core.activityOf({ ...core.emptyUsage('x'), lastUsed: NOW - 10 * DAY }), 'idle')
+  assert.equal(core.activityOf({ ...core.emptyUsage('x'), lastUsed: NOW - 10 * DAY }, NOW), 'idle')
   // 冷门：40 天前用过
-  assert.equal(core.activityOf({ ...core.emptyUsage('x'), lastUsed: NOW - 40 * DAY }), 'cold')
+  assert.equal(core.activityOf({ ...core.emptyUsage('x'), lastUsed: NOW - 40 * DAY }, NOW), 'cold')
 })
 
 test('summarize: 热/冷榜 + totals', () => {
@@ -150,7 +150,7 @@ test('summarize: 热/冷榜 + totals', () => {
   const services = [
     core.normalizeServiceStatus({ serviceId: 's1', pluginId: 'b', state: 'running', port: 8080, pid: 100, restartCount: 0 }),
   ]
-  const sum = core.summarize(plugins, usage, services)
+  const sum = core.summarize(plugins, usage, services, now)
   assert.equal(sum.totals.plugins, 2)
   assert.equal(sum.totals.active, 1)
   assert.equal(sum.totals.cold, 1)
@@ -259,4 +259,85 @@ test('fmtDay / dayStart: 日期边界', () => {
   const start = core.dayStart('2026-10-28')
   assert.equal(core.fmtDay(start), '2026-10-28')
   assert.equal(core.fmtDay(start - 1), '2026-10-27')
+})
+// ── needs/027：宿主工具调用观测（plugin.toolusage.*）─────────────────────────
+
+test('normalizeHostToolObservation: 归一化含工具明细的观测', () => {
+  const obs = core.normalizeHostToolObservation({
+    v: 1,
+    pluginId: 'needs',
+    count: 5,
+    tools: { needs_add: 3, needs_update: 2 },
+    firstUsed: NOW - DAY,
+    lastUsed: NOW,
+    days: { [core.fmtDay(NOW - DAY)]: 2, [core.fmtDay(NOW)]: 3 },
+  })
+  assert.ok(obs)
+  assert.equal(obs.pluginId, 'needs')
+  assert.equal(obs.count, 5)
+  assert.deepEqual(obs.tools, { needs_add: 3, needs_update: 2 })
+  assert.equal(obs.days[core.fmtDay(NOW)], 3)
+})
+
+test('normalizeHostToolObservation: 脏数据防御（缺 pluginId / 负数 / 非日期键）', () => {
+  assert.equal(core.normalizeHostToolObservation(null), null)
+  assert.equal(core.normalizeHostToolObservation({}), null)
+  assert.equal(core.normalizeHostToolObservation({ count: 3 }), null) // 缺 pluginId
+  const obs = core.normalizeHostToolObservation({
+    pluginId: 'x',
+    count: -5,
+    tools: { bad: -1, good: 2 },
+    days: { 'not-a-date': 9, [core.fmtDay(NOW)]: 1 },
+  })
+  assert.ok(obs)
+  assert.equal(obs.count, 0)
+  assert.deepEqual(obs.tools, { good: 2 })
+  assert.equal(Object.keys(obs.days).length, 1)
+})
+
+test('mergeHostToolsIntoUsage: 工具观测并入 mcp 通道 + toolCalls 明细聚合', () => {
+  // 自有账本：本插件自记 1 次 mcp
+  let rec = core.recordUsage('needs', 'mcp', null, NOW - 2 * DAY)
+  // 宿主工具观测：同插件另 5 次工具调用（其中同一天 1 次）
+  const obs = core.normalizeHostToolObservation({
+    v: 1, pluginId: 'needs', count: 5,
+    tools: { needs_add: 3, needs_update: 2 },
+    firstUsed: NOW - DAY, lastUsed: NOW,
+    days: { [core.fmtDay(NOW - 2 * DAY)]: 1, [core.fmtDay(NOW)]: 4 },
+  })
+  rec = core.mergeHostToolsIntoUsage(rec, obs, 'needs')
+  assert.equal(rec.count, 6) // 1 自记 + 5 宿主观测
+  assert.equal(rec.panelOpens, 0) // 不进 panel 通道
+  assert.deepEqual(rec.trends[core.fmtDay(NOW - 2 * DAY)], { mcp: 2, panel: 0 })
+  assert.deepEqual(rec.trends[core.fmtDay(NOW)], { mcp: 4, panel: 0 })
+  assert.deepEqual(rec.toolCalls, { needs_add: 3, needs_update: 2 })
+  assert.equal(rec.firstUsed, NOW - 2 * DAY)
+  assert.equal(rec.lastUsed, NOW)
+})
+
+test('mergeHostToolsIntoUsage: 双观测（面板+工具）三源合并不互串', () => {
+  const own = core.recordUsage('plug-a', 'panel', null, NOW)
+  const panelObs = core.normalizeHostObservation({ pluginId: 'plug-a', count: 2, days: { [core.fmtDay(NOW)]: 2 } })
+  const toolObs = core.normalizeHostToolObservation({ pluginId: 'plug-a', count: 7, tools: { t1: 7 }, days: { [core.fmtDay(NOW)]: 7 } })
+  const merged = core.mergeHostToolsIntoUsage(core.mergeHostIntoUsage(own, panelObs, 'plug-a'), toolObs, 'plug-a')
+  assert.equal(merged.count, 7) // 工具通道
+  assert.equal(merged.panelOpens, 3) // 1 自记 + 2 宿主面板观测
+  assert.deepEqual(merged.trends[core.fmtDay(NOW)], { mcp: 7, panel: 3 })
+  assert.deepEqual(merged.toolCalls, { t1: 7 })
+})
+
+test('normalizeUsage: 二次归一化保留 toolCalls 明细（读时合并链路幂等）', () => {
+  const merged = core.mergeHostToolsIntoUsage(null, core.normalizeHostToolObservation({
+    pluginId: 'needs', count: 3, tools: { needs_add: 3 }, days: {},
+  }), 'needs')
+  const again = core.normalizeUsage(merged)
+  assert.ok(again)
+  assert.deepEqual(again.toolCalls, { needs_add: 3 })
+  assert.equal(again.count, 3)
+})
+
+test('mergeHostToolsIntoUsage: obs 为 null 时账本原样（含 toolCalls 空对象）', () => {
+  const rec = core.mergeHostToolsIntoUsage(null, null, 'plug-a')
+  assert.equal(rec.count, 0)
+  assert.deepEqual(rec.toolCalls, {})
 })

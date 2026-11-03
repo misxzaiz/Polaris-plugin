@@ -5,7 +5,7 @@
  *
  * 职责：把 AI 的「看看哪个插件冷/热」「停掉/启用来释放资源」「报告一次用量」
  * 意图翻译为对宿主三个能力的读写：
- *   - cap.kv                  → 用量账本（watchtower.usage.* 自有 + plugin.usage.* 宿主观测只读合并）
+ *   - cap.kv                  → 用量账本（watchtower.usage.* 自有 + plugin.usage.* / plugin.toolusage.* 宿主观测只读合并）
  *   - cap.pluginDiscovery     → discover（插件清单）/ uninstall（卸载）
  *   - cap.pluginServiceManager → list_status / start / stop / restart（服务管理）
  * 全部计算逻辑走 shared/usage-core.js（与面板同一权威，口径不漂移）。
@@ -27,8 +27,9 @@
  *
  * 边界声明（如实）：
  *   - 面板打开由宿主自动观测（cap.kv plugin.usage.*，读时合并进 panel 通道）
- *   - MCP 工具调用直连插件子进程，宿主不在链路：本插件自记 watchtower_* 的调用，
- *     其它插件的工具调用需 watchtower_report_usage 补记
+ *   - 其它插件的 MCP 工具调用由宿主 AIEvent 观测自动记账（cap.kv plugin.toolusage.*，
+ *     含工具名明细，读时合并进 mcp 通道；needs/027）——watchtower_report_usage
+ *     降级为兜底补记（宿主未及观测/旧版本宿主时手动用）
  *   - 服务状态粒度 = 宿主 cap.pluginServiceManager 提供（running/exited/port/pid/uptime），无 CPU/内存
  */
 const http = require('http');
@@ -210,13 +211,32 @@ async function loadHostObservations() {
   return byPlugin;
 }
 
-/** 自有账本 + 宿主观测读时合并（合并结果不落盘，每次重读重算，幂等） */
+/** 宿主工具调用观测（plugin.toolusage.*，宿主 pluginToolUsageObserver 写，只读；needs/027） */
+async function loadHostToolObservations() {
+  const keys = await kvKeys();
+  const byPlugin = {};
+  for (const k of keys) {
+    if (!k.startsWith(core.K.hostToolUsagePrefix)) continue;
+    // eslint-disable-next-line no-await-in-loop
+    const obs = core.normalizeHostToolObservation(await kvGet(k));
+    if (obs) byPlugin[obs.pluginId] = obs;
+  }
+  return byPlugin;
+}
+
+/** 自有账本 + 宿主两观测（面板/工具）读时合并（合并结果不落盘，每次重读重算，幂等） */
 async function loadMergedUsage() {
-  const [own, host] = await Promise.all([loadAllUsage(), loadHostObservations()]);
-  const ids = new Set([...Object.keys(own), ...Object.keys(host)]);
+  const [own, host, hostTools] = await Promise.all([
+    loadAllUsage(), loadHostObservations(), loadHostToolObservations(),
+  ]);
+  const ids = new Set([...Object.keys(own), ...Object.keys(host), ...Object.keys(hostTools)]);
   const merged = {};
   for (const id of ids) {
-    merged[id] = core.mergeHostIntoUsage(own[id] || null, host[id] || null, id);
+    merged[id] = core.mergeHostToolsIntoUsage(
+      core.mergeHostIntoUsage(own[id] || null, host[id] || null, id),
+      hostTools[id] || null,
+      id,
+    );
   }
   return merged;
 }
@@ -315,6 +335,14 @@ const tools = [
       for (const n of core.TREND_WINDOWS) {
         const w = core.aggregateWindow(rec, n);
         lines.push(`近${n}天：工具${w.mcp} / 面板${w.panel} / 合计${w.total}`);
+      }
+      // 工具级明细（needs/027：宿主 AIEvent 观测自动记账，含工具名分布）
+      const toolCalls = rec.toolCalls && typeof rec.toolCalls === 'object' ? rec.toolCalls : {};
+      const toolEntries = Object.entries(toolCalls).sort((a, b) => b[1] - a[1]);
+      if (toolEntries.length) {
+        const top = toolEntries.slice(0, 10).map(([t, n]) => `${t}×${n}`).join('、');
+        const more = toolEntries.length > 10 ? `（另 ${toolEntries.length - 10} 个工具）` : '';
+        lines.push(`工具明细：${top}${more}`);
       }
       if (p.origin && p.origin.downloadUrl) lines.push(`来源：远端安装（${p.origin.downloadUrl}）`);
       else if (p.source && typeof p.source.kind === 'string') lines.push(`来源：${p.source.kind}`);

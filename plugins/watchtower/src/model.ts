@@ -7,14 +7,17 @@
  * 通道：window.__POLARIS_HOST_INVOKE__ → router_dispatch → cap.*
  * （cap.kv / cap.pluginDiscovery / cap.pluginServiceManager）
  *
- * 计量通道（v0.2.0 起）：
+ * 计量通道（v0.3.0 起）：
  *   - 面板打开：宿主 PluginPanelHost 挂载点自动观测（plugin.usage.*），读时合并
- *   - MCP 工具调用：本插件 MCP server 自动记（watchtower.usage.*，source=mcp）
- *   - 其它来源：AI 经 watchtower_report_usage 补记
+ *   - MCP 工具调用：本插件 MCP server 自动记（watchtower.usage.*，source=mcp）；
+ *     其它插件的工具调用由宿主 AIEvent 观测自动记账（plugin.toolusage.*，含
+ *     工具名明细，读时合并进 mcp 通道；needs/027）
+ *   - 其它来源：AI 经 watchtower_report_usage 补记（兜底）
  *
  * 键空间契约（与 mcp/server.js 一致，权威描述见 README）：
- *   watchtower.usage.<pluginId> → UsageRecord（本插件写）
- *   plugin.usage.<pluginId>     → 宿主面板打开观测（宿主写，本插件只读合并）
+ *   watchtower.usage.<pluginId>   → UsageRecord（本插件写）
+ *   plugin.usage.<pluginId>       → 宿主面板打开观测（宿主写，本插件只读合并）
+ *   plugin.toolusage.<pluginId>   → 宿主工具调用观测（宿主写，本插件只读合并）
  *   watchtower.settings         → { schemaVersion: 1 }
  */
 import { getHostInvoke } from './host'
@@ -35,6 +38,8 @@ export interface UsageRecord {
   pluginId: string
   count: number
   panelOpens: number
+  /** 工具名 → 累计调用次数（宿主 toolusage 观测合并产物，needs/027） */
+  toolCalls: Record<string, number>
   firstUsed: number | null
   lastUsed: number | null
   trends: Record<string, { mcp: number; panel: number }>
@@ -172,13 +177,42 @@ async function loadHostObservations(): Promise<Record<string, HostObservation>> 
   return byPlugin
 }
 
-/** 自有账本 + 宿主观测读时合并（合并结果不落盘，每次重读重算，幂等） */
+/** 宿主工具调用观测（cap.kv `plugin.toolusage.<pluginId>`，宿主 pluginToolUsageObserver 写入；needs/027） */
+export interface HostToolObservation {
+  v: 1
+  pluginId: string
+  count: number
+  tools: Record<string, number>
+  firstUsed: number | null
+  lastUsed: number | null
+  days: Record<string, number>
+}
+
+/** 宿主工具调用观测读时合并进 mcp 通道（core.mergeHostToolsIntoUsage），不回写自有账本 */
+async function loadHostToolObservations(): Promise<Record<string, HostToolObservation>> {
+  const keys = await kvKeys()
+  const byPlugin: Record<string, HostToolObservation> = {}
+  for (const k of keys) {
+    if (!k.startsWith(core.K.hostToolUsagePrefix)) continue
+    // eslint-disable-next-line no-await-in-loop
+    const v = await kvGet<HostToolObservation>(k)
+    const obs = core.normalizeHostToolObservation(v)
+    if (obs) byPlugin[obs.pluginId] = obs as HostToolObservation
+  }
+  return byPlugin
+}
+
+/** 自有账本 + 宿主两观测（面板/工具）读时合并（合并结果不落盘，每次重读重算，幂等） */
 async function loadMergedUsage(): Promise<Record<string, UsageRecord>> {
-  const [own, host] = await Promise.all([loadAllUsage(), loadHostObservations()])
-  const ids = new Set([...Object.keys(own), ...Object.keys(host)])
+  const [own, host, hostTools] = await Promise.all([loadAllUsage(), loadHostObservations(), loadHostToolObservations()])
+  const ids = new Set([...Object.keys(own), ...Object.keys(host), ...Object.keys(hostTools)])
   const merged: Record<string, UsageRecord> = {}
   for (const id of ids) {
-    merged[id] = core.mergeHostIntoUsage(own[id] ?? null, host[id] ?? null, id)
+    merged[id] = core.mergeHostToolsIntoUsage(
+      core.mergeHostIntoUsage(own[id] ?? null, host[id] ?? null, id),
+      hostTools[id] ?? null,
+      id,
+    ) as UsageRecord
   }
   return merged
 }

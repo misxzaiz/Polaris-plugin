@@ -62,6 +62,8 @@ var require_usage_core = __commonJS({
       },
       /** 宿主自有键空间（宿主 pluginUsageObserver 写入，插件运营只读）：面板打开观测 */
       hostUsagePrefix: "plugin.usage.",
+      /** 宿主自有键空间（宿主 pluginToolUsageObserver 写入，插件运营只读）：其它插件 MCP 工具调用观测 */
+      hostToolUsagePrefix: "plugin.toolusage.",
       settings: "watchtower.settings"
     };
     function emptyUsage(pluginId) {
@@ -69,6 +71,7 @@ var require_usage_core = __commonJS({
         pluginId,
         count: 0,
         panelOpens: 0,
+        toolCalls: {},
         firstUsed: null,
         lastUsed: null,
         trends: {}
@@ -89,10 +92,19 @@ var require_usage_core = __commonJS({
         pluginId: typeof raw.pluginId === "string" ? raw.pluginId : "unknown",
         count: toInt(raw.count),
         panelOpens: toInt(raw.panelOpens),
+        // 宿主 toolusage 观测合并产物（读时合并不落盘，二次 normalize 须保留明细）
+        toolCalls: {},
         firstUsed: toTs(raw.firstUsed),
         lastUsed: toTs(raw.lastUsed),
         trends: {}
       };
+      if (raw.toolCalls && typeof raw.toolCalls === "object") {
+        for (const [tool, n] of Object.entries(raw.toolCalls)) {
+          if (typeof tool !== "string" || !tool) continue;
+          const v = toInt(n);
+          if (v > 0) rec.toolCalls[tool] = v;
+        }
+      }
       if (raw.trends && typeof raw.trends === "object") {
         for (const [day, val] of Object.entries(raw.trends)) {
           if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
@@ -188,6 +200,53 @@ var require_usage_core = __commonJS({
       if (obs.lastUsed && (base.lastUsed === null || obs.lastUsed > base.lastUsed)) base.lastUsed = obs.lastUsed;
       return base;
     }
+    function normalizeHostToolObservation2(raw) {
+      if (!raw || typeof raw !== "object") return null;
+      const pluginId = typeof raw.pluginId === "string" ? raw.pluginId : null;
+      if (!pluginId) return null;
+      const count = toInt(raw.count);
+      const tools = {};
+      if (raw.tools && typeof raw.tools === "object") {
+        for (const [tool, n] of Object.entries(raw.tools)) {
+          if (typeof tool !== "string" || !tool) continue;
+          const v = toInt(n);
+          if (v > 0) tools[tool] = v;
+        }
+      }
+      const days = {};
+      if (raw.days && typeof raw.days === "object") {
+        for (const [day, n] of Object.entries(raw.days)) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) continue;
+          const v = toInt(n);
+          if (v > 0) days[day] = v;
+        }
+      }
+      return {
+        pluginId,
+        count,
+        tools,
+        firstUsed: toTs(raw.firstUsed),
+        lastUsed: toTs(raw.lastUsed),
+        days
+      };
+    }
+    function mergeHostToolsIntoUsage2(rec, obs, pluginId) {
+      const base = normalizeUsage2(rec) || emptyUsage(pluginId);
+      base.pluginId = pluginId;
+      if (!obs) return base;
+      for (const [day, n] of Object.entries(obs.days)) {
+        const slot = base.trends[day] || { mcp: 0, panel: 0 };
+        slot.mcp += n;
+        base.trends[day] = slot;
+      }
+      base.count += obs.count;
+      for (const [tool, n] of Object.entries(obs.tools)) {
+        base.toolCalls[tool] = (base.toolCalls[tool] || 0) + n;
+      }
+      if (obs.firstUsed && (base.firstUsed === null || obs.firstUsed < base.firstUsed)) base.firstUsed = obs.firstUsed;
+      if (obs.lastUsed && (base.lastUsed === null || obs.lastUsed > base.lastUsed)) base.lastUsed = obs.lastUsed;
+      return base;
+    }
     function activityOf2(rec, now = nowMs()) {
       if (!rec || typeof rec.pluginId !== "string") return "never";
       const last = rec.lastUsed;
@@ -251,14 +310,14 @@ var require_usage_core = __commonJS({
         restartCount: typeof raw.restartCount === "number" ? raw.restartCount : 0
       };
     }
-    function governanceSuggestions(plugins, usageByPlugin, services = []) {
+    function governanceSuggestions(plugins, usageByPlugin, services = [], now = nowMs()) {
       const out = [];
       const runningServices = new Set(
         services.filter((s) => s && s.state === "running").map((s) => s.pluginId)
       );
       for (const p of plugins) {
         const rec = usageByPlugin[p.id] || null;
-        const activity = activityOf2(rec);
+        const activity = activityOf2(rec, now);
         if ((activity === "cold" || activity === "never") && runningServices.has(p.id)) {
           out.push({
             pluginId: p.id,
@@ -294,7 +353,7 @@ var require_usage_core = __commonJS({
       }
       return out.sort((a, b) => b.weight - a.weight);
     }
-    function summarize2(plugins, usageByPlugin, services = []) {
+    function summarize2(plugins, usageByPlugin, services = [], now = nowMs()) {
       const serviceByPlugin = /* @__PURE__ */ new Map();
       for (const s of services) {
         if (!serviceByPlugin.has(s.pluginId)) serviceByPlugin.set(s.pluginId, []);
@@ -302,16 +361,16 @@ var require_usage_core = __commonJS({
       }
       const rows = plugins.map((p) => {
         const rec = normalizeUsage2(usageByPlugin[p.id]) || emptyUsage(p.id);
-        const activity = activityOf2(rec);
-        const wins = TREND_WINDOWS2.map((n) => ({ days: n, ...aggregateWindow2(rec, n) }));
+        const activity = activityOf2(rec, now);
+        const wins = TREND_WINDOWS2.map((n) => ({ days: n, ...aggregateWindow2(rec, n, now) }));
         return {
           plugin: p,
           usage: rec,
           activity,
           activityMeta: activityLabel2(activity),
           windows: wins,
-          cost30: costOf2(rec, 30),
-          cost7: costOf2(rec, 7),
+          cost30: costOf2(rec, 30, now),
+          cost7: costOf2(rec, 7, now),
           services: serviceByPlugin.get(p.id) || [],
           hasServices: hasServices(p),
           serviceIds: serviceIdsOf(p),
@@ -328,7 +387,7 @@ var require_usage_core = __commonJS({
         rows,
         byActivity,
         byCold,
-        suggestions: governanceSuggestions(plugins, usageByPlugin, services),
+        suggestions: governanceSuggestions(plugins, usageByPlugin, services, now),
         windows: TREND_WINDOWS2,
         totals: {
           plugins: rows.length,
@@ -363,6 +422,8 @@ var require_usage_core = __commonJS({
       costOf: costOf2,
       normalizeHostObservation: normalizeHostObservation2,
       mergeHostIntoUsage: mergeHostIntoUsage2,
+      normalizeHostToolObservation: normalizeHostToolObservation2,
+      mergeHostToolsIntoUsage: mergeHostToolsIntoUsage2,
       activityOf: activityOf2,
       ACTIVITY_LABELS,
       activityLabel: activityLabel2,
@@ -430,12 +491,27 @@ async function loadHostObservations() {
   }
   return byPlugin;
 }
+async function loadHostToolObservations() {
+  const keys = await kvKeys();
+  const byPlugin = {};
+  for (const k of keys) {
+    if (!k.startsWith(core.K.hostToolUsagePrefix)) continue;
+    const v = await kvGet(k);
+    const obs = core.normalizeHostToolObservation(v);
+    if (obs) byPlugin[obs.pluginId] = obs;
+  }
+  return byPlugin;
+}
 async function loadMergedUsage() {
-  const [own, host] = await Promise.all([loadAllUsage(), loadHostObservations()]);
-  const ids = /* @__PURE__ */ new Set([...Object.keys(own), ...Object.keys(host)]);
+  const [own, host, hostTools] = await Promise.all([loadAllUsage(), loadHostObservations(), loadHostToolObservations()]);
+  const ids = /* @__PURE__ */ new Set([...Object.keys(own), ...Object.keys(host), ...Object.keys(hostTools)]);
   const merged = {};
   for (const id of ids) {
-    merged[id] = core.mergeHostIntoUsage(own[id] ?? null, host[id] ?? null, id);
+    merged[id] = core.mergeHostToolsIntoUsage(
+      core.mergeHostIntoUsage(own[id] ?? null, host[id] ?? null, id),
+      hostTools[id] ?? null,
+      id
+    );
   }
   return merged;
 }
@@ -897,9 +973,13 @@ function AboutTab() {
         ] }),
         /* @__PURE__ */ jsxs("li", { children: [
           /* @__PURE__ */ jsx("b", { children: "\u5176\u5B83\u63D2\u4EF6\u7684 MCP \u5DE5\u5177\u8C03\u7528" }),
-          "\uFF1A\u8C03\u7528\u76F4\u8FDE\u63D2\u4EF6\u5B50\u8FDB\u7A0B\uFF0C\u5BBF\u4E3B\u4E0D\u5728\u94FE\u8DEF\uFF0C\u9700 AI \u4E3B\u52A8\u7528 ",
+          "\uFF1A\u5BBF\u4E3B\u4ECE\u5168\u5C40 AI \u4E8B\u4EF6\u6D41\u89C2\u6D4B ",
+          /* @__PURE__ */ jsx("code", { children: "tool_call_end" }),
+          "\uFF0C\u6309\u771F\u5B9E\u5DE5\u5177\u6CE8\u518C\u8868\u5F52\u5C5E\u63D2\u4EF6\u81EA\u52A8\u8BB0\u8D26\uFF08cap.kv ",
+          /* @__PURE__ */ jsx("code", { children: "plugin.toolusage.*" }),
+          "\uFF0C\u542B\u5DE5\u5177\u540D\u660E\u7EC6\uFF1Bneeds/027\uFF09\u2014\u2014\u672C\u9762\u677F\u8BFB\u65F6\u5408\u5E76\u8FDB\u5DE5\u5177\u8C03\u7528\u901A\u9053\u3002\u65E7\u7248\u672C\u5BBF\u4E3B\u65E0\u6B64\u89C2\u6D4B\u65F6\u53EF\u7531 AI \u7ECF ",
           /* @__PURE__ */ jsx("code", { children: "watchtower_report_usage" }),
-          " \u8865\u8BB0\u3002"
+          " \u515C\u5E95\u8865\u8BB0\u3002"
         ] })
       ] }),
       /* @__PURE__ */ jsx("b", { children: "\u4E0D\u5439\u7684\u8FB9\u754C" }),
