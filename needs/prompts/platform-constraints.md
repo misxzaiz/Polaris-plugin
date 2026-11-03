@@ -107,3 +107,11 @@
 - pack.js 只读插件级 .pluginignore、不读根 .gitignore：零运行时依赖插件的 devDeps node_modules（react/esbuild/typescript）会全量打进 zip（实测 10.6MB/273 文件）——插件目录放 .pluginignore 排 node_modules/ 后 49KB/13 文件；zip 是发布产物不入 git（根 .gitignore 无 zip 规则，git add 整目录会把 zip 暂存进去，须 unstage+删）。
 - 头名归一化（小写化）与展示必须分离：toHeaderList 把 name 统一小写后诊断文案里 Authorization 变 authorization——比对用归一名、展示留 raw 原样字段，两处断言红才抓到。
 - 插件 icon 内置白名单（src-tauri plugin_service.rs VALID_PLUGIN_ICONS 18 值）与存量插件实际 icon 名并不一致（url-lens 的 "Link" 不在白名单内仍在线）——新插件 icon 一律对照 Rust 单源现查，别抄存量插件。
+- JS 块注释（/** */）内禁止出现 */ 序列——文档里描述 glob/正则语法（如 a/**/b、**/）会提前闭合注释炸整文件（gitignore-lens 实证）；注释里写语法示例用文字描述代替符号序列。
+- 实现标准工具语义（gitignore/正则/cron 等）时用本机真实工具对照验证（git init + check-ignore -v --stdin 喂 stdin 对照判定）——自以为是的标准记忆不可靠：gitignore-lens 首版锚定语义误用 (?:^|/) 被实测掊穿；check-ignore -v 对否定规则命中的路径也输出，是否被忽略看 pattern 是否 ! 开头。
+- Windows 下测试 harness 不要 spawn mktemp 等非 node 工具——用 fs.mkdtempSync（gitignore-lens 实证 mktemp ENOENT）。
+- 自研解析器/语义引擎类插件用权威实现差分对拍（devDep 引入权威库跑全矩阵：range×version satisfies 1716 组 + compare 169 组）——手写断言抓不到想不到的形态组合，version-lens 初版「> *」恒真错误（npm 实际编译为恒假 <0.0.0-0）只有对拍矩阵能兜住；对拍用例必须含边界哨兵（-0 上界/空 range/通配+比较符组合）。（version-lens 实证）
+- 展开器合成的哨兵对象（如 caret/tilde 展开产物的 -0 上界）必须打 synthetic 标志与用户显式书写区分——否则「整份范围是否含显式 prerelease」这类全局判定会被自家展开产物污染，提示失真；哨兵参与判定但不参与意图统计。（version-lens 实证）
+- npm script（Windows cmd）里 esbuild `--banner:js=` 的值含空格/中文/星斜序列会被 cmd 拆参直接炸构建（症状：Node usage 异常指回 esbuild 而非源码）——banner 类长参数改用 esbuild JS API 或干脆省略（yaml-lens 实证）。
+- 「超 2^53 大整数」判定用位数启发式（length>15）会误杀 16 位的 2^53-1 本体（9007199254740991 是安全整数）——阈值比较才正确：>2^53-1 的整数经 double 舍入仍 >2^53-1（保序），`Number(s) > MAX_SAFE` 单条件即精确（yaml-lens 实证）。
+- 「干净文本」类反例样本也要先过被测引擎自证干净——首版把 `clean: yes` 当干净样本，实际正是 bool-lookalike 的命中对象（假红浪费一轮排查）；与 swarm-lab「非平凡产出」断言同族的反向纪律（yaml-lens 实证）。

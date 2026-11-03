@@ -1,0 +1,41 @@
+{
+  "id": "yaml-lens",
+  "name": "YAML 调试台",
+  "version": "0.1.0",
+  "description": "YAML 粘进来看穿一切：解析预览（多文档/锚点/合并键）+ 坑检测（Norway problem：unquoted no/on/off 在 PyYAML/Go-yaml/kubectl 里是布尔；前导零 02134 八进制、六十进制 12:34:56、版本号塌陷 1.10→1.1、大整数超 2^53 丢精度、重复键带行列、Tab 缩进、智能引号、时间戳漂移 2024-01-02→Date、注释吞值、键后缺空格、空值 null）+ YAML↔JSON 双向转换（不折行/noRefs）。每条坑给严重度/行列/跨实现行为对照/修复建议。js-yaml 4.1.0 基座、行为全部实测锁定，纯本地零外联零 kv，MCP 四工具（parse/lint/to_json/to_yaml）+ 面板三视图。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "yaml-lens.panel",
+        "area": "activityBar",
+        "panelType": "yaml-lens",
+        "icon": "Code2",
+        "labelKey": "plugins.yaml-lens",
+        "labelDefault": "YAML 调试台",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "yaml-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/yaml-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yaml-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yaml-lens/yaml-lens.zip"
+  }
+}
