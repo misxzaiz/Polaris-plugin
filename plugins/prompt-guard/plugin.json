@@ -1,0 +1,43 @@
+{
+  "id": "prompt-guard",
+  "name": "防注入检查器",
+  "version": "0.1.0",
+  "description": "Prompt injection 风险检查器：检测文本中的注入攻击模式——指令覆盖、角色劫持、系统提示词探测、工具调用诱导、数据外泄指令、编码载荷、零宽字符等 15 类规则，纯本地正则+启发式分级（clean/suspicious/dangerous），文本不出本机零外联。AI 把网页/文件/用户内容喂给模型前先自检；MCP 两工具 + 面板交互测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "prompt-guard.panel",
+        "area": "activityBar",
+        "panelType": "prompt-guard",
+        "icon": "Shield",
+        "labelKey": "plugins.prompt-guard",
+        "labelDefault": "防注入检查器",
+        "order": 94
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "prompt-guard",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/prompt-guard",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-guard/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-guard/prompt-guard.zip"
+  }
+}
