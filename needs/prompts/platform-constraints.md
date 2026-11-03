@@ -86,3 +86,10 @@
 - MCP 测试 harness 里 `notifications/initialized` 是通知（无 id）服务端不回包——按 rpc 等响应会永久挂起、呈现为「rpc 超时」假象；通知必须 write-only 不进 pending 表。
 - CJS shared core 的双分支返回（ok:true/false）形状不对称时，TS（allowJs 推断）把 ok 推成 boolean 无法判别收窄，属性访问全线报 possibly undefined——错误分支补齐同形空键（warnings:[] 等，运行时零成本）比 JSDoc typedef 轻。
 - 关键字拦截正则按整 token 匹配会误杀含相同字母的合法枚举名（/L/ 拦掉月份名 JUL）——拦截判定须锚定原子边界（^(l|w)$、#、数字后缀等形态），与 prompt-guard「同形词误杀」同族。
+- 字符级扫描器（策略式修复/tokenizer 类）每条策略分支必须独立可达——把某策略检测嵌进另一个字符的分支体内（如注释检测嵌在引号字符分支里）会让该策略整段静默失效，样本测试直接掊穿（json-repair 实证：注释检测误嵌引号分支）。
+- 「修复器」类工具的不变式：修复产物必须过终验，不过就如实报错不输出半成品——半成品比失败更危险（下游拿去解析会二次翻车）；跨插件工具链测试可直接相对 require 另一插件的 shared/core（json-repair → schema-check 闭环先例）。
+
+## 临时产物清理与中文抽取（needs/012 text-triage 实证）
+
+- SSR/测试临时目录清理：mkdtempSync 的随机后缀目录一旦 rm 失败就永久泄漏且后续跑也清不到（Windows EPERM——刚写入的 .cjs 句柄秒级释放延迟，rmSync 的 force 只豁免 ENOENT）——用固定目录名（如 `.ssr-tmp/`）+ 退出前顶部级 await 重试 rm（5 次 × 200ms），本次开跑先清陈旧残留（text-triage 实证：两次泄漏后改固定名根治，exec-sandbox EPERM 窗口同族）。
+- 中文抽取类正则捕获组用 `\w+` 会静默漏抽汉字（`\w`=[A-Za-z0-9_]，不含 CJK）——抽中文组件名/标题用 `(.+?)` 或显式字符类；症状是字段「未抽取到」而非报错，只有真实中文样本的冒烟才能抓到（text-triage 实证：MCP 测试 `\[(\w+)\]` 抽不出「[认证服务]」）。
