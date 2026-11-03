@@ -93,3 +93,6 @@
 
 - SSR/测试临时目录清理：mkdtempSync 的随机后缀目录一旦 rm 失败就永久泄漏且后续跑也清不到（Windows EPERM——刚写入的 .cjs 句柄秒级释放延迟，rmSync 的 force 只豁免 ENOENT）——用固定目录名（如 `.ssr-tmp/`）+ 退出前顶部级 await 重试 rm（5 次 × 200ms），本次开跑先清陈旧残留（text-triage 实证：两次泄漏后改固定名根治，exec-sandbox EPERM 窗口同族）。
 - 中文抽取类正则捕获组用 `\w+` 会静默漏抽汉字（`\w`=[A-Za-z0-9_]，不含 CJK）——抽中文组件名/标题用 `(.+?)` 或显式字符类；症状是字段「未抽取到」而非报错，只有真实中文样本的冒烟才能抓到（text-triage 实证：MCP 测试 `\[(\w+)\]` 抽不出「[认证服务]」）。
+- 本机 Node 的 `TextDecoder('windows-1252')` 退化为 latin1 恒等映射（0x80→U+0080 而非 €，encoding 属性却照报 windows-1252；多字节族 gbk/big5/shift_jis/euc-kr 实测正常）——凡依赖 cp1252 语义的 decode 必须自建高区映射表（32 项 [byte,char] 对），encode 方向自建表不受影响；「连写字符串 + indexOf 取 idx」反查表在跳位（0x8D/0x8F/0x90/0x9D 保留位）处 idx 会漂移（œ 被算成 0x9A），必须显式 byte→char 对表（encoding-lens 实证）。
+- `{fixed: `${x.best.chain}…`, clean: `…`}[status]` 对象字面量+动态取键会把**所有分支的模板串都求值**——status=clean 而 best=null 时 `${null.chain}` 直接 crash 且报错行指回对象定义处极具迷惑性——多态文案逐态 if/else（encoding-lens 实证）。
+- 「按字节特征选编码再解码修复」类多路径引擎：字节视角中间判定（detect）会选错路径（双重损坏文件判 GBK 也能读出假汉字）——须对高分候选各跑「解码→指纹→修复」全程后按**终态可读性**裁决；utf-8 strict 通过是结构性证据须始终纳入路径枚举，不能按分截断；同一字节流的重复率/分布特征是字节属性非解码属性，同源互串族（GBK↔EUC-KR 码域完全重叠）用字符级统计区分不开时只能靠语种构成奖励 + 环境先验（encoding-lens 实证：GBK 误读产物谚文占比实测可达 0.48，韩文语境奖励必须加「无汉字混杂」条件才能拦住）。
