@@ -48,7 +48,8 @@
         }
       ],
       "createdAt": "2026-10-23T08:20:54.000Z",
-      "updatedAt": "2026-10-27T16:33:12.000Z"
+      "updatedAt": "2026-10-27T16:33:12.000Z",
+      "usageTier": 1
     },
     {
       "id": "polaris.marketplace",
@@ -95,7 +96,8 @@
         }
       ],
       "createdAt": "2026-08-04T17:07:23.000Z",
-      "updatedAt": "2026-11-04T00:58:09.124Z"
+      "updatedAt": "2026-11-04T00:58:09.124Z",
+      "usageTier": 8
     },
     {
       "id": "relay-devkit",
@@ -167,7 +169,8 @@
         }
       ],
       "createdAt": "2026-09-01T16:04:37.000Z",
-      "updatedAt": "2026-10-28T07:16:33.000Z"
+      "updatedAt": "2026-10-28T07:16:33.000Z",
+      "usageTier": 8
     },
     {
       "id": "workspace-manager",
@@ -208,7 +211,8 @@
         }
       ],
       "createdAt": "2026-09-02T05:19:04.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "image-recognition",
@@ -270,7 +274,8 @@
         }
       ],
       "createdAt": "2026-09-07T04:32:40.000Z",
-      "updatedAt": "2026-10-26T04:41:31.000Z"
+      "updatedAt": "2026-10-26T04:41:31.000Z",
+      "usageTier": 9
     },
     {
       "id": "mimo-tts",
@@ -318,7 +323,8 @@
         }
       ],
       "createdAt": "2026-10-17T15:50:30.000Z",
-      "updatedAt": "2026-10-26T04:41:31.000Z"
+      "updatedAt": "2026-10-26T04:41:31.000Z",
+      "usageTier": 5
     },
     {
       "id": "agnes",
@@ -361,7 +367,8 @@
         }
       ],
       "createdAt": "2026-10-26T04:41:31.000Z",
-      "updatedAt": "2026-10-26T04:41:31.000Z"
+      "updatedAt": "2026-10-26T04:41:31.000Z",
+      "usageTier": 3
     },
     {
       "id": "animation-3d",
@@ -395,7 +402,8 @@
       ],
       "createdAt": "2026-10-18T01:41:24.000Z",
       "updatedAt": "2026-10-18T01:41:24.000Z",
-      "tier": 4
+      "tier": 4,
+      "usageTier": 1
     },
     {
       "id": "animation-2d",
@@ -437,7 +445,8 @@
       ],
       "createdAt": "2026-10-18T01:59:07.000Z",
       "updatedAt": "2026-10-18T02:17:15.000Z",
-      "tier": 4
+      "tier": 4,
+      "usageTier": 1
     },
     {
       "id": "douyin-publish",
@@ -480,7 +489,8 @@
         }
       ],
       "createdAt": "2026-10-18T10:30:02.000Z",
-      "updatedAt": "2026-10-18T10:30:02.000Z"
+      "updatedAt": "2026-10-18T10:30:02.000Z",
+      "usageTier": 1
     },
     {
       "id": "battle-mode",
@@ -527,7 +537,8 @@
         }
       ],
       "createdAt": "2026-10-19T01:33:51.000Z",
-      "updatedAt": "2026-10-20T05:25:20.000Z"
+      "updatedAt": "2026-10-20T05:25:20.000Z",
+      "usageTier": 1
     },
     {
       "id": "capability-runtime",
@@ -567,7 +578,8 @@
         }
       ],
       "createdAt": "2026-10-20T05:25:20.000Z",
-      "updatedAt": "2026-10-20T05:25:20.000Z"
+      "updatedAt": "2026-10-20T05:25:20.000Z",
+      "usageTier": 1
     },
     {
       "id": "news-curator",
@@ -619,7 +631,8 @@
         }
       ],
       "createdAt": "2026-10-20T05:25:20.000Z",
-      "updatedAt": "2026-10-20T06:06:03.000Z"
+      "updatedAt": "2026-10-20T06:06:03.000Z",
+      "usageTier": 3
     },
     {
       "id": "opts.zcode-bridge",
@@ -657,7 +670,8 @@
       ],
       "sha256": "fa6ae1d14812cb547d48babab2cee673b0edbb71ab5d40c8b3d39ec3229291bf",
       "createdAt": "2026-10-26T16:01:34.000Z",
-      "updatedAt": "2026-11-04T00:58:17.810Z"
+      "updatedAt": "2026-11-04T00:58:17.810Z",
+      "usageTier": 3
     },
     {
       "id": "data-ark",
@@ -699,7 +713,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 2
     },
     {
       "id": "clip-relay",
@@ -736,7 +751,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 2
     },
     {
       "id": "page-sentinel",
@@ -775,7 +791,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 3
     },
     {
       "id": "feed-radar",
@@ -814,7 +831,8 @@
         }
       ],
       "createdAt": "2026-10-27T16:32:59.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 2
     },
     {
       "id": "pocket-ledger",
@@ -858,7 +876,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 8
     },
     {
       "id": "memoryforge",
@@ -895,7 +914,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "pocket-host",
@@ -934,7 +954,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-27T10:54:25.000Z"
+      "updatedAt": "2026-10-27T10:54:25.000Z",
+      "usageTier": 3
     },
     {
       "id": "paper-radar",
@@ -975,7 +996,8 @@
         }
       ],
       "createdAt": "2026-10-27T10:54:25.000Z",
-      "updatedAt": "2026-10-27T10:54:25.000Z"
+      "updatedAt": "2026-10-27T10:54:25.000Z",
+      "usageTier": 2
     },
     {
       "author": "Polaris",
@@ -1016,7 +1038,8 @@
       },
       "readme": "# 插件工坊（plugin-forge）\n\n> 治本「每次建插件都要重新分析项目」：把散落在官方文档（部分与代码矛盾）、六个已交付插件与历届踩坑实录里的插件开发知识，逐条代码级核实后收编成结构化知识库，配清单体检器与生产级脚手架。AI 收到「帮我创建插件」先拉 `forge_overview`，秒级拿到全部平台契约，不再考古。\n\n## 面板（ActivityBar → ⚗️ 插件工坊）\n\n- **知识库**：16 个主题全文（平台总览 / manifest 规范 / 面板 / 跨域治理三层 / 服务 / 服务自举 start / 单写者 / 键空间 / MCP / cap 速查 / 测试 / 发布 / UI / 生产级清单 / 实测坑总表 / AI 工作流）。支持全文搜索（与 MCP `forge_search` 同口径）。\n- **体检**：粘贴或上传 plugin.json → 20+ 条实测规则（图标 18 白名单、服务健康检查、MCP 声明、permissions 已知集、发布 URL @tag 陷阱……），每条问题给修复建议。\n- **脚手架**：填 id/名称/图标/服务/MCP 开关 → 生成 15 个文件的完整骨架（自发现桥 kvclient、服务 tick 骨架、MCP stdio、面板、单测、真实桥冒烟模板、README 键空间契约表），可预览/复制；落盘走 MCP 工具（面板无 fs，手机端复制自动回退手动弹窗）。\n\n## AI 工具（MCP 5 个 `forge_*`）\n\n| 工具 | 用途 |\n|---|---|\n| `forge_overview` | **建插件请求的第一个调用**：平台速览 + 16 主题目录 |\n| `forge_search` | 全文检索（「cap.http 手机上能用吗」这类具体疑点秒答） |\n| `forge_topic` | 读整个主题（含可照抄的代码契约） |\n| `forge_lint` | 体检清单（传 json 字符串或文件路径） |\n| `forge_scaffold` | 生成骨架；`dir + confirm:true` 直接落盘（只新建不覆盖，非空目录拒绝） |\n\n## 架构\n\n```\n面板（React bundle；知识库/模板经 esbuild text loader 内联）\n  └─ 纯本地：零服务、零外网；设置存 cap.kv forge.settings\nMCP server（stdio；fs 读同一份 shared/ 文件 → 面板与 AI 永远同口径）\n```\n\nshared core 模式：体检规则引擎 `shared/forge-core.js` 面板与 MCP 共用，两边结论永远一致。\n\n## 键空间契约（权威表）\n\n| 键 | 写者 | 读者 | 说明 |\n|-",
       "createdAt": "2026-10-27T16:26:53.000Z",
-      "updatedAt": "2026-10-27T17:37:51.000Z"
+      "updatedAt": "2026-10-27T17:37:51.000Z",
+      "usageTier": 4
     },
     {
       "author": "Polaris",
@@ -1052,7 +1075,8 @@
       },
       "readme": "# 书签考古（bookmark-dig）\n\n> 把积灰的浏览器书签变成可考古、可体检、可复活的活资产。核心循环：**导入 → 体检 → 去重/分类 → 死链清理 → 每日挖出重访**。\n\n## 功能\n\n- **导入**：浏览器书签管理器 → 导出书签（HTML，Chrome/Edge/Firefox 通用 Netscape 格式）→ 面板选文件或桌面端给绝对路径（AI 可用 `dig_import_path`）。解析含文件夹层级、秒级时间戳、HTML 实体；忽略 ICON。\n- **体检**：后台服务并发检查每条链接（默认并发 6、超时 12s、GET 限读 64KB），状态分为存活/重定向/4xx/5xx/域名失效/超时/证书错误/内网拒检/非法 URL；单条失败重试计数，不堵队列；运行清单持久化，服务重启断点续跑。\n- **去重**：URL 规范化（去跟踪参数 utm_*/fbclid/gclid/spm、去碎片/默认端口/尾斜杠、参数排序）后按 normKey 幂等合并；保最早收录时间、更完整标题。\n- **分类**：域名启发式（代码仓库/技术社区/文档/视频/论文/…）；AI 可用 `dig_tag` 覆盖标签。\n- **死链治理**：死链按域名聚合报告；「只重查死链」区分暂时抽风与真死；删除必须 confirm。\n- **今天挖出**：从活书签按「沉睡时长 × 书龄」加权随机捞一条重访并记录——考古的意义不是清单，是重逢。\n- **AI 考古**（MCP 8 工具 `dig_*`）：stats/search/dead/resurface/import_path/check/remove/tag。读路径不依赖服务在线（直接读 kv 分块）。\n\n## 架构（跨域根治点）\n\n```\n面板（React bundle，宿主 invoke 通道；绝不直接 fetch 外网）\n  └─ cap.kv bmd.* 分块存储 ←→ 后台服务（并发体检引擎，原生 fetch + SSRF 守卫）\n                                  └─ MCP server（AI 工具层，stdio；读路径直连 kv）\n```\n\n## 键空间契约（权威表——三方一致，改动须同步）\n\n| 键 | 写者 | 读者 | 说明 |\n|---|---|---|---|\n| `bmd.settings` | 面板/MCP | 服务 | 全局设置（30s 热读） |\n| `bmd.meta` | 服务 | 面板/MCP | 心跳（60s）+ 库概况 |\n| `bmd.rec.<n>` | **服务单写** | 面板/MCP | 记录分块（≤200 条/块；键数纪律见插件工坊） |\n| `bmd.run` | 服务 | 面板/MCP | 当前运行清单（断点续跑） |\n",
       "createdAt": "2026-10-27T16:26:53.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "pocket-drop",
@@ -1089,7 +1113,8 @@
         }
       ],
       "createdAt": "2026-10-27T17:24:53.000Z",
-      "updatedAt": "2026-10-27T17:40:53.000Z"
+      "updatedAt": "2026-10-27T17:40:53.000Z",
+      "usageTier": 1
     },
     {
       "id": "sundial",
@@ -1129,7 +1154,8 @@
         }
       ],
       "createdAt": "2026-10-27T18:55:42.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "time-sift",
@@ -1168,7 +1194,8 @@
         }
       ],
       "createdAt": "2026-10-27T19:32:36.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 2
     },
     {
       "id": "net-sentinel",
@@ -1210,7 +1237,8 @@
         }
       ],
       "createdAt": "2026-10-27T20:06:56.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 5
     },
     {
       "id": "disk-radar",
@@ -1247,7 +1275,8 @@
         }
       ],
       "createdAt": "2026-10-27T20:14:15.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "decision-journal",
@@ -1284,7 +1313,8 @@
         }
       ],
       "createdAt": "2026-10-27T20:32:45.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "amber",
@@ -1323,7 +1353,8 @@
         }
       ],
       "createdAt": "2026-10-27T21:12:34.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "abacus",
@@ -1361,7 +1392,8 @@
         }
       ],
       "createdAt": "2026-10-27T21:41:37.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "time-trail",
@@ -1400,7 +1432,8 @@
         }
       ],
       "createdAt": "2026-10-27T22:35:22.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "ask-stove",
@@ -1440,7 +1473,8 @@
         }
       ],
       "createdAt": "2026-10-27T22:49:38.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "tether",
@@ -1479,7 +1513,8 @@
         }
       ],
       "createdAt": "2026-10-27T23:42:45.000Z",
-      "updatedAt": "2026-10-27T23:42:45.000Z"
+      "updatedAt": "2026-10-27T23:42:45.000Z",
+      "usageTier": 1
     },
     {
       "id": "lingxi",
@@ -1516,7 +1551,8 @@
         }
       ],
       "createdAt": "2026-10-28T00:09:01.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "opts.zcode-adapter",
@@ -1552,7 +1588,8 @@
         }
       ],
       "createdAt": "2026-10-22T09:27:01.000Z",
-      "updatedAt": "2026-11-04T00:58:13.190Z"
+      "updatedAt": "2026-11-04T00:58:13.190Z",
+      "usageTier": 2
     },
     {
       "id": "watchtower",
@@ -1597,7 +1634,8 @@
         }
       ],
       "createdAt": "2026-10-28T02:57:13.000Z",
-      "updatedAt": "2026-11-04T00:58:55.510Z"
+      "updatedAt": "2026-11-04T00:58:55.510Z",
+      "usageTier": 5
     },
     {
       "id": "quote-sentinel",
@@ -1638,7 +1676,8 @@
         }
       ],
       "createdAt": "2026-10-28T17:01:28.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 6
     },
     {
       "id": "changqi",
@@ -1676,7 +1715,8 @@
         }
       ],
       "createdAt": "2026-10-28T17:33:26.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "shouzha",
@@ -1713,7 +1753,8 @@
         }
       ],
       "createdAt": "2026-10-28T17:45:13.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "guanzhi",
@@ -1751,7 +1792,8 @@
         }
       ],
       "createdAt": "2026-10-28T18:23:30.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "qimu",
@@ -1788,7 +1830,8 @@
         }
       ],
       "createdAt": "2026-10-28T18:42:50.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "gezhi",
@@ -1826,7 +1869,8 @@
         }
       ],
       "createdAt": "2026-10-28T18:56:04.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "qingnang",
@@ -1865,7 +1909,8 @@
         }
       ],
       "createdAt": "2026-10-28T19:42:51.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "wenjin",
@@ -1905,7 +1950,8 @@
         }
       ],
       "createdAt": "2026-10-28T20:11:42.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "zhifang",
@@ -1942,7 +1988,8 @@
         }
       ],
       "createdAt": "2026-10-28T20:56:56.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "quanfu",
@@ -1980,7 +2027,8 @@
         }
       ],
       "createdAt": "2026-10-28T21:17:47.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "piaoxia",
@@ -2020,7 +2068,8 @@
         }
       ],
       "createdAt": "2026-10-28T22:02:00.000Z",
-      "updatedAt": "2026-10-28T22:02:00.000Z"
+      "updatedAt": "2026-10-28T22:02:00.000Z",
+      "usageTier": 1
     },
     {
       "id": "jinkui",
@@ -2058,7 +2107,8 @@
         }
       ],
       "createdAt": "2026-10-28T22:21:08.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "weibian",
@@ -2097,7 +2147,8 @@
         }
       ],
       "createdAt": "2026-10-28T23:00:59.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "xintu",
@@ -2135,7 +2186,8 @@
         }
       ],
       "createdAt": "2026-10-29T16:54:46.000Z",
-      "updatedAt": "2026-10-29T16:54:46.000Z"
+      "updatedAt": "2026-10-29T16:54:46.000Z",
+      "usageTier": 1
     },
     {
       "id": "chexia",
@@ -2176,7 +2228,8 @@
         }
       ],
       "createdAt": "2026-10-29T13:12:11.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "duzhi",
@@ -2218,7 +2271,8 @@
         }
       ],
       "createdAt": "2026-10-29T13:12:11.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-10-29T13:12:11.000Z",
+      "usageTier": 1
     },
     {
       "id": "maian",
@@ -2257,7 +2311,8 @@
         }
       ],
       "createdAt": "2026-11-01T10:43:57.000Z",
-      "updatedAt": "2026-11-01T10:43:57.000Z"
+      "updatedAt": "2026-11-01T10:43:57.000Z",
+      "usageTier": 1
     },
     {
       "id": "flashforge",
@@ -2295,7 +2350,8 @@
         }
       ],
       "createdAt": "2026-11-01T10:55:16.000Z",
-      "updatedAt": "2026-11-01T10:55:16.000Z"
+      "updatedAt": "2026-11-01T10:55:16.000Z",
+      "usageTier": 5
     },
     {
       "id": "yizhou",
@@ -2333,7 +2389,8 @@
         }
       ],
       "createdAt": "2026-11-01T12:31:28.000Z",
-      "updatedAt": "2026-11-01T12:37:28.000Z"
+      "updatedAt": "2026-11-01T12:37:28.000Z",
+      "usageTier": 2
     },
     {
       "id": "needs",
@@ -2372,7 +2429,8 @@
         }
       ],
       "createdAt": "2026-11-01T12:51:16.000Z",
-      "updatedAt": "2026-11-01T12:51:26.726Z"
+      "updatedAt": "2026-11-01T12:51:26.726Z",
+      "usageTier": 8
     },
     {
       "id": "zhuangxiu",
@@ -2411,7 +2469,8 @@
         }
       ],
       "createdAt": "2026-11-01T13:33:34.000Z",
-      "updatedAt": "2026-11-01T13:33:34.000Z"
+      "updatedAt": "2026-11-01T13:33:34.000Z",
+      "usageTier": 1
     },
     {
       "id": "imgforge",
@@ -2447,7 +2506,8 @@
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@imgforge-v0.1.0/plugins/imgforge/imgforge.zip"
         }
-      ]
+      ],
+      "usageTier": 1
     },
     {
       "id": "webhook-station",
@@ -2484,7 +2544,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/webhook-station.zip"
         }
       ],
-      "createdAt": "2026-11-01T14:19:56.054Z"
+      "createdAt": "2026-11-01T14:19:56.054Z",
+      "usageTier": 1
     },
     {
       "id": "mcp-probe",
@@ -2522,7 +2583,8 @@
         }
       ],
       "createdAt": "2026-11-01T14:57:44.571Z",
-      "updatedAt": "2026-11-01T14:57:44.571Z"
+      "updatedAt": "2026-11-01T14:57:44.571Z",
+      "usageTier": 1
     },
     {
       "id": "context-pack",
@@ -2561,7 +2623,8 @@
         }
       ],
       "createdAt": "2026-11-01T15:20:00.000Z",
-      "updatedAt": "2026-11-01T16:12:22.093Z"
+      "updatedAt": "2026-11-01T16:12:22.093Z",
+      "usageTier": 1
     },
     {
       "id": "keyscan",
@@ -2597,7 +2660,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/keyscan.zip"
         }
       ],
-      "createdAt": "2026-11-01T15:35:08.216Z"
+      "createdAt": "2026-11-01T15:35:08.216Z",
+      "usageTier": 1
     },
     {
       "id": "log-lens",
@@ -2635,7 +2699,8 @@
         }
       ],
       "createdAt": "2026-11-01T16:45:21.331Z",
-      "updatedAt": "2026-11-01T16:45:21.335Z"
+      "updatedAt": "2026-11-01T16:45:21.335Z",
+      "usageTier": 1
     },
     {
       "id": "llm-probe",
@@ -2673,7 +2738,8 @@
         }
       ],
       "createdAt": "2026-11-01T16:59:48.811Z",
-      "updatedAt": "2026-11-01T16:59:48.811Z"
+      "updatedAt": "2026-11-01T16:59:48.811Z",
+      "usageTier": 1
     },
     {
       "id": "pdf-tables",
@@ -2711,7 +2777,8 @@
         }
       ],
       "createdAt": "2026-11-01T17:04:09.455Z",
-      "updatedAt": "2026-11-01T17:04:09.455Z"
+      "updatedAt": "2026-11-01T17:04:09.455Z",
+      "usageTier": 1
     },
     {
       "id": "api-bench",
@@ -2749,7 +2816,8 @@
         }
       ],
       "createdAt": "2026-11-01T17:56:01.426Z",
-      "updatedAt": "2026-11-01T17:56:01.426Z"
+      "updatedAt": "2026-11-01T17:56:01.426Z",
+      "usageTier": 1
     },
     {
       "id": "file-flow",
@@ -2787,7 +2855,8 @@
         }
       ],
       "createdAt": "2026-11-01T18:26:01.467Z",
-      "updatedAt": "2026-11-01T18:26:01.469Z"
+      "updatedAt": "2026-11-01T18:26:01.469Z",
+      "usageTier": 1
     },
     {
       "id": "site-audit",
@@ -2825,7 +2894,8 @@
           "sha256": "4bdde82aa07fdb7a39ad511239ed4b948837ebf1f3bd92a72154a827743b7c87"
         }
       ],
-      "createdAt": "2026-11-01T19:28:22.752Z"
+      "createdAt": "2026-11-01T19:28:22.752Z",
+      "usageTier": 1
     },
     {
       "id": "task-runner",
@@ -2864,7 +2934,8 @@
         }
       ],
       "createdAt": "2026-11-01T19:57:01.147Z",
-      "updatedAt": "2026-11-01T19:57:01.147Z"
+      "updatedAt": "2026-11-01T19:57:01.147Z",
+      "usageTier": 1
     },
     {
       "id": "mock-server",
@@ -2903,7 +2974,8 @@
         }
       ],
       "createdAt": "2026-11-01T20:51:45.681Z",
-      "updatedAt": "2026-11-01T20:51:45.681Z"
+      "updatedAt": "2026-11-01T20:51:45.681Z",
+      "usageTier": 1
     },
     {
       "id": "ocr-bench",
@@ -2943,7 +3015,8 @@
         }
       ],
       "createdAt": "2026-11-01T21:03:09.555Z",
-      "updatedAt": "2026-11-01T21:03:09.555Z"
+      "updatedAt": "2026-11-01T21:03:09.555Z",
+      "usageTier": 1
     },
     {
       "id": "sqlite-lens",
@@ -2982,7 +3055,8 @@
         }
       ],
       "createdAt": "2026-11-01T21:18:44.676Z",
-      "updatedAt": "2026-11-01T21:18:44.676Z"
+      "updatedAt": "2026-11-01T21:18:44.676Z",
+      "usageTier": 1
     },
     {
       "id": "har-lens",
@@ -3021,7 +3095,8 @@
         }
       ],
       "createdAt": "2026-11-01T21:49:52.349Z",
-      "updatedAt": "2026-11-01T21:49:52.349Z"
+      "updatedAt": "2026-11-01T21:49:52.349Z",
+      "usageTier": 1
     },
     {
       "id": "domain-probe",
@@ -3059,7 +3134,8 @@
         }
       ],
       "createdAt": "2026-11-01T22:24:08.324Z",
-      "updatedAt": "2026-11-01T22:24:08.324Z"
+      "updatedAt": "2026-11-01T22:24:08.324Z",
+      "usageTier": 1
     },
     {
       "id": "stream-desk",
@@ -3100,7 +3176,8 @@
         }
       ],
       "createdAt": "2026-11-01T22:52:48.980Z",
-      "updatedAt": "2026-11-01T22:52:48.980Z"
+      "updatedAt": "2026-11-01T22:52:48.980Z",
+      "usageTier": 1
     },
     {
       "id": "prompt-matrix",
@@ -3139,7 +3216,8 @@
         }
       ],
       "createdAt": "2026-11-01T23:33:49.380Z",
-      "updatedAt": "2026-11-01T23:33:49.380Z"
+      "updatedAt": "2026-11-01T23:33:49.380Z",
+      "usageTier": 1
     },
     {
       "id": "dep-probe",
@@ -3180,7 +3258,8 @@
         }
       ],
       "createdAt": "2026-11-02T00:31:09.190Z",
-      "updatedAt": "2026-11-02T00:31:09.190Z"
+      "updatedAt": "2026-11-02T00:31:09.190Z",
+      "usageTier": 1
     },
     {
       "id": "daw-studio",
@@ -3226,7 +3305,8 @@
         }
       ],
       "createdAt": "2026-11-02T04:41:46.342Z",
-      "updatedAt": "2026-11-02T05:58:28.131Z"
+      "updatedAt": "2026-11-02T05:58:28.131Z",
+      "usageTier": 1
     },
     {
       "id": "whale-pet",
@@ -3274,7 +3354,8 @@
       ],
       "sha256": "c986e5143f8c03cc8df40438c5c52cd24976d40865e138ff6d5d88af034c02bd",
       "updatedAt": "2026-11-04T00:58:59.295Z",
-      "createdAt": "2026-11-02T13:42:42.144Z"
+      "createdAt": "2026-11-02T13:42:42.144Z",
+      "usageTier": 8
     },
     {
       "id": "repo-lens",
@@ -3315,7 +3396,8 @@
         }
       ],
       "createdAt": "2026-11-02T16:20:08.857Z",
-      "updatedAt": "2026-11-02T16:20:08.860Z"
+      "updatedAt": "2026-11-02T16:20:08.860Z",
+      "usageTier": 1
     },
     {
       "id": "dev-toolbox",
@@ -3360,7 +3442,8 @@
         }
       ],
       "createdAt": "2026-11-02T17:47:47.600Z",
-      "updatedAt": "2026-11-02T17:47:47.600Z"
+      "updatedAt": "2026-11-02T17:47:47.600Z",
+      "usageTier": 1
     },
     {
       "id": "db-workbench",
@@ -3386,7 +3469,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@db-workbench-v0.1.0/plugins/db-workbench/db-workbench.zip"
         }
       ],
-      "tier": 2
+      "tier": 2,
+      "usageTier": 1
     },
     {
       "id": "mail-desk",
@@ -3425,7 +3509,8 @@
         }
       ],
       "createdAt": "2026-11-02T18:20:49.239Z",
-      "updatedAt": "2026-11-02T18:20:49.239Z"
+      "updatedAt": "2026-11-02T18:20:49.239Z",
+      "usageTier": 1
     },
     {
       "id": "bundle-lens",
@@ -3463,7 +3548,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/bundle-lens.zip"
         }
       ],
-      "createdAt": "2026-11-03T00:00:00.000Z"
+      "createdAt": "2026-11-03T00:00:00.000Z",
+      "usageTier": 1
     },
     {
       "id": "cdn-audit",
@@ -3504,7 +3590,8 @@
         }
       ],
       "createdAt": "2026-11-02T19:32:47.211Z",
-      "updatedAt": "2026-11-02T19:48:19.585Z"
+      "updatedAt": "2026-11-02T19:48:19.585Z",
+      "usageTier": 1
     },
     {
       "id": "deadcode-lens",
@@ -3546,7 +3633,8 @@
         }
       ],
       "createdAt": "2026-11-02T20:27:03.231Z",
-      "updatedAt": "2026-11-02T20:27:03.231Z"
+      "updatedAt": "2026-11-02T20:27:03.231Z",
+      "usageTier": 1
     },
     {
       "id": "diff-desk",
@@ -3586,7 +3674,8 @@
         }
       ],
       "createdAt": "2026-11-02T20:39:57.307Z",
-      "updatedAt": "2026-11-02T20:39:57.307Z"
+      "updatedAt": "2026-11-02T20:39:57.307Z",
+      "usageTier": 1
     },
     {
       "id": "stack-lens",
@@ -3626,7 +3715,8 @@
         }
       ],
       "createdAt": "2026-11-02T21:32:39.900Z",
-      "updatedAt": "2026-11-02T21:32:39.900Z"
+      "updatedAt": "2026-11-02T21:32:39.900Z",
+      "usageTier": 1
     },
     {
       "id": "docker-desk",
@@ -3666,7 +3756,8 @@
         }
       ],
       "createdAt": "2026-11-02T21:35:28.877Z",
-      "updatedAt": "2026-11-02T21:35:28.877Z"
+      "updatedAt": "2026-11-02T21:35:28.877Z",
+      "usageTier": 1
     },
     {
       "id": "llm-request-desk",
@@ -3704,7 +3795,8 @@
         }
       ],
       "createdAt": "2026-11-02T23:07:45.784Z",
-      "updatedAt": "2026-11-02T23:07:45.784Z"
+      "updatedAt": "2026-11-02T23:07:45.784Z",
+      "usageTier": 1
     },
     {
       "id": "query-plan-lens",
@@ -3742,7 +3834,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/query-plan-lens.zip"
         }
       ],
-      "tier": 8
+      "tier": 8,
+      "usageTier": 1
     },
     {
       "id": "openapi-desk",
@@ -3780,7 +3873,8 @@
         }
       ],
       "createdAt": "2026-11-03T00:09:28.084Z",
-      "updatedAt": "2026-11-03T00:09:28.087Z"
+      "updatedAt": "2026-11-03T00:09:28.087Z",
+      "usageTier": 1
     },
     {
       "id": "exec-sandbox",
@@ -3817,7 +3911,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:54:14.000Z",
-      "updatedAt": "2026-11-04T00:54:14.000Z"
+      "updatedAt": "2026-11-04T00:54:14.000Z",
+      "usageTier": 6
     },
     {
       "id": "cookie-lens",
@@ -3849,7 +3944,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:56:53.000Z",
-      "updatedAt": "2026-11-04T00:56:53.000Z"
+      "updatedAt": "2026-11-04T00:56:53.000Z",
+      "usageTier": 1
     },
     {
       "id": "cron-lens",
@@ -3881,7 +3977,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:56:55.000Z",
-      "updatedAt": "2026-11-04T00:56:55.000Z"
+      "updatedAt": "2026-11-04T00:56:55.000Z",
+      "usageTier": 1
     },
     {
       "id": "csv-lens",
@@ -3913,7 +4010,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:56:56.000Z",
-      "updatedAt": "2026-11-04T00:56:56.000Z"
+      "updatedAt": "2026-11-04T00:56:56.000Z",
+      "usageTier": 1
     },
     {
       "id": "data-query",
@@ -3946,7 +4044,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:56:58.000Z",
-      "updatedAt": "2026-11-04T00:56:58.000Z"
+      "updatedAt": "2026-11-04T00:56:58.000Z",
+      "usageTier": 1
     },
     {
       "id": "datetime-lens",
@@ -3978,7 +4077,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:56:59.000Z",
-      "updatedAt": "2026-11-04T00:56:59.000Z"
+      "updatedAt": "2026-11-04T00:56:59.000Z",
+      "usageTier": 1
     },
     {
       "id": "encoding-lens",
@@ -4010,7 +4110,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:01.000Z",
-      "updatedAt": "2026-11-04T00:57:01.000Z"
+      "updatedAt": "2026-11-04T00:57:01.000Z",
+      "usageTier": 1
     },
     {
       "id": "env-drift",
@@ -4042,7 +4143,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:02.000Z",
-      "updatedAt": "2026-11-04T00:57:02.000Z"
+      "updatedAt": "2026-11-04T00:57:02.000Z",
+      "usageTier": 1
     },
     {
       "id": "flow-pipeline",
@@ -4076,7 +4178,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:04.000Z",
-      "updatedAt": "2026-11-04T00:57:04.000Z"
+      "updatedAt": "2026-11-04T00:57:04.000Z",
+      "usageTier": 1
     },
     {
       "id": "gitignore-lens",
@@ -4108,7 +4211,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:05.000Z",
-      "updatedAt": "2026-11-04T00:57:05.000Z"
+      "updatedAt": "2026-11-04T00:57:05.000Z",
+      "usageTier": 1
     },
     {
       "id": "id-lens",
@@ -4140,7 +4244,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:07.000Z",
-      "updatedAt": "2026-11-04T00:57:07.000Z"
+      "updatedAt": "2026-11-04T00:57:07.000Z",
+      "usageTier": 1
     },
     {
       "id": "json-repair",
@@ -4172,7 +4277,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:08.000Z",
-      "updatedAt": "2026-11-04T00:57:08.000Z"
+      "updatedAt": "2026-11-04T00:57:08.000Z",
+      "usageTier": 1
     },
     {
       "id": "jwt-desk",
@@ -4204,7 +4310,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:10.000Z",
-      "updatedAt": "2026-11-04T00:57:10.000Z"
+      "updatedAt": "2026-11-04T00:57:10.000Z",
+      "usageTier": 1
     },
     {
       "id": "prompt-guard",
@@ -4236,7 +4343,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:13.000Z",
-      "updatedAt": "2026-11-04T00:57:13.000Z"
+      "updatedAt": "2026-11-04T00:57:13.000Z",
+      "usageTier": 1
     },
     {
       "id": "regex-desk",
@@ -4268,7 +4376,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:14.000Z",
-      "updatedAt": "2026-11-04T00:57:14.000Z"
+      "updatedAt": "2026-11-04T00:57:14.000Z",
+      "usageTier": 1
     },
     {
       "id": "schema-check",
@@ -4300,7 +4409,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:16.000Z",
-      "updatedAt": "2026-11-04T00:57:16.000Z"
+      "updatedAt": "2026-11-04T00:57:16.000Z",
+      "usageTier": 1
     },
     {
       "id": "schema-mock",
@@ -4332,7 +4442,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:17.000Z",
-      "updatedAt": "2026-11-04T00:57:17.000Z"
+      "updatedAt": "2026-11-04T00:57:17.000Z",
+      "usageTier": 1
     },
     {
       "id": "swarm-lab",
@@ -4364,7 +4475,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:19.000Z",
-      "updatedAt": "2026-11-04T00:57:19.000Z"
+      "updatedAt": "2026-11-04T00:57:19.000Z",
+      "usageTier": 1
     },
     {
       "id": "text-triage",
@@ -4396,7 +4508,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:21.000Z",
-      "updatedAt": "2026-11-04T00:57:21.000Z"
+      "updatedAt": "2026-11-04T00:57:21.000Z",
+      "usageTier": 1
     },
     {
       "id": "trace-lens",
@@ -4429,7 +4542,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:23.000Z",
-      "updatedAt": "2026-11-04T00:57:23.000Z"
+      "updatedAt": "2026-11-04T00:57:23.000Z",
+      "usageTier": 1
     },
     {
       "id": "unicode-lens",
@@ -4461,7 +4575,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:25.000Z",
-      "updatedAt": "2026-11-04T00:57:25.000Z"
+      "updatedAt": "2026-11-04T00:57:25.000Z",
+      "usageTier": 1
     },
     {
       "id": "url-lens",
@@ -4493,7 +4608,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:27.000Z",
-      "updatedAt": "2026-11-04T00:57:27.000Z"
+      "updatedAt": "2026-11-04T00:57:27.000Z",
+      "usageTier": 1
     },
     {
       "id": "version-lens",
@@ -4525,7 +4641,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:28.000Z",
-      "updatedAt": "2026-11-04T00:57:28.000Z"
+      "updatedAt": "2026-11-04T00:57:28.000Z",
+      "usageTier": 1
     },
     {
       "id": "yaml-lens",
@@ -4557,7 +4674,8 @@
         }
       ],
       "createdAt": "2026-11-04T00:57:30.000Z",
-      "updatedAt": "2026-11-04T00:57:30.000Z"
+      "updatedAt": "2026-11-04T00:57:30.000Z",
+      "usageTier": 1
     }
   ]
 }

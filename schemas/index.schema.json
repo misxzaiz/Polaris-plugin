@@ -50,6 +50,7 @@
           },
           "permissions": { "type": "object" },
           "tier": { "type": "string", "enum": ["production", "beta", "demo"], "description": "质量等级：production 生产可用 / beta 测试阶段 / demo 演示玩具。未设置时默认 demo。" },
+          "usageTier": { "type": "integer", "minimum": 1, "maximum": 10, "description": "使用习惯分级（人工打分 1-10）：10=天天用主力，1=从不用。与 tier(质量评审) 正交，反映用户真实使用习惯。" },
           "screenshots": { "type": "array", "items": { "type": "string", "format": "uri" } },
           "readme": { "type": "string" }
         }
