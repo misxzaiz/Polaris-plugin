@@ -1,14 +1,14 @@
 ---
 id: "048"
 title: 时间与时区调试台（datetime-lens）：多格式解析 + 时区投影 + DST 坑检测
-status: analyzed
+status: delivered
 priority: high
 tags: [datetime, timezone, dst, debug, lens]
 origin: zcode
 created: 2026-11-04
 updated: 2026-11-04
 spec: ""
-delivered: ""
+delivered: 1463fa3
 ---
 ## 一句话
 

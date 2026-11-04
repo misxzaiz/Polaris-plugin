@@ -115,3 +115,10 @@
 - npm script（Windows cmd）里 esbuild `--banner:js=` 的值含空格/中文/星斜序列会被 cmd 拆参直接炸构建（症状：Node usage 异常指回 esbuild 而非源码）——banner 类长参数改用 esbuild JS API 或干脆省略（yaml-lens 实证）。
 - 「超 2^53 大整数」判定用位数启发式（length>15）会误杀 16 位的 2^53-1 本体（9007199254740991 是安全整数）——阈值比较才正确：>2^53-1 的整数经 double 舍入仍 >2^53-1（保序），`Number(s) > MAX_SAFE` 单条件即精确（yaml-lens 实证）。
 - 「干净文本」类反例样本也要先过被测引擎自证干净——首版把 `clean: yes` 当干净样本，实际正是 bool-lookalike 的命中对象（假红浪费一轮排查）；与 swarm-lab「非平凡产出」断言同族的反向纪律（yaml-lens 实证）。
+
+## 日期/时区引擎（needs/048 datetime-lens 实证）
+
+- 自研日期引擎取 epoch 时禁用 Date.UTC 的年份参数（0-99 被映射为 1900+y，utcMs(26,...) 得 1926）——用枢轴年 Date.UTC(2000,...)+setUTCFullYear(y) 校正，并对公元 1-99 年出定向断言守护。
+- 分层纪律：墙钟分量提取函数（formatToParts→offsetMin 反推）不得回调偏移查询函数——datetime-lens 首版 projectZone 为做 DST 判定在内部调 getOffset，getOffset 又调 projectZone，无限递归栈溢出；DST 探针必须放在分量提取之外一层。
+- HTTP 日期（IMF-fixdate）恒 GMT：格式化必须取 UTC 分量与 UTC 星期——拿时区墙钟的星期/钟点拼 GMT 串是静默错值（上海 08:00 本地会拼成 08:00 GMT），round-trip 断言才能抓到。
+- unix 时间戳单位猜测用「惯用位数评分」（秒 10/毫秒 13/微秒 16/纳秒 19，|实际位数−惯用位数| 取最小）而非纯年份区间——10 位数字按毫秒落在 1970-01 合法区间内但荒谬，纯区间法会误报歧义；歧义只在次优候选分差 ≤1 时报。
