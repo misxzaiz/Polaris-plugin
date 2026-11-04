@@ -1,0 +1,43 @@
+{
+  "id": "jwt-desk",
+  "name": "JWT 调试台",
+  "version": "0.1.0",
+  "description": "把任意 JSON Web Token 变成可读可验可审的本地工作台：粘贴 token 即拆解 header/payload/signature 三段，HS256/384/512、RS/PS/ES 签名纯本地校验（node:crypto / WebCrypto 双实现，RFC 7515 A.2 已知答案向量守护），安全审计逐条中文说明（alg=none、缺失或过期 exp、iat 未来时、超长有效期、jku/x5u 外链、payload 携带凭证），并支持按 claims 签发测试 token 供联调。面板 + MCP 四工具（decode/verify/audit/sign）共用同一纯函数核，AI 可直接对 token 提问「这个 token 是谁、还有多久过期、签名对不对」。零依赖零外联，token 不出本机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "jwt-desk.panel",
+        "area": "activityBar",
+        "panelType": "jwt-desk",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.jwt-desk",
+        "labelDefault": "JWT 调试台",
+        "order": 100
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "jwt-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jwt-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jwt-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jwt-desk/jwt-desk.zip"
+  }
+}

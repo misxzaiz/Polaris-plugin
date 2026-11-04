@@ -1,0 +1,43 @@
+{
+  "id": "text-triage",
+  "name": "文本分流台",
+  "version": "0.1.0",
+  "description": "把非结构化文本（日志行/告警/错误报告）确定性地跑成三段结论：分类（按序规则首中即决）→ 抽取（命名捕获 + 七种类型归一：int/float/bool/duration→ms/bytes/date→ISO）→ 决策（十一算子条件表产出 verdict/severity/route），全程证据链每步可回放。内置日志分级/延迟阈值/磁盘水位三套预设零配置可用；模板存宿主 kv 三端共享；MCP 七工具让 AI 在对话里直接分流（模糊判断归 AI，可复跑的归引擎）。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "text-triage.panel",
+        "area": "activityBar",
+        "panelType": "textTriage",
+        "icon": "Target",
+        "labelKey": "plugins.textTriage",
+        "labelDefault": "文本分流台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "text-triage",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/text-triage",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-triage/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-triage/text-triage.zip"
+  }
+}

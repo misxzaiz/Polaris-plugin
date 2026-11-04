@@ -1,0 +1,44 @@
+{
+  "id": "exec-sandbox",
+  "name": "执行沙箱",
+  "version": "0.1.0",
+  "description": "AI 代码执行的一次性隔离工作区：create/write/exec/list/destroy 五工具，文件落系统临时目录 24h 自动清理，严格根边界校验防越界，exec/destroy 双确认闸。跑代码不留痕、不污染宿主与数据根；面板可查看活跃沙箱并手动销毁。零依赖、零服务，元数据走 cap.kv。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "exec-sandbox.panel",
+        "area": "activityBar",
+        "panelType": "exec-sandbox",
+        "icon": "Bot",
+        "labelKey": "plugins.exec-sandbox",
+        "labelDefault": "执行沙箱",
+        "order": 93
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "exec-sandbox",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/exec-sandbox",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/exec-sandbox/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/exec-sandbox/exec-sandbox.zip"
+  }
+}

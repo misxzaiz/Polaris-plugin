@@ -1,0 +1,43 @@
+{
+  "id": "datetime-lens",
+  "name": "时间与时区调试台",
+  "version": "0.1.0",
+  "description": "「为什么 02:30 的定时任务没触发」「这个时间戳是秒还是毫秒」的日期时间调试刚需。多格式解析为权威解读（ISO 8601/RFC 3339、Unix 秒/毫秒/微秒/纳秒按位数猜单位列歧义、RFC 2822、HTTP 日期、date-only），多时区投影标注偏移与 DST，墙钟消解对夏令时边界给确定性判定（时钟前拨不存在/回拨出现两次），日历口径 vs 精确口径双结果算术，全格式输出附 round-trip 自证；坑检测：date-only 按 UTC、无偏移按本地时区、两位年、闰秒、2038、ISO 周年错位、月末钳制 vs JS 回卷、JS Date.parse 差分实况。自研语法与 Intl/ICU 差分对拍守护，纯本地零外联零 kv，MCP 五工具（parse/convert/wall_resolve/arith/format）+ 面板。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "datetime-lens.panel",
+        "area": "activityBar",
+        "panelType": "datetime-lens",
+        "icon": "Clock",
+        "labelKey": "plugins.datetime-lens",
+        "labelDefault": "时间与时区调试台",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "datetime-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/datetime-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/datetime-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/datetime-lens/datetime-lens.zip"
+  }
+}

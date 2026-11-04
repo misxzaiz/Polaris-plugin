@@ -1,0 +1,43 @@
+{
+  "id": "json-repair",
+  "name": "JSON 修复器",
+  "version": "0.1.0",
+  "description": "把 LLM 输出的坏 JSON 修成合法 JSON：尾逗号、单引号键值、未转义控制字符（字面换行）、// 与 /* */ 注释、NaN/Infinity、未闭合括号补全、markdown 代码围栏剥离——策略式逐字符容错修复，逐处修改点报告，不可修如实报错（不输出半成品）。与 schema-check 组成工具链（repair→validate）。AI 程序化消费 LLM JSON 输出的高频痛点；纯本地零外联零 kv，MCP 两工具 + 面板双框测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "json-repair.panel",
+        "area": "activityBar",
+        "panelType": "json-repair",
+        "icon": "Code2",
+        "labelKey": "plugins.json-repair",
+        "labelDefault": "JSON 修复器",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "json-repair",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/json-repair",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/json-repair/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/json-repair/json-repair.zip"
+  }
+}

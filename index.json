@@ -67,7 +67,7 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.4.0/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
       "sha256": "10dd6029dc5e620717fe98325eec93c0f89d4b752d35c910aab8d9d482215987",
       "tier": "production",
@@ -81,8 +81,7 @@
       "versions": [
         {
           "version": "1.4.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/marketplace.zip",
-          "sha256": "10dd6029dc5e620717fe98325eec93c0f89d4b752d35c910aab8d9d482215987"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.4.0/plugins/marketplace/marketplace.zip"
         },
         {
           "version": "1.3.0",
@@ -96,7 +95,7 @@
         }
       ],
       "createdAt": "2026-08-04T17:07:23.000Z",
-      "updatedAt": "2026-11-01"
+      "updatedAt": "2026-11-04T00:58:09.124Z"
     },
     {
       "id": "relay-devkit",
@@ -651,13 +650,12 @@
       "versions": [
         {
           "version": "0.1.3",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip",
-          "sha256": "fa6ae1d14812cb547d48babab2cee673b0edbb71ab5d40c8b3d39ec3229291bf"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip"
         }
       ],
       "sha256": "fa6ae1d14812cb547d48babab2cee673b0edbb71ab5d40c8b3d39ec3229291bf",
       "createdAt": "2026-10-26T16:01:34.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-11-04T00:58:17.810Z"
     },
     {
       "id": "data-ark",
@@ -1536,9 +1534,9 @@
       "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-adapter",
       "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/zcode-adapter.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-adapter-v0.1.0/plugins/zcode-adapter/zcode-adapter.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/update.json",
-      "sha256": "ea322f9758e4283ca5a38451b1fc7f71f61043dec13899274d3212a49462c03e",
+      "sha256": "ab0e3254167fe6591c886c58fc3ad76af901796763a71b491f11a993817a187f",
       "tier": "beta",
       "permissions": {
         "workspaceRead": true,
@@ -1548,17 +1546,16 @@
       "versions": [
         {
           "version": "0.1.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/zcode-adapter.zip",
-          "sha256": "ea322f9758e4283ca5a38451b1fc7f71f61043dec13899274d3212a49462c03e"
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-adapter-v0.1.0/plugins/zcode-adapter/zcode-adapter.zip"
         }
       ],
       "createdAt": "2026-10-22T09:27:01.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-11-04T00:58:13.190Z"
     },
     {
       "id": "watchtower",
       "name": "守望台",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "description": "插件运营台：用量计量（谁在被用/谁在浪费）+ 生命周期治理（服务启停/冷热分级/清理建议）。双通道计量——AI 经 MCP 工具调用自动记账，用户手动打开面板自动记账，同账本同口径（shared/usage-core 双端共用）。仅依赖宿主 cap.kv/cap.pluginDiscovery/cap.pluginServiceManager 三能力，纯本地零服务零外联；面板（总览/服务/治理/口径）+ MCP 9 工具。",
       "author": "Polaris",
       "category": "productivity",
@@ -1574,15 +1571,19 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/watchtower",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.2.0/plugins/watchtower/watchtower.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.3.0/plugins/watchtower/watchtower.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
-      "sha256": "0aa8bf70959ab3af05771464b46854f4c1fab60ee6c24ed109279f47eb3c74e9",
+      "sha256": "a9647dbbec05542f62c0d0d32f6b66bb9270f1f420561d8be3a67cfc44c32de7",
       "tier": "beta",
       "permissions": {
         "aiToolAccess": true
       },
       "screenshots": [],
       "versions": [
+        {
+          "version": "0.3.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.3.0/plugins/watchtower/watchtower.zip"
+        },
         {
           "version": "0.2.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.2.0/plugins/watchtower/watchtower.zip"
@@ -1594,7 +1595,7 @@
         }
       ],
       "createdAt": "2026-10-28T02:57:13.000Z",
-      "updatedAt": "2026-10-29T13:12:11.000Z"
+      "updatedAt": "2026-11-04T00:58:55.510Z"
     },
     {
       "id": "quote-sentinel",
@@ -3228,7 +3229,7 @@
     {
       "id": "whale-pet",
       "name": "ds大肥鱼",
-      "version": "0.3.3",
+      "version": "0.4.3",
       "description": "Polaris 桌面/移动端通用的鲸鱼桌面宠物插件：活动栏面板内一只会游动、眨眼、被点击会吐泡泡的蓝色小鲸鱼，纯前端 Canvas 动画，状态持久化到 cap.kv，零后端改动（宿主零改造）。",
       "author": "Polaris",
       "category": "fun",
@@ -3243,7 +3244,7 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/whale-pet",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.3/plugins/whale-pet/whale-pet.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.4.3/plugins/whale-pet/whale-pet.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/update.json",
       "tier": "beta",
       "permissions": {
@@ -3252,6 +3253,10 @@
       "screenshots": [],
       "readme": "# 鲸鱼宠物\n\nPolaris 活动栏面板内一只会游动、眨眼、被点击吐泡泡的蓝色小鲸鱼。纯前端 Canvas 动画，零后端改动，桌面/手机双端通用。\n\n- 游动/眨眼/喷水：requestAnimationFrame 驱动\n- 点击吐泡泡：Canvas 气泡粒子\n- 互动次数持久化：cap.kv (domain=whale-pet)\n- 和 AI 聊聊它：调宿主 onSendToChat",
       "versions": [
+        {
+          "version": "0.4.3",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.4.3/plugins/whale-pet/whale-pet.zip"
+        },
         {
           "version": "0.3.3",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.3.3/plugins/whale-pet/whale-pet.zip"
@@ -3265,8 +3270,8 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/whale-pet.zip"
         }
       ],
-      "sha256": "f132001ccc01b5e1ca300815bd5d3e5e507c4ea9a88ec4467eeb6bf4c9f793fa",
-      "updatedAt": "2026-11-02T14:55:00.000Z",
+      "sha256": "c986e5143f8c03cc8df40438c5c52cd24976d40865e138ff6d5d88af034c02bd",
+      "updatedAt": "2026-11-04T00:58:59.295Z",
       "createdAt": "2026-11-02T13:42:42.144Z"
     },
     {
@@ -3371,7 +3376,14 @@
         "AI 工具"
       ],
       "enabledByDefault": true,
-      "addedAt": "2026-11-02T17:59:44.007Z"
+      "addedAt": "2026-11-02T17:59:44.007Z",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/db-workbench/update.json",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@db-workbench-v0.1.0/plugins/db-workbench/db-workbench.zip"
+        }
+      ]
     },
     {
       "id": "mail-desk",
@@ -3765,6 +3777,783 @@
       ],
       "createdAt": "2026-11-03T00:09:28.084Z",
       "updatedAt": "2026-11-03T00:09:28.087Z"
+    },
+    {
+      "id": "exec-sandbox",
+      "name": "执行沙箱",
+      "version": "0.1.0",
+      "description": "AI 代码执行的一次性隔离工作区：create/write/exec/list/destroy 五工具，文件落系统临时目录 24h 自动清理，严格根边界校验防越界，exec/destroy 双确认闸。跑代码不留痕、不污染宿主与数据根；面板可查看活跃沙箱并手动销毁。零依赖、零服务，元数据走 cap.kv。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "agent",
+        "isolation",
+        "exec",
+        "sandbox",
+        "mcp",
+        "security"
+      ],
+      "icon": "Bot",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/exec-sandbox",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/exec-sandbox/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@exec-sandbox-v0.1.0/plugins/exec-sandbox/exec-sandbox.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/exec-sandbox/update.json",
+      "sha256": "a81709936eb4a8da7d9ed5cb88090696295e2eb4606faae3b54a101af22e4486",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 执行沙箱（exec-sandbox）\n\nAI 代码执行的一次性隔离工作区：创建 / 写文件 / 执行命令 / 列表 / 销毁五工具，文件落系统临时目录 24h 自动清理，严格根边界校验防越界，让 AI 跑代码不留痕、不污染宿主与数据根。\n\n## 能什么\n\n- **`execsandbox_create`**：在 `os.tmpdir()/polaris-exec-sandbox/<workspaceId>/` 下建一个一次性工作区，返回 id；list/create 时惰性扫描并销毁过期（>24h）沙箱。\n- **`execsandbox_write`**：向工作区内写文件（路径 `path.resolve` 后必须位于沙箱根内，越界拒绝）。\n- **`execsandbox_exec`**：在工作区 cwd 下执行命令（Windows `cmd /d /s /c`），默认超时 120s（上限同值），超时树杀；输出截尾 8KB 存历史。\n- **`execsandbox_list`**：列出活跃沙箱与文件清单。\n- **`execsandbox_destroy`**：销毁指定工作区（recursive rm + kv 清条目）。\n\n面板提供活跃沙箱列表与手动销毁入口。\n\n## 边界（如实声明）\n\n- 隔离边界 = 目录隔离 + TTL + 根边界校验；exec 与宿主同权限级，**不做** Job Object/AppContainer 级进程沙箱。\n- 不从宿主任意目录复制/读取文件作为工作区种子（防越界读）；内容由 AI 经 `write` 内联写入。\n- 不做跨机/远程执行；不做执行历史持久化审计链（输出截尾存 kv 元数据即止）。\n- 不替代 `cap.bash`（宿主能力走总线）；本插件是 MCP 层的独立隔离通道。\n\n## 架构\n\n```\nAI ──MCP stdio──▶ mcp/server.js ──cap.kv(execsandbox.ws.<id>)──▶ 工作区元数据\n                                            │\n                                            ▼\n                       os.tmpdir()/polaris-exec-sandbox/<id>/  （文件 + exec cwd）\n面板 ──invoke──▶ 同一份 kv 元数据 → 列表 / 手动销毁\n```\n\n- 零依赖、零后台服务、零外联\n- 元数据走 `cap.kv`（`execsandbox.ws.<id>`），不落 appConfigDir\n- 仅 `aiToolAccess` 权限\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@exec-sandbox-v0.1.0/plugins/exec-sandbox/exec-sandbox.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:54:14.000Z",
+      "updatedAt": "2026-11-04T00:54:14.000Z"
+    },
+    {
+      "id": "cookie-lens",
+      "name": "Cookie & CORS 调试台",
+      "version": "0.1.0",
+      "description": "Cookie 与 CORS 确定性诊断台：Set-Cookie 逐属性诊断（SameSite=None 缺 Secure 拒收、__Host-/__Secure- 前缀、Domain 父域校验、Max-Age/Expires 优先级）、按 RFC 6265 domain-match/path-match 判定 cookie 会被发往哪些 URL、按 Fetch Standard 判定 CORS 场景（credentials 下通配符失效、重复 ACAO、预检 ACAM/ACAH 逐项核对）。排查「cookie 没种上」「blocked by CORS policy」的高频痛点。纯本地零外联，MCP 四工具 + 面板三页签。",
+      "author": "Polaris",
+      "category": "security",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/cookie-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cookie-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@cookie-lens-v0.1.0/plugins/cookie-lens/cookie-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cookie-lens/update.json",
+      "sha256": "f1f37e065b014d581e5ed2fb459760b3334793162e7c0a786b1b5739f3aa11ea",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@cookie-lens-v0.1.0/plugins/cookie-lens/cookie-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:56:53.000Z",
+      "updatedAt": "2026-11-04T00:56:53.000Z"
+    },
+    {
+      "id": "cron-lens",
+      "name": "Cron 表达式调试台",
+      "version": "0.1.0",
+      "description": "写 cron 表达式（task-runner/crontab/CI/ZCode automations）没有校验和预报，填错只会在该触发时不触发。本插件即时解析表达式、中文逐字段解释、计算未来 N 次触发时刻（月长/闰年敏感）、检测常见坑：日与周同时受限的「或」语义（vixie 与 Quartz 相反）、2 月 30 日永不触发、仅闰年触发、*/n 起点漂移、秒字段误粘。纯本地零外联零 kv，MCP 三工具（explain/next/match）+ 面板实时调试场。",
+      "author": "Polaris",
+      "category": "automation",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Clock",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/cron-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@cron-lens-v0.1.0/plugins/cron-lens/cron-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron-lens/update.json",
+      "sha256": "e31cff22ca8104dbae7a2464d8ae678f665dfefc6d49558d42be43952db94908",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# cron-lens · Cron 表达式调试台\n\n写 cron 表达式（task-runner / crontab / CI / ZCode automations）时没有校验和预报——填错只会在「该触发的时候不触发」。本插件把表达式拆开看清楚：\n\n- **解析 + 中文逐字段解释**：每个字段的语义与展开值；`@hourly` 等别名展开；`0,15,30,45` ↔ `*/15` 归一。\n- **未来触发预报**：从任意起点算未来 N 次（含星期与 epoch），月长/闰年敏感（`0 0 29 2 *` 自动落 2028-02-29）。\n- **坑检测**（vixie/POSIX 语义基准）：\n  - 日与周同时受限 = **「或」**（Quartz 是「与」）——跨调度器迁移最常见语义差；\n  - 永不触发（`0 0 30 2 *`：2 月无 30 日）与仅闰年触发；\n  - `*/n` 起点漂移（`3-59/15` 实际命中 3,18,33,48）、`5/15` 缩写歧义；\n  - 6 字段=首位按秒（标准是 5 字段，秒级仅部分调度器支持）、`?` 与 `7` 的归一提示。\n- **时刻诊断**：给一个时刻逐字段回答「为什么没触发」，未命中给首因字段与期望集合。\n\n纯本地零外联零 kv；不支持 Quartz 的 L/W/#（明确报错并提示）；触发计算用固定偏移墙钟，不做 DST 推算（如实标注）。\n\n## 形态\n\n- MCP 三工具（`cron_lens_` 前缀）：`explain` / `next` / `match`。\n- 面板：表达式输入 + 预设样例 → 字段解释 / 坑警示 / 未来 8 次触发（本机时区）/ 时刻诊断表。\n\n## 引擎\n\n`shared/cron-core.js` 单一权威（MCP 与面板共用，纯函数零依赖）；测试三件套：`test/run-tests.mjs`（core 单测）、`test/mcp-verify.mjs`（stdio JSON-RPC 真实冒烟）、`test/ssr-verify.mjs`（面板 SSR 渲染断言）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@cron-lens-v0.1.0/plugins/cron-lens/cron-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:56:55.000Z",
+      "updatedAt": "2026-11-04T00:56:55.000Z"
+    },
+    {
+      "id": "csv-lens",
+      "name": "CSV 检查台",
+      "version": "0.1.0",
+      "description": "把一份 CSV 拆开看清楚：RFC 4180 状态机严格解析（引号内逗号/换行/\"\"转义），定位列数漂移行与裸引号/引号后尾随字符/未闭合引号（带行号），检测分隔符/换行风格/BOM/方言，逐列类型推断统计，并转 JSON/SQL/Markdown 或输出 RFC 规范 CSV。调试「CSV 导入失败不知道哪一行哪个字符坏了」的数据管道高频痛点。纯本地零外联零 kv，MCP 四工具 + 面板四页签。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Beaker",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/csv-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/csv-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@csv-lens-v0.1.0/plugins/csv-lens/csv-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/csv-lens/update.json",
+      "sha256": "df62f1d9ba16c3841be05fd7a8481696871a4e79a7ab81b829706d84932ef3a6",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@csv-lens-v0.1.0/plugins/csv-lens/csv-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:56:56.000Z",
+      "updatedAt": "2026-11-04T00:56:56.000Z"
+    },
+    {
+      "id": "data-query",
+      "name": "数据查询台",
+      "version": "0.1.0",
+      "description": "把本机散落的 CSV/TSV/JSON/JSONL/Parquet 变成一张张可 SQL 查询、可 JOIN、可导出、可对 AI 提问的本地表——数据不出本机，零环境安装。填个路径点导入（GBK/UTF-16 自动转码），写 SQL 或直接对 AI 说「帮我把下载目录的 sales.csv 导进来，按月汇总金额前十」即查即答；结果一键导出 CSV（带 BOM，Excel 直开）/JSON；多文件同库天然 JOIN；DuckDB 引擎随包内置，全程离线，重启后数据自动恢复。只读护栏（SELECT 专一 + 关键词黑名单），导出路径白名单 + 拒绝覆盖；服务仅绑 127.0.0.1 且不带 CORS 头。",
+      "author": "Polaris",
+      "category": "data",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Beaker",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/data-query",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-query/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@data-query-v0.1.0/plugins/data-query/data-query.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-query/update.json",
+      "sha256": "7c44a9daf2a9ab4be6c492f25d5bc560ba2cfc9f564217ed2eeb332573a7fa15",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 数据查询台（data-query）\n\n把本机散落的 CSV / TSV / JSON / JSONL / Parquet 文件导入为 DuckDB 本地表，真实 SQL（聚合 / JOIN / 窗口函数）即查即答；结果可导出（CSV 带 BOM，Excel 直开 / JSON / NDJSON）；AI 经 MCP 七工具问数。数据不出本机，引擎随包内置，全程离线。\n\n## 形态\n\n- **面板**：导入（填路径）/ 表列表（结构速览 + 预览）/ SQL 编辑（Ctrl+Enter 运行）/ 结果网格 / 导出。经宿主 `cap.http` 调本机服务，无 CORS。\n- **服务**（`service/server.js`，127.0.0.1:9875）：查询 / 导入 / 导出的**单一路径权威**。引擎与工作区都在这里。\n- **MCP**（`mcp/server.js`）：`dq_status` / `dq_tables` / `dq_schema` / `dq_import` / `dq_query` / `dq_export` / `dq_drop` 七工具，AI 直连本机服务。\n\n## 关键语义\n\n- **只读护栏**：查询必须以 SELECT/WITH 开头、单语句、写/装载关键词黑名单（注释 / 字符串字面量 / 标识符感知，防藏词也防误杀）。\n- **编码探测**：BOM → 严格 UTF-8 试解码 → GBK 试解码；非 UTF-8 流式转码副本后导入（恒定内存）。\n- **表名**：文件名主干清洗；CJK 转 `u+码点`（订单 → u8ba2u5355）防塌缩；同名再导入 = 覆盖刷新（幂等），异名自动去重。\n- **工作区**：`<数据根>/plugins/data-query/workspace.duckdb` + `registry.json`。每次写操作后 CHECKPOINT 落盘——进程被 kill 重启数据不丢；重启后以 `duckdb_tables()` 对账恢复（日志即真相）。\n- **导出护栏**：绝对路径 + 扩展名白名单 + 默认拒绝覆盖（`overwrite:true` 显式放行）+ 拒写插件内部文件 / 系统目录。\n- **引擎**：`@duckdb/node-api` native binding（win32-x64 随包，`service/vendor/duckdb/`）。换版本：`npm install` 后 `npm run build:vendor` 重新同步。\n\n## 已知边界（如实）\n\n- v0.1 引擎仅随包 Windows x64；其他平台显式报错不静默。\n- 查询不可中途取消（native connection 有 interrupt 能力，v0.1 未接）。\n- 只读：不提供任何写路径（CREATE/INSERT/UPDATE 全被护栏拒）。\n- `count(*)` 先于导出重复执行一次查询（v0.1 如实接受）。\n\n## 本地验证\n\n```\nnpm install\nnpm run typecheck        # tsc --noEmit\nnpm test                 # 离线纯逻辑单测（17）\nnpm run test:engine      # 引擎真测：导入/聚合/GBK/JOIN/幂等/导出/护栏/重启恢复（9）\nnpm run test:mcp         # MCP 全链路：真实 service + stdio 喂包（21）\nnode test/ssr-verify.mjs # 面板 SSR 渲染断言（6）\n```\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@data-query-v0.1.0/plugins/data-query/data-query.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:56:58.000Z",
+      "updatedAt": "2026-11-04T00:56:58.000Z"
+    },
+    {
+      "id": "datetime-lens",
+      "name": "时间与时区调试台",
+      "version": "0.1.0",
+      "description": "「为什么 02:30 的定时任务没触发」「这个时间戳是秒还是毫秒」的日期时间调试刚需。多格式解析为权威解读（ISO 8601/RFC 3339、Unix 秒/毫秒/微秒/纳秒按位数猜单位列歧义、RFC 2822、HTTP 日期、date-only），多时区投影标注偏移与 DST，墙钟消解对夏令时边界给确定性判定（时钟前拨不存在/回拨出现两次），日历口径 vs 精确口径双结果算术，全格式输出附 round-trip 自证；坑检测：date-only 按 UTC、无偏移按本地时区、两位年、闰秒、2038、ISO 周年错位、月末钳制 vs JS 回卷、JS Date.parse 差分实况。自研语法与 Intl/ICU 差分对拍守护，纯本地零外联零 kv，MCP 五工具（parse/convert/wall_resolve/arith/format）+ 面板。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Clock",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/datetime-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/datetime-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@datetime-lens-v0.1.0/plugins/datetime-lens/datetime-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/datetime-lens/update.json",
+      "sha256": "c7b1ad955775686bc2f914164d69c43c501a7999f520a602d4c1306834ed2135",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# datetime-lens · 时间与时区调试台\n\n多格式日期时间解析 + 时区投影 + DST 空洞/歧义判定 + 双口径算术。纯本地零外联零 kv，面板与 MCP 同一引擎（`shared/datetime-core.js`）。\n\n## 形态\n\n- **面板**：输入任意日期时间原文 → 解读（形态/权威瞬间/JS Date.parse 差分）→ 全格式输出（ISO/RFC 2822/HTTP/Unix/ISO 周）→ 多时区投影表（勾选时区）→ 墙钟消解判定卡 → 双口径算术卡。\n- **MCP 五工具**（前缀 `datetime_lens_`）：\n  - `parse`：权威解读 + 坑检测\n  - `convert`：多时区投影表\n  - `wall_resolve`：`date + time + zone` → unique / ambiguous（两次瞬间+切换点）/ gap（切换瞬间+跳变量）\n  - `arith`：日历口径 vs 精确口径双结果（DST 边界差值显式提示）\n  - `format`：全格式输出 + round-trip 自证\n\n## 支持格式\n\n`now`；Unix 时间戳（秒/毫秒/微秒/纳秒按位数猜单位，歧义列备选）；ISO 8601 / RFC 3339（`YYYY-MM-DD[T ]HH:MM[:SS][.f][Z|±HH:MM|±HHMM]`）；`YYYY-MM`；`YYYY`；RFC 2822 邮件日期；HTTP 日期（IMF-fixdate）。\n\n## 坑检测（14 条）\n\ndate-only 按 UTC 零点、无偏移 date-time 按本地时区（同语言两套规则）、DST 空洞、DST 歧义、unix 单位歧义、两位年（RFC 2822 过时规则）、2038 溢出、闰秒、ISO 周年错位、月末钳制 vs JS setMonth 回卷、偏移越界（|±|>14）、星期名与日期不符、未知时区名、JS Date.parse 差分/拒收实况。\n\n## 权威与边界\n\n- 时区换算唯一权威 = 宿主运行时 Intl/ICU（与宿主同源数据）。\n- 自研语法与时区逻辑由 `test/run-tests.mjs` 差分对拍守护（投影 vs `Intl longOffset` 全 zone 矩阵、墙钟消解 vs 分钟步进暴力扫描、ISO 周规范向量）。\n- 时区历史变迁完整库不在范围：1970 前含 LMT 秒级偏移时代，分钟粒度结果可能失真（会如实标注）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@datetime-lens-v0.1.0/plugins/datetime-lens/datetime-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:56:59.000Z",
+      "updatedAt": "2026-11-04T00:56:59.000Z"
+    },
+    {
+      "id": "encoding-lens",
+      "name": "编码透视台",
+      "version": "0.1.0",
+      "description": "编码识别与乱码修复台：字节级编码判定（UTF-8/GBK/Big5/Shift_JIS/EUC-KR/UTF-16/Latin-1，BOM+多候选评分+码域结构+环境先验）、mojibake 自动修复（六条误读链 + 四条终验不变式，不过不输出半成品）、乱码指纹（锟斤拷/烫烫烫/â€œ 型根因解释）、编码转换（strict 不降级）。纯本地零外联零 kv，MCP 四工具 + 面板三页签。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/encoding-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/encoding-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@encoding-lens-v0.1.0/plugins/encoding-lens/encoding-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/encoding-lens/update.json",
+      "sha256": "7cf5b251a368e83dbd38806d3c0ffabc60dde942ee9d4e2b08c0c2bdea1fc45d",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@encoding-lens-v0.1.0/plugins/encoding-lens/encoding-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:01.000Z",
+      "updatedAt": "2026-11-04T00:57:01.000Z"
+    },
+    {
+      "id": "env-drift",
+      "name": ".env 漂移检查器",
+      "version": "0.1.0",
+      "description": "对比 .env.example 与实际 .env 的键漂移：缺失键（example 有实际无）、多余键（实际有 example 无）、值差异（同名键值不同——脱敏报告不含实际值原文）、格式错误行（含行号）。支持引号值/export 前缀/行内注释/空值/重复键解析。AI 生成项目脚手架的 .env 漂移是部署翻车高频根因，push 前一键体检。纯本地零外联零 kv，MCP 两工具 + 面板双文本框对比测试场。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/env-drift",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/env-drift/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@env-drift-v0.1.0/plugins/env-drift/env-drift.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/env-drift/update.json",
+      "sha256": "423c31d74c40d80916ffd3f8a3dac462187a0fb147a8ffdbf4ade3b0efac52fb",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@env-drift-v0.1.0/plugins/env-drift/env-drift.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:02.000Z",
+      "updatedAt": "2026-11-04T00:57:02.000Z"
+    },
+    {
+      "id": "flow-pipeline",
+      "name": "自动化流水线",
+      "version": "0.1.0",
+      "description": "把「抓数据→加工→调 AI→调插件工具→落盘/通知」这类重复的多步操作串成会自动跑的流水线：九类步骤（HTTP / MCP 工具 / AI / 提取 / 模板 / 脚本 / KV / 文件 / Webhook 通知）+ 四种触发（手动 / 间隔 / 每天 HH:MM / Webhook 入站，带管道级 token 与限流）；宿主已装插件的 MCP 工具即插即用当步骤调（cap.mcp 直调），AI 供应商可从宿主一键导入（OpenAI 兼容 + Anthropic 双协议）。运行历史逐步留痕（状态/耗时/输出摘要，敏感值出口掩码）三端可查，错过调度只补跑一次不回放积压。安全默认收紧：HTTP/通知步骤过 SSRF 围栏（私网/元数据地址拒绝，本地联调需管道显式开 allowLocal）、重定向逐跳复检跨源剥鉴权、脚本步骤 vm 沙箱 2s 超时、文件步骤白名单根目录、webhook token timingSafe 比对。AI 经 MCP 八工具对话式搭建/运行/排障（flow_list/get/save/toggle/run/status/delete/selftest），数据全在 cap.kv 不出本机，服务仅绑 127.0.0.1。",
+      "author": "Polaris",
+      "category": "automation",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Activity",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/flow-pipeline",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flow-pipeline/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@flow-pipeline-v0.1.0/plugins/flow-pipeline/flow-pipeline.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flow-pipeline/update.json",
+      "sha256": "de070317dcf4b931ef472089b076b69bb1012224f54f011d220aae913a9ca243",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 自动化流水线（flow-pipeline）\n\n把「抓数据 → 加工 → 调 AI → 调插件工具 → 落盘/通知」这类重复的多步操作，串成一条**会自己跑的流水线**。\n\n- 数据全在 cap.kv，不出本机；服务仅绑 127.0.0.1。\n- 零运行时依赖（node ≥ 18），装完即用。\n- 面板 + 后台服务 + MCP 八工具三件套（house 标准形态）。\n\n## 一句话场景\n\n- 每天早八点抓接口数据 → 存成文件归档\n- 每 30 分钟巡检接口 → 失败才发钉钉/企微通知\n- Webhook 收到告警 → AI 分析该不该半夜叫人 → 推送结论\n- 定时调用任意已装插件的 MCP 工具（域名体检/密钥扫描/依赖体检…）并把结果存档\n\n## 九类步骤\n\n| 步骤 | 说明 |\n|---|---|\n| http | 方法/头/体/超时；**SSRF 围栏**（私网/环回/元数据地址拒绝，本地联调需流水线显式开 allowLocal；重定向逐跳复检，跨源剥鉴权头） |\n| mcp | 经 cap.mcp 直调宿主任意已装插件的 MCP 工具（工具即步骤） |\n| ai | 供应商直连非流式（OpenAI 兼容 / Anthropic Messages 双协议；可从宿主一键导入） |\n| extract | JSONPath-lite 提取（`a.b.0` / `items[*].id` / `list[?status=open]`；通配聚合数组） |\n| template | `{{占位符}}` 模板渲染（整串占位保留原类型） |\n| script | node:vm 沙箱 JS 片段（2s 超时、无 require/process；本机信任模型与 task-runner 命令行步骤同级，主要防误写死循环） |\n| kv | cap.kv 读写删（跨运行持久化） |\n| file | 白名单根目录写文件（输出目录 / 桌面 / 临时目录；相对路径默认落输出目录；目录外拒绝） |\n| notify | Webhook 出站通知（钉钉/企微/飞书/Bark 都是 POST；同 http 围栏） |\n\n每步可带：`saveAs`（输出保存名，后续 `{{名字}}` 引用）、`when`（门控表达式，如 `{{resp.ok}} == false`）、`continueOnError`。\n\n## 四种触发\n\n- **manual**：面板按钮 / MCP flow_run / REST\n- **interval**：每 N 分钟（≥5）\n- **daily**：每天 HH:MM（本地时区）\n- **webhook**：`POST http://127.0.0.1:9881/hook/<plId>`，头 `X-FlowPipe-Token: <管道token>`；body→`{{params.body}}`、query→`{{params.query}}`；12 次/分钟限流\n\n错过调度只补跑一次（missed 标记），不回放积压（task-runner/data-ark 同款语义）。\n\n## 插值与上下文\n\n- 根作用域：`{{vars.x}}` / `{{steps.输出名.path}}` / `{{params.x}}` / `{{env.today|now|runId|plId|plName}}`\n- 简写：不带根作用域前缀时按 vars → steps → params 顺序回落（`{{apiHost}}`、`{{resp.json}}` 均可直写）\n- 整串恰为一个占位符 → 保留原值类型（对象/数组直接传）\n\n## AI 对话式使用（MCP 八工具）\n\n在 Polaris 聊天里直接说「帮我建一条每天抓 xx 存档的流水线」：\n\n`flow_list` / `flow_get` / `flow_save` / `flow_toggle` / `flow_run` / `flow_status` / `flow_delete`（双闸确认）/ `flow_selftest`\n\n## 安全设计\n\n- 敏感变量（vars 标记「敏感」）与供应商 apiKey **出口一律掩码**（前4***后2）：运行摘要、AI 返回、API 响应均不出现原文；编辑回传掩码哨兵 → 服务端保留旧值\n- 服务 Bearer token（32B 随机）timingSafe 比对；webhook 管道级 token 独立\n- HTTP/notify 步骤默认禁私网/元数据地址（169.254.169.254 永不放行）；跨源重定向剥 Authorization/Cookie\n- script 步骤 vm 沙箱 + 2s 超时（如实说明：不防恶意本机用户，与 task-runner 命令行执行同信任级）\n- file 步骤路径白名单 + 目录穿越拒绝 + 10MB 上限\n- 运行历史每管道保留 30 条，记录先掩码再落 kv\n\n## 本地开发\n\n```bash\ncd plugins/flow-pipeline\nnpm install          # 仅构建期依赖（esbuild/tsc）\nnpm test             # 离线测试 58 断言（引擎/steps/runner/service/mcp 五层）\nnpm run typecheck    # 面板 tsc --noEmit\nnpm run build        # esbuild 产出 dist/panel.js\n```\n\n测试说明：service/mcp 层用「假宿主桥」（env `POLARIS_HOST/PORT/TOKEN` 注入）全离线跑通全链路；`APPDATA` 指向临时目录隔离本机真实配置。真桥冒烟（真实 cap.kv/cap.mcp）需在 Polaris 宿主内进行。\n\n## 已知边界（如实）\n\n- Web(https) 部署模式下浏览器拦 `http://127.0.0.1` 混合内容——桌面/手机 WebView 正常（repo-lens/stream-desk/api-bench 同款边界）\n- 调度精度分钟级；interval 首装从启用时刻起算，不立即触发\n- webhook 服务绑 127.0.0.1：外部系统要打进来需本机有端口转发/隧道（本地脚本、CI agent、宿主内插件直打无碍）\n- script 步骤非安全边界（见上）；不支持并行分支/循环/子管道（线性 + when 门控覆盖主场景，画布编辑器明确不做）\n- mcp 步骤依赖宿主 cap.mcp 通路；若目标 server 未启用会得到可读错误\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@flow-pipeline-v0.1.0/plugins/flow-pipeline/flow-pipeline.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:04.000Z",
+      "updatedAt": "2026-11-04T00:57:04.000Z"
+    },
+    {
+      "id": "gitignore-lens",
+      "name": ".gitignore 检查器",
+      "version": "0.1.0",
+      "description": "粘贴 .gitignore 规则 + 路径清单 → 逐路径判定「被忽略/未被忽略/被复活」+ 命中哪条规则（行号定位）+ 坑检测（否定被父目录规则压住、目录规则不可复活文件等）。「为什么这个文件还是被提交了」「为什么排除不掉」的调试刚需。gitignore 语义常用子集（注释/否定/锚定/目录限定/*/​?/[...]/**）纯本地解析，MCP 两工具 + 面板判定表测试场，零外联零 kv。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "AlertCircle",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/gitignore-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gitignore-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@gitignore-lens-v0.1.0/plugins/gitignore-lens/gitignore-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gitignore-lens/update.json",
+      "sha256": "87efab8fa50aeb1968469c5aaf31a38ac34146c1d996d298cca15285788bf64d",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@gitignore-lens-v0.1.0/plugins/gitignore-lens/gitignore-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:05.000Z",
+      "updatedAt": "2026-11-04T00:57:05.000Z"
+    },
+    {
+      "id": "id-lens",
+      "name": "标识符调试台",
+      "version": "0.1.0",
+      "description": "UUID / ULID / Snowflake 雪花 ID 粘进来看穿一切:家族自动识别 + 位域逐段解读(时间戳/机器号/序列/版本/变体位)+ 时间还原(Twitter/Discord 纪元可配)+ 规范性校验(RFC 9562 版本变体/Crockford 混淆字母 ILOU 定位/41 位纪元耗尽/纪元歧义对照)+ 形态互转(canonical/urn/braces/无连字符/十进制/二进制/ULID↔UUID128)。超 2^53 数值全程 BigInt 字符串输出防精度丢失。纯本地零外联零 kv,MCP 四工具(parse/bits/validate/convert)+ 面板位段表。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/id-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/id-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@id-lens-v0.1.0/plugins/id-lens/id-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/id-lens/update.json",
+      "sha256": "8a7ff73c623909d2f854d87d8bd0720f62c0da13fad638665a1738d2de5c0dc1",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# id-lens 标识符调试台\n\n把任意 UUID / ULID / Snowflake 雪花 ID 粘进来,看穿一切:\n\n- **家族自动识别**:UUID(canonical / `{braces}` / `urn:uuid:` / 无连字符)、ULID(26 字符 Crockford Base32)、Snowflake(纯数字 ≤20 位)\n- **位域逐段解读**:时间戳 / 机器号 / 序列 / 版本位 / 变体位,高地位号精确到每一位(64/128 位位图)\n- **时间还原**:UUID v1(1582 Gregorian 纪元 100ns)/ v6(重排)/ v7(Unix 毫秒)/ ULID / Snowflake(Twitter 2010 与 Discord 2015 纪元可切,同 ID 双纪元对照提示歧义)\n- **规范性校验**:RFC 9562 版本(1-8)/ 变体(10xx)合规、大小写与形态、ULID 排除字母 I/L/O/U 精确定位、41 位时间戳耗尽时刻、远未来时间提示\n- **形态互转**:canonical / uppercase / urn / braces / hyphenless / decimal / bitstring / hex128 / ULID↔UUID128(编码层互转,语义不保证如实标注)\n\n所有超过 2^53 的数值以字符串输出(BigInt 全程精确,不丢精度)。纯本地零外联零 kv。\n\n## MCP 四工具\n\n| 工具 | 用途 |\n|---|---|\n| `id_lens_parse` | 解析 + 家族识别 + 时间还原(layout: twitter/discord) |\n| `id_lens_bits` | 位段表 + 二进制位图 |\n| `id_lens_validate` | 规范性校验清单(级别/规则名/修复建议) |\n| `id_lens_convert` | 形态互转(9 种目标形态) |\n\n## 边界\n\n纯解码器:不做 ID 生成、不做 v3/v5 名字散列重算(不可逆)、不做溯源查询;v2/v8 只解析结构。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@id-lens-v0.1.0/plugins/id-lens/id-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:07.000Z",
+      "updatedAt": "2026-11-04T00:57:07.000Z"
+    },
+    {
+      "id": "json-repair",
+      "name": "JSON 修复器",
+      "version": "0.1.0",
+      "description": "把 LLM 输出的坏 JSON 修成合法 JSON：尾逗号、单引号键值、未转义控制字符（字面换行）、// 与 /* */ 注释、NaN/Infinity、未闭合括号补全、markdown 代码围栏剥离——策略式逐字符容错修复，逐处修改点报告，不可修如实报错（不输出半成品）。与 schema-check 组成工具链（repair→validate）。AI 程序化消费 LLM JSON 输出的高频痛点；纯本地零外联零 kv，MCP 两工具 + 面板双框测试场。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/json-repair",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/json-repair/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@json-repair-v0.1.0/plugins/json-repair/json-repair.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/json-repair/update.json",
+      "sha256": "9c0301693c3d672c2ebf6634ebc8802e9597227db98d52999a2dddd1633111c0",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@json-repair-v0.1.0/plugins/json-repair/json-repair.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:08.000Z",
+      "updatedAt": "2026-11-04T00:57:08.000Z"
+    },
+    {
+      "id": "jwt-desk",
+      "name": "JWT 调试台",
+      "version": "0.1.0",
+      "description": "把任意 JSON Web Token 变成可读可验可审的本地工作台：粘贴 token 即拆解 header/payload/signature 三段，HS256/384/512、RS/PS/ES 签名纯本地校验（node:crypto / WebCrypto 双实现，RFC 7515 A.2 已知答案向量守护），安全审计逐条中文说明（alg=none、缺失或过期 exp、iat 未来时、超长有效期、jku/x5u 外链、payload 携带凭证），并支持按 claims 签发测试 token 供联调。面板 + MCP 四工具（decode/verify/audit/sign）共用同一纯函数核，AI 可直接对 token 提问「这个 token 是谁、还有多久过期、签名对不对」。零依赖零外联，token 不出本机。",
+      "author": "Polaris",
+      "category": "security",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "CheckSquare",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/jwt-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jwt-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@jwt-desk-v0.1.0/plugins/jwt-desk/jwt-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jwt-desk/update.json",
+      "sha256": "9884861ee8af36aa67fb5b7e058d1c7c744385566650027f832caaa6b813242b",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@jwt-desk-v0.1.0/plugins/jwt-desk/jwt-desk.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:10.000Z",
+      "updatedAt": "2026-11-04T00:57:10.000Z"
+    },
+    {
+      "id": "prompt-guard",
+      "name": "防注入检查器",
+      "version": "0.1.0",
+      "description": "Prompt injection 风险检查器：检测文本中的注入攻击模式——指令覆盖、角色劫持、系统提示词探测、工具调用诱导、数据外泄指令、编码载荷、零宽字符等 15 类规则，纯本地正则+启发式分级（clean/suspicious/dangerous），文本不出本机零外联。AI 把网页/文件/用户内容喂给模型前先自检；MCP 两工具 + 面板交互测试场。",
+      "author": "Polaris",
+      "category": "security",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "CheckSquare",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/prompt-guard",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-guard/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@prompt-guard-v0.1.0/plugins/prompt-guard/prompt-guard.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-guard/update.json",
+      "sha256": "c04e76e09ed7d1cffb6f2c85081a57d1eba154031b6795ed3c135130a0db062d",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@prompt-guard-v0.1.0/plugins/prompt-guard/prompt-guard.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:13.000Z",
+      "updatedAt": "2026-11-04T00:57:13.000Z"
+    },
+    {
+      "id": "regex-desk",
+      "name": "正则调试台",
+      "version": "0.1.0",
+      "description": "正则表达式调试台：JS RegExp 真实语义测试（匹配高亮/捕获组/命名组/耗时）、ReDoS 灾难性回溯检测（静态模式识别 + 静态可疑时输入长度阶梯真实计时复核 + 中文改写建议）、逐构造中文解释（类内 \\b 是退格这类语义细节也不漏）、替换预览。AI 生成正则先自检再用——2026 年 path-to-regexp/markdown-it 等 ReDoS CVE 连发，LLM 生成正则的回溯风险已有专研；纯本地零外联，文本不出本机。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/regex-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@regex-desk-v0.1.0/plugins/regex-desk/regex-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex-desk/update.json",
+      "sha256": "91933856dc49f2c9ffbb8f9971b94cf8302e33d83206352e8788cb9fe99261bc",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@regex-desk-v0.1.0/plugins/regex-desk/regex-desk.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:14.000Z",
+      "updatedAt": "2026-11-04T00:57:14.000Z"
+    },
+    {
+      "id": "schema-check",
+      "name": "JSON Schema 校验器",
+      "version": "0.1.0",
+      "description": "粘贴 JSON Schema + 数据 → 校验报告：错误 JSON Pointer 路径定位、类型/必填/枚举/数值范围/字符串长度/pattern/array 约束/additionalProperties 逐项检出。Draft-07 高频子集纯本地实现（$ref 不支持时如实报错）。AI 结构化输出/工具参数校验高频场景——LLM 生成的 JSON 喂给程序前先按 schema 体检；MCP 两工具（validate/explain）+ 面板双框测试场，零依赖零外联。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "CheckSquare",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/schema-check",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-check/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@schema-check-v0.1.0/plugins/schema-check/schema-check.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-check/update.json",
+      "sha256": "bc3f502fa9bdf462732db5e6951065817092b27fa1072472a7d75abbdf33f1d3",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@schema-check-v0.1.0/plugins/schema-check/schema-check.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:16.000Z",
+      "updatedAt": "2026-11-04T00:57:16.000Z"
+    },
+    {
+      "id": "schema-mock",
+      "name": "Mock 数据生成器",
+      "version": "0.1.0",
+      "description": "按 JSON Schema 生成随机合法假数据：Draft-07 高频子集约束反向生成（type/enum/const/数值范围/字符串长度/array 约束/additionalProperties），seed 可复现（确定性 PRNG）。与 schema-check（036）/json-repair（040）组成三件套工具链：mock→repair→validate——每组生成物经校验器闭环断言必过，校验不过=生成器 bug 如实报错。AI 测试数据/联调边界样本/演示素材的确定性来源；纯本地零外联零 kv，MCP 两工具 + 面板测试场。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Activity",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/schema-mock",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-mock/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@schema-mock-v0.1.0/plugins/schema-mock/schema-mock.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-mock/update.json",
+      "sha256": "1fe80e3c61d3e3ffad0a46493b980ae12ae6e81993a423abc25599196592d3c9",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@schema-mock-v0.1.0/plugins/schema-mock/schema-mock.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:17.000Z",
+      "updatedAt": "2026-11-04T00:57:17.000Z"
+    },
+    {
+      "id": "swarm-lab",
+      "name": "蜂群实验台",
+      "version": "0.1.0",
+      "description": "多智能体涌现行为实验台：把「群体智能如何从简单规则里长出来」变成可动手做实验的本机沙盘。两个经典场景——Boids 蜂群（分离/对齐/聚合三规则+可选捕食者，看极化指数如何上升）、蚁群觅食（信息素沉积蒸发，看路径如何收敛、采食曲线何时起飞）；确定性引擎（mulberry32 种子），同种子同参数逐 tick 一致、实验可复现。面板是实时 canvas 沙盘（拖参数/换种子/播放暂停/主指标曲线）；AI 经 MCP 五工具做可控实验：swarmlab_scenarios 拿参数字典、swarmlab_run 单批实验、swarmlab_compare 同种子控制变量跑 2~5 组对照、swarmlab_snapshot 密度字符图直接「看见」空间格局、swarmlab_metrics 对齐指标口径。纯本地零服务零外联零宿主依赖，数据不出机。",
+      "author": "Polaris",
+      "category": "simulation",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Bot",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/swarm-lab",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/swarm-lab/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@swarm-lab-v0.1.0/plugins/swarm-lab/swarm-lab.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/swarm-lab/update.json",
+      "sha256": "efdfb2d0b96f8ecfeb464a90af1683a7f0b06ead889b14f30018a740e69f8fde",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 蜂群实验台（swarm-lab）\n\n多智能体涌现行为实验台：把「群体智能如何从简单规则里长出来」变成可动手做实验的本机沙盘。\n\n## 两个涌现场景\n\n| 场景 | 规则 | 涌现 | 主指标 |\n|---|---|---|---|\n| **boids 蜂群鸟群** | 分离/对齐/聚合三规则 + 可选捕食者 | 群体秩序、成团 | 极化指数 \\|Σv̂\\|/N |\n| **ants 蚁群觅食** | 信息素沉积/蒸发 + 3 探针转向 | 觅食路径收敛 | 累计采食 |\n\n确定性引擎（mulberry32 种子化 PRNG）：同种子同参数 → 逐 tick 一致，实验可复现。\n环形世界（toroidal [0,100)）消除边界效应。\n\n## 面板\n\n实时 canvas 沙盘：参数滑杆（连续型逐 tick 生效，结构型同种子重建）、种子控制、\n播放/暂停/单步/重置、速度 1~8×、主指标迷你曲线、四指标实时读数。\n\n## MCP 五工具（前缀 `swarmlab_`）\n\n- `swarmlab_scenarios` — 场景清单 + 参数 schema + 默认值（实验设计的输入字典）\n- `swarmlab_run` — 单批次实验 → 指标摘要（初/末/最小/最大/均值）+ 采样曲线\n- `swarmlab_compare` — **同种子控制变量**跑 2~5 组对照 → 逐组末值对比 + 差值表\n- `swarmlab_snapshot` — 密度网格字符图（`.` 稀 → `@` 密）+ 质心 + 散布半径\n- `swarmlab_metrics` — 指标口径表\n\n推荐问法：「用 swarmlab_compare 对照 alignment=0.1 和 3.0，看极化差多少」。\n\n## 架构\n\n```\nshared/engine.js   纯算法核心（零依赖，双端同一权威，确定性）\nmcp/server.js      stdio JSON-RPC（零宿主依赖，stdout 只出协议行）\nsrc/Panel.tsx      React 面板（canvas 渲染 + 参数控制）\n```\n\n纯本地：无服务、无 kv、无网络、无宿主依赖——数据不出机，刷新即重置（不做实验结果持久化）。\n\n## 算力护栏\n\n`count²×(ticks+采样点) ≤ 4e8`（boids）/ `count×ticks ≤ 5e7`（ants），超限显式拒绝并给建议，不静默降载。\n\n## 开发\n\n```bash\nnpm install          # devDeps（esbuild/react/typescript，仅构建与测试用）\nnpm run build        # dist/panel.js\nnpm test             # core 单测（node --test）\nnpm run verify:mcp   # MCP 协议验证（真 spawn server 喂 JSON-RPC）\nnpm run verify:render# 面板 SSR 渲染冒烟\n```\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@swarm-lab-v0.1.0/plugins/swarm-lab/swarm-lab.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:19.000Z",
+      "updatedAt": "2026-11-04T00:57:19.000Z"
+    },
+    {
+      "id": "text-triage",
+      "name": "文本分流台",
+      "version": "0.1.0",
+      "description": "把非结构化文本（日志行/告警/错误报告）确定性地跑成三段结论：分类（按序规则首中即决）→ 抽取（命名捕获 + 七种类型归一：int/float/bool/duration→ms/bytes/date→ISO）→ 决策（十一算子条件表产出 verdict/severity/route），全程证据链每步可回放。内置日志分级/延迟阈值/磁盘水位三套预设零配置可用；模板存宿主 kv 三端共享；MCP 七工具让 AI 在对话里直接分流（模糊判断归 AI，可复跑的归引擎）。",
+      "author": "Polaris",
+      "category": "automation",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/text-triage",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-triage/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@text-triage-v0.1.0/plugins/text-triage/text-triage.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-triage/update.json",
+      "sha256": "7578bccf8be44681c3b7553df6aa96a7bbcb712032687af252a8c8253df52f23",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# text-triage 文本分流台\n\n把非结构化文本（日志行 / 告警 / 错误报告）确定性地跑成三段结论：\n\n```\n文本 → ①分类（按序规则首中即决） → ②抽取（结构化字段 + 类型归一） → ③决策（verdict/severity/route）\n                └────────────── 全程 trace 证据链，每步判定可回放 ──────────────┘\n```\n\n## 分流模板\n\n一份模板（pipeline）= 三张表：\n\n- **classes**：分类规则，按序首中即决。每条 `anyOf` 多模式命中其一即中；模式 `\"re:<source>\"` 为 JS 正则（大小写敏感），其他为字面子串（不区分大小写）。未命中落「未分类」。\n- **extract**：按类别 id 或 `*`（共享层）定义字段抽取。`pattern` 同上；`group` 指定捕获组（默认第 1 组，无捕获组取整段）；`type` 归一为 `string/int/float/bool/duration(→ms)/bytes(→B)/date(→ISO)`；抽取失败出警示不致命，`default` 兜底。\n- **decide**：按类别 id 或 `*` 的条件规则表，首中即决。算子 `exists/missing/eq/ne/gt/gte/lt/lte/contains/matches/in`；产出 `{verdict, severity?, label?, route?, note?}`。类别规则 → `*` 规则 → `fallback` 三级回落。\n\n## 使用\n\n- **面板**：内置预设（log-triage / latency-triage / disk-triage）一键载入，改 JSON → 粘文本 → 运行；模板存宿主 kv 三端共享。\n- **MCP 七工具**（`text_triage_*`）：`run`（内联模板即跑）/ `test`（跑已存模板）/ `save` / `get` / `delete` / `list` / `builtin`。模糊分类判断交给 AI（选模板、调规则），可复跑的抽取与决策交给引擎。\n\n## 边界\n\n- 不做 LLM 调用（引擎纯确定性，冒烟离线可复跑）；不做文件批量处理与多步编排（那是 flow-pipeline 的领地）。\n- 正则无内联 flags；无时区字样的日期按本机时区解释并注明；duration/bytes 裸数字分别按毫秒/字节。\n- 持久化走 cap.kv 自建索引键，**零 `list` 动作**（宿主高危接口）。\n\n## 测试\n\n```bash\nnpm test   # core 单测 79 + MCP 假桥 28 + SSR 渲染 8 = 115 断言\n```\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@text-triage-v0.1.0/plugins/text-triage/text-triage.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:21.000Z",
+      "updatedAt": "2026-11-04T00:57:21.000Z"
+    },
+    {
+      "id": "trace-lens",
+      "name": "链路追踪台",
+      "version": "0.1.0",
+      "description": "把本机变成 OpenTelemetry 兼容的链路（trace）接收与排查工作站：任意 OTel SDK / 智能体运行时把 trace 经 OTLP/HTTP-JSON 发到本机接收器（127.0.0.1，数据不出本机），全量留痕落盘。面板瀑布图一眼看出慢在哪错在哪；AI 经 MCP 五工具读树诊断：看瀑布/搜慢链/查错误链。支持 Node/Python SDK 的 http/json 协议，零外部服务零依赖。",
+      "author": "Polaris",
+      "category": "automation",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/trace-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/trace-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@trace-lens-v0.1.0/plugins/trace-lens/trace-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/trace-lens/update.json",
+      "sha256": "6157826b1754cc2d41a2c84ff21b9b0295eb0063cff4d6d81a2b22d2b0a888a3",
+      "tier": "beta",
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# 链路追踪台（trace-lens）\n\n把本机变成 **OpenTelemetry 兼容**的链路（trace）接收与排查工作站：任意 OTel SDK / 智能体运行时把 trace 经 **OTLP/HTTP-JSON** 发到本机接收器，全量留痕落盘；面板瀑布图看慢在哪错在哪；AI 经 MCP 五工具读树诊断。数据不出本机。\n\n## 接入方法\n\nOTel SDK 设两个环境变量（或对应初始化参数）：\n\n```\nOTEL_EXPORTER_OTLP_PROTOCOL=http/json\nOTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:9871\n```\n\n- Node：`@opentelemetry/exporter-trace-otlp-http`（JSON 模式）\n- Python：`opentelemetry-exporter-otlp-proto-http` + 同上 env（JSON 模式）\n- 任何能发 `POST /v1/traces`、`Content-Type: application/json`（ExportTraceServiceRequest JSON）的客户端都能接\n\n> 只支持 JSON 编码（protobuf 请求会得到 415 与提示）；接收器只绑 127.0.0.1，跨机采集不是本插件场景。\n\n## 组成\n\n| 部件 | 说明 |\n|---|---|\n| 服务 | OTLP 接收器（`POST /v1/traces`），归一化落 `spans.jsonl`（8MB 轮转），tick 镜像 kv 投影 |\n| 面板 | trace 列表（错误标红/耗时琥珀）+ 瀑布图（树形缩进、分段耗时、属性/事件展开）|\n| MCP | `trace_lens_overview / recent / get / search / clear` 五工具 |\n\n## 数据流（单一权威）\n\n```\nOTel SDK ──POST /v1/traces──▶ 服务（唯一写者）\n                                ├─ spans.jsonl（权威全量，dataRoot 兄弟目录 polaris-trace/）\n                                └─ cap.kv 投影：tl.meta（心跳+端点）/ tl.idx / tl.rec.*（概览分块）\n                                               tl.trace.<id>（最近 12 条全文，面板跨端读）\n面板 ──宿主 invoke──▶ cap.kv 投影；MCP ──直读──▶ spans.jsonl（全量保真）+ kv\n```\n\n- 归一化容忍 OTel JSON 方言：traceId/spanId hex（兼容 base64 bytes）、int64 字符串、kind/status 双枚举、AnyValue 全型；UnixNano→ms 用 BigInt 精确换算。\n- 孤儿 span（父缺失）当根挂树，不丢数据。\n- 清空/删除是危险操作：MCP 需 `confirm:true`；面板二次确认。\n\n## 隐私与安全\n\n- 只绑 127.0.0.1；无外发路径；不提供开放 CORS 的读 API。\n- span 属性可能含 prompt / 密钥等敏感数据：日志不落 span 内容；MCP 工具描述提示 AI 转述时脱敏。\n\n## 本地开发\n\n```\ncd plugins/trace-lens\nnpm install            # 面板构建依赖（服务/MCP 零依赖）\nnpm run build          # dist/panel.js\nnpm run typecheck      # tsc --noEmit\nnpm test               # core 单测 + 服务端到端 + MCP 冒烟\n```\n\n需求来源：Polaris 需求库 #017（智能体实时可观测性标准——OpenTelemetry for Agents，插件化落地为「接收器+瀑布面板+AI 查询」）。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@trace-lens-v0.1.0/plugins/trace-lens/trace-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:23.000Z",
+      "updatedAt": "2026-11-04T00:57:23.000Z"
+    },
+    {
+      "id": "unicode-lens",
+      "name": "Unicode 检查台",
+      "version": "0.1.0",
+      "description": "Unicode 隐形字符检查台：检出人眼不可见的注入载体（双向控制字符——Trojan Source、Unicode Tag 隐形标签——LLM 可读的提示词隐形注入载体、零宽字符、不可见填充、变体选择符、控制字符）与同形异码字（西里尔/希腊/全角/数学变体）、混合文字系统混排、NFC 未归一化。中文分级报告 + 一键清洗（emoji ZWJ 自动豁免、全角空格/标点中文语境豁免）。纯本地零外联零 kv，MCP 四工具 + 面板逐字符可视化标注。",
+      "author": "Polaris",
+      "category": "security",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "AlertCircle",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/unicode-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/unicode-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@unicode-lens-v0.1.0/plugins/unicode-lens/unicode-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/unicode-lens/update.json",
+      "sha256": "932c509de2bd6790cc2b4ac2383bb0808e491b12394b653cdbcff127c19ba673",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@unicode-lens-v0.1.0/plugins/unicode-lens/unicode-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:25.000Z",
+      "updatedAt": "2026-11-04T00:57:25.000Z"
+    },
+    {
+      "id": "url-lens",
+      "name": "URL 调试台",
+      "version": "0.1.0",
+      "description": "把一个 URL 拆开看清楚：结构分解（protocol/host/port/path/query/fragment）、query 参数表逐项展开（重复键/数组值/空值/编码边界 %20 与 + 语义）、参数编辑后重建 URL、各段编码解码对比。调试 Webhook 回调/OAuth redirect/带追踪参数链接的高频痛点。纯本地零外联零 kv（浏览器原生 URL/URLSearchParams 语义），MCP 三工具 + 面板结构树测试场。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/url-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/url-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@url-lens-v0.1.0/plugins/url-lens/url-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/url-lens/update.json",
+      "sha256": "4dd97261c6d01b7209e3723b977b4effe77ad45a49e9a3fde168e3fc127583eb",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@url-lens-v0.1.0/plugins/url-lens/url-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:27.000Z",
+      "updatedAt": "2026-11-04T00:57:27.000Z"
+    },
+    {
+      "id": "version-lens",
+      "name": "semver 版本范围调试台",
+      "version": "0.1.0",
+      "description": "「为什么 ^0.2.3 装不到 0.3.0」「为什么 beta 装不上」的依赖冲突调试刚需。解析 npm semver 范围并中文逐部分解释（插入符/波浪线/通配/部分版本跳段语义，上界以 -0 精确排他），逐版本判定匹配与否并给出原因（放行交集组/首个拒绝比较器/预发布门控），坑检测：0.x 插入符锁定次版本、0.0.x 锁定补丁、预发布门控、>1.2 跳段、空交集组、=1.2 并非精确等于、构建元数据被忽略。判定引擎与 node-semver 7 权威实现差分对拍全等（1700+ 组），纯本地零外联零 kv，MCP 三工具（explain/check/sort）+ 面板双框判定表。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Target",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/version-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/version-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@version-lens-v0.1.0/plugins/version-lens/version-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/version-lens/update.json",
+      "sha256": "33eaedbf9363849a2265d506f1c75c319445614fbae9fd7a2e0fd675b62d80bc",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# version-lens — semver 版本范围调试台\n\n「为什么 `^0.2.3` 装不到 `0.3.0`」「为什么 beta 装不上」的依赖冲突调试刚需。纯本地零外联零 kv。\n\n## 能力\n\n- **范围解释**：插入符（`^`）/波浪线（`~`）/通配（`x`/`*`）/连字符区间/`||` 并集逐部分展开成比较器，中文说明每个比较器的语义（含上界「-0」精确排他的解释）\n- **逐版本判定**：候选版本清单逐一判定 匹配/不匹配/门控拦截，给出原因（放行交集组、首个拒绝比较器）\n- **坑检测**：0.x 插入符锁定次版本、0.0.x 锁定补丁、预发布门控（beta/rc 装不上的最高频根因）、`>1.2` 跳段语义、空交集组、`=1.2` 并非精确等于、构建元数据被忽略\n- **排序视图**：semver 全序（预发布低于同号正式版、数字标识符按数值比较）\n\n## 语义权威\n\n判定引擎为自研实现，与 **node-semver 7**（npm 实际行为）差分对拍全等（satisfies 1700+ 组矩阵 + compare 全矩阵 + 官方 prerelease 排序链）；语义边界：不做 registry 网络查询、不做 loose 宽松解析、不支持 includePrerelease 变体。\n\n## 形态\n\n- MCP 三工具：`version_lens_explain`（解析+解释+坑）、`version_lens_check`（逐版本判定）、`version_lens_sort`（排序）\n- 面板：范围输入 + 版本清单双框 → 解释卡 / 坑卡 / 判定表 / 排序视图，实时计算\n\n## 测试\n\n```bash\nnpm test   # core 单测(29) + MCP 协议验证(19) + SSR 渲染断言(11)\n```\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@version-lens-v0.1.0/plugins/version-lens/version-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:28.000Z",
+      "updatedAt": "2026-11-04T00:57:28.000Z"
+    },
+    {
+      "id": "yaml-lens",
+      "name": "YAML 调试台",
+      "version": "0.1.0",
+      "description": "YAML 粘进来看穿一切：解析预览（多文档/锚点/合并键）+ 坑检测（Norway problem：unquoted no/on/off 在 PyYAML/Go-yaml/kubectl 里是布尔；前导零 02134 八进制、六十进制 12:34:56、版本号塌陷 1.10→1.1、大整数超 2^53 丢精度、重复键带行列、Tab 缩进、智能引号、时间戳漂移 2024-01-02→Date、注释吞值、键后缺空格、空值 null）+ YAML↔JSON 双向转换（不折行/noRefs）。每条坑给严重度/行列/跨实现行为对照/修复建议。js-yaml 4.1.0 基座、行为全部实测锁定，纯本地零外联零 kv，MCP 四工具（parse/lint/to_json/to_yaml）+ 面板三视图。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Code2",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/yaml-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yaml-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@yaml-lens-v0.1.0/plugins/yaml-lens/yaml-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yaml-lens/update.json",
+      "sha256": "3f711e70c7e2c9be1004ccd5b14e988ea2fdf93c261cb5aa198ea3de9595d913",
+      "tier": "beta",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# yaml-lens — YAML 调试台\n\n粘贴 YAML → 三件事（纯本地零外联）：\n\n1. **解析预览**：js-yaml 4.1.0（YAML 1.2 core 语义）多文档解析、锚点/别名/合并键清单、JSON 预览；解析失败给 1 基行列 + 中文修复提示。\n2. **坑检测**：19 条静态规则（与解析是两道独立闸）——跨实现语义漂移（Norway problem / 前导零八进制 / 六十进制）、数据变形（版本号塌陷、大整数精度丢失、时间戳漂移、注释吞值、空值 null）、书写陷阱（Tab 缩进、智能引号、重复键、键后缺空格、保留字符）。每条给严重度 / 行列 / 跨实现行为对照 / 修复建议。\n3. **转换**：YAML→JSON、JSON→YAML（不折行 `lineWidth:-1`、`noRefs` 展开共享引用、可选排序键）。\n\n## MCP 工具（前缀 `yaml_lens_`）\n\n| 工具 | 说明 |\n|---|---|\n| `yaml_lens_parse` | 解析 + 每文档 JSON 预览 + 锚点别名清单；失败报行列与原因 |\n| `yaml_lens_lint` | 坑检测全表（严重度/位置/规则/说明/修复）+ 解析状态 |\n| `yaml_lens_to_json` | YAML→JSON（单文档对象 / 多文档数组；.inf/.nan/Date 字符串化不静默变 null） |\n| `yaml_lens_to_yaml` | JSON→YAML（不折行 / noRefs / sortKeys 可选） |\n\n## 结构\n\n- `shared/yaml-core.js` — 扫描引擎（零依赖纯函数，MCP 与面板共用单一权威）\n- `mcp/server-src.js` → esbuild bundle 到 `mcp/server.js`（js-yaml 打入，发布 zip 零 node_modules）\n- `src/Panel.tsx` — 面板三视图\n- `test/` — core 行为锁与规则断言 + MCP 协议离线验证 + 面板 SSR 渲染断言\n\n## 开发\n\n```\nnpm install\nnpm run build     # 先 MCP 后面板\nnpm run typecheck\nnpm test          # 三段冒烟全过才算交付\n```\n\n## 边界（如实声明）\n\n不做 k8s/Actions 等领域 schema 校验（只做语言层诊断）；跨行 flow 内重复键不静态检测（解析器抛错兜底）；跨行引用续行只做注释/智能引号检查；不做 YAML Formatter 重排美化。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@yaml-lens-v0.1.0/plugins/yaml-lens/yaml-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-04T00:57:30.000Z",
+      "updatedAt": "2026-11-04T00:57:30.000Z"
     }
   ]
 }

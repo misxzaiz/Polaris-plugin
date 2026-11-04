@@ -1,0 +1,63 @@
+{
+  "id": "data-query",
+  "name": "数据查询台",
+  "version": "0.1.0",
+  "description": "把本机散落的 CSV/TSV/JSON/JSONL/Parquet 变成一张张可 SQL 查询、可 JOIN、可导出、可对 AI 提问的本地表——数据不出本机，零环境安装。填个路径点导入（GBK/UTF-16 自动转码），写 SQL 或直接对 AI 说「帮我把下载目录的 sales.csv 导进来，按月汇总金额前十」即查即答；结果一键导出 CSV（带 BOM，Excel 直开）/JSON；多文件同库天然 JOIN；DuckDB 引擎随包内置，全程离线，重启后数据自动恢复。只读护栏（SELECT 专一 + 关键词黑名单），导出路径白名单 + 拒绝覆盖；服务仅绑 127.0.0.1 且不带 CORS 头。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "data-query.panel",
+        "area": "activityBar",
+        "panelType": "dataQuery",
+        "icon": "Beaker",
+        "labelKey": "plugins.dataQuery",
+        "labelDefault": "数据查询台",
+        "order": 90
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "data-query-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/server.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "数据查询引擎单权威（127.0.0.1:9875）：DuckDB native 引擎 + 工作区导入/查询/导出"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "data-query",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/data-query",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-query/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-query/data-query.zip"
+  }
+}

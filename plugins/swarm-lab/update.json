@@ -1,0 +1,43 @@
+{
+  "id": "swarm-lab",
+  "name": "蜂群实验台",
+  "version": "0.1.0",
+  "description": "多智能体涌现行为实验台：把「群体智能如何从简单规则里长出来」变成可动手做实验的本机沙盘。两个经典场景——Boids 蜂群（分离/对齐/聚合三规则+可选捕食者，看极化指数如何上升）、蚁群觅食（信息素沉积蒸发，看路径如何收敛、采食曲线何时起飞）；确定性引擎（mulberry32 种子），同种子同参数逐 tick 一致、实验可复现。面板是实时 canvas 沙盘（拖参数/换种子/播放暂停/主指标曲线）；AI 经 MCP 五工具做可控实验：swarmlab_scenarios 拿参数字典、swarmlab_run 单批实验、swarmlab_compare 同种子控制变量跑 2~5 组对照、swarmlab_snapshot 密度字符图直接「看见」空间格局、swarmlab_metrics 对齐指标口径。纯本地零服务零外联零宿主依赖，数据不出机。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "swarm-lab.panel",
+        "area": "activityBar",
+        "panelType": "swarmLab",
+        "icon": "Bot",
+        "labelKey": "plugins.swarmLab",
+        "labelDefault": "蜂群实验台",
+        "order": 93
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "mcpServers": [
+      {
+        "id": "swarm-lab",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/swarm-lab",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/swarm-lab/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/swarm-lab/swarm-lab.zip"
+  }
+}

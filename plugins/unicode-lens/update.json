@@ -1,0 +1,43 @@
+{
+  "id": "unicode-lens",
+  "name": "Unicode 检查台",
+  "version": "0.1.0",
+  "description": "Unicode 隐形字符检查台：检出人眼不可见的注入载体（双向控制字符——Trojan Source、Unicode Tag 隐形标签——LLM 可读的提示词隐形注入载体、零宽字符、不可见填充、变体选择符、控制字符）与同形异码字（西里尔/希腊/全角/数学变体）、混合文字系统混排、NFC 未归一化。中文分级报告 + 一键清洗（emoji ZWJ 自动豁免、全角空格/标点中文语境豁免）。纯本地零外联零 kv，MCP 四工具 + 面板逐字符可视化标注。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "unicode-lens.panel",
+        "area": "activityBar",
+        "panelType": "unicode-lens",
+        "icon": "AlertCircle",
+        "labelKey": "plugins.unicode-lens",
+        "labelDefault": "Unicode 检查台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "unicode-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/unicode-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/unicode-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/unicode-lens/unicode-lens.zip"
+  }
+}

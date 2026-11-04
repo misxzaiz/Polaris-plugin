@@ -1,0 +1,43 @@
+{
+  "id": "id-lens",
+  "name": "标识符调试台",
+  "version": "0.1.0",
+  "description": "UUID / ULID / Snowflake 雪花 ID 粘进来看穿一切:家族自动识别 + 位域逐段解读(时间戳/机器号/序列/版本/变体位)+ 时间还原(Twitter/Discord 纪元可配)+ 规范性校验(RFC 9562 版本变体/Crockford 混淆字母 ILOU 定位/41 位纪元耗尽/纪元歧义对照)+ 形态互转(canonical/urn/braces/无连字符/十进制/二进制/ULID↔UUID128)。超 2^53 数值全程 BigInt 字符串输出防精度丢失。纯本地零外联零 kv,MCP 四工具(parse/bits/validate/convert)+ 面板位段表。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "id-lens.panel",
+        "area": "activityBar",
+        "panelType": "id-lens",
+        "icon": "Target",
+        "labelKey": "plugins.id-lens",
+        "labelDefault": "标识符调试台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "id-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/id-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/id-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/id-lens/id-lens.zip"
+  }
+}

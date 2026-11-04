@@ -1,0 +1,65 @@
+{
+  "id": "flow-pipeline",
+  "name": "自动化流水线",
+  "version": "0.1.0",
+  "description": "把「抓数据→加工→调 AI→调插件工具→落盘/通知」这类重复的多步操作串成会自动跑的流水线：九类步骤（HTTP / MCP 工具 / AI / 提取 / 模板 / 脚本 / KV / 文件 / Webhook 通知）+ 四种触发（手动 / 间隔 / 每天 HH:MM / Webhook 入站，带管道级 token 与限流）；宿主已装插件的 MCP 工具即插即用当步骤调（cap.mcp 直调），AI 供应商可从宿主一键导入（OpenAI 兼容 + Anthropic 双协议）。运行历史逐步留痕（状态/耗时/输出摘要，敏感值出口掩码）三端可查，错过调度只补跑一次不回放积压。安全默认收紧：HTTP/通知步骤过 SSRF 围栏（私网/元数据地址拒绝，本地联调需管道显式开 allowLocal）、重定向逐跳复检跨源剥鉴权、脚本步骤 vm 沙箱 2s 超时、文件步骤白名单根目录、webhook token timingSafe 比对。AI 经 MCP 八工具对话式搭建/运行/排障（flow_list/get/save/toggle/run/status/delete/selftest），数据全在 cap.kv 不出本机，服务仅绑 127.0.0.1。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "flow-pipeline.panel",
+        "area": "activityBar",
+        "panelType": "flowPipeline",
+        "icon": "Activity",
+        "labelKey": "plugins.flowPipeline",
+        "labelDefault": "流水线",
+        "order": 70
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "flow-pipeline-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "port": 9881,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "流水线运行引擎（127.0.0.1:9881：调度/队列/九类步骤执行器/webhook 入站 + kv 投影）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "flow-pipeline",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/flow-pipeline",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flow-pipeline/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flow-pipeline/flow-pipeline.zip"
+  }
+}

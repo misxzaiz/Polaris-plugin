@@ -1,0 +1,43 @@
+{
+  "id": "url-lens",
+  "name": "URL 调试台",
+  "version": "0.1.0",
+  "description": "把一个 URL 拆开看清楚：结构分解（protocol/host/port/path/query/fragment）、query 参数表逐项展开（重复键/数组值/空值/编码边界 %20 与 + 语义）、参数编辑后重建 URL、各段编码解码对比。调试 Webhook 回调/OAuth redirect/带追踪参数链接的高频痛点。纯本地零外联零 kv（浏览器原生 URL/URLSearchParams 语义），MCP 三工具 + 面板结构树测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "url-lens.panel",
+        "area": "activityBar",
+        "panelType": "url-lens",
+        "icon": "Target",
+        "labelKey": "plugins.url-lens",
+        "labelDefault": "URL 调试台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "url-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/url-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/url-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/url-lens/url-lens.zip"
+  }
+}

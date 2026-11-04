@@ -1,0 +1,43 @@
+{
+  "id": "schema-check",
+  "name": "JSON Schema 校验器",
+  "version": "0.1.0",
+  "description": "粘贴 JSON Schema + 数据 → 校验报告：错误 JSON Pointer 路径定位、类型/必填/枚举/数值范围/字符串长度/pattern/array 约束/additionalProperties 逐项检出。Draft-07 高频子集纯本地实现（$ref 不支持时如实报错）。AI 结构化输出/工具参数校验高频场景——LLM 生成的 JSON 喂给程序前先按 schema 体检；MCP 两工具（validate/explain）+ 面板双框测试场，零依赖零外联。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "schema-check.panel",
+        "area": "activityBar",
+        "panelType": "schema-check",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.schema-check",
+        "labelDefault": "JSON Schema 校验器",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "schema-check",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/schema-check",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-check/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-check/schema-check.zip"
+  }
+}

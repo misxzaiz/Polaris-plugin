@@ -1,0 +1,17 @@
+{
+  "name": "flow-pipeline-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "flow-pipeline 插件（构建用）：自动化流水线——九类步骤×四种触发的本机自动化组合层",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}

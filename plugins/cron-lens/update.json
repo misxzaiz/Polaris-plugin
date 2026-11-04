@@ -1,0 +1,43 @@
+{
+  "id": "cron-lens",
+  "name": "Cron 表达式调试台",
+  "version": "0.1.0",
+  "description": "写 cron 表达式（task-runner/crontab/CI/ZCode automations）没有校验和预报，填错只会在该触发时不触发。本插件即时解析表达式、中文逐字段解释、计算未来 N 次触发时刻（月长/闰年敏感）、检测常见坑：日与周同时受限的「或」语义（vixie 与 Quartz 相反）、2 月 30 日永不触发、仅闰年触发、*/n 起点漂移、秒字段误粘。纯本地零外联零 kv，MCP 三工具（explain/next/match）+ 面板实时调试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "cron-lens.panel",
+        "area": "activityBar",
+        "panelType": "cron-lens",
+        "icon": "Clock",
+        "labelKey": "plugins.cron-lens",
+        "labelDefault": "Cron 表达式调试台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "cron-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cron-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron-lens/cron-lens.zip"
+  }
+}

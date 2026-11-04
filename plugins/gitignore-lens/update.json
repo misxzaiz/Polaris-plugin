@@ -1,0 +1,43 @@
+{
+  "id": "gitignore-lens",
+  "name": ".gitignore 检查器",
+  "version": "0.1.0",
+  "description": "粘贴 .gitignore 规则 + 路径清单 → 逐路径判定「被忽略/未被忽略/被复活」+ 命中哪条规则（行号定位）+ 坑检测（否定被父目录规则压住、目录规则不可复活文件等）。「为什么这个文件还是被提交了」「为什么排除不掉」的调试刚需。gitignore 语义常用子集（注释/否定/锚定/目录限定/*/​?/[...]/**）纯本地解析，MCP 两工具 + 面板判定表测试场，零外联零 kv。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "gitignore-lens.panel",
+        "area": "activityBar",
+        "panelType": "gitignore-lens",
+        "icon": "AlertCircle",
+        "labelKey": "plugins.gitignore-lens",
+        "labelDefault": ".gitignore 检查器",
+        "order": 100
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "gitignore-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/gitignore-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gitignore-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gitignore-lens/gitignore-lens.zip"
+  }
+}
