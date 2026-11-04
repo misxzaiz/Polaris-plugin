@@ -1,0 +1,42 @@
+{
+  "id": "codebuddy",
+  "name": "CodeBuddy Engine",
+  "version": "0.2.0",
+  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1），内置 hy4-preview 混元免费模型。v0.2.0：宿主事件帧解析修复全量适配（流式 token/思考/工具调用/用量全部可见）；interrupt 真实现（进程树终止无孤儿）；permission_mode 尊重会话配置；prompt 改走 stdin（长消息不再受命令行长度限制）；tool_call_end 回填工具名；session_start 提前反馈；声明模型目录支持会话内选模型。",
+  "enabledByDefault": false,
+  "contributes": {
+    "engines": [
+      {
+        "id": "codebuddy",
+        "name": "CodeBuddy",
+        "description": "腾讯 CodeBuddy CLI — 内置 hy4-preview 混元模型（免费）",
+        "cli": {
+          "command": "codebuddy",
+          "args": [],
+          "installGuide": "npm install -g @tencent-ai/codebuddy-code"
+        },
+        "npmPackage": "@tencent-ai/codebuddy-code",
+        "protocol": "command",
+        "sessionFlags": "omp",
+        "mcpConsumption": "none",
+        "models": ["hy4-preview", "hy3", "deepseek-v4.1-flash"],
+        "adapter": {
+          "entry": "adapter.js",
+          "runtime": "node",
+          "protocol": "engine-v1"
+        },
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": true,
+          "resume": true
+        }
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "aiToolAccess": true
+  }
+}
