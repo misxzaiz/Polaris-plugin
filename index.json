@@ -54,8 +54,8 @@
     {
       "id": "polaris.marketplace",
       "name": "Polaris 插件商城",
-      "version": "1.4.0",
-      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件；支持查看已装插件、卸载、检查与应用更新，支持选择安装历史版本。列表支持按创建时间 / 最后更新时间排序（组内重排，保留等级分组）。手机/远程端直连商城源失败时自动经桌面 MCP proxy_fetch 中转，本地商城源（127.0.0.1:8787）远程可达。提供 ActivityBar 面板与 MCP 工具。",
+      "version": "1.5.0",
+      "description": "在 Polaris 内浏览、搜索并一键安装本商城索引中的插件。单视图「插件市场」：已装为筛选 chip 与分类/搜索叠加，详情为面板内 push 覆盖层，按安装状态分流（未装：版本选择+安装到 User/Project；已装：检查更新/应用更新/卸载）。列表徽标含「已装 vX」「可更新至 vX」，双独立评分维度（🔧 功能 tier / ⭐ 使用 usageTier）各自排序与徽标，平铺/按分类分组可切换。手机/远程端直连商城源失败时自动经桌面 MCP proxy_fetch 中转，本地商城源（127.0.0.1:8787）远程可达。提供 ActivityBar 面板与 MCP 工具。",
       "author": "Polaris",
       "category": "productivity",
       "tags": [
@@ -68,9 +68,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/marketplace",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.4.0/plugins/marketplace/marketplace.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.5.0/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
-      "sha256": "10dd6029dc5e620717fe98325eec93c0f89d4b752d35c910aab8d9d482215987",
+      "sha256": "decbf9ba119d27dd92d8cf7a069c785034a20090d187db47cfa5fd12e419b64e",
       "tier": 5,
       "permissions": {
         "aiToolAccess": true,
@@ -80,6 +80,10 @@
       "screenshots": [],
       "readme": "# Polaris 插件商城\n\n在 Polaris 内浏览、搜索并一键安装商城插件，支持卸载与更新。",
       "versions": [
+        {
+          "version": "1.5.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.5.0/plugins/marketplace/marketplace.zip"
+        },
         {
           "version": "1.4.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.4.0/plugins/marketplace/marketplace.zip"
@@ -96,7 +100,7 @@
         }
       ],
       "createdAt": "2026-08-04T17:07:23.000Z",
-      "updatedAt": "2026-11-04T00:58:09.124Z",
+      "updatedAt": "2026-11-04T06:28:06.006Z",
       "usageTier": 8
     },
     {
