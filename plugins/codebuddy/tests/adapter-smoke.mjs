@@ -194,11 +194,28 @@ async function scenarioC() {
   check('退出码 1', () => assert.strictEqual(code, 1));
 }
 
+async function scenarioE() {
+  console.log('场景 E：流式增量 + 完整帧回放 → 跳过回放，不产生 assistant_message');
+  const child = runAdapter({ FAKE_CLI_MODE: 'streamreplay' });
+  send(child, { id: 1, method: 'start_session', params: { session_id: 'host-s4', message: 'hi', env_overrides: { PATH: sandbox + ';' + process.env.PATH } } });
+  const { frames, code } = await collect(child, 10000);
+  const types = eventFrames(frames).map((f) => f.type);
+  check('帧序无 assistant_message（增量即内容）', () =>
+    assert.deepStrictEqual(types, ['session_start', 'cli_init', 'thinking', 'token', 'usage', 'session_end']));
+  check('正文只出现一次（token 增量）', () => {
+    const tok = eventFrames(frames).filter((f) => f.type === 'token');
+    assert.strictEqual(tok.length, 1);
+    assert.strictEqual(tok[0].value, '流式正文');
+  });
+  check('退出码 0', () => assert.strictEqual(code, 0));
+}
+
 try {
   await scenarioA();
   await scenarioD();
   await scenarioB();
   await scenarioC();
+  await scenarioE();
 } finally {
   try { rmSync(sandbox, { recursive: true, force: true }); } catch { /* Windows 句柄延迟 */ }
 }

@@ -48,6 +48,13 @@ function respondError(id, msg) {
 let lastCbSessionId = null;
 // call_id → 工具名（content_block_start 建立映射，tool_result 回填）
 const toolNames = new Map();
+// 上一条 assistant 完整消息的正文：codebuddy CLI 会把最终 assistant 消息发两遍
+// （流式结束 + result 回放，thinking 内容略有差异导致签名不同），按正文文本去重，
+// 否则 UI 渲染出重复的思考/正文块
+let lastAssistantText = null;
+// 本条消息是否已有 stream_event 增量流出：CLI 在流式增量后会再发一条完整 assistant
+// 帧（思考+正文回放），不跳过会与增量内容重复渲染（delta 一对 + 完整帧一对）
+let streamedDeltas = false;
 
 function parseLine(line, sessionId) {
   let o;
@@ -69,9 +76,16 @@ function parseLine(line, sessionId) {
       }
       return false;
 
-    case 'assistant':
-      if (o.message?.content && Array.isArray(o.message.content)) {
-        for (const b of o.message.content) {
+    case 'assistant': {
+      const blocks = o.message?.content;
+      if (Array.isArray(blocks)) {
+        // CLI 把最终消息拆成多条 assistant 帧（一条 thinking、一条 text）在流式增量后回放，
+        // 增量已覆盖内容 → 全部跳过；标记保持到 user（tool_result）消息边界再重置
+        if (streamedDeltas) return false;
+        const frameText = blocks.filter((b) => b.type === 'text').map((b) => b.text || '').join('');
+        if (frameText && frameText === lastAssistantText) return false;
+        if (frameText) lastAssistantText = frameText;
+        for (const b of blocks) {
           if (b.type === 'thinking') {
             emit(sessionId, 'thinking', { content: b.thinking || '' });
           } else if (b.type === 'text') {
@@ -80,14 +94,17 @@ function parseLine(line, sessionId) {
         }
       }
       return false;
+    }
 
     case 'stream_event': {
       const e = o.event;
       if (!e) return false;
       if (e.type === 'content_block_delta' && e.delta) {
         if (e.delta.type === 'text_delta') {
+          streamedDeltas = true;
           emit(sessionId, 'token', { value: e.delta.text || '' });
         } else if (e.delta.type === 'thinking_delta') {
+          streamedDeltas = true;
           emit(sessionId, 'thinking', { content: e.delta.thinking || '' });
         }
       }
@@ -105,6 +122,8 @@ function parseLine(line, sessionId) {
 
     case 'user':
       if (o.message?.content && Array.isArray(o.message.content)) {
+        // user（tool_result）帧是消息边界：下一条 assistant 消息的增量从零计
+        streamedDeltas = false;
         for (const b of o.message.content) {
           if (b.type === 'tool_result') {
             emit(sessionId, 'tool_call_end', {
@@ -202,6 +221,8 @@ function runSession(params, reqId) {
   currentSessionId = sessionId;
   sessionEnded = false;
   toolNames.clear();
+  lastAssistantText = null;
+  streamedDeltas = false;
   lastCbSessionId = null;
 
   process.stderr.write(`[Adapter] runSession: sid=${sessionId}, model=${model}, permission=${permissionMode}\n`);

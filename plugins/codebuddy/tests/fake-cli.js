@@ -26,6 +26,18 @@ if (process.env.FAKE_CLI_MODE === 'slow') {
     setInterval(() => {}, 1000);
     setTimeout(() => process.exit(0), 30000);
   });
+} else if (process.env.FAKE_CLI_MODE === 'streamreplay') {
+  // 真实 CLI 行为：流式增量后把最终消息拆成两条 assistant 帧（thinking / text）回放，
+  // adapter 应全部跳过（增量已覆盖），不产生 assistant_message
+  process.stdin.on('end', () => {
+    out({ type: 'system', subtype: 'init', session_id: 'cb-fake-123', tools: [], mcp_servers: [], model: 'hy4-preview' });
+    out({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: '思考增量' } } });
+    out({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'text_delta', text: '流式正文' } } });
+    out({ type: 'assistant', message: { content: [{ type: 'thinking', thinking: '回放思考' }] } });
+    out({ type: 'assistant', message: { content: [{ type: 'text', text: '流式正文' }] } });
+    out({ type: 'result', session_id: 'cb-fake-123', usage: { input_tokens: 3, output_tokens: 2 }, total_cost_usd: 0 });
+    process.exit(0);
+  });
 } else {
   process.stdin.on('end', () => {
     if (process.env.FAKE_CLI_PROMPT_DUMP) {
@@ -37,6 +49,9 @@ if (process.env.FAKE_CLI_MODE === 'slow') {
     out({ type: 'stream_event', event: { type: 'content_block_start', content_block: { type: 'tool_use', id: 't1', name: 'Bash', input: { cmd: 'ls' } } } });
     out({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', is_error: false, content: 'out' }] } });
     out({ type: 'assistant', message: { content: [{ type: 'text', text: '完整回复' }] } });
+    // codebuddy 真实行为：最终 assistant 消息会重发一遍（thinking 内容有差异、正文相同）——
+    // adapter 按正文文本去重
+    out({ type: 'assistant', message: { content: [{ type: 'thinking', thinking: '重放思考' }, { type: 'text', text: '完整回复' }] } });
     out({ type: 'result', session_id: 'cb-fake-123', usage: { input_tokens: 10, output_tokens: 5 }, total_cost_usd: 0.01 });
     process.exit(0);
   });
