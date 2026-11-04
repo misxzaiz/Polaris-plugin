@@ -29,7 +29,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/multichat.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/multichat/update.json",
       "sha256": "ccb5f578d3cda3b9c95dd401e0209234a2e0ea3fc4d7349486b3ab3c45a47cf2",
-      "tier": "beta",
+      "tier": 4,
       "permissions": {
         "appConfigRead": true,
         "appConfigWrite": true,
@@ -70,7 +70,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@marketplace-v1.4.0/plugins/marketplace/marketplace.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/marketplace/update.json",
       "sha256": "10dd6029dc5e620717fe98325eec93c0f89d4b752d35c910aab8d9d482215987",
-      "tier": "production",
+      "tier": 5,
       "permissions": {
         "aiToolAccess": true,
         "network": true,
@@ -120,7 +120,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@relay-devkit-v1.5.1/plugins/relay-devkit/relay-devkit.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/relay-devkit/update.json",
       "sha256": "b3623d1291229b3eb720362b6e746edd70da1873c1f7af8fc901f4921cf6330a",
-      "tier": "production",
+      "tier": 7,
       "permissions": {
         "workspaceRead": true,
         "network": true
@@ -191,7 +191,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/workspace-manager.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/workspace-manager/update.json",
       "sha256": "fe9e7b52a521f45f9f2646c6817ae5b1d28e5d5a2dbc329ac31ea03876509af9",
-      "tier": "beta",
+      "tier": 2,
       "permissions": {
         "workspaceRead": true,
         "workspaceWrite": true,
@@ -231,7 +231,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@image-recognition-v0.1.5/plugins/image-recognition/image-recognition.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/image-recognition/update.json",
       "sha256": "88b072f2ff15eee3e23817313325117619e62fb112471c02ee816a96bb55e266",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true,
         "network": true,
@@ -295,7 +295,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@mimo-tts-v0.1.1/plugins/mimo-tts/mimo-tts.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mimo-tts/update.json",
       "sha256": "872fdb386b68de360422b4729fd89761d8764fde5449aae777526f6b37418fa9",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true,
         "network": true,
@@ -341,7 +341,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
       "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true,
         "network": true,
@@ -394,7 +394,8 @@
         }
       ],
       "createdAt": "2026-10-18T01:41:24.000Z",
-      "updatedAt": "2026-10-18T01:41:24.000Z"
+      "updatedAt": "2026-10-18T01:41:24.000Z",
+      "tier": 4
     },
     {
       "id": "animation-2d",
@@ -435,7 +436,8 @@
         }
       ],
       "createdAt": "2026-10-18T01:59:07.000Z",
-      "updatedAt": "2026-10-18T02:17:15.000Z"
+      "updatedAt": "2026-10-18T02:17:15.000Z",
+      "tier": 4
     },
     {
       "id": "douyin-publish",
@@ -459,7 +461,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/douyin-publish.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/douyin-publish/update.json",
       "sha256": "aa447ea7756a3a51f03cf6ee34a07c6881c2e87534665f985ac64ef18b4bb7fe",
-      "tier": "beta",
+      "tier": 3,
       "permissions": {
         "aiToolAccess": true,
         "network": true,
@@ -502,7 +504,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@battle-mode-v0.1.1/plugins/battle-mode/battle-mode.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/battle-mode/update.json",
       "sha256": "e16168cb0aa2e220963663c9e364420d2d0e068a2d3bbc4411c5a1427f887c07",
-      "tier": "beta",
+      "tier": 3,
       "permissions": {
         "appConfigRead": true,
         "appConfigWrite": true,
@@ -547,7 +549,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/capability-runtime.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/capability-runtime/update.json",
       "sha256": "b5872fb33941495ac94cc0bdd2834a7ffe303783c652476637e254f55358ba84",
-      "tier": "beta",
+      "tier": 4,
       "permissions": {
         "workspaceRead": true,
         "appConfigRead": true,
@@ -589,7 +591,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@news-curator-v0.3.0/plugins/news-curator/news-curator.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/news-curator/update.json",
       "sha256": "2f8299d3fa67cf15cb43d19a1ce4efab4d78a4a1dcc549dd2355f5bfa38b7a05",
-      "tier": "beta",
+      "tier": 3,
       "permissions": {
         "appConfigRead": true,
         "appConfigWrite": true,
@@ -640,7 +642,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
-      "tier": "beta",
+      "tier": 4,
       "permissions": {
         "workspaceRead": true,
         "workspaceWrite": true,
@@ -683,7 +685,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@data-ark-v0.1.0/plugins/data-ark/data-ark.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-ark/update.json",
       "sha256": "111041d50cde231866e76b07d7510051df6a5d5c35f9a32dee1ae7da9b80e043",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "network": true,
         "aiToolAccess": true
@@ -720,7 +722,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@clip-relay-v0.1.0/plugins/clip-relay/clip-relay.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/clip-relay/update.json",
       "sha256": "b47ac1a3d998deb7a173c455c36ceda28b4c4a9ccb056ce8b1fb97d2b7a20f26",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -758,7 +760,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@page-sentinel-v0.1.0/plugins/page-sentinel/page-sentinel.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/page-sentinel/update.json",
       "sha256": "6d155199b48e21e3c8de67b6119569b30b877ef26f6c03fe70bef2329aefb915",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "network": true,
         "appConfigRead": true,
@@ -797,7 +799,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@feed-radar-v0.1.0/plugins/feed-radar/feed-radar.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/feed-radar/update.json",
       "sha256": "54b83f39949598e5647539bee70f2eb694883dae71a6fe2f0a290939beee83a1",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "network": true,
         "appConfigRead": true,
@@ -835,7 +837,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@pocket-ledger-v0.3.0/plugins/pocket-ledger/pocket-ledger.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-ledger/update.json",
       "sha256": "caca3c97778f9c33d01cc1561d12806082c7671a745b30dd1c17783619139d59",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "aiToolAccess": true
       },
@@ -879,7 +881,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@memoryforge-v0.1.0/plugins/memoryforge/memoryforge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/memoryforge/update.json",
       "sha256": "fa0e34a62ab68b830bbebbffbd4cb3f71a14302c96cb255b00f63c620d8c149b",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "network": true,
         "aiToolAccess": true
@@ -918,7 +920,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/pocket-host.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-host/update.json",
       "sha256": "2756bde7fe25960492ef7d2d2ae88cacee708ebca95646d63aa6e6e521e84bc6",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -958,7 +960,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@paper-radar-v0.1.0/plugins/paper-radar/paper-radar.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/paper-radar/update.json",
       "sha256": "ca9d234a2c230d3800c516eeaf0c60da0569fb9c17f1f715ef46f98d1f8b6247",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "network": true,
         "appConfigRead": true,
@@ -979,7 +981,7 @@
       "author": "Polaris",
       "category": "productivity",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "tier": "beta",
+      "tier": 7,
       "screenshots": [],
       "versions": [
         {
@@ -1020,7 +1022,7 @@
       "author": "Polaris",
       "category": "productivity",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
-      "tier": "beta",
+      "tier": 8,
       "screenshots": [],
       "versions": [
         {
@@ -1073,7 +1075,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/pocket-drop.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pocket-drop/update.json",
       "sha256": "7246799a3c5c1f0ccf31b130388f7739dca541980a8587da94e82ed40a8a6936",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1113,7 +1115,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@sundial-v0.1.0/plugins/sundial/sundial.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sundial/update.json",
       "sha256": "a770c4bdff32f9a77d5be249af52ac03b75c85630185bad99e475912ef305d70",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1152,7 +1154,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@time-sift-v0.1.0/plugins/time-sift/time-sift.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-sift/update.json",
       "sha256": "d650d5c8fce72d1069a724a3d64a9ea80c2d8f9cb7c07d8419fc39d961076649",
-      "tier": "beta",
+      "tier": 10,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1193,7 +1195,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@net-sentinel-v0.1.0/plugins/net-sentinel/net-sentinel.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/net-sentinel/update.json",
       "sha256": "a4c527bbace7ba7d9297d728073d6dffe807a029d8a40df48fd7b3ecb231e059",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -1231,7 +1233,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@disk-radar-v0.1.0/plugins/disk-radar/disk-radar.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/disk-radar/update.json",
       "sha256": "37000ea6bfa1a16573ff800172623643dc689138567b5551d7d6e9f05d8d3ae8",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1269,7 +1271,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@decision-journal-v0.1.0/plugins/decision-journal/decision-journal.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/decision-journal/update.json",
       "sha256": "3d9a4ebcc357f1e38dc17e897e1a52f342758367b99f8a1c205a1beacf2fe9bb",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1306,7 +1308,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@amber-v0.1.0/plugins/amber/amber.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/amber/update.json",
       "sha256": "d4854dc748e08cdc136d79277a41e526c3ef7be4368c922e00b9bd5adfbcf9b8",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "network": true,
         "appConfigRead": true,
@@ -1346,7 +1348,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@abacus-v0.1.0/plugins/abacus/abacus.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/abacus/update.json",
       "sha256": "3025e64100fa8e83ae9cc727279ec91fa9b9980837aa1a351c87b599669f6bca",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1383,7 +1385,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@time-trail-v0.1.0/plugins/time-trail/time-trail.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/time-trail/update.json",
       "sha256": "8a7ce49b28d15908388c77b4d1fdebaa3bc45e1dc073ce3ded6eadd6cc0ce41f",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -1423,7 +1425,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ask-stove-v0.1.0/plugins/ask-stove/ask-stove.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ask-stove/update.json",
       "sha256": "cd7501442f777aedeae38d14f9f6fa5da57f2a1877e37001fec566c86571111c",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -1464,7 +1466,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@tether-v0.1.0/plugins/tether/tether.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/tether/update.json",
       "sha256": "e501645da0f6dd28615240aa0ed1eb2de5262e930f99cd5630c2078f20e26ed0",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1501,7 +1503,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@lingxi-v0.1.0/plugins/lingxi/lingxi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/lingxi/update.json",
       "sha256": "80139f44b4018c09530b178fa08785f1adf8eb03dc059db044135c6a1eba85df",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1537,7 +1539,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-adapter-v0.1.0/plugins/zcode-adapter/zcode-adapter.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-adapter/update.json",
       "sha256": "ab0e3254167fe6591c886c58fc3ad76af901796763a71b491f11a993817a187f",
-      "tier": "beta",
+      "tier": 4,
       "permissions": {
         "workspaceRead": true,
         "aiToolAccess": true
@@ -1574,7 +1576,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@watchtower-v0.3.0/plugins/watchtower/watchtower.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/watchtower/update.json",
       "sha256": "a9647dbbec05542f62c0d0d32f6b66bb9270f1f420561d8be3a67cfc44c32de7",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1621,7 +1623,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@quote-sentinel-v0.1.0/plugins/quote-sentinel/quote-sentinel.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quote-sentinel/update.json",
       "sha256": "0ec3a1d43c19234f92057820c1af215a6168636e75a2fc8cb55b0bcba8244820",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "network": true,
         "appConfigRead": true,
@@ -1660,7 +1662,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@changqi-v0.1.0/plugins/changqi/changqi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/changqi/update.json",
       "sha256": "76635ba1a495a8aff5c7c1a653dc88cb6573a4ad093e386af6d74ffce8fc22ca",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true,
         "appConfigRead": true
@@ -1698,7 +1700,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@shouzha-v0.1.0/plugins/shouzha/shouzha.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shouzha/update.json",
       "sha256": "b6e16e9a6ce04b5b769a8fb32cb6123b73ef41ff6583ddba7d9ba798b30dc15a",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1735,7 +1737,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@guanzhi-v0.1.0/plugins/guanzhi/guanzhi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/guanzhi/update.json",
       "sha256": "05311b14b4b0206b42d3e7209699f986244d3a3b5d9fbec7a9078653031b67a2",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1773,7 +1775,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@qimu-v0.1.0/plugins/qimu/qimu.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qimu/update.json",
       "sha256": "692f49220f8897c54e2b712f2e5bda9534d77491d12457766e14a96d0aff0e73",
-      "tier": "beta",
+      "tier": 3,
       "permissions": {
         "aiToolAccess": true
       },
@@ -1810,7 +1812,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@gezhi-v0.1.0/plugins/gezhi/gezhi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gezhi/update.json",
       "sha256": "e3a878380522e4f308cf8b5f495e960ffa567da27e6d59d599a4a770d2fbdfd0",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1849,7 +1851,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@qingnang-v0.1.0/plugins/qingnang/qingnang.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qingnang/update.json",
       "sha256": "a8a239b14640b3ad793aac4ef5d3d15f9573b63bad3d7870bef37d885839346f",
-      "tier": "production",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1889,7 +1891,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@wenjin-v0.1.0/plugins/wenjin/wenjin.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/wenjin/update.json",
       "sha256": "c484fdd1bbbf12619ab398bad387de434bcdc55794da3439ec8611b9696f05fd",
-      "tier": "production",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1926,7 +1928,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zhifang-v0.1.0/plugins/zhifang/zhifang.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhifang/update.json",
       "sha256": "fd1eb03fce0f411c7b3f26e99d15e090c5955b046fa2b280fb41fee89f3e4829",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -1964,7 +1966,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@quanfu-v0.1.0/plugins/quanfu/quanfu.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/quanfu/update.json",
       "sha256": "67b36a4626e07fd2b3ae0a3efe83998ecd22c2a8a9fc1849b022cdf1c44b114e",
-      "tier": "production",
+      "tier": 5,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2004,7 +2006,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@piaoxia-v0.1.0/plugins/piaoxia/piaoxia.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/piaoxia/update.json",
       "sha256": "c959cd569c36aea8aebc0fcfb4f57c07f61d05bc171083c401f27d45553e2ffa",
-      "tier": "production",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2042,7 +2044,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@jinkui-v0.1.0/plugins/jinkui/jinkui.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jinkui/update.json",
       "sha256": "68a2ef2c0ceee21be430a41827757465497ec622582c3580745991b42c8f29a5",
-      "tier": "production",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2081,7 +2083,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@weibian-v0.1.0/plugins/weibian/weibian.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/weibian/update.json",
       "sha256": "0bf94a4c0d8ae2073b4ed4c3a14755096e9994363e5e227265f88d93036ef505",
-      "tier": "production",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2120,7 +2122,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@xintu-v0.1.0/plugins/xintu/xintu.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/xintu/update.json",
       "sha256": "312b5b9707bacdbed6d890be39ceaa47db7df94973ce8c7f2162708191d33eaa",
-      "tier": "production",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true
       },
@@ -2159,7 +2161,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/chexia.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chexia/update.json",
       "sha256": "0d316610e47cf7b40f7aff130a889137677dd8fa99359cae6036296f7a695715",
-      "tier": "production",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2201,7 +2203,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/duzhi.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/duzhi/update.json",
       "sha256": "69dd5b9255b7274e148cb612f73f3295ceecce752cae9e208d67f6ce17577e3f",
-      "tier": "production",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2241,7 +2243,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/maian.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/maian/update.json",
       "sha256": "40ad649362723b6f893423ae94b2fddc93cd8675bfbfdc804156b4ce5d97ca3c",
-      "tier": "production",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2280,7 +2282,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@flashforge-v0.1.0/plugins/flashforge/flashforge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flashforge/update.json",
       "sha256": "32e4de1c57eef1078988a94c86d790f395e32eaaca588868be6c418783fc7411",
-      "tier": "production",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true
       },
@@ -2318,7 +2320,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/yizhou.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yizhou/update.json",
       "sha256": "87ef77f6850b483c58c2641ff8baadec40d3131ae530b02bf10bfa64c58f392a",
-      "tier": "production",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true
       },
@@ -2356,7 +2358,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@needs-v0.2.0/plugins/needs/needs.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/needs/update.json",
       "sha256": "e2d065bbc2dcf62e64b43ac9ae83e5b8a2292461df7cd666f9ca798d99fab7cb",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2395,7 +2397,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/zhuangxiu.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zhuangxiu/update.json",
       "sha256": "22aa9ee79fd8fd493acc262392ce2cca6a3bf433b5982acd730ed2d386011f00",
-      "tier": "production",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2433,7 +2435,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@imgforge-v0.1.0/plugins/imgforge/imgforge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/imgforge/update.json",
       "sha256": "b26ac96adb52f530b69433cf89b98332e0f34c9454258eeb41956ef48e9df7f1",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2469,7 +2471,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/webhook-station.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/webhook-station/update.json",
       "sha256": "562ff803bcb26becffda7319af8a46ec3c2b72e95879b3f9d57762fd2b16f0fd",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2505,7 +2507,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mcp-probe/mcp-probe.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mcp-probe/update.json",
       "sha256": "a84478916c3d9bee859134d2aa20ea98fe7d987757e13e7ebc11705f9846a4ef",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "network": true,
         "appConfigRead": true,
@@ -2544,7 +2546,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/context-pack.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/context-pack/update.json",
       "sha256": "45fe83a71b65e2164f14959f54668adcf8b7cb8a6ee6cf58cfc66ef7fc73b3dc",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "workspaceRead": true,
         "appConfigRead": true,
@@ -2582,7 +2584,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/keyscan.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/keyscan/update.json",
       "sha256": "e84ebd54d4d3076c223e07aefd940a15b5b4a17fe3634c671ecfec3e622c9e31",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2619,7 +2621,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/log-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/log-lens/update.json",
       "sha256": "0c912207f2625eed753d87629b54b7d8c8dce562fdf6cfe8e3e3f63fced2bbc3",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2657,7 +2659,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-probe/llm-probe.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-probe/update.json",
       "sha256": "aa552decc3293c3da08b0140c83cb0b0c0e98aa5f962cdb6ed7afdc3c311203d",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2695,7 +2697,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pdf-tables/pdf-tables.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/pdf-tables/update.json",
       "sha256": "41d7cd5dbd1870bce051d0b51441075690aa5d61243979b08b57153f66ee189c",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2733,7 +2735,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/api-bench.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/api-bench/update.json",
       "sha256": "15e56fb9e96f00481fa03cedec24194cf333fab8867dbf156f2b5878c8abcf35",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2771,7 +2773,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/file-flow/file-flow.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/file-flow/update.json",
       "sha256": "be38ca085f0cad27f1ea7a50ec61d15b146419d92515bc0e78c4096073f88646",
-      "tier": "beta",
+      "tier": 2,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2809,7 +2811,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/site-audit/site-audit.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/site-audit/update.json",
       "sha256": "4bdde82aa07fdb7a39ad511239ed4b948837ebf1f3bd92a72154a827743b7c87",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2847,7 +2849,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/task-runner.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/task-runner/update.json",
       "sha256": "b62b779761fc7db9a4e2a9cc862467b89063438412d5233a3054bd26a90f7e6b",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2886,7 +2888,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mock-server/mock-server.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mock-server/update.json",
       "sha256": "b189fbe5a71b9b8807fcb08fcd3e951b14013b4c0fbe66e315a1da4b9b89938f",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2926,7 +2928,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ocr-bench/ocr-bench.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ocr-bench/update.json",
       "sha256": "3f7a7839bcdee20b3436946ad98f504b932e865263a9e40893782757c296d8d6",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -2965,7 +2967,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/sqlite-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/sqlite-lens/update.json",
       "sha256": "a370216c5e09f6def70d59bb0981583428d6629ea22667b0873cef11c1f76036",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3005,7 +3007,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/har-lens/har-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/har-lens/update.json",
       "sha256": "7ea396d9b8e2afa43b203a3dd694ac752099484273a3f9d5fcae1509a0d75af6",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3043,7 +3045,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/domain-probe/domain-probe.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/domain-probe/update.json",
       "sha256": "fb65f9540e772847260f25c3bce064bcc261dad705068f0a8d0a9dceeeea1258",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3083,7 +3085,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stream-desk/stream-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stream-desk/update.json",
       "sha256": "dcc9a5d70c1cdeefeda8ffaf3b77715ddd9aadad3450581c68fbd1f33e3fc63e",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true,
         "network": true,
@@ -3122,7 +3124,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/prompt-matrix.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-matrix/update.json",
       "sha256": "2f4433ef37388d6043b754b1332ef07cdc432d686041054324731e7e19d9b7ef",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3162,7 +3164,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dep-probe/dep-probe.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dep-probe/update.json",
       "sha256": "fd46b6d8f293b52f8d7c3ddf761cfdd7ebc2ba91fa8a0932ff246fc4b84d7c12",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -3202,7 +3204,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@daw-studio-v0.1.2/plugins/daw-studio/daw-studio.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/daw-studio/update.json",
       "sha256": "a78ba175bee950580f4fdb434c9d9f3742dff5b601382a089bb15302d4834ece",
-      "tier": "beta",
+      "tier": 10,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3246,7 +3248,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@whale-pet-v0.4.3/plugins/whale-pet/whale-pet.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/whale-pet/update.json",
-      "tier": "beta",
+      "tier": 3,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3297,7 +3299,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/repo-lens/repo-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/repo-lens/update.json",
       "sha256": "67bd71d5be26128d60f634a779604df4f9a177be4b9b6072454260bb3d65fabf",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -3344,7 +3346,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dev-toolbox/dev-toolbox.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/dev-toolbox/update.json",
       "sha256": "ecada0b0aafd2f257a53639c80d05c4c2177bfc2a5b6abb2d5356c5d93a0d972",
-      "tier": "beta",
+      "tier": 2,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3383,7 +3385,8 @@
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@db-workbench-v0.1.0/plugins/db-workbench/db-workbench.zip"
         }
-      ]
+      ],
+      "tier": 2
     },
     {
       "id": "mail-desk",
@@ -3407,7 +3410,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mail-desk/mail-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/mail-desk/update.json",
       "sha256": "e67e8c1e28ffd5159d49023b141827819f36bc080e039a907fcdad2c690b4922",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3446,7 +3449,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/bundle-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/bundle-lens/update.json",
       "sha256": "9197769784e425f438c90a72d09e5a584e16fcd2d19e7343dbe72e7f79633090",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -3487,7 +3490,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/cdn-audit.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cdn-audit/update.json",
       "sha256": "c03f1e9932062470e30a2e703014ac9022becee7e2b2e8d505837569c661abf0",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3528,7 +3531,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/deadcode-lens/deadcode-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/deadcode-lens/update.json",
       "sha256": "2a802ad53e5477b30dd0f2cd7a5d6bb008f900705c555969dab6b3789ce56ae9",
-      "tier": "beta",
+      "tier": 9,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3569,7 +3572,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/diff-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/diff-desk/update.json",
       "sha256": "9c54c019c254db66c7a32eef7db549390b26b46ca67d22976e130425838b1543",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3609,7 +3612,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stack-lens/stack-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/stack-lens/update.json",
       "sha256": "347739fcaa6ff1ad941a83f30bcd97f60393b8ec1edbdaf85018dcbfff27b82b",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3649,7 +3652,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/docker-desk/docker-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/docker-desk/update.json",
       "sha256": "6366005f4bc55ebd55161c21a749d3431d2872607781b03a1ac5975ca4d27457",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3687,7 +3690,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/llm-request-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/llm-request-desk/update.json",
       "sha256": "08592d96bfaa3e9293974a45a3be85f6a1b2e45b4df2cc9c1136e8641b50acdb",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3738,7 +3741,8 @@
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/query-plan-lens/query-plan-lens.zip"
         }
-      ]
+      ],
+      "tier": 8
     },
     {
       "id": "openapi-desk",
@@ -3762,7 +3766,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/openapi-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/openapi-desk/update.json",
       "sha256": "a5eec5140389064a4ea92eb2c325de8b48c82aa65c31cbb65a88a79955e81b83",
-      "tier": "beta",
+      "tier": 8,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3800,7 +3804,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@exec-sandbox-v0.1.0/plugins/exec-sandbox/exec-sandbox.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/exec-sandbox/update.json",
       "sha256": "a81709936eb4a8da7d9ed5cb88090696295e2eb4606faae3b54a101af22e4486",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3832,7 +3836,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@cookie-lens-v0.1.0/plugins/cookie-lens/cookie-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cookie-lens/update.json",
       "sha256": "f1f37e065b014d581e5ed2fb459760b3334793162e7c0a786b1b5739f3aa11ea",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3864,7 +3868,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@cron-lens-v0.1.0/plugins/cron-lens/cron-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cron-lens/update.json",
       "sha256": "e31cff22ca8104dbae7a2464d8ae678f665dfefc6d49558d42be43952db94908",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3896,7 +3900,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@csv-lens-v0.1.0/plugins/csv-lens/csv-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/csv-lens/update.json",
       "sha256": "df62f1d9ba16c3841be05fd7a8481696871a4e79a7ab81b829706d84932ef3a6",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3928,7 +3932,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@data-query-v0.1.0/plugins/data-query/data-query.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/data-query/update.json",
       "sha256": "7c44a9daf2a9ab4be6c492f25d5bc560ba2cfc9f564217ed2eeb332573a7fa15",
-      "tier": "beta",
+      "tier": 10,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -3961,7 +3965,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@datetime-lens-v0.1.0/plugins/datetime-lens/datetime-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/datetime-lens/update.json",
       "sha256": "c7b1ad955775686bc2f914164d69c43c501a7999f520a602d4c1306834ed2135",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -3993,7 +3997,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@encoding-lens-v0.1.0/plugins/encoding-lens/encoding-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/encoding-lens/update.json",
       "sha256": "7cf5b251a368e83dbd38806d3c0ffabc60dde942ee9d4e2b08c0c2bdea1fc45d",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4025,7 +4029,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@env-drift-v0.1.0/plugins/env-drift/env-drift.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/env-drift/update.json",
       "sha256": "423c31d74c40d80916ffd3f8a3dac462187a0fb147a8ffdbf4ade3b0efac52fb",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4057,7 +4061,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@flow-pipeline-v0.1.0/plugins/flow-pipeline/flow-pipeline.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/flow-pipeline/update.json",
       "sha256": "de070317dcf4b931ef472089b076b69bb1012224f54f011d220aae913a9ca243",
-      "tier": "beta",
+      "tier": 10,
       "permissions": {
         "appConfigRead": true,
         "network": true,
@@ -4091,7 +4095,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@gitignore-lens-v0.1.0/plugins/gitignore-lens/gitignore-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/gitignore-lens/update.json",
       "sha256": "87efab8fa50aeb1968469c5aaf31a38ac34146c1d996d298cca15285788bf64d",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4123,7 +4127,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@id-lens-v0.1.0/plugins/id-lens/id-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/id-lens/update.json",
       "sha256": "8a7ff73c623909d2f854d87d8bd0720f62c0da13fad638665a1738d2de5c0dc1",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4155,7 +4159,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@json-repair-v0.1.0/plugins/json-repair/json-repair.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/json-repair/update.json",
       "sha256": "9c0301693c3d672c2ebf6634ebc8802e9597227db98d52999a2dddd1633111c0",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4187,7 +4191,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@jwt-desk-v0.1.0/plugins/jwt-desk/jwt-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jwt-desk/update.json",
       "sha256": "9884861ee8af36aa67fb5b7e058d1c7c744385566650027f832caaa6b813242b",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4219,7 +4223,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@prompt-guard-v0.1.0/plugins/prompt-guard/prompt-guard.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/prompt-guard/update.json",
       "sha256": "c04e76e09ed7d1cffb6f2c85081a57d1eba154031b6795ed3c135130a0db062d",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4251,7 +4255,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@regex-desk-v0.1.0/plugins/regex-desk/regex-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/regex-desk/update.json",
       "sha256": "91933856dc49f2c9ffbb8f9971b94cf8302e33d83206352e8788cb9fe99261bc",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4283,7 +4287,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@schema-check-v0.1.0/plugins/schema-check/schema-check.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-check/update.json",
       "sha256": "bc3f502fa9bdf462732db5e6951065817092b27fa1072472a7d75abbdf33f1d3",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4315,7 +4319,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@schema-mock-v0.1.0/plugins/schema-mock/schema-mock.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/schema-mock/update.json",
       "sha256": "1fe80e3c61d3e3ffad0a46493b980ae12ae6e81993a423abc25599196592d3c9",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4347,7 +4351,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@swarm-lab-v0.1.0/plugins/swarm-lab/swarm-lab.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/swarm-lab/update.json",
       "sha256": "efdfb2d0b96f8ecfeb464a90af1683a7f0b06ead889b14f30018a740e69f8fde",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4379,7 +4383,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@text-triage-v0.1.0/plugins/text-triage/text-triage.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-triage/update.json",
       "sha256": "7578bccf8be44681c3b7553df6aa96a7bbcb712032687af252a8c8253df52f23",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4411,7 +4415,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@trace-lens-v0.1.0/plugins/trace-lens/trace-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/trace-lens/update.json",
       "sha256": "6157826b1754cc2d41a2c84ff21b9b0295eb0063cff4d6d81a2b22d2b0a888a3",
-      "tier": "beta",
+      "tier": 7,
       "permissions": {
         "appConfigRead": true,
         "aiToolAccess": true
@@ -4444,7 +4448,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@unicode-lens-v0.1.0/plugins/unicode-lens/unicode-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/unicode-lens/update.json",
       "sha256": "932c509de2bd6790cc2b4ac2383bb0808e491b12394b653cdbcff127c19ba673",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4476,7 +4480,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@url-lens-v0.1.0/plugins/url-lens/url-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/url-lens/update.json",
       "sha256": "4dd97261c6d01b7209e3723b977b4effe77ad45a49e9a3fde168e3fc127583eb",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4508,7 +4512,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@version-lens-v0.1.0/plugins/version-lens/version-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/version-lens/update.json",
       "sha256": "33eaedbf9363849a2265d506f1c75c319445614fbae9fd7a2e0fd675b62d80bc",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
@@ -4540,7 +4544,7 @@
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@yaml-lens-v0.1.0/plugins/yaml-lens/yaml-lens.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/yaml-lens/update.json",
       "sha256": "3f711e70c7e2c9be1004ccd5b14e988ea2fdf93c261cb5aa198ea3de9595d913",
-      "tier": "beta",
+      "tier": 6,
       "permissions": {
         "aiToolAccess": true
       },
