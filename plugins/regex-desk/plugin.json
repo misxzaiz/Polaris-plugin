@@ -10,7 +10,7 @@
         "id": "regex-desk.panel",
         "area": "activityBar",
         "panelType": "regex-desk",
-        "icon": "ScanSearch",
+        "icon": "Target",
         "labelKey": "plugins.regex-desk",
         "labelDefault": "正则调试台",
         "order": 95

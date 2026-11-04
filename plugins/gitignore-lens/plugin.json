@@ -10,7 +10,7 @@
         "id": "gitignore-lens.panel",
         "area": "activityBar",
         "panelType": "gitignore-lens",
-        "icon": "FileX",
+        "icon": "AlertCircle",
         "labelKey": "plugins.gitignore-lens",
         "labelDefault": ".gitignore 检查器",
         "order": 100
@@ -25,7 +25,9 @@
         "id": "gitignore-lens",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

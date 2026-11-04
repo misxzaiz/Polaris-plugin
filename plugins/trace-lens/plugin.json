@@ -10,7 +10,7 @@
         "id": "trace-lens.panel",
         "area": "activityBar",
         "panelType": "traceLens",
-        "icon": "ScanSearch",
+        "icon": "Target",
         "labelKey": "plugins.traceLens",
         "labelDefault": "链路追踪台",
         "order": 97
@@ -25,7 +25,11 @@
         "id": "trace-lens-service",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
         "port": 9871,
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
@@ -40,7 +44,10 @@
         "id": "trace-lens",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
       }
     ]
   },

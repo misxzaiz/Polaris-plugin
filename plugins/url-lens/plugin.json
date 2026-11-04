@@ -10,7 +10,7 @@
         "id": "url-lens.panel",
         "area": "activityBar",
         "panelType": "url-lens",
-        "icon": "Link",
+        "icon": "Target",
         "labelKey": "plugins.url-lens",
         "labelDefault": "URL 调试台",
         "order": 97
@@ -25,7 +25,9 @@
         "id": "url-lens",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

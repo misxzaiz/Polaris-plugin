@@ -10,7 +10,7 @@
         "id": "exec-sandbox.panel",
         "area": "activityBar",
         "panelType": "exec-sandbox",
-        "icon": "Box",
+        "icon": "Bot",
         "labelKey": "plugins.exec-sandbox",
         "labelDefault": "执行沙箱",
         "order": 93

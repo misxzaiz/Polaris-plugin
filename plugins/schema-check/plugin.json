@@ -10,7 +10,7 @@
         "id": "schema-check.panel",
         "area": "activityBar",
         "panelType": "schema-check",
-        "icon": "ListChecks",
+        "icon": "CheckSquare",
         "labelKey": "plugins.schema-check",
         "labelDefault": "JSON Schema 校验器",
         "order": 96
@@ -25,7 +25,9 @@
         "id": "schema-check",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

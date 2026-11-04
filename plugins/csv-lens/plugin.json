@@ -10,7 +10,7 @@
         "id": "csv-lens.panel",
         "area": "activityBar",
         "panelType": "csv-lens",
-        "icon": "Table",
+        "icon": "Beaker",
         "labelKey": "plugins.csv-lens",
         "labelDefault": "CSV 检查台",
         "order": 98
@@ -25,7 +25,9 @@
         "id": "csv-lens",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

@@ -10,7 +10,7 @@
         "id": "env-drift.panel",
         "area": "activityBar",
         "panelType": "env-drift",
-        "icon": "FileDiff",
+        "icon": "Code2",
         "labelKey": "plugins.env-drift",
         "labelDefault": ".env 漂移检查器",
         "order": 95
@@ -25,7 +25,9 @@
         "id": "env-drift",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

@@ -10,7 +10,7 @@
         "id": "schema-mock.panel",
         "area": "activityBar",
         "panelType": "schema-mock",
-        "icon": "Shuffle",
+        "icon": "Activity",
         "labelKey": "plugins.schema-mock",
         "labelDefault": "Mock 数据生成器",
         "order": 99
@@ -25,7 +25,9 @@
         "id": "schema-mock",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

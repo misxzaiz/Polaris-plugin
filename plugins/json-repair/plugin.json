@@ -10,7 +10,7 @@
         "id": "json-repair.panel",
         "area": "activityBar",
         "panelType": "json-repair",
-        "icon": "Wrench",
+        "icon": "Code2",
         "labelKey": "plugins.json-repair",
         "labelDefault": "JSON 修复器",
         "order": 98
@@ -25,7 +25,9 @@
         "id": "json-repair",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
       }
     ]
   },

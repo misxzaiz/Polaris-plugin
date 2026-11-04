@@ -10,7 +10,7 @@
         "id": "prompt-guard.panel",
         "area": "activityBar",
         "panelType": "prompt-guard",
-        "icon": "Shield",
+        "icon": "CheckSquare",
         "labelKey": "plugins.prompt-guard",
         "labelDefault": "防注入检查器",
         "order": 94
