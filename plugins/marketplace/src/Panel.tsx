@@ -3,10 +3,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 /**
  * Polaris 插件商城面板
  *
- * 两个标签：
- *   - 商城：拉取 index.json 浏览/搜索/一键安装，按 tier 等级分组，
- *     未设置 tier 的插件默认视为 demo（玩具）
- *   - 已装：读取本地已装插件，支持卸载 / 检查更新 / 应用更新
+ * 单视图「插件市场」：
+ *   - 拉取 index.json 浏览/搜索/安装
+ *   - 两个独立评分维度各自做徽标与排序，互不推导：
+ *       tier      （功能评审 1-10）→ 🔧 N 徽标 + tier-desc/asc 排序
+ *       usageTier （使用习惯 1-10）→ ⭐ N 徽标 + usage-desc/asc 排序
+ *   - 「已装」化为筛选 chip（与分类筛选、搜索叠加），不再是平行 Tab
+ *   - 详情为面板内 push 覆盖层（从右滑入），按安装状态分流操作：
+ *     未装 → 版本选择 + 安装到 User/Project；已装 → 检查更新/应用更新/卸载
+ *   - 分组视图按 category 分组（平铺为默认）
  *
  * 运行环境：宿主 webview，React 由 pluginModuleLoader shim 注入。
  * 宿主调用统一走 window.__POLARIS_HOST_INVOKE__（主应用 main.tsx 挂载，环境感知：
@@ -16,8 +21,6 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
  */
 
 /* ---------- 类型定义 ---------- */
-
-type PluginTier = 'production' | 'beta' | 'demo'
 
 interface MarketPlugin {
   id: string
@@ -34,7 +37,8 @@ interface MarketPlugin {
   downloadUrl?: string
   updateUrl?: string
   sha256?: string
-  tier?: PluginTier
+  /** 功能评审分级（index.json 的 tier 字段，数字 1-10）；缺省按 0 */
+  tier?: number
   permissions?: Record<string, boolean>
   readme?: string
   screenshots?: string[]
@@ -44,6 +48,8 @@ interface MarketPlugin {
   createdAt?: string
   /** 最近发版时间（ISO 8601，由 index.json 提供；缺失时回退 createdAt） */
   updatedAt?: string
+  /** 使用习惯分级（index.json 的 usageTier 字段，数字 1-10）；缺省按 0 */
+  usageTier?: number
 }
 
 interface IndexData {
@@ -76,10 +82,18 @@ interface UpdateCheck {
 
 /* ---------- 工具函数 ---------- */
 
-/** 解析插件 tier：未设置时默认 demo */
-function resolveTier(p: MarketPlugin): PluginTier {
-  if (p.tier === 'production' || p.tier === 'beta') return p.tier
-  return 'demo'
+const CATEGORY_COLORS: Record<string, string> = {
+  utility: '#3B82F6', mcp: '#8B5CF6', panel: '#10B981', media: '#EC4899',
+  dev: '#F59E0B', productivity: '#06B6D4', integration: '#6366F1',
+  'ai-engine': '#A855F7', fun: '#EC4899', demo: '#6B7280',
+}
+
+/** 评分档颜色：≥8 绿 / ≥5 黄 / 其余灰（缺失/0 归灰，且不显示徽标） */
+function scoreColor(score?: number): string {
+  if (typeof score !== 'number' || score <= 0) return '#6B7280'
+  if (score >= 8) return '#34D399'
+  if (score >= 5) return '#F5B73D'
+  return '#6B7280'
 }
 
 /** 官方商城索引源（多镜像兜底：raw 访问不稳时切 jsdelivr） */
@@ -390,18 +404,6 @@ async function applyUpdate(installPath: string): Promise<OpResult> {
 
 /* ---------- 样式常量 ---------- */
 
-const TIER_CONFIG: Record<PluginTier, { label: string; color: string; bg: string; border: string }> = {
-  production: { label: 'Production', color: '#34D399', bg: '#065F4622', border: '#065F4644' },
-  beta: { label: 'Beta', color: '#60A5FA', bg: '#1E40AF22', border: '#1E40AF44' },
-  demo: { label: 'Demo', color: '#6B7280', bg: '#3F3F4622', border: '#3F3F4644' },
-}
-
-const CATEGORY_COLORS: Record<string, string> = {
-  utility: '#3B82F6', mcp: '#8B5CF6', panel: '#10B981', media: '#EC4899',
-  dev: '#F59E0B', productivity: '#06B6D4', integration: '#6366F1',
-  'ai-engine': '#A855F7', fun: '#EC4899', demo: '#6B7280',
-}
-
 const s: Record<string, React.CSSProperties> = {
   btn: {
     padding: '6px 12px', borderRadius: 6, border: '1px solid #3F3F46',
@@ -419,12 +421,22 @@ const s: Record<string, React.CSSProperties> = {
 
 /* ---------- 主面板 ---------- */
 
-/** 排序键：default=索引原序（tier 分组内）；其余按时间组内重排 */
-type SortKey = 'default' | 'updated-desc' | 'updated-asc' | 'created-desc' | 'created-asc'
+/**
+ * 排序键：
+ *   - default=索引原序（平铺或 category 分组内均走原序）
+ *   - tier-desc/asc=功能评审排序（tier 缺失按 0，归末尾）
+ *   - usage-desc/asc=使用习惯排序（usageTier 缺失按 0，归末尾）
+ *   - updated/created=时间排序（升降序）
+ */
+type SortKey = 'default' | 'tier-desc' | 'tier-asc' | 'usage-desc' | 'usage-asc' | 'updated-desc' | 'updated-asc' | 'created-desc' | 'created-asc'
 
 /** 排序选项配置（下拉用） */
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
   { value: 'default', label: '默认' },
+  { value: 'tier-desc', label: '🔧 功能最高' },
+  { value: 'tier-asc', label: '🔧 功能最低' },
+  { value: 'usage-desc', label: '⭐ 使用最高' },
+  { value: 'usage-asc', label: '⭐ 使用最低' },
   { value: 'updated-desc', label: '最新更新' },
   { value: 'updated-asc', label: '最早更新' },
   { value: 'created-desc', label: '最新创建' },
@@ -432,12 +444,37 @@ const SORT_OPTIONS: { value: SortKey; label: string }[] = [
 ]
 
 /**
- * 组内排序（保留 tier 分组结构，仅组内重排）。
- * 缺字段兜底：updatedAt 缺失 → 回退 createdAt → 再缺失 → 视为"未知"区固定排末尾
- * （无论升降序都排末尾，避免淹没在最旧区，也避免自定义源旧索引无字段时报错）。
+ * 数值评分排序（通用：tier / usageTier）。
+ * 缺失按 0 处理，排末尾；同分按名称升序作次序。
+ */
+function sortByScore(list: MarketPlugin[], field: 'tier' | 'usageTier', dir: 'desc' | 'asc'): MarketPlugin[] {
+  const sign = dir === 'desc' ? -1 : 1
+  const withScore = list.filter(p => typeof p[field] === 'number' && (p[field] as number) > 0)
+  const without = list.filter(p => !(typeof p[field] === 'number' && (p[field] as number) > 0))
+  withScore.sort((a, b) => {
+    const diff = ((b[field] as number) - (a[field] as number)) * sign
+    if (diff !== 0) return diff
+    return (a.name || a.id).localeCompare(b.name || b.id)
+  })
+  without.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+  return [...withScore, ...without]
+}
+
+/**
+ * 组内/平铺排序。
+ * 缺字段兜底：
+ *   - 时间排序：updatedAt 缺失 → 回退 createdAt → 再缺失 → 视为"未知"区固定排末尾
+ *     （无论升降序都排末尾，避免淹没在最旧区，也避免自定义源旧索引无字段时报错）。
+ *   - 评分排序：缺失按 0 处理，排末尾；同分按名称升序作次序。
  */
 function sortWithinTier(list: MarketPlugin[], sort: SortKey): MarketPlugin[] {
   if (sort === 'default') return list
+  if (sort === 'tier-desc' || sort === 'tier-asc') {
+    return sortByScore(list, 'tier', sort === 'tier-desc' ? 'desc' : 'asc')
+  }
+  if (sort === 'usage-desc' || sort === 'usage-asc') {
+    return sortByScore(list, 'usageTier', sort === 'usage-desc' ? 'desc' : 'asc')
+  }
   const [field, dir] = sort.split('-') as ['updated' | 'created', 'desc' | 'asc']
   const key = field === 'updated' ? 'updatedAt' : 'createdAt'
   const timeOf = (p: MarketPlugin): number | null => {
@@ -466,17 +503,17 @@ function fmtDate(iso?: string): string {
 }
 
 export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: string }) {
-  const [tab, setTab] = useState<'market' | 'installed'>('market')
-
   // 商城状态
   const [index, setIndex] = useState<IndexData | null>(null)
   const [mLoading, setMLoading] = useState(true)
   const [mError, setMError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>('')
-  const [tierFilter, setTierFilter] = useState<PluginTier | 'all'>('all')
+  const [installedFilter, setInstalledFilter] = useState(false)
   const [sort, setSort] = useState<SortKey>('default')
+  const [flatView, setFlatView] = useState(true)
   const [selected, setSelected] = useState<MarketPlugin | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [selectedVersion, setSelectedVersion] = useState<string>('')
   const [installing, setInstalling] = useState<string | null>(null)
   const [installMsg, setInstallMsg] = useState<string | null>(null)
@@ -546,7 +583,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const switchSource = useCallback((id: string) => {
     setActiveId(id)
     setActiveSourceId(id)
-    setSelected(null); setSelectedVersion(''); setInstallMsg(null)
+    setSelected(null); setDetailOpen(false); setSelectedVersion(''); setInstallMsg(null)
     void loadIndex(id)
   }, [loadIndex])
 
@@ -556,7 +593,7 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     setSources(getSources())
     setActiveId(entry.id)
     setActiveSourceId(entry.id)
-    setSelected(null); setSelectedVersion(''); setInstallMsg(null)
+    setSelected(null); setDetailOpen(false); setSelectedVersion(''); setInstallMsg(null)
     void loadIndex(entry.id)
   }, [loadIndex])
 
@@ -579,13 +616,27 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     finally { setILoading(false) }
   }, [])
 
+  // 单视图：挂载即加载索引 + 已装（已装数据供徽标/筛选/详情分流，不再依赖 Tab 切换）
   useEffect(() => { loadIndex() }, [loadIndex])
-  useEffect(() => { if (tab === 'installed') loadInstalled() }, [tab, loadInstalled])
+  useEffect(() => { loadInstalled() }, [loadInstalled])
 
   const refreshAfterOp = useCallback(async () => {
     await loadInstalled()
     setUpdates({})
   }, [loadInstalled])
+
+  /** 已装判定：商城插件 id 命中已装列表 */
+  const isInstalled = useCallback((p: MarketPlugin): InstalledPlugin | undefined =>
+    installed.find(i => i.id === p.id), [installed])
+
+  const openDetail = useCallback((p: MarketPlugin) => {
+    setSelected(p); setDetailOpen(true); setSelectedVersion(''); setInstallMsg(null)
+  }, [])
+
+  const closeDetail = useCallback(() => {
+    setDetailOpen(false)
+    // 保留 selected 与筛选/搜索态：返回时列表位置与筛选不变，仅收起覆盖层
+  }, [])
 
   const handleInstall = async (p: MarketPlugin, scope: 'user' | 'project') => {
     setInstalling(p.id); setInstallMsg(null)
@@ -593,6 +644,8 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     const r = await installPlugin(p, scope, version)
     setInstallMsg(r.success ? `✓ ${p.name} ${version ? 'v' + version : ''} 安装成功${r.message ? '：' + r.message : ''}` : `✗ 安装失败：${r.error ?? '未知错误'}`)
     setInstalling(null)
+    // 安装成功后刷新已装，列表徽标即时更新（原 handleInstall 缺此步，补上）
+    if (r.success) await loadInstalled()
   }
 
   const handleUninstall = async (p: InstalledPlugin) => {
@@ -634,37 +687,54 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     }
   }
 
+  const installedCount = installed.filter(p => !p.builtin).length
+
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#1A1A1F', color: '#F8F8F8', fontSize: 13 }}>
-      {/* Tab 切换 */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #3F3F46' }}>
-        <TabBtn active={tab === 'market'} onClick={() => setTab('market')} label="商城" />
-        <TabBtn active={tab === 'installed'} onClick={() => setTab('installed')} label={`已装${installed.length ? ` (${installed.filter(p => !p.builtin).length})` : ''}`} />
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#1A1A1F', color: '#F8F8F8', fontSize: 13, position: 'relative', overflow: 'hidden' }}>
+      {/* 顶栏：单一入口「插件市场」+ 刷新；已装筛选态显示「检查全部更新」 */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid #3F3F46', flexShrink: 0 }}>
+        <div style={{
+          fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
+          background: '#3B82F6', color: '#fff', display: 'flex', alignItems: 'center', gap: 5,
+        }}>
+          🧩 插件市场
+          <span style={{ fontSize: 9, background: 'rgba(255,255,255,.2)', padding: '1px 6px', borderRadius: 8 }}>
+            {index?.plugins?.length ?? 0}
+          </span>
+        </div>
+        <div style={{ flex: 1 }} />
+        {installedFilter && installedCount > 0 && (
+          <button onClick={handleCheckAll} title="检查全部已装插件更新"
+            style={{ ...s.btn, padding: '6px 10px', fontSize: 11, minHeight: 32 }}>
+            检查全部更新
+          </button>
+        )}
+        <button onClick={() => void loadIndex()} title="刷新索引"
+          style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #3F3F46', background: '#2D2D33', color: '#B4B4B8', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          ↻
+        </button>
       </div>
 
-      {tab === 'market' ? (
-        <MarketView
-          index={index} loading={mLoading} error={mError}
-          query={query} setQuery={setQuery}
-          category={category} setCategory={setCategory}
-          tierFilter={tierFilter} setTierFilter={setTierFilter}
-          sort={sort} setSort={setSort}
-          selected={selected} setSelected={(p) => { setSelected(p); setSelectedVersion(''); setInstallMsg(null) }}
-          selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
-          installing={installing} installMsg={installMsg} onInstall={handleInstall}
-          onReload={() => void loadIndex()}
-          sourceUsed={sourceUsed}
-          sources={sources} activeSourceId={activeSourceId}
-          onSwitchSource={switchSource} onAddSource={applyIndexSource} onDeleteSource={deleteSource}
-        />
-      ) : (
-        <InstalledView
-          installed={installed} loading={iLoading} error={iError} updates={updates}
-          opLoading={opLoading} opMsg={opMsg} onReload={loadInstalled}
-          onUninstall={handleUninstall} onCheckUpdate={handleCheckUpdate}
-          onApplyUpdate={handleApplyUpdate} onCheckAll={handleCheckAll}
-        />
-      )}
+      <MarketView
+        index={index} loading={mLoading} error={mError}
+        query={query} setQuery={setQuery}
+        category={category} setCategory={setCategory}
+        installedFilter={installedFilter} setInstalledFilter={setInstalledFilter}
+        installedCount={installedCount}
+        sort={sort} setSort={setSort}
+        flatView={flatView} setFlatView={setFlatView}
+        selected={selected} detailOpen={detailOpen}
+        openDetail={openDetail} closeDetail={closeDetail}
+        selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
+        installing={installing} installMsg={installMsg} onInstall={handleInstall}
+        onReload={() => void loadIndex()}
+        sourceUsed={sourceUsed}
+        sources={sources} activeSourceId={activeSourceId}
+        onSwitchSource={switchSource} onAddSource={applyIndexSource} onDeleteSource={deleteSource}
+        installed={installed} isInstalled={isInstalled} updates={updates}
+        opLoading={opLoading} opMsg={opMsg}
+        onUninstall={handleUninstall} onCheckUpdate={handleCheckUpdate} onApplyUpdate={handleApplyUpdate}
+      />
     </div>
   )
 }
@@ -681,50 +751,60 @@ interface MarketViewProps {
   setQuery: (s: string) => void
   category: string
   setCategory: (s: string) => void
-  tierFilter: PluginTier | 'all'
-  setTierFilter: (s: PluginTier | 'all') => void
+  installedFilter: boolean
+  setInstalledFilter: (b: boolean) => void
+  installedCount: number
   sort: SortKey
   setSort: (s: SortKey) => void
+  flatView: boolean
+  setFlatView: (b: boolean) => void
   selected: MarketPlugin | null
-  setSelected: (p: MarketPlugin | null) => void
+  detailOpen: boolean
+  openDetail: (p: MarketPlugin) => void
+  closeDetail: () => void
   selectedVersion: string
   setSelectedVersion: (s: string) => void
   installing: string | null
   installMsg: string | null
   onInstall: (p: MarketPlugin, scope: 'user' | 'project') => void
   onReload: () => void
-  /** 当前生效的索引源（空 = 加载中/失败未定），展示 + 设置面板 */
   sourceUsed: string
-  /** 全部商城源（含官方占位，按 lastUsed 倒序） */
   sources: MarketSource[]
-  /** 当前激活源 id */
   activeSourceId: string
-  /** 切换激活源（快速回） */
   onSwitchSource: (id: string) => void
-  /** 添加/更新用户源（name + url）并切换 */
   onAddSource: (name: string, url: string) => void
-  /** 删除用户源 */
   onDeleteSource: (id: string) => void
+  installed: InstalledPlugin[]
+  isInstalled: (p: MarketPlugin) => InstalledPlugin | undefined
+  updates: Record<string, UpdateResult>
+  opLoading: string | null
+  opMsg: string | null
+  onUninstall: (p: InstalledPlugin) => void
+  onCheckUpdate: (p: InstalledPlugin) => void
+  onApplyUpdate: (p: InstalledPlugin) => void
 }
 
 function MarketView(props: MarketViewProps) {
   const { index, loading, error, query, setQuery, category, setCategory,
-    tierFilter, setTierFilter, sort, setSort, selected, setSelected,
+    installedFilter, setInstalledFilter, installedCount,
+    sort, setSort, flatView, setFlatView,
+    selected, detailOpen, openDetail, closeDetail,
     selectedVersion, setSelectedVersion,
     installing, installMsg, onInstall, onReload,
-    sourceUsed, sources, activeSourceId, onSwitchSource, onAddSource, onDeleteSource } = props
+    sourceUsed, sources, activeSourceId, onSwitchSource, onAddSource, onDeleteSource,
+    installed, isInstalled, updates, opLoading, opMsg,
+    onUninstall, onCheckUpdate, onApplyUpdate } = props
 
   // —— 派生数据（所有 hooks 必须在条件 return 之前，否则跨渲染 hook 数量
   //     不一致 → React Rules of Hooks 违规 #310）——
   const plugins = index?.plugins ?? []
   const categories = Array.from(new Set(plugins.map(p => p.category).filter(Boolean) as string[]))
 
-  // 过滤
+  // 过滤：分类 + 已装 + 搜索（全部叠加）
   const filtered = useMemo(() => {
     return plugins.filter(p => {
-      const t = resolveTier(p)
-      if (tierFilter !== 'all' && t !== tierFilter) return false
       if (category && p.category !== category) return false
+      if (installedFilter && !installed.some(i => i.id === p.id)) return false
       if (query.trim()) {
         const q = query.toLowerCase()
         const hay = [p.id, p.name, p.description, (p.tags || []).join(' ')].join(' ').toLowerCase()
@@ -732,26 +812,26 @@ function MarketView(props: MarketViewProps) {
       }
       return true
     })
-  }, [plugins, tierFilter, category, query])
+  }, [plugins, category, installedFilter, query, installed])
 
-  // 按 tier 分组，并在组内应用时间排序（保留分组结构，仅组内重排）
-  const grouped = useMemo(() => {
-    const groups: Record<PluginTier, MarketPlugin[]> = { production: [], beta: [], demo: [] }
+  // 分组（按 category）或平铺，均经 sortWithinTier 组内/整体排序
+  const groupedByCategory = useMemo(() => {
+    const groups: Record<string, MarketPlugin[]> = {}
     for (const p of filtered) {
-      groups[resolveTier(p)].push(p)
+      const key = p.category || '未分类'
+      ;(groups[key] || (groups[key] = [])).push(p)
     }
-    groups.production = sortWithinTier(groups.production, sort)
-    groups.beta = sortWithinTier(groups.beta, sort)
-    groups.demo = sortWithinTier(groups.demo, sort)
+    for (const k of Object.keys(groups)) groups[k] = sortWithinTier(groups[k], sort)
     return groups
   }, [filtered, sort])
 
-  const tierOrder: PluginTier[] = ['production', 'beta', 'demo']
-  const tierLabels: Record<PluginTier, string> = { production: '生产可用', beta: '测试阶段', demo: '演示玩具' }
-  const hasAny = tierOrder.some(t => grouped[t].length > 0)
-  // 排序非默认时列表项显示时间行
-  const showTime = sort !== 'default'
-  // 当前排序对应的时间字段（用于 MarketItem 显示对应时间）
+  // 平铺：整体走 sortWithinTier（default 时保持索引原序）
+  const flatList = useMemo(() => sortWithinTier(filtered, sort), [filtered, sort])
+
+  const categoryOrder = Object.keys(groupedByCategory).sort((a, b) => a.localeCompare(b))
+  const hasAny = flatView ? flatList.length > 0 : categoryOrder.some(c => groupedByCategory[c].length > 0)
+  // 时间行仅在时间排序时显示（评分排序不显示时间）
+  const showTime = sort.startsWith('updated') || sort.startsWith('created')
   const timeField = sort.startsWith('updated') ? 'updated' : 'created'
 
   if (loading) return (
@@ -776,40 +856,41 @@ function MarketView(props: MarketViewProps) {
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      {/* 搜索栏 */}
-      <div style={{ padding: '12px 12px 8px', display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索插件…"
-          style={{ flex: 1, padding: '6px 10px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none' }} />
-        <button onClick={onReload} title="刷新索引" style={{ ...s.btn, padding: '6px 10px' }}>↻</button>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative', overflow: 'hidden' }}>
+      {/* 工具栏：搜索 + 平铺/分组切换一行 */}
+      <div style={{ padding: '8px 10px', display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索插件名称、ID、标签…"
+          style={{ flex: 1, minWidth: 0, padding: '7px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none' }} />
+        <button onClick={() => setFlatView(true)} title="平铺（不分组）"
+          style={{ fontSize: 10, padding: '5px 10px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap', minHeight: 32,
+            border: `1px solid ${flatView ? '#3B82F6' : '#3F3F46'}`, background: flatView ? '#3B82F622' : '#2D2D33',
+            color: flatView ? '#3B82F6' : '#8E8E93' }}>平铺</button>
+        <button onClick={() => setFlatView(false)} title="按分类分组"
+          style={{ fontSize: 10, padding: '5px 10px', borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap', minHeight: 32,
+            border: `1px solid ${!flatView ? '#3B82F6' : '#3F3F46'}`, background: !flatView ? '#3B82F622' : '#2D2D33',
+            color: !flatView ? '#3B82F6' : '#8E8E93' }}>分组</button>
       </div>
 
       {/* 商城源切换条（常驻，快速回）：官方 + 用户源 chips + 添加 */}
       <SourceBar sources={sources} activeSourceId={activeSourceId}
         onSwitchSource={onSwitchSource} onAddSource={onAddSource} onDeleteSource={onDeleteSource} sourceUsed={sourceUsed} />
 
-      {/* 过滤栏：等级 + 分类 */}
-      <div style={{ padding: '0 12px 8px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* 等级过滤 */}
-        <span style={{ fontSize: 10, color: '#6B7280', marginRight: 2 }}>等级</span>
-        {(['all', 'production', 'beta', 'demo'] as const).map(t => (
-          <FilterChip
-            key={t}
-            active={tierFilter === t}
-            onClick={() => setTierFilter(t)}
-            label={t === 'all' ? '全部' : TIER_CONFIG[t].label}
-            color={t === 'all' ? '#6B7280' : TIER_CONFIG[t].color}
-          />
-        ))}
-        <span style={{ width: 1, height: 14, background: '#3F3F46', margin: '0 2px' }} />
-        {/* 分类过滤 */}
-        <span style={{ fontSize: 10, color: '#6B7280', marginRight: 2 }}>分类</span>
+      {/* 筛选 chips 行：状态 + 分类（手机端横滑） */}
+      <div style={{ padding: '0 10px 6px', display: 'flex', gap: 4, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexShrink: 0 }}>
+        <span style={{ fontSize: 9, color: '#6B7280', marginRight: 1, flexShrink: 0 }}>状态</span>
+        <FilterChip active={!installedFilter} onClick={() => setInstalledFilter(false)} label="全部" color="#6B7280" />
+        <FilterChip active={installedFilter} onClick={() => setInstalledFilter(true)} label={`已装 ${installedCount}`} color="#34D399" />
+        <span style={{ width: 1, height: 12, background: '#3F3F46', flexShrink: 0, margin: '0 2px' }} />
+        <span style={{ fontSize: 9, color: '#6B7280', marginRight: 1, flexShrink: 0 }}>分类</span>
         <FilterChip active={!category} onClick={() => setCategory('')} label="全部" color="#6B7280" />
         {categories.map(c => (
           <FilterChip key={c} active={category === c} onClick={() => setCategory(c)} label={c} color={CATEGORY_COLORS[c] || '#6B7280'} />
         ))}
-        {/* 排序下拉：组内时间排序（保留 tier 分组） */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+      </div>
+
+      {/* 排序行 */}
+      <div style={{ padding: '2px 10px 6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
           <span style={{ fontSize: 10, color: '#6B7280' }}>排序</span>
           <select
             value={sort}
@@ -827,35 +908,52 @@ function MarketView(props: MarketViewProps) {
             ))}
           </select>
         </div>
+        <span style={{ fontSize: 10, color: '#6B7280' }}>{filtered.length} 个{installedFilter ? '（已装）' : ''}</span>
       </div>
 
-      {/* 提示条：未设置 tier 的插件默认视为 demo */}
-      <div style={{ margin: '0 12px 6px', padding: '4px 8px', borderRadius: 4, background: '#3F3F4622', fontSize: 10, color: '#6B7280', lineHeight: 1.4 }}>
-        💡 未标注等级的插件默认视为 <strong style={{ color: '#6B7280' }}>Demo</strong>，仅已标注 <span style={{ color: '#34D399' }}>Production</span> 或 <span style={{ color: '#60A5FA' }}>Beta</span> 的插件才算可用
-      </div>
+      {/* 操作结果提示条 */}
+      {opMsg && (
+        <div style={{ padding: '6px 10px', fontSize: 11, color: opMsg.startsWith('✓') ? '#10B981' : '#EF4444', borderBottom: '1px solid #3F3F46', flexShrink: 0 }}>
+          {opMsg}
+        </div>
+      )}
 
       {/* 列表 */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 12px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 12px' }}>
         {!hasAny ? (
           <div style={{ padding: 24, color: '#8E8E93', textAlign: 'center' }}>未找到匹配插件</div>
+        ) : flatView ? (
+          flatList.map(p => (
+            <MarketItem
+              key={p.id}
+              plugin={p}
+              installedInfo={isInstalled(p)}
+              updateInfo={updates[p.id]}
+              selected={selected?.id === p.id}
+              onClick={() => openDetail(p)}
+              showTime={showTime}
+              timeField={timeField}
+            />
+          ))
         ) : (
-          tierOrder.map(tier => {
-            const list = grouped[tier]
+          categoryOrder.map(cat => {
+            const list = groupedByCategory[cat]
             if (list.length === 0) return null
-            const cfg = TIER_CONFIG[tier]
+            const color = CATEGORY_COLORS[cat] || '#6B7280'
             return (
-              <div key={tier} style={{ marginBottom: 12 }}>
+              <div key={cat} style={{ marginBottom: 12 }}>
                 <div style={{ fontSize: 10, fontWeight: 600, color: '#6B7280', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                  <span style={{ color: cfg.color }}>{cfg.label}</span>
-                  <span style={{ color: '#6B7280', fontWeight: 400, marginLeft: 4 }}>{tierLabels[tier]} · {list.length}</span>
+                  <span style={{ color }}>{cat}</span>
+                  <span style={{ color: '#6B7280', fontWeight: 400, marginLeft: 4 }}>· {list.length}</span>
                 </div>
                 {list.map(p => (
                   <MarketItem
                     key={p.id}
                     plugin={p}
-                    tier={resolveTier(p)}
+                    installedInfo={isInstalled(p)}
+                    updateInfo={updates[p.id]}
                     selected={selected?.id === p.id}
-                    onClick={() => setSelected(p)}
+                    onClick={() => openDetail(p)}
                     showTime={showTime}
                     timeField={timeField}
                   />
@@ -866,17 +964,23 @@ function MarketView(props: MarketViewProps) {
         )}
       </div>
 
-      {/* 详情面板 */}
+      {/* 详情 push 覆盖层（面板内全屏，从右滑入；‹ 返回保留筛选/搜索态） */}
       {selected && (
         <DetailPanel
           plugin={selected}
-          tier={resolveTier(selected)}
+          installedInfo={isInstalled(selected)}
+          updateInfo={updates[selected.id]}
+          open={detailOpen}
           selectedVersion={selectedVersion}
           setSelectedVersion={setSelectedVersion}
           installing={installing}
           installMsg={installMsg}
-          onClose={() => setSelected(null)}
+          opLoading={opLoading}
+          onClose={closeDetail}
           onInstall={onInstall}
+          onUninstall={onUninstall}
+          onCheckUpdate={onCheckUpdate}
+          onApplyUpdate={onApplyUpdate}
         />
       )}
     </div>
@@ -911,22 +1015,23 @@ function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDel
 
   return (
     <>
-      {/* 源 chips 条（快速回）：官方 + 用户源 + 添加 */}
-      <div style={{ padding: '0 12px 8px', display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: 10, color: '#6B7280', marginRight: 2 }}>源</span>
+      {/* 源 chips 条（快速回）：官方 + 用户源 + 添加（手机端横滑） */}
+      <div style={{ padding: '0 10px 8px', display: 'flex', gap: 6, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexShrink: 0 }}>
+        <span style={{ fontSize: 10, color: '#6B7280', marginRight: 2, flexShrink: 0 }}>源</span>
         {sources.map(src => {
           const active = src.id === activeSourceId
           const isOfficial = src.id === OFFICIAL_SOURCE_ID
           return (
-            <span key={src.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+            <span key={src.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
               <button
                 onClick={() => onSwitchSource(src.id)}
                 title={src.url || '官方多镜像'}
                 style={{
-                  fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer',
+                  fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer', minHeight: 28,
                   border: `1px solid ${active ? '#3B82F6' : '#3F3F46'}`,
                   background: active ? '#3B82F622' : 'transparent',
                   color: active ? '#3B82F6' : '#8E8E93',
+                  whiteSpace: 'nowrap',
                 }}
               >{src.name}</button>
               {!isOfficial && (
@@ -937,25 +1042,25 @@ function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDel
           )
         })}
         <button onClick={() => setAdding(o => !o)} title="添加商城源"
-          style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer', border: '1px dashed #3F3F46', background: 'transparent', color: '#6B7280' }}>+ 添加源</button>
+          style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer', border: '1px dashed #3F3F46', background: 'transparent', color: '#6B7280', whiteSpace: 'nowrap', flexShrink: 0 }}>+ 添加源</button>
       </div>
 
       {/* 添加源表单 */}
       {adding && (
-        <div style={{ margin: '0 12px 8px', padding: 10, borderRadius: 8, background: '#1F1F24', border: '1px solid #3F3F46', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ margin: '0 10px 8px', padding: 10, borderRadius: 8, background: '#1F1F24', border: '1px solid #3F3F46', display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           <div style={{ fontSize: 11, color: '#B4B4B8', fontWeight: 600 }}>添加商城源</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <input
               value={sourceNameDraft}
               onChange={e => setSourceNameDraft(e.target.value)}
               placeholder="名称（可选，如 本地商城）"
-              style={{ width: '32%', padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none' }}
+              style={{ width: '32%', minWidth: 120, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none' }}
             />
             <input
               value={sourceDraft}
               onChange={e => setSourceDraft(e.target.value)}
               placeholder="索引 URL（必填，http/https），如 http://127.0.0.1:8787/index.json"
-              style={{ flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none', wordBreak: 'break-all' }}
+              style={{ flex: 1, minWidth: 200, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 11, outline: 'none', wordBreak: 'break-all' }}
             />
             <button onClick={submitAdd} style={{ ...s.btn, padding: '4px 10px' }}>添加</button>
             <button onClick={() => { setAdding(false); setSourceDraft(''); setSourceNameDraft('') }} style={{ ...s.miniBtn, padding: '4px 10px' }}>取消</button>
@@ -981,32 +1086,56 @@ function SourceBar({ sources, activeSourceId, onSwitchSource, onAddSource, onDel
 
 /* ---------- 商城列表项 ---------- */
 
-function MarketItem({ plugin, tier, selected, onClick, showTime, timeField }: {
+function MarketItem({ plugin, installedInfo, updateInfo, selected, onClick, showTime, timeField }: {
   plugin: MarketPlugin
-  tier: PluginTier
+  installedInfo: InstalledPlugin | undefined
+  updateInfo: UpdateResult | undefined
   selected: boolean
   onClick: () => void
-  /** 排序非默认时显示时间行 */
   showTime: boolean
-  /** 当前排序对应的时间字段：updated / created */
   timeField: 'updated' | 'created'
 }) {
-  const cfg = TIER_CONFIG[tier]
-  const isDemo = tier === 'demo'
   // 时间行：依据当前排序字段取对应时间；updatedAt 缺失回退 createdAt
   const timeVal = showTime
     ? (timeField === 'updated' ? (plugin.updatedAt || plugin.createdAt) : plugin.createdAt)
     : undefined
 
+  // 徽标：已装 → 「已装 vX」或金色「↑ 可更新至 vX」；未装 → 无 tier 徽标（状态优先）
+  const hasUpdate = updateInfo?.updateAvailable
+  const renderStatusBadge = () => {
+    if (installedInfo) {
+      if (hasUpdate) {
+        return (
+          <span style={{
+            fontSize: 9, padding: '1px 6px', borderRadius: 4, flexShrink: 0, fontWeight: 600,
+            background: '#F5B73D22', color: '#F5B73D', border: '1px solid #F5B73D44',
+          }}>↑ 可更新至 v{plugin.version}</span>
+        )
+      }
+      return (
+        <span style={{
+          fontSize: 9, padding: '1px 6px', borderRadius: 4, flexShrink: 0, fontWeight: 600,
+          background: '#34D39922', color: '#34D399', border: '1px solid #34D39944',
+        }}>✓ 已装 v{installedInfo.version}</span>
+      )
+    }
+    return null
+  }
+
+  // 两个独立评分徽标：🔧 功能（tier）/ ⭐ 使用（usageTier），各自缺失不显示
+  const tierScore = plugin.tier
+  const showTier = typeof tierScore === 'number' && tierScore > 0
+  const usageScore = plugin.usageTier
+  const showUsage = typeof usageScore === 'number' && usageScore > 0
+
   return (
     <div
       onClick={onClick}
       style={{
-        display: 'flex', gap: 10, padding: 10, borderRadius: 8, cursor: 'pointer',
+        display: 'flex', gap: 10, padding: 10, borderRadius: 8, cursor: 'pointer', minHeight: 48,
         marginBottom: 6, border: `1px solid ${selected ? '#3B82F6' : 'transparent'}`,
         background: selected ? '#2D2D33' : '#25252B',
-        opacity: isDemo ? 0.55 : 1,
-        transition: 'opacity 0.15s, background 0.15s',
+        transition: 'background 0.15s',
       }}
       onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLElement).style.background = '#2A2A30' }}
       onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLElement).style.background = '#25252B' }}
@@ -1015,7 +1144,7 @@ function MarketItem({ plugin, tier, selected, onClick, showTime, timeField }: {
       <div style={{
         width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center',
         justifyContent: 'center', fontSize: 14, flexShrink: 0, marginTop: 2,
-        background: cfg.bg, color: cfg.color,
+        background: '#3B82F622', color: '#3B82F6',
       }}>
         {plugin.icon === 'BookOpen' ? '📖' : plugin.icon === 'Terminal' ? '⚡' : plugin.icon === 'Target' ? '🎯' : plugin.icon === 'Beaker' ? '🧪' : plugin.icon === 'Activity' ? '📊' : plugin.icon === 'GitPullRequest' ? '🔀' : plugin.icon === 'Bot' ? '🤖' : '🧩'}
       </div>
@@ -1023,16 +1152,25 @@ function MarketItem({ plugin, tier, selected, onClick, showTime, timeField }: {
       {/* 内容 */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: isDemo ? '#6B7280' : '#F8F8F8' }}>{plugin.name}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#F8F8F8' }}>{plugin.name}</span>
           <span style={{ fontSize: 10, color: '#6B7280' }}>v{plugin.version}</span>
-          <TierBadge tier={tier} />
+          {renderStatusBadge()}
+          {/* 评分徽标靠右挤齐 */}
+          <span style={{ marginLeft: 'auto', display: 'flex', gap: 4, alignItems: 'center', flexShrink: 0 }}>
+            {showTier && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor(tierScore) }}>🔧{tierScore}</span>
+            )}
+            {showUsage && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor(usageScore) }}>⭐{usageScore}</span>
+            )}
+          </span>
         </div>
         {plugin.description && (
-          <div style={{ fontSize: 11, color: isDemo ? '#6B7280' : '#8E8E93', marginTop: 3, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 11, color: '#8E8E93', marginTop: 3, lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {plugin.description}
           </div>
         )}
-        {/* 时间行：仅排序非默认时显示，让排序依据可视化 */}
+        {/* 时间行：仅时间排序时显示，让排序依据可视化 */}
         {showTime && (
           timeVal ? (
             <div style={{ fontSize: 9, color: '#6B7280', marginTop: 4 }}>
@@ -1059,17 +1197,23 @@ function MarketItem({ plugin, tier, selected, onClick, showTime, timeField }: {
   )
 }
 
-/* ---------- 详情面板 ---------- */
+/* ---------- 详情面板（push 覆盖层） ---------- */
 
-function DetailPanel({ plugin, tier, selectedVersion, setSelectedVersion, installing, installMsg, onClose, onInstall }: {
+function DetailPanel({ plugin, installedInfo, updateInfo, open, selectedVersion, setSelectedVersion, installing, installMsg, opLoading, onClose, onInstall, onUninstall, onCheckUpdate, onApplyUpdate }: {
   plugin: MarketPlugin
-  tier: PluginTier
+  installedInfo: InstalledPlugin | undefined
+  updateInfo: UpdateResult | undefined
+  open: boolean
   selectedVersion: string
   setSelectedVersion: (s: string) => void
   installing: string | null
   installMsg: string | null
+  opLoading: string | null
   onClose: () => void
   onInstall: (p: MarketPlugin, scope: 'user' | 'project') => void
+  onUninstall: (p: InstalledPlugin) => void
+  onCheckUpdate: (p: InstalledPlugin) => void
+  onApplyUpdate: (p: InstalledPlugin) => void
 }) {
   // 收集可用的版本列表
   const allVersions = useMemo(() => {
@@ -1084,204 +1228,197 @@ function DetailPanel({ plugin, tier, selectedVersion, setSelectedVersion, instal
   // 当前选中的版本对象
   const currentVersion = selectedVersion || plugin.version
 
+  const isInstalled = !!installedInfo
+  const hasUpdate = updateInfo?.updateAvailable
+  const checking = updateInfo?.checking || opLoading === `check-${plugin.id}`
+  const applying = opLoading === `apply-${plugin.id}`
+  const uninstalling = opLoading === `uninstall-${plugin.id}`
+  const tierScore = plugin.tier
+  const showTier = typeof tierScore === 'number' && tierScore > 0
+  const usageScore = plugin.usageTier
+  const showUsage = typeof usageScore === 'number' && usageScore > 0
+
+  const permList = plugin.permissions
+    ? Object.entries(plugin.permissions).filter(([, v]) => v).map(([k]) => k)
+    : []
+
+  // 已装来源描述
+  const sourceDesc = installedInfo?.source?.kind
+    ? (installedInfo.source.kind === 'user' ? 'User 安装' : installedInfo.source.kind === 'project' ? 'Project 安装' : installedInfo.source.kind)
+    : installedInfo?.builtin ? '内置' : '—'
+
   return (
     <div style={{
-      borderTop: '1px solid #3F3F46', padding: 12, background: '#1F1F24',
-      maxHeight: '40%', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8,
+      position: 'absolute', inset: 0, zIndex: 20, background: '#1C1C24',
+      transform: open ? 'translateX(0)' : 'translateX(100%)',
+      transition: 'transform 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>{plugin.name}</span>
-            <TierBadge tier={tier} />
-          </div>
-          <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2 }}>{plugin.id} · v{plugin.version}</div>
-        </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#8E8E93', cursor: 'pointer', padding: '2px 6px', fontSize: 14 }}>✕</button>
-      </div>
-
-      {plugin.description && (
-        <div style={{ fontSize: 12, color: '#B4B4B8', lineHeight: 1.5 }}>{plugin.description}</div>
-      )}
-
-      {/* 时间信息：创建时间 / 最后更新（缺字段时显示回退说明） */}
-      {(plugin.createdAt || plugin.updatedAt) && (
-        <div style={{ fontSize: 10, color: '#8E8E93', background: '#25252B', padding: '5px 8px', borderRadius: 4, lineHeight: 1.6 }}>
-          <div><span style={{ color: '#B4B4B8' }}>创建时间：</span>{plugin.createdAt ? fmtDate(plugin.createdAt) : '（未记录）'}</div>
-          <div><span style={{ color: '#B4B4B8' }}>最后更新：</span>{plugin.updatedAt ? fmtDate(plugin.updatedAt) : '（未记录，回退创建时间）'}</div>
-        </div>
-      )}
-
-      {plugin.permissions && Object.keys(plugin.permissions).length > 0 && (
-        <div>
-          <div style={{ fontSize: 10, color: '#8E8E93', marginBottom: 2 }}>权限</div>
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {Object.entries(plugin.permissions).filter(([, v]) => v).map(([k]) => (
-              <span key={k} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: '#3F3F46', color: '#F8B4B8' }}>{k}</span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* 版本选择器 */}
-      {allVersions.length > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <label style={{ fontSize: 11, color: '#8E8E93', whiteSpace: 'nowrap' }}>版本：</label>
-          <select
-            value={currentVersion}
-            onChange={e => setSelectedVersion(e.target.value)}
-            style={{
-              flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46',
-              borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none', cursor: 'pointer',
-            }}
-          >
-            {allVersions.map(v => (
-              <option key={v.version} value={v.version}>
-                v{v.version}{v.version === plugin.version ? ' (最新)' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {plugin.readme && <pre style={s.pre}>{plugin.readme}</pre>}
-      {installMsg && <div style={{ fontSize: 11, color: installMsg.startsWith('✓') ? '#10B981' : '#EF4444' }}>{installMsg}</div>}
-
-      <div style={{ display: 'flex', gap: 8, marginTop: 2 }}>
-        <button onClick={() => onInstall(plugin, 'user')} disabled={installing === plugin.id}
-          style={{ ...s.btn, flex: 1, opacity: installing === plugin.id ? 0.6 : 1 }}>
-          {installing === plugin.id ? '安装中…' : `安装到 User${currentVersion !== plugin.version ? ' (v' + currentVersion + ')' : ''}`}
+      {/* 顶栏：‹ 返回 + 名称 */}
+      <div style={{ padding: 10, borderBottom: '1px solid #3F3F46', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={onClose} title="返回"
+          style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: '#2D2D33', color: '#B4B4B8', cursor: 'pointer', fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          ‹
         </button>
-        <button onClick={() => onInstall(plugin, 'project')} disabled={installing === plugin.id}
-          style={{ ...s.btn, opacity: installing === plugin.id ? 0.6 : 1 }}>
-          安装到 Project{currentVersion !== plugin.version ? ' (v' + currentVersion + ')' : ''}
-        </button>
-      </div>
-
-      {plugin.downloadUrl && (
-        <div style={{ fontSize: 9, color: '#6B7280', wordBreak: 'break-all' }}>
-          {currentVersion !== plugin.version
-            ? allVersions.find(v => v.version === currentVersion)?.downloadUrl || plugin.downloadUrl
-            : plugin.downloadUrl}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{plugin.name}</div>
+          <div style={{ fontSize: 10, color: '#6B7280' }}>{plugin.id} · v{plugin.version}</div>
         </div>
-      )}
-    </div>
-  )
-}
-
-/* ========================================================================
-   已装视图（保持不变）
-   ======================================================================== */
-
-interface InstalledViewProps {
-  installed: InstalledPlugin[]
-  loading: boolean
-  error: string | null
-  updates: Record<string, UpdateResult>
-  opLoading: string | null
-  opMsg: string | null
-  onReload: () => void
-  onUninstall: (p: InstalledPlugin) => void
-  onCheckUpdate: (p: InstalledPlugin) => void
-  onApplyUpdate: (p: InstalledPlugin) => void
-  onCheckAll: () => void
-}
-
-function InstalledView(props: InstalledViewProps) {
-  const { installed, loading, error, updates, opLoading, opMsg, onReload, onUninstall, onCheckUpdate, onApplyUpdate, onCheckAll } = props
-
-  if (loading) return <div style={{ padding: 24, color: '#8E8E93' }}>读取已装插件中…</div>
-  if (error) return (
-    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ color: '#EF4444' }}>读取失败：{error}</div>
-      <button onClick={onReload} style={s.btn}>重试</button>
-    </div>
-  )
-
-  const external = installed.filter(p => !p.builtin)
-  const builtin = installed.filter(p => p.builtin)
-
-  return (
-    <>
-      <div style={{ padding: '10px 12px', display: 'flex', gap: 8, borderBottom: '1px solid #3F3F46' }}>
-        <button onClick={onReload} style={{ ...s.btn, flex: 1 }}>↻ 刷新</button>
-        <button onClick={onCheckAll} disabled={external.length === 0}
-          style={{ ...s.btn, flex: 1, opacity: external.length === 0 ? 0.5 : 1 }}>检查全部更新</button>
       </div>
-      {opMsg && <div style={{ padding: '8px 12px', fontSize: 11, color: opMsg.startsWith('✓') ? '#10B981' : '#EF4444', borderBottom: '1px solid #3F3F46' }}>{opMsg}</div>}
-      <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
-        {external.length === 0 && builtin.length === 0 ? (
-          <div style={{ padding: 24, color: '#8E8E93', textAlign: 'center' }}>未发现已装插件</div>
+
+      {/* 详情主体 */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* hero：图标 + 名称 + 徽标 + 评分 */}
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 10, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: 24, flexShrink: 0,
+            background: '#3B82F622', color: '#3B82F6',
+          }}>
+            {plugin.icon === 'BookOpen' ? '📖' : plugin.icon === 'Terminal' ? '⚡' : plugin.icon === 'Target' ? '🎯' : plugin.icon === 'Beaker' ? '🧪' : plugin.icon === 'Activity' ? '📊' : plugin.icon === 'GitPullRequest' ? '🔀' : plugin.icon === 'Bot' ? '🤖' : '🧩'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>{plugin.name}</div>
+            <div style={{ display: 'flex', gap: 4, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+              {isInstalled && (
+                <>
+                  <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: '#34D39922', color: '#34D399', border: '1px solid #34D39944' }}>已装 v{installedInfo!.version}</span>
+                  {hasUpdate && (
+                    <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: '#F5B73D22', color: '#F5B73D', border: '1px solid #F5B73D44' }}>↑ 可更新至 v{plugin.version}</span>
+                  )}
+                </>
+              )}
+              {showTier && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor(tierScore) }}>🔧 功能 {tierScore}/10</span>
+              )}
+              {showUsage && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: scoreColor(usageScore) }}>⭐ 使用 {usageScore}/10</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 描述 */}
+        {plugin.description && (
+          <div style={{ fontSize: 12, color: '#B4B4B8', lineHeight: 1.6 }}>{plugin.description}</div>
+        )}
+
+        {/* 信息行表（ID/当前版本/最新版本/来源/分类/创建/更新/权限） */}
+        <div style={{ border: '1px solid #3F3F46', borderRadius: 8, overflow: 'hidden' }}>
+          <InfoRow k="ID" v={plugin.id} />
+          <InfoRow k="最新版本" v={`v${plugin.version}`} />
+          {isInstalled && (
+            <InfoRow k="当前版本" v={`v${installedInfo!.version}${hasUpdate ? `（最新 v${plugin.version}）` : ''}`} />
+          )}
+          {isInstalled && <InfoRow k="来源" v={sourceDesc} />}
+          <InfoRow k="分类" v={plugin.category || '—'} />
+          {showTier && <InfoRow k="🔧 功能评分" v={`${tierScore}/10`} />}
+          {showUsage && <InfoRow k="⭐ 使用评分" v={`${usageScore}/10`} />}
+          <InfoRow k="创建时间" v={plugin.createdAt ? fmtDate(plugin.createdAt) : '（未记录）'} />
+          <InfoRow k="最后更新" v={plugin.updatedAt ? fmtDate(plugin.updatedAt) : '（未记录）'} />
+          {/* 权限行 */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', fontSize: 10, borderBottom: 'none', gap: 10 }}>
+            <span style={{ color: '#6B7280', flexShrink: 0 }}>权限</span>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              {permList.length > 0 ? permList.map(k => (
+                <span key={k} style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: '#F0616D1A', color: '#F0616D' }}>{k}</span>
+              )) : <span style={{ fontSize: 9, color: '#6B7280' }}>无特殊权限</span>}
+            </div>
+          </div>
+        </div>
+
+        {/* 版本选择器（仅未装时显示） */}
+        {!isInstalled && allVersions.length > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <label style={{ fontSize: 11, color: '#8E8E93', whiteSpace: 'nowrap' }}>版本：</label>
+            <select
+              value={currentVersion}
+              onChange={e => setSelectedVersion(e.target.value)}
+              style={{
+                flex: 1, padding: '5px 8px', background: '#25252B', border: '1px solid #3F3F46',
+                borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none', cursor: 'pointer',
+              }}
+            >
+              {allVersions.map(v => (
+                <option key={v.version} value={v.version}>
+                  v{v.version}{v.version === plugin.version ? ' (最新)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {plugin.readme && <pre style={s.pre}>{plugin.readme}</pre>}
+
+        {/* 操作结果提示 */}
+        {(installMsg || (updateInfo && !updateInfo.checking)) && (
+          <div style={{ fontSize: 11, padding: '6px 8px', borderRadius: 4, lineHeight: 1.5,
+            background: (installMsg || updateInfo?.error || updateInfo?.updateAvailable) ? (installMsg?.startsWith('✓') || updateInfo?.updateAvailable ? '#10B98122' : '#EF444422') : '#3F3F46',
+            color: installMsg ? (installMsg.startsWith('✓') ? '#10B981' : '#EF4444')
+              : updateInfo?.error ? '#EF4444'
+              : updateInfo?.updateAvailable ? '#10B981' : '#8E8E93' }}>
+            {installMsg || (updateInfo?.error ? `检查失败：${updateInfo.error}`
+              : updateInfo?.updateAvailable ? `↑ 有更新：${updateInfo.currentVersion} → ${updateInfo.latestVersion}`
+              : `✓ 已是最新（${updateInfo?.currentVersion}）`)}
+          </div>
+        )}
+
+        {/* 操作区：按安装状态分流 */}
+        {isInstalled ? (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingBottom: 16 }}>
+            <button onClick={() => onCheckUpdate(installedInfo!)} disabled={checking || applying || uninstalling}
+              style={{ ...s.btn, flex: 1, minWidth: 96, minHeight: 40, opacity: checking ? 0.6 : 1 }}>
+              {checking ? '检查中…' : '检查更新'}
+            </button>
+            <button onClick={() => onApplyUpdate(installedInfo!)} disabled={!hasUpdate || applying || uninstalling}
+              style={{ ...s.btn, flex: 1, minWidth: 96, minHeight: 40, background: applying ? '#3B82F644' : '#3B82F622', color: '#3B82F6', borderColor: '#3B82F6', opacity: (!hasUpdate || applying) ? 0.5 : 1, fontWeight: 600 }}>
+              {applying ? '更新中…' : '↑ 应用更新'}
+            </button>
+            <button onClick={() => onUninstall(installedInfo!)} disabled={checking || applying || uninstalling}
+              style={{ ...s.btn, flex: 1, minWidth: 96, minHeight: 40, color: '#F0616D', borderColor: '#7F1D1D', opacity: uninstalling ? 0.6 : 1 }}>
+              {uninstalling ? '卸载中…' : '卸载'}
+            </button>
+          </div>
         ) : (
-          <>
-            {external.length > 0 && <SectionLabel>外部安装（{external.length}）</SectionLabel>}
-            {external.map(p => <InstalledCard key={p.id} p={p} updates={updates} opLoading={opLoading}
-              onUninstall={onUninstall} onCheckUpdate={onCheckUpdate} onApplyUpdate={onApplyUpdate} />)}
-            {builtin.length > 0 && <SectionLabel>内置（{builtin.length}）</SectionLabel>}
-            {builtin.map(p => (
-              <div key={p.id} style={{ padding: 10, marginBottom: 8, borderRadius: 8, background: '#1F1F24', border: '1px solid #2A2A30' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-                  <div style={{ fontSize: 10, color: '#8E8E93' }}>v{p.version}</div>
-                </div>
-                <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4 }}>{p.id} · 内置</div>
-              </div>
-            ))}
-          </>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', paddingBottom: 16 }}>
+            <button onClick={() => onInstall(plugin, 'user')} disabled={installing === plugin.id}
+              style={{ ...s.btn, flex: 1, minWidth: 96, minHeight: 40, background: '#3B82F6', borderColor: '#3B82F6', color: '#fff', fontWeight: 600, opacity: installing === plugin.id ? 0.6 : 1 }}>
+              {installing === plugin.id ? '安装中…' : `⬇ 安装到 User${currentVersion !== plugin.version ? ' (v' + currentVersion + ')' : ''}`}
+            </button>
+            <button onClick={() => onInstall(plugin, 'project')} disabled={installing === plugin.id}
+              style={{ ...s.btn, flex: 1, minWidth: 96, minHeight: 40, opacity: installing === plugin.id ? 0.6 : 1 }}>
+              安装到 Project{currentVersion !== plugin.version ? ' (v' + currentVersion + ')' : ''}
+            </button>
+          </div>
+        )}
+
+        {/* 二期预留：启用/停用、端口管理（D10，不实现宿主侧逻辑） */}
+        {/*
+          <div style={{ display:'flex', gap:8 }}>
+            <button>启用/停用</button>
+            <button>端口管理</button>
+          </div>
+        */}
+
+        {/* 未装时显示下载地址 */}
+        {!isInstalled && plugin.downloadUrl && (
+          <div style={{ fontSize: 9, color: '#6B7280', wordBreak: 'break-all', lineHeight: 1.4 }}>
+            {currentVersion !== plugin.version
+              ? allVersions.find(v => v.version === currentVersion)?.downloadUrl || plugin.downloadUrl
+              : plugin.downloadUrl}
+          </div>
         )}
       </div>
-    </>
+    </div>
   )
 }
 
-function InstalledCard({ p, updates, opLoading, onUninstall, onCheckUpdate, onApplyUpdate }: {
-  p: InstalledPlugin
-  updates: Record<string, UpdateResult>
-  opLoading: string | null
-  onUninstall: (p: InstalledPlugin) => void
-  onCheckUpdate: (p: InstalledPlugin) => void
-  onApplyUpdate: (p: InstalledPlugin) => void
-}) {
-  const u = updates[p.id]
-  const checking = u?.checking || opLoading === `check-${p.id}`
-  const applying = opLoading === `apply-${p.id}`
-  const uninstalling = opLoading === `uninstall-${p.id}`
-
+/** 信息行表的一行（k-v，带分隔线） */
+function InfoRow({ k, v }: { k: string; v: string }) {
   return (
-    <div style={{ padding: 10, marginBottom: 8, borderRadius: 8, background: '#25252B', border: '1px solid #3F3F46' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <div style={{ fontWeight: 600, fontSize: 13 }}>{p.name}</div>
-        <div style={{ fontSize: 10, color: '#8E8E93' }}>v{p.version}</div>
-      </div>
-      <div style={{ fontSize: 10, color: '#6B7280', marginTop: 4, wordBreak: 'break-all' }}>
-        {p.id}{p.source?.kind ? ` · ${p.source.kind}` : ''}
-      </div>
-      {p.description && <div style={{ fontSize: 11, color: '#8E8E93', marginTop: 4 }}>{p.description}</div>}
-
-      {u && !u.checking && (
-        <div style={{ marginTop: 6, fontSize: 11, padding: '4px 8px', borderRadius: 4,
-          background: u.updateAvailable ? '#10B98122' : '#3F3F46',
-          color: u.updateAvailable ? '#10B981' : '#8E8E93' }}>
-          {u.error ? `检查失败：${u.error}`
-            : u.updateAvailable ? `↑ 有更新：${u.currentVersion} → ${u.latestVersion}`
-            : `✓ 已是最新（${u.currentVersion}）`}
-        </div>
-      )}
-
-      <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-        <button onClick={() => onCheckUpdate(p)} disabled={checking || applying || uninstalling}
-          style={{ ...s.miniBtn, opacity: checking ? 0.6 : 1 }}>
-          {checking ? '检查中…' : '检查更新'}
-        </button>
-        <button onClick={() => onApplyUpdate(p)} disabled={!u?.updateAvailable || applying || uninstalling}
-          style={{ ...s.miniBtn, background: applying ? '#3B82F644' : '#3B82F622', color: '#3B82F6', borderColor: '#3B82F6', opacity: (!u?.updateAvailable || applying) ? 0.5 : 1 }}>
-          {applying ? '更新中…' : '应用更新'}
-        </button>
-        <button onClick={() => onUninstall(p)} disabled={checking || applying || uninstalling}
-          style={{ ...s.miniBtn, color: '#EF4444', borderColor: '#7F1D1D', opacity: uninstalling ? 0.6 : 1 }}>
-          {uninstalling ? '卸载中…' : '卸载'}
-        </button>
-      </div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', fontSize: 10, borderBottom: '1px solid #3F3F46', gap: 10 }}>
+      <span style={{ color: '#6B7280', flexShrink: 0 }}>{k}</span>
+      <span style={{ color: '#B4B4B8', textAlign: 'right', wordBreak: 'break-all' }}>{v}</span>
     </div>
   )
 }
@@ -1290,43 +1427,15 @@ function InstalledCard({ p, updates, opLoading, onUninstall, onCheckUpdate, onAp
    小组件
    ======================================================================== */
 
-function TabBtn({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button onClick={onClick} style={{
-      flex: 1, padding: '10px 12px', fontSize: 12, cursor: 'pointer',
-      border: 'none', borderBottom: active ? '2px solid #3B82F6' : '2px solid transparent',
-      background: 'transparent', color: active ? '#F8F8F8' : '#8E8E93', fontWeight: active ? 600 : 400,
-    }}>{label}</button>
-  )
-}
-
 function FilterChip({ active, onClick, label, color }: { active: boolean; onClick: () => void; label: string; color: string }) {
   return (
     <button onClick={onClick} style={{
-      fontSize: 10, padding: '2px 8px', borderRadius: 10, cursor: 'pointer',
+      fontSize: 10, padding: '3px 8px', borderRadius: 12, cursor: 'pointer', minHeight: 28,
       border: `1px solid ${active ? color : '#3F3F46'}`,
       background: active ? color + '22' : 'transparent',
       color: active ? color : '#8E8E93',
+      whiteSpace: 'nowrap', flexShrink: 0,
       transition: 'background 0.15s, color 0.15s',
     }}>{label}</button>
-  )
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: 10, color: '#6B7280', marginTop: 12, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>{children}</div>
-}
-
-function TierBadge({ tier }: { tier: PluginTier }) {
-  const cfg = TIER_CONFIG[tier]
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 3,
-      fontSize: 9, fontWeight: 600, padding: '1px 7px', borderRadius: 4,
-      letterSpacing: '0.3px', textTransform: 'uppercase',
-      background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
-    }}>
-      <span style={{ width: 5, height: 5, borderRadius: '50%', background: cfg.color }} />
-      {cfg.label}
-    </span>
   )
 }
