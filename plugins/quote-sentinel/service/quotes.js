@@ -30,7 +30,7 @@ const providers = require('./providers');
 const norm = require('./normalize');
 const alertsEngine = require('./alerts');
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.1';
 const TICK_MS = 1000;
 const DEFS_REFRESH_MS = 5000;     // 自选/提醒/设置刷新周期
 const META_BEAT_MS = 60 * 1000;

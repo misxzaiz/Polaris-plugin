@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>行情哨兵 · 图例 + 时间/新鲜度标识 PRD 原型 v2</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#10141C; --card:#161B22; --card2:#12161E; --line:#242C3A;
+    --txt:#E6EAF2; --mut:#8B95A7; --dim:#5C6678; --red:#F85149; --green:#3FB950; --yellow:#D29922;
+    --blue:#2b6cb0; --orange:#F97316; --sky:#58a6ff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:0 0 60px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 14px}
+  .doc-head{padding:24px 0 6px}
+  .doc-head h1{font-size:20px;margin:0 0 4px}
+  .doc-head .sub{color:var(--mut);font-size:12.5px}
+  .doc-head .ver{display:inline-block;background:#1C2330;border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:11px;color:var(--mut);margin-left:8px;vertical-align:2px}
+
+  /* 场景条 */
+  .scene-bar{position:sticky;top:0;z-index:60;background:rgba(11,14,20,.94);backdrop-filter:blur(8px);padding:10px 0 8px;border-bottom:1px solid var(--line)}
+  .scene-bar .lbl{font-size:11px;color:var(--mut);margin-bottom:6px}
+  .scene-btns{display:flex;gap:6px;flex-wrap:wrap}
+  .scene-btn{border:1px solid var(--line);background:#12151c;color:var(--mut);border-radius:8px;padding:6px 11px;font-size:12px;cursor:pointer}
+  .scene-btn.on{background:#1C2330;color:var(--txt);border-color:var(--blue);font-weight:600}
+  .scene-desc{font-size:11.5px;color:var(--dim);margin-top:7px;min-height:16px}
+
+  .grid{display:grid;grid-template-columns:1fr 1.15fr;gap:18px;margin-top:14px}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+  .col-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .col-hd .tag{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700}
+  .col-hd .tag.cur{background:#3a1d22;color:var(--red)}
+  .col-hd .tag.new{background:#12301c;color:var(--green)}
+  .col-hd .tt{font-size:13px;font-weight:600}
+
+  /* 模拟面板 */
+  .qs-root{position:relative;font:13px/1.55 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:var(--txt);height:620px;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .qs-body{flex:1;overflow-y:auto;padding:0 0 16px}
+  .qs-top{position:sticky;top:0;z-index:20;padding:11px 14px 8px;background:linear-gradient(180deg,var(--panel) 78%,rgba(16,20,28,0))}
+  .qs-ttrow{display:flex;align-items:center;gap:9px}
+  .qs-logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#C2410C,#F85149);display:flex;align-items:center;justify-content:center;font-size:15px;flex:none}
+  .qs-tt{flex:1;min-width:0}
+  .qs-tt b{font-size:14.5px;display:block}
+  .qs-tt small{color:var(--mut);font-size:10.5px;display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap}
+  .qs-dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none;cursor:help;transition:transform .1s}
+  .qs-dot:hover{transform:scale(1.4)}
+  .qs-dot.ok{background:var(--green);box-shadow:0 0 6px rgba(63,185,80,.7)}
+  .qs-dot.stale{background:var(--yellow)}
+  .qs-dot.down{background:var(--red)}
+  .qs-tabs{display:flex;gap:4px;margin-top:8px}
+  .qs-tab{background:transparent;border:none;color:var(--mut);font-size:12px;padding:5px 11px;border-radius:8px;cursor:pointer;position:relative}
+  .qs-tab.on{background:#1C2330;color:var(--txt);font-weight:600}
+  .qs-badge{position:absolute;top:0;right:2px;background:var(--red);color:#fff;font-size:9px;min-width:15px;height:15px;line-height:15px;border-radius:8px;text-align:center;padding:0 3px;font-weight:700}
+  .qs-idx{display:flex;gap:7px;overflow-x:auto;padding:2px 14px 8px}
+  .qs-idx-chip{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 9px;flex:none;min-width:96px}
+  .qs-idx-chip .n{font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+  .qs-idx-chip .v{font-size:12.5px;font-weight:700;white-space:nowrap}
+  .qs-idx-chip .p{font-size:10px;font-weight:600;white-space:nowrap}
+  .qs-sec{display:flex;align-items:center;gap:8px;padding:7px 15px 5px;font-size:12.5px;font-weight:700}
+  .qs-bar{width:3px;height:13px;border-radius:2px;background:linear-gradient(180deg,#F97316,#F85149);flex:none}
+  .qs-hint{margin-left:auto;font-size:10px;color:var(--dim);font-weight:400}
+  .qs-card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:0 14px 8px;overflow:hidden}
+  .qs-row{display:flex;align-items:center;gap:9px;padding:9px 12px;cursor:pointer;min-width:0}
+  .qs-row:hover{background:#1A2029}
+  .qs-name{min-width:0;flex:1}
+  .qs-name b{font-size:12.5px;display:flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qs-name small{color:var(--dim);font-size:9.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .qs-price{text-align:right;flex:none}
+  .qs-price b{font-size:14px;display:block;font-variant-numeric:tabular-nums}
+  .qs-chg{font-size:10px;font-variant-numeric:tabular-nums}
+  .qs-bell{font-size:10px;color:var(--yellow);flex:none}
+  .qs-detail{border-top:1px solid var(--line);padding:9px 12px;background:var(--card2)}
+  .qs-sub{font-size:10.5px;color:var(--mut);line-height:1.6}
+  .qs-grid{display:flex;gap:12px;flex-wrap:wrap;margin-top:7px}
+  .gs-cell{min-width:0}
+  .gs-cell .l{font-size:9px;color:var(--dim)}
+  .gs-cell .v{font-size:11.5px;color:#C9D1D9;font-weight:600}
+
+  /* 行内时间/源/新鲜度 */
+  .qs-timerow{display:flex;align-items:center;gap:5px;margin-top:2px;flex-wrap:wrap}
+  .qs-time{font-size:9.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+  .qs-src{font-size:8.5px;border-radius:4px;padding:0 4px;font-weight:600;white-space:nowrap}
+  .qs-src.tencent{background:#12301c;color:var(--green)}
+  .qs-src.east{background:#1c2330;color:var(--sky)}
+  .qs-src.cache{background:#332b12;color:var(--yellow)}
+  .qs-src.fund{background:#2a1a3a;color:#c792ea}
+  .qs-fresh{font-size:8.5px;border-radius:4px;padding:0 4px;font-weight:600;white-space:nowrap}
+  .qs-fresh.ok{background:#12301c;color:var(--green)}
+  .qs-fresh.warn{background:#332b12;color:var(--yellow)}
+  .qs-fresh.old{background:#3a1d22;color:var(--red)}
+  .qs-fresh.nav{background:#2a1a3a;color:#c792ea}
+
+  .tip{position:absolute;bottom:16px;left:-4px;z-index:99;background:rgba(22,27,35,.98);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:10.5px;color:var(--txt);width:210px;box-shadow:0 6px 18px #0008;display:none;line-height:1.5;white-space:normal}
+  .tip.show{display:block}
+  .tip b{color:var(--txt)}
+  .tip .d{color:var(--dim)}
+  .qs-empty{color:var(--mut);font-size:11.5px;padding:24px 14px;text-align:center;line-height:1.9}
+  .qs-foot{text-align:center;color:#454E5E;font-size:9px;padding:5px 14px 8px}
+  .about-hd{padding:8px 12px;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px}
+  .about-hd:hover{background:#1A2029}
+  .about-bd{padding:0 12px 10px;font-size:10.5px;color:var(--mut);line-height:1.7}
+  .about-bd code{background:#12151c;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:9.5px;color:var(--yellow)}
+  .hintbar{margin:12px 2px 0;font-size:10.5px;color:var(--dim);line-height:1.7}
+  .hintbar b{color:var(--mut)}
+
+  /* ===== 图例（面板内 sticky，可折叠） ===== */
+  .qs-legend{position:sticky;top:0;z-index:40;background:rgba(16,20,28,.97);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 14px 9px}
+  .lg-hd{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+  .lg-hd b{font-size:12px}
+  .lg-hd .tg{font-size:10px;color:var(--dim);font-weight:400;margin-left:auto}
+  .lg-hd .caret{font-size:10px;color:var(--mut);transition:transform .15s}
+  .qs-legend.open .caret{transform:rotate(90deg)}
+  .lg-body{display:none;margin-top:8px}
+  .qs-legend.open .lg-body{display:block}
+  .lg-group{margin-bottom:8px}
+  .lg-group:last-child{margin-bottom:0}
+  .lg-gt{font-size:9.5px;color:var(--dim);font-weight:700;letter-spacing:.4px;margin-bottom:4px}
+  .lg-items{display:flex;flex-wrap:wrap;gap:5px}
+  .lg-item{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);background:#12151c;border-radius:6px;padding:3px 7px;font-size:10px;color:var(--mut);cursor:pointer;transition:border-color .12s}
+  .lg-item:hover{border-color:var(--sky)}
+  .lg-item .desc{color:var(--dim);font-size:9px}
+  .lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}
+  .lg-swatch{font-size:8.5px;border-radius:4px;padding:0 4px;font-weight:600;line-height:1.4}
+  .lg-icon{font-size:10px;line-height:1}
+  /* 高亮定位动画 */
+  .glow{animation:glow 1.2s ease-out 2}
+  @keyframes glow{
+    0%{box-shadow:0 0 0 0 rgba(88,166,255,.9)}
+    50%{box-shadow:0 0 0 5px rgba(88,166,255,.55)}
+    100%{box-shadow:0 0 0 0 rgba(88,166,255,0)}
+  }
+  .qs-row.glow,.qs-idx-chip.glow,.qs-tab.glow{border-radius:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="doc-head">
+    <h1>行情哨兵 · 图例 + 时间/新鲜度标识 <span class="ver">PRD 原型 v2</span></h1>
+    <div class="sub">新增 <b style="color:var(--green)">面板内常驻图例</b>（分组 + 点击定位高亮），并补齐 <b style="color:#c792ea">场外基金 · 日净值</b> 场景与卡片。</div>
+  </div>
+
+  <div class="scene-bar">
+    <div class="lbl">模拟数据场景（切换后两侧面板同步更新；右侧图例可点条目定位高亮）</div>
+    <div class="scene-btns">
+      <button class="scene-btn on" data-scene="live">盘中 · 正常</button>
+      <button class="scene-btn" data-scene="offhours">盘外 · 降频</button>
+      <button class="scene-btn" data-scene="degraded">盘中 · 备源降级</button>
+      <button class="scene-btn" data-scene="cache">实时源全挂 · 缓存兜底</button>
+      <button class="scene-btn" data-scene="fund">场外基金 · 日净值</button>
+      <button class="scene-btn" data-scene="down">后台服务故障</button>
+      <button class="scene-btn" data-scene="stale">个股停牌 · 数据陈旧</button>
+    </div>
+    <div class="scene-desc" id="sceneDesc"></div>
+  </div>
+
+  <div class="grid">
+    <!-- 现状 -->
+    <div>
+      <div class="col-hd"><span class="tag cur">现状 v0.1.0</span><span class="tt">时间信息分散</span></div>
+      <div class="qs-root" id="panelCur"></div>
+      <div class="hintbar"><b>问题：</b>每只票的「行情时间 / 数据源」只有展开卡片才看得到；头部圆点只是「新鲜度」三态，且无文字、无提示。场外基金直接拒绝。</div>
+    </div>
+    <!-- 改进 -->
+    <div>
+      <div class="col-hd"><span class="tag new">改进 · 方案 A+</span><span class="tt">一眼看懂时间 + 常驻图例</span></div>
+      <div class="qs-root" id="panelNew"></div>
+      <div class="hintbar"><b>改动：</b>① 面板内常驻图例（分组、可折叠、点条目高亮定位）；② 圆点点击弹状态 tooltip；③ 头部直读「HH:MM:SS 更新（X 秒前）」；④ 卡片行内显示行情时间+数据源+新鲜度；⑤ 场外基金显示日净值（非实时标注）；⑥ 使用说明折叠区。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 数据 ===== */
+const STOCKS = [
+  {id:'sh000001', name:'上证指数', code:'000001', price:3210.45, chg:12.36, pct:0.39, note:'指数', mkt:'idx'},
+  {id:'sz399001', name:'深证成指', code:'399001', price:10562.80, chg:-45.20, pct:-0.43, note:'指数', mkt:'idx'},
+  {id:'sh600519', name:'贵州茅台', code:'600519', price:1487.50, chg:6.80, pct:0.46, note:'沪A', mkt:'stock'},
+  {id:'sh510300', name:'沪深300ETF', code:'510300', price:4.012, chg:-0.008, pct:-0.20, note:'沪基', mkt:'etf'},
+  {id:'sz000001', name:'平安银行', code:'000001', price:11.28, chg:0.00, pct:0.00, note:'深A', mkt:'stock'},
+];
+const FUNDS = [
+  {id:'jj006348', code:'006348', name:'银华盛利混合A', nav:2.5732, chgPct:6.82, navDate:'11-04', note:'场外基金'},
+  {id:'jj110022', code:'110022', name:'易方达消费行业', nav:3.4150, chgPct:-1.24, navDate:'11-04', note:'场外基金'},
+];
+const SCENES = {
+  live:{label:'盘中 · 正常', desc:'盘中 20s 轮询正常，腾讯主源，全部新鲜。', poll:20, lastPoll:8000, src:'tencent', err:null, session:true},
+  offhours:{label:'盘外 · 降频', desc:'收盘后自动降频 300s，数据为收盘价（正常）。', poll:300, lastPoll:120000, src:'tencent', err:null, session:false},
+  degraded:{label:'盘中 · 备源降级', desc:'腾讯超时，降级东财备源（黄点+lastError），部分标的缺数据。', poll:20, lastPoll:15000, src:'east', err:'腾讯主源超时，已切换东财备源', session:true},
+  cache:{label:'实时源全挂 · 缓存兜底', desc:'双源全挂，保留最近缓存标注 cache（橙标），不冒充实时。', poll:20, lastPoll:20000, src:'cache', err:'双源不可用，显示最近缓存', session:true},
+  fund:{label:'场外基金 · 日净值', desc:'场外基金无盘中价格，显示最近净值日（非实时）。日净值+日涨跌%+净值日期+「日净值」徽章。', poll:null, lastPoll:null, src:'fund', err:null, session:false},
+  down:{label:'后台服务故障', desc:'后台服务未连接，头部红点，列表无数据。', poll:null, lastPoll:null, src:null, err:'后台服务未连接', session:false},
+  stale:{label:'个股停牌 · 数据陈旧', desc:'平安银行停牌，行情时间停在 25 分钟前，其余正常。', poll:20, lastPoll:8000, src:'tencent', err:null, session:true},
+};
+const SRC_LABEL = {tencent:'腾讯主源', east:'东财备源', cache:'缓存兜底', fund:'日净值'};
+const NOW = new Date('2026-11-05T14:56:10');
+
+function stockOff(id, scene){
+  if(scene==='stale' && id==='sz000001') return 25*60000;
+  if(scene==='cache' && id==='sz000001') return 6*60000;
+  if(scene==='degraded' && (id==='sh510300'||id==='sz000001')) return 30*60000;
+  return 8*1000;
+}
+function stockSrc(id, scene){
+  if(scene==='cache') return 'cache';
+  if(scene==='degraded') return (id==='sh510300'||id==='sz000001') ? 'east' : 'tencent';
+  return 'tencent';
+}
+function fmt(ts){ const s=String(ts||''); return s.length===14 ? s.slice(4,6)+'-'+s.slice(6,8)+' '+s.slice(8,10)+':'+s.slice(10,12) : '—'; }
+function pctColor(p){ return p>0?'var(--red)':p<0?'var(--green)':'var(--mut)'; }
+
+/* ===== 图例定义 ===== */
+const LEGEND = [
+  {group:'服务状态（头部圆点）', items:[
+    {key:'dot-ok', type:'dot', style:'background:var(--green)', label:'正常更新', desc:'<2×轮询周期'},
+    {key:'dot-stale', type:'dot', style:'background:var(--yellow)', label:'降级/陈旧', desc:'超时或降级'},
+    {key:'dot-down', type:'dot', style:'background:var(--red)', label:'故障/未连接', desc:'服务挂了'},
+  ]},
+  {group:'数据源（行内徽章）', items:[
+    {key:'src-tencent', type:'swatch', style:'background:#12301c;color:var(--green)', label:'腾讯主源'},
+    {key:'src-east', type:'swatch', style:'background:#1c2330;color:var(--sky)', label:'东财备源'},
+    {key:'src-cache', type:'swatch', style:'background:#332b12;color:var(--yellow)', label:'缓存兜底'},
+    {key:'src-fund', type:'swatch', style:'background:#2a1a3a;color:#c792ea', label:'日净值(场外)'},
+  ]},
+  {group:'新鲜度（行内角标）', items:[
+    {key:'fresh-ok', type:'swatch', style:'background:#12301c;color:var(--green)', label:'实时'},
+    {key:'fresh-warn', type:'swatch', style:'background:#332b12;color:var(--yellow)', label:'数分钟前'},
+    {key:'fresh-old', type:'swatch', style:'background:#3a1d22;color:var(--red)', label:'陈旧/停牌'},
+    {key:'fresh-nav', type:'swatch', style:'background:#2a1a3a;color:#c792ea', label:'非实时·日净值'},
+  ]},
+  {group:'涨跌色 & 其他', items:[
+    {key:'updown', type:'icon', icon:'▲', style:'color:var(--red)', label:'红涨绿跌', desc:'可配置'},
+    {key:'bell', type:'icon', icon:'🔔', label:'生效中提醒'},
+    {key:'unread', type:'icon', icon:'●', style:'color:var(--red)', label:'未读徽标'},
+  ]},
+];
+
+/* ===== 渲染图例 ===== */
+function renderLegend(el){
+  let h = '<div class="qs-legend open"><div class="lg-hd" data-lg-toggle><b>图例</b><span style="font-size:9.5px;color:var(--dim)">点条目定位高亮 · 点标题折叠</span><span class="caret">▸</span></div><div class="lg-body">';
+  LEGEND.forEach(g=>{
+    h += '<div class="lg-group"><div class="lg-gt">'+g.group+'</div><div class="lg-items">';
+    g.items.forEach(it=>{
+      h += '<button class="lg-item" data-key="'+it.key+'">';
+      if(it.type==='dot') h += '<span class="lg-dot" style="'+it.style+'"></span>';
+      if(it.type==='swatch') h += '<span class="lg-swatch" style="'+it.style+'">'+it.label+'</span>';
+      if(it.type==='icon') h += '<span class="lg-icon" style="'+it.style+'">'+it.icon+'</span>';
+      h += '<span>'+it.label+'</span>';
+      if(it.desc) h += '<span class="desc">'+it.desc+'</span>';
+      h += '</button>';
+    });
+    h += '</div></div>';
+  });
+  h += '</div></div>';
+  el.insertAdjacentHTML('afterbegin', h);
+  const toggle = el.querySelector('[data-lg-toggle]');
+  toggle.addEventListener('click', ()=>el.querySelector('.qs-legend').classList.toggle('open'));
+  el.querySelectorAll('.lg-item').forEach(btn=>{
+    btn.addEventListener('click', ()=>highlight(el, btn.dataset.key));
+  });
+}
+function highlight(el, key){
+  el.querySelectorAll('.glow').forEach(x=>x.classList.remove('glow'));
+  el.querySelectorAll('[data-legend="'+key+'"]').forEach(x=>{ x.classList.add('glow'); });
+}
+
+/* ===== 渲染面板 ===== */
+function renderPanel(el, variant, scene){
+  const S = SCENES[scene];
+  const meta = S.lastPoll===null ? null : {poll:S.poll, lastPoll:Date.now()-S.lastPoll, src:S.src, err:S.err, session:S.session};
+  const dotCls = !meta ? 'down' : meta.err ? 'stale' : (Date.now()-meta.lastPoll < Math.max(meta.poll*2.5,90)*1000) ? 'ok' : 'stale';
+
+  let h = '<div class="qs-top">';
+  h += '<div class="qs-ttrow"><div class="qs-logo">盤</div><div class="qs-tt"><b>行情哨兵</b><small>';
+  h += '<span class="qs-dot '+dotCls+'" data-legend="dot-'+dotCls+'" '+(variant==='new'?'data-tip="head"':'')+'></span>';
+  if(!meta){ h += '后台服务未连接'; }
+  else {
+    const ago = Math.max(0, Date.now()-meta.lastPoll);
+    const agoTxt = ago<15000?'刚刚更新':ago<60000?Math.floor(ago/1000)+' 秒前更新':Math.floor(ago/60000)+' 分钟前更新';
+    if(variant==='cur'){
+      h += (meta.session?'盘中':'盘外')+' · '+(SRC_LABEL[meta.src]||'—')+' · '+agoTxt;
+      if(meta.err) h += ' · '+meta.err;
+    } else {
+      const nowStr = new Date(Date.now()).toTimeString().slice(0,8);
+      h += (meta.session?'盘中':'盘外')+' · '+nowStr+' 更新（'+agoTxt.replace('更新','')+'） · '+(SRC_LABEL[meta.src]||'—');
+      if(meta.err) h += ' · <span style="color:var(--yellow)">'+meta.err+'</span>';
+    }
+  }
+  h += '</small></div></div>';
+  h += '<div class="qs-tabs"><span class="qs-tab on" data-legend="updown">行情</span><span class="qs-tab" data-legend="unread">提醒<span class="qs-badge" data-legend="unread">1</span></span><span class="qs-tab">设置</span></div>';
+  h += '</div>';
+
+  h += '<div class="qs-body">';
+  if(!meta){
+    h += '<div class="qs-empty">后台服务未连接<br>设置 → 插件 → 行情哨兵 → 重启服务</div>';
+  } else {
+    // 指数条
+    if(scene!=='fund'){
+      h += '<div class="qs-idx">';
+      STOCKS.slice(0,2).forEach(s=>{
+        const c = pctColor(s.pct);
+        h += '<div class="qs-idx-chip" data-legend="updown"><div class="n">'+s.name+'</div><div class="v" style="color:'+c+'">'+s.price.toFixed(2)+'</div><div class="p" style="color:'+c+'">'+(s.pct>0?'+':'')+s.pct.toFixed(2)+'%</div></div>';
+      });
+      h += '</div>';
+    }
+    const showStocks = scene!=='fund';
+    h += '<div class="qs-sec"><span class="qs-bar"></span>'+(showStocks?'自选':'场外基金')+(showStocks?' '+STOCKS.length:' '+FUNDS.length)+'<span class="qs-hint">点击行展开详情</span></div>';
+
+    const list = showStocks ? STOCKS.slice(2) : [];
+    list.forEach((s,i)=>{
+      const c = pctColor(s.pct);
+      const off = stockOff(s.id, scene), src = stockSrc(s.id, scene);
+      const t = new Date(NOW.getTime()-off);
+      const tStr = ('0'+t.getMonth()+1).slice(-2)+'-'+('0'+t.getDate()).slice(-2)+' '+('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2);
+      const freshCls = off<90000?'ok':off<300000?'warn':'old';
+      const freshTxt = off<15000?'实时':off<90000?'近 1 分钟':off<300000?'数分钟前':'陈旧';
+      h += '<div class="qs-card"><div class="qs-row" data-legend="updown">';
+      h += '<div class="qs-name"><b>'+s.name+(i===0?'<span class="qs-bell" data-legend="bell">🔔1</span>':'')+'</b><small>'+s.id+' · '+s.note+'</small>';
+      if(variant==='new'){
+        h += '<div class="qs-timerow"><span class="qs-time">'+tStr+'</span><span class="qs-src '+src+'" data-legend="src-'+src+'">'+SRC_LABEL[src]+'</span><span class="qs-fresh '+freshCls+'" data-legend="fresh-'+freshCls+'">'+freshTxt+'</span></div>';
+      }
+      h += '</div>';
+      h += '<div class="qs-price"><b style="color:'+c+'">'+s.price.toFixed(2)+'</b><span class="qs-chg" style="color:'+c+'">'+(s.chg>0?'+':'')+s.chg.toFixed(2)+'</span></div>';
+      h += '<span style="font-size:10px;font-weight:700;color:'+c+'">'+(s.pct>0?'+':'')+s.pct.toFixed(2)+'%</span>';
+      h += '</div>';
+      h += '<div class="qs-detail" style="display:none">';
+      h += '<div class="qs-grid">';
+      h += '<div class="gs-cell"><div class="l">今开</div><div class="v">'+(s.price-0.5).toFixed(2)+'</div></div>';
+      h += '<div class="gs-cell"><div class="l">昨收</div><div class="v">'+(s.price-s.chg).toFixed(2)+'</div></div>';
+      h += '<div class="gs-cell"><div class="l">最高</div><div class="v">'+(s.price+0.6).toFixed(2)+'</div></div>';
+      h += '<div class="gs-cell"><div class="l">最低</div><div class="v">'+(s.price-0.9).toFixed(2)+'</div></div>';
+      h += '</div>';
+      h += '<div class="qs-sub" style="margin-top:6px">行情时间 '+fmt('2026110514'+(56-i)+'02')+' · 数据源 '+(SRC_LABEL[src]||'—')+'</div>';
+      h += '</div></div>';
+    });
+
+    // 场外基金卡（fund 场景）
+    if(scene==='fund'){
+      FUNDS.forEach(f=>{
+        const c = pctColor(f.chgPct);
+        h += '<div class="qs-card"><div class="qs-row" data-legend="updown">';
+        h += '<div class="qs-name"><b>'+f.name+'</b><small>'+f.code+' · '+f.note+'</small>';
+        if(variant==='new'){
+          h += '<div class="qs-timerow"><span class="qs-time">'+f.navDate+'</span><span class="qs-src fund" data-legend="src-fund">日净值</span><span class="qs-fresh nav" data-legend="fresh-nav">非实时·日频</span></div>';
+        }
+        h += '</div>';
+        h += '<div class="qs-price"><b style="color:'+c+'">'+f.nav.toFixed(4)+'</b><span class="qs-chg" style="color:'+c+'">'+(f.chgPct>0?'+':'')+f.chgPct.toFixed(2)+'%</span></div>';
+        h += '<span style="font-size:10px;font-weight:700;color:'+c+'">'+(f.chgPct>0?'+':'')+f.chgPct.toFixed(2)+'%</span>';
+        h += '</div>';
+        h += '<div class="qs-detail" style="display:none">';
+        h += '<div class="qs-grid">';
+        h += '<div class="gs-cell"><div class="l">最新净值</div><div class="v">'+f.nav.toFixed(4)+'</div></div>';
+        h += '<div class="gs-cell"><div class="l">日涨跌</div><div class="v" style="color:'+c+'">'+(f.chgPct>0?'+':'')+f.chgPct.toFixed(2)+'%</div></div>';
+        h += '<div class="gs-cell"><div class="l">净值日期</div><div class="v">'+f.navDate+'</div></div>';
+        h += '<div class="gs-cell"><div class="l">频率</div><div class="v">日频</div></div>';
+        h += '</div>';
+        h += '<div class="qs-sub" style="margin-top:6px">场外基金无盘中价格，净值每日收盘后更新一次（非实时）· 数据源 天天基金</div>';
+        h += '</div></div>';
+      });
+    }
+  }
+  h += '<div class="qs-foot">行情数据来自公开接口 · 仅供个人参考，非投资建议</div>';
+
+  if(variant==='new'){
+    h += '<div class="qs-card" style="margin-top:2px"><div class="about-hd" data-about>▸ 使用说明（原 README，随包内置）</div>';
+    h += '<div class="about-bd" style="display:none">';
+    h += '<b style="color:var(--txt)">怎么看时间？</b><br>头部圆点=服务新鲜度；头部文字=最近一次轮询时刻；每只票行内=该标的最新成交时刻 + 数据源 + 新鲜度。<br><br>';
+    h += '<b style="color:var(--txt)">数据源三级降级</b><br><code>腾讯主源</code>→<code>东财备源</code>→<code>缓存兜底</code>。<br><br>';
+    h += '<b style="color:var(--txt)">场外基金</b><br>无盘中价格，显示最近净值日（<code>日净值</code>徽章），非实时。<br><br>';
+    h += '<b style="color:var(--txt)">提醒</b><br>🔔 = 生效中提醒；触发后「提醒」Tab 出现未读徽标。<br><br>';
+    h += '<span style="color:var(--dim)">行情数据来自公开接口，可能有延迟或错误，仅供个人参考，非投资建议。</span>';
+    h += '</div></div>';
+  }
+  h += '</div></div>';
+  el.innerHTML = h;
+
+  el.querySelectorAll('.qs-row').forEach(r=>{ r.addEventListener('click',()=>{ const d=r.parentNode.querySelector('.qs-detail'); if(d) d.style.display = d.style.display==='none'?'block':'none'; }); });
+  const ab = el.querySelector('[data-about]');
+  if(ab) ab.addEventListener('click',()=>{ const bd=ab.parentNode.querySelector('.about-bd'); const open=bd.style.display!=='none'; bd.style.display=open?'none':'block'; ab.textContent=(open?'▸ ':'▾ ')+'使用说明（原 README，随包内置）'; });
+  if(variant==='new'){
+    renderLegend(el);
+    const dot = el.querySelector('.qs-dot[data-tip]');
+    if(dot) dot.addEventListener('click',(e)=>{ e.stopPropagation(); const tip=el.querySelector('.tip'); if(tip){ tip.classList.toggle('show'); return; } const t=document.createElement('div'); t.className='tip show'; t.innerHTML=dotTitle(meta,dotCls); dot.parentNode.insertBefore(t,dot.nextSibling); setTimeout(()=>{const ti=el.querySelector('.tip'); if(ti) ti.classList.remove('show');},5000); });
+  }
+}
+function dotTitle(meta, cls){
+  if(!meta) return '<b>状态：故障</b><br><span class="d">后台服务未连接。请到 设置 → 插件 → 行情哨兵 → 重启服务。</span>';
+  const ago=Math.max(0,Date.now()-meta.lastPoll); const agoTxt=ago<15000?'刚刚':Math.floor(ago/1000)+' 秒前';
+  const st=cls==='ok'?'<b style="color:var(--green)">正常更新</b>':cls==='stale'?'<b style="color:var(--yellow)">降级/陈旧</b>':'<b style="color:var(--red)">故障</b>';
+  return '状态：'+st+'<br><span class="d">最近轮询 '+agoTxt+' · '+(meta.session?'盘中':'盘外')+'<br>数据源：'+(SRC_LABEL[meta.src]||'—')+(meta.err?'<br>'+meta.err:'')+'</span>';
+}
+
+/* ===== 场景切换 ===== */
+let curScene='live';
+function apply(scene){
+  curScene=scene;
+  renderPanel(document.getElementById('panelCur'),'cur',scene);
+  renderPanel(document.getElementById('panelNew'),'new',scene);
+  document.querySelectorAll('.scene-btn').forEach(b=>b.classList.toggle('on',b.dataset.scene===scene));
+  document.getElementById('sceneDesc').textContent=SCENES[scene].desc;
+}
+document.querySelectorAll('.scene-btn').forEach(b=>b.addEventListener('click',()=>apply(b.dataset.scene)));
+apply('live');
+setInterval(()=>{ if(curScene==='live') apply('live'); },3000);
+</script>
+</body>
+</html>

@@ -34,7 +34,7 @@ const { normalizeCode, fmtNum, fmtAmountWan, fmtVolumeHand } = require('../servi
 const { describeAlert } = require('../service/alerts');
 
 const SERVER_NAME = 'quote-sentinel';
-const SERVER_VERSION = '0.1.0';
+const SERVER_VERSION = '0.1.1';
 const PROTOCOL_VERSION = '2024-11-05';
 const DISCLAIMER = '（数据来自公开行情接口，可能有延迟或错误，仅供个人参考，非投资建议）';
 

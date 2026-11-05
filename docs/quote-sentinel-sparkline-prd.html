@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>行情哨兵 · 分时图坐标轴标注 PRD 原型</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#10141C; --card:#161B22; --card2:#12161E; --line:#242C3A;
+    --txt:#E6EAF2; --mut:#8B95A7; --dim:#5C6678; --red:#F85149; --green:#3FB950; --yellow:#D29922;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:0 0 60px}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 14px}
+  .doc-head{padding:24px 0 6px}
+  .doc-head h1{font-size:20px;margin:0 0 4px}
+  .doc-head .sub{color:var(--mut);font-size:12.5px}
+  .doc-head .ver{display:inline-block;background:#1C2330;border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:11px;color:var(--mut);margin-left:8px;vertical-align:2px}
+  .callout{border:1px solid var(--line);border-left:3px solid #2b6cb0;background:#12161E;border-radius:8px;padding:9px 12px;font-size:12px;color:var(--mut);margin:14px 0}
+  .callout b{color:var(--txt)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:16px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .col-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .col-hd .tag{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700}
+  .col-hd .tag.cur{background:#3a1d22;color:var(--red)}
+  .col-hd .tag.new{background:#12301c;color:var(--green)}
+  .col-hd .tt{font-size:13px;font-weight:600}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;overflow:hidden}
+  .card .chd{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .card .chd b{font-size:13px}
+  .card .chd small{color:var(--dim);font-size:10px}
+  svg{display:block}
+  .hintbar{margin:12px 2px 0;font-size:10.5px;color:var(--dim);line-height:1.7}
+  .hintbar b{color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="doc-head">
+    <h1>行情哨兵 · 分时图坐标轴标注 <span class="ver">PRD 原型 v1</span></h1>
+    <div class="sub">你问的「线图」是 <b>当日分时</b>（09:30–15:00 每分钟价）。现状只有一条线，无轴无标注；改进版补齐 <b>时间轴 / 价格轴 / 昨收标注 / 标题 / 末点</b>。</div>
+  </div>
+
+  <div class="callout">
+    <b>这条线到底是什么？</b> 横轴 = 当日时间（09:30 开盘 → 11:30 午休 → 13:00 午后 → 15:00 收盘）；纵轴 = 价格；虚线 = 昨收价（涨跌分界）。
+    <br><b>不是</b> 按日、<b>不是</b> K线、<b>不是</b> 多日走势——就是<b>单只标的今天一整天的分时价</b>。
+  </div>
+
+  <div class="grid">
+    <!-- 现状 -->
+    <div>
+      <div class="col-hd"><span class="tag cur">现状 v0.1.0</span><span class="tt">光秃秃一条线</span></div>
+      <div class="card" id="cardCur">
+        <div class="chd"><b>贵州茅台 600519</b><small>展开详情后</small></div>
+        <div id="spCur"></div>
+      </div>
+      <div class="hintbar"><b>问题：</b>无时间轴、无价格轴、无标题、无昨收标注、无图例 → 你无法判断它是按时/按日/按什么，也读不出当前价。</div>
+    </div>
+    <!-- 改进 -->
+    <div>
+      <div class="col-hd"><span class="tag new">改进 · 已实现</span><span class="tt">完整坐标轴 + 标注</span></div>
+      <div class="card" id="cardNew">
+        <div class="chd"><b>贵州茅台 600519</b><small>展开详情后</small></div>
+        <div id="spNew"></div>
+      </div>
+      <div class="hintbar"><b>新增：</b>① 标题「11-05 · 当日分时」+ 最新价/涨跌% ② 横轴 09:30/11:30/13:00/15:00（真实时钟映射，体现午休）③ 纵轴最高/昨收/最低 ④ 昨收虚线+「昨收」标签 ⑤ 末点高亮圆点。代码已落到 <code>src/bits.tsx</code> 并构建。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* 模拟当日分时：9:30→11:30 与 13:00→15:00，每分钟一点（午休跳过） */
+const MORN=9*60+30, LUNCH=11*60+30, AFTER=13*60, CLOSE=15*60;
+const points=[];
+function fmtHHMM(min){ const h=String(Math.floor(min/60)).padStart(2,'0'); const m=String(min%60).padStart(2,'0'); return h+m; }
+// 生成：上午震荡上行，午休后回落后尾盘回升
+for(let m=MORN;m<=LUNCH;m++){ const p=1487.5+ (m-MORN)*0.02 + Math.sin((m-MORN)/4)*1.2; points.push({t:fmtHHMM(m),p:+p.toFixed(2)}); }
+for(let m=AFTER;m<=CLOSE;m++){ const p=1487.5+4.0 - (m-AFTER)*0.012 + Math.sin((m-AFTER)/5)*1.5; points.push({t:fmtHHMM(m),p:+p.toFixed(2)}); }
+const prevClose=1480.7, color='#F85149';
+
+function render(el, withAxis){
+  const W=430,H=110;
+  const padL=4,padR=46,padT=18,padB=20;
+  const plotW=W-padL-padR, plotH=H-padT-padB;
+  const prices=points.map(p=>p.p);
+  const lo=Math.min(...prices,prevClose), hi=Math.max(...prices,prevClose);
+  const pad=(hi-lo)*0.08||0.01, yMin=lo-pad, yMax=hi+pad;
+  function xOfMin(minOfDay){
+    if(minOfDay<=LUNCH) return padL+((minOfDay-MORN)/(LUNCH-MORN))*(plotW/2);
+    return padL+(plotW/2)+((minOfDay-AFTER)/(CLOSE-AFTER))*(plotW/2);
+  }
+  function minOf(i){ const s=points[i].t; return parseInt(s.slice(0,2))*60+parseInt(s.slice(2,4)); }
+  const x=i=>xOfMin(minOf(i));
+  const y=v=>padT+plotH-((v-yMin)/(yMax-yMin))*plotH;
+  const path=points.map((p,i)=>`${i===0?'M':'L'}${x(i).toFixed(1)},${y(p.p).toFixed(1)}`).join(' ');
+  const area=`${path} L${x(points.length-1).toFixed(1)},${padT+plotH} L${x(0).toFixed(1)},${padT+plotH} Z`;
+  const last=points[points.length-1];
+  const lastPct=((last.p-prevClose)/prevClose)*100;
+  let s=`<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block" preserveAspectRatio="none">`;
+  if(withAxis){
+    s+=`<text x="${padL}" y="11" fill="#8B95A7" font-size="9" font-weight="600">11-05 · 当日分时</text>`;
+    s+=`<text x="${W-padR}" y="11" fill="#F85149" font-size="9" font-weight="700" text-anchor="end">${last.p.toFixed(2)}  +${lastPct.toFixed(2)}%</text>`;
+    s+=`<line x1="${padL}" x2="${W-padR}" y1="${y(prevClose)}" y2="${y(prevClose)}" stroke="#5C6678" stroke-width="0.8" stroke-dasharray="4 3"/>`;
+    s+=`<text x="${W-padR+2}" y="${y(prevClose)+3}" fill="#8B95A7" font-size="7.5" font-weight="600">昨收</text>`;
+  } else {
+    s+=`<line x1="${padL}" x2="${W-padR}" y1="${y(prevClose)}" y2="${y(prevClose)}" stroke="#5C6678" stroke-width="0.8" stroke-dasharray="4 3"/>`;
+  }
+  s+=`<path d="${area}" fill="${color}" fill-opacity="0.1"/>`;
+  s+=`<path d="${path}" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if(withAxis){
+    s+=`<circle cx="${x(points.length-1)}" cy="${y(last.p)}" r="2.5" fill="#F85149" stroke="#10141C" stroke-width="1"/>`;
+    [[ '高',hi ],[ '昨收',prevClose ],[ '低',lo ]].forEach(([lb,v])=>{
+      s+=`<line x1="${W-padR}" x2="${W-padR+3}" y1="${y(v)}" y2="${y(v)}" stroke="#5C6678" stroke-width="0.6"/>`;
+      s+=`<text x="${W-padR+5}" y="${y(v)+2.6}" fill="#8B95A7" font-size="7.5">${v.toFixed(2)}</text>`;
+    });
+    [['09:30',MORN],['11:30',LUNCH],['13:00',AFTER],['15:00',CLOSE]].forEach(([lb,mn],i)=>{
+      s+=`<line x1="${xOfMin(mn)}" x2="${xOfMin(mn)}" y1="${padT}" y2="${padT+plotH}" stroke="#242C3A" stroke-width="0.5" stroke-dasharray="2 3"/>`;
+      s+=`<text x="${xOfMin(mn)}" y="${H-6}" fill="#8B95A7" font-size="7.5" text-anchor="${i===0?'start':i===3?'end':'middle'}">${lb}</text>`;
+    });
+  }
+  s+='</svg>';
+  el.innerHTML=s;
+}
+render(document.getElementById('spCur'),false);
+render(document.getElementById('spNew'),true);
+</script>
+</body>
+</html>

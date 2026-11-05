@@ -1,6 +1,6 @@
 {
   "name": "quote-sentinel-panel",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "quote-sentinel 插件面板（打包用）：行情哨兵行情哨兵",
   "scripts": {

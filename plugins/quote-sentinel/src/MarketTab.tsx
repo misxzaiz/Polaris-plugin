@@ -290,7 +290,7 @@ function Detail({ row, alerts, redUp, reload, showToast }: {
       {minute && !loadingMinute && (
         minute.ok === false || !minute.points?.length
           ? <div className="qs-sub">{minute.error || '暂无分时数据'}</div>
-          : <Sparkline points={minute.points} prevClose={minute.prevClose ?? state?.prevClose ?? null} color={color} />
+          : <Sparkline points={minute.points} prevClose={minute.prevClose ?? state?.prevClose ?? null} color={color} date={minute.date} />
       )}
       <div className="qs-grid">
         <StatCell label="今开" value={fmtNum(state?.open)} />

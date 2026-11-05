@@ -346,7 +346,7 @@ init_model();
 import { useState } from "react";
 
 // src/bits.tsx
-import { jsx, jsxs } from "react/jsx-runtime";
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 var UP_RED = "#F85149";
 var DOWN_GREEN = "#3FB950";
 var FLAT = "#8B95A7";
@@ -376,25 +376,73 @@ function PctBadge({ pct, redUp, big }) {
     }
   );
 }
-function Sparkline({ points, prevClose, color, width = 300, height = 96 }) {
+function Sparkline({ points, prevClose, color, width = 300, height = 110, date }) {
   if (!points.length) {
     return /* @__PURE__ */ jsx("div", { style: { color: "#5C6678", fontSize: 11, padding: "14px 0" }, children: "\u6682\u65E0\u5206\u65F6\u6570\u636E" });
   }
+  const padL = 4, padR = 46, padT = 18, padB = 20;
+  const plotW = width - padL - padR;
+  const plotH = height - padT - padB;
   const prices = points.map((p) => p.p);
   const lo = Math.min(...prices, prevClose ?? Infinity);
   const hi = Math.max(...prices, prevClose ?? -Infinity);
   const pad = (hi - lo) * 0.08 || hi * 2e-3 || 0.01;
   const yMin = lo - pad;
   const yMax = hi + pad;
-  const x = (i) => i / Math.max(points.length - 1, 1) * (width - 8) + 4;
-  const y = (v) => height - 6 - (v - yMin) / (yMax - yMin) * (height - 12);
+  function xOfMin(minOfDay) {
+    const MORN = 9 * 60 + 30, LUNCH = 11 * 60 + 30, AFTER = 13 * 60, CLOSE = 15 * 60;
+    if (minOfDay <= LUNCH) return padL + (minOfDay - MORN) / (LUNCH - MORN) * (plotW / 2);
+    return padL + plotW / 2 + (minOfDay - AFTER) / (CLOSE - AFTER) * (plotW / 2);
+  }
+  function minOf(i) {
+    const t = points[i].t;
+    const s = String(t);
+    if (/^\d{4}$/.test(s)) return parseInt(s.slice(0, 2), 10) * 60 + parseInt(s.slice(2, 4), 10);
+    return 9 * 60 + 30 + i;
+  }
+  const x = (i) => xOfMin(minOf(i));
+  const y = (v) => padT + plotH - (v - yMin) / (yMax - yMin) * plotH;
   const path = points.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.p).toFixed(1)}`).join(" ");
-  const area = `${path} L${x(points.length - 1).toFixed(1)},${height - 4} L${x(0).toFixed(1)},${height - 4} Z`;
-  const base = prevClose !== null && Number.isFinite(prevClose) ? /* @__PURE__ */ jsx("line", { x1: 4, x2: width - 4, y1: y(prevClose), y2: y(prevClose), stroke: "#5C6678", strokeWidth: 1, strokeDasharray: "4 3" }) : null;
+  const area = `${path} L${x(points.length - 1).toFixed(1)},${padT + plotH} L${x(0).toFixed(1)},${padT + plotH} Z`;
+  const hasBase = prevClose !== null && Number.isFinite(prevClose);
+  const last = points[points.length - 1];
+  const lastPct = hasBase && prevClose !== null ? (last.p - prevClose) / prevClose * 100 : null;
+  const lastColor = lastPct === null ? "#8B95A7" : lastPct >= 0 ? UP_RED : DOWN_GREEN;
+  const yTicks = [
+    { label: "\u9AD8", v: hi, sub: null },
+    { label: "\u6628\u6536", v: prevClose, sub: "\u6628\u6536" },
+    { label: "\u4F4E", v: lo, sub: null }
+  ].filter((t) => t.v !== null && t.v !== void 0);
+  const xTicks = [
+    { t: "09:30", min: 9 * 60 + 30 },
+    { t: "11:30", min: 11 * 60 + 30 },
+    { t: "13:00", min: 13 * 60 },
+    { t: "15:00", min: 15 * 60 }
+  ];
   return /* @__PURE__ */ jsxs("svg", { width: "100%", viewBox: `0 0 ${width} ${height}`, style: { display: "block" }, preserveAspectRatio: "none", children: [
+    /* @__PURE__ */ jsxs("text", { x: padL, y: 11, fill: "#8B95A7", fontSize: "9", fontWeight: "600", children: [
+      fmtDateLabel(date),
+      " \xB7 \u5F53\u65E5\u5206\u65F6"
+    ] }),
+    /* @__PURE__ */ jsxs("text", { x: width - padR, y: 11, fill: lastColor, fontSize: "9", fontWeight: "700", textAnchor: "end", children: [
+      last.p.toFixed(2),
+      lastPct !== null ? `  ${lastPct >= 0 ? "+" : ""}${lastPct.toFixed(2)}%` : ""
+    ] }),
+    hasBase && /* @__PURE__ */ jsxs(Fragment, { children: [
+      /* @__PURE__ */ jsx("line", { x1: padL, x2: width - padR, y1: y(prevClose), y2: y(prevClose), stroke: "#5C6678", strokeWidth: 0.8, strokeDasharray: "4 3" }),
+      /* @__PURE__ */ jsx("text", { x: width - padR + 2, y: y(prevClose) + 3, fill: "#8B95A7", fontSize: "7.5", fontWeight: "600", children: "\u6628\u6536" })
+    ] }),
     /* @__PURE__ */ jsx("path", { d: area, fill: color, fillOpacity: 0.1 }),
-    base,
-    /* @__PURE__ */ jsx("path", { d: path, fill: "none", stroke: color, strokeWidth: 1.6, strokeLinejoin: "round", strokeLinecap: "round" })
+    /* @__PURE__ */ jsx("path", { d: path, fill: "none", stroke: color, strokeWidth: 1.6, strokeLinejoin: "round", strokeLinecap: "round" }),
+    /* @__PURE__ */ jsx("circle", { cx: x(points.length - 1), cy: y(last.p), r: 2.5, fill: lastColor, stroke: "#10141C", strokeWidth: 1 }),
+    yTicks.map((t, i) => /* @__PURE__ */ jsxs("g", { children: [
+      /* @__PURE__ */ jsx("line", { x1: width - padR, x2: width - padR + 3, y1: y(t.v), y2: y(t.v), stroke: "#5C6678", strokeWidth: 0.6 }),
+      /* @__PURE__ */ jsx("text", { x: width - padR + 5, y: y(t.v) + 2.6, fill: "#8B95A7", fontSize: "7.5", children: t.v.toFixed(2) })
+    ] }, "y" + i)),
+    xTicks.map((t, i) => /* @__PURE__ */ jsxs("g", { children: [
+      /* @__PURE__ */ jsx("line", { x1: xOfMin(t.min), x2: xOfMin(t.min), y1: padT, y2: padT + plotH, stroke: "#242C3A", strokeWidth: 0.5, strokeDasharray: "2 3" }),
+      /* @__PURE__ */ jsx("text", { x: xOfMin(t.min), y: height - 6, fill: "#8B95A7", fontSize: "7.5", textAnchor: i === 0 ? "start" : i === xTicks.length - 1 ? "end" : "middle", children: t.t })
+    ] }, "x" + i))
   ] });
 }
 function StatCell({ label, value, color }) {
@@ -402,6 +450,10 @@ function StatCell({ label, value, color }) {
     /* @__PURE__ */ jsx("div", { style: { fontSize: 9.5, color: "#5C6678" }, children: label }),
     /* @__PURE__ */ jsx("div", { style: { fontSize: 12, color: color || "#C9D1D9", fontWeight: 600 }, children: value })
   ] });
+}
+function fmtDateLabel(d) {
+  const s = String(d || "");
+  return /^\d{8}$/.test(s) ? `${s.slice(4, 6)}-${s.slice(6, 8)}` : "";
 }
 
 // src/MarketTab.tsx
@@ -652,7 +704,7 @@ function Detail({ row, alerts, redUp, reload, showToast }) {
       /* @__PURE__ */ jsx2("span", { className: "qs-spin" }),
       " \u5206\u65F6\u52A0\u8F7D\u4E2D\u2026"
     ] }),
-    minute && !loadingMinute && (minute.ok === false || !minute.points?.length ? /* @__PURE__ */ jsx2("div", { className: "qs-sub", children: minute.error || "\u6682\u65E0\u5206\u65F6\u6570\u636E" }) : /* @__PURE__ */ jsx2(Sparkline, { points: minute.points, prevClose: minute.prevClose ?? state?.prevClose ?? null, color })),
+    minute && !loadingMinute && (minute.ok === false || !minute.points?.length ? /* @__PURE__ */ jsx2("div", { className: "qs-sub", children: minute.error || "\u6682\u65E0\u5206\u65F6\u6570\u636E" }) : /* @__PURE__ */ jsx2(Sparkline, { points: minute.points, prevClose: minute.prevClose ?? state?.prevClose ?? null, color, date: minute.date })),
     /* @__PURE__ */ jsxs2("div", { className: "qs-grid", children: [
       /* @__PURE__ */ jsx2(StatCell, { label: "\u4ECA\u5F00", value: fmtNum(state?.open) }),
       /* @__PURE__ */ jsx2(StatCell, { label: "\u6628\u6536", value: fmtNum(state?.prevClose) }),
