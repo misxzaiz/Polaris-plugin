@@ -1,0 +1,41 @@
+{
+  "id": "ci-lens",
+  "name": "CI 体检台",
+  "version": "0.1.0",
+  "description": "把「配置错误→push→CI 红了→来回改」变成 push 前一次本地体检：Dockerfile 20 条 + GitHub Actions 工作流 26 条规则（hadolint/actionlint 高频子集），行级发现 + 中文修复建议 + 0-10 评分。基础镜像未钉版本、apt/apk 缓存卫生、curl|sh、多 CMD、ADD 远程 URL；needs 环/未知引用、runs-on 拼写、${{ 未闭合、secrets.github_token 大小写、outputs 引用校验、pull_request_target+PR head 检出危险组合、schedule cron 校验、timeout 缺失。纯本地零外联零 kv；AI 经 MCP 三工具（lint/scan/rules）一句话体检单文件或扫整个仓库并解读。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "ci-lens.panel",
+        "area": "activityBar",
+        "panelType": "ci-lens",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.ci-lens",
+        "labelDefault": "CI 体检台",
+        "order": 102
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "ci-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ci-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ci-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ci-lens/ci-lens.zip"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "ci-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ci-lens 插件（打包用）：CI 体检台",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime && esbuild mcp/src/server.mjs --bundle --platform=node --format=cjs --outfile=mcp/server.js",
+    "build:panel": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build:mcp": "esbuild mcp/src/server.mjs --bundle --platform=node --format=cjs --outfile=mcp/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/mcp-verify.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "js-yaml": "^4.1.0",
+    "typescript": "^5.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "type": "commonjs"
+}
