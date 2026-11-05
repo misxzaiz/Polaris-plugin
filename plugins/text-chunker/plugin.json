@@ -1,0 +1,36 @@
+{
+  "id": "text-chunker",
+  "name": "LLM 文本切块台",
+  "version": "0.1.0",
+  "description": "把长文本按 token 预算切成适合 LLM 上下文的块：段落/句子边界贪心切块（不在词中间断）、可配重叠窗口防语义断裂、每块 token 估算（CJK≈1 字/token、英文≈4 字符/token 启发式口径，如实声明非精确 tokenizer）。喂长文档给 AI 前的预处理刚需。与 schema-check/json-repair/schema-mock 组成 AI 工具链；纯本地零外联零 kv，MCP 两工具（split/count_only）+ 面板双框测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "text-chunker.panel",
+        "area": "activityBar",
+        "panelType": "text-chunker",
+        "icon": "Scissors",
+        "labelKey": "plugins.text-chunker",
+        "labelDefault": "LLM 文本切块台",
+        "order": 105
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js", "supportsFullscreen": false },
+    "mcpServers": [
+      {
+        "id": "text-chunker",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/text-chunker",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-chunker/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/text-chunker/text-chunker.zip"
+  }
+}
