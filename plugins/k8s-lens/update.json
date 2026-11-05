@@ -1,0 +1,43 @@
+{
+  "id": "k8s-lens",
+  "name": "K8s 清单体检台",
+  "version": "0.1.0",
+  "description": "把「清单错误→apply 被拒/带病上线→集群里排错」变成 apply 前一次本地体检：50+ 条离线规则覆盖结构错误（缺 apiVersion/kind/name、kind↔apiVersion 错配、已移除的弃用 API 如 apps/v1beta1/extensions/v1beta1/policy/v1beta1、labels 值非字符串）、安全红线（privileged、hostNetwork/PID/IPC、hostPath、明文密钥、危险 capability）、可靠性（缺资源 limits/探针、latest 镜像、Job restartPolicy、CronJob cron 表达式）与跨资源一致性（selector 不匹配、ConfigMap/Secret/PVC 引用缺失、Service targetPort 断链、Ingress 后端缺失）。行级定位 + 中文修复建议 + 0-10 评分，多文档 --- 支持，Helm 模板自动跳过。纯本地零外联零 kv，不连集群；AI 经 MCP 四工具一句话体检单段清单或只读扫描整个目录。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "k8s-lens.panel",
+        "area": "activityBar",
+        "panelType": "k8s-lens",
+        "icon": "Ship",
+        "labelKey": "plugins.k8s-lens",
+        "labelDefault": "K8s 清单体检台",
+        "order": 103
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "k8s-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/k8s-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/k8s-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/k8s-lens/k8s-lens.zip"
+  }
+}
