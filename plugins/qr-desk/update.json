@@ -1,0 +1,51 @@
+{
+  "id": "qr-desk",
+  "name": "二维码工作台",
+  "version": "0.1.0",
+  "description": "把「生成/解读一个二维码」从贴密钥给联网生成器、手机扫码猜内容，变成 3 秒本地闭环：文本/URL/WiFi/vCard/otpauth 模板生成 PNG/SVG 本地落盘，拖图或粘贴即解码并逐字段解读（WiFi 转义还原、otpauth 参数+TOTP 实时码、Google Authenticator 迁移码 protobuf 解码——竞品真空），CSV/JSON 批量出码，冲突永不覆盖。全程零外联，密钥类载荷不出本机、不落日志不落 kv；AI 经 MCP 五工具（generate/decode/inspect/batch/selftest）一句话生成与解读，试金石自检含 RFC 6238/4226 金标向量与 round-trip 闭环。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "qr-desk.panel",
+        "area": "activityBar",
+        "panelType": "qr-desk",
+        "icon": "./assets/icon.svg",
+        "labelKey": "plugins.qrDesk",
+        "labelDefault": "二维码工作台",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "services": [
+      {
+        "id": "qr-desk-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9865,
+        "healthCheck": "/__health"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "qr-desk",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/qr-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qr-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/qr-desk/qr-desk.zip"
+  }
+}
