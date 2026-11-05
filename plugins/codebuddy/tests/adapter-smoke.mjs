@@ -88,7 +88,7 @@ async function scenarioA() {
     id: 1, method: 'start_session',
     params: {
       session_id: 'host-s1', message: 'hi', work_dir: sandbox,
-      permission_mode: 'plan', model: 'hy4-preview',
+      permission_mode: 'plan', model: 'hy4-preview', effort: 'high', agent: 'general-purpose',
       env_overrides: { PATH: sandbox + ';' + process.env.PATH },
     },
   });
@@ -140,6 +140,16 @@ async function scenarioA() {
     const argv = JSON.parse(readFileSync(argvDump, 'utf8'));
     assert.ok(!argv.some(a => a === 'hi'), `argv 含 prompt: ${JSON.stringify(argv)}`);
     assert.strictEqual(readFileSync(promptDump, 'utf8'), 'hi');
+  });
+  check('effort high 透传', () => {
+    const argv = JSON.parse(readFileSync(argvDump, 'utf8'));
+    const i = argv.indexOf('--effort');
+    assert.ok(i >= 0 && argv[i + 1] === 'high', `argv=${JSON.stringify(argv)}`);
+  });
+  check('agent general-purpose 透传', () => {
+    const argv = JSON.parse(readFileSync(argvDump, 'utf8'));
+    const i = argv.indexOf('--agent');
+    assert.ok(i >= 0 && argv[i + 1] === 'general-purpose', `argv=${JSON.stringify(argv)}`);
   });
 }
 

@@ -217,6 +217,14 @@ function runSession(params, reqId) {
   const isContinue = params.is_continue || false;
   const resumeToken = params.resume_token;
   const permissionMode = mapPermissionMode(params.permission_mode);
+  // 透传宿主 SessionOptions 的字段到 CLI 参数（与 claude 引擎 build_command 对齐）
+  const effort = params.effort || '';
+  const agent = params.agent || '';
+  const systemPrompt = params.system_prompt || '';
+  const appendSystemPrompt = params.append_system_prompt || '';
+  const additionalDirs = Array.isArray(params.additional_dirs) ? params.additional_dirs : [];
+  const allowedTools = Array.isArray(params.allowed_tools) ? params.allowed_tools : [];
+  const disallowedTools = Array.isArray(params.disallowed_tools) ? params.disallowed_tools : [];
 
   currentSessionId = sessionId;
   sessionEnded = false;
@@ -225,7 +233,7 @@ function runSession(params, reqId) {
   streamedDeltas = false;
   lastCbSessionId = null;
 
-  process.stderr.write(`[Adapter] runSession: sid=${sessionId}, model=${model}, permission=${permissionMode}\n`);
+  process.stderr.write(`[Adapter] runSession: sid=${sessionId}, model=${model}, effort=${effort || '-'}, permission=${permissionMode}\n`);
 
   // 即刻回 session_start：CLI 冷启动 ~73s，此前全程无任何反馈，宿主无法区分慢启动与假死
   emit(sessionId, 'session_start', { engineId: 'codebuddy' });
@@ -233,6 +241,21 @@ function runSession(params, reqId) {
   const args = ['-p', '--model', model, '--output-format', 'stream-json', '--include-partial-messages'];
   if (isContinue && resumeToken) args.push('--resume', resumeToken);
   args.push('--permission-mode', permissionMode);
+  // 努力级别（思考力度）
+  if (effort) args.push('--effort', effort);
+  // Agent 角色
+  if (agent) args.push('--agent', agent);
+  // 系统提示词覆盖
+  if (systemPrompt) args.push('--system-prompt', systemPrompt);
+  // 追加系统提示词
+  if (appendSystemPrompt) args.push('--append-system-prompt', appendSystemPrompt);
+  // 额外目录
+  for (const dir of additionalDirs) {
+    if (dir) args.push('--add-dir', dir);
+  }
+  // 工具白名单/黑名单
+  if (allowedTools.length > 0) args.push('--allowedTools', allowedTools.join(','));
+  if (disallowedTools.length > 0) args.push('--disallowedTools', disallowedTools.join(','));
   // prompt 不进 argv（Windows ~32k 上限 + cmd.exe 特殊字符展开风险），统一走 stdin
 
   // env_overrides：宿主显式传入的环境覆盖（测试注入 PATH 用假 CLI 即此通道）
