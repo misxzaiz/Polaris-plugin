@@ -8,8 +8,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowJs": false,
-    "types": ["react", "react-dom"]
+    "allowJs": false
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

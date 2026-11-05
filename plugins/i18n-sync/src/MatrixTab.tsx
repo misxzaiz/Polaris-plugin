@@ -62,9 +62,9 @@ export default function MatrixTab({ ctx, meta, scan, onScanDone }: {
         if (!c || c._parseError) continue
         const want: Array<'missing' | 'empty' | 'same' | 'placeholder'> = filter === 'all' ? ['missing', 'empty', 'same', 'placeholder'] : [filter]
         for (const kind of want) {
-          const list: Array<{ key: string; baseValue?: string; detail?: { missingInTarget?: string[]; extraInTarget?: string[]; positionalIssues?: string[] } }> =
+          const raw: Array<{ key: string; baseValue?: string; detail?: { missingInTarget?: string[]; extraInTarget?: string[]; positionalIssues?: string[] } }> | undefined =
             kind === 'missing' ? c.missing : kind === 'empty' ? c.emptyValues : kind === 'same' ? c.sameAsBase : c.placeholderIssues
-          for (const it of list || []) {
+          for (const it of raw ?? []) {
             out.push({
               ns: n, key: it.key, baseValue: it.baseValue ?? '', kind, locale: loc,
               phDetail: kind === 'placeholder' ? phText(it.detail) : undefined,

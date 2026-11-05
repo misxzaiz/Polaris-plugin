@@ -26,7 +26,12 @@ const undo = fs.mkdtempSync(path.join(os.tmpdir(), 'i18n-mcp-undo-'))
 fs.writeFileSync(path.join(root, 'zh-cn.json'), '{"login":{"title":"登录到你的账户","submit":"提交 {name}"}}', 'utf8')
 fs.writeFileSync(path.join(root, 'en.json'), '{"login":{"title":"Sign in to your account"}}', 'utf8')
 
-const proc = spawn('node', [serverJs, undo], { stdio: ['pipe', 'pipe', 'pipe'] })
+const proc = spawn('node', [serverJs, undo], {
+  stdio: ['pipe', 'pipe', 'pipe'],
+  // 隔离：POLARIS_HOST/PORT env 指向死端口 → kvclient env 分支优先命中且不可达 → MCP 走进程内降级
+  // 否则 kvclient 自发现会连上本机真实 Polaris 桥，把测试 glossary 写进生产 kv（mail-desk 同款坑）
+  env: { ...process.env, POLARIS_HOST: '127.0.0.1', POLARIS_PORT: '1', POLARIS_TOKEN: 'smoke-isolated' },
+})
 let stderr = ''
 proc.stderr.on('data', (d) => { stderr += d })
 
@@ -92,11 +97,11 @@ try {
   t('i18n_missing: 工作表含源文案与 apply 指引', () => {
     const text = miss.result.content[0].text
     assert.ok(!miss.result.isError)
-    assert.ok(text.includes('登录到你的账户'))
+    assert.ok(text.includes('提交 {name}')) // 缺失键 login.submit 的基准源文案
     assert.ok(text.includes('i18n_apply'))
     const jsonLine = text.split('```json')[1].split('```')[0].trim()
     const items = JSON.parse(jsonLine)
-    assert.ok(items.some((it) => it.k === 'login.submit'))
+    assert.ok(items.some((it) => it.k === 'login.submit' && it.v === '提交 {name}'))
   })
 
   // i18n_apply 无 confirm → isError

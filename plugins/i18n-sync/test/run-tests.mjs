@@ -30,7 +30,7 @@ t('stripJsonComments: 行注释 + 保换行不漂移', () => {
   assert.equal(r.hasComments, true)
   const parsed = JSON.parse(r.code)
   assert.equal(parsed.a, 1)
-  assert.equal(r.code.split('\n').length, 4) // 注释行换成空行，行号不漂移
+  assert.equal(r.code.split('\n').length, 5) // 与输入行数一致（注释内容删、换行保）→ 行号不漂移
 })
 
 t('stripJsonComments: 字符串内 // 不剥（URL 场景）', () => {
@@ -162,12 +162,17 @@ t('extractPlaceholders: i18next 双花括号', () => {
 
 t('extractPlaceholders: 单花括号命名与数字', () => {
   const r = core.extractPlaceholders('Hi {name}, file {0}')
-  assert.deepEqual(r.named.sort(), ['{0}', 'name'])
+  assert.deepEqual(r.named.sort(), ['{0}', 'name'].sort())
 })
 
-t('extractPlaceholders: ICU 简单复数形取变量名', () => {
+t('extractPlaceholders: ICU 简单复数形取变量名（嵌套括号不误吞）', () => {
   const r = core.extractPlaceholders('{count, plural, one {# item} other {# items}}')
   assert.deepEqual(r.named, ['count'])
+})
+
+t('extractPlaceholders: ICU select 嵌套取顶层变量（嵌套占位符按文档边界不抓）', () => {
+  const r = core.extractPlaceholders('{gender, select, male {他 {count} 岁} female {她 {count} 岁}}')
+  assert.deepEqual(r.named, ['gender'])
 })
 
 t('extractPlaceholders: printf 族计数', () => {

@@ -108,6 +108,7 @@ async function applyTranslations(p) {
 
   const applied = [];
   const allPlanErrors = [];
+  const allWarnings = [];
   const snapshotItems = [];
   for (const u of units) {
     const slice = byUnit.get(u.ns);
@@ -118,9 +119,11 @@ async function applyTranslations(p) {
       translations: slice,
       mode,
       targetConflicts: u.targetConflicts,
+      allowPlaceholderMismatch: !!p.force,
     });
     plan.unknown.forEach((k) => allPlanErrors.push({ key: k, reason: '基准与目标都没有这个键（可能是幻觉键），已拒绝' }));
     for (const e of plan.errors) allPlanErrors.push(e);
+    for (const w of plan.warnings) allWarnings.push(w);
     if (plan.insert.length || plan.update.length) {
       if (u.targetFile.parse.hasComments && !p.stripComments) {
         allPlanErrors.push({ key: `(${u.ns}) ${u.targetFile.relPath}`, reason: '该文件含注释，直接序列化会丢注释；确认接受时传 stripComments:true' });
@@ -174,7 +177,7 @@ async function applyTranslations(p) {
   } catch (e) { log('warn', 'undo 索引写失败: ' + e.message); }
 
   log('info', `apply ${resolvedDir} ${locale} batch=${batchId} 文件=${snapshotItems.length} 插入=${applied.reduce((s, a) => s + a.insert, 0)} 更新=${applied.reduce((s, a) => s + a.update, 0)}`);
-  return { ok: true, batchId, applied, warnings: scan.warnings };
+  return { ok: true, batchId, applied, warnings: [...(scan.warnings || []), ...allWarnings.map((w) => `${w.key}: ${w.reason}`)] };
 }
 
 module.exports = { applyTranslations, KEY_UNDO_INDEX };

@@ -14,7 +14,7 @@ interface HostGlobals {
 }
 
 function hostWindow(): HostGlobals & typeof globalThis {
-  return window as unknown as HostGlobals
+  return window as unknown as HostGlobals & typeof globalThis
 }
 
 export function getHostInvoke(): HostInvoke {

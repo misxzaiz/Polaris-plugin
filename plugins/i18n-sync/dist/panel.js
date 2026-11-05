@@ -363,8 +363,8 @@ function MatrixTab({ ctx, meta, scan, onScanDone }) {
         if (!c || c._parseError) continue;
         const want = filter === "all" ? ["missing", "empty", "same", "placeholder"] : [filter];
         for (const kind of want) {
-          const list = kind === "missing" ? c.missing : kind === "empty" ? c.emptyValues : kind === "same" ? c.sameAsBase : c.placeholderIssues;
-          for (const it of list || []) {
+          const raw = kind === "missing" ? c.missing : kind === "empty" ? c.emptyValues : kind === "same" ? c.sameAsBase : c.placeholderIssues;
+          for (const it of raw ?? []) {
             out.push({
               ns: n,
               key: it.key,

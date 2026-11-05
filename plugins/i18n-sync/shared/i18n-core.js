@@ -239,7 +239,8 @@ function flattenLocale(root) {
 
 /**
  * 抽取占位符。支持：
- *   {{name}}（i18next/vue-i18n）、{name}/{0}[,icu...]（ICU 简单形/.NET/vue 复数变量）、
+ *   {{name}}（i18next/vue-i18n）、{name}/{0}[,icu...]（ICU 简单形/.NET/vue 复数变量，
+ *   深度感知——ICU 复数/select 嵌套括号不会误吞）、
  *   %s %d %i %f %@ %1$s（printf 族，含序号）。
  *   %% 先剥除（字面百分号，不参与比对）。
  * @returns {{ named: string[], positionalCounts: Record<string, number> }}
@@ -254,12 +255,31 @@ function extractPlaceholders(str) {
     const name = m[1].trim();
     if (name) named.add(name);
   }
-  // {name} / {0} / {count, plural, ...}（{{}} 已被上一条吃掉，不会重复匹配）
-  for (const m of cleaned.matchAll(/\{([^{}\s][^{}]*?)\}/g)) {
-    const head = m[1].split(',')[0].trim();
-    if (!head) continue;
-    if (/^\d+$/.test(head)) named.add('{' + head + '}');
-    else named.add(head);
+  // {name} / {0} / {count, plural, ...}：括号深度感知扫描。
+  // 只在深度 1 记录 head（首个 , 或 } 之前的片段）；嵌套 ICU 子分支（深度 ≥2）忽略。
+  let depth = 0;
+  let head = '';
+  for (let i = 0; i < cleaned.length; i++) {
+    const ch = cleaned[i];
+    if (ch === '{') {
+      depth++;
+      if (depth === 1) head = '';
+      continue;
+    }
+    if (ch === '}') {
+      const wasDepth1 = depth === 1;
+      if (depth > 0) depth--;
+      if (wasDepth1) {
+        // 只在深度 1 的闭合处结算 head；嵌套闭合（ICU 子分支）不清空外层 head
+        const h = head.split(',')[0].trim();
+        if (h && !/\s/.test(h)) {
+          named.add(/^\d+$/.test(h) ? '{' + h + '}' : h);
+        }
+        head = '';
+      }
+      continue;
+    }
+    if (depth === 1) head += ch;
   }
   // printf 族
   for (const m of cleaned.matchAll(/%(?:\d+\$)?[sdif@]/g)) {
@@ -410,11 +430,12 @@ function deleteByPath(doc, path) {
  * @param {Record<string,string>} p.translations key→译文
  * @param {'preserve'|'mirror'} p.mode preserve=新键追加到父级末尾；mirror=按基准语言键序重建
  * @param {string[]} p.targetConflicts 目标文件结构冲突路径（这些键拒绝写入）
- * @returns {{ newDoc: object, plan: {insert: string[], update: string[], noop: string[], unknown: string[], errors: {key,reason}[] } }}
+ * @param {boolean} p.allowPlaceholderMismatch force 逃生口：占位符不符降级为警告仍写入
+ * @returns {{ newDoc: object, plan: {insert: string[], update: string[], noop: string[], unknown: string[], errors: {key,reason}[], warnings: {key,reason}[] } }}
  */
-function planApply({ targetDoc, baseFlat, translations, mode = 'preserve', targetConflicts = [] }) {
+function planApply({ targetDoc, baseFlat, translations, mode = 'preserve', targetConflicts = [], allowPlaceholderMismatch = false }) {
   const conflictSet = new Set(targetConflicts);
-  const plan = { insert: [], update: [], noop: [], unknown: [], errors: [] };
+  const plan = { insert: [], update: [], noop: [], unknown: [], errors: [], warnings: [] };
   const clean = Object.create(null);
   for (const [rawKey, rawValue] of Object.entries(translations || {})) {
     const key = String(rawKey).trim();
@@ -437,8 +458,12 @@ function planApply({ targetDoc, baseFlat, translations, mode = 'preserve', targe
             ph.extraInTarget.length ? `多出 ${ph.extraInTarget.join(' ')}` : '',
             ph.positionalIssues.length ? ph.positionalIssues.join('; ') : '',
           ].filter(Boolean).join('；');
-          plan.errors.push({ key, reason: `占位符不一致：${why}` });
-          continue;
+          if (allowPlaceholderMismatch) {
+            plan.warnings.push({ key, reason: `占位符不一致（force 放行）：${why}` });
+          } else {
+            plan.errors.push({ key, reason: `占位符不一致：${why}` });
+            continue;
+          }
         }
       }
       clean[key] = rawValue;

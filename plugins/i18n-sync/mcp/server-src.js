@@ -19,7 +19,7 @@ const yaml = require('js-yaml');
 const core = require('../shared/i18n-core');
 const engine = require('../shared/scan-engine');
 const { applyTranslations, KEY_UNDO_INDEX } = require('../shared/apply-engine');
-const { createKvClient } = require('./kvclient');
+const { createKvClient } = require('../service/kvclient');
 
 const SERVER_NAME = 'i18n-sync';
 const SERVER_VERSION = '0.1.0';

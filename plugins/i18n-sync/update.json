@@ -1,0 +1,63 @@
+{
+  "id": "i18n-sync",
+  "name": "多语言键同步台",
+  "version": "0.1.0",
+  "description": "把「改了 zh.json 忘了 en.json」变成 30 秒本地体检：扫 locale 目录（JSON/JSONC/YAML，file-per-locale 与 dir-per-locale 布局自动识别）→ 键奇偶矩阵（缺失/多余/空值/疑似未翻译/占位符不一致）→ AI 按术语表翻译缺失键 → 审阅确认后保序落盘，写前快照全程可撤销。占位符不一致（{name}/{{name}}/%s/%1$s 丢失或数量错）自动拦截——机器翻译典型事故的硬闸；整个语言文件缺失也会点名。AI 经 MCP 五工具（status/missing/apply/undo/glossary）一句话补齐；面板矩阵支持手工编辑后应用。纯本地零外联，翻译由宿主对话 AI 完成（零额外密钥）。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "i18n-sync.panel",
+        "area": "activityBar",
+        "panelType": "i18nSync",
+        "icon": "Languages",
+        "labelKey": "plugins.i18nSync",
+        "labelDefault": "多语言键同步台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
+    "services": [
+      {
+        "id": "i18n-sync-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "locale 目录扫描与审阅落盘引擎（只绑 127.0.0.1 + token 鉴权；扫描/应用/撤销）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "i18n-sync",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/i18n-sync",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/i18n-sync/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/i18n-sync/i18n-sync.zip"
+  }
+}

@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-05T19:29:29.766Z",
+  "updated": "2026-11-05T19:54:36.423Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -668,7 +668,7 @@
       "screenshots": [],
       "versions": [
         {
-          "version": "0.1.3",
+          "version": "0.2.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip"
         }
       ],
@@ -4802,6 +4802,40 @@
       ],
       "createdAt": "2026-11-05T19:29:29.766Z",
       "updatedAt": "2026-11-05T19:29:29.766Z"
+    },
+    {
+      "id": "i18n-sync",
+      "name": "多语言键同步台",
+      "version": "0.1.0",
+      "description": "把「改了 zh.json 忘了 en.json」变成 30 秒本地体检：扫 locale 目录（JSON/JSONC/YAML，file-per-locale 与 dir-per-locale 布局自动识别）→ 键奇偶矩阵（缺失/多余/空值/疑似未翻译/占位符不一致）→ AI 按术语表翻译缺失键 → 审阅确认后保序落盘，写前快照全程可撤销。占位符不一致（{name}/{{name}}/%s/%1$s 丢失或数量错）自动拦截——机器翻译典型事故的硬闸；整个语言文件缺失也会点名。AI 经 MCP 五工具（status/missing/apply/undo/glossary）一句话补齐；面板矩阵支持手工编辑后应用。纯本地零外联，翻译由宿主对话 AI 完成（零额外密钥）。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "mcp"
+      ],
+      "icon": "Languages",
+      "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/i18n-sync",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/i18n-sync/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/i18n-sync/i18n-sync.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/i18n-sync/update.json",
+      "sha256": "e88ac7a3601bc81651490f16d0b798d18fa3977bb5cd2cb10ab89b61cd791859",
+      "tier": 6,
+      "permissions": {
+        "appConfigRead": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/i18n-sync/i18n-sync.zip"
+        }
+      ],
+      "createdAt": "2026-11-05T19:54:36.423Z",
+      "updatedAt": "2026-11-05T19:54:36.423Z",
+      "usageTier": 1
     }
   ]
 }
