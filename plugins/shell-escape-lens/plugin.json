@@ -1,0 +1,41 @@
+{
+  "id": "shell-escape-lens",
+  "name": "Shell 转义对照台",
+  "version": "0.1.0",
+  "description": "一段文本/命令在 bash/cmd/powershell 三种 shell 里的安全引用形态对照：特殊字符（$ ` \" ' ! % | & ;）各 shell 怎么转义逐项标注，反向把命令行解析为 argv 看实际参数。跨 shell 写命令的转义地狱是自动化脚本踩坑重灾区。bash 产物经本机 bash round-trip 实测锚定；纯本地零外联零 kv，MCP 两工具（quote/parse）+ 面板对照表测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "shell-escape-lens.panel",
+        "area": "activityBar",
+        "panelType": "shell-escape-lens",
+        "icon": "Terminal",
+        "labelKey": "plugins.shell-escape-lens",
+        "labelDefault": "Shell 转义对照台",
+        "order": 102
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "shell-escape-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/shell-escape-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shell-escape-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/shell-escape-lens/shell-escape-lens.zip"
+  }
+}
