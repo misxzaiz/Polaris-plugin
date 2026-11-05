@@ -213,7 +213,7 @@ function runSession(params, reqId) {
   const sessionId = params.session_id || 'unknown';
   const message = params.message || '';
   const workDir = params.work_dir || process.cwd();
-  const model = params.model || 'hy4-preview';
+  const model = params.model || 'hy4free';
   const isContinue = params.is_continue || false;
   const resumeToken = params.resume_token;
   const permissionMode = mapPermissionMode(params.permission_mode);
