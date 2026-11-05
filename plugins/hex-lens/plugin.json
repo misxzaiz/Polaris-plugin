@@ -1,0 +1,36 @@
+{
+  "id": "hex-lens",
+  "name": "文件魔数透视台",
+  "version": "0.1.0",
+  "description": "看文件真实的「头几字节」而不是骗人的扩展名：魔数（magic number）识别 PNG/PDF/ZIP/GZIP/ELF/PE/Mach-O/WebP/MP4/Java class 等 20+ 常见格式，扩展名与实际类型不符时如实警告（伪装扩展名检测）；hex dump 视图（偏移/HEX/ASCII 侧栏，指定偏移长度切片）；熵概览（高熵提示已压缩或加密）。安全向文件诊断；纯本地只读零外联零 kv（默认只读头 4KB），MCP 两工具 + 面板。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "hex-lens.panel",
+        "area": "activityBar",
+        "panelType": "hex-lens",
+        "icon": "Binary",
+        "labelKey": "plugins.hex-lens",
+        "labelDefault": "文件魔数透视台",
+        "order": 104
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js", "supportsFullscreen": false },
+    "mcpServers": [
+      {
+        "id": "hex-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/hex-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hex-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/hex-lens/hex-lens.zip"
+  }
+}
