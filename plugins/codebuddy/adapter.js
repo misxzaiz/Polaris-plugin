@@ -55,6 +55,7 @@ let lastAssistantText = null;
 // 本条消息是否已有 stream_event 增量流出：CLI 在流式增量后会再发一条完整 assistant
 // 帧（思考+正文回放），不跳过会与增量内容重复渲染（delta 一对 + 完整帧一对）
 let streamedDeltas = false;
+let resultHadError = false;  // result 帧 is_error/errors（CLI 执行错误，非进程退出错误）
 
 function parseLine(line, sessionId) {
   let o;
@@ -139,6 +140,15 @@ function parseLine(line, sessionId) {
 
     case 'result': {
       if (typeof o.session_id === 'string' && o.session_id) lastCbSessionId = o.session_id;
+      // CLI 执行错误（模型不可用/限流等）藏在 result 帧：is_error + errors[]，
+      // 不透出则用户看到空回复假成功（429 限流时 errors 带"使用量已超出频率限制"实证）
+      resultHadError = o.is_error === true || (Array.isArray(o.errors) && o.errors.length > 0);
+      if (resultHadError) {
+        const errs = (Array.isArray(o.errors) && o.errors.length > 0)
+          ? o.errors.join(' | ')
+          : (o.result || 'CLI 执行错误');
+        emit(sessionId, 'error', { error: String(errs).slice(0, 500) });
+      }
       const u = o.usage || {};
       emit(sessionId, 'usage', {
         input_tokens: u.input_tokens || 0,
@@ -231,6 +241,7 @@ function runSession(params, reqId) {
   toolNames.clear();
   lastAssistantText = null;
   streamedDeltas = false;
+  resultHadError = false;
   lastCbSessionId = null;
 
   process.stderr.write(`[Adapter] runSession: sid=${sessionId}, model=${model}, effort=${effort || '-'}, permission=${permissionMode}\n`);
@@ -325,7 +336,8 @@ function runSession(params, reqId) {
       endSession(code === 0 ? 'completed' : 'error', reqId,
         code !== 0 && code !== null ? `CLI 退出码: ${code}` : undefined);
     } else {
-      endSession('completed', reqId);
+      // result 已收到：执行错误已在 parseLine 内发过 error 帧，此处仅定终态原因
+      endSession(resultHadError ? 'error' : 'completed', reqId);
     }
   });
 
@@ -367,16 +379,18 @@ process.stdin.on('data', (chunk) => {
 
 // 宿主异常退出 / 强杀时 stdin 管道断开：回收 CLI 进程树，不留孤儿
 process.stdin.on('close', () => {
+  // stdin EOF（宿主长连接不发 EOF，手动管道测试会发）：
+  // - CLI 还在跑：等它自然收尾（close 事件触发 endSession + respondAndExit），
+  //   此处仅设兜底定时器防适配器永久空转
+  // - 无 CLI：直接退出
   if (currentChild && !sessionEnded) {
-    killCliTree('stdin-closed');
+    setTimeout(() => process.exit(0), 10 * 60 * 1000);
+  } else {
+    setTimeout(() => process.exit(0), 200);
   }
-  // 会话已结束的正常路径由 respondAndExit 退出；此处兜底退出避免空转进程
-  setTimeout(() => process.exit(0), 100);
 });
 process.stdin.on('end', () => {
-  if (currentChild && !sessionEnded) {
-    killCliTree('stdin-end');
-  }
+  // 同上：EOF ≠ 宿主要求终止
 });
 
 process.on('SIGINT', () => { killCliTree('sigint'); process.exit(0); });
