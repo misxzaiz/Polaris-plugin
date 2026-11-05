@@ -1,0 +1,8 @@
+node_modules/
+package-lock.json
+package.json
+tsconfig.json
+test/
+src/
+.ssr-tmp/
+*.zip

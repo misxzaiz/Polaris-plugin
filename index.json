@@ -4724,6 +4724,44 @@
       "createdAt": "2026-11-05T18:49:46.000Z",
       "updatedAt": "2026-11-05T18:49:46.000Z",
       "usageTier": 1
+    },
+    {
+      "id": "markdown-lens",
+      "name": "Markdown 检查器",
+      "version": "0.1.0",
+      "description": "Markdown 结构体检：标题层级跳级、多 h1、锚点断链（#目标 与标题 GitHub slug 匹配，中文标题兼容）、图片无 alt、表格列数不齐、代码块无语言、重复标题、TODO/FIXME 残留等 12 条规则，行级报告（行号/规则/严重级）+ 标题树大纲。围栏状态感知（代码块内伪 markdown 语法不误报）。README 与文档质量刚需；纯本地零外联零 kv，MCP 两工具（lint/outline）+ 面板双框测试场。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "markdown",
+        "lint",
+        "docs",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "FileText",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/markdown-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/markdown-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/markdown-lens/markdown-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/markdown-lens/update.json",
+      "sha256": "2fc4bbbe3204b18d253dc342dd88db51a389b3f7b77af965328da44b7c94abf5",
+      "tier": 7,
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# Markdown 检查器 markdown-lens —— 结构体检\n\n> 发布 README / 文档前过一遍：12 条结构规则行级体检，围栏状态感知不误报，锚点匹配对齐 GitHub slug（中文标题兼容）。\n\n## 核心能力\n\n| 规则 | 级别 |\n|---|---|\n| 标题层级跳级（h1→h3） | warn |\n| 多个 h1（第二个起） | error |\n| 首个标题不是 h1 | info |\n| 锚点断链（`#目标` 与标题 GitHub slug 全量比对，前向引用合法，中文保留） | error |\n| 图片无 alt | warn |\n| 空链接 | warn |\n| 裸 URL（建议语义化链接） | info |\n| 表格列数不齐（定位表头行） | error |\n| 代码块无语言标注 | info |\n| 重复标题 | warn |\n| TODO/FIXME 残留 | info |\n| 粗体当标题用 | info |\n\n**围栏状态感知**：代码块内的伪 markdown 语法（示例文档、嵌套说明）不触发任何规则。\n\n## 快速开始\n\n1. 插件中心安装「Markdown 检查器」→ 左侧 ActivityBar 出现面板。\n2. 粘贴 markdown → 「检查」→ 行级发现表 + 标题树大纲。\n3. 或对 AI 说：「用 Markdown 检查器体检这段 README」。\n\n## 与 AI 的对话约定（MCP 工具）\n\n| 工具 | 用途 |\n|---|---|\n| `mdlen_lint` | 结构体检（行级发现 + 统计） |\n| `mdlen_outline` | 标题树大纲（层级缩进 + 行号） |\n\n## 开发与验证\n\n```bash\nnpm install\nnpm run typecheck          # tsc --noEmit（strict）\nnpm run build              # esbuild → dist/panel.js\nnode test/run-tests.mjs    # 离线单测 13 组（29 断言：逐规则 + slug + 围栏）\nnode test/mcp-verify.mjs   # MCP 全链路 16 组（真实 stdio 子进程）\n```\n\n## 已知边界\n\n- 锚点匹配按 GitHub slug 规则（空格→-、去标点、中文保留）；其他渲染器（GitLab 等）slug 规则略有差异。\n- 不做拼写/语法检查（交给 AI 对话）；纯结构体检。\n",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/markdown-lens/markdown-lens.zip"
+        }
+      ],
+      "createdAt": "2026-11-05T18:51:04.000Z",
+      "updatedAt": "2026-11-05T18:51:04.000Z",
+      "usageTier": 1
     }
   ]
 }
