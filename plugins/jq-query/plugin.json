@@ -1,0 +1,51 @@
+{
+  "id": "jq-query",
+  "name": "jq 查询台",
+  "version": "0.1.0",
+  "description": "把「对一段 JSON 提取/过滤/统计」从 Windows 引号地狱、网页粘贴泄漏与大文件卡死中解放出来：真实 jq 引擎（jq-web WASM，jq 1.7 语义）三栏即时迭代，支持 -r/-c/-s/-n/-R/--arg/--argjson 全 flags 与 NDJSON 多文档流，本地文件（≤64MB）一键载入，死查询 5 秒超时击杀引擎自动重生成、主进程永不挂死；查询历史与约 90 条内置函数速查表离线可搜；AI 经 MCP 五工具（jq_query/jq_check/jq_reference/json_outline/jq_selftest）对 JSON 文件做确定性查询——LLM 手算 10MB JSON 必错，经 jq 是精确的。全程本地计算零外联，数据不落日志不落 kv。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "jq-query.panel",
+        "area": "activityBar",
+        "panelType": "jq-query",
+        "icon": "./assets/icon.svg",
+        "labelKey": "plugins.jqQuery",
+        "labelDefault": "jq 查询台",
+        "order": 97
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "services": [
+      {
+        "id": "jq-query-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9883,
+        "healthCheck": "/__health"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "jq-query",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/jq-query",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jq-query/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/jq-query/jq-query.zip"
+  }
+}
