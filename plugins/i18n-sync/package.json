@@ -1,0 +1,26 @@
+{
+  "name": "i18n-sync-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "多语言键同步台插件（打包用）：locale 奇偶体检 + AI 翻译补齐审阅落盘",
+  "scripts": {
+    "build": "npm run build:panel && npm run build:service && npm run build:mcp",
+    "build:panel": "esbuild src/index.tsx --bundle --format=esm --jsx=automatic --external:react --external:react/jsx-runtime --outfile=dist/panel.js",
+    "build:service": "esbuild service/main-src.js --bundle --platform=node --format=cjs --outfile=service/main.js",
+    "build:mcp": "esbuild mcp/server-src.js --bundle --platform=node --format=cjs --outfile=mcp/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs"
+  },
+  "dependencies": {
+    "js-yaml": "4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.5.0"
+  },
+  "type": "commonjs"
+}
