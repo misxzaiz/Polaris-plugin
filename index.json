@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-02",
+  "updated": "2026-11-06",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -641,8 +641,8 @@
     {
       "id": "opts.zcode-bridge",
       "name": "ZCode 会话桥接",
-      "version": "0.1.3",
-      "description": "桥接已安装的 ZCode 桌面版：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话，会话落盘后桌面端可见；同时把 ZCode 注册为 Polaris 主对话引擎（思考/工具流适配）。引擎权限默认 yolo，可用 ZBRIDGE_DEFAULT_MODE 环境变量收紧。",
+      "version": "0.2.0",
+      "description": "桥接已安装的 ZCode 桌面版：AI 可通过 MCP 工具在 Polaris 中新建/续接 ZCode 会话，会话落盘后桌面端可见；同时把 ZCode 注册为 Polaris 主对话引擎（思考/工具流适配）。引擎权限默认 yolo，可用 ZBRIDGE_DEFAULT_MODE 环境变量收紧。 v0.2.0：他机适配——zcode.cjs/provider 配置动态解析（env>安装候选>运行进程探测），版本目录语义序扫描，解析失败聊天内可行动指引。",
       "author": "Polaris",
       "category": "ai",
       "tags": [
@@ -657,7 +657,7 @@
       "homepage": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin/tree/main/plugins/zcode-bridge",
       "repository": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.2.0/plugins/zcode-bridge/zcode-bridge.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/zcode-bridge/update.json",
       "tier": 4,
       "permissions": {
@@ -672,7 +672,7 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@zcode-bridge-v0.1.3/plugins/zcode-bridge/zcode-bridge.zip"
         }
       ],
-      "sha256": "fa6ae1d14812cb547d48babab2cee673b0edbb71ab5d40c8b3d39ec3229291bf",
+      "sha256": "232467d3558899791c8c3afe6ae23e3f057e31a50155de005cde7a6cb91663d0",
       "createdAt": "2026-10-26T16:01:34.000Z",
       "updatedAt": "2026-11-04T00:58:17.810Z",
       "usageTier": 3

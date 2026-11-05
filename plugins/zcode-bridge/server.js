@@ -27,7 +27,7 @@ const { DatabaseSync } = require('node:sqlite')
 
 const PORT = parseInt(process.argv[2] || '9862', 10)
 const PLUGIN_DIR = process.argv[3] || path.join(__dirname, '..')
-const { ZCodeClient, queryDbSessions, resolveProviderConfig } = require(path.join(PLUGIN_DIR, 'mcp', 'zcode-core.js'))
+const { ZCodeClient, queryDbSessions, resolveProviderConfig, resolveZcodeCjs, zcodeCjsMissingHint } = require(path.join(PLUGIN_DIR, 'mcp', 'zcode-core.js'))
 
 // 插件配置段所在 config.json 路径（宿主启动时经 {{appConfigDir}} 注入）。
 // 多候选：显式 env > 命令行参数 > 数据根相对路径（服务 cwd 下）> 家目录。
@@ -238,11 +238,14 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url === '/api/ping') {
-      const zcodeCjs = process.env.ZCODE_CJS || 'D:/app/ZCode/resources/glm/zcode.cjs'
+      // zcode.cjs 动态定位（env > 安装候选 > 运行进程探测）——他机不再指向本机硬编码路径
+      const resolvedZcodeCjs = resolveZcodeCjs()
       const provider = resolveProviderConfig()
       return send(res, 200, 'application/json', JSON.stringify({
-        zcodeCjsExists: fs.existsSync(zcodeCjs),
-        zcodeCjs,
+        zcodeCjsExists: !!resolvedZcodeCjs,
+        zcodeCjs: resolvedZcodeCjs ? resolvedZcodeCjs.path : null,
+        zcodeCjsSource: resolvedZcodeCjs ? resolvedZcodeCjs.source : null,
+        zcodeCjsHint: resolvedZcodeCjs ? null : zcodeCjsMissingHint(),
         providerConfigFound: !!provider,
         providerConfig: provider || null,
       }))

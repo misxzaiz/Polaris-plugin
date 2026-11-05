@@ -61,13 +61,13 @@ const mode = getArg('--mode') || 'rpc';
 const SESSION_MODE = process.env.ZBRIDGE_DEFAULT_MODE || 'yolo';
 
 // 默认工作区：Polaris 把主对话工作区设为 spawn cwd（configure_command.current_dir）；
-// 显式 --workdir 兜底，其次回退默认项目。
+// 显式 --workdir 兜底，其次回退用户主目录（原硬编码本机仓库路径，他机不适配）。
 let DEFAULT_WS = (() => {
   if (workDir && workDir.trim()) return workDir;
   try {
-    return process.cwd() || 'D:/space/base/Polaris';
+    return process.cwd() || os.homedir();
   } catch {
-    return 'D:/space/base/Polaris';
+    return os.homedir();
   }
 })();
 
@@ -175,11 +175,15 @@ function resolveSelection() {
   return sel;
 }
 
-// 自持 app-server：引擎路径不再依赖 9862 面板桥（面板桥与引擎各自独立实例）
+// 自持 app-server：引擎路径不再依赖 9862 面板桥（面板桥与引擎各自独立实例）。
+// autoSpawn=false：zcode.cjs 解析失败（他机未装/路径非默认）时不立即炸进程，
+// 首个 prompt 以可见回复形式给出可行动指引（装 ZCode / 设 ZCODE_CJS）。
 const client = new ZCodeClient({
   workspacePath: DEFAULT_WS,
   personalProviderConfigFile: profileProvider ? profileProvider.configPath : null,
+  autoSpawn: false,
 });
+if (client.zcodeCjs && !client._exited) client.spawn();
 
 // 恢复映射（续聊冷启动）：优先用已落盘的 zcodeSid + ws
 let restored = readMapping();
@@ -461,6 +465,13 @@ async function handlePrompt(message) {
   sawToolRound = false;
   sessionFinalized = false;
   aborted = false;
+
+  // zcode.cjs 解析失败：抛出可行动指引（宿主 pi_parser 把 prompt 失败 response
+  // 映射为 AIEvent::error，用户在聊天里直接看到「装 ZCode / 设 ZCODE_CJS」指引），
+  // 而非笼统的「app-server 退出 code=1」。
+  if (client.startupError) {
+    throw new Error(client.startupError);
+  }
 
   if (!zcodeRealSid) {
     // 新会话：create（ZCode 异步落盘）→ resume 激活 → setModel → send。

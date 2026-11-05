@@ -27,12 +27,101 @@ const { spawn } = require('node:child_process');
 const readline = require('node:readline');
 const path = require('node:path');
 const os = require('node:os');
+const fs = require('node:fs');
+
+// ── ZCode 桌面安装定位（2026-11-06 他机适配）──────────────────────────────
+// 原状：zcode.cjs 与 provider glob 都硬编码本机路径（D:/app/ZCode、版本 3.16.3）——
+// 其他电脑上路径不存在 → app-server 无法启动 → 引擎整体不可用。
+// 解析优先级：ZCODE_CJS env（显式覆盖）> 常见安装位置候选 > 运行中 ZCode.exe 进程探测。
+
+/** ZCode 桌面安装根目录候选（含历史默认，供 resources/glm/zcode.cjs 探测） */
+function zcodeDesktopRoots() {
+  const roots = [];
+  const push = (p) => { if (p) roots.push(String(p).split('\\').join('/').replace(/\/+$/, '')); };
+  push(process.env.ZCODE_DESKTOP_DIR); // 用户显式指定安装根目录
+  if (process.env.LOCALAPPDATA) push(path.join(process.env.LOCALAPPDATA, 'Programs', 'ZCode'));
+  if (process.env['ProgramFiles']) push(path.join(process.env['ProgramFiles'], 'ZCode'));
+  if (process.env['ProgramFiles(x86)']) push(path.join(process.env['ProgramFiles(x86)'], 'ZCode'));
+  push('D:/app/ZCode');   // 历史默认安装目录（存量机器）
+  push('C:/app/ZCode');
+  push('D:/ZCode');
+  return roots;
+}
+
+/** 解析 zcode.cjs 绝对路径。返回 { path, source } 或 null（调用方给出可行动指引）。 */
+function resolveZcodeCjs(env = process.env) {
+  // 1. 显式 env 覆盖（优先级最高；非默认安装位置的唯一保险手段）
+  if (env.ZCODE_CJS && fs.existsSync(env.ZCODE_CJS)) {
+    return { path: String(env.ZCODE_CJS).split('\\').join('/'), source: 'env:ZCODE_CJS' };
+  }
+  // 2. 常见安装位置候选
+  for (const root of zcodeDesktopRoots()) {
+    const candidate = root + '/resources/glm/zcode.cjs';
+    try {
+      if (fs.existsSync(candidate)) return { path: candidate, source: 'candidate:' + root };
+    } catch { /* 路径非法忽略 */ }
+  }
+  // 3. 运行中 ZCode 桌面进程探测（Windows；覆盖非标准安装位置——仅桌面运行时可用）
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = require('node:child_process');
+      const out = execSync(
+        'powershell -NoProfile -Command "(Get-CimInstance Win32_Process -Filter \\"Name=\'ZCode.exe\'\\" | Select-Object -First 1 -ExpandProperty ExecutablePath)"',
+        { encoding: 'utf8', timeout: 12000, windowsHide: true },
+      );
+      const exe = String(out).trim().split('\n').map((s) => s.trim())
+        .find((s) => s.toLowerCase().endsWith('zcode.exe'));
+      if (exe) {
+        const root = path.dirname(exe).split('\\').join('/');
+        const candidate = root + '/resources/glm/zcode.cjs';
+        if (fs.existsSync(candidate)) return { path: candidate, source: 'process:' + root };
+      }
+    } catch { /* PowerShell 不可用/进程未运行——静默降级 */ }
+  }
+  return null;
+}
+
+/** zcode.cjs 缺失时的可行动指引（直达用户聊天错误） */
+function zcodeCjsMissingHint() {
+  return '未找到 ZCode 桌面版（zcode.cjs）。解决任一即可：'
+    + '① 安装 ZCode 桌面版到默认位置后重试；'
+    + '② 已装在自定义位置：设置环境变量 ZCODE_CJS 指向安装目录内 resources/glm/zcode.cjs'
+    + '（如 D:/app/ZCode/resources/glm/zcode.cjs）；'
+    + '③ 启动一次 ZCode 桌面程序（运行态自动探测）。';
+}
+
+/**
+ * 解析 provider 配置 glob（zcode-builtin.json）。
+ * 原状硬编码版本 3.16.3——他机版本不同即 miss。动态扫描
+ * ~/.zcode/v2/runtime/provider/<arch>/<版本>/endpoint-星 目录下的
+ * zcode-builtin.json，取语义序最新的版本目录；ZCODE_PROVIDER_CONFIG env 仍最高优先。
+ */
+function resolveProviderConfigGlob() {
+  if (process.env.ZCODE_PROVIDER_CONFIG) return process.env.ZCODE_PROVIDER_CONFIG;
+  const arch = process.arch === 'arm64' ? 'windows-arm64' : 'windows-x86_64';
+  const base = path.join(os.homedir(), '.zcode', 'v2', 'runtime', 'provider', arch);
+  try {
+    const versions = fs.readdirSync(base)
+      .filter((d) => /^\d+\.\d+\.\d+/.test(d))
+      .sort((a, b) => {
+        const pa = a.split('.').map(Number); const pb = b.split('.').map(Number);
+        for (let i = 0; i < 3; i++) { if ((pb[i] || 0) !== (pa[i] || 0)) return (pb[i] || 0) - (pa[i] || 0); }
+        return b.localeCompare(a);
+      });
+    for (const v of versions) {
+      const vDir = path.join(base, v);
+      try {
+        const endpoints = fs.readdirSync(vDir).filter((d) => d.startsWith('endpoint-'));
+        if (endpoints.length > 0) return path.join(vDir, 'endpoint-*', 'zcode-builtin.json');
+      } catch { /* 该版本目录读取失败，继续 */ }
+    }
+  } catch { /* base 目录不存在（未装 ZCode）走兜底 */ }
+  // 兜底：历史硬编码（存量机器 3.16.3）
+  return path.join(os.homedir(), '.zcode', 'v2', 'runtime', 'provider', 'windows-x86_64', '3.16.3', 'endpoint-*', 'zcode-builtin.json');
+}
 
 // ── 默认路径（可被 env 覆盖，便于测试/多版本）──────────────────────────────
-const DEFAULT_ZCODE_CJS = process.env.ZCODE_CJS || 'D:/app/ZCode/resources/glm/zcode.cjs';
-const DEFAULT_PROVIDER_CONFIG_GLOB =
-  process.env.ZCODE_PROVIDER_CONFIG ||
-  path.join(os.homedir(), '.zcode', 'v2', 'runtime', 'provider', 'windows-x86_64', '3.16.3', 'endpoint-*', 'zcode-builtin.json');
+const DEFAULT_PROVIDER_CONFIG_GLOB = resolveProviderConfigGlob();
 // 用户真实 personal provider 配置（ZCode 桌面与 CLI 共享的自建供应商声明）
 const REAL_PERSONAL_PROVIDER_CONFIG = path.join(os.homedir(), '.zcode', 'v2', 'provider_config.json');
 
@@ -142,7 +231,12 @@ class ZCodeClient {
    */
   constructor({ workspacePath, zcodeCjs, providerConfigFile, personalProviderConfigFile, autoSpawn = true, requestTimeoutMs = 45000 }) {
     this.workspacePath = workspacePath;
-    this.zcodeCjs = zcodeCjs || DEFAULT_ZCODE_CJS;
+    // zcode.cjs 解析：显式参数 > ZCODE_CJS env > 安装候选 > 运行进程探测。
+    // 全部失败时记录 startupError（可行动指引），spawn 时抛出直达用户。
+    const resolvedCjs = zcodeCjs || resolveZcodeCjs();
+    this.zcodeCjs = resolvedCjs ? resolvedCjs.path : null;
+    this.zcodeCjsSource = resolvedCjs ? resolvedCjs.source : null;
+    this.startupError = resolvedCjs ? null : zcodeCjsMissingHint();
     this.providerConfigFile = providerConfigFile || resolveProviderConfig();
     this.personalProviderConfigFile = personalProviderConfigFile || null;
     this.requestTimeoutMs = requestTimeoutMs;
@@ -162,6 +256,14 @@ class ZCodeClient {
 
   spawn() {
     if (this.child) return;
+    if (this.startupError || !this.zcodeCjs) {
+      // zcode.cjs 未找到：可行动指引直达用户（宿主 stderr 日志 + 轮次错误可见）
+      const err = new Error(this.startupError || zcodeCjsMissingHint());
+      this._exited = true;
+      for (const [id, cb] of this._pending) { cb({ id, error: { code: -32000, message: err.message } }); }
+      this._pending.clear();
+      throw err;
+    }
     const args = ['app-server', '--stdio', '--surface', 'desktop'];
     // env 清洗：宿主经 Profile 注入的 ANTHROPIC_*/OPENAI_* 是给 CLI 型引擎用的，
     // 对 ZCode app-server 无意义且不应泄漏进协议子进程（zcode 的 provider 体系
@@ -398,6 +500,8 @@ function queryDbSessions({ dbPath = path.join(os.homedir(), '.zcode', 'cli', 'db
 module.exports = {
   ZCodeClient,
   resolveProviderConfig,
+  resolveZcodeCjs,
+  zcodeCjsMissingHint,
   defaultRuntimePreferences,
   queryDbSessions,
   readRealPersonalConfig,

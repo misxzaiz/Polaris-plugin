@@ -1,8 +1,8 @@
 {
   "id": "codebuddy",
   "name": "CodeBuddy Engine",
-  "version": "0.2.0",
-  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1），支持 hy4free/hy4std/hy3/deepseek-v4.1-flash/glm-5.3 等模型。v0.2.1：修正模型目录为 CLI 权威清单；流式回放去重修复重复渲染。",
+  "version": "0.2.2",
+  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1），支持 hy4free/hy4std/hy3/deepseek-v4.1-flash/glm-5.3 等模型。v0.2.2：修正模型目录为 CLI 权威清单；流式回放去重修复重复渲染。 v0.2.2：result 帧执行错误透出（is_error+errors→error 帧，429/模型不可用不再空回复假成功）；stdin EOF 不误杀 CLI。",
   "enabledByDefault": false,
   "contributes": {
     "engines": [
@@ -19,26 +19,106 @@
         "protocol": "command",
         "sessionFlags": "omp",
         "mcpConsumption": "none",
-        "models": ["hy4free", "hy4std", "hy3", "hy3-x", "deepseek-v4.1-flash", "glm-5.3", "glm-5.3-flash", "glm-5.2", "space-bunny", "minimax-m3.1-flash", "minimax-m2.7", "kimi-k3.1-pro", "kimi-k3-1", "kimi-k2.8-preview", "deepseek-v4-pro", "step-5-preview", "mimo-v2.6-pro"],
+        "models": [
+          "hy4free",
+          "hy4std",
+          "hy3",
+          "hy3-x",
+          "deepseek-v4.1-flash",
+          "glm-5.3",
+          "glm-5.3-flash",
+          "glm-5.2",
+          "space-bunny",
+          "minimax-m3.1-flash",
+          "minimax-m2.7",
+          "kimi-k3.1-pro",
+          "kimi-k3-1",
+          "kimi-k2.8-preview",
+          "deepseek-v4-pro",
+          "step-5-preview",
+          "mimo-v2.6-pro"
+        ],
         "sessionConfig": {
-          "selectors": ["agent", "model", "effort", "permission", "profile"],
+          "selectors": [
+            "agent",
+            "model",
+            "effort",
+            "permission",
+            "profile"
+          ],
           "effortOptions": [
-            { "value": "", "label": "不设置", "description": "使用 CLI 默认级别" },
-            { "value": "minimal", "label": "最低", "description": "极简思考，快速响应" },
-            { "value": "low", "label": "低", "description": "快速响应，适合简单问题" },
-            { "value": "medium", "label": "中", "description": "平衡速度和质量" },
-            { "value": "high", "label": "高", "description": "深入思考，适合复杂问题" },
-            { "value": "xhigh", "label": "极高", "description": "适合复杂编码和长程 Agent 任务" },
-            { "value": "max", "label": "最高", "description": "全力以赴，最高质量输出" }
+            {
+              "value": "",
+              "label": "不设置",
+              "description": "使用 CLI 默认级别"
+            },
+            {
+              "value": "minimal",
+              "label": "最低",
+              "description": "极简思考，快速响应"
+            },
+            {
+              "value": "low",
+              "label": "低",
+              "description": "快速响应，适合简单问题"
+            },
+            {
+              "value": "medium",
+              "label": "中",
+              "description": "平衡速度和质量"
+            },
+            {
+              "value": "high",
+              "label": "高",
+              "description": "深入思考，适合复杂问题"
+            },
+            {
+              "value": "xhigh",
+              "label": "极高",
+              "description": "适合复杂编码和长程 Agent 任务"
+            },
+            {
+              "value": "max",
+              "label": "最高",
+              "description": "全力以赴，最高质量输出"
+            }
           ],
           "permissionOptions": [
-            { "value": "", "label": "不设置", "description": "使用 CLI 默认权限策略" },
-            { "value": "default", "label": "默认", "description": "敏感操作需要确认" },
-            { "value": "auto", "label": "自动", "description": "安全操作自动批准，高风险仍受限" },
-            { "value": "acceptEdits", "label": "接受编辑", "description": "自动接受文件编辑" },
-            { "value": "plan", "label": "规划", "description": "仅规划不执行" },
-            { "value": "dontAsk", "label": "拒绝危险", "description": "拒绝需要确认的危险操作" },
-            { "value": "bypassPermissions", "label": "跳过权限（高风险）", "description": "绕过所有权限检查" }
+            {
+              "value": "",
+              "label": "不设置",
+              "description": "使用 CLI 默认权限策略"
+            },
+            {
+              "value": "default",
+              "label": "默认",
+              "description": "敏感操作需要确认"
+            },
+            {
+              "value": "auto",
+              "label": "自动",
+              "description": "安全操作自动批准，高风险仍受限"
+            },
+            {
+              "value": "acceptEdits",
+              "label": "接受编辑",
+              "description": "自动接受文件编辑"
+            },
+            {
+              "value": "plan",
+              "label": "规划",
+              "description": "仅规划不执行"
+            },
+            {
+              "value": "dontAsk",
+              "label": "拒绝危险",
+              "description": "拒绝需要确认的危险操作"
+            },
+            {
+              "value": "bypassPermissions",
+              "label": "跳过权限（高风险）",
+              "description": "绕过所有权限检查"
+            }
           ]
         },
         "adapter": {
