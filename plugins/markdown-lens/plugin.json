@@ -1,0 +1,41 @@
+{
+  "id": "markdown-lens",
+  "name": "Markdown 检查器",
+  "version": "0.1.0",
+  "description": "Markdown 结构体检：标题层级跳级、多 h1、锚点断链（#目标 与标题 GitHub slug 匹配，中文标题兼容）、图片无 alt、表格列数不齐、代码块无语言、重复标题、TODO/FIXME 残留等 12 条规则，行级报告（行号/规则/严重级）+ 标题树大纲。围栏状态感知（代码块内伪 markdown 语法不误报）。README 与文档质量刚需；纯本地零外联零 kv，MCP 两工具（lint/outline）+ 面板双框测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "markdown-lens.panel",
+        "area": "activityBar",
+        "panelType": "markdown-lens",
+        "icon": "FileText",
+        "labelKey": "plugins.markdown-lens",
+        "labelDefault": "Markdown 检查器",
+        "order": 101
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "mcpServers": [
+      {
+        "id": "markdown-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/markdown-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/markdown-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/markdown-lens/markdown-lens.zip"
+  }
+}
