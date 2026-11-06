@@ -30,3 +30,5 @@ plugins/animation-2d/out/
 # douyin-publish 运行时状态（发布记录，含本机路径与 itemId）
 plugins/douyin-publish/state/
 *.harness-bundle*
+codebuddy.zip
+qoder.zip

@@ -48,6 +48,13 @@ function respondError(id, msg) {
 let lastCbSessionId = null;
 // call_id → 工具名（content_block_start 建立映射，tool_result 回填）
 const toolNames = new Map();
+// call_id → input_json_delta 分片聚合（Anthropic 流协议：tool_use 参数经
+// content_block_delta 的 input_json_delta 分片到达，content_block_start 时
+// input 恒为空对象——不聚合则前端 ToolCallBlock.input 为空，Edit/Write 的
+// file_path/old_string/new_string 全丢，悬浮岛文件变更统计为 0）
+const toolInputFrags = new Map();
+// content_block index → call_id（input_json_delta 按 index 路由到对应工具）
+const blockIndexToCallId = new Map();
 // 上一条 assistant 完整消息的正文：codebuddy CLI 会把最终 assistant 消息发两遍
 // （流式结束 + result 回放，thinking 内容略有差异导致签名不同），按正文文本去重，
 // 否则 UI 渲染出重复的思考/正文块
@@ -107,16 +114,47 @@ function parseLine(line, sessionId) {
         } else if (e.delta.type === 'thinking_delta') {
           streamedDeltas = true;
           emit(sessionId, 'thinking', { content: e.delta.thinking || '' });
+        } else if (e.delta.type === 'input_json_delta' && typeof e.delta.partial_json === 'string') {
+          // tool_use 参数分片聚合：按 index 对应的 call_id 累积（index → id 映射
+          // 在 content_block_start 时登记）
+          const callId = blockIndexToCallId.get(e.index);
+          if (callId) {
+            const arr = toolInputFrags.get(callId) || [];
+            arr.push(e.delta.partial_json);
+            toolInputFrags.set(callId, arr);
+          }
         }
       }
       if (e.type === 'content_block_start' && e.content_block?.type === 'tool_use') {
         const callId = e.content_block.id || '';
-        if (callId) toolNames.set(callId, e.content_block.name || 'unknown');
+        if (callId) {
+          toolNames.set(callId, e.content_block.name || 'unknown');
+          blockIndexToCallId.set(e.index, callId);
+        }
         emit(sessionId, 'tool_call_start', {
           tool: e.content_block.name || 'unknown',
           args: e.content_block.input || {},
           call_id: callId,
         });
+      }
+      if (e.type === 'content_block_stop' && typeof e.index === 'number') {
+        // 参数分片收齐：拼完整 JSON 后重发 tool_call_start——宿主 appendToolCallBlock
+        // 幂等守卫对同 callId 仅回填缺失 input（不重复开卡），Edit/Write 的
+        // file_path/old_string/new_string 由此到达前端（悬浮岛变更统计的数据源）
+        const callId = blockIndexToCallId.get(e.index);
+        const frags = toolInputFrags.get(callId);
+        if (callId && frags && frags.length > 0) {
+          toolInputFrags.delete(callId);
+          blockIndexToCallId.delete(e.index);
+          let args = {};
+          try { args = JSON.parse(frags.join('')); } catch { /* 参数残缺则保持空对象 */ }
+          const name = toolNames.get(callId) || 'unknown';
+          emit(sessionId, 'tool_call_start', {
+            tool: name,
+            args,
+            call_id: callId,
+          });
+        }
       }
       return false;
     }
@@ -197,8 +235,16 @@ function endSession(reason, reqId, errorMsg) {
   if (sessionEnded || !currentSessionId) return;
   sessionEnded = true;
   if (errorMsg) emit(currentSessionId, 'error', { error: errorMsg });
+  // 响应帧必须先于 session_end 发出：宿主 reader 收到 session_end 即 break，
+  // 后发的响应帧会被丢弃——resume_token 丢失导致续聊退化为新会话（实测根因）
+  respondAndExitBegin(reqId, { session_id: currentSessionId, resume_token: lastCbSessionId || undefined });
   emit(currentSessionId, 'session_end', { reason });
-  respondAndExit(reqId, { session_id: currentSessionId, resume_token: lastCbSessionId || undefined });
+  process.exit(0);
+}
+
+/** 响应帧写出（不退出——退出由 endSession 尾部统一执行） */
+function respondAndExitBegin(id, result) {
+  process.stdout.write(JSON.stringify({ id, result }) + '\n');
 }
 
 function mapPermissionMode(mode) {
@@ -239,6 +285,8 @@ function runSession(params, reqId) {
   currentSessionId = sessionId;
   sessionEnded = false;
   toolNames.clear();
+  toolInputFrags.clear();
+  blockIndexToCallId.clear();
   lastAssistantText = null;
   streamedDeltas = false;
   resultHadError = false;

@@ -96,8 +96,8 @@ async function scenarioA() {
   const evs = eventFrames(frames);
   const types = evs.map(f => f.type);
 
-  check('帧全序（9 事件，session_start 首帧）', () =>
-    assert.deepStrictEqual(types, ['session_start', 'cli_init', 'thinking', 'token', 'tool_call_start', 'tool_call_end', 'assistant_message', 'usage', 'session_end']));
+  check('帧全序（10 事件：start×2=参数分片补发，session_start 首帧）', () =>
+    assert.deepStrictEqual(types, ['session_start', 'cli_init', 'thinking', 'token', 'tool_call_start', 'tool_call_start', 'tool_call_end', 'assistant_message', 'usage', 'session_end']));
   check('session_start 提前且带 engineId', () => {
     assert.strictEqual(evs[0].engineId, 'codebuddy');
   });
@@ -109,21 +109,27 @@ async function scenarioA() {
   });
   check('thinking 内容', () => assert.strictEqual(evs[2].content, '思考片段'));
   check('token 增量值', () => assert.strictEqual(evs[3].value, '你好'));
-  check('tool_call_start 带 call_id', () => {
+  check('tool_call_start 带 call_id（首个，args 为空——参数分片后补发）', () => {
     assert.strictEqual(evs[4].tool, 'Bash');
     assert.strictEqual(evs[4].call_id, 't1');
+    assert.deepStrictEqual(evs[4].args, {});
+  });
+  check('tool_call_start 补发完整 args（input_json_delta 聚合）', () => {
+    assert.strictEqual(evs[5].tool, 'Bash');
+    assert.strictEqual(evs[5].call_id, 't1');
+    assert.deepStrictEqual(evs[5].args, { cmd: 'ls' });
   });
   check('tool_call_end 工具名回填（此前为空串）', () => {
-    assert.strictEqual(evs[5].tool, 'Bash');
-    assert.strictEqual(evs[5].success, true);
-    assert.strictEqual(evs[5].call_id, 't1');
+    assert.strictEqual(evs[6].tool, 'Bash');
+    assert.strictEqual(evs[6].success, true);
+    assert.strictEqual(evs[6].call_id, 't1');
   });
   check('assistant_message isDelta=false', () => {
-    assert.strictEqual(evs[6].content, '完整回复');
-    assert.strictEqual(evs[6].isDelta, false);
+    assert.strictEqual(evs[7].content, '完整回复');
+    assert.strictEqual(evs[7].isDelta, false);
   });
-  check('usage tokens', () => assert.strictEqual(evs[7].input_tokens, 10));
-  check('session_end reason=completed', () => assert.strictEqual(evs[8].reason, 'completed'));
+  check('usage tokens', () => assert.strictEqual(evs[8].input_tokens, 10));
+  check('session_end reason=completed', () => assert.strictEqual(evs[9].reason, 'completed'));
   check('响应帧 result 带 resume_token', () => {
     const r = responseFrame(frames);
     assert.strictEqual(r.id, 1);

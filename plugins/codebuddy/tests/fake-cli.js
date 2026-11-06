@@ -46,7 +46,15 @@ if (process.env.FAKE_CLI_MODE === 'slow') {
     out({ type: 'system', subtype: 'init', session_id: 'cb-fake-123', tools: ['Bash', 'Read'], mcp_servers: [{ name: 'm1', status: 'connected' }], model: 'hy4-preview' });
     out({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: '思考片段' } } });
     out({ type: 'stream_event', event: { type: 'content_block_delta', delta: { type: 'text_delta', text: '你好' } } });
-    out({ type: 'stream_event', event: { type: 'content_block_start', content_block: { type: 'tool_use', id: 't1', name: 'Bash', input: { cmd: 'ls' } } } });
+    // 真实 CLI 行为（Anthropic 流协议）：tool_use 参数经 input_json_delta 分片流式，
+    // content_block_start 时 input 为空对象——adapter 须聚合分片并在 content_block_stop 补发
+    const toolInput = { cmd: 'ls' };
+    const inputJson = JSON.stringify(toolInput);
+    const mid = Math.ceil(inputJson.length / 2);
+    out({ type: 'stream_event', event: { type: 'content_block_start', index: 2, content_block: { type: 'tool_use', id: 't1', name: 'Bash', input: {} } } });
+    out({ type: 'stream_event', event: { type: 'content_block_delta', index: 2, delta: { type: 'input_json_delta', partial_json: inputJson.slice(0, mid) } } });
+    out({ type: 'stream_event', event: { type: 'content_block_delta', index: 2, delta: { type: 'input_json_delta', partial_json: inputJson.slice(mid) } } });
+    out({ type: 'stream_event', event: { type: 'content_block_stop', index: 2 } });
     out({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 't1', is_error: false, content: 'out' }] } });
     out({ type: 'assistant', message: { content: [{ type: 'text', text: '完整回复' }] } });
     // codebuddy 真实行为：最终 assistant 消息会重发一遍（thinking 内容有差异、正文相同）——

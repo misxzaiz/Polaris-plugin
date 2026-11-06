@@ -172,8 +172,11 @@ function endSession(reason, reqId, errorMsg) {
   if (sessionEnded || !currentSessionId) return;
   sessionEnded = true;
   if (errorMsg) emit(currentSessionId, 'error', { error: errorMsg });
+  // 响应帧必须先于 session_end 发出：宿主 reader 收到 session_end 即 break，
+  // 后发的响应帧会被丢弃——resume_token 丢失导致续聊退化为新会话
+  process.stdout.write(JSON.stringify({ id: reqId, result: { session_id: currentSessionId, resume_token: lastQoderSessionId || undefined } }) + '\n');
   emit(currentSessionId, 'session_end', { reason });
-  respondAndExit(reqId, { session_id: currentSessionId, resume_token: lastQoderSessionId || undefined });
+  process.exit(0);
 }
 
 /**
@@ -222,7 +225,10 @@ function runSession(params, reqId) {
   emit(sessionId, 'session_start', { engineId: 'qoder' });
 
   const args = ['-p', '--output-format', 'stream-json', '--include-partial-messages'];
-  if (model) args.push('--model', model);
+  // resume 与 --model 互斥（qoder CLI 实测 bug）：resume 时显式传 --model 触发
+  // "main model \"auto\" is unavailable."（恢复会话的模型被覆盖冲突）。
+  // 续聊交给会话记忆的原模型；仅新会话传 --model。
+  if (model && !(isContinue && resumeToken)) args.push('--model', model);
   if (isContinue && resumeToken) args.push('--resume', resumeToken);
   args.push('--permission-mode', permissionMode);
   if (effort) args.push('--reasoning-effort', effort);
