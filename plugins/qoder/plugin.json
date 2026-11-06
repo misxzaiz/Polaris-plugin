@@ -1,8 +1,8 @@
 {
   "id": "qoder",
   "name": "Qoder Engine",
-  "version": "0.2.0",
-  "description": "Qoder AI CLI 引擎适配器（engine-v1）。v0.2.0：续聊修复（--resume 与 --model 互斥规避——resume 时传 model 触发 CLI \"auto is unavailable\"；响应帧先于 session_end 发出防 resume_token 丢失）。",
+  "version": "0.2.1",
+  "description": "Qoder AI CLI 引擎适配器（engine-v1）。v0.2.0：续聊修复（--resume 与 --model 互斥规避——resume 时传 model 触发 CLI \"auto is unavailable\"；响应帧先于 session_end 发出防 resume_token 丢失）。 v0.2.1：同 codebuddy 的 resume_token 采集竞态修复（stdout drain 完才收尾）。",
   "enabledByDefault": false,
   "contributes": {
     "engines": [

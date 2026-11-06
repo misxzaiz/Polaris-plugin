@@ -81,12 +81,22 @@ async function scenarioA() {
   const { frames, code } = await collect(child, 15000);
   const evs = eventFrames(frames);
   const types = evs.map(f => f.type);
-  check('帧全序（9 事件）', () =>
-    assert.deepStrictEqual(types, ['session_start', 'cli_init', 'thinking', 'token', 'tool_call_start', 'tool_call_end', 'assistant_message', 'usage', 'session_end']));
+  check('帧全序（10 事件：start×2=参数分片补发）', () =>
+    assert.deepStrictEqual(types, ['session_start', 'cli_init', 'thinking', 'token', 'tool_call_start', 'tool_call_start', 'tool_call_end', 'assistant_message', 'usage', 'session_end']));
   check('session_start 带 engineId=qoder', () => assert.strictEqual(evs[0].engineId, 'qoder'));
-  check('tool_call_end 工具名回填', () => assert.strictEqual(evs[5].tool, 'Bash'));
-  check('usage 采集', () => assert.strictEqual(evs[7].input_tokens, 10));
-  check('session_end completed', () => assert.strictEqual(evs[8].reason, 'completed'));
+  check('tool_call_start 首个 args 为空（参数分片后补发）', () => {
+    assert.strictEqual(evs[4].tool, 'Bash');
+    assert.strictEqual(evs[4].call_id, 't1');
+    assert.deepStrictEqual(evs[4].args, {});
+  });
+  check('tool_call_start 补发完整 args（input_json_delta 聚合）', () => {
+    assert.strictEqual(evs[5].tool, 'Bash');
+    assert.strictEqual(evs[5].call_id, 't1');
+    assert.deepStrictEqual(evs[5].args, { cmd: 'ls' });
+  });
+  check('tool_call_end 工具名回填', () => assert.strictEqual(evs[6].tool, 'Bash'));
+  check('usage 采集', () => assert.strictEqual(evs[8].input_tokens, 10));
+  check('session_end completed', () => assert.strictEqual(evs[9].reason, 'completed'));
   check('响应帧 resume_token', () => {
     const r = responseFrame(frames);
     assert.strictEqual(r.result.resume_token, 'qoder-fake-456');

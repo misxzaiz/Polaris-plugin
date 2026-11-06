@@ -42,6 +42,14 @@ function respondError(id, msg) {
 // ============================================================
 let lastQoderSessionId = null;
 const toolNames = new Map();
+// call_id → input_json_delta 分片聚合（claude-code 流协议：tool_use 参数经
+// content_block_delta 的 input_json_delta 分片到达，content_block_start 时 input
+// 恒为空对象——不聚合则前端 ToolCallBlock.input 为空，Edit/Write 的
+// file_path/old_string/new_string 全丢，悬浮岛文件变更统计为 0，工具头只显示
+// 工具名（如 Bash → "执行"）看不到路径/命令/查询词。与 codebuddy adapter 同构。）
+const toolInputFrags = new Map();
+// content_block index → call_id（input_json_delta 按 index 路由到对应工具）
+const blockIndexToCallId = new Map();
 let lastAssistantText = null;
 let streamedDeltas = false;
 let resultHadError = false;  // result 帧 is_error/errors（CLI 执行错误，非进程退出错误）
@@ -92,16 +100,47 @@ function parseLine(line, sessionId) {
         } else if (e.delta.type === 'thinking_delta') {
           streamedDeltas = true;
           emit(sessionId, 'thinking', { content: e.delta.thinking || '' });
+        } else if (e.delta.type === 'input_json_delta' && typeof e.delta.partial_json === 'string') {
+          // tool_use 参数分片聚合：按 index 对应的 call_id 累积（index → id 映射
+          // 在 content_block_start 时登记）
+          const callId = blockIndexToCallId.get(e.index);
+          if (callId) {
+            const arr = toolInputFrags.get(callId) || [];
+            arr.push(e.delta.partial_json);
+            toolInputFrags.set(callId, arr);
+          }
         }
       }
       if (e.type === 'content_block_start' && e.content_block?.type === 'tool_use') {
         const callId = e.content_block.id || '';
-        if (callId) toolNames.set(callId, e.content_block.name || 'unknown');
+        if (callId) {
+          toolNames.set(callId, e.content_block.name || 'unknown');
+          blockIndexToCallId.set(e.index, callId);
+        }
         emit(sessionId, 'tool_call_start', {
           tool: e.content_block.name || 'unknown',
           args: e.content_block.input || {},
           call_id: callId,
         });
+      }
+      if (e.type === 'content_block_stop' && typeof e.index === 'number') {
+        // 参数分片收齐：拼完整 JSON 后重发 tool_call_start——宿主 appendToolCallBlock
+        // 幂等守卫对同 callId 仅回填缺失 input（不重复开卡），Edit/Write 的
+        // file_path/old_string/new_string 由此到达前端（悬浮岛变更统计的数据源）
+        const callId = blockIndexToCallId.get(e.index);
+        const frags = toolInputFrags.get(callId);
+        if (callId && frags && frags.length > 0) {
+          toolInputFrags.delete(callId);
+          blockIndexToCallId.delete(e.index);
+          let args = {};
+          try { args = JSON.parse(frags.join('')); } catch { /* 参数残缺则保持空对象 */ }
+          const name = toolNames.get(callId) || 'unknown';
+          emit(sessionId, 'tool_call_start', {
+            tool: name,
+            args,
+            call_id: callId,
+          });
+        }
       }
       return false;
     }
@@ -215,6 +254,8 @@ function runSession(params, reqId) {
   currentSessionId = sessionId;
   sessionEnded = false;
   toolNames.clear();
+  toolInputFrags.clear();
+  blockIndexToCallId.clear();
   lastAssistantText = null;
   streamedDeltas = false;
   lastQoderSessionId = null;
@@ -315,6 +356,9 @@ function runSession(params, reqId) {
   let gotResult = false;
   let stdoutBuf = '';
   let stdoutErrText = '';  // stdout 里的非 JSON 错误文本（如 Not logged in 栈）
+  let childClosed = false; // close 已发生（stdout 可能仍有缓冲未消费——竞态守卫）
+  let stdoutEnded = false;
+  let closeCode = null;
 
   child.stdout.on('data', (chunk) => {
     stdoutBuf += chunk.toString();
@@ -335,6 +379,37 @@ function runSession(params, reqId) {
       if (parseLine(line, sessionId)) gotResult = true;
     }
   });
+  // stdout drain 完才收尾（close ≠ 消费完：result 帧行可能在缓冲里——
+  // 竞态下响应帧带空 token，续聊退化为新会话）
+  child.stdout.on('end', () => {
+    stdoutEnded = true;
+    if (childClosed) finishSession(reqId);
+  });
+  child.stdout.on('close', () => {
+    if (!stdoutEnded && stdoutBuf.trim()) {
+      const line = stdoutBuf.trim();
+      stdoutBuf = '';
+      try { JSON.parse(line); if (parseLine(line, sessionId)) gotResult = true; } catch {
+        if (!stdoutErrText) stdoutErrText = line;
+      }
+    }
+    stdoutEnded = true;
+    if (childClosed) finishSession(reqId);
+  });
+
+  const finishSession = (reqId2) => {
+    if (!gotResult) {
+      // 错误优先级：stdout 非 JSON 错误文本（Not logged in 等）> stderr 尾部 > 通用兜底
+      const errTail = stderrBuf.trim().split('\n').slice(-3).join(' | ').slice(0, 300);
+      const errMsg = stdoutErrText.slice(0, 300) || errTail
+        || (closeCode !== 0 && closeCode !== null ? `CLI 退出码: ${closeCode}（无错误输出；若首次使用请先运行 qodercli login 登录）` : undefined);
+      endSession(closeCode === 0 && !errMsg ? 'completed' : 'error', reqId2, errMsg || undefined);
+    } else {
+      // result 已收到：执行错误（result.is_error）已在 parseLine 内发过 error 帧，
+      // 此处仅决定终态原因（error 帧去重由 sessionEnded 守卫保证）
+      endSession(resultHadError ? 'error' : 'completed', reqId2);
+    }
+  };
 
   let stderrBuf = '';
   child.stderr.on('data', (chunk) => {
@@ -348,17 +423,9 @@ function runSession(params, reqId) {
   });
 
   child.on('close', (code) => {
-    if (!gotResult) {
-      // 错误优先级：stdout 非 JSON 错误文本（Not logged in 等）> stderr 尾部 > 通用兜底
-      const errTail = stderrBuf.trim().split('\n').slice(-3).join(' | ').slice(0, 300);
-      const errMsg = stdoutErrText.slice(0, 300) || errTail
-        || (code !== 0 && code !== null ? `CLI 退出码: ${code}（无错误输出；若首次使用请先运行 qodercli login 登录）` : undefined);
-      endSession(code === 0 && !errMsg ? 'completed' : 'error', reqId, errMsg || undefined);
-    } else {
-      // result 已收到：执行错误（result.is_error）已在 parseLine 内发过 error 帧，
-      // 此处仅决定终态原因（error 帧去重由 sessionEnded 守卫保证）
-      endSession(resultHadError ? 'error' : 'completed', reqId);
-    }
+    childClosed = true;
+    closeCode = code;
+    if (stdoutEnded) finishSession(reqId);
   });
 
   child.on('error', (e) => {

@@ -356,6 +356,9 @@ function runSession(params, reqId) {
 
   let gotResult = false;
   let stdoutBuf = '';
+  let childClosed = false;   // close 已发生（stdout 可能仍有缓冲未消费）
+  let stdoutEnded = false;   // stdout drain 完毕（所有行已消费，lastCbSessionId 定值）
+  let closeCode = null;
 
   // 用 data 事件 + 手动分行，避免 readline 在管道模式下不触发 line 事件
   child.stdout.on('data', (chunk) => {
@@ -367,6 +370,34 @@ function runSession(params, reqId) {
       if (line && parseLine(line, sessionId)) gotResult = true;
     }
   });
+  // stdout end：CLI 输出全部消费完——result 帧（resume_token 采集源）保证已处理。
+  // close 事件 ≠ stdout 消费完（Windows 管道缓冲时序）：close 时 result 行可能
+  // 仍在缓冲，直接 endSession 会带着空/旧 token 发响应帧——续聊 token 错误
+  // （实测：T1 token 采集竞态丢失 → T2 resume 查无会话 → CLI 静默新开会话）。
+  child.stdout.on('end', () => {
+    stdoutEnded = true;
+    if (childClosed) finishSession(reqId);
+  });
+  // 残余无换行尾行（CLI 异常截断时的最后一帧）
+  child.stdout.on('close', () => {
+    if (!stdoutEnded && stdoutBuf.trim()) {
+      const line = stdoutBuf.trim();
+      stdoutBuf = '';
+      if (line && parseLine(line, sessionId)) gotResult = true;
+    }
+    stdoutEnded = true;
+    if (childClosed) finishSession(reqId);
+  });
+
+  const finishSession = (reqId2) => {
+    if (!gotResult) {
+      endSession(closeCode === 0 ? 'completed' : 'error', reqId2,
+        closeCode !== 0 && closeCode !== null ? `CLI 退出码: ${closeCode}` : undefined);
+    } else {
+      // result 已收到：执行错误已在 parseLine 内发过 error 帧，此处仅定终态原因
+      endSession(resultHadError ? 'error' : 'completed', reqId2);
+    }
+  };
 
   let stderrBuf = '';
   child.stderr.on('data', (chunk) => {
@@ -380,13 +411,10 @@ function runSession(params, reqId) {
   });
 
   child.on('close', (code) => {
-    if (!gotResult) {
-      endSession(code === 0 ? 'completed' : 'error', reqId,
-        code !== 0 && code !== null ? `CLI 退出码: ${code}` : undefined);
-    } else {
-      // result 已收到：执行错误已在 parseLine 内发过 error 帧，此处仅定终态原因
-      endSession(resultHadError ? 'error' : 'completed', reqId);
-    }
+    childClosed = true;
+    closeCode = code;
+    // stdout 未 drain 完时等待其 end/close（竞态守卫），已 drain 则立即收尾
+    if (stdoutEnded) finishSession(reqId);
   });
 
   child.on('error', (e) => {
