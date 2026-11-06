@@ -1,0 +1,51 @@
+{
+  "id": "cert-lens",
+  "name": "TLS 证书调试台",
+  "version": "0.1.0",
+  "description": "把「SSL 握手失败」的排障从 openssl 语法地狱变成点一下的事：粘贴证书全字段解析（SAN/密钥强度/签名算法/到期倒计时），多证书自动链拼装验签揪出「浏览器能开 curl 报错」的经典根因（缺中间证书/乱序/假链）；对任意端点（含内网/自签——在线检查工具够不到的地方）做真实 TLS 握手诊断，错误码翻译成中文根因+修复建议（覆盖 19 类高频错误）；端点到期盯守分色告警（≤30 天 warn/≤7 天 crit）；可选私钥配对检查（内存比对即弃）。AI 经 MCP 五工具（cert_parse/tls_probe/tls_diagnose/cert_expiry_check/cert_selftest）在遇到 SSL 报错时直接自证。全程本地计算零外联，证书数据不落日志不落 kv。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "cert-lens.panel",
+        "area": "activityBar",
+        "panelType": "cert-lens",
+        "icon": "./assets/icon.svg",
+        "labelKey": "plugins.certLens",
+        "labelDefault": "TLS 证书调试台",
+        "order": 98
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "services": [
+      {
+        "id": "cert-lens-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9885,
+        "healthCheck": "/__health"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "cert-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/cert-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cert-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/cert-lens/cert-lens.zip"
+  }
+}
