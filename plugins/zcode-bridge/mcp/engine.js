@@ -283,6 +283,10 @@ async function applyModelSelection(sessionId) {
   const candidates = [];
   const cached = catalog.levels[sel.modelId];
   if (cached) candidates.push(cached);
+  // 会话级 effort（宿主 POLARIS_SESSION_EFFORT 通用注入，2026-11-06）：
+  // UI 选择的努力级别 → 档位阶梯最高优先（Profile custom_env 的 ZCODE_REASONING_LEVEL 次之）
+  const sessionEffort = (process.env.POLARIS_SESSION_EFFORT || '').trim();
+  if (sessionEffort && !candidates.includes(sessionEffort)) candidates.push(sessionEffort);
   const envLevel = (process.env.ZCODE_REASONING_LEVEL || '').trim();
   if (envLevel && !candidates.includes(envLevel)) candidates.push(envLevel);
   for (const lv of ['high', 'medium', 'low']) if (!candidates.includes(lv)) candidates.push(lv);
