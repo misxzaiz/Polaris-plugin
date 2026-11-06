@@ -10,7 +10,12 @@ src/
 test/
 
 # 开发文档（方案/演进记录，不进安装包）
-PLAN-*.md
+PLAN-chat.md
+PLAN-easy-to-use.md
+PLAN-engine-plugin.md
+PLAN-model-select.md
+PLAN-next-phase.md
+PLAN-next-step-v2.md
 
 # 打包产物与日志
 *.zip
