@@ -1,8 +1,8 @@
 {
   "id": "interactive-component",
   "name": "交互组件",
-  "version": "1.0.0",
-  "description": "在 AI 对话中渲染自包含交互组件：任意 HTML（iframe 沙箱）+ 可选表单回传（与系统表单同一信任边界：read 三态/secret 掩码服务端强制）+ 静态原型预览与版本管理。含 ask/form 交互模板（块委托渲染）。MCP 四工具（render_component / preview_html 兼容别名 / read_preview / list_previews）。数据落工作区 .polaris/previews，代码不出本机。",
+  "version": "1.1.0",
+  "description": "在 AI 对话中渲染自包含交互组件：任意 HTML（iframe 沙箱）+ 可选表单回传（与系统表单同一信任边界：read 三态/secret 掩码服务端强制）+ 静态原型预览。MCP 四工具（render_component / preview_html 兼容别名 / read_preview / list_previews）。数据落工作区 .polaris/previews，代码不出本机。",
   "enabledByDefault": true,
   "core": true,
   "contributes": {
@@ -11,21 +11,25 @@
         "id": "polaris-prd-preview",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}", "{{workspacePath}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}",
+          "{{workspacePath}}"
+        ]
       }
     ],
     "chatCards": [
       {
         "id": "preview-card",
         "mcpServerId": "polaris-prd-preview",
-        "tools": ["render_component", "preview_html", "read_preview"],
+        "tools": [
+          "render_component",
+          "preview_html",
+          "read_preview"
+        ],
         "mode": "result",
         "entry": "./dist/card.js"
       }
-    ],
-    "blockRenderers": [
-      { "blockType": "form", "entry": "./dist/blocks/form-card.js" },
-      { "blockType": "question", "entry": "./dist/blocks/ask-card.js" }
     ]
   },
   "permissions": {
