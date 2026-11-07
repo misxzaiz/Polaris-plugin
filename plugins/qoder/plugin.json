@@ -19,9 +19,6 @@
         "protocol": "command",
         "sessionFlags": "omp",
         "mcpConsumption": "none",
-        "models": [
-          "Qwen3.8-Flash"
-        ],
         "sessionConfig": {
           "selectors": [
             "agent",
