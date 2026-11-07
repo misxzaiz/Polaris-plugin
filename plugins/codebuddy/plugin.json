@@ -1,7 +1,7 @@
 {
   "id": "codebuddy",
   "name": "CodeBuddy Engine",
-  "version": "0.3.1",
+  "version": "0.4.1",
   "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.3.0：续聊修复（响应帧先于 session_end 发出——resume_token 不再被宿主 reader 丢弃）；tool_use 参数 input_json_delta 分片聚合补发（Edit/Write 的 file_path/old_string 到达前端，悬浮岛文件变更统计生效）。 v0.3.1：resume_token 采集竞态修复——close≠stdout消费完，CLI result 帧行可能仍在管道缓冲，响应帧曾带空/旧 token（续聊退化新会话的真根因）；stdout drain 完才收尾。",
   "enabledByDefault": false,
   "contributes": {
@@ -133,7 +133,22 @@
           "resume": true
         }
       }
-    ]
+    ],
+    "views": [
+      {
+        "id": "codebuddy.panel",
+        "area": "activityBar",
+        "panelType": "codebuddyPanel",
+        "icon": "Bot",
+        "labelKey": "plugins.codebuddy",
+        "labelDefault": "CodeBuddy",
+        "order": 91
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
   },
   "permissions": {
     "workspaceRead": true,
