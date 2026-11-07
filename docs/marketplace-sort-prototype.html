@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Polaris 插件商城 · 排序能力可交互原型</title>
+<style>
+  /* ===== 忠实还原 Panel.tsx 暗色风格 ===== */
+  :root {
+    --bg: #1A1A1F;
+    --card: #25252B;
+    --card-hover: #2A2A30;
+    --card-selected: #2D2D33;
+    --panel: #1F1F24;
+    --border: #3F3F46;
+    --text: #F8F8F8;
+    --text-2: #B4B4B8;
+    --text-3: #8E8E93;
+    --text-4: #6B7280;
+    --accent: #3B82F6;
+    --green: #34D399;
+    --blue: #60A5FA;
+    --gray: #6B7280;
+    --red: #EF4444;
+    --amber: #F59E0B;
+    /* tier 配色 */
+    --prod-c: #34D399; --prod-bg: #065F4622; --prod-bd: #065F4644;
+    --beta-c: #60A5FA; --beta-bg: #1E40AF22; --beta-bd: #1E40AF44;
+    --demo-c: #6B7280; --demo-bg: #3F3F4622; --demo-bd: #3F3F4644;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: #0F0F12;
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 24px 12px;
+  }
+  .mock-shell {
+    width: 100%;
+    max-width: 480px;
+    height: 760px;
+    background: var(--bg);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  /* ===== 顶部说明条（原型专属，非真实 UI） ===== */
+  .mock-note {
+    background: #2D1B00;
+    color: var(--amber);
+    font-size: 10px;
+    padding: 6px 12px;
+    line-height: 1.5;
+    border-bottom: 1px solid #4D3A00;
+  }
+  .mock-note b { color: #FBBF24; }
+  /* ===== Tab ===== */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    flex: 1; padding: 10px 12px; font-size: 12px; cursor: pointer;
+    border: none; background: transparent; color: var(--text-3);
+    border-bottom: 2px solid transparent; font-weight: 400;
+  }
+  .tab-btn.active { color: var(--text); font-weight: 600; border-bottom-color: var(--accent); }
+  /* ===== 搜索栏 ===== */
+  .search-row { padding: 12px 12px 8px; display: flex; gap: 8px; align-items: center; }
+  .search-row input {
+    flex: 1; padding: 6px 10px; background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 12px; outline: none;
+  }
+  .icon-btn {
+    padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: #2D2D33; color: var(--text); font-size: 12px; cursor: pointer;
+  }
+  /* ===== 源 chips ===== */
+  .source-bar { padding: 0 12px 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .source-bar .label { font-size: 10px; color: var(--text-4); margin-right: 2px; }
+  .chip-src {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--text-3);
+  }
+  .chip-src.active { border-color: var(--accent); background: #3B82F622; color: var(--accent); }
+  /* ===== 过滤栏 + 排序 ===== */
+  .filter-row { padding: 0 12px 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .filter-row .sep { width: 1px; height: 14px; background: var(--border); margin: 0 2px; }
+  .filter-row .label { font-size: 10px; color: var(--text-4); margin-right: 2px; }
+  .chip-filter {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border); background: transparent; color: var(--text-3);
+    transition: background 0.15s, color 0.15s;
+  }
+  .chip-filter.active { background: #6B728022; color: var(--text-4); border-color: var(--text-4); }
+  .chip-filter.active.tier-prod { background: var(--prod-bg); color: var(--prod-c); border-color: var(--prod-c); }
+  .chip-filter.active.tier-beta { background: var(--beta-bg); color: var(--beta-c); border-color: var(--beta-c); }
+  .chip-filter.active.tier-demo { background: var(--demo-bg); color: var(--demo-c); border-color: var(--demo-c); }
+  .chip-filter.active.cat-ai { background: #8B5CF622; color: #A855F7; border-color: #A855F7; }
+  /* 排序下拉 */
+  .sort-wrap { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .sort-wrap .label { font-size: 10px; color: var(--text-4); }
+  .sort-select {
+    font-size: 10px; padding: 3px 8px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--card); color: var(--text-2);
+    outline: none;
+  }
+  .sort-select.active { border-color: var(--accent); color: var(--accent); background: #3B82F622; }
+  /* ===== 提示条 ===== */
+  .tip-bar {
+    margin: 0 12px 6px; padding: 4px 8px; border-radius: 4px;
+    background: #3F3F4622; font-size: 10px; color: var(--text-4); line-height: 1.4;
+  }
+  .tip-bar strong { color: var(--text-4); }
+  /* ===== 列表 ===== */
+  .list { flex: 1; overflow-y: auto; padding: 0 12px 12px; }
+  .group-label {
+    font-size: 10px; font-weight: 600; color: var(--text-4);
+    margin-bottom: 6px; margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .group-label .count { color: var(--text-4); font-weight: 400; margin-left: 4px; }
+  .item {
+    display: flex; gap: 10px; padding: 10px; border-radius: 8px; cursor: pointer;
+    margin-bottom: 6px; border: 1px solid transparent; background: var(--card);
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .item:hover { background: var(--card-hover); }
+  .item.selected { border-color: var(--accent); background: var(--card-selected); }
+  .item.demo { opacity: 0.55; }
+  .item-icon {
+    width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 2px;
+  }
+  .item-body { flex: 1; min-width: 0; }
+  .item-title { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .item-name { font-size: 13px; font-weight: 600; }
+  .item.demo .item-name { color: var(--text-4); }
+  .item-ver { font-size: 10px; color: var(--text-4); }
+  .item-desc {
+    font-size: 11px; margin-top: 3px; line-height: 1.4; color: var(--text-3);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .item.demo .item-desc { color: var(--text-4); }
+  .item-time {
+    font-size: 9px; color: var(--text-4); margin-top: 4px;
+    display: none;
+  }
+  /* 排序非默认时显示时间行 */
+  .show-time .item-time { display: block; }
+  .item-tags { display: flex; gap: 4px; margin-top: 5px; flex-wrap: wrap; }
+  .tag {
+    font-size: 9px; padding: 1px 6px; border-radius: 4px;
+    background: #3F3F4633; color: var(--text-4);
+  }
+  /* tier badge */
+  .tier-badge {
+    display: inline-flex; align-items: center; gap: 3px; font-size: 9px; font-weight: 600;
+    padding: 1px 7px; border-radius: 4px; letter-spacing: 0.3px; text-transform: uppercase;
+  }
+  .tier-badge .dot { width: 5px; height: 5px; border-radius: 50%; }
+  .tier-production { background: var(--prod-bg); color: var(--prod-c); border: 1px solid var(--prod-bd); }
+  .tier-production .dot { background: var(--prod-c); }
+  .tier-beta { background: var(--beta-bg); color: var(--beta-c); border: 1px solid var(--beta-bd); }
+  .tier-beta .dot { background: var(--beta-c); }
+  .tier-demo { background: var(--demo-bg); color: var(--demo-c); border: 1px solid var(--demo-bd); }
+  .tier-demo .dot { background: var(--demo-c); }
+  /* 缺字段标记 */
+  .missing-time { color: var(--red); font-style: italic; }
+  /* ===== 详情面板 ===== */
+  .detail {
+    border-top: 1px solid var(--border); padding: 12px; background: var(--panel);
+    max-height: 42%; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  }
+  .detail-head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .detail-name { font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 6px; }
+  .detail-meta { font-size: 10px; color: var(--text-4); margin-top: 2px; }
+  .detail-desc { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .detail-close { background: none; border: none; color: var(--text-3); cursor: pointer; padding: 2px 6px; font-size: 14px; }
+  .detail-time {
+    font-size: 10px; color: var(--text-3); background: var(--card); padding: 5px 8px;
+    border-radius: 4px; line-height: 1.6;
+  }
+  .detail-time b { color: var(--text-2); }
+  .btn-row { display: flex; gap: 8px; margin-top: 2px; }
+  .btn-primary {
+    flex: 1; padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: #2D2D33; color: var(--text); font-size: 12px; cursor: pointer;
+  }
+  .empty { padding: 24px; color: var(--text-3); text-align: center; }
+  /* 滚动条 */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="mock-shell">
+  <div class="mock-note">
+    🧪 <b>PRD 可交互原型</b>——演示「按创建时间 / 最后更新时间排序」能力。数据为模拟（插件名取自真实索引，时间为构造），仅验证交互逻辑。切排序下拉观察组内重排与时间行显隐。
+  </div>
+
+  <!-- Tab -->
+  <div class="tabs">
+    <button class="tab-btn active">商城</button>
+    <button class="tab-btn">已装</button>
+  </div>
+
+  <!-- 搜索栏 -->
+  <div class="search-row">
+    <input id="search" placeholder="搜索插件…" />
+    <button class="icon-btn" title="刷新索引">↻</button>
+  </div>
+
+  <!-- 源 chips -->
+  <div class="source-bar">
+    <span class="label">源</span>
+    <button class="chip-src active">官方</button>
+    <button class="chip-src">本地8787</button>
+    <button class="chip-src" style="border-style: dashed;">+ 添加源</button>
+  </div>
+
+  <!-- 过滤栏：等级 + 分类 + 排序 -->
+  <div class="filter-row">
+    <span class="label">等级</span>
+    <button class="chip-filter tier-prod active" data-tier="all">全部</button>
+    <button class="chip-filter" data-tier="production">Production</button>
+    <button class="chip-filter" data-tier="beta">Beta</button>
+    <button class="chip-filter" data-tier="demo">Demo</button>
+    <span class="sep"></span>
+    <span class="label">分类</span>
+    <button class="chip-filter active" data-cat="">全部</button>
+    <button class="chip-filter" data-cat="ai">ai</button>
+    <button class="chip-filter" data-cat="dev">dev</button>
+    <button class="chip-filter" data-cat="utility">utility</button>
+    <button class="chip-filter" data-cat="media">media</button>
+    <!-- 排序下拉（新增能力） -->
+    <div class="sort-wrap">
+      <span class="label">排序</span>
+      <select id="sort" class="sort-select">
+        <option value="default">默认</option>
+        <option value="updated-desc">最新更新</option>
+        <option value="updated-asc">最早更新</option>
+        <option value="created-desc">最新创建</option>
+        <option value="created-asc">最早创建</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 提示条 -->
+  <div class="tip-bar">
+    💡 未标注等级的插件默认视为 <strong>Demo</strong>，仅已标注 <span style="color:var(--green)">Production</span> 或 <span style="color:var(--blue)">Beta</span> 的插件才算可用
+  </div>
+
+  <!-- 列表 -->
+  <div class="list" id="list"></div>
+
+  <!-- 详情面板 -->
+  <div class="detail" id="detail" style="display:none;"></div>
+</div>
+
+<script>
+/* ===== 模拟数据（插件名取自真实 index.json，时间为构造） =====
+   createdAt / updatedAt 为 ISO 字符串；abacus 故意缺时间字段验证兜底 */
+const PLUGINS = [
+  // —— production ——
+  { id:'pocket-ledger', name:'Pocket Ledger', version:'1.2.0', tier:'production', category:'utility',
+    icon:'📊', desc:'家庭账本：对话式记账 + 通用参考分带 + 就诊小结，零服务进程纯本地。',
+    createdAt:'2026-07-15T08:00:00Z', updatedAt:'2026-10-29T11:20:00Z', tags:['账本','记账'] },
+  { id:'sundial', name:'Sundial', version:'1.0.3', tier:'production', category:'utility',
+    icon:'⏰', desc:'日历与提醒：本地事件台账、自然语言建提醒、跨设备同步。',
+    createdAt:'2026-06-02T03:10:00Z', updatedAt:'2026-10-20T09:00:00Z', tags:['日历','提醒'] },
+  { id:'memoryforge', name:'MemoryForge', version:'0.9.1', tier:'production', category:'dev',
+    icon:'🧠', desc:'长期记忆铸造：把会话要点沉淀为结构化记忆条目，跨会话召回。',
+    createdAt:'2026-08-12T14:30:00Z', updatedAt:'2026-10-25T16:45:00Z', tags:['记忆','agent'] },
+  { id:'relay-devkit', name:'Relay DevKit', version:'1.5.1', tier:'production', category:'dev',
+    icon:'🔀', desc:'AI 请求中继开发套件：超时控制 + 手动中断 + 通用 HTTP 转发。',
+    createdAt:'2026-05-10T02:00:00Z', updatedAt:'2026-10-18T07:30:00Z', tags:['http','relay'] },
+  { id:'data-ark', name:'Data Ark', version:'1.1.0', tier:'production', category:'utility',
+    icon:'🗃️', desc:'数据方舟：结构化数据持久化与查询，cap.kv 上层抽象。',
+    createdAt:'2026-07-01T05:00:00Z', updatedAt:'2026-09-28T10:15:00Z', tags:['存储','kv'] },
+
+  // —— beta ——
+  { id:'flashforge', name:'闪造', version:'0.1.0', tier:'beta', category:'ai',
+    icon:'⚡', desc:'私人 AI 应用作坊：一句话造可玩小应用 + 随身应用花园。',
+    createdAt:'2026-10-30T01:00:00Z', updatedAt:'2026-10-30T01:00:00Z', tags:['作坊','生成'] },
+  { id:'maian', name:'脉案', version:'0.1.0', tier:'beta', category:'ai',
+    icon:'🩺', desc:'家庭体征台账：对话式记血压/血糖/体温/体重，通用参考分带。',
+    createdAt:'2026-10-28T22:00:00Z', updatedAt:'2026-10-28T22:00:00Z', tags:['健康','体征'] },
+  { id:'xintu', name:'心图', version:'0.1.0', tier:'beta', category:'ai',
+    icon:'🗺️', desc:'AI 画布：MCP 六工具 / 人机共编画布 / 索引驱动无 list。',
+    createdAt:'2026-10-26T19:00:00Z', updatedAt:'2026-10-26T19:00:00Z', tags:['画布','mcp'] },
+  { id:'needs', name:'需求库', version:'0.2.0', tier:'beta', category:'dev',
+    icon:'📋', desc:'一需求一文件台账，一库两端：需求与提示词双轨管理。',
+    createdAt:'2026-10-22T12:00:00Z', updatedAt:'2026-10-29T08:00:00Z', tags:['需求','文档'] },
+  { id:'multichat', name:'MultiChat', version:'0.2.0', tier:'beta', category:'ai',
+    icon:'🤖', desc:'多设备会话：任意设备打开面板即可操作同一组会话，实时流式跨端。',
+    createdAt:'2026-09-05T06:00:00Z', updatedAt:'2026-10-15T13:40:00Z', tags:['chat','多设备'] },
+  { id:'feed-radar', name:'Feed Radar', version:'0.3.2', tier:'beta', category:'ai',
+    icon:'📡', desc:'订阅雷达：RSS 双出口跨域方案，id 版本号剥离，离线优先。',
+    createdAt:'2026-08-20T07:00:00Z', updatedAt:'2026-10-12T09:30:00Z', tags:['rss','订阅'] },
+  { id:'paper-radar', name:'Paper Radar', version:'0.2.0', tier:'beta', category:'ai',
+    icon:'📰', desc:'论文雷达：arXiv 主题追踪 + 收藏 + 每日推送。',
+    createdAt:'2026-08-18T04:00:00Z', updatedAt:'2026-10-08T11:00:00Z', tags:['论文','arxiv'] },
+  { id:'quote-sentinel', name:'Quote Sentinel', version:'0.4.0', tier:'beta', category:'ai',
+    icon:'📈', desc:'行情哨兵：自选股盯盘 + 预警 + 持仓管理。',
+    createdAt:'2026-07-25T03:00:00Z', updatedAt:'2026-10-03T15:20:00Z', tags:['行情','股票'] },
+  { id:'piaoxia', name:'飘霞', version:'0.3.0', tier:'beta', category:'media',
+    icon:'🌸', desc:'素材收藏与状态流转：采集、整理、发布一条龙。',
+    createdAt:'2026-09-12T08:00:00Z', updatedAt:'2026-09-22T10:00:00Z', tags:['素材','采集'] },
+  { id:'watchtower', name:'守望台', version:'0.1.0', tier:'beta', category:'dev',
+    icon:'🗼', desc:'用量计量 + 生命周期治理：双通道计量（MCP + 面板）、cap.kv 记账。',
+    createdAt:'2026-09-18T02:00:00Z', updatedAt:'2026-09-18T02:00:00Z', tags:['计量','治理'] },
+
+  // —— demo ——
+  { id:'animation-2d', name:'Animation 2D', version:'0.0.3', tier:'demo', category:'media',
+    icon:'🎬', desc:'2D 动画玩具：关键帧驱动的小型动画演示。',
+    createdAt:'2026-06-20T05:00:00Z', updatedAt:'2026-08-01T09:00:00Z', tags:['动画','玩具'] },
+  { id:'glass-micro-world', name:'Glass Micro World', version:'0.0.1', tier:'demo', category:'media',
+    icon:'🔮', desc:'玻璃微世界：粒子与折射的视觉玩具。',
+    createdAt:'2026-07-08T11:00:00Z', updatedAt:'2026-07-08T11:00:00Z', tags:['视觉','玩具'] },
+  { id:'battle-mode', name:'Battle Mode', version:'0.0.2', tier:'demo', category:'fun',
+    icon:'⚔️', desc:'对战模式玩具：两个 agent 对打的演示场。',
+    createdAt:'2026-06-15T07:00:00Z', updatedAt:'2026-07-30T03:00:00Z', tags:['对战','玩具'] },
+  // 故意缺时间字段——验证兜底（自定义源旧索引可能无此字段）
+  { id:'abacus', name:'Abacus', version:'0.0.1', tier:'demo', category:'utility',
+    icon:'🧮', desc:'算盘玩具：怀旧计数演示（本条无时间字段，验证兜底）。',
+    tags:['算盘','玩具'] },
+];
+
+const TIER_LABEL = { production:'生产可用', beta:'测试阶段', demo:'演示玩具' };
+const TIER_BADGE = { production:'tier-production', beta:'tier-beta', demo:'tier-demo' };
+const TIER_CFG = {
+  production: { label:'Production', color:'#34D399', bg:'#065F4622' },
+  beta:       { label:'Beta',       color:'#60A5FA', bg:'#1E40AF22' },
+  demo:       { label:'Demo',       color:'#6B7280', bg:'#3F3F4622' },
+};
+const CAT_COLOR = {
+  ai:'#A855F7', dev:'#F59E0B', utility:'#3B82F6', media:'#EC4899', fun:'#EC4899',
+};
+
+/* ===== 状态 ===== */
+let state = {
+  query: '',
+  tierFilter: 'all',
+  category: '',
+  sort: 'default',
+  selectedId: null,
+};
+
+/* ===== 排序：组内排序（保留 tier 分组） =====
+   缺字段兜底：updatedAt 缺失 → 回退 createdAt → 再缺失 → 1970（最旧优先时排末尾）
+   为"最新优先"时把缺字段项排到该组最末（视为未知而非最旧，避免淹没在最旧区） */
+function sortPlugins(list, sort) {
+  if (sort === 'default') return list;
+  const [field, dir] = sort.split('-'); // field: updated|created, dir: desc|asc
+  const key = field === 'updated' ? 'updatedAt' : 'createdAt';
+  const hasTime = p => p[key] || p.createdAt; // updated 缺失回退 created
+  const timeOf = p => {
+    const v = p[key] || (field === 'updated' ? p.createdAt : null);
+    return v ? new Date(v).getTime() : null;
+  };
+  // 有时间的优先参与排序，无时间的固定排末尾（无论升降序，都视为"未知"区在最后）
+  const withTime = list.filter(hasTime);
+  const without = list.filter(p => !hasTime(p));
+  withTime.sort((a, b) => {
+    const ta = timeOf(a), tb = timeOf(b);
+    return dir === 'desc' ? tb - ta : ta - tb;
+  });
+  return [...withTime, ...without];
+}
+
+/* ===== 过滤 ===== */
+function filterPlugins() {
+  return PLUGINS.filter(p => {
+    if (state.tierFilter !== 'all' && p.tier !== state.tierFilter) return false;
+    if (state.category && p.category !== state.category) return false;
+    if (state.query.trim()) {
+      const q = state.query.toLowerCase();
+      const hay = [p.id, p.name, p.desc, (p.tags||[]).join(' ')].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+/* ===== 渲染 ===== */
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function fmtFull(iso) {
+  if (!iso) return '（未记录）';
+  const d = new Date(iso);
+  return d.toLocaleString('zh-CN', { hour12: false }).replace(/\//g, '-');
+}
+
+function render() {
+  const listEl = document.getElementById('list');
+  const filtered = filterPlugins();
+  const grouped = { production: [], beta: [], demo: [] };
+  for (const p of filtered) grouped[p.tier]?.push(p);
+
+  // 排序态：组内重排 + 显示时间行
+  const showTime = state.sort !== 'default';
+  listEl.classList.toggle('show-time', showTime);
+  document.getElementById('sort').classList.toggle('active', showTime);
+
+  const tierOrder = ['production', 'beta', 'demo'];
+  const hasAny = tierOrder.some(t => grouped[t].length > 0);
+
+  if (!hasAny) {
+    listEl.innerHTML = '<div class="empty">未找到匹配插件</div>';
+    renderDetail(null);
+    return;
+  }
+
+  let html = '';
+  for (const tier of tierOrder) {
+    const list = sortPlugins(grouped[tier], state.sort);
+    if (list.length === 0) continue;
+    const cfg = TIER_CFG[tier];
+    html += `<div class="group-label" style="color:${cfg.color}">${cfg.label}<span class="count" style="color:var(--text-4);font-weight:400">${TIER_LABEL[tier]} · ${list.length}</span></div>`;
+    for (const p of list) {
+      const sel = state.selectedId === p.id ? 'selected' : '';
+      const dm = p.tier === 'demo' ? 'demo' : '';
+      // 时间行：依据当前排序字段显示对应时间；缺字段显示红色提示
+      let timeLine = '';
+      if (showTime) {
+        const field = state.sort.startsWith('updated') ? 'updated' : 'created';
+        const key = field === 'updated' ? 'updatedAt' : 'createdAt';
+        const v = p[key] || (field === 'updated' ? p.createdAt : null);
+        timeLine = v
+          ? `<div class="item-time">${field === 'updated' ? '更新于' : '创建于'} ${fmtDate(v)}</div>`
+          : `<div class="item-time missing-time">ⓘ 时间未知（索引缺字段，兜底归入末尾）</div>`;
+      }
+      const catColor = CAT_COLOR[p.category] || '#6B7280';
+      html += `
+        <div class="item ${sel} ${dm}" onclick="selectPlugin('${p.id}')">
+          <div class="item-icon" style="background:${cfg.bg};color:${cfg.color}">${p.icon}</div>
+          <div class="item-body">
+            <div class="item-title">
+              <span class="item-name">${p.name}</span>
+              <span class="item-ver">v${p.version}</span>
+              <span class="tier-badge ${TIER_BADGE[tier]}"><span class="dot"></span>${cfg.label}</span>
+            </div>
+            <div class="item-desc">${p.desc}</div>
+            ${timeLine}
+            <div class="item-tags">
+              ${p.category ? `<span class="tag" style="background:${catColor}33;color:${catColor}">${p.category}</span>` : ''}
+              ${(p.tags||[]).slice(0,2).map(t => `<span class="tag">${t}</span>`).join('')}
+            </div>
+          </div>
+        </div>`;
+    }
+  }
+  listEl.innerHTML = html;
+  renderDetail(state.selectedId);
+}
+
+function renderDetail(id) {
+  const el = document.getElementById('detail');
+  if (!id) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  const p = PLUGINS.find(x => x.id === id);
+  if (!p) { el.style.display = 'none'; return; }
+  const cfg = TIER_CFG[p.tier];
+  el.style.display = 'flex';
+  el.innerHTML = `
+    <div class="detail-head">
+      <div>
+        <div class="detail-name">${p.name} <span class="tier-badge ${TIER_BADGE[p.tier]}"><span class="dot"></span>${cfg.label}</span></div>
+        <div class="detail-meta">${p.id} · v${p.version}</div>
+      </div>
+      <button class="detail-close" onclick="selectPlugin(null)">✕</button>
+    </div>
+    <div class="detail-desc">${p.desc}</div>
+    <div class="detail-time">
+      <b>创建时间：</b>${fmtFull(p.createdAt)}<br/>
+      <b>最后更新：</b>${p.updatedAt ? fmtFull(p.updatedAt) : '（未记录，回退创建时间）'}
+    </div>
+    <div class="btn-row">
+      <button class="btn-primary">安装到 User</button>
+      <button class="btn-primary">安装到 Project</button>
+    </div>`;
+}
+
+function selectPlugin(id) {
+  state.selectedId = id;
+  render();
+}
+
+/* ===== 事件绑定 ===== */
+document.getElementById('search').addEventListener('input', e => {
+  state.query = e.target.value; render();
+});
+document.getElementById('sort').addEventListener('change', e => {
+  state.sort = e.target.value; render();
+});
+document.querySelectorAll('.chip-filter[data-tier]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.tierFilter = btn.dataset.tier;
+    document.querySelectorAll('.chip-filter[data-tier]').forEach(b => {
+      b.classList.remove('active','tier-prod','tier-beta','tier-demo');
+    });
+    btn.classList.add('active');
+    if (btn.dataset.tier === 'production') btn.classList.add('tier-prod');
+    else if (btn.dataset.tier === 'beta') btn.classList.add('tier-beta');
+    else if (btn.dataset.tier === 'demo') btn.classList.add('tier-demo');
+    else btn.classList.add('tier-prod'); // all 用绿色高亮复用
+    render();
+  });
+});
+document.querySelectorAll('.chip-filter[data-cat]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    state.category = btn.dataset.cat;
+    document.querySelectorAll('.chip-filter[data-cat]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  });
+});
+
+/* 初始化 */
+render();
+</script>
+</body>
+</html>

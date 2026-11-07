@@ -18,14 +18,36 @@ function clsx() {
 var clsx_default = clsx;
 
 // src/card.tsx
-import { ArtifactPreviewRenderer, buildArtifactBlockFromData, useArtifactVersions, readArtifactHtml, openArtifactSource } from "polaris-host/artifact";
+import { buildArtifactBlockFromData, readArtifactHtml, openArtifactSource, ArtifactPreviewRenderer } from "polaris-host/artifact";
 import { registerComponent, submitForm } from "polaris-host/form";
+import { forwardCap } from "polaris-host/cap";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+function collectThemeVars() {
+  try {
+    const cs = getComputedStyle(document.documentElement);
+    const names = ["--background", "--foreground", "--card", "--card-foreground", "--muted", "--muted-foreground", "--primary", "--primary-foreground", "--border", "--accent"];
+    const pairs = names.map((n) => {
+      const v = cs.getPropertyValue(n).trim();
+      return v ? n + ":" + v : "";
+    }).filter(Boolean);
+    const dark = document.documentElement.dataset.theme?.includes("dark") || document.body.classList.contains("dark");
+    pairs.push("color-scheme:" + (dark ? "dark" : "light"));
+    return pairs.join(";");
+  } catch {
+    return "";
+  }
+}
+function themeWrap(html) {
+  const vars = collectThemeVars();
+  const base = "<style>:root{" + vars + "}html,body{background:transparent;color:var(--foreground,#e8e8ea)}</style>";
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head([^>]*)>/i, "<head$1>" + base);
+  return base + html;
+}
 var InteractiveComponentCard = memo(function InteractiveComponentCard2(props) {
   const data = props.data;
   const form = data && typeof data === "object" ? data.form : void 0;
+  const isStatic = props.toolName.endsWith("preview_html");
   const artifactBlock = useMemo(() => buildArtifactBlockFromData(data), [props.data]);
-  const versions = useArtifactVersions(artifactBlock?.requirementId);
   if (!artifactBlock) {
     const partial = data;
     if (partial && typeof partial === "object" && (partial.previewId || partial.sourcePath)) {
@@ -41,7 +63,8 @@ var InteractiveComponentCard = memo(function InteractiveComponentCard2(props) {
           requirementId: partial.requirementId,
           description: partial.description,
           form,
-          sessionId: props.sessionId
+          sessionId: props.sessionId,
+          isStatic
         }
       );
     }
@@ -51,27 +74,33 @@ var InteractiveComponentCard = memo(function InteractiveComponentCard2(props) {
       "\uFF09"
     ] });
   }
+  if (isStatic) {
+    return /* @__PURE__ */ jsx(StaticArtifactPreview, { artifactBlock, requirementId: artifactBlock.requirementId });
+  }
   return /* @__PURE__ */ jsx(
     InteractivePreview,
     {
       artifactBlock,
-      versions: versions ?? void 0,
       form,
       sessionId: props.sessionId,
-      declaredCapTargets: data.caps ? new Set(data.caps) : void 0
+      declaredCapTargets: data.caps
     }
   );
 });
+function StaticArtifactPreview({ artifactBlock, requirementId }) {
+  const h = window.__POLARIS_HOST_ARTIFACT__;
+  const versions = h ? h.useArtifactVersions(requirementId) : null;
+  return /* @__PURE__ */ jsx(ArtifactPreviewRenderer, { block: artifactBlock, versions: versions ?? void 0 });
+}
 function InteractivePreview({
   artifactBlock,
-  versions,
   form,
   sessionId,
   declaredCapTargets
 }) {
   const componentIdRef = useRef("");
   if (!componentIdRef.current) {
-    componentIdRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `comp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    componentIdRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : "comp-" + Date.now() + "-" + Math.random().toString(36).slice(2);
   }
   const componentId = componentIdRef.current;
   const [formState, setFormState] = useState("idle");
@@ -102,39 +131,69 @@ function InteractivePreview({
         sessionId,
         private: privateSubmit || void 0,
         read: form.read
-      }).then(() => {
-        setFormState("submitted");
-      }).catch((e) => {
+      }).then(() => setFormState("submitted")).catch((e) => {
         setFormState("error");
         setSubmitError(e instanceof Error ? e.message : String(e));
       });
     },
     [form?.formId, form?.read, sessionId, privateSubmit]
   );
-  const onFrameMessage = useCallback(
-    (raw) => {
-      if (!form || formState === "submitted" || formState === "submitting") return;
-      const msg = raw;
-      if (!msg || typeof msg !== "object") return;
-      if (msg.__polarisComponent !== 1) return;
-      if (msg.formId !== form.formId) return;
-      handleSubmit(msg.values ?? {});
-    },
-    [form?.formId, formState, handleSubmit]
-  );
-  return /* @__PURE__ */ jsxs("div", { className: "relative", children: [
-    /* @__PURE__ */ jsx(
-      ArtifactPreviewRenderer,
-      {
-        block: artifactBlock,
-        versions,
-        onFrameMessage,
-        declaredCapTargets
+  const iframeRef = useRef(null);
+  const declaredRef = useRef(declaredCapTargets);
+  declaredRef.current = declaredCapTargets;
+  const formRef = useRef(form);
+  formRef.current = form;
+  const stateRef = useRef(formState);
+  stateRef.current = formState;
+  const submitRef = useRef(handleSubmit);
+  submitRef.current = handleSubmit;
+  useEffect(() => {
+    const onMessage = (event) => {
+      const source = event.source;
+      const frameWin = iframeRef.current?.contentWindow;
+      if (!source || !frameWin || source !== frameWin) return;
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
+      if (data.__polarisCap === 1) {
+        Promise.resolve(forwardCap(data, declaredRef.current ?? []));
+        return;
       }
-    ),
-    form ? /* @__PURE__ */ jsx("div", { className: "my-1 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-1.5 text-xs", children: formState === "submitted" ? /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1 text-green-500", children: [
+      if (data.__polarisComponent === 1 && formRef.current && data.formId === formRef.current.formId) {
+        if (stateRef.current === "submitted" || stateRef.current === "submitting") return;
+        submitRef.current(data.values ?? {});
+      }
+    };
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+  const html = typeof artifactBlock.html === "string" ? artifactBlock.html : "";
+  const themedHtml = useMemo(() => themeWrap(html), [html]);
+  const title = String(artifactBlock.title || "\u4EA4\u4E92\u7EC4\u4EF6");
+  return /* @__PURE__ */ jsxs("div", { className: "my-2 overflow-hidden rounded-lg border border-border bg-background-elevated", children: [
+    /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 border-b border-border bg-background-elevated px-3 py-1.5", children: [
+      /* @__PURE__ */ jsx("span", { className: "rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-medium text-cyan-400", children: "\u4EA4\u4E92\u7EC4\u4EF6" }),
+      /* @__PURE__ */ jsx("span", { className: "text-xs font-medium text-text-primary", children: title }),
+      artifactBlock.versionLabel ? /* @__PURE__ */ jsx("span", { className: "text-[10px] text-text-tertiary", children: String(artifactBlock.versionLabel) }) : null,
+      /* @__PURE__ */ jsx("span", { className: "ml-auto text-[10px] text-text-tertiary", children: "AI \xB7 \u81EA\u5B9A\u4E49\u4EA4\u4E92" })
+    ] }),
+    /* @__PURE__ */ jsx("div", { className: "relative", children: /* @__PURE__ */ jsx(
+      "iframe",
+      {
+        ref: iframeRef,
+        title,
+        srcDoc: themedHtml,
+        sandbox: "allow-scripts allow-forms allow-popups allow-modals",
+        className: "h-full w-full",
+        style: { background: "transparent", border: "none", minHeight: 120 },
+        referrerPolicy: "no-referrer"
+      }
+    ) }),
+    form ? /* @__PURE__ */ jsx("div", { className: "flex items-center gap-2 border-t border-border bg-background-elevated px-3 py-1.5 text-xs", children: formState === "submitted" ? /* @__PURE__ */ jsxs("span", { className: "text-green-500", children: [
       "\u2705 \u5DF2\u63D0\u4EA4",
       form.read === "none" ? "\uFF08\u79C1\u5BC6\uFF1A\u503C\u672A\u56DE\u4F20 AI\uFF09" : "\uFF08\u56DE\u6267\u5C06\u968F\u4E0B\u4E00\u6761\u6D88\u606F\u5E26\u7ED9 AI\uFF09"
+    ] }) : formState === "error" ? /* @__PURE__ */ jsxs("span", { className: "text-error", children: [
+      "\u63D0\u4EA4\u5931\u8D25\uFF1A",
+      submitError
     ] }) : /* @__PURE__ */ jsxs(Fragment, { children: [
       /* @__PURE__ */ jsx(
         "span",
@@ -151,7 +210,7 @@ function InteractivePreview({
         /* @__PURE__ */ jsx("input", { type: "checkbox", checked: privateSubmit, onChange: (e) => setPrivateSubmit(e.target.checked) }),
         "\u79C1\u5BC6\u63D0\u4EA4\uFF08\u672C\u6B21\u503C\u4E0D\u56DE\u4F20\uFF09"
       ] }),
-      /* @__PURE__ */ jsx("span", { className: "ml-auto text-text-muted", children: formState === "submitting" ? "\u63D0\u4EA4\u4E2D\u2026" : formState === "error" ? submitError || "\u63D0\u4EA4\u5931\u8D25" : `\u7B49\u5F85\u7EC4\u4EF6\u5185\u63D0\u4EA4\uFF08${form.submitLabel || "\u63D0\u4EA4"}\uFF09` })
+      /* @__PURE__ */ jsx("span", { className: "ml-auto text-text-muted", children: formState === "submitting" ? "\u63D0\u4EA4\u4E2D\u2026" : `\u7B49\u5F85\u7EC4\u4EF6\u5185\u63D0\u4EA4\uFF08${form.submitLabel || "\u63D0\u4EA4"}\uFF09` })
     ] }) }) : null
   ] });
 }
@@ -165,11 +224,11 @@ function HydratingPreview({
   requirementId,
   description,
   form,
-  sessionId
+  sessionId,
+  isStatic
 }) {
   const [state, setState] = useState("checking");
   const [block, setBlock] = useState(null);
-  const versions = useArtifactVersions(requirementId);
   useEffect(() => {
     let cancelled = false;
     setBlock(null);
@@ -214,16 +273,21 @@ function HydratingPreview({
   if (state === "checking") {
     return /* @__PURE__ */ jsxs("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2", children: [
       /* @__PURE__ */ jsx("div", { className: "h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" }),
-      /* @__PURE__ */ jsx("span", { className: "text-xs text-text-muted", children: "\u52A0\u8F7D\u9884\u89C8\u2026" })
+      /* @__PURE__ */ jsx("span", { className: "text-xs text-text-muted", children: "\u52A0\u8F7D\u7EC4\u4EF6\u2026" })
     ] });
   }
   if (state === "ready" && block) {
-    return /* @__PURE__ */ jsx(InteractivePreview, { artifactBlock: block, versions: versions ?? void 0, form, sessionId, declaredCapTargets: void 0 });
+    if (isStatic) {
+      const h = window.__POLARIS_HOST_ARTIFACT__;
+      const versions = h ? h.useArtifactVersions(requirementId) : null;
+      return /* @__PURE__ */ jsx(ArtifactPreviewRenderer, { block, versions: versions ?? void 0 });
+    }
+    return /* @__PURE__ */ jsx(InteractivePreview, { artifactBlock: block, form, sessionId, declaredCapTargets: void 0 });
   }
   return /* @__PURE__ */ jsxs("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs", children: [
     /* @__PURE__ */ jsx("span", { className: "text-green-500", children: "\u2705" }),
     /* @__PURE__ */ jsxs("span", { className: "text-text-secondary", children: [
-      "\u9884\u89C8\u5DF2\u751F\u6210",
+      "\u7EC4\u4EF6\u5DF2\u751F\u6210",
       title ? `\uFF1A${title}` : "",
       versionLabel ? ` \xB7 ${versionLabel}` : "",
       previewId ? `\uFF08${previewId.slice(0, 8)}\u2026\uFF09` : ""

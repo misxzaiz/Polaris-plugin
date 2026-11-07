@@ -143,6 +143,10 @@ function updateIndexJson(pluginId, sha256) {
   plugin.versions = plugin.versions || []
   plugin.versions = plugin.versions.filter(v => v.version !== version)
   plugin.versions.unshift({ version, downloadUrl: base })
+  // 时间戳：每次发布刷新 updatedAt；createdAt 仅首次缺失时回填，不被覆盖
+  const nowIso = new Date().toISOString()
+  plugin.updatedAt = nowIso
+  if (!plugin.createdAt) plugin.createdAt = nowIso
   writeFileSync(INDEX_JSON, JSON.stringify(index, null, 2) + '\n', 'utf-8')
   console.log(`   ✓ index.json 已同步: version=${version}, sha256=${sha256}`)
   console.log(`   ✓ downloadUrl=${base}`)

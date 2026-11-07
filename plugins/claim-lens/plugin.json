@@ -1,0 +1,46 @@
+{
+  "id": "claim-lens",
+  "name": "AI 声明核验台",
+  "version": "0.1.0",
+  "description": "把 AI 回答里可证伪的声明（文件/符号/依赖/CLI/配置五类）提取出来，对照本地仓库逐条实证，给出 ✓/✗/部分/无法核验四态裁决与证据（file:line、--help 输出、git status 交叉核对）；MCP 四工具让宿主 AI 在宣布完成前自证。直接打击 2025 SO 调查 66% 开发者头号挫败「AI 输出差一点就对」。纯本地零外联，exec 仅白名单 --help/--version 探测。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "claim-lens.panel",
+        "area": "activityBar",
+        "panelType": "claim-lens",
+        "icon": "CheckSquare",
+        "labelKey": "plugins.claimLens",
+        "labelDefault": "AI 声明核验台",
+        "order": 106
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js", "supportsFullscreen": false },
+    "services": [
+      {
+        "id": "claim-lens-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9867,
+        "healthCheck": "/__health"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "claim-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/claim-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/claim-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/claim-lens/claim-lens.zip"
+  }
+}

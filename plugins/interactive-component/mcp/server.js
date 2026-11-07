@@ -167,6 +167,7 @@ function normalizeFormDecl(args) {
     : [];
   const submitLabel = optionalTrimmedString(f.submitLabel);
   const decl = { formId, read, secretKeys };
+  if (f.wait === true) decl.wait = true;
   if (submitLabel) decl.submitLabel = submitLabel;
   return decl;
 }
@@ -218,6 +219,7 @@ function execPreviewHtml(args, { toolName }) {
   };
   if (form) artifact.form = form;
   if (caps) artifact.caps = caps;
+  if (form && form.wait) artifact.form = Object.assign({}, artifact.form, { wait: true });
   return artifactResult(artifact, `已创建预览: ${title}`);
 }
 
@@ -283,7 +285,7 @@ const TOOLS = [
   {
     name: 'render_component',
     description:
-      '渲染一个自包含的交互组件（任意 HTML+CSS+JS）。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容会在 Polaris 聊天中渲染为沙箱 iframe。可选 form 契约：声明后用户在组件内的表单提交会回喂给你（read=none 时字段值对你隐藏）。不要把秘密输入声明为 read=full。页面内提交约定：脚本调 parent.postMessage({ __polarisComponent: 1, formId: 「你声明的formId」, values: {字段: 值} }, "*")，宿主校验后走系统表单管线，回执随下一条消息注入你的上下文。',
+      '渲染一个自包含的自定义交互组件（任意 HTML+CSS+JS）。仅当 form/ask_user_question 工具无法表达的自定义交互 UI 才使用——结构化表单收集请用 form 工具、选项问答请用 ask_user_question（两者阻塞且回执同回合）。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容在 Polaris 聊天中渲染为沙箱 iframe（主题自动匹配，页面请使用透明/继承底色）。可选 form 契约：用户在组件内的提交回喂给你；wait:true 时本工具阻塞等待提交（同回合拿到回执，适合审批门/确认门），默认 false（回执随用户下一条消息注入）。页面内提交约定：脚本调 parent.postMessage({ __polarisComponent: 1, formId: 「你声明的formId」, values: {字段: 值} }, "*")。不要把秘密输入声明为 read=full。',
     inputSchema: {
       type: 'object',
       required: ['html'],
@@ -299,6 +301,7 @@ const TOOLS = [
             formId: { type: 'string', minLength: 1, description: '回传契约 id（唯一）' },
             read: { type: 'string', enum: ['full', 'none'], description: 'AI 读取模式；服务端强制，不信任 HTML 内声明' },
             secretKeys: { type: 'array', items: { type: 'string' }, description: '恒定掩码的键名列表' },
+            wait: { type: 'boolean', description: 'true=本工具调用阻塞等待提交（同回合拿回执，适合审批门）；默认 false（回执随用户下一条消息注入）' },
             submitLabel: { type: 'string', description: '提交按钮文案（可选）' },
           },
           additionalProperties: false,
@@ -306,12 +309,6 @@ const TOOLS = [
       },
       additionalProperties: false,
     },
-  },
-  {
-    name: 'preview_html',
-    description:
-      '创建一个自包含 HTML 原型预览。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容会在 Polaris 聊天中渲染为 artifact_preview。（兼容别名 = render_component 无 form）',
-    inputSchema: { type: 'object', required: ['html'], properties: htmlProps, additionalProperties: false },
   },
   {
     name: 'read_preview',

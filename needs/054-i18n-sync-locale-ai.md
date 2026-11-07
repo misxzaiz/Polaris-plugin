@@ -1,14 +1,14 @@
 ---
 id: "054"
 title: 多语言键同步台（i18n-sync）：locale 奇偶体检 + AI 翻译补齐审阅落盘
-status: building
+status: delivered
 priority: high
 tags: [i18n, devtools, transformation, mcp, files]
 origin: manual
 created: 2026-11-06
 updated: 2026-11-06
 spec: ""
-delivered: ""
+delivered: i18n-sync v0.1.0 已交付已 push 商城可见（8e18ea8，CDN manifest/zip/index 三 200，zip sha e88ac7a3 与 index 一致）。三层验证全绿：离线单测 78/78、MCP stdio 真子进程闭环 16/16（env 死端口隔离防真 kv 污染）、真实桥冒烟 14/14。选型记录 docs/i18n-sync-selection.md（88.0 分）。
 ---
 ## 一句话
 
@@ -35,6 +35,8 @@ delivered: ""
 - 2026-11-06 由 manual 记录。
 
 2026-11-06 03:42 撞车定案：夜班 automation 与本会话并行领走 054（03:32 覆写了 plugins/i18n-sync 的 package.json/plugin.json/tsconfig 并 install/build；本会话源码完好且为主实现方）。状态置 building 由本会话收尾交付，夜班后续轮次跳过 054，避免再次覆写。
+
+2026-11-06 03:56 交付定案：i18n-sync v0.1.0 已 push（commit 8e18ea8）+CDN 三 200，商城可见。三层验证：离线单测 78/78 + MCP 协议闭环 16/16 + 真实桥冒烟 14/14。撞车处置：夜班 03:32 覆写三个配置文件，本会话恢复自有版本 + 置 building + 快速 commit 护盘。实测坑：测试 spawn 的 MCP 子进程 kvclient 自发现会写生产 kv（env 指死端口隔离）；占位符 ICU 嵌套括号需深度感知且嵌套闭合不清空外层 head；force 语义必须打通到 planApply。顺带修复 opts.zcode-bridge versions 存量不一致。
 
 ## 验收
 

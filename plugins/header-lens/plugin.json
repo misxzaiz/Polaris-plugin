@@ -1,0 +1,36 @@
+{
+  "id": "header-lens",
+  "name": "HTTP 头解析台",
+  "version": "0.1.0",
+  "description": "粘贴原始响应/请求头块 → 逐头结构化解析：Cache-Control 指令语义（max-age/no-cache/no-store/stale-while-revalidate）、CSP 逐方向分解（default-src/script-src + unsafe-inline/unsafe-eval 危险标注）、Retry-After 双形态（秒数/HTTP-date）、Link rel=preload/preconnect、Content-Disposition filename* RFC5987 解码、多 Set-Cookie 逐条分离（深检衔接 cookie-lens）。调试 API 缓存策略/安全头配置的高频刚需；纯本地零外联零 kv，MCP 两工具 + 面板双框测试场。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "header-lens.panel",
+        "area": "activityBar",
+        "panelType": "header-lens",
+        "icon": "Layers",
+        "labelKey": "plugins.header-lens",
+        "labelDefault": "HTTP 头解析台",
+        "order": 106
+      }
+    ],
+    "panel": { "entry": "./dist/panel.js", "supportsFullscreen": false },
+    "mcpServers": [
+      {
+        "id": "header-lens",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/mcp/server.js"]
+      }
+    ]
+  },
+  "permissions": { "aiToolAccess": true },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/header-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/header-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/header-lens/header-lens.zip"
+  }
+}

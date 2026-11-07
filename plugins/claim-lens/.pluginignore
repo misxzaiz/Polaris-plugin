@@ -1,0 +1,13 @@
+node_modules/
+package.json
+package-lock.json
+pnpm-lock.yaml
+src/
+server/
+service/main-src.js
+mcp/server-src.js
+tsconfig.json
+test/
+*.zip
+*.md
+.pluginignore

@@ -23,7 +23,7 @@ function getInvoke(): HostInvoke {
   return w.__POLARIS_HOST_INVOKE__
 }
 
-const FALLBACK_PORT = 9863
+const FALLBACK_PORT = 9863 // 仅兜底：宿主未分配端口时用（v0.4.2 起 service 不再写死 port，由宿主动态分配，dev/正式版同机共存不冲突）
 
 const IDLE = ['待机呼吸休闲']
 const TURN = ['东张西望']
@@ -70,15 +70,28 @@ function rollNext(current: string): { anim: string; once: boolean } {
   return { anim: pick(IDLE, current), once: false }
 }
 
-/** 服务端口解析：宿主 plugin_service_list 查 whale-pet-assets 分配端口，兜底 9863。 */
+/** 服务端口解析：经 router_dispatch → cap.pluginServiceManager.list_status 查 whale-pet-assets
+ *  动态分配端口（v0.4.2 起 service 不写死 port），兜底 FALLBACK_PORT。
+ *
+ *  为什么走 list_status 而非旧的 plugin_service_list：宿主未暴露 plugin_service_list
+ *  command，正确总线入口是 cap.pluginServiceManager 的 list_status action，返回
+ *  ServiceStatus[] 裸数组（pluginId/serviceId/port/state；serde camelCase）。
+ *  旧版写死 9863 时 FALLBACK_PORT 恰好命中掩盖了此 bug，改动态端口后暴露。 */
 async function resolvePort(invoke: HostInvoke): Promise<number> {
   let port = FALLBACK_PORT
   try {
-    const res = await invoke<{ ok?: boolean; result?: { services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> }; services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> }>('plugin_service_list', {})
-    const wrapped = res as { result?: { services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> }; services?: Array<{ pluginId: string; serviceId: string; port?: number; state?: string }> }
-    const services = wrapped?.result?.services ?? wrapped?.services ?? []
-    const svc = services.find((s) => s.pluginId === 'whale-pet' && s.serviceId === 'whale-pet-assets' && s.port)
-    if (svc?.port) port = svc.port
+    const res = await invoke<{ ok: boolean; result?: unknown; error?: string }>(
+      'router_dispatch',
+      { req: { target: 'cap.pluginServiceManager', payload: { action: 'list_status' } } },
+    )
+    if (res?.ok) {
+      const arr = Array.isArray(res.result) ? res.result : []
+      const svc = arr.find((s: unknown) => {
+        const x = s as { pluginId?: string; serviceId?: string; port?: number }
+        return x.pluginId === 'whale-pet' && x.serviceId === 'whale-pet-assets' && typeof x.port === 'number'
+      }) as { port?: number } | undefined
+      if (svc?.port) port = svc.port
+    }
   } catch { /* 兜底端口 */ }
   return port
 }
@@ -282,7 +295,7 @@ export default function WhalePetPanel(props: { pluginId?: string; onSendToChat?:
     <div style={{ font: '13px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif', color: '#d7dde6', background: '#0a1428', minHeight: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', flexWrap: 'wrap' }}>
         <span style={{ fontSize: 15, fontWeight: 700, color: '#e6edf3' }}>ds<span style={{ color: '#3b82f6' }}>大肥鱼</span></span>
-        <span style={{ fontSize: 10, color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 6, padding: '1px 6px' }}>v0.4.1</span>
+        <span style={{ fontSize: 10, color: '#3b82f6', border: '1px solid #3b82f6', borderRadius: 6, padding: '1px 6px' }}>v0.4.3</span>
         {petOverlayApi && (
           <button
             onClick={openOverlay}

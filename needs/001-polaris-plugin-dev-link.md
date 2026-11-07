@@ -1,13 +1,13 @@
 ---
 id: "001"
 title: Polaris 插件源码直连模式（dev-link）
-status: analyzed
+status: building
 priority: high
 tags: [platform, devtools]
 origin: zcode
 created: 2026-10-30
-updated: 2026-10-30
-spec: ""
+updated: 2026-10-31
+spec: plans/001-polaris-plugin-dev-link-spec.md
 delivered: ""
 ---
 ## 一句话
@@ -69,3 +69,7 @@ delivered: ""
 
 - 2026-10-30 需求库建立，本条为第 001 号，由 ZCode 会话记录（来源：需求库方案讨论，用户点名要「Polaris 像 ZCode 一样改 server.js 即生效」）。
 - 2026-10-30 夜班分析：选型定为 **junction/符号链接指向源码目录**（非复制+热更）——已在生产实测可行（Polaris-dev/mimo-tts 先例），零宿主发现逻辑改动，改 server.js 即生效；接口挂 `cap.pluginDiscovery` 新增 `dev_link` 动作；删除/更新经 `allowed_roots` 天然保护，dev 插件更新检查须短路。
+
+- 2026-10-30 夜班写 spec：plans/001-polaris-plugin-dev-link-spec.md（选型 junction 定案、cap.pluginDiscovery 新 dev_link 动作、更新短路/卸载分支两处宿主改动、remove_dir 不递归目标为硬门）。待用户拍板后实施。
+
+- 2026-10-31 实施完成（ZCode 会话推进）。选型 junction 定案落地：cap.pluginDiscovery 新增 dev_link action；plugin_service 新增 dev_link_plugin / read_dev_link / uninstall_dev_link_plugin（硬门：非链接目录拒删 + 「父 canonicalize+文件名」拼回链接路径，绝不 canonicalize 链接本身）；三卸载路径（uninstall_local / with_cleanup / force）与两更新路径（check/apply）全部 dev 短路，apply 在停服务之前拦截；发现扫描回读 state.json 盖戳 dev 字段。形状偏差两处（已记录于 spec 实施记录）：state.json 定为 devLink:{sourcePath} 单对象；check_update 短路返回带 skipped:"dev-link" 字段的 PluginUpdateCheckResult。顺手修复两处既有测试目标编译破损（mcp_config_service 等构造缺新字段属连带适配；app_autolaunch 测试 FixedIntent mock 缺失 + Source import 缺失为 12a198ed 遗留，不修则整个 lib test 无法编译）。验证矩阵：cargo check / web-only gate / tsc / eslint(touched) / vitest 44+71 全绿；junction 五项 OS 语义 + Rust std is_symlink 离线实证通过。遗留：真机 e2e 冒烟（注册 needs→改 mcp/server.js 文案→新会话生效；本机无运行宿主 9829，且 Rust 单测受 STATUS_ENTRYPOINT_NOT_FOUND DLL 限制只能编译验证——AGENTS §九已知边界），故状态置 building 待冒烟收口。

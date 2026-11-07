@@ -50,11 +50,18 @@ function rollNext(current) {
 async function resolvePort(invoke) {
   let port = FALLBACK_PORT;
   try {
-    const res = await invoke("plugin_service_list", {});
-    const wrapped = res;
-    const services = wrapped?.result?.services ?? wrapped?.services ?? [];
-    const svc = services.find((s) => s.pluginId === "whale-pet" && s.serviceId === "whale-pet-assets" && s.port);
-    if (svc?.port) port = svc.port;
+    const res = await invoke(
+      "router_dispatch",
+      { req: { target: "cap.pluginServiceManager", payload: { action: "list_status" } } }
+    );
+    if (res?.ok) {
+      const arr = Array.isArray(res.result) ? res.result : [];
+      const svc = arr.find((s) => {
+        const x = s;
+        return x.pluginId === "whale-pet" && x.serviceId === "whale-pet-assets" && typeof x.port === "number";
+      });
+      if (svc?.port) port = svc.port;
+    }
   } catch {
   }
   return port;
@@ -215,7 +222,7 @@ function WhalePetPanel(props) {
         "ds",
         /* @__PURE__ */ jsx("span", { style: { color: "#3b82f6" }, children: "\u5927\u80A5\u9C7C" })
       ] }),
-      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.4.1" }),
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#3b82f6", border: "1px solid #3b82f6", borderRadius: 6, padding: "1px 6px" }, children: "v0.4.3" }),
       petOverlayApi && /* @__PURE__ */ jsx(
         "button",
         {

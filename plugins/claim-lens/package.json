@@ -1,0 +1,23 @@
+{
+  "name": "claim-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "claim-lens 插件面板（打包用）：AI 声明核验台",
+  "scripts": {
+    "build:service": "esbuild service/main-src.js --bundle --platform=node --format=cjs --outfile=service/main.js",
+    "build:mcp": "esbuild mcp/server-src.js --bundle --platform=node --format=cjs --outfile=mcp/server.js",
+    "build:panel": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build": "npm run build:service && npm run build:mcp && npm run build:panel",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/mcp-verify.mjs && node test/service-verify.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.5.0"
+  },
+  "type": "commonjs"
+}

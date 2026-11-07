@@ -11,21 +11,38 @@
         "id": "polaris-prd-preview",
         "transport": "stdio",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/mcp/server.js", "{{appConfigDir}}", "{{workspacePath}}"]
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}",
+          "{{workspacePath}}"
+        ]
       }
     ],
     "chatCards": [
       {
         "id": "preview-card",
         "mcpServerId": "polaris-prd-preview",
-        "tools": ["render_component", "preview_html", "read_preview"],
+        "tools": [
+          "render_component",
+          "preview_html",
+          "read_preview"
+        ],
         "mode": "result",
         "entry": "./dist/card.js"
       }
     ],
     "blockRenderers": [
-      { "blockType": "form", "entry": "./dist/blocks/form-card.js" },
-      { "blockType": "question", "entry": "./dist/blocks/ask-card.js" }
+      {
+        "blockType": "form",
+        "entry": "./dist/blocks/form-card.js"
+      },
+      {
+        "blockType": "question",
+        "entry": "./dist/blocks/ask-card.js"
+      }
+    ],
+    "styles": [
+      "./dist/template.css"
     ]
   },
   "permissions": {

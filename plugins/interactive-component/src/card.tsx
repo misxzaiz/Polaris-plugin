@@ -1,24 +1,25 @@
 /**
- * 交互组件卡片（chatCards entry：dist/card.js）
+ * 交互组件卡片 v2（chatCards entry：dist/card.js）
  *
- * 接 PluginChatCardProps（宿主注入），渲染 MCP render_component / preview_html
- * 产物的 PreviewArtifact。相比旧 PRD 卡片新增：
- * - marker 带 form 契约 → mount 时 component_register 登记（宿主 form_core 建组件型 hold）
- * - iframe 内组件经 postMessage 提交 → polaris-host/form.submitForm（现有 form_submit
- *   管线，read 三态/secret 掩码服务端强制），回执回流下一轮上下文
- * - read 模式徽标：让用户知道提交数据是否回传 AI（spec [S-7] 透明性）
+ * 双渲染分支（去 PRD 化，spec [A-1] 例外条款：静态原型保留预览渲染器）：
+ * - render_component（含 form 契约）→ 轻量组件卡外壳：主题注入 iframe + 收起式
+ *   标题条 + 回传徽标，无预览套件（版本 pills/复制输出/全屏）
+ * - preview_html（兼容别名，静态原型）→ ArtifactPreviewRenderer 完整预览
+ *   （版本管理/源码查看是原型场景的正当需求）
  *
- * 复用宿主通用核心经 polaris-host/artifact 桥（ArtifactPreviewRenderer 全功能：
- * iframe 沙箱/全屏/版本 pills/源码查看），不复制渲染代码（spec [A-1]）。
+ * 表单回传链路（spec [S-7]）：mount 登记 component_register → iframe postMessage
+ * （event.source 绑定 + formId 校验）→ polaris-host/form.submitForm（现有
+ * form_submit 管线，read 三态/secret 掩码服务端强制）→ 回执随下一条消息注入。
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import clsx from 'clsx'
-// 宿主桥（加载器重写为 shim；宿主对象由 ensureBridgesReady 按需注册）
-// @ts-expect-error — polaris-host/* 是宿主桥占位符，加载器重写，tsc 无类型
-import { ArtifactPreviewRenderer, buildArtifactBlockFromData, useArtifactVersions, readArtifactHtml, openArtifactSource } from 'polaris-host/artifact'
+// @ts-expect-error — polaris-host/* 占位符，加载器重写
+import { buildArtifactBlockFromData, readArtifactHtml, openArtifactSource, ArtifactPreviewRenderer } from 'polaris-host/artifact'
 // @ts-expect-error — 同上
 import { registerComponent, submitForm } from 'polaris-host/form'
+// @ts-expect-error — 同上
+import { forwardCap } from 'polaris-host/cap'
 
 interface PreviewArtifactData {
   artifactType?: string
@@ -32,7 +33,7 @@ interface PreviewArtifactData {
   versionLabel?: string
   requirementId?: string
   description?: string
-  form?: { formId: string; read: 'full' | 'none'; secretKeys?: string[]; submitLabel?: string }
+  form?: { formId: string; read: 'full' | 'none'; secretKeys?: string[]; submitLabel?: string; wait?: boolean }
   caps?: string[]
 }
 
@@ -49,19 +50,49 @@ interface CardProps {
   respond?: (result: unknown) => Promise<void>
 }
 
-/** 组件 → 宿主提交消息（与 mcp/server.js 工具描述中的约定一致） */
 interface ComponentSubmitMessage {
   __polarisComponent?: unknown
   formId?: unknown
   values?: unknown
 }
 
+interface CapRequestMessage {
+  __polarisCap?: unknown
+  id?: unknown
+  target?: unknown
+  payload?: unknown
+}
+
+/** 从宿主文档收集主题变量——注入组件 srcdoc，AI 的 HTML 底色/文字自动跟随主题 */
+function collectThemeVars(): string {
+  try {
+    const cs = getComputedStyle(document.documentElement)
+    const names = ['--background', '--foreground', '--card', '--card-foreground', '--muted', '--muted-foreground', '--primary', '--primary-foreground', '--border', '--accent']
+    const pairs = names
+      .map((n) => { const v = cs.getPropertyValue(n).trim(); return v ? n + ':' + v : '' })
+      .filter(Boolean)
+    const dark = document.documentElement.dataset.theme?.includes('dark') || document.body.classList.contains('dark')
+    pairs.push('color-scheme:' + (dark ? 'dark' : 'light'))
+    return pairs.join(';')
+  } catch {
+    return ''
+  }
+}
+
+/** 给 AI 的 html 包主题底座：底色/文字继承宿主，页面自身透明 */
+function themeWrap(html: string): string {
+  const vars = collectThemeVars()
+  const base = '<style>:root{' + vars + '}html,body{background:transparent;color:var(--foreground,#e8e8ea)}</style>'
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head([^>]*)>/i, '<head$1>' + base)
+  return base + html
+}
+
 export const InteractiveComponentCard = memo(function InteractiveComponentCard(props: CardProps) {
   const data = props.data as PreviewArtifactData | null
   const form = data && typeof data === 'object' ? data.form : undefined
+  const isStatic = props.toolName.endsWith('preview_html')
 
   const artifactBlock = useMemo(() => buildArtifactBlockFromData(data), [props.data])
-  const versions = useArtifactVersions(artifactBlock?.requirementId)
 
   if (!artifactBlock) {
     const partial = data
@@ -78,6 +109,7 @@ export const InteractiveComponentCard = memo(function InteractiveComponentCard(p
           description={partial.description}
           form={form}
           sessionId={props.sessionId}
+          isStatic={isStatic}
         />
       )
     }
@@ -88,38 +120,51 @@ export const InteractiveComponentCard = memo(function InteractiveComponentCard(p
     )
   }
 
+  if (isStatic) {
+    return <StaticArtifactPreview artifactBlock={artifactBlock} requirementId={artifactBlock.requirementId} />
+  }
+
   return (
     <InteractivePreview
       artifactBlock={artifactBlock}
-      versions={versions ?? undefined}
       form={form}
       sessionId={props.sessionId}
-      declaredCapTargets={data.caps ? new Set(data.caps) : undefined}
+      declaredCapTargets={data.caps}
     />
   )
 })
 
-/** 完整形态：渲染预览 + 表单契约接线（登记/提交/状态/徽标） */
+/** 静态原型分支：完整预览渲染器（宿主桥 hook 惰性引用） */
+function StaticArtifactPreview({ artifactBlock, requirementId }: { artifactBlock: Record<string, unknown>; requirementId?: string }) {
+  const h = (window as unknown as { __POLARIS_HOST_ARTIFACT__?: { useArtifactVersions: (r?: string) => unknown } }).__POLARIS_HOST_ARTIFACT__
+  const versions = h ? h.useArtifactVersions(requirementId) : null
+  return <ArtifactPreviewRenderer block={artifactBlock as never} versions={(versions ?? undefined) as never} />
+}
+
+/**
+ * 轻量组件卡外壳（v2 去 PRD 化）：
+ * - 主题注入 iframe（AI 的 HTML 底色/文字自动跟随宿主主题）
+ * - form 契约：mount 登记 + 提交接线（event.source 绑定 + formId 校验）
+ * - cap 调用转发（宿主三重门控执行）
+ * - 无预览套件：静态原型走另一分支
+ */
 function InteractivePreview({
   artifactBlock,
-  versions,
   form,
   sessionId,
   declaredCapTargets,
 }: {
   artifactBlock: Record<string, unknown>
-  versions?: Record<string, unknown>[] | null
-  form?: { formId: string; read: 'full' | 'none'; secretKeys?: string[]; submitLabel?: string }
-  caps?: string[]
+  form?: { formId: string; read: 'full' | 'none'; secretKeys?: string[]; submitLabel?: string; wait?: boolean }
   sessionId?: string
-  declaredCapTargets?: ReadonlySet<string>
+  declaredCapTargets?: string[]
 }) {
   const componentIdRef = useRef<string>('')
   if (!componentIdRef.current) {
     componentIdRef.current =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
-        : `comp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+        : 'comp-' + Date.now() + '-' + Math.random().toString(36).slice(2)
   }
   const componentId = componentIdRef.current
 
@@ -127,7 +172,7 @@ function InteractivePreview({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [privateSubmit, setPrivateSubmit] = useState(false)
 
-  // mount：登记表单契约（formId 唯一 hold；提交走现有 form_submit 管线）
+  // mount：登记表单契约（wait:true 时 form_submit 唤醒挂起的工具调用——同管线）
   useEffect(() => {
     if (!form || !sessionId) return
     let cancelled = false
@@ -138,12 +183,9 @@ function InteractivePreview({
       read: form.read,
       secretKeys: form.secretKeys,
     }).catch(() => {
-      // 登记失败：提交时会被「表单已失效」拒绝，此处静默（提交按钮置错由提交路径处理）
       if (!cancelled) setSubmitError('表单契约登记失败，提交可能不可用')
     })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [form?.formId, sessionId, componentId])
 
   const handleSubmit = useCallback(
@@ -156,9 +198,7 @@ function InteractivePreview({
         private: privateSubmit || undefined,
         read: form.read,
       })
-        .then(() => {
-          setFormState('submitted')
-        })
+        .then(() => setFormState('submitted'))
         .catch((e: unknown) => {
           setFormState('error')
           setSubmitError(e instanceof Error ? e.message : String(e))
@@ -167,34 +207,72 @@ function InteractivePreview({
     [form?.formId, form?.read, sessionId, privateSubmit],
   )
 
-  // iframe 消息钩子：ArtifactPreviewRenderer 已做 event.source 绑定校验，
-  // 此处只认本组件协议（__polarisComponent === 1 且 formId 匹配）。
-  const onFrameMessage = useCallback(
-    (raw: unknown) => {
-      if (!form || formState === 'submitted' || formState === 'submitting') return
-      const msg = raw as ComponentSubmitMessage
-      if (!msg || typeof msg !== 'object') return
-      if (msg.__polarisComponent !== 1) return
-      if (msg.formId !== form.formId) return
-      handleSubmit(msg.values ?? {})
-    },
-    [form?.formId, formState, handleSubmit],
-  )
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const declaredRef = useRef(declaredCapTargets)
+  declaredRef.current = declaredCapTargets
+  const formRef = useRef(form)
+  formRef.current = form
+  const stateRef = useRef(formState)
+  stateRef.current = formState
+  const submitRef = useRef(handleSubmit)
+  submitRef.current = handleSubmit
+
+  // iframe 消息管线：event.source 严格绑定（伪造来源拒绝）+ 协议分派
+  useEffect(() => {
+    const onMessage = (event: MessageEvent) => {
+      const source = event.source
+      const frameWin = iframeRef.current?.contentWindow
+      if (!source || !frameWin || source !== frameWin) return
+      const data = event.data
+      if (!data || typeof data !== 'object') return
+
+      // cap 调用 → 宿主三重门控转发（deny 清单/声明白名单/allowlist）
+      if (data.__polarisCap === 1) {
+        Promise.resolve(forwardCap(data, declaredRef.current ?? []))
+       
+        return
+      }
+      // 表单提交 → form_submit（现有管线）；formId 不匹配 = 伪造 → 忽略
+      if (data.__polarisComponent === 1 && formRef.current && data.formId === formRef.current.formId) {
+        if (stateRef.current === 'submitted' || stateRef.current === 'submitting') return
+        submitRef.current(data.values ?? {})
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [])
+
+  const html = typeof artifactBlock.html === 'string' ? artifactBlock.html : ''
+  const themedHtml = useMemo(() => themeWrap(html), [html])
+  const title = String(artifactBlock.title || '交互组件')
 
   return (
-    <div className="relative">
-      <ArtifactPreviewRenderer
-        block={artifactBlock as never}
-        versions={versions as never}
-        onFrameMessage={onFrameMessage}
-        declaredCapTargets={declaredCapTargets}
-      />
+    <div className="my-2 overflow-hidden rounded-lg border border-border bg-background-elevated">
+      <div className="flex items-center gap-2 border-b border-border bg-background-elevated px-3 py-1.5">
+        <span className="rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-medium text-cyan-400">交互组件</span>
+        <span className="text-xs font-medium text-text-primary">{title}</span>
+        {artifactBlock.versionLabel ? <span className="text-[10px] text-text-tertiary">{String(artifactBlock.versionLabel)}</span> : null}
+        <span className="ml-auto text-[10px] text-text-tertiary">AI · 自定义交互</span>
+      </div>
+      <div className="relative">
+        <iframe
+          ref={iframeRef}
+          title={title}
+          srcDoc={themedHtml}
+          sandbox="allow-scripts allow-forms allow-popups allow-modals"
+          className="h-full w-full"
+          style={{ background: 'transparent', border: 'none', minHeight: 120 }}
+          referrerPolicy="no-referrer"
+        />
+      </div>
       {form ? (
-        <div className="my-1 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-1.5 text-xs">
+        <div className="flex items-center gap-2 border-t border-border bg-background-elevated px-3 py-1.5 text-xs">
           {formState === 'submitted' ? (
-            <span className="flex items-center gap-1 text-green-500">
+            <span className="text-green-500">
               ✅ 已提交{form.read === 'none' ? '（私密：值未回传 AI）' : '（回执将随下一条消息带给 AI）'}
             </span>
+          ) : formState === 'error' ? (
+            <span className="text-error">提交失败：{submitError}</span>
           ) : (
             <>
               <span
@@ -213,7 +291,7 @@ function InteractivePreview({
                 </label>
               )}
               <span className="ml-auto text-text-muted">
-                {formState === 'submitting' ? '提交中…' : formState === 'error' ? submitError || '提交失败' : `等待组件内提交（${form.submitLabel || '提交'}）`}
+                {formState === 'submitting' ? '提交中…' : `等待组件内提交（${form.submitLabel || '提交'}）`}
               </span>
             </>
           )}
@@ -224,8 +302,8 @@ function InteractivePreview({
 }
 
 /**
- * 投影形态自升级（与旧 PRD 卡同构）：data 缺 html 但预览已落盘 → 读回 index.html
- * 补齐。经 polaris-host/artifact.readArtifactHtml（宿主封装，插件不 import 宿主服务）。
+ * 投影形态自升级：data 缺 html 但预览已落盘 → 读回 index.html 补齐。
+ * 静态分支走宿主预览渲染器；交互分支走轻量外壳。
  */
 function HydratingPreview({
   previewId,
@@ -238,6 +316,7 @@ function HydratingPreview({
   description,
   form,
   sessionId,
+  isStatic,
 }: {
   previewId?: string
   sourcePath?: string
@@ -247,14 +326,12 @@ function HydratingPreview({
   createdAt?: string
   requirementId?: string
   description?: string
-  form?: { formId: string; read: 'full' | 'none'; secretKeys?: string[]; submitLabel?: string }
-  caps?: string[]
+  form?: { formId: string; read: 'full' | 'none'; secretKeys?: string[]; submitLabel?: string; wait?: boolean }
   sessionId?: string
-  declaredCapTargets?: ReadonlySet<string>
+  isStatic: boolean
 }) {
   const [state, setState] = useState<'checking' | 'ready' | 'notice'>('checking')
   const [block, setBlock] = useState<Record<string, unknown> | null>(null)
-  const versions = useArtifactVersions(requirementId)
 
   useEffect(() => {
     let cancelled = false
@@ -295,29 +372,32 @@ function HydratingPreview({
       .catch(() => {
         if (!cancelled) setState('notice')
       })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [previewId, sourcePath, title, versionLabel, version, createdAt, requirementId, description])
 
   if (state === 'checking') {
     return (
       <div className="my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2">
         <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span className="text-xs text-text-muted">加载预览…</span>
+        <span className="text-xs text-text-muted">加载组件…</span>
       </div>
     )
   }
 
   if (state === 'ready' && block) {
-    return <InteractivePreview artifactBlock={block} versions={versions ?? undefined} form={form} sessionId={sessionId} declaredCapTargets={undefined} />
+    if (isStatic) {
+      const h = (window as unknown as { __POLARIS_HOST_ARTIFACT__?: { useArtifactVersions: (r?: string) => unknown } }).__POLARIS_HOST_ARTIFACT__
+      const versions = h ? h.useArtifactVersions(requirementId) : null
+      return <ArtifactPreviewRenderer block={block as never} versions={(versions ?? undefined) as never} />
+    }
+    return <InteractivePreview artifactBlock={block} form={form} sessionId={sessionId} declaredCapTargets={undefined} />
   }
 
   return (
     <div className="my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs">
       <span className="text-green-500">✅</span>
       <span className="text-text-secondary">
-        预览已生成{title ? `：${title}` : ''}{versionLabel ? ` · ${versionLabel}` : ''}
+        组件已生成{title ? `：${title}` : ''}{versionLabel ? ` · ${versionLabel}` : ''}
         {previewId ? `（${previewId.slice(0, 8)}…）` : ''}
       </span>
       {sourcePath ? (
