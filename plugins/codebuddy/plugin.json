@@ -1,8 +1,8 @@
 {
   "id": "codebuddy",
   "name": "CodeBuddy Engine",
-  "version": "0.4.0",
-  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.4.0：activityBar 侧边栏面板（配置中心：模型/effort/权限/max-turns/autocompact/fallback-model 可视化编辑；快捷指令注入主对话；会话/工具观察）。",
+  "version": "0.4.1",
+  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.4.1：activityBar 侧边栏面板（配置中心：模型/effort/权限/max-turns/autocompact/fallback-model 可视化编辑；快捷指令注入主对话；会话/工具观察）。",
   "enabledByDefault": false,
   "contributes": {
     "engines": [
