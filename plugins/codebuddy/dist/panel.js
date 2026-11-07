@@ -41,34 +41,45 @@ async function savePanelConfig(cfg) {
 }
 
 // src/panel.tsx
-import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+import { jsx, jsxs } from "react/jsx-runtime";
 var CSS = `
-.cb-root{position:relative;font:13px/1.55 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#E6EAF2;height:100%;display:flex;flex-direction:column;background:transparent}
+.cb-root{position:relative;font:12.5px/1.6 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#DEE4EE;height:100%;display:flex;flex-direction:column;background:transparent}
 .cb-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-.cb-tabs{display:flex;gap:2px;padding:8px 10px 0;flex-shrink:0}
-.cb-tab{flex:1;background:transparent;border:none;color:#8B95A7;font-size:11.5px;padding:6px 4px;border-radius:7px;cursor:pointer;font-weight:600}
-.cb-tab:hover{color:#E6EAF2}
-.cb-tab.on{background:#1C2330;color:#E6EAF2}
-.cb-body{flex:1;overflow-y:auto;padding:10px 12px;min-height:0}
+.cb-tabs{display:flex;gap:1px;padding:10px 10px 0;flex-shrink:0;border-bottom:1px solid #1E242E}
+.cb-tab{flex:1;background:transparent;border:none;color:#7A8496;font-size:11.5px;padding:7px 4px 9px;cursor:pointer;font-weight:600;position:relative;letter-spacing:.02em}
+.cb-tab:hover{color:#C9D2DE}
+.cb-tab.on{color:#FFFFFF}
+.cb-tab.on::after{content:'';position:absolute;left:20%;right:20%;bottom:-1px;height:2px;border-radius:1px;background:#5EA8FF}
+.cb-body{flex:1;overflow-y:auto;padding:12px 14px;min-height:0}
 .cb-body::-webkit-scrollbar{width:8px;height:8px}
-.cb-body::-webkit-scrollbar-thumb{background:#2a2f3a;border-radius:4px;border:2px solid transparent;background-clip:content-box}
-.cb-sec{font-size:11px;font-weight:700;color:#8B95A7;padding:8px 0 4px;display:flex;align-items:center;gap:6px}
-.cb-bar{width:3px;height:12px;border-radius:2px;background:linear-gradient(180deg,#5EA8FF,#3B6FE0);flex-shrink:0}
-.cb-field{margin-bottom:10px}
-.cb-label{font-size:11.5px;color:#B8C0CC;display:block;margin-bottom:3px}
-.cb-hint{font-size:10px;color:#5C6678;margin-top:2px;line-height:1.4}
-.cb-input,.cb-select{width:100%;background:#161B22;border:1px solid #242C3A;border-radius:7px;color:#E6EAF2;font-size:12px;padding:6px 9px;outline:none}
-.cb-input:focus,.cb-select:focus{border-color:#3B6FE0}
-.cb-btn{background:#2E5FC0;border:none;color:#fff;border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600}
-.cb-btn:hover{filter:brightness(1.12)}
+.cb-body::-webkit-scrollbar-thumb{background:#242C3A;border-radius:4px;border:2px solid transparent;background-clip:content-box}
+.cb-sec{display:flex;align-items:center;gap:7px;padding:14px 2px 7px;font-size:10.5px;font-weight:700;color:#7A8496;text-transform:uppercase;letter-spacing:.08em}
+.cb-sec:first-child{padding-top:2px}
+.cb-bar{width:3px;height:11px;border-radius:2px;background:#5EA8FF;flex-shrink:0;opacity:.85}
+.cb-field{margin-bottom:12px}
+.cb-label{font-size:11.5px;color:#AEB8C4;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.cb-label .cb-arg{font-family:ui-monospace,Consolas,monospace;font-size:10px;color:#5C6678}
+.cb-hint{font-size:10px;color:#5C6678;margin-top:3px;line-height:1.5}
+.cb-input,.cb-select{width:100%;background:#12161E;border:1px solid #232A36;border-radius:8px;color:#E6EAF2;font-size:12px;padding:7px 10px;outline:none;transition:border-color .12s}
+.cb-input:focus,.cb-select:focus{border-color:#3B6FE0;box-shadow:0 0 0 2px rgba(62,111,224,.18)}
+.cb-input:hover,.cb-select:hover{border-color:#2E3644}
+.cb-btn{background:linear-gradient(135deg,#3B6FE0,#2E5FC0);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600;transition:filter .12s, transform .06s;width:100%}
+.cb-btn:hover{filter:brightness(1.15)}
+.cb-btn:active{transform:scale(.985)}
 .cb-btn:disabled{opacity:.45;cursor:not-allowed}
-.cb-quick{display:flex;flex-direction:column;gap:6px;padding-bottom:8px}
-.cb-quick button{background:#161B22;border:1px solid #242C3A;color:#E6EAF2;border-radius:9px;padding:9px 12px;font-size:12px;cursor:pointer;text-align:left;line-height:1.45}
-.cb-quick button:hover{border-color:#3B6FE0;background:#1C2330}
-.cb-quick button b{display:block;font-size:12px;margin-bottom:2px}
-.cb-quick button small{color:#8B95A7;font-size:10.5px}
-.cb-card{background:#161B22;border:1px solid #242C3A;border-radius:9px;padding:8px 10px;margin-bottom:8px;font-size:11.5px;color:#B8C0CC;line-height:1.6}
-.cb-card b{color:#E6EAF2}
+.cb-quick{display:flex;flex-direction:column;gap:7px;padding:2px 0 10px}
+.cb-quick button{background:#141922;border:1px solid #232A36;color:#DEE4EE;border-radius:10px;padding:10px 13px;font-size:12px;cursor:pointer;text-align:left;line-height:1.5;transition:border-color .12s, background .12s}
+.cb-quick button:hover{border-color:#3B6FE0;background:#181F2A}
+.cb-quick button:active{transform:scale(.99)}
+.cb-quick b{display:block;font-size:12px;margin-bottom:2px;font-weight:600}
+.cb-quick small{color:#7A8496;font-size:10.5px}
+.cb-card{background:#12161E;border:1px solid #1E242E;border-radius:11px;padding:11px 13px;margin-bottom:10px;font-size:11.5px;color:#AEB8C4;line-height:1.7}
+.cb-card b{color:#DEE4EE;font-weight:600}
+.cb-summary{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 6px}
+.cb-chip{background:#141922;border:1px solid #232A36;border-radius:7px;padding:4px 9px;font-size:10.5px;color:#AEB8C4}
+.cb-chip b{color:#E6EAF2;font-weight:600}
+.cb-empty{color:#5C6678;font-size:11.5px;text-align:center;padding:28px 12px;line-height:1.7}
+.cb-divider{height:1px;background:#1E242E;margin:4px 0 2px}
 `;
 var QUICK_PROMPTS = [
   { title: "\u4EE3\u7801\u5BA1\u67E5", desc: "\u5BA1\u67E5\u5F53\u524D\u5DE5\u4F5C\u533A\u6700\u8FD1\u6539\u52A8", prompt: "\u5BA1\u67E5\u5F53\u524D\u5DE5\u4F5C\u533A\u6700\u8FD1\u7684\u4EE3\u7801\u6539\u52A8\uFF0C\u6309\u4E25\u91CD\u5EA6\u5217\u51FA\u95EE\u9898\u4E0E\u4FEE\u590D\u5EFA\u8BAE\u3002" },
@@ -76,10 +87,36 @@ var QUICK_PROMPTS = [
   { title: "\u91CD\u6784\u5EFA\u8BAE", desc: "\u6307\u5B9A\u6587\u4EF6\u7684\u91CD\u6784\u65B9\u6848", prompt: "\u5206\u6790\u4EE5\u4E0B\u6587\u4EF6\u7684\u7ED3\u6784\u95EE\u9898\u5E76\u7ED9\u51FA\u91CD\u6784\u65B9\u6848\uFF08\u4FDD\u6301\u884C\u4E3A\u4E0D\u53D8\uFF09\uFF1A\n\n\uFF08\u6307\u5B9A\u6587\u4EF6\u8DEF\u5F84\uFF09" },
   { title: "\u6392\u67E5\u62A5\u9519", desc: "\u7C98\u8D34\u62A5\u9519\u4FE1\u606F\u5B9A\u4F4D\u95EE\u9898", prompt: "\u5E2E\u6211\u6392\u67E5\u8FD9\u4E2A\u62A5\u9519\uFF0C\u7ED9\u51FA\u6839\u56E0\u4E0E\u4FEE\u590D\u6B65\u9AA4\uFF1A\n\n\uFF08\u7C98\u8D34\u62A5\u9519\u4FE1\u606F\uFF09" }
 ];
-var EFFORT_OPTIONS = ["", "minimal", "low", "medium", "high", "xhigh", "max"];
-var PERM_OPTIONS = ["bypassPermissions", "acceptEdits", "default", "plan", "dontAsk", "auto"];
-var AUTOCOMPACT_OPTIONS = ["", "auto", "400k", "1m"];
-var FALLBACK_OPTIONS = ["", "hy4free", "hy4std", "hy3", "deepseek-v4.1-flash"];
+var EFFORT_OPTIONS = [
+  { v: "", label: "\u4E0D\u8BBE\u7F6E\uFF08\u5F15\u64CE\u9ED8\u8BA4\uFF09" },
+  { v: "minimal", label: "minimal \u2014 \u6781\u7B80" },
+  { v: "low", label: "low \u2014 \u4F4E" },
+  { v: "medium", label: "medium \u2014 \u4E2D" },
+  { v: "high", label: "high \u2014 \u9AD8" },
+  { v: "xhigh", label: "xhigh \u2014 \u6781\u9AD8" },
+  { v: "max", label: "max \u2014 \u6700\u9AD8" }
+];
+var PERM_OPTIONS = [
+  { v: "bypassPermissions", label: "bypassPermissions \u2014 \u8DF3\u8FC7\u6743\u9650\uFF08\u9AD8\u98CE\u9669\uFF09" },
+  { v: "acceptEdits", label: "acceptEdits \u2014 \u81EA\u52A8\u63A5\u53D7\u7F16\u8F91" },
+  { v: "default", label: "default \u2014 \u9ED8\u8BA4\u786E\u8BA4" },
+  { v: "plan", label: "plan \u2014 \u4EC5\u89C4\u5212" },
+  { v: "dontAsk", label: "dontAsk \u2014 \u62D2\u7EDD\u5371\u9669" },
+  { v: "auto", label: "auto \u2014 \u81EA\u52A8" }
+];
+var AUTOCOMPACT_OPTIONS = [
+  { v: "", label: "\u4E0D\u8BBE\u7F6E" },
+  { v: "auto", label: "auto \u2014 \u8DDF\u968F\u6A21\u578B\u7A97\u53E3" },
+  { v: "400k", label: "400k \u2014 40 \u4E07 token" },
+  { v: "1m", label: "1m \u2014 100 \u4E07 token" }
+];
+var FALLBACK_OPTIONS = [
+  { v: "", label: "\u4E0D\u8BBE\u7F6E" },
+  { v: "hy4free", label: "hy4free" },
+  { v: "hy4std", label: "hy4std" },
+  { v: "hy3", label: "hy3" },
+  { v: "deepseek-v4.1-flash", label: "deepseek-v4.1-flash" }
+];
 function CodeBuddyPanel({ onSendToChat }) {
   const [tab, setTab] = useState("quick");
   const [cfg, setCfg] = useState({
@@ -92,7 +129,7 @@ function CodeBuddyPanel({ onSendToChat }) {
     daemonEnabled: false
   });
   const [loaded, setLoaded] = useState(false);
-  const [saveMsg, setSaveMsg] = useState("");
+  const [saveMsg, setSaveMsg] = useState(null);
   useEffect(() => {
     void loadPanelConfig().then((c) => {
       setCfg(c);
@@ -101,60 +138,73 @@ function CodeBuddyPanel({ onSendToChat }) {
   }, []);
   const update = (patch) => setCfg((prev) => ({ ...prev, ...patch }));
   const handleSave = useCallback(async () => {
-    setSaveMsg("\u4FDD\u5B58\u4E2D\u2026");
+    setSaveMsg({ text: "\u4FDD\u5B58\u4E2D\u2026", ok: true });
     try {
       await savePanelConfig(cfg);
-      setSaveMsg("\u2713 \u5DF2\u4FDD\u5B58\uFF08\u65B0\u4F1A\u8BDD\u751F\u6548\uFF09");
+      setSaveMsg({ text: "\u2713 \u5DF2\u4FDD\u5B58\uFF08\u65B0\u4F1A\u8BDD\u751F\u6548\uFF09", ok: true });
     } catch (e) {
-      setSaveMsg("\u2717 " + String(e.message).slice(0, 60));
+      setSaveMsg({ text: "\u2717 " + String(e.message).slice(0, 60), ok: false });
     }
-    setTimeout(() => setSaveMsg(""), 2500);
+    setTimeout(() => setSaveMsg(null), 2600);
   }, [cfg]);
   const sendToChatSafe = (text) => {
     if (onSendToChat) void onSendToChat(text);
   };
-  const tabBtn = (t, label) => /* @__PURE__ */ jsx("button", { className: `cb-tab ${tab === t ? "on" : ""}`, onClick: () => setTab(t), children: label }, t);
+  const Section = ({ title }) => /* @__PURE__ */ jsxs("div", { className: "cb-sec", children: [
+    /* @__PURE__ */ jsx("span", { className: "cb-bar" }),
+    title
+  ] });
   const quickTab = /* @__PURE__ */ jsxs("div", { className: "cb-body", children: [
-    /* @__PURE__ */ jsxs("div", { className: "cb-card", children: [
-      /* @__PURE__ */ jsx("b", { children: "\u5F53\u524D\u914D\u7F6E\u6458\u8981" }),
-      /* @__PURE__ */ jsx("br", {}),
-      "\u6A21\u578B\uFF1A",
-      /* @__PURE__ */ jsx("b", { children: cfg.model || "\u5F15\u64CE\u9ED8\u8BA4" }),
-      " \xB7 \u52AA\u529B\u7EA7\u522B\uFF1A",
-      /* @__PURE__ */ jsx("b", { children: cfg.effort || "\u9ED8\u8BA4" }),
-      " \xB7 \u6743\u9650\uFF1A",
-      /* @__PURE__ */ jsx("b", { children: cfg.permissionMode }),
-      cfg.fallbackModel ? /* @__PURE__ */ jsxs(Fragment, { children: [
-        " \xB7 \u5907\u7528\uFF1A",
+    /* @__PURE__ */ jsxs("div", { className: "cb-summary", children: [
+      /* @__PURE__ */ jsxs("span", { className: "cb-chip", children: [
+        "\u6A21\u578B ",
+        /* @__PURE__ */ jsx("b", { children: cfg.model || "\u5F15\u64CE\u9ED8\u8BA4" })
+      ] }),
+      /* @__PURE__ */ jsxs("span", { className: "cb-chip", children: [
+        "effort ",
+        /* @__PURE__ */ jsx("b", { children: cfg.effort || "\u9ED8\u8BA4" })
+      ] }),
+      /* @__PURE__ */ jsxs("span", { className: "cb-chip", children: [
+        "\u6743\u9650 ",
+        /* @__PURE__ */ jsx("b", { children: cfg.permissionMode })
+      ] }),
+      cfg.fallbackModel ? /* @__PURE__ */ jsxs("span", { className: "cb-chip", children: [
+        "\u5907\u7528 ",
         /* @__PURE__ */ jsx("b", { children: cfg.fallbackModel })
       ] }) : null
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: "cb-sec", children: [
-      /* @__PURE__ */ jsx("span", { className: "cb-bar" }),
-      "\u5FEB\u6377\u6307\u4EE4",
-      /* @__PURE__ */ jsx("span", { className: "cb-hint", children: "\u70B9\u51FB\u53D1\u9001\u5230\u4E3B\u5BF9\u8BDD" })
-    ] }),
+    /* @__PURE__ */ jsx(Section, { title: "\u5FEB\u6377\u6307\u4EE4" }),
+    /* @__PURE__ */ jsx("div", { style: { fontSize: 10, color: "#5C6678", padding: "0 0 6px" }, children: "\u70B9\u51FB\u53D1\u9001\u5230\u4E3B\u5BF9\u8BDD\uFF08CodeBuddy \u5F15\u64CE\u63A5\u624B\uFF0C\u6309\u5F53\u524D\u914D\u7F6E\u6267\u884C\uFF09" }),
     /* @__PURE__ */ jsx("div", { className: "cb-quick", children: QUICK_PROMPTS.map((q) => /* @__PURE__ */ jsxs("button", { onClick: () => sendToChatSafe(q.prompt), children: [
       /* @__PURE__ */ jsx("b", { children: q.title }),
       /* @__PURE__ */ jsx("small", { children: q.desc })
     ] }, q.title)) }),
-    /* @__PURE__ */ jsxs("div", { className: "cb-sec", children: [
-      /* @__PURE__ */ jsx("span", { className: "cb-bar" }),
-      "\u81EA\u5B9A\u4E49\u6307\u4EE4"
-    ] }),
-    /* @__PURE__ */ jsx("textarea", { className: "cb-textarea", id: "cb-custom", rows: 3, placeholder: "\u8F93\u5165\u81EA\u5B9A\u4E49\u6307\u4EE4\uFF0C\u70B9\u4E0B\u65B9\u6309\u94AE\u53D1\u9001\u5230\u4E3B\u5BF9\u8BDD" }),
-    /* @__PURE__ */ jsx("div", { style: { padding: "6px 0" }, children: /* @__PURE__ */ jsx("button", { className: "cb-btn", id: "cb-send-custom", style: { width: "100%" }, onClick: () => {
+    /* @__PURE__ */ jsx(Section, { title: "\u81EA\u5B9A\u4E49\u6307\u4EE4" }),
+    /* @__PURE__ */ jsx(
+      "textarea",
+      {
+        id: "cb-custom",
+        rows: 3,
+        style: { width: "100%", background: "#12161E", border: "1px solid #232A36", borderRadius: 9, color: "#DEE4EE", fontSize: 12, padding: "8px 10px", outline: "none", resize: "vertical", minHeight: 56, fontFamily: "inherit" },
+        placeholder: "\u8F93\u5165\u81EA\u5B9A\u4E49\u6307\u4EE4\u2026"
+      }
+    ),
+    /* @__PURE__ */ jsx("button", { className: "cb-btn", onClick: () => {
       const el = document.getElementById("cb-custom");
       const text = el?.value.trim();
       if (text) {
         sendToChatSafe(text);
         if (el) el.value = "";
       }
-    }, children: "\u53D1\u9001\u5230\u4E3B\u5BF9\u8BDD" }) })
+    }, children: "\u53D1\u9001\u5230\u4E3B\u5BF9\u8BDD" })
   ] });
   const configTab = /* @__PURE__ */ jsxs("div", { className: "cb-body", children: [
+    /* @__PURE__ */ jsx(Section, { title: "\u6838\u5FC3" }),
     /* @__PURE__ */ jsxs("div", { className: "cb-field", children: [
-      /* @__PURE__ */ jsx("label", { className: "cb-label", children: "\u6A21\u578B\uFF08--model\uFF09" }),
+      /* @__PURE__ */ jsxs("label", { className: "cb-label", children: [
+        "\u6A21\u578B ",
+        /* @__PURE__ */ jsx("span", { className: "cb-arg", children: "--model" })
+      ] }),
       /* @__PURE__ */ jsx(
         "input",
         {
@@ -164,24 +214,30 @@ function CodeBuddyPanel({ onSendToChat }) {
           onChange: (e) => update({ model: e.target.value })
         }
       ),
-      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u5E38\u7528\uFF1Ahy4free / hy4std / hy3 / deepseek-v4.1-flash" })
+      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u5E38\u7528\uFF1Ahy4free / hy4std / hy3 / hy3-x / deepseek-v4.1-flash" })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "cb-field", children: [
-      /* @__PURE__ */ jsx("label", { className: "cb-label", children: "\u52AA\u529B\u7EA7\u522B\uFF08--effort\uFF09" }),
-      /* @__PURE__ */ jsx("select", { value: cfg.effort, onChange: (e) => update({ effort: e.target.value }), children: EFFORT_OPTIONS.map((v) => /* @__PURE__ */ jsx("option", { value: v, children: v || "\u4E0D\u8BBE\u7F6E" }, v)) }),
-      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u601D\u8003\u529B\u5EA6\uFF1Aminimal \u6700\u5FEB\uFF0Cmax \u6700\u9AD8\u8D28\u91CF" })
+      /* @__PURE__ */ jsxs("label", { className: "cb-label", children: [
+        "\u52AA\u529B\u7EA7\u522B ",
+        /* @__PURE__ */ jsx("span", { className: "cb-arg", children: "--effort" })
+      ] }),
+      /* @__PURE__ */ jsx("select", { className: "cb-select", value: cfg.effort, onChange: (e) => update({ effort: e.target.value }), children: EFFORT_OPTIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.v, children: o.label }, o.v)) }),
+      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u601D\u8003\u529B\u5EA6\uFF1Aminimal \u6700\u5FEB\u54CD\u5E94\uFF0Cmax \u6700\u9AD8\u8D28\u91CF" })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "cb-field", children: [
-      /* @__PURE__ */ jsx("label", { className: "cb-label", children: "\u6743\u9650\u6A21\u5F0F\uFF08--permission-mode\uFF09" }),
-      /* @__PURE__ */ jsx("select", { value: cfg.permissionMode, onChange: (e) => update({ permissionMode: e.target.value }), children: PERM_OPTIONS.map((v) => /* @__PURE__ */ jsx("option", { value: v, children: v }, v)) }),
+      /* @__PURE__ */ jsxs("label", { className: "cb-label", children: [
+        "\u6743\u9650\u6A21\u5F0F ",
+        /* @__PURE__ */ jsx("span", { className: "cb-arg", children: "--permission-mode" })
+      ] }),
+      /* @__PURE__ */ jsx("select", { className: "cb-select", value: cfg.permissionMode, onChange: (e) => update({ permissionMode: e.target.value }), children: PERM_OPTIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.v, children: o.label }, o.v)) }),
       /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u8DF3\u8FC7\u6743\u9650\uFF08\u9AD8\u98CE\u9669\uFF09\u4EC5\u5EFA\u8BAE\u9694\u79BB\u73AF\u5883\u4F7F\u7528" })
     ] }),
-    /* @__PURE__ */ jsxs("div", { className: "cb-sec", children: [
-      /* @__PURE__ */ jsx("span", { className: "cb-bar" }),
-      "\u4E0A\u4E0B\u6587\u4E0E\u5BB9\u9519"
-    ] }),
+    /* @__PURE__ */ jsx(Section, { title: "\u4E0A\u4E0B\u6587\u4E0E\u5BB9\u9519" }),
     /* @__PURE__ */ jsxs("div", { className: "cb-field", children: [
-      /* @__PURE__ */ jsx("label", { className: "cb-label", children: "\u6700\u5927\u8F6E\u6570\uFF08--max-turns\uFF09" }),
+      /* @__PURE__ */ jsxs("label", { className: "cb-label", children: [
+        "\u6700\u5927\u8F6E\u6570 ",
+        /* @__PURE__ */ jsx("span", { className: "cb-arg", children: "--max-turns" })
+      ] }),
       /* @__PURE__ */ jsx(
         "input",
         {
@@ -195,17 +251,23 @@ function CodeBuddyPanel({ onSendToChat }) {
       /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u9650\u5236 agent \u81EA\u52A8\u6267\u884C\u8F6E\u6570\uFF0C\u9632\u5931\u63A7" })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "cb-field", children: [
-      /* @__PURE__ */ jsx("label", { className: "cb-label", children: "\u81EA\u52A8\u538B\u7F29\u7A97\u53E3\uFF08--autocompact\uFF09" }),
-      /* @__PURE__ */ jsx("select", { value: cfg.autocompact, onChange: (e) => update({ autocompact: e.target.value }), children: AUTOCOMPACT_OPTIONS.map((v) => /* @__PURE__ */ jsx("option", { value: v, children: v || "\u4E0D\u8BBE\u7F6E" }, v)) }),
-      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u4E0A\u4E0B\u6587\u8FBE\u5230\u9608\u503C\u81EA\u52A8\u538B\u7F29" })
+      /* @__PURE__ */ jsxs("label", { className: "cb-label", children: [
+        "\u81EA\u52A8\u538B\u7F29\u7A97\u53E3 ",
+        /* @__PURE__ */ jsx("span", { className: "cb-arg", children: "--autocompact" })
+      ] }),
+      /* @__PURE__ */ jsx("select", { className: "cb-select", value: cfg.autocompact, onChange: (e) => update({ autocompact: e.target.value }), children: AUTOCOMPACT_OPTIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.v, children: o.label }, o.v)) }),
+      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u4E0A\u4E0B\u6587\u8FBE\u5230\u9608\u503C\u81EA\u52A8\u538B\u7F29\uFF08100k-1M \u8303\u56F4\uFF09" })
     ] }),
     /* @__PURE__ */ jsxs("div", { className: "cb-field", children: [
-      /* @__PURE__ */ jsx("label", { className: "cb-label", children: "\u5907\u7528\u6A21\u578B\uFF08--fallback-model\uFF09" }),
-      /* @__PURE__ */ jsx("select", { value: cfg.fallbackModel, onChange: (e) => update({ fallbackModel: e.target.value }), children: FALLBACK_OPTIONS.map((v) => /* @__PURE__ */ jsx("option", { value: v, children: v || "\u4E0D\u8BBE\u7F6E" }, v)) }),
-      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u4E3B\u6A21\u578B\u8FC7\u8F7D/\u9650\u6D41\u65F6\u81EA\u52A8\u5207\u6362\uFF08\u7F13\u89E3 429\uFF09" })
+      /* @__PURE__ */ jsxs("label", { className: "cb-label", children: [
+        "\u5907\u7528\u6A21\u578B ",
+        /* @__PURE__ */ jsx("span", { className: "cb-arg", children: "--fallback-model" })
+      ] }),
+      /* @__PURE__ */ jsx("select", { className: "cb-select", value: cfg.fallbackModel, onChange: (e) => update({ fallbackModel: e.target.value }), children: FALLBACK_OPTIONS.map((o) => /* @__PURE__ */ jsx("option", { value: o.v, children: o.label }, o.v)) }),
+      /* @__PURE__ */ jsx("div", { className: "cb-hint", children: "\u4E3B\u6A21\u578B\u8FC7\u8F7D/\u9650\u6D41\u65F6\u81EA\u52A8\u5207\u6362\uFF08\u7F13\u89E3 429\uFF0C\u4EC5 -p \u6A21\u5F0F\uFF09" })
     ] }),
-    /* @__PURE__ */ jsx("button", { className: "cb-btn", style: { width: "100%" }, onClick: () => void handleSave(), children: "\u4FDD\u5B58\u914D\u7F6E" }),
-    /* @__PURE__ */ jsx("div", { className: "cb-hint", style: { textAlign: "center", minHeight: 14 }, children: saveMsg })
+    /* @__PURE__ */ jsx("button", { className: "cb-btn", onClick: () => void handleSave(), children: "\u4FDD\u5B58\u914D\u7F6E\uFF08\u65B0\u4F1A\u8BDD\u751F\u6548\uFF09" }),
+    /* @__PURE__ */ jsx("div", { className: "cb-hint", style: { textAlign: "center", minHeight: 16, marginTop: 6 }, children: saveMsg ? /* @__PURE__ */ jsx("span", { style: { color: saveMsg.ok ? "#7BC47F" : "#FF8A9A" }, children: saveMsg.text }) : "" })
   ] });
   const sessionsTab = /* @__PURE__ */ jsxs("div", { className: "cb-body", children: [
     /* @__PURE__ */ jsxs("div", { className: "cb-card", children: [
@@ -233,24 +295,11 @@ function CodeBuddyPanel({ onSendToChat }) {
       "TaskCreate / TaskUpdate / TaskList / EnterPlanMode / ExitPlanMode / AskUserQuestion"
     ] })
   ] });
-  if (!loaded) {
-    return /* @__PURE__ */ jsxs("div", { className: "cb-root", children: [
-      /* @__PURE__ */ jsx("style", { children: CSS }),
-      /* @__PURE__ */ jsxs("div", { className: "cb-empty", children: [
-        /* @__PURE__ */ jsx("span", { className: "cb-spin" }),
-        "\u52A0\u8F7D\u914D\u7F6E\u2026"
-      ] })
-    ] });
-  }
+  const tabBody = tab === "quick" ? quickTab : tab === "config" ? configTab : tab === "sessions" ? sessionsTab : toolsTab;
   return /* @__PURE__ */ jsxs("div", { className: "cb-root", children: [
     /* @__PURE__ */ jsx("style", { children: CSS }),
-    /* @__PURE__ */ jsxs("div", { className: "cb-tabs", children: [
-      tabBtn("quick", "\u5FEB\u6377"),
-      tabBtn("config", "\u914D\u7F6E"),
-      tabBtn("sessions", "\u4F1A\u8BDD"),
-      tabBtn("tools", "\u5DE5\u5177")
-    ] }),
-    tab === "quick" ? quickTab : tab === "config" ? configTab : tab === "sessions" ? sessionsTab : toolsTab
+    /* @__PURE__ */ jsx("div", { className: "cb-tabs", children: [["quick", "\u5FEB\u6377"], ["config", "\u914D\u7F6E"], ["sessions", "\u4F1A\u8BDD"], ["tools", "\u5DE5\u5177"]].map(([t, label]) => /* @__PURE__ */ jsx("button", { className: `cb-tab ${tab === t ? "on" : ""}`, onClick: () => setTab(t), children: label }, t)) }),
+    tabBody
   ] });
 }
 export {

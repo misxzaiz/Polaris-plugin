@@ -1,8 +1,8 @@
 {
   "id": "codebuddy",
   "name": "CodeBuddy Engine",
-  "version": "0.4.1",
-  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.4.1：activityBar 侧边栏面板（配置中心：模型/effort/权限/max-turns/autocompact/fallback-model 可视化编辑；快捷指令注入主对话；会话/工具观察）。",
+  "version": "0.5.0",
+  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.5.0：侧边栏面板生产级改造（MCP 挂载——Polaris 插件/内置 MCP 经 --mcp-config 注入会话；样式与信息层级重做；会话/工具 Tab 落地）。",
   "enabledByDefault": false,
   "contributes": {
     "engines": [

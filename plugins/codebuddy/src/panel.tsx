@@ -11,34 +11,45 @@
 import { useCallback, useEffect, useState } from 'react'
 import { loadPanelConfig, savePanelConfig, type PanelConfig } from './host'
 
-// ── 样式（窄容器 200-600px，深色主题）──────────────────────────────────
+// ── 样式（生产级：间距节奏/信息层级/交互反馈；深底面板容器）────────────
 const CSS = `
-.cb-root{position:relative;font:13px/1.55 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#E6EAF2;height:100%;display:flex;flex-direction:column;background:transparent}
+.cb-root{position:relative;font:12.5px/1.6 -apple-system,Segoe UI,PingFang SC,Microsoft YaHei,sans-serif;color:#DEE4EE;height:100%;display:flex;flex-direction:column;background:transparent}
 .cb-root *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-.cb-tabs{display:flex;gap:2px;padding:8px 10px 0;flex-shrink:0}
-.cb-tab{flex:1;background:transparent;border:none;color:#8B95A7;font-size:11.5px;padding:6px 4px;border-radius:7px;cursor:pointer;font-weight:600}
-.cb-tab:hover{color:#E6EAF2}
-.cb-tab.on{background:#1C2330;color:#E6EAF2}
-.cb-body{flex:1;overflow-y:auto;padding:10px 12px;min-height:0}
+.cb-tabs{display:flex;gap:1px;padding:10px 10px 0;flex-shrink:0;border-bottom:1px solid #1E242E}
+.cb-tab{flex:1;background:transparent;border:none;color:#7A8496;font-size:11.5px;padding:7px 4px 9px;cursor:pointer;font-weight:600;position:relative;letter-spacing:.02em}
+.cb-tab:hover{color:#C9D2DE}
+.cb-tab.on{color:#FFFFFF}
+.cb-tab.on::after{content:'';position:absolute;left:20%;right:20%;bottom:-1px;height:2px;border-radius:1px;background:#5EA8FF}
+.cb-body{flex:1;overflow-y:auto;padding:12px 14px;min-height:0}
 .cb-body::-webkit-scrollbar{width:8px;height:8px}
-.cb-body::-webkit-scrollbar-thumb{background:#2a2f3a;border-radius:4px;border:2px solid transparent;background-clip:content-box}
-.cb-sec{font-size:11px;font-weight:700;color:#8B95A7;padding:8px 0 4px;display:flex;align-items:center;gap:6px}
-.cb-bar{width:3px;height:12px;border-radius:2px;background:linear-gradient(180deg,#5EA8FF,#3B6FE0);flex-shrink:0}
-.cb-field{margin-bottom:10px}
-.cb-label{font-size:11.5px;color:#B8C0CC;display:block;margin-bottom:3px}
-.cb-hint{font-size:10px;color:#5C6678;margin-top:2px;line-height:1.4}
-.cb-input,.cb-select{width:100%;background:#161B22;border:1px solid #242C3A;border-radius:7px;color:#E6EAF2;font-size:12px;padding:6px 9px;outline:none}
-.cb-input:focus,.cb-select:focus{border-color:#3B6FE0}
-.cb-btn{background:#2E5FC0;border:none;color:#fff;border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600}
-.cb-btn:hover{filter:brightness(1.12)}
+.cb-body::-webkit-scrollbar-thumb{background:#242C3A;border-radius:4px;border:2px solid transparent;background-clip:content-box}
+.cb-sec{display:flex;align-items:center;gap:7px;padding:14px 2px 7px;font-size:10.5px;font-weight:700;color:#7A8496;text-transform:uppercase;letter-spacing:.08em}
+.cb-sec:first-child{padding-top:2px}
+.cb-bar{width:3px;height:11px;border-radius:2px;background:#5EA8FF;flex-shrink:0;opacity:.85}
+.cb-field{margin-bottom:12px}
+.cb-label{font-size:11.5px;color:#AEB8C4;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.cb-label .cb-arg{font-family:ui-monospace,Consolas,monospace;font-size:10px;color:#5C6678}
+.cb-hint{font-size:10px;color:#5C6678;margin-top:3px;line-height:1.5}
+.cb-input,.cb-select{width:100%;background:#12161E;border:1px solid #232A36;border-radius:8px;color:#E6EAF2;font-size:12px;padding:7px 10px;outline:none;transition:border-color .12s}
+.cb-input:focus,.cb-select:focus{border-color:#3B6FE0;box-shadow:0 0 0 2px rgba(62,111,224,.18)}
+.cb-input:hover,.cb-select:hover{border-color:#2E3644}
+.cb-btn{background:linear-gradient(135deg,#3B6FE0,#2E5FC0);border:none;color:#fff;border-radius:8px;padding:8px 14px;font-size:12px;cursor:pointer;font-weight:600;transition:filter .12s, transform .06s;width:100%}
+.cb-btn:hover{filter:brightness(1.15)}
+.cb-btn:active{transform:scale(.985)}
 .cb-btn:disabled{opacity:.45;cursor:not-allowed}
-.cb-quick{display:flex;flex-direction:column;gap:6px;padding-bottom:8px}
-.cb-quick button{background:#161B22;border:1px solid #242C3A;color:#E6EAF2;border-radius:9px;padding:9px 12px;font-size:12px;cursor:pointer;text-align:left;line-height:1.45}
-.cb-quick button:hover{border-color:#3B6FE0;background:#1C2330}
-.cb-quick button b{display:block;font-size:12px;margin-bottom:2px}
-.cb-quick button small{color:#8B95A7;font-size:10.5px}
-.cb-card{background:#161B22;border:1px solid #242C3A;border-radius:9px;padding:8px 10px;margin-bottom:8px;font-size:11.5px;color:#B8C0CC;line-height:1.6}
-.cb-card b{color:#E6EAF2}
+.cb-quick{display:flex;flex-direction:column;gap:7px;padding:2px 0 10px}
+.cb-quick button{background:#141922;border:1px solid #232A36;color:#DEE4EE;border-radius:10px;padding:10px 13px;font-size:12px;cursor:pointer;text-align:left;line-height:1.5;transition:border-color .12s, background .12s}
+.cb-quick button:hover{border-color:#3B6FE0;background:#181F2A}
+.cb-quick button:active{transform:scale(.99)}
+.cb-quick b{display:block;font-size:12px;margin-bottom:2px;font-weight:600}
+.cb-quick small{color:#7A8496;font-size:10.5px}
+.cb-card{background:#12161E;border:1px solid #1E242E;border-radius:11px;padding:11px 13px;margin-bottom:10px;font-size:11.5px;color:#AEB8C4;line-height:1.7}
+.cb-card b{color:#DEE4EE;font-weight:600}
+.cb-summary{display:flex;flex-wrap:wrap;gap:6px;padding:2px 0 6px}
+.cb-chip{background:#141922;border:1px solid #232A36;border-radius:7px;padding:4px 9px;font-size:10.5px;color:#AEB8C4}
+.cb-chip b{color:#E6EAF2;font-weight:600}
+.cb-empty{color:#5C6678;font-size:11.5px;text-align:center;padding:28px 12px;line-height:1.7}
+.cb-divider{height:1px;background:#1E242E;margin:4px 0 2px}
 `
 
 type Tab = 'quick' | 'config' | 'sessions' | 'tools'
@@ -51,19 +62,45 @@ const QUICK_PROMPTS: Array<{ title: string; desc: string; prompt: string }> = [
   { title: '排查报错', desc: '粘贴报错信息定位问题', prompt: '帮我排查这个报错，给出根因与修复步骤：\n\n（粘贴报错信息）' },
 ]
 
-const EFFORT_OPTIONS = ['', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']
-const PERM_OPTIONS = ['bypassPermissions', 'acceptEdits', 'default', 'plan', 'dontAsk', 'auto']
-const AUTOCOMPACT_OPTIONS = ['', 'auto', '400k', '1m']
-const FALLBACK_OPTIONS = ['', 'hy4free', 'hy4std', 'hy3', 'deepseek-v4.1-flash']
+const EFFORT_OPTIONS = [
+  { v: '', label: '不设置（引擎默认）' },
+  { v: 'minimal', label: 'minimal — 极简' },
+  { v: 'low', label: 'low — 低' },
+  { v: 'medium', label: 'medium — 中' },
+  { v: 'high', label: 'high — 高' },
+  { v: 'xhigh', label: 'xhigh — 极高' },
+  { v: 'max', label: 'max — 最高' },
+]
+const PERM_OPTIONS = [
+  { v: 'bypassPermissions', label: 'bypassPermissions — 跳过权限（高风险）' },
+  { v: 'acceptEdits', label: 'acceptEdits — 自动接受编辑' },
+  { v: 'default', label: 'default — 默认确认' },
+  { v: 'plan', label: 'plan — 仅规划' },
+  { v: 'dontAsk', label: 'dontAsk — 拒绝危险' },
+  { v: 'auto', label: 'auto — 自动' },
+]
+const AUTOCOMPACT_OPTIONS = [
+  { v: '', label: '不设置' },
+  { v: 'auto', label: 'auto — 跟随模型窗口' },
+  { v: '400k', label: '400k — 40 万 token' },
+  { v: '1m', label: '1m — 100 万 token' },
+]
+const FALLBACK_OPTIONS = [
+  { v: '', label: '不设置' },
+  { v: 'hy4free', label: 'hy4free' },
+  { v: 'hy4std', label: 'hy4std' },
+  { v: 'hy3', label: 'hy3' },
+  { v: 'deepseek-v4.1-flash', label: 'deepseek-v4.1-flash' },
+]
 
-export default function CodeBuddyPanel({ onSendToChat }: { pluginId: string; onSendToChat?: (message: string) => void | Promise<void> }): JSX.Element {
+export default function CodeBuddyPanel({ onSendToChat }: { pluginId: string; onSendToChat?: (message: string) => void | Promise<void> }) {
   const [tab, setTab] = useState<Tab>('quick')
   const [cfg, setCfg] = useState<PanelConfig>({
     model: '', effort: '', permissionMode: 'bypassPermissions',
     maxTurns: '', autocompact: '', fallbackModel: '', daemonEnabled: false,
   })
   const [loaded, setLoaded] = useState(false)
-  const [saveMsg, setSaveMsg] = useState('')
+  const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null)
 
   useEffect(() => {
     void loadPanelConfig().then((c) => { setCfg(c); setLoaded(true) })
@@ -72,33 +109,37 @@ export default function CodeBuddyPanel({ onSendToChat }: { pluginId: string; onS
   const update = (patch: Partial<PanelConfig>) => setCfg((prev) => ({ ...prev, ...patch }))
 
   const handleSave = useCallback(async () => {
-    setSaveMsg('保存中…')
+    setSaveMsg({ text: '保存中…', ok: true })
     try {
       await savePanelConfig(cfg)
-      setSaveMsg('✓ 已保存（新会话生效）')
+      setSaveMsg({ text: '✓ 已保存（新会话生效）', ok: true })
     } catch (e) {
-      setSaveMsg('✗ ' + String((e as Error).message).slice(0, 60))
+      setSaveMsg({ text: '✗ ' + String((e as Error).message).slice(0, 60), ok: false })
     }
-    setTimeout(() => setSaveMsg(''), 2500)
+    setTimeout(() => setSaveMsg(null), 2600)
   }, [cfg])
 
   const sendToChatSafe = (text: string) => {
     if (onSendToChat) void onSendToChat(text)
   }
 
-  const tabBtn = (t: Tab, label: string) => (
-    <button key={t} className={`cb-tab ${tab === t ? 'on' : ''}`} onClick={() => setTab(t)}>{label}</button>
+  const Section = ({ title }: { title: string }) => (
+    <div className="cb-sec"><span className="cb-bar" />{title}</div>
   )
 
   // ── Tab：快捷指令 ────────────────────────────────────────────────────
   const quickTab = (
     <div className="cb-body">
-      <div className="cb-card">
-        <b>当前配置摘要</b><br />
-        模型：<b>{cfg.model || '引擎默认'}</b> · 努力级别：<b>{cfg.effort || '默认'}</b> · 权限：<b>{cfg.permissionMode}</b>
-        {cfg.fallbackModel ? <> · 备用：<b>{cfg.fallbackModel}</b></> : null}
+      <div className="cb-summary">
+        <span className="cb-chip">模型 <b>{cfg.model || '引擎默认'}</b></span>
+        <span className="cb-chip">effort <b>{cfg.effort || '默认'}</b></span>
+        <span className="cb-chip">权限 <b>{cfg.permissionMode}</b></span>
+        {cfg.fallbackModel ? <span className="cb-chip">备用 <b>{cfg.fallbackModel}</b></span> : null}
       </div>
-      <div className="cb-sec"><span className="cb-bar" />快捷指令<span className="cb-hint">点击发送到主对话</span></div>
+      <Section title="快捷指令" />
+      <div style={{ fontSize: 10, color: '#5C6678', padding: '0 0 6px' }}>
+        点击发送到主对话（CodeBuddy 引擎接手，按当前配置执行）
+      </div>
       <div className="cb-quick">
         {QUICK_PROMPTS.map((q) => (
           <button key={q.title} onClick={() => sendToChatSafe(q.prompt)}>
@@ -106,64 +147,69 @@ export default function CodeBuddyPanel({ onSendToChat }: { pluginId: string; onS
           </button>
         ))}
       </div>
-      <div className="cb-sec"><span className="cb-bar" />自定义指令</div>
-      <textarea className="cb-textarea" id="cb-custom" rows={3} placeholder="输入自定义指令，点下方按钮发送到主对话" />
-      <div style={{ padding: '6px 0' }}>
-        <button className="cb-btn" id="cb-send-custom" style={{ width: '100%' }} onClick={() => {
-          const el = document.getElementById('cb-custom') as HTMLTextAreaElement | null
-          const text = el?.value.trim()
-          if (text) { sendToChatSafe(text); if (el) el.value = '' }
-        }}>发送到主对话</button>
-      </div>
+      <Section title="自定义指令" />
+      <textarea
+        id="cb-custom" rows={3}
+        style={{ width: '100%', background: '#12161E', border: '1px solid #232A36', borderRadius: 9, color: '#DEE4EE', fontSize: 12, padding: '8px 10px', outline: 'none', resize: 'vertical', minHeight: 56, fontFamily: 'inherit' }}
+        placeholder="输入自定义指令…"
+      />
+      <button className="cb-btn" onClick={() => {
+        const el = document.getElementById('cb-custom') as HTMLTextAreaElement | null
+        const text = el?.value.trim()
+        if (text) { sendToChatSafe(text); if (el) el.value = '' }
+      }}>发送到主对话</button>
     </div>
   )
 
   // ── Tab：配置 ────────────────────────────────────────────────────────
   const configTab = (
     <div className="cb-body">
+      <Section title="核心" />
       <div className="cb-field">
-        <label className="cb-label">模型（--model）</label>
+        <label className="cb-label">模型 <span className="cb-arg">--model</span></label>
         <input className="cb-input" value={cfg.model} placeholder="hy4free（空=引擎默认）"
           onChange={(e) => update({ model: e.target.value })} />
-        <div className="cb-hint">常用：hy4free / hy4std / hy3 / deepseek-v4.1-flash</div>
+        <div className="cb-hint">常用：hy4free / hy4std / hy3 / hy3-x / deepseek-v4.1-flash</div>
       </div>
       <div className="cb-field">
-        <label className="cb-label">努力级别（--effort）</label>
-        <select value={cfg.effort} onChange={(e) => update({ effort: e.target.value })}>
-          {EFFORT_OPTIONS.map((v) => <option key={v} value={v}>{v || '不设置'}</option>)}
+        <label className="cb-label">努力级别 <span className="cb-arg">--effort</span></label>
+        <select className="cb-select" value={cfg.effort} onChange={(e) => update({ effort: e.target.value })}>
+          {EFFORT_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>
-        <div className="cb-hint">思考力度：minimal 最快，max 最高质量</div>
+        <div className="cb-hint">思考力度：minimal 最快响应，max 最高质量</div>
       </div>
       <div className="cb-field">
-        <label className="cb-label">权限模式（--permission-mode）</label>
-        <select value={cfg.permissionMode} onChange={(e) => update({ permissionMode: e.target.value })}>
-          {PERM_OPTIONS.map((v) => <option key={v} value={v}>{v}</option>)}
+        <label className="cb-label">权限模式 <span className="cb-arg">--permission-mode</span></label>
+        <select className="cb-select" value={cfg.permissionMode} onChange={(e) => update({ permissionMode: e.target.value })}>
+          {PERM_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>
         <div className="cb-hint">跳过权限（高风险）仅建议隔离环境使用</div>
       </div>
-      <div className="cb-sec"><span className="cb-bar" />上下文与容错</div>
+      <Section title="上下文与容错" />
       <div className="cb-field">
-        <label className="cb-label">最大轮数（--max-turns）</label>
+        <label className="cb-label">最大轮数 <span className="cb-arg">--max-turns</span></label>
         <input className="cb-input" value={cfg.maxTurns} placeholder="不限" inputMode="numeric"
           onChange={(e) => update({ maxTurns: e.target.value.replace(/\D/g, '') })} />
         <div className="cb-hint">限制 agent 自动执行轮数，防失控</div>
       </div>
       <div className="cb-field">
-        <label className="cb-label">自动压缩窗口（--autocompact）</label>
-        <select value={cfg.autocompact} onChange={(e) => update({ autocompact: e.target.value })}>
-          {AUTOCOMPACT_OPTIONS.map((v) => <option key={v} value={v}>{v || '不设置'}</option>)}
+        <label className="cb-label">自动压缩窗口 <span className="cb-arg">--autocompact</span></label>
+        <select className="cb-select" value={cfg.autocompact} onChange={(e) => update({ autocompact: e.target.value })}>
+          {AUTOCOMPACT_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>
-        <div className="cb-hint">上下文达到阈值自动压缩</div>
+        <div className="cb-hint">上下文达到阈值自动压缩（100k-1M 范围）</div>
       </div>
       <div className="cb-field">
-        <label className="cb-label">备用模型（--fallback-model）</label>
-        <select value={cfg.fallbackModel} onChange={(e) => update({ fallbackModel: e.target.value })}>
-          {FALLBACK_OPTIONS.map((v) => <option key={v} value={v}>{v || '不设置'}</option>)}
+        <label className="cb-label">备用模型 <span className="cb-arg">--fallback-model</span></label>
+        <select className="cb-select" value={cfg.fallbackModel} onChange={(e) => update({ fallbackModel: e.target.value })}>
+          {FALLBACK_OPTIONS.map((o) => <option key={o.v} value={o.v}>{o.label}</option>)}
         </select>
-        <div className="cb-hint">主模型过载/限流时自动切换（缓解 429）</div>
+        <div className="cb-hint">主模型过载/限流时自动切换（缓解 429，仅 -p 模式）</div>
       </div>
-      <button className="cb-btn" style={{ width: '100%' }} onClick={() => void handleSave()}>保存配置</button>
-      <div className="cb-hint" style={{ textAlign: 'center', minHeight: 14 }}>{saveMsg}</div>
+      <button className="cb-btn" onClick={() => void handleSave()}>保存配置（新会话生效）</button>
+      <div className="cb-hint" style={{ textAlign: 'center', minHeight: 16, marginTop: 6 }}>
+        {saveMsg ? <span style={{ color: saveMsg.ok ? '#7BC47F' : '#FF8A9A' }}>{saveMsg.text}</span> : ''}
+      </div>
     </div>
   )
 
@@ -190,22 +236,18 @@ export default function CodeBuddyPanel({ onSendToChat }: { pluginId: string; onS
     </div>
   )
 
-  if (!loaded) {
-    return (
-      <div className="cb-root">
-        <style>{CSS}</style>
-        <div className="cb-empty"><span className="cb-spin" />加载配置…</div>
-      </div>
-    )
-  }
+  const tabBody =
+    tab === 'quick' ? quickTab : tab === 'config' ? configTab : tab === 'sessions' ? sessionsTab : toolsTab
 
   return (
     <div className="cb-root">
       <style>{CSS}</style>
       <div className="cb-tabs">
-        {tabBtn('quick', '快捷')}{tabBtn('config', '配置')}{tabBtn('sessions', '会话')}{tabBtn('tools', '工具')}
+        {([['quick', '快捷'], ['config', '配置'], ['sessions', '会话'], ['tools', '工具']] as Array<[Tab, string]>).map(([t, label]) => (
+          <button key={t} className={`cb-tab ${tab === t ? 'on' : ''}`} onClick={() => setTab(t)}>{label}</button>
+        ))}
       </div>
-      {tab === 'quick' ? quickTab : tab === 'config' ? configTab : tab === 'sessions' ? sessionsTab : toolsTab}
+      {tabBody}
     </div>
   )
 }
