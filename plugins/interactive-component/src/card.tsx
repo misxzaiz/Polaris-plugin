@@ -105,6 +105,7 @@ function InteractivePreview({
   versions,
   form,
   sessionId,
+  declaredCapTargets,
 }: {
   artifactBlock: Record<string, unknown>
   versions?: Record<string, unknown>[] | null
@@ -309,7 +310,7 @@ function HydratingPreview({
   }
 
   if (state === 'ready' && block) {
-    return <InteractivePreview artifactBlock={block} versions={versions ?? undefined} form={form} sessionId={sessionId} />
+    return <InteractivePreview artifactBlock={block} versions={versions ?? undefined} form={form} sessionId={sessionId} declaredCapTargets={undefined} />
   }
 
   return (

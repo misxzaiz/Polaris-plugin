@@ -66,7 +66,8 @@ function InteractivePreview({
   artifactBlock,
   versions,
   form,
-  sessionId
+  sessionId,
+  declaredCapTargets
 }) {
   const componentIdRef = useRef("");
   if (!componentIdRef.current) {
@@ -217,7 +218,7 @@ function HydratingPreview({
     ] });
   }
   if (state === "ready" && block) {
-    return /* @__PURE__ */ jsx(InteractivePreview, { artifactBlock: block, versions: versions ?? void 0, form, sessionId });
+    return /* @__PURE__ */ jsx(InteractivePreview, { artifactBlock: block, versions: versions ?? void 0, form, sessionId, declaredCapTargets: void 0 });
   }
   return /* @__PURE__ */ jsxs("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs", children: [
     /* @__PURE__ */ jsx("span", { className: "text-green-500", children: "\u2705" }),
