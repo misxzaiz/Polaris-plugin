@@ -133,7 +133,22 @@
           "resume": true
         }
       }
-    ]
+    ],
+    "views": [
+      {
+        "id": "codebuddy.panel",
+        "area": "activityBar",
+        "panelType": "codebuddyPanel",
+        "icon": "Bot",
+        "labelKey": "plugins.codebuddy",
+        "labelDefault": "CodeBuddy",
+        "order": 91
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
   },
   "permissions": {
     "workspaceRead": true,

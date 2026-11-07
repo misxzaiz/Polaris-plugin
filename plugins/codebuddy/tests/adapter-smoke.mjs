@@ -89,6 +89,7 @@ async function scenarioA() {
     params: {
       session_id: 'host-s1', message: 'hi', work_dir: sandbox,
       permission_mode: 'plan', model: 'hy4-preview', effort: 'high', agent: 'general-purpose',
+      advanced: { maxTurns: '20', autocompact: '400k', fallbackModel: 'hy4free' },
       env_overrides: { PATH: sandbox + ';' + process.env.PATH },
     },
   });
@@ -155,7 +156,16 @@ async function scenarioA() {
   check('agent general-purpose 透传', () => {
     const argv = JSON.parse(readFileSync(argvDump, 'utf8'));
     const i = argv.indexOf('--agent');
-    assert.ok(i >= 0 && argv[i + 1] === 'general-purpose', `argv=${JSON.stringify(argv)}`);
+    assert.ok(i >= 0 && argv[i + 1] === 'general-purpose');
+  });
+  check('advanced 参数透传（max-turns/autocompact/fallback-model）', () => {
+    const argv = JSON.parse(readFileSync(argvDump, 'utf8'));
+    const mt = argv.indexOf('--max-turns');
+    assert.ok(mt >= 0 && argv[mt + 1] === '20', `--max-turns 缺失: ${JSON.stringify(argv)}`);
+    const ac = argv.indexOf('--autocompact');
+    assert.ok(ac >= 0 && argv[ac + 1] === '400k');
+    const fm = argv.indexOf('--fallback-model');
+    assert.ok(fm >= 0 && argv[fm + 1] === 'hy4free');
   });
 }
 

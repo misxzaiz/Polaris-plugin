@@ -281,6 +281,13 @@ function runSession(params, reqId) {
   const additionalDirs = Array.isArray(params.additional_dirs) ? params.additional_dirs : [];
   const allowedTools = Array.isArray(params.allowed_tools) ? params.allowed_tools : [];
   const disallowedTools = Array.isArray(params.disallowed_tools) ? params.disallowed_tools : [];
+  // 面板高级配置（params.advanced，CodeBuddy 面板配置中心写入）：
+  // maxTurns → --max-turns（防失控轮数上限）；autocompact → --autocompact（上下文压缩窗口）；
+  // fallbackModel → --fallback-model（主模型过载/限流自动切换，缓解 429）
+  const adv = params.advanced && typeof params.advanced === 'object' ? params.advanced : {};
+  const maxTurns = String(adv.maxTurns || '').trim();
+  const autocompact = String(adv.autocompact || '').trim();
+  const fallbackModel = String(adv.fallbackModel || '').trim();
 
   currentSessionId = sessionId;
   sessionEnded = false;
@@ -315,6 +322,10 @@ function runSession(params, reqId) {
   // 工具白名单/黑名单
   if (allowedTools.length > 0) args.push('--allowedTools', allowedTools.join(','));
   if (disallowedTools.length > 0) args.push('--disallowedTools', disallowedTools.join(','));
+  // 面板高级参数（CodeBuddy 独有 CLI 能力）
+  if (maxTurns && /^\d+$/.test(maxTurns)) args.push('--max-turns', maxTurns);
+  if (autocompact && /^(auto|400k|1m|\d+[km]?)$/i.test(autocompact)) args.push('--autocompact', autocompact);
+  if (fallbackModel) args.push('--fallback-model', fallbackModel);
   // prompt 不进 argv（Windows ~32k 上限 + cmd.exe 特殊字符展开风险），统一走 stdin
 
   // env_overrides：宿主显式传入的环境覆盖（测试注入 PATH 用假 CLI 即此通道）
