@@ -311,6 +311,56 @@ const TOOLS = [
     },
   },
   {
+    name: 'form',
+    description:
+      '拉起结构化表单让用户填写并等待提交（阻塞）。用户提交后你在同一回合拿到回执继续。字段 schema 驱动渲染，secret 字段服务端强制掩码。这是结构化收集的默认选择——自定义交互 UI 用 render_component。',
+    inputSchema: {
+      type: 'object',
+      required: ['title', 'fields'],
+      properties: {
+        title: { type: 'string', description: '表单标题' },
+        mode: { type: 'string', enum: ['collect', 'dispatch'], description: 'collect=收集参数回喂 AI（默认）；dispatch=转发目标能力' },
+        fields: {
+          type: 'array',
+          description: '字段 schema',
+          items: {
+            type: 'object',
+            required: ['name'],
+            properties: {
+              name: { type: 'string' }, type: { type: 'string', enum: ['string','number','boolean','textarea','select','secret','date','time','datetime','month','week'] },
+              label: { type: 'string' }, placeholder: { type: 'string' }, options: { type: 'array', items: { type: 'string' } },
+              required: { type: 'boolean' }, default: {}, secret: { type: 'boolean' }, hidden: { type: 'boolean' },
+            },
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'ask_user_question',
+    description:
+      '向用户提出选择题并阻塞等待回答（同回合拿到答案继续）。支持 1-4 题、多选、自定义输入。选项问答的默认选择。',
+    inputSchema: {
+      type: 'object',
+      required: ['questions'],
+      properties: {
+        questions: {
+          type: 'array', minItems: 1, maxItems: 4,
+          items: {
+            type: 'object', required: ['question', 'header', 'options'],
+            properties: {
+              question: { type: 'string' }, header: { type: 'string' }, multiSelect: { type: 'boolean' },
+              options: { type: 'array', items: { type: 'object', required: ['value'], properties: { value: { type: 'string' }, label: { type: 'string' } } } },
+              allowCustomInput: { type: 'boolean' },
+            },
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'read_preview',
     description: '读取之前创建的 HTML 预览源码。',
     inputSchema: {
@@ -331,6 +381,54 @@ const TOOLS = [
   },
 ];
 
+// ── 阻塞交互基础设施（v2：form/ask 工具接管，阻塞经宿主中继） ────────────────
+// 模式（ask_mcp_server 已验证）：tools/call 挂起 → POST 宿主 interaction-begin
+// → 广播 form/question 事件 → 前端委托模板渲染 → 用户提交 → form_submit/
+// answer_question → 宿主 interaction_notify POST 回调 → 本 server 唤醒返回。
+// 信任边界在宿主（form_core 脱敏/审计/600s 超时），本 server 只透传。
+
+const httpMod = require("http");
+
+let HOST_BASE = "";
+let HOST_MD5 = "";
+try {
+  const cfg = JSON.parse(fs.readFileSync(path.join(process.argv[2] || ".", "config.json"), "utf8"));
+  const port = process.env.POLARIS_WEB_PORT || (cfg.web && cfg.web.port) || 9830;
+  HOST_BASE = "http://127.0.0.1:" + port;
+  const tok = (cfg.web && cfg.web.token) || "";
+  HOST_MD5 = tok ? crypto.createHash("md5").update(tok).digest("hex") : "";
+} catch (e) { console.error("[ic] config 读取失败:", e.message); }
+
+function hostPost(ipcCmd, body) {
+  return new Promise((resolve, reject) => {
+    const u = new URL(HOST_BASE + "/api/ipc/" + ipcCmd);
+    const req = httpMod.request(u, { method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + HOST_MD5 },
+      timeout: 8000 }, (res) => {
+      let d = ""; res.on("data", (c) => (d += c));
+      res.on("end", () => { try { resolve(JSON.parse(d)); } catch { resolve({}); } });
+    });
+    req.on("error", reject);
+    req.end(JSON.stringify(body));
+  });
+}
+
+// 本地回调 server：POST 到此即收到提交/超时/取消
+function makeCallbackServer() {
+  const srv = httpMod.createServer((req, res) => {
+    let b = "";
+    req.on("data", (c) => (b += c));
+    req.on("end", () => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end('{"ok":true}');
+      try { srv.__payload = JSON.parse(b); } catch { srv.__payload = { status: "error" }; }
+      srv.close();
+    });
+  });
+  srv.listen(0, "127.0.0.1");
+  return srv;
+}
+
 // ── stdio JSON-RPC 主循环（换行分帧，与 needs/prompt-matrix 同构） ──────────
 
 function send(msg) {
@@ -346,6 +444,54 @@ function callTool(name, args) {
       return execPreviewHtml(args, { toolName: name });
     case 'preview_html':
       return execPreviewHtml(args, { toolName: name });
+    case 'form':
+    case 'ask_user_question': {
+      // 阻塞交互（v2）：拉起面板 → 等用户提交 → 回执作 tool_result
+      const kind = name === 'form' ? 'form' : 'ask';
+      const args2 = args || {};
+      const convId = args2._polarisSessionId || '';
+      if (!convId) {
+        return { content: [{ type: 'text', text: '错误：缺少会话上下文（_polarisSessionId），无法拉起交互面板' }], isError: true };
+      }
+      const cbSrv = makeCallbackServer();
+      const cbPort = cbSrv.address().port;
+      const cbToken = crypto.randomUUID();
+      const decl = kind === 'form'
+        ? { title: args2.title || '表单', mode: args2.mode || 'collect', fields: args2.fields || [], style: args2.style || {}, target: '', action: '' }
+        : { questions: args2.questions || [], title: (args2.questions && args2.questions[0] && args2.questions[0].header) || '问答' };
+      const beginBody = {
+        conversationId: convId,
+        kind: kind === 'form' ? 'form' : 'ask',
+        decl,
+        callbackUrl: 'http://127.0.0.1:' + cbPort + '/callback',
+        callbackToken: cbToken,
+      };
+      let beginRes;
+      try {
+        beginRes = await hostPost('interaction-begin', beginBody);
+      } catch (e) {
+        cbSrv.close();
+        return { content: [{ type: 'text', text: '错误：交互中继 begin 失败: ' + (e.message || JSON.stringify(beginRes)) }], isError: true };
+      }
+      if (beginRes.error) {
+        cbSrv.close();
+        return { content: [{ type: 'text', text: '错误：' + beginRes.error }], isError: true };
+      }
+      // 阻塞等回调（宿主 600s 超时先到，本地多留 30s 缓冲）
+      const deadline = Date.now() + 630000;
+      while (!cbSrv.__payload && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 500));
+      }
+      const payload = cbSrv.__payload || { status: 'timeout' };
+      if (payload.status === 'timeout') {
+        return { content: [{ type: 'text', text: '表单等待超时（600s），用户未提交。AI 可自行决定是否重拉。' }] };
+      }
+      if (payload.status === 'skipped') {
+        return { content: [{ type: 'text', text: '用户跳过了表单。AI 可自行决定是否重拉或继续。' }] };
+      }
+      const answerTxt = payload.receipt || payload.answer || JSON.stringify(payload);
+      return { content: [{ type: 'text', text: answerTxt }] };
+    }
     case 'read_preview':
       return execReadPreview(args);
     case 'list_previews':
