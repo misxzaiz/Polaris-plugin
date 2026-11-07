@@ -413,20 +413,21 @@ function hostPost(ipcCmd, body) {
   });
 }
 
-// 本地回调 server：POST 到此即收到提交/超时/取消
+// 本地回调 server：POST 到此即收到提交/超时/取消。返回 Promise（listen 异步绑定完成即 resolve）
 function makeCallbackServer() {
-  const srv = httpMod.createServer((req, res) => {
-    let b = "";
-    req.on("data", (c) => (b += c));
-    req.on("end", () => {
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end('{"ok":true}');
-      try { srv.__payload = JSON.parse(b); } catch { srv.__payload = { status: "error" }; }
-      srv.close();
+  return new Promise((resolve) => {
+    const srv = http.createServer((req, res) => {
+      let b = "";
+      req.on("data", (c) => (b += c));
+      req.on("end", () => {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end('{"ok":true}');
+        try { srv.__payload = JSON.parse(b); } catch { srv.__payload = { status: "error" }; }
+        srv.close();
+      });
     });
+    srv.listen(0, "127.0.0.1", () => resolve(srv));
   });
-  srv.listen(0, "127.0.0.1");
-  return srv;
 }
 
 // ── stdio JSON-RPC 主循环（换行分帧，与 needs/prompt-matrix 同构） ──────────
@@ -453,7 +454,7 @@ async function callTool(name, args) {
       if (!convId) {
         return { content: [{ type: 'text', text: '错误：缺少会话上下文（_polarisSessionId），无法拉起交互面板' }], isError: true };
       }
-      const cbSrv = makeCallbackServer();
+      const cbSrv = await makeCallbackServer();
       const cbPort = cbSrv.address().port;
       const cbToken = crypto.randomUUID();
       const decl = kind === 'form'
