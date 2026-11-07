@@ -522,7 +522,7 @@ process.stdin.on('data', (chunk) => {
 });
 process.stdin.on('end', () => process.exit(0));
 
-function handleMessage(msg) {
+async function handleMessage(msg) {
   try {
     if (msg.method === 'initialize') {
       send({
