@@ -18,7 +18,7 @@
         "npmPackage": "@tencent-ai/codebuddy-code",
         "protocol": "command",
         "sessionFlags": "omp",
-        "mcpConsumption": "none",
+        "mcpConsumption": "mcp-servers",
         "models": [
           "hy4free",
           "hy4std",

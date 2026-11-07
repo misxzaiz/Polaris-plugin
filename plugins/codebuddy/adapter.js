@@ -25,6 +25,9 @@
 'use strict';
 
 const { spawn, spawnSync } = require('child_process');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 // ============================================================
 // 输出工具
@@ -322,6 +325,23 @@ function runSession(params, reqId) {
   // 工具白名单/黑名单
   if (allowedTools.length > 0) args.push('--allowedTools', allowedTools.join(','));
   if (disallowedTools.length > 0) args.push('--disallowedTools', disallowedTools.join(','));
+  // Polaris 插件/内置 MCP 挂载：宿主 mcp_servers → 临时 JSON 文件 → --mcp-config
+  // （claude 系 CLI 标准参数；strict-mcp-config 隔离用户全局 MCP 配置，只用本会话注入的）。
+  // mcpFile 的清理在 spawn 成功后挂到 child close；spawn 失败路径同步删除。
+  const mcpServers = Array.isArray(params.mcp_servers) ? params.mcp_servers : [];
+  let mcpFile = null;
+  if (mcpServers.length > 0) {
+    mcpFile = path.join(os.tmpdir(), `cb-mcp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`);
+    // engine-v1 mcp_servers 形态 {server_name, command, args} → claude mcp-config 形态 mcpServers.{name:{command,args}}
+    const mcpConfig = { mcpServers: {} };
+    for (const s of mcpServers) {
+      if (s && s.server_name && s.command) {
+        mcpConfig.mcpServers[s.server_name] = { command: s.command, args: Array.isArray(s.args) ? s.args : [] };
+      }
+    }
+    fs.writeFileSync(mcpFile, JSON.stringify(mcpConfig, null, 2), 'utf8');
+    args.push('--strict-mcp-config', '--mcp-config', mcpFile);
+  }
   // 面板高级参数（CodeBuddy 独有 CLI 能力）
   if (maxTurns && /^\d+$/.test(maxTurns)) args.push('--max-turns', maxTurns);
   if (autocompact && /^(auto|400k|1m|\d+[km]?)$/i.test(autocompact)) args.push('--autocompact', autocompact);
@@ -351,6 +371,7 @@ function runSession(params, reqId) {
       });
     }
   } catch (e) {
+    if (mcpFile) { try { fs.rmSync(mcpFile, { force: true }); } catch { /* 清理失败忽略 */ } }
     endSession('error', reqId, `启动失败: ${e.message}`);
     return;
   }
@@ -424,11 +445,13 @@ function runSession(params, reqId) {
   child.on('close', (code) => {
     childClosed = true;
     closeCode = code;
+    if (mcpFile) { try { fs.rmSync(mcpFile, { force: true }); } catch { /* 清理失败忽略 */ } }
     // stdout 未 drain 完时等待其 end/close（竞态守卫），已 drain 则立即收尾
     if (stdoutEnded) finishSession(reqId);
   });
 
   child.on('error', (e) => {
+    if (mcpFile) { try { fs.rmSync(mcpFile, { force: true }); } catch { /* 清理失败忽略 */ } }
     endSession('error', reqId, e.message);
   });
 }
