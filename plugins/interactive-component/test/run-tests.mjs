@@ -57,11 +57,14 @@ test('tools/list 暴露 4 工具（金标：exposes_expected_tools）', async ()
   const { stdout } = await execNode([SERVER, configDir], req);
   const line = stdout.split('\n').find((l) => l.includes('"id":1'));
   const tools = JSON.parse(line).result.tools;
-  assert.equal(tools.length, 4);
-  assert.equal(tools[0].name, 'render_component');
-  assert.equal(tools[1].name, 'preview_html');
-  assert.equal(tools[2].name, 'read_preview');
-  assert.equal(tools[3].name, 'list_previews');
+  assert.equal(tools.length, 5);
+  const names = tools.map(t => t.name);
+  assert.ok(names.includes('render_component'), 'render_component missing');
+  assert.ok(names.includes('form'), 'form missing');
+  assert.ok(names.includes('ask_user_question'), 'ask_user_question missing');
+  assert.ok(names.includes('read_preview'), 'read_preview missing');
+  assert.ok(names.includes('list_previews'), 'list_previews missing');
+
 });
 
 test('创建预览：落盘/版本递增/metadata（金标：stores_preview_metadata_and_increments_requirement_versions）', async () => {

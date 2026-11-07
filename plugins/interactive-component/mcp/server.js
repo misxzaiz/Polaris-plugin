@@ -438,7 +438,7 @@ function err(message) {
   return { content: [{ type: 'text', text: `错误：${message}` }], isError: true };
 }
 
-function callTool(name, args) {
+async function callTool(name, args) {
   switch (name) {
     case 'render_component':
       return execPreviewHtml(args, { toolName: name });
@@ -545,7 +545,8 @@ async function handleMessage(msg) {
       const name = msg.params && msg.params.name;
       const args = (msg.params && msg.params.arguments) || {};
       try {
-        send({ jsonrpc: '2.0', id: msg.id, result: callTool(name, args) });
+        const result = await callTool(name, args);
+        send({ jsonrpc: '2.0', id: msg.id, result });
       } catch (e) {
         send({ jsonrpc: '2.0', id: msg.id, result: err(e.message || '工具执行失败') });
       }
