@@ -54,6 +54,10 @@ function InteractiveFrame({ data, sessionId }) {
   }, [formState]);
   useEffect(() => {
     if (!form || !sessionId) return;
+    if (typeof registerComponent !== "function") {
+      setSubmitError("\u5BBF\u4E3B\u8868\u5355\u6865\u4E0D\u53EF\u7528\uFF0C\u7EC4\u4EF6\u63D0\u4EA4\u4E0D\u53EF\u7528");
+      return;
+    }
     let cancelled = false;
     registerComponent({
       sessionId,
@@ -71,6 +75,11 @@ function InteractiveFrame({ data, sessionId }) {
   const handleSubmit = useCallback(
     (rawValues) => {
       if (!form) return;
+      if (typeof submitForm !== "function") {
+        setFormState("error");
+        setSubmitError("\u5BBF\u4E3B\u8868\u5355\u6865\u4E0D\u53EF\u7528\uFF0C\u63D0\u4EA4\u5931\u8D25");
+        return;
+      }
       setFormState("submitting");
       setSubmitError(null);
       submitForm(form.formId, rawValues, {
@@ -104,6 +113,7 @@ function InteractiveFrame({ data, sessionId }) {
         return;
       }
       if (msg.__polarisCap === 1) {
+        if (typeof forwardCap !== "function") return;
         forwardCap(msg, caps).then((res) => {
           try {
             source.postMessage(res, "*");
@@ -229,7 +239,7 @@ function HydratingFrame({ data, sessionId }) {
       "\u7EC4\u4EF6\u5DF2\u751F\u6210",
       data.title ? `\uFF1A${data.title}` : "",
       data.versionLabel ? ` \xB7 ${data.versionLabel}` : "",
-      data.previewId ? `\uFF08${data.previewId.slice(0, 8)}\u2026\uFF09` : ""
+      typeof data.previewId === "string" && data.previewId ? `\uFF08${data.previewId.slice(0, 8)}\u2026\uFF09` : ""
     ] }),
     data.sourcePath ? /* @__PURE__ */ jsx(
       "button",

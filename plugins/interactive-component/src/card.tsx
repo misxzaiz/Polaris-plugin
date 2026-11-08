@@ -105,9 +105,15 @@ function InteractiveFrame({ data, sessionId }: { data: PreviewArtifactData; sess
     formStateRef.current = formState
   }, [formState])
 
-  // mount：登记表单契约（formId 唯一 hold；提交走现有 form_submit 管线）
+  // mount：登记表单契约（formId 唯一 hold；提交走现有 form_submit 管线）。
+  // 桥成员守卫：宿主桥缺失/成员名漂移时降级为无表单（徽标位置提示），不抛错——
+  // useEffect 里的同步异常会被宿主 ContentBlockErrorBoundary 接住，整卡变错误块。
   useEffect(() => {
     if (!form || !sessionId) return
+    if (typeof registerComponent !== 'function') {
+      setSubmitError('宿主表单桥不可用，组件提交不可用')
+      return
+    }
     let cancelled = false
     registerComponent({
       sessionId,
@@ -127,6 +133,11 @@ function InteractiveFrame({ data, sessionId }: { data: PreviewArtifactData; sess
   const handleSubmit = useCallback(
     (rawValues: unknown) => {
       if (!form) return
+      if (typeof submitForm !== 'function') {
+        setFormState('error')
+        setSubmitError('宿主表单桥不可用，提交失败')
+        return
+      }
       setFormState('submitting')
       setSubmitError(null)
       submitForm(form.formId, rawValues, {
@@ -166,6 +177,9 @@ function InteractiveFrame({ data, sessionId }: { data: PreviewArtifactData; sess
         return
       }
       if (msg.__polarisCap === 1) {
+        // 桥成员守卫：cap 桥缺失时静默拒绝（不弹响应，组件内调用方超时自兜底），
+        // 异常若外抛会炸整卡（error boundary 接住后组件不可用）
+        if (typeof forwardCap !== 'function') return
         forwardCap(msg, caps)
           .then((res: unknown) => {
             try {
@@ -317,7 +331,7 @@ function HydratingFrame({ data, sessionId }: { data: PreviewArtifactData; sessio
       <span className="text-text-secondary">
         组件已生成{data.title ? `：${data.title}` : ''}
         {data.versionLabel ? ` · ${data.versionLabel}` : ''}
-        {data.previewId ? `（${data.previewId.slice(0, 8)}…）` : ''}
+        {typeof data.previewId === 'string' && data.previewId ? `（${data.previewId.slice(0, 8)}…）` : ''}
       </span>
       {data.sourcePath ? (
         <button
