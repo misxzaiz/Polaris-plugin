@@ -163,6 +163,10 @@ function InteractiveFrame({ data, sessionId }: { data: PreviewArtifactData; sess
   // __polarisComponent=1 → 表单提交；__polarisCap=1 → cap 桥转发（宿主三重门控）
   const submitRef = useRef(handleSubmit)
   submitRef.current = handleSubmit
+  const frameRef = useRef<HTMLIFrameElement | null>(null)
+  // iframe 引用：postMessage 管线用 event.source === frameRef.current.contentWindow
+  // 做绑定校验（只认本卡片的 iframe，不吃别的窗口的消息）
+
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       const source = event.source as Window | null

@@ -99,6 +99,7 @@ function InteractiveFrame({ data, sessionId }) {
   const srcDoc = useMemo(() => buildSrcDoc(html), [html]);
   const submitRef = useRef(handleSubmit);
   submitRef.current = handleSubmit;
+  const frameRef = useRef(null);
   useEffect(() => {
     const onMessage = (event) => {
       const source = event.source;
