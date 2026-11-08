@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-05T19:54:36.423Z",
+  "updated": "2026-11-08T17:38:13.745Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -175,6 +175,45 @@
       "createdAt": "2026-09-01T16:04:37.000Z",
       "updatedAt": "2026-10-28T07:16:33.000Z",
       "usageTier": 8
+    },
+    {
+      "id": "codebuddy",
+      "name": "CodeBuddy Engine",
+      "version": "0.5.0",
+      "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.5.0：侧边栏面板生产级改造（MCP 挂载——Polaris 插件/内置 MCP 经 --mcp-config 注入会话；样式与信息层级重做；会话/工具 Tab 落地）。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "codebuddy",
+        "engine",
+        "cli",
+        "agent",
+        "panel",
+        "session",
+        "streaming",
+        "mcp"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/codebuddy",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/codebuddy/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@codebuddy-v0.5.0/plugins/codebuddy/codebuddy.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/codebuddy/update.json",
+      "sha256": "800b5c593843fdc5347fffaabd43dff6cea3285e1aeabf8688195909bd57c159",
+      "permissions": {
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "versions": [
+        {
+          "version": "0.5.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@codebuddy-v0.5.0/plugins/codebuddy/codebuddy.zip"
+        }
+      ],
+      "createdAt": "2026-11-08T17:38:07.095Z",
+      "updatedAt": "2026-11-08T17:38:07.095Z"
     },
     {
       "id": "workspace-manager",

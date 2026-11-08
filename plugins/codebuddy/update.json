@@ -1,0 +1,164 @@
+{
+  "id": "codebuddy",
+  "name": "CodeBuddy Engine",
+  "version": "0.5.0",
+  "description": "腾讯 CodeBuddy CLI 引擎适配器（engine-v1）。v0.5.0：侧边栏面板生产级改造（MCP 挂载——Polaris 插件/内置 MCP 经 --mcp-config 注入会话；样式与信息层级重做；会话/工具 Tab 落地）。",
+  "enabledByDefault": false,
+  "contributes": {
+    "engines": [
+      {
+        "id": "codebuddy",
+        "name": "CodeBuddy",
+        "description": "腾讯 CodeBuddy CLI — 混元 hy4free 等多模型（免费）",
+        "cli": {
+          "command": "codebuddy",
+          "args": [],
+          "installGuide": "npm install -g @tencent-ai/codebuddy-code"
+        },
+        "npmPackage": "@tencent-ai/codebuddy-code",
+        "protocol": "command",
+        "sessionFlags": "omp",
+        "mcpConsumption": "mcp-servers",
+        "models": [
+          "hy4free",
+          "hy4std",
+          "hy3",
+          "hy3-x",
+          "deepseek-v4.1-flash",
+          "glm-5.3",
+          "glm-5.3-flash",
+          "glm-5.2",
+          "space-bunny",
+          "minimax-m3.1-flash",
+          "minimax-m2.7",
+          "kimi-k3.1-pro",
+          "kimi-k3-1",
+          "kimi-k2.8-preview",
+          "deepseek-v4-pro",
+          "step-5-preview",
+          "mimo-v2.6-pro"
+        ],
+        "sessionConfig": {
+          "selectors": [
+            "agent",
+            "model",
+            "effort",
+            "permission",
+            "profile"
+          ],
+          "effortOptions": [
+            {
+              "value": "",
+              "label": "不设置",
+              "description": "使用 CLI 默认级别"
+            },
+            {
+              "value": "minimal",
+              "label": "最低",
+              "description": "极简思考，快速响应"
+            },
+            {
+              "value": "low",
+              "label": "低",
+              "description": "快速响应，适合简单问题"
+            },
+            {
+              "value": "medium",
+              "label": "中",
+              "description": "平衡速度和质量"
+            },
+            {
+              "value": "high",
+              "label": "高",
+              "description": "深入思考，适合复杂问题"
+            },
+            {
+              "value": "xhigh",
+              "label": "极高",
+              "description": "适合复杂编码和长程 Agent 任务"
+            },
+            {
+              "value": "max",
+              "label": "最高",
+              "description": "全力以赴，最高质量输出"
+            }
+          ],
+          "permissionOptions": [
+            {
+              "value": "",
+              "label": "不设置",
+              "description": "使用 CLI 默认权限策略"
+            },
+            {
+              "value": "default",
+              "label": "默认",
+              "description": "敏感操作需要确认"
+            },
+            {
+              "value": "auto",
+              "label": "自动",
+              "description": "安全操作自动批准，高风险仍受限"
+            },
+            {
+              "value": "acceptEdits",
+              "label": "接受编辑",
+              "description": "自动接受文件编辑"
+            },
+            {
+              "value": "plan",
+              "label": "规划",
+              "description": "仅规划不执行"
+            },
+            {
+              "value": "dontAsk",
+              "label": "拒绝危险",
+              "description": "拒绝需要确认的危险操作"
+            },
+            {
+              "value": "bypassPermissions",
+              "label": "跳过权限（高风险）",
+              "description": "绕过所有权限检查"
+            }
+          ]
+        },
+        "adapter": {
+          "entry": "adapter.js",
+          "runtime": "node",
+          "protocol": "engine-v1"
+        },
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": true,
+          "resume": true
+        }
+      }
+    ],
+    "views": [
+      {
+        "id": "codebuddy.panel",
+        "area": "activityBar",
+        "panelType": "codebuddyPanel",
+        "icon": "Bot",
+        "labelKey": "plugins.codebuddy",
+        "labelDefault": "CodeBuddy",
+        "order": 91
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/codebuddy",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/codebuddy/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@codebuddy-v0.5.0/plugins/codebuddy/codebuddy.zip"
+  }
+}

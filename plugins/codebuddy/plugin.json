@@ -154,5 +154,11 @@
     "workspaceRead": true,
     "workspaceWrite": true,
     "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/codebuddy",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/codebuddy/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@codebuddy-v0.5.0/plugins/codebuddy/codebuddy.zip"
   }
 }
