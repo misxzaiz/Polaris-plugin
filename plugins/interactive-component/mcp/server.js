@@ -167,7 +167,6 @@ function normalizeFormDecl(args) {
     : [];
   const submitLabel = optionalTrimmedString(f.submitLabel);
   const decl = { formId, read, secretKeys };
-  if (f.wait === true) decl.wait = true;
   if (submitLabel) decl.submitLabel = submitLabel;
   return decl;
 }
@@ -219,7 +218,6 @@ function execPreviewHtml(args, { toolName }) {
   };
   if (form) artifact.form = form;
   if (caps) artifact.caps = caps;
-  if (form && form.wait) artifact.form = Object.assign({}, artifact.form, { wait: true });
   return artifactResult(artifact, `已创建预览: ${title}`);
 }
 
@@ -239,6 +237,9 @@ function execListPreviews(args) {
   if (args && typeof args.limit === 'number' && Number.isFinite(args.limit)) {
     limit = Math.min(50, Math.max(1, Math.trunc(args.limit)));
   }
+  // total 必须取截断前的真实数量：工作区预览已达数百个，而 schema limit
+  // 上限 50；旧实现先截断数组再用 previews.length 报数，文案恒等于 limit，
+  // 调用方既拿不到总数、也误以为没有更多。
   const previews = [];
   if (fs.existsSync(root)) {
     for (const name of safeReadDir(root)) {
@@ -255,11 +256,12 @@ function execListPreviews(args) {
       }
     }
   }
+  const total = previews.length;
   previews.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  previews.length = Math.min(previews.length, limit);
+  const returned = previews.slice(0, limit);
   return {
-    structuredContent: { previews },
-    content: [{ type: 'text', text: `共 ${previews.length} 个预览` }],
+    structuredContent: { previews: returned, total },
+    content: [{ type: 'text', text: `共 ${total} 个预览，返回最近 ${returned.length} 个` }],
   };
 }
 
@@ -285,7 +287,7 @@ const TOOLS = [
   {
     name: 'render_component',
     description:
-      '渲染一个自包含的自定义交互组件（任意 HTML+CSS+JS）。仅当 form/ask_user_question 工具无法表达的自定义交互 UI 才使用——结构化表单收集请用 form 工具、选项问答请用 ask_user_question（两者阻塞且回执同回合）。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容在 Polaris 聊天中渲染为沙箱 iframe（主题自动匹配，页面请使用透明/继承底色）。可选 form 契约：用户在组件内的提交回喂给你；wait:true 时本工具阻塞等待提交（同回合拿到回执，适合审批门/确认门），默认 false（回执随用户下一条消息注入）。页面内提交约定：脚本调 parent.postMessage({ __polarisComponent: 1, formId: 「你声明的formId」, values: {字段: 值} }, "*")。不要把秘密输入声明为 read=full。',
+      '渲染一个自包含的交互组件（任意 HTML+CSS+JS）。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容会在 Polaris 聊天中渲染为沙箱 iframe。可选 form 契约：声明后用户在组件内的表单提交会回喂给你（read=none 时字段值对你隐藏）。不要把秘密输入声明为 read=full。页面内提交约定：脚本调 parent.postMessage({ __polarisComponent: 1, formId: 「你声明的formId」, values: {字段: 值} }, "*")，宿主校验后走系统表单管线，回执随下一条消息注入你的上下文。',
     inputSchema: {
       type: 'object',
       required: ['html'],
@@ -301,7 +303,6 @@ const TOOLS = [
             formId: { type: 'string', minLength: 1, description: '回传契约 id（唯一）' },
             read: { type: 'string', enum: ['full', 'none'], description: 'AI 读取模式；服务端强制，不信任 HTML 内声明' },
             secretKeys: { type: 'array', items: { type: 'string' }, description: '恒定掩码的键名列表' },
-            wait: { type: 'boolean', description: 'true=本工具调用阻塞等待提交（同回合拿回执，适合审批门）；默认 false（回执随用户下一条消息注入）' },
             submitLabel: { type: 'string', description: '提交按钮文案（可选）' },
           },
           additionalProperties: false,
@@ -311,54 +312,10 @@ const TOOLS = [
     },
   },
   {
-    name: 'form',
+    name: 'preview_html',
     description:
-      '拉起结构化表单让用户填写并等待提交（阻塞）。用户提交后你在同一回合拿到回执继续。字段 schema 驱动渲染，secret 字段服务端强制掩码。这是结构化收集的默认选择——自定义交互 UI 用 render_component。',
-    inputSchema: {
-      type: 'object',
-      required: ['title', 'fields'],
-      properties: {
-        title: { type: 'string', description: '表单标题' },
-        mode: { type: 'string', enum: ['collect', 'dispatch'], description: 'collect=收集参数回喂 AI（默认）；dispatch=转发目标能力' },
-        fields: {
-          type: 'array',
-          description: '字段 schema',
-          items: {
-            type: 'object',
-            required: ['name'],
-            properties: {
-              name: { type: 'string' }, type: { type: 'string', enum: ['string','number','boolean','textarea','select','secret','date','time','datetime','month','week'] },
-              label: { type: 'string' }, placeholder: { type: 'string' }, options: { type: 'array', items: { type: 'string' } },
-              required: { type: 'boolean' }, default: {}, secret: { type: 'boolean' }, hidden: { type: 'boolean' },
-            },
-          },
-        },
-      },
-      additionalProperties: false,
-    },
-  },
-  {
-    name: 'ask_user_question',
-    description:
-      '向用户提出选择题并阻塞等待回答（同回合拿到答案继续）。支持 1-4 题、多选、自定义输入。选项问答的默认选择。',
-    inputSchema: {
-      type: 'object',
-      required: ['questions'],
-      properties: {
-        questions: {
-          type: 'array', minItems: 1, maxItems: 4,
-          items: {
-            type: 'object', required: ['question', 'header', 'options'],
-            properties: {
-              question: { type: 'string' }, header: { type: 'string' }, multiSelect: { type: 'boolean' },
-              options: { type: 'array', items: { type: 'object', required: ['value'], properties: { value: { type: 'string' }, label: { type: 'string' } } } },
-              allowCustomInput: { type: 'boolean' },
-            },
-          },
-        },
-      },
-      additionalProperties: false,
-    },
+      '创建一个自包含 HTML 原型预览。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容会在 Polaris 聊天中渲染为 artifact_preview。（兼容别名 = render_component 无 form）',
+    inputSchema: { type: 'object', required: ['html'], properties: htmlProps, additionalProperties: false },
   },
   {
     name: 'read_preview',
@@ -381,55 +338,6 @@ const TOOLS = [
   },
 ];
 
-// ── 阻塞交互基础设施（v2：form/ask 工具接管，阻塞经宿主中继） ────────────────
-// 模式（ask_mcp_server 已验证）：tools/call 挂起 → POST 宿主 interaction-begin
-// → 广播 form/question 事件 → 前端委托模板渲染 → 用户提交 → form_submit/
-// answer_question → 宿主 interaction_notify POST 回调 → 本 server 唤醒返回。
-// 信任边界在宿主（form_core 脱敏/审计/600s 超时），本 server 只透传。
-
-const httpMod = require("http");
-
-let HOST_BASE = "";
-let HOST_MD5 = "";
-try {
-  const cfg = JSON.parse(fs.readFileSync(path.join(process.argv[2] || ".", "config.json"), "utf8"));
-  const port = process.env.POLARIS_WEB_PORT || (cfg.web && cfg.web.port) || 9830;
-  HOST_BASE = "http://127.0.0.1:" + port;
-  const tok = (cfg.web && cfg.web.token) || "";
-  HOST_MD5 = tok ? crypto.createHash("md5").update(tok).digest("hex") : "";
-} catch (e) { console.error("[ic] config 读取失败:", e.message); }
-
-function hostPost(ipcCmd, body) {
-  return new Promise((resolve, reject) => {
-    const u = new URL(HOST_BASE + "/api/ipc/" + ipcCmd);
-    const req = httpMod.request(u, { method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + HOST_MD5 },
-      timeout: 8000 }, (res) => {
-      let d = ""; res.on("data", (c) => (d += c));
-      res.on("end", () => { try { resolve(JSON.parse(d)); } catch { resolve({}); } });
-    });
-    req.on("error", reject);
-    req.end(JSON.stringify(body));
-  });
-}
-
-// 本地回调 server：POST 到此即收到提交/超时/取消。返回 Promise（listen 异步绑定完成即 resolve）
-function makeCallbackServer() {
-  return new Promise((resolve) => {
-    const srv = http.createServer((req, res) => {
-      let b = "";
-      req.on("data", (c) => (b += c));
-      req.on("end", () => {
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end('{"ok":true}');
-        try { srv.__payload = JSON.parse(b); } catch { srv.__payload = { status: "error" }; }
-        srv.close();
-      });
-    });
-    srv.listen(0, "127.0.0.1", () => resolve(srv));
-  });
-}
-
 // ── stdio JSON-RPC 主循环（换行分帧，与 needs/prompt-matrix 同构） ──────────
 
 function send(msg) {
@@ -439,60 +347,12 @@ function err(message) {
   return { content: [{ type: 'text', text: `错误：${message}` }], isError: true };
 }
 
-async function callTool(name, args) {
+function callTool(name, args) {
   switch (name) {
     case 'render_component':
       return execPreviewHtml(args, { toolName: name });
     case 'preview_html':
       return execPreviewHtml(args, { toolName: name });
-    case 'form':
-    case 'ask_user_question': {
-      // 阻塞交互（v2）：拉起面板 → 等用户提交 → 回执作 tool_result
-      const kind = name === 'form' ? 'form' : 'ask';
-      const args2 = args || {};
-      const convId = args2._polarisSessionId || '';
-      if (!convId) {
-        return { content: [{ type: 'text', text: '错误：缺少会话上下文（_polarisSessionId），无法拉起交互面板' }], isError: true };
-      }
-      const cbSrv = await makeCallbackServer();
-      const cbPort = cbSrv.address().port;
-      const cbToken = crypto.randomUUID();
-      const decl = kind === 'form'
-        ? { title: args2.title || '表单', mode: args2.mode || 'collect', fields: args2.fields || [], style: args2.style || {}, target: '', action: '' }
-        : { questions: args2.questions || [], title: (args2.questions && args2.questions[0] && args2.questions[0].header) || '问答' };
-      const beginBody = {
-        conversationId: convId,
-        kind: kind === 'form' ? 'form' : 'ask',
-        decl,
-        callbackUrl: 'http://127.0.0.1:' + cbPort + '/callback',
-        callbackToken: cbToken,
-      };
-      let beginRes;
-      try {
-        beginRes = await hostPost('interaction-begin', beginBody);
-      } catch (e) {
-        cbSrv.close();
-        return { content: [{ type: 'text', text: '错误：交互中继 begin 失败: ' + (e.message || JSON.stringify(beginRes)) }], isError: true };
-      }
-      if (beginRes.error) {
-        cbSrv.close();
-        return { content: [{ type: 'text', text: '错误：' + beginRes.error }], isError: true };
-      }
-      // 阻塞等回调（宿主 600s 超时先到，本地多留 30s 缓冲）
-      const deadline = Date.now() + 630000;
-      while (!cbSrv.__payload && Date.now() < deadline) {
-        await new Promise((r) => setTimeout(r, 500));
-      }
-      const payload = cbSrv.__payload || { status: 'timeout' };
-      if (payload.status === 'timeout') {
-        return { content: [{ type: 'text', text: '表单等待超时（600s），用户未提交。AI 可自行决定是否重拉。' }] };
-      }
-      if (payload.status === 'skipped') {
-        return { content: [{ type: 'text', text: '用户跳过了表单。AI 可自行决定是否重拉或继续。' }] };
-      }
-      const answerTxt = payload.receipt || payload.answer || JSON.stringify(payload);
-      return { content: [{ type: 'text', text: answerTxt }] };
-    }
     case 'read_preview':
       return execReadPreview(args);
     case 'list_previews':
@@ -523,7 +383,7 @@ process.stdin.on('data', (chunk) => {
 });
 process.stdin.on('end', () => process.exit(0));
 
-async function handleMessage(msg) {
+function handleMessage(msg) {
   try {
     if (msg.method === 'initialize') {
       send({
@@ -532,7 +392,7 @@ async function handleMessage(msg) {
         result: {
           protocolVersion: (msg.params && msg.params.protocolVersion) || '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'interactive-component-mcp', version: '1.0.0' },
+          serverInfo: { name: 'interactive-component-mcp', version: '1.1.2' },
         },
       });
       return;
@@ -546,8 +406,7 @@ async function handleMessage(msg) {
       const name = msg.params && msg.params.name;
       const args = (msg.params && msg.params.arguments) || {};
       try {
-        const result = await callTool(name, args);
-        send({ jsonrpc: '2.0', id: msg.id, result });
+        send({ jsonrpc: '2.0', id: msg.id, result: callTool(name, args) });
       } catch (e) {
         send({ jsonrpc: '2.0', id: msg.id, result: err(e.message || '工具执行失败') });
       }

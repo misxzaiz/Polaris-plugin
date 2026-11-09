@@ -57,14 +57,11 @@ test('tools/list 暴露 4 工具（金标：exposes_expected_tools）', async ()
   const { stdout } = await execNode([SERVER, configDir], req);
   const line = stdout.split('\n').find((l) => l.includes('"id":1'));
   const tools = JSON.parse(line).result.tools;
-  assert.equal(tools.length, 5);
-  const names = tools.map(t => t.name);
-  assert.ok(names.includes('render_component'), 'render_component missing');
-  assert.ok(names.includes('form'), 'form missing');
-  assert.ok(names.includes('ask_user_question'), 'ask_user_question missing');
-  assert.ok(names.includes('read_preview'), 'read_preview missing');
-  assert.ok(names.includes('list_previews'), 'list_previews missing');
-
+  assert.equal(tools.length, 4);
+  assert.equal(tools[0].name, 'render_component');
+  assert.equal(tools[1].name, 'preview_html');
+  assert.equal(tools[2].name, 'read_preview');
+  assert.equal(tools[3].name, 'list_previews');
 });
 
 test('创建预览：落盘/版本递增/metadata（金标：stores_preview_metadata_and_increments_requirement_versions）', async () => {
@@ -137,4 +134,25 @@ test('缺 html / 空 html / 超限 HTML 报错且不留脏目录（金标三条�
   assert.match(e3.content[0].text, /HTML 过大/);
   const previewsRoot = join(workspace, '.polaris', 'previews');
   assert.equal(existsSync(previewsRoot), false, '超限失败不应留下脏目录');
+});
+
+test('list_previews：total 为真实总数，previews 受 limit 截断（回归：旧文案恒等于 limit）', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+  for (let i = 0; i < 7; i++) {
+    await callTool(args, 'preview_html', {
+      title: `bulk-${i}`,
+      html: `<!doctype html><html><body>${i}</body></html>`,
+    });
+  }
+  const listed = await callTool(args, 'list_previews', { limit: 3 });
+  assert.equal(listed.structuredContent.total, 7);
+  assert.equal(listed.structuredContent.previews.length, 3);
+  assert.match(listed.content[0].text, /共 7 个预览，返回最近 3 个/);
+
+  const all = await callTool(args, 'list_previews', { limit: 50 });
+  assert.equal(all.structuredContent.total, 7);
+  assert.equal(all.structuredContent.previews.length, 7);
+  assert.match(all.content[0].text, /共 7 个预览，返回最近 7 个/);
 });

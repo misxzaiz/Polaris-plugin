@@ -1,11 +1,12 @@
 {
   "name": "interactive-component-plugin",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "private": true,
-  "description": "交互组件插件打包（对话内自包含交互组件 + ask/form 块委托模板）",
+  "description": "交互组件插件打包（对话内自包含交互组件：任意 HTML 沙箱渲染 + 可选表单回传）",
   "scripts": {
-    "build": "esbuild src/card.tsx --bundle --format=esm --outfile=dist/card.js --jsx=automatic --external:react --external:react/jsx-runtime --external:polaris-host/artifact --external:polaris-host/form && esbuild src/blocks/form-card.tsx --bundle --format=esm --outfile=dist/blocks/form-card.js --jsx=automatic --external:react --external:react/jsx-runtime --external:polaris-host/artifact --external:polaris-host/form && esbuild src/blocks/ask-card.tsx --bundle --format=esm --outfile=dist/blocks/ask-card.js --jsx=automatic --external:react --external:react/jsx-runtime --external:polaris-host/artifact --external:polaris-host/form",
-    "test": "node test/run-tests.mjs"
+    "build": "pnpm typecheck && esbuild src/card.tsx --bundle --format=esm --outfile=dist/card.js --jsx=automatic --external:react --external:react/jsx-runtime --external:polaris-host/artifact --external:polaris-host/form --external:polaris-host/cap",
+    "test": "node test/run-tests.mjs && node test/card-ssr.test.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/react": "^18.3.31",
@@ -13,7 +14,8 @@
     "esbuild": "^0.23.0",
     "lucide-react": "^0.469.0",
     "react": "^18.3.1",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "react-dom": "^18.3.1",
+    "@types/react-dom": "^18.3.7"
   }
 }
