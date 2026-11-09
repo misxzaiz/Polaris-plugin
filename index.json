@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-05T19:54:36.423Z",
+  "updated": "2026-11-09T01:30:46.397Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -4986,6 +4986,40 @@
       ],
       "createdAt": "2026-11-06T00:00:00.000Z",
       "updatedAt": "2026-11-06T00:00:00.000Z"
+    },
+    {
+      "id": "interactive-component",
+      "name": "交互组件",
+      "version": "1.1.2",
+      "description": "在 AI 对话中渲染自包含交互组件：任意 HTML（iframe 沙箱）+ 可选表单回传（read 三态/secret 掩码服务端强制）+ 静态原型预览。MCP 四工具：render_component / preview_html / read_preview / list_previews。",
+      "author": "Polaris",
+      "category": "mcp",
+      "tags": [
+        "mcp",
+        "interactive",
+        "preview",
+        "form",
+        "artifact"
+      ],
+      "icon": "LayoutTemplate",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/interactive-component",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/interactive-component/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/interactive-component/update.json",
+      "sha256": "9e6fa481280cf05fe1c1e63a67ca78329bfe330726815de82fe61eac7580df26",
+      "permissions": {
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "aiToolAccess": true
+      },
+      "tier": "production",
+      "versions": [
+        {
+          "version": "1.1.2",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip"
+        }
+      ]
     }
   ]
 }

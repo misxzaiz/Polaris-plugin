@@ -1,6 +1,6 @@
 {
   "name": "interactive-component-plugin",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "private": true,
   "description": "交互组件插件打包（对话内自包含交互组件：任意 HTML 沙箱渲染 + 可选表单回传）",
   "scripts": {

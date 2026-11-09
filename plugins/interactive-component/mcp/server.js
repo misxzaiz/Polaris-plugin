@@ -392,7 +392,7 @@ function handleMessage(msg) {
         result: {
           protocolVersion: (msg.params && msg.params.protocolVersion) || '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'interactive-component-mcp', version: '1.0.0' },
+          serverInfo: { name: 'interactive-component-mcp', version: '1.1.2' },
         },
       });
       return;

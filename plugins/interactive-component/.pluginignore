@@ -1,0 +1,9 @@
+node_modules/
+src/
+test/
+previews-workspace/
+*.zip
+pnpm-lock.yaml
+tsconfig.json
+package.json
+.pluginignore
