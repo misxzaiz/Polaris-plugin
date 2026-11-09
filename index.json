@@ -5072,6 +5072,45 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip"
         }
       ]
+    },
+    {
+      "id": "personal-hub",
+      "name": "个人空间",
+      "version": "1.0.0",
+      "description": "个人链接/收藏/待办/笔记台账：Supabase 云同步 + description 字段级加密（crypto-js 兼容）。stdio MCP 五工具（ph_list/ph_create/ph_get/ph_update/ph_delete）+ 活动栏面板（登录/CRUD/配置管理）。自主仓内置插件外移而来。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "bookmarks",
+        "todo",
+        "notes",
+        "supabase",
+        "mcp",
+        "panel"
+      ],
+      "icon": "Link",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/personal-hub",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/personal-hub/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@personal-hub-v1.0.0/plugins/personal-hub/personal-hub.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/personal-hub/update.json",
+      "sha256": "9892fc09e5c6eb3179367fda85832d0f794812ed66df9d400c4058404242b159",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@personal-hub-v1.0.0/plugins/personal-hub/personal-hub.zip",
+          "sha256": "9892fc09e5c6eb3179367fda85832d0f794812ed66df9d400c4058404242b159"
+        }
+      ],
+      "createdAt": "2026-11-09T20:49:45.175Z",
+      "updatedAt": "2026-11-09T20:49:45.175Z"
     }
   ]
 }
