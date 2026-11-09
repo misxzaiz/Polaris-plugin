@@ -9122,6 +9122,7 @@ function TerminalDeskPanel(_props) {
   const [drawerOpen, setDrawerOpen] = useState4(false);
   const [runnerOpen, setRunnerOpen] = useState4(false);
   const [renamingId, setRenamingId] = useState4(null);
+  const [splitPartnerId, setSplitPartnerId] = useState4(null);
   const [runtimes, setRuntimes] = useState4({});
   const rootRef = useRef3(null);
   const [nameOverrides, setNameOverrides] = useState4({});
@@ -9130,6 +9131,10 @@ function TerminalDeskPanel(_props) {
   const activeSession = useMemo3(
     () => sessions.find((s) => s.id === activeId) ?? null,
     [sessions, activeId]
+  );
+  const partnerSession = useMemo3(
+    () => splitPartnerId && splitPartnerId !== activeId ? sessions.find((s) => s.id === splitPartnerId && s.exitCode === null) ?? null : null,
+    [sessions, splitPartnerId, activeId]
   );
   const createSession = useCallback2(
     async (opts) => {
@@ -9173,6 +9178,20 @@ function TerminalDeskPanel(_props) {
     void createSession().catch(() => {
     });
   }, [createSession]);
+  const toggleSplit = useCallback2(() => {
+    if (partnerSession) {
+      setSplitPartnerId(null);
+      return;
+    }
+    if (!activeSession) return;
+    const target = sessions.find((s) => s.id !== activeSession.id && s.exitCode === null);
+    if (target) {
+      setSplitPartnerId(target.id);
+      return;
+    }
+    void createSession({ activate: false }).then((meta) => setSplitPartnerId(meta.id)).catch(() => {
+    });
+  }, [partnerSession, activeSession, sessions, createSession]);
   useEffect4(() => {
     return listenTerminalExit((event) => {
       setSessions((prev) => {
@@ -9303,6 +9322,15 @@ function TerminalDeskPanel(_props) {
           "button",
           {
             className: "td-iconbtn",
+            onClick: toggleSplit,
+            title: partnerSession ? "\u53D6\u6D88\u5DE6\u53F3\u5206\u5C4F" : "\u5DE6\u53F3\u5206\u5C4F\uFF08\u5F53\u524D\u4F1A\u8BDD | \u53E6\u4E00\u4F1A\u8BDD\uFF09",
+            children: "\u2FF4"
+          }
+        ),
+        /* @__PURE__ */ jsx4(
+          "button",
+          {
+            className: "td-iconbtn",
             onClick: () => setRunnerOpen(true),
             title: "\u8FD0\u884C\u547D\u4EE4\uFF08Ctrl+Shift+R\uFF09",
             children: "\u25B6"
@@ -9320,39 +9348,57 @@ function TerminalDeskPanel(_props) {
       ] })
     ] }),
     error && /* @__PURE__ */ jsx4("div", { className: "td-errorbar", children: error }),
-    /* @__PURE__ */ jsxs4("div", { className: "td-stage", children: [
-      sessions.map((s) => /* @__PURE__ */ jsx4("div", { style: { display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }, children: /* @__PURE__ */ jsxs4("div", { style: { display: s.id === activeId ? "flex" : "none", flexDirection: "column", flex: 1, minHeight: 0 }, children: [
-        s.exitCode !== null && /* @__PURE__ */ jsxs4("div", { className: "td-exitbanner", children: [
-          /* @__PURE__ */ jsxs4("span", { children: [
-            "\u4F1A\u8BDD\u5DF2\u9000\u51FA\uFF08exit ",
-            s.exitCode,
-            "\uFF09"
-          ] }),
-          /* @__PURE__ */ jsx4(
-            "button",
-            {
-              className: "td-mini",
-              onClick: () => {
-                void closeSession(s.id);
-                void createSession({ activate: true });
-              },
-              children: "\u5F00\u65B0\u4F1A\u8BDD"
-            }
-          ),
-          /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: () => void closeSession(s.id), children: "\u5173\u95ED\u6807\u7B7E" })
-        ] }),
-        /* @__PURE__ */ jsx4(
-          SessionView,
+    /* @__PURE__ */ jsxs4("div", { className: "td-stage", style: partnerSession ? { flexDirection: "row" } : void 0, children: [
+      sessions.map((s) => {
+        const inSplit = !!partnerSession && (s.id === activeId || s.id === partnerSession.id);
+        const isLeftPane = partnerSession && s.id === activeId;
+        return /* @__PURE__ */ jsxs4(
+          "div",
           {
-            sessionId: s.id,
-            visible: s.id === activeId,
-            onExit: (code) => setSessions((prev) => markExited2(prev, s.id, code)),
-            registerSearch: (open) => {
-              searchTriggerRef.current = open;
-            }
-          }
-        )
-      ] }) }, s.id)),
+            style: {
+              display: partnerSession ? inSplit ? "flex" : "none" : s.id === activeId ? "flex" : "none",
+              flexDirection: "column",
+              flex: 1,
+              minWidth: 0,
+              minHeight: 0,
+              borderRight: partnerSession && isLeftPane ? "1px solid rgb(var(--c-border))" : void 0
+            },
+            children: [
+              s.exitCode !== null && /* @__PURE__ */ jsxs4("div", { className: "td-exitbanner", children: [
+                /* @__PURE__ */ jsxs4("span", { children: [
+                  "\u4F1A\u8BDD\u5DF2\u9000\u51FA\uFF08exit ",
+                  s.exitCode,
+                  "\uFF09"
+                ] }),
+                /* @__PURE__ */ jsx4(
+                  "button",
+                  {
+                    className: "td-mini",
+                    onClick: () => {
+                      void closeSession(s.id);
+                      void createSession({ activate: true });
+                    },
+                    children: "\u5F00\u65B0\u4F1A\u8BDD"
+                  }
+                ),
+                /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: () => void closeSession(s.id), children: "\u5173\u95ED\u6807\u7B7E" })
+              ] }),
+              /* @__PURE__ */ jsx4(
+                SessionView,
+                {
+                  sessionId: s.id,
+                  visible: partnerSession ? inSplit : s.id === activeId,
+                  onExit: (code) => setSessions((prev) => markExited2(prev, s.id, code)),
+                  registerSearch: (open) => {
+                    searchTriggerRef.current = open;
+                  }
+                }
+              )
+            ]
+          },
+          s.id
+        );
+      }),
       sessions.length === 0 && /* @__PURE__ */ jsxs4("div", { className: "td-empty", children: [
         /* @__PURE__ */ jsx4("div", { children: "\u6682\u65E0\u7EC8\u7AEF\u4F1A\u8BDD" }),
         /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: openEmptySession, children: "\u65B0\u5EFA\u7EC8\u7AEF" })

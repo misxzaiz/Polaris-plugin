@@ -41,6 +41,8 @@ export default function TerminalDeskPanel(_props: PanelProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [runnerOpen, setRunnerOpen] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  /** 左右分屏：右栏会话 id（null = 单栏）。左栏恒为 activeId。 */
+  const [splitPartnerId, setSplitPartnerId] = useState<string | null>(null);
   const [runtimes, setRuntimes] = useState<Record<string, ScriptRuntime>>({});
   const rootRef = useRef<HTMLDivElement | null>(null);
   /** tab 栏内会话名覆盖（重命名不回传后端——会话名仅本面板展示语义） */
@@ -51,6 +53,15 @@ export default function TerminalDeskPanel(_props: PanelProps) {
   const activeSession = useMemo(
     () => sessions.find((s) => s.id === activeId) ?? null,
     [sessions, activeId],
+  );
+
+  // 分屏伙伴：必须存在且未退出；否则视作单栏（splitPartnerId 残留无害）
+  const partnerSession = useMemo(
+    () =>
+      splitPartnerId && splitPartnerId !== activeId
+        ? sessions.find((s) => s.id === splitPartnerId && s.exitCode === null) ?? null
+        : null,
+    [sessions, splitPartnerId, activeId],
   );
 
   const createSession = useCallback(
@@ -106,6 +117,23 @@ export default function TerminalDeskPanel(_props: PanelProps) {
       /* 错误已入 error 横幅（宿主未升级/无 cap.terminal 场景） */
     });
   }, [createSession]);
+
+  /** 左右分屏开关：无第二会话时自动新建（不抢焦点）；再点取消分屏 */
+  const toggleSplit = useCallback(() => {
+    if (partnerSession) {
+      setSplitPartnerId(null);
+      return;
+    }
+    if (!activeSession) return;
+    const target = sessions.find((s) => s.id !== activeSession.id && s.exitCode === null);
+    if (target) {
+      setSplitPartnerId(target.id);
+      return;
+    }
+    void createSession({ activate: false })
+      .then((meta) => setSplitPartnerId(meta.id))
+      .catch(() => {});
+  }, [partnerSession, activeSession, sessions, createSession]);
 
   // 退出事件：标记退出码；关联脚本 runtime 置 stopped
   useEffect(() => {
@@ -245,6 +273,13 @@ export default function TerminalDeskPanel(_props: PanelProps) {
           </button>
           <button
             className="td-iconbtn"
+            onClick={toggleSplit}
+            title={partnerSession ? '取消左右分屏' : '左右分屏（当前会话 | 另一会话）'}
+          >
+            ⿴
+          </button>
+          <button
+            className="td-iconbtn"
             onClick={() => setRunnerOpen(true)}
             title="运行命令（Ctrl+Shift+R）"
           >
@@ -262,11 +297,25 @@ export default function TerminalDeskPanel(_props: PanelProps) {
 
       {error && <div className="td-errorbar">{error}</div>}
 
-      {/* 会话区（保活挂载，display 切换） */}
-      <div className="td-stage">
-        {sessions.map((s) => (
-          <div key={s.id} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-            <div style={{ display: s.id === activeId ? 'flex' : 'none', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {/* 会话区（保活挂载，display 切换；分屏时 stage 转行向、双栏 flex:1） */}
+      <div className="td-stage" style={partnerSession ? { flexDirection: 'row' } : undefined}>
+        {sessions.map((s) => {
+          // 分屏下两栏同时可见（ResizeObserver 各自 fit → resize）
+          const inSplit = !!partnerSession && (s.id === activeId || s.id === partnerSession.id);
+          const isLeftPane = partnerSession && s.id === activeId;
+          return (
+            <div
+              key={s.id}
+              style={{
+                display: partnerSession ? (inSplit ? 'flex' : 'none') : s.id === activeId ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: 1,
+                minWidth: 0,
+                minHeight: 0,
+                borderRight:
+                  partnerSession && isLeftPane ? '1px solid rgb(var(--c-border))' : undefined,
+              }}
+            >
               {s.exitCode !== null && (
                 <div className="td-exitbanner">
                   <span>会话已退出（exit {s.exitCode}）</span>
@@ -286,15 +335,15 @@ export default function TerminalDeskPanel(_props: PanelProps) {
               )}
               <SessionView
                 sessionId={s.id}
-                visible={s.id === activeId}
+                visible={partnerSession ? inSplit : s.id === activeId}
                 onExit={(code) => setSessions((prev) => markExited(prev, s.id, code))}
                 registerSearch={(open) => {
                   searchTriggerRef.current = open;
                 }}
               />
             </div>
-          </div>
-        ))}
+          );
+        })}
         {sessions.length === 0 && (
           <div className="td-empty">
             <div>暂无终端会话</div>
