@@ -1,265 +1,197 @@
 // src/card.tsx
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
-function r(e) {
-  var t, f, n = "";
-  if ("string" == typeof e || "number" == typeof e) n += e;
-  else if ("object" == typeof e) if (Array.isArray(e)) {
-    var o = e.length;
-    for (t = 0; t < o; t++) e[t] && (f = r(e[t])) && (n && (n += " "), n += f);
-  } else for (f in e) e[f] && (n && (n += " "), n += f);
-  return n;
+// src/shared.ts
+var APPS_KEY = "__POLARIS_INTERACTIVE_APPS__";
+var APPS_CHANGED_EVENT = "polaris:interactive-apps-changed";
+function rememberApp(data) {
+  try {
+    const w = window;
+    const list = Array.isArray(w[APPS_KEY]) ? w[APPS_KEY].slice() : [];
+    if (data.previewId) {
+      const idx = list.findIndex((x) => x.previewId === data.previewId);
+      if (idx >= 0) list[idx] = data;
+      else list.unshift(data);
+    } else if (typeof data.html === "string" && data.html) {
+      list.unshift(data);
+    }
+    w[APPS_KEY] = list.slice(0, 60);
+    window.dispatchEvent(new CustomEvent(APPS_CHANGED_EVENT));
+  } catch {
+  }
 }
-function clsx() {
-  for (var e, t, f = 0, n = "", o = arguments.length; f < o; f++) (e = arguments[f]) && (t = r(e)) && (n && (n += " "), n += t);
-  return n;
+function themeBase() {
+  try {
+    const cs = getComputedStyle(document.documentElement);
+    const names = [
+      "--background",
+      "--foreground",
+      "--card",
+      "--card-foreground",
+      "--muted",
+      "--muted-foreground",
+      "--primary",
+      "--primary-foreground",
+      "--border",
+      "--accent"
+    ];
+    const pairs = names.map((n) => {
+      const v = cs.getPropertyValue(n).trim();
+      return v ? `${n}:${v}` : "";
+    }).filter(Boolean);
+    const dark = document.documentElement.dataset.theme?.includes("dark") || document.body.classList.contains("dark");
+    pairs.push(`color-scheme:${dark ? "dark" : "light"}`);
+    return `<style>:root{${pairs.join(";")}}html,body{background:transparent;color:var(--foreground,#e8e8ea)}</style>`;
+  } catch {
+    return "";
+  }
 }
-var clsx_default = clsx;
+function buildSrcDoc(html, withTheme) {
+  const trimmed = html.trim();
+  const doc = /<html[\s>]/i.test(trimmed) ? trimmed : `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0">${trimmed}</body></html>`;
+  if (!withTheme) return doc;
+  const base = themeBase();
+  if (!base) return doc;
+  return /<head[^>]*>/i.test(doc) ? doc.replace(/<head([^>]*)>/i, `<head$1>${base}`) : base + doc;
+}
+function framePolicy(source) {
+  if (source === "flashforge") {
+    return { sandbox: "allow-scripts allow-pointer-lock", allow: "autoplay", withTheme: false };
+  }
+  return {
+    sandbox: "allow-scripts allow-forms allow-popups allow-modals allow-pointer-lock",
+    allow: "autoplay",
+    withTheme: true
+  };
+}
 
 // src/card.tsx
-import { readArtifactHtml, openArtifactSource } from "polaris-host/artifact";
-import { registerComponent, submitForm } from "polaris-host/form";
-import { forwardCap } from "polaris-host/cap";
-import { Fragment, jsx, jsxs } from "react/jsx-runtime";
-var InteractiveComponentCard = memo(function InteractiveComponentCard2(props) {
-  const data = props.data && typeof props.data === "object" ? props.data : {};
-  if (typeof data.html === "string" && data.html.length > 0) {
-    return /* @__PURE__ */ jsx(InteractiveFrame, { data, sessionId: props.sessionId });
-  }
-  if (data.sourcePath) {
-    return /* @__PURE__ */ jsx(HydratingFrame, { data, sessionId: props.sessionId });
-  }
-  return /* @__PURE__ */ jsxs("div", { className: "my-2 rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs text-text-secondary", children: [
-    "\u4EA4\u4E92\u7EC4\u4EF6\u6570\u636E\u89E3\u6790\u5931\u8D25\uFF08",
-    props.toolName,
-    "\uFF09"
-  ] });
-});
-function InteractiveFrame({ data, sessionId }) {
-  const form = data.form;
-  const caps = useMemo(() => Array.isArray(data.caps) ? data.caps : void 0, [data.caps]);
-  const componentIdRef = useRef("");
-  if (!componentIdRef.current) {
-    componentIdRef.current = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `comp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  }
-  const componentId = componentIdRef.current;
-  const [expanded, setExpanded] = useState(false);
-  const [formState, setFormState] = useState("idle");
-  const [submitError, setSubmitError] = useState(null);
-  const [privateSubmit, setPrivateSubmit] = useState(false);
-  const formStateRef = useRef(formState);
+import { jsx, jsxs } from "react/jsx-runtime";
+function Notice({ text }) {
+  return /* @__PURE__ */ jsx("div", { className: "my-2 rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs text-text-secondary", children: text });
+}
+var InteractivePanelCard = memo(function InteractivePanelCard2(props) {
+  const data = props.data && typeof props.data === "object" ? props.data : null;
   useEffect(() => {
-    formStateRef.current = formState;
-  }, [formState]);
-  useEffect(() => {
-    if (!form || !sessionId) return;
-    if (typeof registerComponent !== "function") {
-      setSubmitError("\u5BBF\u4E3B\u8868\u5355\u6865\u4E0D\u53EF\u7528\uFF0C\u7EC4\u4EF6\u63D0\u4EA4\u4E0D\u53EF\u7528");
-      return;
+    if (data) rememberApp(data);
+  }, [data]);
+  if (!data) return /* @__PURE__ */ jsx(Notice, { text: `\u4EA4\u4E92\u9762\u677F\u6570\u636E\u89E3\u6790\u5931\u8D25\uFF08${props.toolName}\uFF09` });
+  if (typeof data.html !== "string" || !data.html) {
+    if (data.sourcePath || data.previewId) {
+      return /* @__PURE__ */ jsx(
+        Notice,
+        {
+          text: `\u4EA4\u4E92\u9762\u677F\u5DF2\u751F\u6210${data.title ? `\uFF1A${data.title}` : ""}${data.versionLabel ? ` \xB7 ${data.versionLabel}` : ""}${data.sourcePath ? ` \xB7 ${data.sourcePath}` : ""}`
+        }
+      );
     }
-    let cancelled = false;
-    registerComponent({
-      sessionId,
-      componentId,
-      formId: form.formId,
-      read: form.read,
-      secretKeys: form.secretKeys
-    }).catch(() => {
-      if (!cancelled) setSubmitError("\u8868\u5355\u5951\u7EA6\u767B\u8BB0\u5931\u8D25\uFF0C\u63D0\u4EA4\u53EF\u80FD\u4E0D\u53EF\u7528");
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [form?.formId, sessionId, componentId]);
-  const handleSubmit = useCallback(
-    (rawValues) => {
-      if (!form) return;
-      if (typeof submitForm !== "function") {
-        setFormState("error");
-        setSubmitError("\u5BBF\u4E3B\u8868\u5355\u6865\u4E0D\u53EF\u7528\uFF0C\u63D0\u4EA4\u5931\u8D25");
-        return;
-      }
-      setFormState("submitting");
-      setSubmitError(null);
-      submitForm(form.formId, rawValues, {
-        sessionId,
-        private: privateSubmit || void 0,
-        read: form.read
-      }).then(() => {
-        setFormState("submitted");
-      }).catch((e) => {
-        setFormState("error");
-        setSubmitError(e instanceof Error ? e.message : String(e));
-      });
-    },
-    [form?.formId, form?.read, sessionId, privateSubmit]
-  );
-  const html = data.html ?? "";
-  const srcDoc = useMemo(() => buildSrcDoc(html), [html]);
-  const submitRef = useRef(handleSubmit);
-  submitRef.current = handleSubmit;
+    return /* @__PURE__ */ jsx(Notice, { text: `\u4EA4\u4E92\u9762\u677F\u6570\u636E\u89E3\u6790\u5931\u8D25\uFF08${props.toolName}\uFF09` });
+  }
+  return /* @__PURE__ */ jsx(PanelFrame, { data });
+});
+function PanelFrame({ data }) {
+  const [expanded, setExpanded] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const frameRef = useRef(null);
+  const policy = useMemo(() => framePolicy(data.source), [data.source]);
+  const srcDoc = useMemo(
+    () => buildSrcDoc(data.html, policy.withTheme),
+    [data.html, policy.withTheme]
+  );
+  const title = String(data.title || "\u4EA4\u4E92\u9762\u677F");
   useEffect(() => {
-    const onMessage = (event) => {
-      const source = event.source;
-      const frameWin = frameRef.current?.contentWindow;
-      if (!source || !frameWin || source !== frameWin) return;
-      const msg = event.data;
-      if (!msg || typeof msg !== "object") return;
-      if (msg.__polarisComponent === 1) {
-        if (!form || msg.formId !== form.formId) return;
-        if (formStateRef.current === "submitted" || formStateRef.current === "submitting") return;
-        submitRef.current(msg.values ?? {});
-        return;
-      }
-      if (msg.__polarisCap === 1) {
-        if (typeof forwardCap !== "function") return;
-        forwardCap(msg, caps).then((res) => {
-          try {
-            source.postMessage(res, "*");
-          } catch {
-          }
-        }).catch(() => {
-        });
-      }
+    if (!fullscreen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setFullscreen(false);
     };
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [form?.formId, caps]);
-  return /* @__PURE__ */ jsxs("div", { className: "relative", children: [
-    /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between rounded-t-lg border border-b-0 border-border bg-background-elevated px-3 py-1.5", children: [
-      /* @__PURE__ */ jsxs("span", { className: "flex min-w-0 items-center gap-1.5", children: [
-        /* @__PURE__ */ jsx("span", { className: "truncate text-xs font-medium text-text-primary", children: String(data.title || "\u4EA4\u4E92\u7EC4\u4EF6") }),
-        form ? /* @__PURE__ */ jsx(
-          "span",
-          {
-            className: clsx_default(
-              "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium",
-              form.read === "none" ? "bg-amber-500/10 text-amber-500" : "bg-cyan-500/10 text-cyan-400"
-            ),
-            title: form.read === "none" ? "\u63D0\u4EA4\u503C\u4E0D\u8FDB\u5165 AI \u4E0A\u4E0B\u6587\uFF08\u670D\u52A1\u7AEF\u5F3A\u5236\uFF09" : "\u63D0\u4EA4\u503C\u7ECF\u670D\u52A1\u7AEF\u56DE\u6267\u56DE\u4F20 AI\uFF1Bsecret \u952E\u6052\u5B9A\u63A9\u7801",
-            children: form.read === "none" ? "\u79C1\u5BC6\u56DE\u4F20" : "\u8868\u5355\u56DE\u4F20"
-          }
-        ) : null
-      ] }),
-      /* @__PURE__ */ jsxs("span", { className: "flex shrink-0 items-center gap-2", children: [
-        data.sourcePath ? /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: () => openArtifactSource(data.sourcePath),
-            className: "text-[10px] text-text-tertiary hover:text-text-primary transition-colors",
-            children: "\u6E90\u7801"
-          }
-        ) : null,
-        /* @__PURE__ */ jsx(
-          "button",
-          {
-            type: "button",
-            onClick: () => setExpanded(!expanded),
-            className: "text-[10px] text-text-tertiary hover:text-text-primary transition-colors",
-            children: expanded ? "\u6536\u8D77" : "\u5C55\u5F00"
-          }
-        )
-      ] })
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      try {
+        frameRef.current?.contentWindow?.postMessage(
+          { __polarisMute: 1, muted: next },
+          "*"
+        );
+      } catch {
+      }
+      return next;
+    });
+  }, []);
+  const copySourcePath = useCallback(() => {
+    if (!data.sourcePath) return;
+    try {
+      void navigator.clipboard?.writeText(String(data.sourcePath));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+    }
+  }, [data.sourcePath]);
+  const frame = /* @__PURE__ */ jsx(
+    "iframe",
+    {
+      ref: frameRef,
+      title,
+      srcDoc,
+      sandbox: policy.sandbox,
+      allow: policy.allow,
+      className: "h-full w-full",
+      style: { background: policy.withTheme ? "transparent" : "#ffffff", border: "none" },
+      referrerPolicy: "no-referrer"
+    }
+  );
+  const toolbar = /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between gap-2 border-b border-border bg-background-elevated px-3 py-1.5", children: [
+    /* @__PURE__ */ jsxs("span", { className: "flex min-w-0 items-center gap-1.5", children: [
+      /* @__PURE__ */ jsx("span", { className: "shrink-0 rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-medium text-cyan-400", children: "\u4EA4\u4E92\u9762\u677F" }),
+      /* @__PURE__ */ jsx("span", { className: "truncate text-xs font-medium text-text-primary", children: title }),
+      data.versionLabel ? /* @__PURE__ */ jsx("span", { className: "shrink-0 text-[10px] text-text-tertiary", children: String(data.versionLabel) }) : null,
+      data.source === "flashforge" ? /* @__PURE__ */ jsx("span", { className: "shrink-0 rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-500", children: "\u95EA\u9020\u5E94\u7528" }) : null
     ] }),
+    /* @__PURE__ */ jsxs("span", { className: "flex shrink-0 items-center gap-2", children: [
+      /* @__PURE__ */ jsx("button", { type: "button", onClick: toggleMute, title: "\u9759\u97F3\uFF08\u7EC4\u4EF6\u9700\u54CD\u5E94 __polarisMute \u534F\u8BAE\uFF09", className: "text-[10px] text-text-tertiary hover:text-text-primary", children: muted ? "\u53D6\u6D88\u9759\u97F3" : "\u9759\u97F3" }),
+      data.sourcePath ? /* @__PURE__ */ jsx("button", { type: "button", onClick: copySourcePath, className: "text-[10px] text-text-tertiary hover:text-text-primary", children: copied ? "\u5DF2\u590D\u5236" : "\u590D\u5236\u6E90\u7801\u8DEF\u5F84" }) : null,
+      /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setFullscreen(!fullscreen), className: "text-[10px] text-text-tertiary hover:text-text-primary", children: fullscreen ? "\u9000\u51FA\u5168\u5C4F" : "\u5168\u5C4F" }),
+      !fullscreen ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setExpanded(!expanded), className: "text-[10px] text-text-tertiary hover:text-text-primary", children: expanded ? "\u6536\u8D77" : "\u5C55\u5F00" }) : null
+    ] })
+  ] });
+  if (fullscreen) {
+    return /* @__PURE__ */ jsxs("div", { className: "my-2 overflow-hidden rounded-lg border border-border", children: [
+      toolbar,
+      /* @__PURE__ */ jsxs(
+        "div",
+        {
+          className: "fixed inset-0 z-[9999] flex flex-col bg-background",
+          style: { top: 0, left: 0, right: 0, bottom: 0 },
+          children: [
+            /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-hidden", children: frame }),
+            /* @__PURE__ */ jsxs("div", { className: "border-t border-border px-3 py-1 text-[10px] text-text-tertiary", children: [
+              "\u6309 Esc \u9000\u51FA\u5168\u5C4F \xB7 \u6C99\u7BB1 iframe\uFF08",
+              policy.sandbox,
+              "\uFF09"
+            ] })
+          ]
+        }
+      )
+    ] });
+  }
+  return /* @__PURE__ */ jsxs("div", { className: "my-2 overflow-hidden rounded-lg border border-border", children: [
+    toolbar,
     /* @__PURE__ */ jsx(
       "div",
       {
-        className: "overflow-hidden border-x border-b border-border rounded-b-lg transition-[height] duration-200",
+        className: "overflow-hidden transition-[height] duration-200",
         style: { height: expanded ? "70vh" : "360px" },
-        children: /* @__PURE__ */ jsx(
-          "iframe",
-          {
-            ref: frameRef,
-            title: String(data.title || "\u4EA4\u4E92\u7EC4\u4EF6"),
-            srcDoc,
-            sandbox: "allow-scripts allow-forms allow-popups allow-modals",
-            className: "h-full w-full",
-            style: { background: "#ffffff", border: "none" },
-            referrerPolicy: "no-referrer"
-          }
-        )
+        children: frame
       }
-    ),
-    form ? /* @__PURE__ */ jsx("div", { className: "my-1 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-1.5 text-xs", children: formState === "submitted" ? /* @__PURE__ */ jsxs("span", { className: "flex items-center gap-1 text-green-500", children: [
-      "\u2705 \u5DF2\u63D0\u4EA4",
-      form.read === "none" ? "\uFF08\u79C1\u5BC6\uFF1A\u503C\u672A\u56DE\u4F20 AI\uFF09" : "\uFF08\u56DE\u6267\u5C06\u968F\u4E0B\u4E00\u6761\u6D88\u606F\u5E26\u7ED9 AI\uFF09"
-    ] }) : formState === "submitting" ? /* @__PURE__ */ jsx("span", { className: "text-text-secondary", children: "\u63D0\u4EA4\u4E2D\u2026" }) : formState === "error" ? /* @__PURE__ */ jsx("span", { className: "text-red-500", children: submitError || "\u63D0\u4EA4\u5931\u8D25" }) : /* @__PURE__ */ jsxs(Fragment, { children: [
-      form.read === "full" && /* @__PURE__ */ jsxs("label", { className: "flex cursor-pointer items-center gap-1 text-text-secondary", children: [
-        /* @__PURE__ */ jsx("input", { type: "checkbox", checked: privateSubmit, onChange: (e) => setPrivateSubmit(e.target.checked) }),
-        "\u79C1\u5BC6\u63D0\u4EA4\uFF08\u672C\u6B21\u503C\u4E0D\u56DE\u4F20\uFF09"
-      ] }),
-      /* @__PURE__ */ jsxs("span", { className: "ml-auto text-text-muted", children: [
-        "\u7B49\u5F85\u7EC4\u4EF6\u5185\u63D0\u4EA4\uFF08",
-        form.submitLabel || "\u63D0\u4EA4",
-        "\uFF09"
-      ] })
-    ] }) }) : null
+    )
   ] });
 }
-function HydratingFrame({ data, sessionId }) {
-  const [state, setState] = useState("checking");
-  const [html, setHtml] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    setState("checking");
-    setHtml(null);
-    if (!data.sourcePath) {
-      setState("notice");
-      return;
-    }
-    readArtifactHtml(data.sourcePath).then((h) => {
-      if (cancelled) return;
-      if (typeof h === "string" && h.length > 0 && h.includes("<")) {
-        setHtml(h);
-        setState("ready");
-      } else {
-        setState("notice");
-      }
-    }).catch(() => {
-      if (!cancelled) setState("notice");
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [data.sourcePath]);
-  if (state === "checking") {
-    return /* @__PURE__ */ jsxs("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2", children: [
-      /* @__PURE__ */ jsx("div", { className: "h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" }),
-      /* @__PURE__ */ jsx("span", { className: "text-xs text-text-muted", children: "\u52A0\u8F7D\u7EC4\u4EF6\u2026" })
-    ] });
-  }
-  if (state === "ready" && html !== null) {
-    return /* @__PURE__ */ jsx(InteractiveFrame, { data: { ...data, html }, sessionId });
-  }
-  return /* @__PURE__ */ jsxs("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-2 text-xs", children: [
-    /* @__PURE__ */ jsx("span", { className: "text-green-500", children: "\u2705" }),
-    /* @__PURE__ */ jsxs("span", { className: "text-text-secondary", children: [
-      "\u7EC4\u4EF6\u5DF2\u751F\u6210",
-      data.title ? `\uFF1A${data.title}` : "",
-      data.versionLabel ? ` \xB7 ${data.versionLabel}` : "",
-      typeof data.previewId === "string" && data.previewId ? `\uFF08${data.previewId.slice(0, 8)}\u2026\uFF09` : ""
-    ] }),
-    data.sourcePath ? /* @__PURE__ */ jsx(
-      "button",
-      {
-        type: "button",
-        onClick: () => openArtifactSource(data.sourcePath),
-        className: clsx_default("ml-auto shrink-0 rounded-md border border-border px-2 py-1", "text-text-secondary hover:text-primary hover:border-primary transition-colors"),
-        children: "\u6253\u5F00\u6E90\u7801"
-      }
-    ) : null
-  ] });
-}
-function buildSrcDoc(html) {
-  const trimmed = html.trim();
-  if (/<html[\s>]/i.test(trimmed)) return trimmed;
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0">${trimmed}</body></html>`;
-}
-var card_default = InteractiveComponentCard;
+var card_default = InteractivePanelCard;
 export {
-  InteractiveComponentCard,
+  InteractivePanelCard,
   card_default as default
 };

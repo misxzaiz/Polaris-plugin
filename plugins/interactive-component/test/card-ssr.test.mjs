@@ -6,8 +6,8 @@
  * 测试又只覆盖 server.js 不碰卡片 → 构建全绿照样炸。本文件把「卡片渲染
  * 路径」锁进测试：任何渲染期抛错（未声明变量/空指针/协议分支炸）直接红。
  *
- * 形态矩阵：完整 html / html+form 契约 / 仅 sourcePath（投影）/ 脏数据。
- * 桥成员在 SSR 下不会执行（useEffect 跳过），stub 只需存在（见 host-bridge-stubs）。
+ * v2：卡片不再依赖任何 polaris-host/* 桥，esbuild 无需 stub alias。
+ * 形态矩阵：完整 html / 闪造来源 / 仅 sourcePath / 脏数据 / 非字符串 previewId。
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,22 +20,15 @@ const here = dirname(fileURLToPath(import.meta.url));
 const bundlePath = join(here, '.tmp', 'card-ssr.bundle.mjs');
 mkdirSync(dirname(bundlePath), { recursive: true });
 
-// 1. 打包：src/card.tsx + renderToString 入口；三个 polaris-host 桥 alias 到 stub
 await esbuild.build({
   entryPoints: [join(here, 'card-ssr-entry.tsx')],
   bundle: true,
   format: 'esm',
   outfile: bundlePath,
   jsx: 'automatic',
-  alias: {
-    'polaris-host/artifact': join(here, 'host-bridge-stubs.ts'),
-    'polaris-host/form': join(here, 'host-bridge-stubs.ts'),
-    'polaris-host/cap': join(here, 'host-bridge-stubs.ts'),
-  },
 });
 
-// 2. 渲染四种形态，断言关键标记 + 不抛
-// Windows 坑：ESM 动态 import 绝对路径必须 file:// URL（裸盘符路径 ERR_UNSUPPORTED_ESM_URL_SCHEME）
+// Windows 坑：ESM 动态 import 绝对路径必须 file:// URL
 const { renderCard } = await import(pathToFileURL(bundlePath).href);
 
 test('SSR：完整 html 形态渲染出标题与 iframe', () => {
@@ -48,31 +41,26 @@ test('SSR：完整 html 形态渲染出标题与 iframe', () => {
   assert.ok(html.includes('<iframe'), '应有沙箱 iframe');
 });
 
-test('SSR：form 契约形态渲染回传徽标与提交提示', () => {
-  const html = renderCard({
-    previewId: 'pv-form',
-    title: '表单组件',
-    html: '<button>提交</button>',
-    form: { formId: 'f-1', read: 'full', submitLabel: '提交' },
-  });
-  assert.ok(html.includes('表单回传'), 'read=full 徽标应上屏');
-  assert.ok(html.includes('私密提交'), '私密提交复选应上屏');
+test('SSR：iframe 具备音效与 pointer-lock 权限（闪造对齐）', () => {
+  const html = renderCard({ previewId: 'pv-audio', html: '<p>x</p>' });
+  assert.ok(html.includes('autoplay'), '应有 allow="autoplay"（不透明 origin 下音效必需）');
+  assert.ok(html.includes('allow-pointer-lock'), '应有 pointer-lock sandbox token');
 });
 
-test('SSR：read=none 形态渲染私密徽标且无私密提交复选', () => {
+test('SSR：闪造来源渲染来源徽标且收紧 sandbox', () => {
   const html = renderCard({
-    previewId: 'pv-none',
-    title: '私密组件',
-    html: '<input/>',
-    form: { formId: 'f-2', read: 'none' },
+    previewId: 'pv-ff',
+    title: '贪吃蛇',
+    html: '<canvas></canvas>',
+    source: 'flashforge',
   });
-  assert.ok(html.includes('私密回传'), 'read=none 徽标应上屏');
-  assert.ok(!html.includes('私密提交（本次值不回传）'), '不应出现私密复选');
+  assert.ok(html.includes('闪造应用'), '来源徽标应上屏');
+  assert.ok(!html.includes('allow-popups'), '闪造档位不应放宽弹窗权限');
 });
 
-test('SSR：仅 sourcePath（投影形态）渲染加载态不抛', () => {
-  const html = renderCard({ sourcePath: 'ws/.polaris/previews/abc/index.html' });
-  assert.ok(html.includes('加载组件'), '应显示加载态');
+test('SSR：仅 sourcePath（投影形态）渲染提示不抛', () => {
+  const html = renderCard({ sourcePath: 'ws/.polaris/interactive/abc/index.html' });
+  assert.ok(html.includes('交互面板已生成'), '应显示已生成提示');
 });
 
 test('SSR：脏数据（字符串/undefined）优雅兜底不抛', () => {
@@ -83,7 +71,6 @@ test('SSR：脏数据（字符串/undefined）优雅兜底不抛', () => {
 });
 
 test('SSR：previewId 非字符串真值不炸（2026-11-08 防御回归锁）', () => {
-  // 投影形态 + 数字 previewId：旧实现 .slice(0,8) 在此抛 TypeError
   const html = renderCard({
     sourcePath: 'ws/x/index.html',
     previewId: 12345678,

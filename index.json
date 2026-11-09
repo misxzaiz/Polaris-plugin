@@ -5032,25 +5032,25 @@
     },
     {
       "id": "interactive-component",
-      "name": "交互组件",
-      "version": "1.1.2",
-      "description": "在 AI 对话中渲染自包含交互组件：任意 HTML（iframe 沙箱）+ 可选表单回传（read 三态/secret 掩码服务端强制）+ 静态原型预览。MCP 四工具：render_component / preview_html / read_preview / list_previews。",
+      "name": "交互面板",
+      "version": "2.0.0",
+      "description": "在 AI 对话中渲染自包含交互面板：任意 HTML（沙箱 iframe）+ 全屏 / 音效（autoplay）/ pointer-lock / 主题注入 / 版本分组，另有活动栏应用架。可选配合闪造（ff_source 取源码后以 source=flashforge 传入），闪造未安装时独立可用。",
       "author": "Polaris",
       "category": "mcp",
       "tags": [
         "mcp",
         "interactive",
-        "preview",
-        "form",
-        "artifact"
+        "panel",
+        "fullscreen",
+        "audio"
       ],
       "icon": "LayoutTemplate",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/interactive-component",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/interactive-component/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v2.0.0/plugins/interactive-component/interactive-component.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/interactive-component/update.json",
-      "sha256": "9e6fa481280cf05fe1c1e63a67ca78329bfe330726815de82fe61eac7580df26",
+      "sha256": "e43267b1c317a0c7ab6b3a6b05c3204be20bc0d0421edfda805f056a12124062",
       "permissions": {
         "workspaceRead": true,
         "workspaceWrite": true,
@@ -5058,6 +5058,10 @@
       },
       "tier": "production",
       "versions": [
+        {
+          "version": "2.0.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v2.0.0/plugins/interactive-component/interactive-component.zip"
+        },
         {
           "version": "1.1.2",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip"

@@ -1,14 +1,29 @@
 {
   "id": "interactive-component",
-  "name": "交互组件",
-  "version": "1.1.2",
-  "description": "在 AI 对话中渲染自包含交互组件：任意 HTML（iframe 沙箱）+ 可选表单回传（与系统表单同一信任边界：read 三态/secret 掩码服务端强制）+ 静态原型预览。MCP 四工具（render_component / preview_html 兼容别名 / read_preview / list_previews）。数据落工作区 .polaris/previews，代码不出本机。",
+  "name": "交互面板",
+  "version": "2.0.0",
+  "description": "在 AI 对话中渲染自包含交互面板：任意 HTML（沙箱 iframe）+ 全屏 / 音效（autoplay）/ pointer-lock / 主题注入 / 版本分组，另有活动栏应用架。MCP 四工具（render_component / preview_html 兼容别名 / read_preview / list_previews）。可选配合闪造：先用 ff_source 读应用源码再以 source=flashforge 传入；闪造未安装时本插件完全独立可用。数据落工作区 .polaris/interactive。",
   "enabledByDefault": true,
   "core": true,
   "contributes": {
+    "views": [
+      {
+        "id": "interactive.panel",
+        "area": "activityBar",
+        "panelType": "interactive",
+        "icon": "Code2",
+        "labelKey": "plugins.interactive",
+        "labelDefault": "交互面板",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    },
     "mcpServers": [
       {
-        "id": "polaris-prd-preview",
+        "id": "polaris-interactive",
         "transport": "stdio",
         "command": "node",
         "argsTemplate": [
@@ -20,8 +35,8 @@
     ],
     "chatCards": [
       {
-        "id": "preview-card",
-        "mcpServerId": "polaris-prd-preview",
+        "id": "interactive-card",
+        "mcpServerId": "polaris-interactive",
         "tools": [
           "render_component",
           "preview_html",
@@ -41,6 +56,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/interactive-component",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/interactive-component/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v2.0.0/plugins/interactive-component/interactive-component.zip"
   }
 }

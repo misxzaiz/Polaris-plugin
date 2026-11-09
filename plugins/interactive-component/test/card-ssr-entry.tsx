@@ -3,8 +3,7 @@
  * 由 card-ssr.test.mjs 经 esbuild 打包后 import 执行。
  */
 import { renderToString } from 'react-dom/server'
-// @ts-expect-error — polaris-host/* 桥在构建时 alias 到 stub
-import InteractiveComponentCard from '../src/card'
+import InteractivePanelCard from '../src/card'
 
 interface CardProps {
   pluginId: string
@@ -19,12 +18,12 @@ interface CardProps {
 export function renderCard(data: unknown, sessionId?: string): string {
   const props: CardProps = {
     pluginId: 'interactive-component',
-    cardId: 'preview-card',
+    cardId: 'interactive-card',
     toolName: 'render_component',
     mode: 'result',
     status: 'ready',
     data,
     sessionId,
   }
-  return renderToString(<InteractiveComponentCard {...(props as never)} />)
+  return renderToString(<InteractivePanelCard {...(props as never)} />)
 }

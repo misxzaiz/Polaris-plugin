@@ -1,45 +1,41 @@
 #!/usr/bin/env node
 /**
- * 交互组件 MCP Server（stdio，零依赖）
+ * 交互面板 MCP Server（stdio，零依赖）
  *
- * 由主仓 `prd_preview_mcp_server.rs`（557 行）等价移植并泛化：
- * - render_component：自由交互组件（= preview_html 超集，可选 form 回传契约）
- * - preview_html：兼容别名（历史对话/提示词不断链，spec [N-1]）
- * - read_preview / list_previews：原样
+ * v2 去 PRD 化（由原预览 server 泛化，不再兼容 v1 数据目录）：
+ * - render_component：渲染自包含交互面板（iframe 沙箱 + 全屏 + 音效 + pointer-lock）
+ * - preview_html：兼容别名（等价 render_component）
+ * - read_preview / list_previews：读取 / 列出落盘产物
+ * - 数据落 `<workspace>/.polaris/interactive`
  *
- * 金标对齐（行为等价清单，见 plugins/docs/interactive-component-implementation-plan.md §2.3）：
- * - 落盘：`<workspace>/.polaris/previews/<previewId>/index.html` + metadata.json
- *   （无 workspace 时落 `<configDir>/previews-workspace/.polaris/previews`）
- * - 版本：同 requirementId 下 version 递增，versionLabel 缺省自动 v1/v2…
- * - 上限：HTML ≤ 2MB（超限报错，不留脏目录——校验全部前置）
- * - 返回信封：{ structuredContent, content:[{type:'text',text}] }，artifactType 恒 "polaris.preview"
+ * 闪造配合是**可选增强**：AI 可先用 ff_source 读应用源码，再以
+ * source='flashforge' 传给本工具（切到闪造的 iframe 权限档位）。本插件
+ * 不依赖闪造、不读 ff.* 键空间，未安装时完全独立可用。
  *
- * form 回传契约（v2 新增）：marker 顶层可选 `form: { formId, read, secretKeys?, submitLabel? }`。
- * 登记与提交的信任边界在宿主（cap.ai.chat component_register / form_submit + form_core），
- * 本 server 只透传 AI 声明，不做任何信任判断（spec [S-7]：AI 的 HTML 声明不构成信任）。
+ * 安全：入库前静态扫描拦联网/逃逸代码；运行时 iframe 为不透明 origin
+ * 沙箱（无 allow-same-origin），是隔离 AI 生成 HTML 的硬边界。
  */
-
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const ARTIFACT_TYPE = 'polaris.preview';
+const ARTIFACT_TYPE = 'polaris.interactive';
 const MAX_HTML_BYTES = 2 * 1024 * 1024;
-const PREVIEW_DIR = '.polaris/previews';
+const PREVIEW_DIR = '.polaris/interactive';
 
-// ── 参数解析：argv[2]=appConfigDir argv[3]=workspacePath（与 Rust 版一致） ──
+// argv[2]=appConfigDir argv[3]=workspacePath
 const configDir = process.argv[2] || '.';
 const workspacePath = (process.argv[3] || '').trim();
 
-const rootBase = workspacePath || path.join(configDir, 'previews-workspace');
+const rootBase = workspacePath || path.join(configDir, 'interactive-workspace');
 const root = path.join(rootBase, ...PREVIEW_DIR.split('/'));
 
-// ── 工具函数（与 Rust 版逐条对齐） ─────────────────────────────────────────
+// ── 工具函数 ────────────────────────────────────────────────────────────────
 
 function nowIso() {
-  return new Date().toISOString().replace(/\.\d{3}Z$/, (m) => m); // 保留毫秒 + Z（RFC3339 millis）
+  return new Date().toISOString();
 }
 
 function fileModifiedIso(p) {
@@ -84,6 +80,27 @@ function validateHtmlSize(html) {
   }
 }
 
+/** 入库闸：拦联网与逃逸面（与闪造 BLOCK 口径对齐；沙箱是第二道硬边界） */
+const BLOCK_RULES = [
+  { re: /\bfetch\s*\(/, hint: '禁止 fetch()' },
+  { re: /\bXMLHttpRequest\b/, hint: '禁止 XMLHttpRequest' },
+  { re: /\bWebSocket\b/, hint: '禁止 WebSocket' },
+  { re: /\bEventSource\b/, hint: '禁止 EventSource' },
+  { re: /\bnavigator\.sendBeacon\b/, hint: '禁止 sendBeacon' },
+  { re: /\bserviceWorker\b/, hint: '禁止 serviceWorker' },
+  { re: /\bimport\s*\(/, hint: '禁止动态 import()' },
+  { re: /\bwindow\.open\s*\(/, hint: '禁止 window.open' },
+  { re: /\btop\.location\b|\bparent\.location\b/, hint: '禁止顶层导航' },
+  { re: /\bdocument\.domain\b/, hint: '禁止 document.domain' },
+];
+
+function scanHtml(html) {
+  const blocked = BLOCK_RULES.filter((r) => r.re.test(html)).map((r) => r.hint);
+  if (blocked.length) {
+    throw new Error(`HTML 静态扫描未通过：${blocked.join('；')}。请改为纯本地实现（无外网请求、无顶层导航）。`);
+  }
+}
+
 function previewDir(previewId) {
   if (!isSafePreviewId(previewId)) throw new Error('previewId 不合法');
   return path.join(root, previewId);
@@ -108,7 +125,7 @@ function readMetadata(previewId) {
   try {
     return JSON.parse(fs.readFileSync(p, 'utf8'));
   } catch (e) {
-    throw new Error(`解析预览元数据失败: ${e.message}`);
+    throw new Error(`解析交互面板元数据失败: ${e.message}`);
   }
 }
 
@@ -116,7 +133,7 @@ function fallbackMetadata(previewId, idxPath) {
   return {
     artifactType: ARTIFACT_TYPE,
     previewId,
-    title: 'PRD Prototype',
+    title: '交互面板',
     contentType: 'html',
     sourcePath: idxPath,
     createdAt: fileModifiedIso(idxPath) || nowIso(),
@@ -154,40 +171,16 @@ function newPreviewId() {
 
 // ── 工具实现 ────────────────────────────────────────────────────────────────
 
-function normalizeFormDecl(args) {
-  const f = args && args.form;
-  if (f == null) return null;
-  if (typeof f !== 'object') throw new Error('form 契约必须是对象: { formId, read, secretKeys?, submitLabel? }');
-  const formId = optionalTrimmedString(f.formId);
-  if (!formId) throw new Error('form.formId 必填（非空字符串）');
-  const read = f.read === 'none' ? 'none' : f.read === 'full' ? 'full' : null;
-  if (!read) throw new Error('form.read 仅支持 full|none');
-  const secretKeys = Array.isArray(f.secretKeys)
-    ? f.secretKeys.filter((k) => typeof k === 'string' && k.trim()).map((k) => k.trim()).slice(0, 64)
-    : [];
-  const submitLabel = optionalTrimmedString(f.submitLabel);
-  const decl = { formId, read, secretKeys };
-  if (submitLabel) decl.submitLabel = submitLabel;
-  return decl;
-}
-
-function execPreviewHtml(args, { toolName }) {
+function execRenderComponent(args) {
   const html = requireStr(args, 'html');
   validateHtmlSize(html);
-  const title =
-    optionalTrimmedString(args.title) || 'PRD Prototype';
+  scanHtml(html);
+  const title = optionalTrimmedString(args.title) || '交互面板';
   const requirementId = optionalTrimmedString(args.requirementId);
   const description = optionalTrimmedString(args.description);
-  const form = normalizeFormDecl(args);
-  // caps 声明（spec [S-8]）：组件内脚本可调用的 cap 目标白名单（服务端三重门控
-  // 的第三重；deny 清单不可声明）。透传登记，不做信任判断。
-  let caps = null;
-  if (Array.isArray(args.caps)) {
-    caps = args.caps.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim()).slice(0, 16);
-  }
+  const source = args.source === 'flashforge' ? 'flashforge' : 'inline';
 
-  // 所有可能失败的计算（版本号、目录解析）都已在上面完成；从这里开始才触碰
-  // 文件系统，且校验已前置，失败不再留下脏目录（金标行为）。
+  // 校验全部前置，从这里开始才触碰文件系统，失败不留脏目录
   const version = nextVersion(requirementId);
   const versionLabel = optionalTrimmedString(args.versionLabel) || `v${version}`;
   const createdAt = nowIso();
@@ -212,24 +205,19 @@ function execPreviewHtml(args, { toolName }) {
   };
   writeMetadata(metadata);
 
-  const artifact = {
-    ...metadata,
-    html,
-  };
-  if (form) artifact.form = form;
-  if (caps) artifact.caps = caps;
-  return artifactResult(artifact, `已创建预览: ${title}`);
+  const artifact = { ...metadata, html, source };
+  return artifactResult(artifact, `已创建交互面板: ${title}`);
 }
 
 function execReadPreview(args) {
   const previewId = requireStr(args, 'previewId');
   const p = indexPath(previewId);
-  if (!fs.existsSync(p)) throw new Error(`读取预览失败: 预览不存在（${previewId}）`);
+  if (!fs.existsSync(p)) throw new Error(`读取交互面板失败: 不存在（${previewId}）`);
   const html = fs.readFileSync(p, 'utf8');
   validateHtmlSize(html);
   const metadata = readMetadata(previewId) || fallbackMetadata(previewId, p);
   const artifact = { ...metadata, sourcePath: p, html };
-  return artifactResult(artifact, '已读取预览');
+  return artifactResult(artifact, '已读取交互面板');
 }
 
 function execListPreviews(args) {
@@ -237,9 +225,6 @@ function execListPreviews(args) {
   if (args && typeof args.limit === 'number' && Number.isFinite(args.limit)) {
     limit = Math.min(50, Math.max(1, Math.trunc(args.limit)));
   }
-  // total 必须取截断前的真实数量：工作区预览已达数百个，而 schema limit
-  // 上限 50；旧实现先截断数组再用 previews.length 报数，文案恒等于 limit，
-  // 调用方既拿不到总数、也误以为没有更多。
   const previews = [];
   if (fs.existsSync(root)) {
     for (const name of safeReadDir(root)) {
@@ -261,7 +246,7 @@ function execListPreviews(args) {
   const returned = previews.slice(0, limit);
   return {
     structuredContent: { previews: returned, total },
-    content: [{ type: 'text', text: `共 ${total} 个预览，返回最近 ${returned.length} 个` }],
+    content: [{ type: 'text', text: `共 ${total} 个交互面板，返回最近 ${returned.length} 个` }],
   };
 }
 
@@ -273,53 +258,48 @@ function artifactResult(artifact, message) {
   };
 }
 
-// ── 工具清单（schema 与 Rust 版逐字段对齐；render_component 为超集） ────────
+// ── 工具清单 ────────────────────────────────────────────────────────────────
 
 const htmlProps = {
-  title: { type: 'string', description: '预览标题' },
-  html: { type: 'string', minLength: 1, description: '完整 HTML 源码，建议内联 CSS/JS' },
+  title: { type: 'string', description: '面板标题' },
+  html: {
+    type: 'string',
+    minLength: 1,
+    description:
+      '完整 HTML 文档或可独立渲染的片段，内联 CSS/JS。可包含音效（AudioContext / <audio>）、游戏循环、动画；卡片支持全屏、静音与 pointer-lock。禁止 fetch/XHR/WebSocket/动态 import 等联网调用与顶层导航（入库前静态扫描会拒绝）。',
+  },
   requirementId: { type: 'string', description: '可选，关联的需求 ID；同一需求下版本号会递增' },
-  description: { type: 'string', description: '可选，预览说明或本版本变更摘要' },
+  description: { type: 'string', description: '可选，面板说明或本版本变更摘要' },
   versionLabel: { type: 'string', description: '可选，展示版本名；未传时自动生成 v1/v2...' },
+  source: {
+    type: 'string',
+    enum: ['inline', 'flashforge'],
+    description:
+      "可选，内容来源。'inline'（默认）= AI 直接产出；'flashforge' = 先用闪造 ff_source 读应用源码再传入（沿用闪造沙箱档位）。闪造未安装时忽略本字段，插件独立可用。",
+  },
 };
 
 const TOOLS = [
   {
     name: 'render_component',
     description:
-      '渲染一个自包含的交互组件（任意 HTML+CSS+JS）。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容会在 Polaris 聊天中渲染为沙箱 iframe。可选 form 契约：声明后用户在组件内的表单提交会回喂给你（read=none 时字段值对你隐藏）。不要把秘密输入声明为 read=full。页面内提交约定：脚本调 parent.postMessage({ __polarisComponent: 1, formId: 「你声明的formId」, values: {字段: 值} }, "*")，宿主校验后走系统表单管线，回执随下一条消息注入你的上下文。',
+      '渲染一个自包含交互面板（任意 HTML+CSS+JS）。适合小游戏、可玩原型、带音效的教具、图表与工具类页面：可写 AudioContext 音效、requestAnimationFrame 动画、requestPointerLock 鼠标锁定；卡片提供全屏、静音、展开。html 必须自包含、不引用本地任意路径、不联网。可选闪造配合：先调 ff_source 取应用源码，再以 source="flashforge" 传入；不需要闪造也能独立使用。',
     inputSchema: {
       type: 'object',
       required: ['html'],
-      properties: {
-        ...htmlProps,
-        caps: { type: 'array', items: { type: 'string' }, description: '可选，组件内脚本可调用的 cap 目标白名单（如 cap.kv）；敏感能力（bash/fs 写等）在宿主 deny 清单中不可声明' },
-        form: {
-          type: 'object',
-          description:
-            '可选，表单回传契约。formId 全局唯一；read="none" 时用户提交值不进入你的上下文（只见字段名）；secretKeys 列出的键值恒定掩码。submitLabel 为提交按钮文案（缺省「提交」）。',
-          required: ['formId', 'read'],
-          properties: {
-            formId: { type: 'string', minLength: 1, description: '回传契约 id（唯一）' },
-            read: { type: 'string', enum: ['full', 'none'], description: 'AI 读取模式；服务端强制，不信任 HTML 内声明' },
-            secretKeys: { type: 'array', items: { type: 'string' }, description: '恒定掩码的键名列表' },
-            submitLabel: { type: 'string', description: '提交按钮文案（可选）' },
-          },
-          additionalProperties: false,
-        },
-      },
+      properties: { ...htmlProps },
       additionalProperties: false,
     },
   },
   {
     name: 'preview_html',
     description:
-      '创建一个自包含 HTML 原型预览。html 必须是完整 HTML 文档或可独立渲染的片段；不要引用本地任意路径。返回内容会在 Polaris 聊天中渲染为 artifact_preview。（兼容别名 = render_component 无 form）',
+      '创建一个自包含 HTML 交互面板（render_component 的兼容别名，schema 相同）。可含音效与动画，卡片支持全屏与静音。',
     inputSchema: { type: 'object', required: ['html'], properties: htmlProps, additionalProperties: false },
   },
   {
     name: 'read_preview',
-    description: '读取之前创建的 HTML 预览源码。',
+    description: '读取之前创建的交互面板 HTML 源码（按 previewId）。',
     inputSchema: {
       type: 'object',
       required: ['previewId'],
@@ -329,7 +309,7 @@ const TOOLS = [
   },
   {
     name: 'list_previews',
-    description: '列出当前工作区最近保存的 Polaris HTML 预览。',
+    description: '列出当前工作区最近保存的交互面板（含真实总数）。',
     inputSchema: {
       type: 'object',
       properties: { limit: { type: 'integer', minimum: 1, maximum: 50 } },
@@ -338,7 +318,7 @@ const TOOLS = [
   },
 ];
 
-// ── stdio JSON-RPC 主循环（换行分帧，与 needs/prompt-matrix 同构） ──────────
+// ── stdio JSON-RPC 主循环（换行分帧） ──────────────────────────────────────
 
 function send(msg) {
   process.stdout.write(JSON.stringify(msg) + '\n');
@@ -350,9 +330,9 @@ function err(message) {
 function callTool(name, args) {
   switch (name) {
     case 'render_component':
-      return execPreviewHtml(args, { toolName: name });
+      return execRenderComponent(args);
     case 'preview_html':
-      return execPreviewHtml(args, { toolName: name });
+      return execRenderComponent(args);
     case 'read_preview':
       return execReadPreview(args);
     case 'list_previews':
@@ -392,7 +372,7 @@ function handleMessage(msg) {
         result: {
           protocolVersion: (msg.params && msg.params.protocolVersion) || '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'interactive-component-mcp', version: '1.1.2' },
+          serverInfo: { name: 'interactive-mcp', version: '2.0.0' },
         },
       });
       return;
