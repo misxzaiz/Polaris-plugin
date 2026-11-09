@@ -1,0 +1,29 @@
+{
+  "id": "computer",
+  "name": "电脑操作",
+  "version": "1.0.0",
+  "description": "Windows 电脑操作 MCP server（截图/鼠标键盘/UIA 控件树/剪贴板 19 工具）。自主仓内置插件外移而来：Rust 独立二进制随 zip 分发，仅 Windows 可用；非 Windows 宿主 server 启动失败即不注入（无平台声明字段，SPEC 限制）。",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      {
+        "id": "computer-mcp",
+        "transport": "stdio",
+        "command": "{{pluginDir}}/bin/polaris-computer-mcp.exe",
+        "argsTemplate": [
+          "{{appConfigDir}}",
+          "{{workspacePath}}"
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/computer",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/computer/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@computer-v1.0.0/plugins/computer/computer.zip"
+  }
+}
