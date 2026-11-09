@@ -372,7 +372,7 @@
     {
       "id": "agnes",
       "name": "Agnes 多模态",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域不再被 CORS 拦截。",
       "author": "Polaris",
       "category": "ai",
@@ -387,9 +387,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.2/plugins/agnes/agnes.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
-      "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64",
+      "sha256": "e4b3d9d4f639d729da928d3e121f361a71d962376f4413c6da7e35c791620c0c",
       "tier": 7,
       "permissions": {
         "aiToolAccess": true,
@@ -398,6 +398,11 @@
         "appConfigWrite": true
       },
       "versions": [
+        {
+          "version": "0.1.2",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.2/plugins/agnes/agnes.zip",
+          "sha256": "e4b3d9d4f639d729da928d3e121f361a71d962376f4413c6da7e35c791620c0c"
+        },
         {
           "version": "0.1.1",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
@@ -410,7 +415,7 @@
         }
       ],
       "createdAt": "2026-10-26T04:41:31.000Z",
-      "updatedAt": "2026-10-26T04:41:31.000Z",
+      "updatedAt": "2026-11-09T20:33:52.595Z",
       "usageTier": 3
     },
     {
