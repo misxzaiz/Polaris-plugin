@@ -237,6 +237,9 @@ function execListPreviews(args) {
   if (args && typeof args.limit === 'number' && Number.isFinite(args.limit)) {
     limit = Math.min(50, Math.max(1, Math.trunc(args.limit)));
   }
+  // total 必须取截断前的真实数量：工作区预览已达数百个，而 schema limit
+  // 上限 50；旧实现先截断数组再用 previews.length 报数，文案恒等于 limit，
+  // 调用方既拿不到总数、也误以为没有更多。
   const previews = [];
   if (fs.existsSync(root)) {
     for (const name of safeReadDir(root)) {
@@ -253,11 +256,12 @@ function execListPreviews(args) {
       }
     }
   }
+  const total = previews.length;
   previews.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
-  previews.length = Math.min(previews.length, limit);
+  const returned = previews.slice(0, limit);
   return {
-    structuredContent: { previews },
-    content: [{ type: 'text', text: `共 ${previews.length} 个预览` }],
+    structuredContent: { previews: returned, total },
+    content: [{ type: 'text', text: `共 ${total} 个预览，返回最近 ${returned.length} 个` }],
   };
 }
 

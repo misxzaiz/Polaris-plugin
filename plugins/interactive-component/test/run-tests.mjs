@@ -135,3 +135,24 @@ test('缺 html / 空 html / 超限 HTML 报错且不留脏目录（金标三条�
   const previewsRoot = join(workspace, '.polaris', 'previews');
   assert.equal(existsSync(previewsRoot), false, '超限失败不应留下脏目录');
 });
+
+test('list_previews：total 为真实总数，previews 受 limit 截断（回归：旧文案恒等于 limit）', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+  for (let i = 0; i < 7; i++) {
+    await callTool(args, 'preview_html', {
+      title: `bulk-${i}`,
+      html: `<!doctype html><html><body>${i}</body></html>`,
+    });
+  }
+  const listed = await callTool(args, 'list_previews', { limit: 3 });
+  assert.equal(listed.structuredContent.total, 7);
+  assert.equal(listed.structuredContent.previews.length, 3);
+  assert.match(listed.content[0].text, /共 7 个预览，返回最近 3 个/);
+
+  const all = await callTool(args, 'list_previews', { limit: 50 });
+  assert.equal(all.structuredContent.total, 7);
+  assert.equal(all.structuredContent.previews.length, 7);
+  assert.match(all.content[0].text, /共 7 个预览，返回最近 7 个/);
+});
