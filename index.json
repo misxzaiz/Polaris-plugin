@@ -372,7 +372,7 @@
     {
       "id": "agnes",
       "name": "Agnes 多模态",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "description": "Agnes Image 2.1 Flash 文生图/图生图 + Agnes Video V2.0 文生视频/图生视频/多图/关键帧。MCP 工具 + 活动栏面板 + 聊天媒体卡片。v0.1.1：面板 API 调用改道宿主 cap.http 转发，面板/Web/移动端跨域不再被 CORS 拦截。",
       "author": "Polaris",
       "category": "ai",
@@ -387,9 +387,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/agnes",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.2/plugins/agnes/agnes.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/agnes/update.json",
-      "sha256": "47814a5b1f0f6cbca829359c9e6c5aa374c73e5fb1d0d5491ebb3a383ca2ba64",
+      "sha256": "e4b3d9d4f639d729da928d3e121f361a71d962376f4413c6da7e35c791620c0c",
       "tier": 7,
       "permissions": {
         "aiToolAccess": true,
@@ -398,6 +398,11 @@
         "appConfigWrite": true
       },
       "versions": [
+        {
+          "version": "0.1.2",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.2/plugins/agnes/agnes.zip",
+          "sha256": "e4b3d9d4f639d729da928d3e121f361a71d962376f4413c6da7e35c791620c0c"
+        },
         {
           "version": "0.1.1",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@agnes-v0.1.1/plugins/agnes/agnes.zip",
@@ -410,7 +415,7 @@
         }
       ],
       "createdAt": "2026-10-26T04:41:31.000Z",
-      "updatedAt": "2026-10-26T04:41:31.000Z",
+      "updatedAt": "2026-11-09T20:33:52.595Z",
       "usageTier": 3
     },
     {
@@ -5067,6 +5072,80 @@
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@interactive-component-v1.1.2/plugins/interactive-component/interactive-component.zip"
         }
       ]
+    },
+    {
+      "id": "personal-hub",
+      "name": "个人空间",
+      "version": "1.0.0",
+      "description": "个人链接/收藏/待办/笔记台账：Supabase 云同步 + description 字段级加密（crypto-js 兼容）。stdio MCP 五工具（ph_list/ph_create/ph_get/ph_update/ph_delete）+ 活动栏面板（登录/CRUD/配置管理）。自主仓内置插件外移而来。",
+      "author": "Polaris",
+      "category": "productivity",
+      "tags": [
+        "bookmarks",
+        "todo",
+        "notes",
+        "supabase",
+        "mcp",
+        "panel"
+      ],
+      "icon": "Link",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/personal-hub",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/personal-hub/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@personal-hub-v1.0.0/plugins/personal-hub/personal-hub.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/personal-hub/update.json",
+      "sha256": "9892fc09e5c6eb3179367fda85832d0f794812ed66df9d400c4058404242b159",
+      "tier": "production",
+      "permissions": {
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "network": true,
+        "aiToolAccess": true
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@personal-hub-v1.0.0/plugins/personal-hub/personal-hub.zip",
+          "sha256": "9892fc09e5c6eb3179367fda85832d0f794812ed66df9d400c4058404242b159"
+        }
+      ],
+      "createdAt": "2026-11-09T20:49:45.175Z",
+      "updatedAt": "2026-11-09T20:49:45.175Z"
+    },
+    {
+      "id": "computer",
+      "name": "电脑操作",
+      "version": "1.0.0",
+      "description": "Windows 电脑操作 MCP server（截图/鼠标键盘/UIA 控件树/剪贴板 19 工具）。自主仓内置插件外移而来：Rust 独立二进制随 zip 分发，仅 Windows 可用；非 Windows 宿主 server 启动失败即不注入（无平台声明字段，SPEC 限制）。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "windows",
+        "automation",
+        "uia",
+        "screenshot",
+        "mcp"
+      ],
+      "icon": "MousePointer2",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/computer",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/computer/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@computer-v1.0.0/plugins/computer/computer.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/computer/update.json",
+      "sha256": "f424fbf7db92351e54b47d750598c3c9b9cdbe447346679edf1b8a384cd06e25",
+      "tier": "production",
+      "permissions": {
+        "aiToolAccess": true
+      },
+      "versions": [
+        {
+          "version": "1.0.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@computer-v1.0.0/plugins/computer/computer.zip",
+          "sha256": "f424fbf7db92351e54b47d750598c3c9b9cdbe447346679edf1b8a384cd06e25"
+        }
+      ],
+      "createdAt": "2026-11-09T22:29:00.934Z",
+      "updatedAt": "2026-11-09T22:29:00.934Z"
     }
   ]
 }

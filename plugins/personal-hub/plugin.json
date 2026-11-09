@@ -1,0 +1,75 @@
+{
+  "id": "personal-hub",
+  "name": "个人空间",
+  "version": "1.0.0",
+  "description": "个人链接/收藏/待办/笔记台账：Supabase 云同步 + description 字段级加密（crypto-js 兼容）。stdio MCP 五工具（ph_list/ph_create/ph_get/ph_update/ph_delete）+ 活动栏面板（登录/CRUD/配置管理）。自主仓内置插件外移而来。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "personalHub.panel",
+        "area": "activityBar",
+        "panelType": "personalHub",
+        "icon": "Link",
+        "labelKey": "labels.personalHubPanel",
+        "labelDefault": "Personal Hub",
+        "order": 50
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js"
+    },
+    "mcpServers": [
+      {
+        "id": "personal-hub-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ],
+    "configSchema": [
+      {
+        "key": "supabaseUrl",
+        "label": "Supabase URL",
+        "type": "string",
+        "default": "https://nynpqrwsautudqblxoir.supabase.co"
+      },
+      {
+        "key": "supabaseAnonKey",
+        "label": "Supabase Anon Key",
+        "type": "string",
+        "default": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im55bnBxcndzYXV0dWRxYmx4b2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3MDkzMDksImV4cCI6MjA3ODI4NTMwOX0.rz79QkbbSEQPsrSdbYYFL-nuV_MwdAWhf4-gQ0j_fz4",
+        "sensitive": true
+      },
+      {
+        "key": "sessionToken",
+        "label": "会话令牌（面板登录后自动写入）",
+        "type": "string",
+        "default": "",
+        "sensitive": true
+      },
+      {
+        "key": "encryptionKey",
+        "label": "字段加密密钥（description）",
+        "type": "string",
+        "default": "",
+        "sensitive": true
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/personal-hub",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/personal-hub/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@personal-hub-v1.0.0/plugins/personal-hub/personal-hub.zip"
+  }
+}

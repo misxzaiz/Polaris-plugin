@@ -6,9 +6,8 @@
  * 配置来源（优先级）：
  *   1. 环境变量 AGNES_API_KEY / AGNES_API_BASE（如设了就用，不读 config）
  *   2. {appConfigDir}/config.json 的 plugins["agnes"]（与外部插件面板共用同一配置）
- *   3. 旧版兼容：{appConfigDir}/agnes/config.json（内置插件遗留；首次读取到会自动迁移写入 plugins["agnes"]）
  *
- * 组包逻辑与内置版（src/plugins/agnes/api.ts）及外部面板（plugins/agnes/src/Panel.tsx）保持一致。
+ * 组包逻辑与外部面板（plugins/agnes/src/Panel.tsx）保持一致。
  */
 
 const https = require('https')
@@ -64,47 +63,27 @@ function saveConfigStore(appConfigDir, store) {
   }
 }
 
-function readLegacyConfig(appConfigDir) {
-  if (!appConfigDir) return null
-  const p = path.join(appConfigDir, 'agnes', 'config.json')
-  try {
-    return JSON.parse(fs.readFileSync(p, 'utf8'))
-  } catch {
-    return null
-  }
-}
-
 function ensureConfig(appConfigDir, env) {
-  const store = getConfigStore(appConfigDir)
-  const existing = store.plugins?.[PLUGIN_ID]
-  if (existing && (existing.apiKey || env.AGNES_API_KEY)) {
-    return deepMerge(
-      {
-        apiKey: env.AGNES_API_KEY || '',
-        apiBase: DEFAULT_API_BASE,
-        imageModel: DEFAULT_IMAGE_MODEL,
-        videoModel: DEFAULT_VIDEO_MODEL,
-        defaultSize: DEFAULT_IMAGE_SIZE,
-      },
-      existing,
-    )
-  }
-  // 旧版兼容：迁移内置插件遗留配置
-  const legacy = readLegacyConfig(appConfigDir)
-  if (legacy) {
-    const migrated = deepMerge({ apiKey: '', apiBase: DEFAULT_API_BASE }, legacy)
-    store.plugins = store.plugins || {}
-    store.plugins[PLUGIN_ID] = migrated
-    saveConfigStore(appConfigDir, store)
-    return deepMerge({ apiKey: env.AGNES_API_KEY || '' }, migrated)
-  }
-  return {
-    apiKey: env.AGNES_API_KEY || '',
+  const defaults = {
+    apiKey: '',
     apiBase: DEFAULT_API_BASE,
     imageModel: DEFAULT_IMAGE_MODEL,
     videoModel: DEFAULT_VIDEO_MODEL,
     defaultSize: DEFAULT_IMAGE_SIZE,
   }
+  // 优先级 1：环境变量如设了就用，不读 config（与文件头声明一致）
+  if (env.AGNES_API_KEY || env.AGNES_API_BASE) {
+    return {
+      ...defaults,
+      apiKey: env.AGNES_API_KEY || '',
+      apiBase: env.AGNES_API_BASE || DEFAULT_API_BASE,
+    }
+  }
+  // 优先级 2：config.json plugins["agnes"]（修复：此前条件要求 apiKey 非空，
+  // 只设置 apiBase/模型的存量配置会被整个丢弃回退默认值）
+  const store = getConfigStore(appConfigDir)
+  const existing = store.plugins?.[PLUGIN_ID]
+  return deepMerge(defaults, existing || {})
 }
 
 // ── HTTP ──────────────────────────────────────────────────────────────────────
