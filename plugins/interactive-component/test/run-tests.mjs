@@ -161,3 +161,24 @@ test('list_previews：total 为真实总数，previews 受 limit 截断', async 
   assert.equal(all.structuredContent.previews.length, 7);
   assert.match(all.content[0].text, /共 7 个交互面板，返回最近 7 个/);
 });
+
+test('全屏覆盖层：源码单源实现、无旧全屏残留、对齐 z-overlay（静态闸）', async () => {
+  const { readFileSync } = await import('node:fs');
+  const srcDir = resolve(new URL('../src/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+  const overlay = readFileSync(join(srcDir, 'fullscreen.ts'), 'utf8');
+  const card = readFileSync(join(srcDir, 'card.tsx'), 'utf8');
+  const panel = readFileSync(join(srcDir, 'panel.tsx'), 'utf8');
+  const manifest = readFileSync(join(srcDir, '..', 'plugin.json'), 'utf8');
+
+  assert.ok(
+    card.includes('openFullscreenOverlay') && panel.includes('openFullscreenOverlay'),
+    '卡片与面板必须共用同一个全屏实现（不再各写一套）',
+  );
+  assert.ok(!card.includes('z-[9999]') && !panel.includes('z-[9999]'), '不应残留硬编码 z-[9999] 覆盖层');
+  assert.ok(!card.includes('fixed inset-0') && !panel.includes('fixed inset-0'), '不应残留组件树内 fixed 覆盖层');
+  assert.ok(overlay.includes('var(--z-overlay'), '覆盖层须对齐宿主 z-overlay 层级');
+  assert.ok(overlay.includes('document.body'), '覆盖层须挂到 body（脱离 virtuoso transform）');
+  assert.ok(overlay.includes('TOPBAR_OFFSET_PX = 40'), '覆盖层须保留宿主 40px 顶栏');
+  assert.ok(overlay.includes('退出全屏'), '覆盖层须含常驻退出按钮');
+  assert.ok(!manifest.includes('supportsFullscreen'), '宿主无消费者，manifest 不应再声明 supportsFullscreen');
+});

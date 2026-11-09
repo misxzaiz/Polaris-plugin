@@ -57,6 +57,108 @@ function framePolicy(source) {
   };
 }
 
+// src/fullscreen.ts
+var TOPBAR_OFFSET_PX = 40;
+var Z_OVERLAY = "var(--z-overlay, 40)";
+var active = null;
+function teardown() {
+  if (!active) return;
+  const { root, detach } = active;
+  active = null;
+  detach();
+  root.remove();
+}
+function openFullscreenOverlay(opts) {
+  teardown();
+  const root = document.createElement("div");
+  root.className = "flex flex-col bg-background";
+  Object.assign(root.style, {
+    position: "fixed",
+    top: `${TOPBAR_OFFSET_PX}px`,
+    left: "0",
+    right: "0",
+    bottom: "0"
+  });
+  root.style.setProperty("z-index", Z_OVERLAY);
+  const bar = document.createElement("div");
+  bar.className = "flex items-center justify-between gap-2 border-b border-border bg-background-elevated";
+  Object.assign(bar.style, {
+    height: "48px",
+    flex: "0 0 48px",
+    padding: "0 14px"
+  });
+  const left = document.createElement("div");
+  left.className = "flex min-w-0 items-center gap-2";
+  const chip = document.createElement("span");
+  chip.className = "shrink-0 rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-medium text-cyan-400";
+  chip.textContent = "\u4EA4\u4E92\u9762\u677F";
+  const titleEl = document.createElement("span");
+  titleEl.className = "truncate text-xs font-medium text-text-primary";
+  titleEl.textContent = opts.title;
+  left.append(chip, titleEl);
+  if (opts.meta) {
+    const meta = document.createElement("span");
+    meta.className = "shrink-0 text-[10px] text-text-tertiary";
+    meta.textContent = opts.meta;
+    left.appendChild(meta);
+  }
+  const right = document.createElement("div");
+  right.className = "flex shrink-0 items-center gap-2";
+  for (const action of opts.actions ?? []) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "text-[10px] text-text-tertiary hover:text-text-primary";
+    btn.textContent = action.label;
+    btn.onclick = action.onClick;
+    right.appendChild(btn);
+  }
+  const exit = document.createElement("button");
+  exit.type = "button";
+  exit.className = "bg-red-500 text-white";
+  exit.textContent = "\u2715 \u9000\u51FA\u5168\u5C4F";
+  Object.assign(exit.style, {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "6px 12px",
+    borderRadius: "6px",
+    border: "none",
+    fontSize: "12px",
+    fontWeight: "600",
+    cursor: "pointer"
+  });
+  exit.onclick = opts.onClose;
+  right.appendChild(exit);
+  bar.append(left, right);
+  const content = document.createElement("div");
+  content.className = "flex-1 overflow-hidden";
+  const frame = document.createElement("iframe");
+  frame.title = opts.title;
+  frame.setAttribute("sandbox", opts.sandbox);
+  frame.setAttribute("allow", opts.allow);
+  frame.setAttribute("referrerpolicy", "no-referrer");
+  frame.srcdoc = opts.srcDoc;
+  Object.assign(frame.style, {
+    width: "100%",
+    height: "100%",
+    border: "none",
+    display: "block",
+    background: opts.frameBg
+  });
+  content.appendChild(frame);
+  opts.onFrame?.(frame);
+  root.append(bar, content);
+  const onKey = (e) => {
+    if (e.key === "Escape") opts.onClose();
+  };
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(root);
+  active = { root, detach: () => document.removeEventListener("keydown", onKey) };
+  return () => {
+    if (active?.root === root) teardown();
+  };
+}
+
 // src/panel.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
 var InteractivePanel = memo(function InteractivePanel2() {
@@ -73,13 +175,18 @@ var InteractivePanel = memo(function InteractivePanel2() {
     return apps.find((a) => a.previewId && a.previewId === selected) ?? apps[0];
   }, [apps, selected]);
   useEffect(() => {
-    if (!fullscreen) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") setFullscreen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [fullscreen]);
+    if (!fullscreen || !current || typeof current.html !== "string") return;
+    const p = framePolicy(current.source);
+    return openFullscreenOverlay({
+      title: String(current.title || "\u4EA4\u4E92\u9762\u677F"),
+      meta: current.versionLabel ? String(current.versionLabel) : void 0,
+      srcDoc: buildSrcDoc(current.html, p.withTheme),
+      sandbox: p.sandbox,
+      allow: p.allow,
+      frameBg: p.withTheme ? "transparent" : "#ffffff",
+      onClose: () => setFullscreen(false)
+    });
+  }, [fullscreen, current]);
   const policy = current ? framePolicy(current.source) : null;
   const srcDoc = current && typeof current.html === "string" ? buildSrcDoc(current.html, policy ? policy.withTheme : true) : "";
   const title = String(current?.title || "\u4EA4\u4E92\u9762\u677F");
@@ -124,13 +231,13 @@ var InteractivePanel = memo(function InteractivePanel2() {
     /* @__PURE__ */ jsxs("div", { className: "flex flex-1 overflow-hidden", children: [
       /* @__PURE__ */ jsx("div", { className: "w-48 shrink-0 overflow-y-auto border-r border-border", children: apps.map((a, i) => {
         const key = a.previewId || `app-${i}`;
-        const active = current === a;
+        const active2 = current === a;
         return /* @__PURE__ */ jsxs(
           "button",
           {
             type: "button",
             onClick: () => setSelected(a.previewId || null),
-            className: "block w-full truncate border-b border-border px-3 py-2 text-left text-xs " + (active ? "bg-primary/10 text-primary" : "text-text-secondary hover:bg-background-elevated"),
+            className: "block w-full truncate border-b border-border px-3 py-2 text-left text-xs " + (active2 ? "bg-primary/10 text-primary" : "text-text-secondary hover:bg-background-elevated"),
             children: [
               String(a.title || "\u672A\u547D\u540D\u5E94\u7528"),
               a.versionLabel ? ` \xB7 ${a.versionLabel}` : ""
@@ -140,29 +247,7 @@ var InteractivePanel = memo(function InteractivePanel2() {
         );
       }) }),
       /* @__PURE__ */ jsx("div", { className: "flex flex-1 flex-col overflow-hidden", children: current && typeof current.html === "string" ? runner("h-full w-full flex-1") : /* @__PURE__ */ jsx("div", { className: "flex flex-1 items-center justify-center text-xs text-text-secondary", children: "\u8BE5\u5E94\u7528\u6CA1\u6709\u53EF\u8FD0\u884C\u7684 HTML" }) })
-    ] }),
-    fullscreen && current ? /* @__PURE__ */ jsxs(
-      "div",
-      {
-        className: "fixed inset-0 z-[9999] flex flex-col bg-background",
-        style: { top: 0, left: 0, right: 0, bottom: 0 },
-        children: [
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center justify-between border-b border-border px-3 py-2", children: [
-            /* @__PURE__ */ jsx("span", { className: "text-xs font-medium text-text-primary", children: title }),
-            /* @__PURE__ */ jsx(
-              "button",
-              {
-                type: "button",
-                onClick: () => setFullscreen(false),
-                className: "text-[10px] text-text-tertiary hover:text-text-primary",
-                children: "\u9000\u51FA\u5168\u5C4F\uFF08Esc\uFF09"
-              }
-            )
-          ] }),
-          /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-hidden", children: runner("h-full w-full") })
-        ]
-      }
-    ) : null
+    ] })
   ] });
 });
 var panel_default = InteractivePanel;

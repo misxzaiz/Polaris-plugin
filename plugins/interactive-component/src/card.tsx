@@ -11,7 +11,12 @@
  *
  * 宿主桥约束：react shim 仅导出 useState/useEffect/useCallback/useMemo/useRef/
  * memo/createElement 等——不得使用 shim 外的 hooks（useReducer 会让 blob 模块
- * 整体加载失败，2026-11-08 实锤）。
+ * 整体加载失败，2026-11-08 实锤）；也不提供 createPortal，故全屏走原生 DOM
+ * 覆盖层（src/fullscreen.ts）。
+ *
+ * 全屏（2026-11-09，plans/interactive-panel-fullscreen-spec.md）：覆盖层挂到
+ * document.body、顶部常驻操作栏含「退出全屏」；卡片内嵌 iframe 始终保持挂载
+ * 不卸载，退出无重载、组件交互状态保留。
  */
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -21,6 +26,7 @@ import {
   rememberApp,
   type InteractiveArtifactData,
 } from './shared'
+import { openFullscreenOverlay } from './fullscreen'
 
 interface CardProps {
   pluginId: string
@@ -79,6 +85,7 @@ function PanelFrame({ data }: { data: InteractiveArtifactData }) {
   const [muted, setMuted] = useState(false)
   const [copied, setCopied] = useState(false)
   const frameRef = useRef<HTMLIFrameElement | null>(null)
+  const fsFrameRef = useRef<HTMLIFrameElement | null>(null)
 
   const policy = useMemo(() => framePolicy(data.source), [data.source])
   const srcDoc = useMemo(
@@ -87,25 +94,14 @@ function PanelFrame({ data }: { data: InteractiveArtifactData }) {
   )
   const title = String(data.title || '交互面板')
 
-  // 全屏时 Esc 退出（不占用宿主 F11 / 面板全屏机制）
-  useEffect(() => {
-    if (!fullscreen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [fullscreen])
-
-  // 静音开关：向 iframe 广播可选协议，组件未实现时不影响运行（只切 UI 状态）
+  // 静音协议要广播给两个 iframe：内嵌 iframe 常驻挂载，覆盖层是独立实例。
   const toggleMute = useCallback(() => {
     setMuted((prev) => {
       const next = !prev
       try {
-        frameRef.current?.contentWindow?.postMessage(
-          { __polarisMute: 1, muted: next },
-          '*',
-        )
+        const msg = { __polarisMute: 1, muted: next }
+        frameRef.current?.contentWindow?.postMessage(msg, '*')
+        fsFrameRef.current?.contentWindow?.postMessage(msg, '*')
       } catch {
         /* iframe 已销毁，忽略 */
       }
@@ -123,6 +119,41 @@ function PanelFrame({ data }: { data: InteractiveArtifactData }) {
       /* 剪贴板不可用时忽略 */
     }
   }, [data.sourcePath])
+
+  // 覆盖层次级操作的回调走 ref：静音/复制的 UI 状态变化不应重建覆盖层
+  // （重建会重载覆盖层 iframe，丢失组件内交互状态）。
+  const liveRef = useRef({ toggleMute, copySourcePath })
+  liveRef.current = { toggleMute, copySourcePath }
+
+  // 全屏覆盖层挂到 document.body（脱离 virtuoso transform / overflow-hidden）。
+  // onClose 是唯一状态回写路径 → setFullscreen(false) → cleanup 移除本层。
+  useEffect(() => {
+    if (!fullscreen) return
+    const meta = [data.versionLabel, data.source === 'flashforge' ? '闪造应用' : null]
+      .filter(Boolean)
+      .map(String)
+      .join(' · ')
+    const close = openFullscreenOverlay({
+      title,
+      meta: meta || undefined,
+      srcDoc,
+      sandbox: policy.sandbox,
+      allow: policy.allow,
+      frameBg: policy.withTheme ? 'transparent' : '#ffffff',
+      actions: [
+        { label: '静音', onClick: () => liveRef.current.toggleMute() },
+        ...(data.sourcePath
+          ? [{ label: '复制源码路径', onClick: () => liveRef.current.copySourcePath() }]
+          : []),
+      ],
+      onFrame: (f) => { fsFrameRef.current = f },
+      onClose: () => setFullscreen(false),
+    })
+    return () => {
+      fsFrameRef.current = null
+      close()
+    }
+  }, [fullscreen, title, srcDoc, policy, data.versionLabel, data.source, data.sourcePath])
 
   const frame = (
     <iframe
@@ -174,23 +205,8 @@ function PanelFrame({ data }: { data: InteractiveArtifactData }) {
     </div>
   )
 
-  if (fullscreen) {
-    return (
-      <div className="my-2 overflow-hidden rounded-lg border border-border">
-        {toolbar}
-        <div
-          className="fixed inset-0 z-[9999] flex flex-col bg-background"
-          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          <div className="flex-1 overflow-hidden">{frame}</div>
-          <div className="border-t border-border px-3 py-1 text-[10px] text-text-tertiary">
-            按 Esc 退出全屏 · 沙箱 iframe（{policy.sandbox}）
-          </div>
-        </div>
-      </div>
-    )
-  }
-
+  // 全屏态与非全屏态都保留内嵌卡片（iframe 不卸载）；覆盖层由 useEffect
+  // 单独挂到 body 并盖住此处，退出后原位状态自然保留。
   return (
     <div className="my-2 overflow-hidden rounded-lg border border-border">
       {toolbar}

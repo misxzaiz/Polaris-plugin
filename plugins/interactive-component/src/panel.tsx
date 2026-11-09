@@ -5,9 +5,12 @@
  * 数据来源是插件自有的 window 全局（shared.ts），不触碰宿主 store / IPC；
  * 因此这是「运行容器」而非持久仓库——持久化与版本树由闪造负责，本插件
  * 不依赖闪造（未安装时空态引导照常可用）。
+ *
+ * 全屏（2026-11-09）：与卡片共用 src/fullscreen.ts 的原生 DOM 覆盖层，
+ * 挂到 document.body、顶部常驻操作栏含「退出全屏」，不再各写一套。
  */
 
-import { memo, useCallback, useEffect, useMemo, useState } from 'react'
+import { memo, useEffect, useMemo, useState } from 'react'
 import {
   APPS_CHANGED_EVENT,
   buildSrcDoc,
@@ -15,6 +18,7 @@ import {
   readApps,
   type InteractiveArtifactData,
 } from './shared'
+import { openFullscreenOverlay } from './fullscreen'
 
 export const InteractivePanel = memo(function InteractivePanel() {
   const [apps, setApps] = useState<InteractiveArtifactData[]>(() => readApps())
@@ -32,14 +36,21 @@ export const InteractivePanel = memo(function InteractivePanel() {
     return apps.find((a) => a.previewId && a.previewId === selected) ?? apps[0]
   }, [apps, selected])
 
+  // 依赖只写 fullscreen / current：policy、srcDoc 在 effect 内部计算，
+  // 避免每次渲染重建覆盖层（重建会重载覆盖层 iframe）。
   useEffect(() => {
-    if (!fullscreen) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setFullscreen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [fullscreen])
+    if (!fullscreen || !current || typeof current.html !== 'string') return
+    const p = framePolicy(current.source)
+    return openFullscreenOverlay({
+      title: String(current.title || '交互面板'),
+      meta: current.versionLabel ? String(current.versionLabel) : undefined,
+      srcDoc: buildSrcDoc(current.html, p.withTheme),
+      sandbox: p.sandbox,
+      allow: p.allow,
+      frameBg: p.withTheme ? 'transparent' : '#ffffff',
+      onClose: () => setFullscreen(false),
+    })
+  }, [fullscreen, current])
 
   const policy = current ? framePolicy(current.source) : null
   const srcDoc = current && typeof current.html === 'string'
@@ -120,25 +131,6 @@ export const InteractivePanel = memo(function InteractivePanel() {
           )}
         </div>
       </div>
-
-      {fullscreen && current ? (
-        <div
-          className="fixed inset-0 z-[9999] flex flex-col bg-background"
-          style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        >
-          <div className="flex items-center justify-between border-b border-border px-3 py-2">
-            <span className="text-xs font-medium text-text-primary">{title}</span>
-            <button
-              type="button"
-              onClick={() => setFullscreen(false)}
-              className="text-[10px] text-text-tertiary hover:text-text-primary"
-            >
-              退出全屏（Esc）
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">{runner('h-full w-full')}</div>
-        </div>
-      ) : null}
     </div>
   )
 })

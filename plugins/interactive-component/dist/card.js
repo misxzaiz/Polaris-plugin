@@ -65,6 +65,108 @@ function framePolicy(source) {
   };
 }
 
+// src/fullscreen.ts
+var TOPBAR_OFFSET_PX = 40;
+var Z_OVERLAY = "var(--z-overlay, 40)";
+var active = null;
+function teardown() {
+  if (!active) return;
+  const { root, detach } = active;
+  active = null;
+  detach();
+  root.remove();
+}
+function openFullscreenOverlay(opts) {
+  teardown();
+  const root = document.createElement("div");
+  root.className = "flex flex-col bg-background";
+  Object.assign(root.style, {
+    position: "fixed",
+    top: `${TOPBAR_OFFSET_PX}px`,
+    left: "0",
+    right: "0",
+    bottom: "0"
+  });
+  root.style.setProperty("z-index", Z_OVERLAY);
+  const bar = document.createElement("div");
+  bar.className = "flex items-center justify-between gap-2 border-b border-border bg-background-elevated";
+  Object.assign(bar.style, {
+    height: "48px",
+    flex: "0 0 48px",
+    padding: "0 14px"
+  });
+  const left = document.createElement("div");
+  left.className = "flex min-w-0 items-center gap-2";
+  const chip = document.createElement("span");
+  chip.className = "shrink-0 rounded bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-medium text-cyan-400";
+  chip.textContent = "\u4EA4\u4E92\u9762\u677F";
+  const titleEl = document.createElement("span");
+  titleEl.className = "truncate text-xs font-medium text-text-primary";
+  titleEl.textContent = opts.title;
+  left.append(chip, titleEl);
+  if (opts.meta) {
+    const meta = document.createElement("span");
+    meta.className = "shrink-0 text-[10px] text-text-tertiary";
+    meta.textContent = opts.meta;
+    left.appendChild(meta);
+  }
+  const right = document.createElement("div");
+  right.className = "flex shrink-0 items-center gap-2";
+  for (const action of opts.actions ?? []) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "text-[10px] text-text-tertiary hover:text-text-primary";
+    btn.textContent = action.label;
+    btn.onclick = action.onClick;
+    right.appendChild(btn);
+  }
+  const exit = document.createElement("button");
+  exit.type = "button";
+  exit.className = "bg-red-500 text-white";
+  exit.textContent = "\u2715 \u9000\u51FA\u5168\u5C4F";
+  Object.assign(exit.style, {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: "6px",
+    padding: "6px 12px",
+    borderRadius: "6px",
+    border: "none",
+    fontSize: "12px",
+    fontWeight: "600",
+    cursor: "pointer"
+  });
+  exit.onclick = opts.onClose;
+  right.appendChild(exit);
+  bar.append(left, right);
+  const content = document.createElement("div");
+  content.className = "flex-1 overflow-hidden";
+  const frame = document.createElement("iframe");
+  frame.title = opts.title;
+  frame.setAttribute("sandbox", opts.sandbox);
+  frame.setAttribute("allow", opts.allow);
+  frame.setAttribute("referrerpolicy", "no-referrer");
+  frame.srcdoc = opts.srcDoc;
+  Object.assign(frame.style, {
+    width: "100%",
+    height: "100%",
+    border: "none",
+    display: "block",
+    background: opts.frameBg
+  });
+  content.appendChild(frame);
+  opts.onFrame?.(frame);
+  root.append(bar, content);
+  const onKey = (e) => {
+    if (e.key === "Escape") opts.onClose();
+  };
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(root);
+  active = { root, detach: () => document.removeEventListener("keydown", onKey) };
+  return () => {
+    if (active?.root === root) teardown();
+  };
+}
+
 // src/card.tsx
 import { jsx, jsxs } from "react/jsx-runtime";
 function Notice({ text }) {
@@ -95,28 +197,20 @@ function PanelFrame({ data }) {
   const [muted, setMuted] = useState(false);
   const [copied, setCopied] = useState(false);
   const frameRef = useRef(null);
+  const fsFrameRef = useRef(null);
   const policy = useMemo(() => framePolicy(data.source), [data.source]);
   const srcDoc = useMemo(
     () => buildSrcDoc(data.html, policy.withTheme),
     [data.html, policy.withTheme]
   );
   const title = String(data.title || "\u4EA4\u4E92\u9762\u677F");
-  useEffect(() => {
-    if (!fullscreen) return;
-    const onKey = (e) => {
-      if (e.key === "Escape") setFullscreen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [fullscreen]);
   const toggleMute = useCallback(() => {
     setMuted((prev) => {
       const next = !prev;
       try {
-        frameRef.current?.contentWindow?.postMessage(
-          { __polarisMute: 1, muted: next },
-          "*"
-        );
+        const msg = { __polarisMute: 1, muted: next };
+        frameRef.current?.contentWindow?.postMessage(msg, "*");
+        fsFrameRef.current?.contentWindow?.postMessage(msg, "*");
       } catch {
       }
       return next;
@@ -131,6 +225,32 @@ function PanelFrame({ data }) {
     } catch {
     }
   }, [data.sourcePath]);
+  const liveRef = useRef({ toggleMute, copySourcePath });
+  liveRef.current = { toggleMute, copySourcePath };
+  useEffect(() => {
+    if (!fullscreen) return;
+    const meta = [data.versionLabel, data.source === "flashforge" ? "\u95EA\u9020\u5E94\u7528" : null].filter(Boolean).map(String).join(" \xB7 ");
+    const close = openFullscreenOverlay({
+      title,
+      meta: meta || void 0,
+      srcDoc,
+      sandbox: policy.sandbox,
+      allow: policy.allow,
+      frameBg: policy.withTheme ? "transparent" : "#ffffff",
+      actions: [
+        { label: "\u9759\u97F3", onClick: () => liveRef.current.toggleMute() },
+        ...data.sourcePath ? [{ label: "\u590D\u5236\u6E90\u7801\u8DEF\u5F84", onClick: () => liveRef.current.copySourcePath() }] : []
+      ],
+      onFrame: (f) => {
+        fsFrameRef.current = f;
+      },
+      onClose: () => setFullscreen(false)
+    });
+    return () => {
+      fsFrameRef.current = null;
+      close();
+    };
+  }, [fullscreen, title, srcDoc, policy, data.versionLabel, data.source, data.sourcePath]);
   const frame = /* @__PURE__ */ jsx(
     "iframe",
     {
@@ -158,26 +278,6 @@ function PanelFrame({ data }) {
       !fullscreen ? /* @__PURE__ */ jsx("button", { type: "button", onClick: () => setExpanded(!expanded), className: "text-[10px] text-text-tertiary hover:text-text-primary", children: expanded ? "\u6536\u8D77" : "\u5C55\u5F00" }) : null
     ] })
   ] });
-  if (fullscreen) {
-    return /* @__PURE__ */ jsxs("div", { className: "my-2 overflow-hidden rounded-lg border border-border", children: [
-      toolbar,
-      /* @__PURE__ */ jsxs(
-        "div",
-        {
-          className: "fixed inset-0 z-[9999] flex flex-col bg-background",
-          style: { top: 0, left: 0, right: 0, bottom: 0 },
-          children: [
-            /* @__PURE__ */ jsx("div", { className: "flex-1 overflow-hidden", children: frame }),
-            /* @__PURE__ */ jsxs("div", { className: "border-t border-border px-3 py-1 text-[10px] text-text-tertiary", children: [
-              "\u6309 Esc \u9000\u51FA\u5168\u5C4F \xB7 \u6C99\u7BB1 iframe\uFF08",
-              policy.sandbox,
-              "\uFF09"
-            ] })
-          ]
-        }
-      )
-    ] });
-  }
   return /* @__PURE__ */ jsxs("div", { className: "my-2 overflow-hidden rounded-lg border border-border", children: [
     toolbar,
     /* @__PURE__ */ jsx(

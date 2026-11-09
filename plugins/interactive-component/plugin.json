@@ -18,8 +18,7 @@
       }
     ],
     "panel": {
-      "entry": "./dist/panel.js",
-      "supportsFullscreen": true
+      "entry": "./dist/panel.js"
     },
     "mcpServers": [
       {
