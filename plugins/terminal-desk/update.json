@@ -1,8 +1,8 @@
 {
   "id": "terminal-desk",
   "name": "终端",
-  "version": "0.2.1",
-  "description": "终端工作台：多标签 PTY 会话（新建/重命名/关闭/退出码标记）、脚本抽屉（package.json 脚本发现 + 自定义命令 + 危险命令确认）、Ctrl+Shift+R 运行命令浮层、会话内搜索、主题跟随、全屏。PTY 由宿主 cap.terminal 能力提供（不占端口、零后台服务），输出经 terminal:output 事件流推送。v0.2.0：shadow 接管内置终端席位（同位渲染，禁用插件即回退内置）。附带 stdio MCP 三工具：AI 可在用户面板里开新会话跑命令。",
+  "version": "0.2.2",
+  "description": "终端工作台：多标签 PTY 会话（新建/重命名/关闭/退出码标记）、脚本抽屉（package.json 脚本发现 + 自定义命令 + 危险命令确认）、Ctrl+Shift+R 运行命令浮层、主题跟随、全屏。PTY 由宿主 cap.terminal 能力提供（不占端口、零后台服务），输出经 terminal:output 事件流推送。v0.2.0：shadow 接管内置终端席位（同位渲染，禁用插件即回退内置）。v0.2.2：修复宿主 listen 异步契约误用致面板挂载即崩。附带 stdio MCP 三工具：AI 可在用户面板里开新会话跑命令。",
   "enabledByDefault": true,
   "contributes": {
     "views": [

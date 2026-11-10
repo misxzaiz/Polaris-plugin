@@ -5157,6 +5157,47 @@
       ],
       "createdAt": "2026-11-09T22:29:00.934Z",
       "updatedAt": "2026-11-09T22:29:00.934Z"
+    },
+    {
+      "id": "terminal-desk",
+      "name": "终端",
+      "version": "0.2.2",
+      "description": "终端工作台：多标签 PTY 会话（新建/重命名/关闭/退出码标记）、脚本抽屉（package.json 脚本发现 + 自定义命令 + 危险命令确认）、Ctrl+Shift+R 运行命令浮层、主题跟随、全屏。PTY 由宿主 cap.terminal 能力提供（不占端口、零后台服务），输出经 terminal:output 事件流推送。v0.2.0：shadow 接管内置终端席位（同位渲染，禁用插件即回退内置）。v0.2.2：修复宿主 listen 异步契约误用致面板挂载即崩。附带 stdio MCP 三工具：AI 可在用户面板里开新会话跑命令。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "terminal",
+        "pty",
+        "shell",
+        "script",
+        "runner",
+        "mcp",
+        "panel",
+        "local-first"
+      ],
+      "icon": "./assets/icon.svg",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/terminal-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/terminal-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@terminal-desk-v0.2.2/plugins/terminal-desk/terminal-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/terminal-desk/update.json",
+      "sha256": "22be20594ecbf5dd55615d5a691357c634dea429fde868941ae4e1a76fbf4df0",
+      "tier": 7,
+      "permissions": {
+        "appConfigRead": true,
+        "appConfigWrite": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "readme": "# terminal-desk（终端）\n\nPolaris 终端工作台插件。PTY 由宿主 `cap.terminal` 能力提供（端口零占用、零后台服务），本插件只做 UI 与编排；输出经 `terminal:output` / `terminal:exit` 事件流推送。\n\n> 方案：主仓 `plans/terminal-plugin-spec.md`（终端插件化四阶段：共存 → 接管 → 优化 → 拆除）。\n\n## 功能\n\n- **多标签会话**：新建 / 切换 / 双击重命名 / 关闭；退出码徽标 + 开新会话引导\n- **真 PTY 交互**：xterm.js 全保真（颜色/光标控制/Ctrl 键族），WebGL 渲染（失败自动降级）\n- **脚本抽屉**：项目脚本发现（package.json scripts，按 lockfile 判 runner）+ 自定义命令（持久化到插件配置）+ 危险命令确认\n- **运行命令浮层**：`Ctrl+Shift+R`（面板可见时），Enter 运行 / Ctrl+Enter 保存并运行\n- **会话内搜索**：`Ctrl+F` 搜索条（Enter 下一个 / Shift+Enter 上一个）\n- **主题跟随**：随宿主主题热切换（CSS 变量取色）\n- **全屏**：面板右上角宿主全屏机制（manifest supportsFullscreen）\n- **stdio MCP 三工具**（AI）：`terminal_list` / `terminal_run_in_new_session`（AI 在用户面板开可见会话跑命令，区别于 cap.bash 后台任务）/ `terminal_write`\n\n## 宿主要求\n\n主仓需含 `cap.terminal` 能力（2026-11-10 起，见 spec §四）。面板依赖宿主桥：`__POLARIS_HOST_INVOKE__`（router_dispatch）、`__POLARIS_HOST_LISTEN__`、`__POLARIS_HOST_WORKSPACE__`、`__POLARIS_THEME_API__`、`__POLARIS_WORKSPACE_API__`。\n\n## 开发\n\n```bash\npnpm i            # 安装依赖（xterm 族 + esbuild + typescript）\npnpm build        # esbuild bundle → dist/panel.js + CSS 同步进 plugin.json\npnpm typecheck    # tsc --noEmit（SSR 冒烟前置门槛）\npnpm test         # node --test：core 逻辑 + MCP stdio 全链路（假宿主 hermetic）\n```\n\n真机冒烟：主仓 dev-link 或本地 zip 安装（插件管理页 → 本地安装）。\n\n## 结构\n\n```\nplugin.json          # manifest（样式内联清单由 scripts/build.mjs 同步）\nsrc/                 # 面板（react + xterm，宿主 React shim）\nshared/td-core.js    # 纯逻辑核（面板/MCP/测试三方同源）\nmcp/server.js        # stdio MCP（零依赖 JSON-RPC；stdout 仅协议数据）\ntest/                # node --test（离线 hermetic）\n```\n",
+      "versions": [
+        {
+          "version": "0.2.2",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@terminal-desk-v0.2.2/plugins/terminal-desk/terminal-desk.zip"
+        }
+      ],
+      "updatedAt": "2026-11-10T17:04:13.869Z",
+      "createdAt": "2026-11-10T17:04:13.869Z"
     }
   ]
 }
