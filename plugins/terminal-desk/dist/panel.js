@@ -8600,14 +8600,31 @@ async function writePluginConfig(patch) {
   const invoke = getHostInvoke();
   await invoke("plugin_set_config", { pluginId: PLUGIN_ID, patch });
 }
+function subscribeHostEvent(event, handler) {
+  let unlisten = null;
+  let cancelled = false;
+  void getHostListen()(event, handler).then((fn) => {
+    if (cancelled) fn();
+    else unlisten = fn;
+  }).catch(() => {
+  });
+  return () => {
+    cancelled = true;
+    try {
+      unlisten?.();
+    } catch {
+    }
+    unlisten = null;
+  };
+}
 function listenTerminalOutput(handler) {
-  return getHostListen()("terminal:output", (payload) => {
+  return subscribeHostEvent("terminal:output", (payload) => {
     const ev = payload;
     if (ev && typeof ev.sessionId === "string" && typeof ev.data === "string") handler(ev);
   });
 }
 function listenTerminalExit(handler) {
-  return getHostListen()("terminal:exit", (payload) => {
+  return subscribeHostEvent("terminal:exit", (payload) => {
     const ev = payload;
     if (ev && typeof ev.sessionId === "string") handler(ev);
   });

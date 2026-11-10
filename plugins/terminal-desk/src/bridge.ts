@@ -10,7 +10,13 @@
  */
 
 type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
-type HostListen = (event: string, handler: (payload: unknown) => void) => () => void;
+/**
+ * 宿主 listen 契约：返回 Promise<unlisten>（web/桌面 transport 统一为异步注册）。
+ * 曾误声明为同步 () => void——useEffect 直接 return 该返回值会把 Promise 塞进
+ * cleanup 槽，StrictMode 首轮卸载时 React 调 destroy() 抛
+ * "TypeError: destroy is not a function"，面板一挂载即崩（2026-11-11 修复）。
+ */
+type HostListen = (event: string, handler: (payload: unknown) => void) => Promise<() => void>;
 
 interface HostGlobals {
   __POLARIS_HOST_INVOKE__?: HostInvoke;
@@ -90,15 +96,40 @@ export interface TerminalExitEvent {
   exitCode: number | null;
 }
 
+/**
+ * 事件订阅统一封装：宿主 listen 异步注册，返回值必须是同步清理函数。
+ * - 未决期退订：Promise resolve 时发现已取消，立即退订（防 StrictMode 双挂载泄漏）
+ * - 失败静默：订阅失败（宿主未升级等）不阻塞面板
+ */
+function subscribeHostEvent(event: string, handler: (payload: unknown) => void): () => void {
+  let unlisten: (() => void) | null = null;
+  let cancelled = false;
+  void getHostListen()(event, handler)
+    .then((fn) => {
+      if (cancelled) fn();
+      else unlisten = fn;
+    })
+    .catch(() => {});
+  return () => {
+    cancelled = true;
+    try {
+      unlisten?.();
+    } catch {
+      /* 重复退订安全忽略 */
+    }
+    unlisten = null;
+  };
+}
+
 export function listenTerminalOutput(handler: (event: TerminalOutputEvent) => void): () => void {
-  return getHostListen()('terminal:output', (payload) => {
+  return subscribeHostEvent('terminal:output', (payload) => {
     const ev = payload as TerminalOutputEvent;
     if (ev && typeof ev.sessionId === 'string' && typeof ev.data === 'string') handler(ev);
   });
 }
 
 export function listenTerminalExit(handler: (event: TerminalExitEvent) => void): () => void {
-  return getHostListen()('terminal:exit', (payload) => {
+  return subscribeHostEvent('terminal:exit', (payload) => {
     const ev = payload as TerminalExitEvent;
     if (ev && typeof ev.sessionId === 'string') handler(ev);
   });
