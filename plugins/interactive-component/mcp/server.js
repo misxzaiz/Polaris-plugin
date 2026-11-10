@@ -22,8 +22,20 @@ const path = require('path');
 const crypto = require('crypto');
 
 const ARTIFACT_TYPE = 'polaris.interactive';
+/** 用户 HTML 输入上限（libs 注入前；spec: plans/interactive-threejs-games-spec.md §2.2） */
 const MAX_HTML_BYTES = 2 * 1024 * 1024;
+/** 落盘产物（可能已内联 vendor 库，~820KB）读取上限：2MB 用户代码 + 库体积 */
+const MAX_STORED_HTML_BYTES = 4 * 1024 * 1024;
 const PREVIEW_DIR = '.polaris/interactive';
+
+/**
+ * 白名单库 → vendor 产物（esbuild IIFE，构建期产出；spec §2.1）。
+ * 产物无 import()、不联网；scanHtml 只扫用户 HTML——three 源码含 fetch 实现
+ * （FileLoader），与注入产物合并扫描必误伤。
+ */
+const VENDOR_LIBS = {
+  three: path.join(__dirname, '..', 'dist', 'vendor', 'three.iife.js'),
+};
 
 // argv[2]=appConfigDir argv[3]=workspacePath
 const configDir = process.argv[2] || '.';
@@ -80,7 +92,16 @@ function validateHtmlSize(html) {
   }
 }
 
-/** 入库闸：拦联网与逃逸面（与闪造 BLOCK 口径对齐；沙箱是第二道硬边界） */
+/** 落盘产物读取上限：用户代码上限 + vendor 库体积（three 注入后 ~2.8MB） */
+function validateStoredHtmlSize(html) {
+  const bytes = Buffer.byteLength(html, 'utf8');
+  if (bytes > MAX_STORED_HTML_BYTES) {
+    throw new Error(`交互面板 HTML 过大，当前 ${bytes} bytes，最大允许 ${MAX_STORED_HTML_BYTES} bytes`);
+  }
+}
+
+/** 入库闸：拦联网与逃逸面（与闪造 BLOCK 口径对齐；沙箱是第二道硬边界）。
+ * 只作用于用户 HTML——vendor 注入产物发生在扫描之后。 */
 const BLOCK_RULES = [
   { re: /\bfetch\s*\(/, hint: '禁止 fetch()' },
   { re: /\bXMLHttpRequest\b/, hint: '禁止 XMLHttpRequest' },
@@ -92,6 +113,9 @@ const BLOCK_RULES = [
   { re: /\bwindow\.open\s*\(/, hint: '禁止 window.open' },
   { re: /\btop\.location\b|\bparent\.location\b/, hint: '禁止顶层导航' },
   { re: /\bdocument\.domain\b/, hint: '禁止 document.domain' },
+  // 2026-11-10 补缺口（spec §4.4）：此前 <script src="https://..."> 不在拦截面，
+  // AI 可借 CDN 外链绕过「不联网」意图；三维库走 libs 参数（本地内联）。
+  { re: /<script[^>]*\bsrc\s*=\s*(['"])(?!data:)/i, hint: '禁止外链 <script src>（不联网；三维库请传 libs:["three"]）' },
 ];
 
 function scanHtml(html) {
@@ -171,10 +195,49 @@ function newPreviewId() {
 
 // ── 工具实现 ────────────────────────────────────────────────────────────────
 
+/** 校验并归一 libs 参数（可选；重复去重；白名单外报错并给出可用值） */
+function parseLibs(value) {
+  if (value == null) return [];
+  if (!Array.isArray(value) || value.some((v) => typeof v !== 'string')) {
+    throw new Error('libs 必须是字符串数组');
+  }
+  const libs = [...new Set(value.map((s) => s.trim()).filter(Boolean))];
+  const unknown = libs.filter((l) => !VENDOR_LIBS[l]);
+  if (unknown.length) {
+    throw new Error(`不支持的库: ${unknown.join(', ')}。当前可用: ${Object.keys(VENDOR_LIBS).join(', ')}`);
+  }
+  return libs;
+}
+
+/** 读 vendor 产物（构建期 esbuild IIFE）；缺失提示先 build */
+function loadVendorScript(lib) {
+  try {
+    const code = fs.readFileSync(VENDOR_LIBS[lib], 'utf8');
+    return `<script>/* polaris-interactive vendor:${lib} */${code}</script>`;
+  } catch (e) {
+    throw new Error(`库 ${lib} 的 vendor 产物缺失（${VENDOR_LIBS[lib]}）。请在插件目录执行 pnpm build 后重试`);
+  }
+}
+
+/** 注入 vendor <script>：完整文档插 <head> 开头，片段直接前置
+ * （卡片端 buildSrcDoc 会为片段补文档壳；主题注入插在 <head> 首位，
+ * 与 lib 顺序无依赖冲突）。无 libs 时原样返回——旧调用行为不变。 */
+function injectLibs(html, libs) {
+  if (!libs.length) return html;
+  const scripts = libs.map(loadVendorScript).join('');
+  if (/<head[^>]*>/i.test(html)) {
+    return html.replace(/<head[^>]*>/i, (m) => m + scripts);
+  }
+  return scripts + html;
+}
+
 function execRenderComponent(args) {
   const html = requireStr(args, 'html');
   validateHtmlSize(html);
   scanHtml(html);
+  const libs = parseLibs(args.libs);
+  // 注入在扫描之后：产物自包含且不被自己的扫描闸误伤
+  const finalHtml = injectLibs(html, libs);
   const title = optionalTrimmedString(args.title) || '交互面板';
   const requirementId = optionalTrimmedString(args.requirementId);
   const description = optionalTrimmedString(args.description);
@@ -189,7 +252,7 @@ function execRenderComponent(args) {
   const idxPath = path.join(dir, 'index.html');
 
   fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(idxPath, html, 'utf8');
+  fs.writeFileSync(idxPath, finalHtml, 'utf8');
 
   const metadata = {
     artifactType: ARTIFACT_TYPE,
@@ -202,10 +265,11 @@ function execRenderComponent(args) {
     versionLabel,
     requirementId,
     description,
+    libs,
   };
   writeMetadata(metadata);
 
-  const artifact = { ...metadata, html, source };
+  const artifact = { ...metadata, html: finalHtml, source };
   return artifactResult(artifact, `已创建交互面板: ${title}`);
 }
 
@@ -214,7 +278,7 @@ function execReadPreview(args) {
   const p = indexPath(previewId);
   if (!fs.existsSync(p)) throw new Error(`读取交互面板失败: 不存在（${previewId}）`);
   const html = fs.readFileSync(p, 'utf8');
-  validateHtmlSize(html);
+  validateStoredHtmlSize(html);
   const metadata = readMetadata(previewId) || fallbackMetadata(previewId, p);
   const artifact = { ...metadata, sourcePath: p, html };
   return artifactResult(artifact, '已读取交互面板');
@@ -266,7 +330,14 @@ const htmlProps = {
     type: 'string',
     minLength: 1,
     description:
-      '完整 HTML 文档或可独立渲染的片段，内联 CSS/JS。可包含音效（AudioContext / <audio>）、游戏循环、动画；卡片支持全屏、静音与 pointer-lock。禁止 fetch/XHR/WebSocket/动态 import 等联网调用与顶层导航（入库前静态扫描会拒绝）。',
+      '完整 HTML 文档或可独立渲染的片段，内联 CSS/JS。可包含音效（AudioContext / <audio>）、游戏循环（requestAnimationFrame）、动画、WebGL；卡片支持全屏、静音与 pointer-lock（点击画布 requestPointerLock 可做 FPS 视角）。禁止 fetch/XHR/WebSocket/动态 import/外链 <script src> 等联网调用与顶层导航（入库前静态扫描会拒绝）。沙箱 iframe 无 localStorage/indexedDB（进度存内存）；模型/贴图用 base64 DataURL。',
+  },
+  libs: {
+    type: 'array',
+    items: { type: 'string', enum: ['three'] },
+    maxItems: 8,
+    description:
+      '可选，注入预打包的本地三维库。["three"] = 内联 three.js r187（全局 THREE 与 THREE_ADDONS.OrbitControls / THREE_ADDONS.GLTFLoader），适合三维建模展示与 3D 小游戏。用全局 THREE 直接写代码，不写 import、不引 CDN、不传 CDN script；GLTF 模型以 base64 DataURL 内嵌后用 loader.parse()。',
   },
   requirementId: { type: 'string', description: '可选，关联的需求 ID；同一需求下版本号会递增' },
   description: { type: 'string', description: '可选，面板说明或本版本变更摘要' },
@@ -283,7 +354,7 @@ const TOOLS = [
   {
     name: 'render_component',
     description:
-      '渲染一个自包含交互面板（任意 HTML+CSS+JS）。适合小游戏、可玩原型、带音效的教具、图表与工具类页面：可写 AudioContext 音效、requestAnimationFrame 动画、requestPointerLock 鼠标锁定；卡片提供全屏、静音、展开。html 必须自包含、不引用本地任意路径、不联网。可选闪造配合：先调 ff_source 取应用源码，再以 source="flashforge" 传入；不需要闪造也能独立使用。',
+      '渲染一个自包含交互面板（任意 HTML+CSS+JS）。适合小游戏、可玩原型、三维建模展示、带音效的教具、图表与工具类页面：可写 AudioContext 音效、requestAnimationFrame 游戏循环、requestPointerLock 鼠标锁定；三维场景传 libs:["three"] 后用全局 THREE / THREE_ADDONS 编写（WebGL2，60fps 实测）；卡片提供全屏、静音、展开。html 必须自包含、不引用本地任意路径、不联网（外链 <script src> 会被拒绝）。可选闪造配合：先调 ff_source 取应用源码，再以 source="flashforge" 传入；不需要闪造也能独立使用。',
     inputSchema: {
       type: 'object',
       required: ['html'],
@@ -372,7 +443,7 @@ function handleMessage(msg) {
         result: {
           protocolVersion: (msg.params && msg.params.protocolVersion) || '2024-11-05',
           capabilities: { tools: {} },
-          serverInfo: { name: 'interactive-mcp', version: '2.0.0' },
+          serverInfo: { name: 'interactive-mcp', version: '2.1.0' },
         },
       });
       return;

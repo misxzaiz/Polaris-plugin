@@ -1,19 +1,21 @@
 {
   "name": "interactive-component-plugin",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
-  "description": "交互面板插件打包（自包含 HTML 沙箱渲染：全屏 / 音效 / 应用架；不依赖宿主桥）",
+  "description": "交互面板插件打包（自包含 HTML 沙箱渲染：全屏 / 音效 / 应用架 / three.js 三维注入；不依赖宿主桥）",
   "scripts": {
-    "build": "pnpm typecheck && esbuild src/card.tsx --bundle --format=esm --outfile=dist/card.js --jsx=automatic --external:react --external:react/jsx-runtime && esbuild src/panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime",
+    "build": "pnpm typecheck && esbuild src/card.tsx --bundle --format=esm --outfile=dist/card.js --jsx=automatic --external:react --external:react/jsx-runtime && esbuild src/panel.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime && esbuild src/vendor-three.ts --bundle --format=iife --minify --outfile=dist/vendor/three.iife.js",
     "test": "node test/run-tests.mjs && node test/card-ssr.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@types/three": "0.187.0",
     "esbuild": "^0.23.0",
     "react": "^18.3.1",
-    "typescript": "^5.5.0",
     "react-dom": "^18.3.1",
-    "@types/react-dom": "^18.3.7"
+    "three": "0.187.0",
+    "typescript": "^5.5.0"
   }
 }

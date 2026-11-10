@@ -1,8 +1,8 @@
 {
   "id": "interactive-component",
   "name": "交互面板",
-  "version": "2.0.0",
-  "description": "在 AI 对话中渲染自包含交互面板：任意 HTML（沙箱 iframe）+ 全屏 / 音效（autoplay）/ pointer-lock / 主题注入 / 版本分组，另有活动栏应用架。MCP 四工具（render_component / preview_html 兼容别名 / read_preview / list_previews）。可选配合闪造：先用 ff_source 读应用源码再以 source=flashforge 传入；闪造未安装时本插件完全独立可用。数据落工作区 .polaris/interactive。",
+  "version": "2.1.0",
+  "description": "在 AI 对话中渲染自包含交互面板：任意 HTML（沙箱 iframe）+ 全屏 / 音效（autoplay）/ pointer-lock / 主题注入 / 版本分组，另有活动栏应用架。支持三维建模展示与 3D 小游戏：render_component 传 libs:[\"three\"] 内联 three.js（全局 THREE/THREE_ADDONS，本地离线不联网）。MCP 四工具（render_component / preview_html 兼容别名 / read_preview / list_previews）。可选配合闪造：先用 ff_source 读应用源码再以 source=flashforge 传入；闪造未安装时本插件完全独立可用。数据落工作区 .polaris/interactive。",
   "enabledByDefault": true,
   "core": true,
   "contributes": {

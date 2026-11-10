@@ -6,7 +6,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, existsSync, readdirSync } from 'node:fs';
+import { mkdtempSync, existsSync, readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawn } from 'node:child_process';
@@ -181,4 +181,90 @@ test('全屏覆盖层：源码单源实现、无旧全屏残留、对齐 z-overl
   assert.ok(overlay.includes('TOPBAR_OFFSET_PX = 40'), '覆盖层须保留宿主 40px 顶栏');
   assert.ok(overlay.includes('退出全屏'), '覆盖层须含常驻退出按钮');
   assert.ok(!manifest.includes('supportsFullscreen'), '宿主无消费者，manifest 不应再声明 supportsFullscreen');
+});
+
+// ── v2.1.0：libs 三维库注入（spec: 主仓 plans/interactive-threejs-games-spec.md）──
+
+test('libs:["three"] 注入：产物自包含、用户 HTML 原样保留、metadata 记录', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+
+  const userHtml = '<!DOCTYPE html><html><head><title>t</title></head><body><canvas id="c"></canvas><script>new THREE.WebGLRenderer({ canvas: document.getElementById("c") })</script></body></html>';
+  const res = await callTool(args, 'render_component', { title: '三维演示', html: userHtml, libs: ['three'] });
+  const out = res.structuredContent;
+  assert.deepEqual(out.libs, ['three'], 'metadata 须记录 libs');
+  assert.ok(out.html.includes('window.THREE'), '产物须内联 vendor bundle（全局 THREE）');
+  assert.ok(out.html.includes('THREE_ADDONS'), '产物须内联 addons（OrbitControls/GLTFLoader）');
+  assert.ok(out.html.includes('<title>t</title>') && out.html.includes('<canvas id="c"></canvas>') && out.html.includes('new THREE.WebGLRenderer'), '用户 HTML 内容须原样保留（注入只插 <head> 开头，不改写用户代码）');
+  assert.ok(out.html.indexOf('window.THREE') < out.html.indexOf('<title>'), '完整文档须注入 <head> 开头');
+  // 落盘与返回一致
+  const stored = readFileSync(join(previewsRoot(workspace), out.previewId, 'index.html'), 'utf8');
+  assert.equal(stored, out.html);
+  const meta = JSON.parse(readFileSync(join(previewsRoot(workspace), out.previewId, 'metadata.json'), 'utf8'));
+  assert.deepEqual(meta.libs, ['three']);
+
+  // 片段（无 head）：script 前置
+  const frag = await callTool(args, 'preview_html', { html: '<p>frag</p>', libs: ['three'] });
+  assert.ok(frag.structuredContent.html.startsWith('<script>/* polaris-interactive vendor:three */'), '片段须前置 vendor script');
+});
+
+test('libs 无参数行为不变：产物 HTML 与输入一致', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+  const userHtml = '<p>no-libs</p>';
+  const res = await callTool(args, 'render_component', { html: userHtml });
+  assert.deepEqual(res.structuredContent.libs, [], '缺省 libs 为空数组');
+  assert.equal(res.structuredContent.html, userHtml, '无 libs 时产物与输入一致（旧调用零回归）');
+});
+
+test('libs 白名单外/非数组报错', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+  const e1 = await callTool(args, 'render_component', { html: '<p>x</p>', libs: ['babylon'] });
+  assert.match(e1.content[0].text, /不支持的库: babylon/);
+  assert.match(e1.content[0].text, /当前可用: three/);
+  const e2 = await callTool(args, 'render_component', { html: '<p>x</p>', libs: 'three' });
+  assert.match(e2.content[0].text, /libs 必须是字符串数组/);
+});
+
+test('外链 <script src> 被静态扫描拒绝（2026-11-10 补缺口，data: 放行）', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+  const cdn = await callTool(args, 'render_component', {
+    html: '<script src="https://cdn.example.com/three.min.js"></script>',
+  });
+  assert.match(cdn.content[0].text, /静态扫描未通过/);
+  assert.match(cdn.content[0].text, /外链/);
+  const ok = await callTool(args, 'render_component', {
+    html: '<script src="data:text/javascript,console.log(1)"></script>',
+  });
+  assert.ok(ok.structuredContent.previewId, 'data: URL 的 script src 放行');
+});
+
+test('vendor 产物本身不被扫描闸误伤（防 three 升级引入敏感 API 早炸）', async () => {
+  const { readFileSync: rf } = await import('node:fs');
+  const vendorPath = resolve(new URL('../dist/vendor/three.iife.js', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'));
+  assert.ok(existsSync(vendorPath), 'vendor 产物必须存在（pnpm build 产出）');
+  const code = rf(vendorPath, 'utf8');
+  assert.ok(!/\bimport\s*\(/.test(code), 'IIFE 产物不得含动态 import()');
+  assert.ok(code.includes('window.THREE'), 'IIFE 产物须挂全局 THREE');
+});
+
+test('read_preview 对带库产物用 4MB 上限（2MB 闸会误拒合法产物）', async () => {
+  const configDir = mkdtempSync(join(tmpdir(), 'ic-config-'));
+  const workspace = mkdtempSync(join(tmpdir(), 'ic-ws-'));
+  const args = [configDir, workspace];
+  // 手工落一个 >2MB、<4MB 的产物（模拟 libs 注入后的历史产物）
+  const big = '<!DOCTYPE html><html><head></head><body>' + 'x'.repeat(3 * 1024 * 1024) + '</body></html>';
+  const id = 'manualbig0000000000000000000000000000';
+  const dir = join(previewsRoot(workspace), id);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, 'index.html'), big);
+  writeFileSync(join(dir, 'metadata.json'), JSON.stringify({ artifactType: 'polaris.interactive', previewId: id, title: 'big', libs: ['three'] }));
+  const res = await callTool(args, 'read_preview', { previewId: id });
+  assert.ok(res.structuredContent.html.length > 2 * 1024 * 1024, '读取成功（不被旧 2MB 闸误拒）');
 });
