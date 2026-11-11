@@ -6,7 +6,9 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node test/model-tests.mjs && node test/mcp-tests.mjs"
+    "test": "node --test test/run-tests.mjs && node test/mcp-tests.mjs",
+    "check:styles": "node scripts/check-styles.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run check:styles"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
