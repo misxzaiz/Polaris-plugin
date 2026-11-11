@@ -7,9 +7,13 @@
  * - 事件：__POLARIS_HOST_LISTEN__('terminal:output' / 'terminal:exit')
  * - 工作区：__POLARIS_HOST_WORKSPACE__（宿主保活字符串）+ __POLARIS_WORKSPACE_API__
  * - 主题：__POLARIS_THEME_API__.subscribe
+ *
+ * 硬约束：宿主 HOST_INVOKE_ALLOWLIST 只放行 plugin_* / router_dispatch 等命令。
+ * 禁止直调已摘除的 terminal_* 命令与 __TAURI_INTERNALS__.invoke。
  */
 
 type HostInvoke = <T>(cmd: string, args?: Record<string, unknown>) => Promise<T>;
+
 /**
  * 宿主 listen 契约：返回 Promise<unlisten>（web/桌面 transport 统一为异步注册）。
  * 曾误声明为同步 () => void——useEffect 直接 return 该返回值会把 Promise 塞进
@@ -30,6 +34,11 @@ interface HostGlobals {
   __POLARIS_THEME_API__?: {
     activeId: () => string;
     subscribe: (listener: () => void) => () => void;
+  };
+  /** 宿主未来 H1 落地后可提供的全屏委托；当前版本不存在，插件降级为专注模式 */
+  __POLARIS_HOST_FULLSCREEN__?: {
+    active: () => boolean;
+    toggle: () => void | Promise<void>;
   };
 }
 
@@ -62,8 +71,41 @@ export async function capTerminal<T = Record<string, unknown>>(
   return (res.result ?? ({} as T));
 }
 
+/** 宿主已存在的 PTY 会话（面板重挂/多窗口时恢复，避免重复建会话） */
+export async function listTerminalSessions<T = unknown>(): Promise<T[]> {
+  const res = await capTerminal<{ sessions?: T[] }>({ action: 'list' });
+  return Array.isArray(res.sessions) ? res.sessions : [];
+}
+
+/** 在系统终端中运行（cap.terminal open_in_external，仅桌面构建可用） */
+export async function openInExternalTerminal(
+  command: string,
+  cwd?: string,
+  env?: Record<string, string>,
+): Promise<void> {
+  await capTerminal({
+    action: 'open_in_external',
+    command,
+    ...(cwd ? { cwd } : {}),
+    ...(env ? { env } : {}),
+  });
+}
+
+/** 宿主全屏委托是否可用（H1 落地前恒为 false → 插件内专注模式） */
+export function hasHostFullscreen(): boolean {
+  const api = globals().__POLARIS_HOST_FULLSCREEN__;
+  return !!api && typeof api.toggle === 'function';
+}
+
+export async function toggleHostFullscreen(): Promise<boolean> {
+  const api = globals().__POLARIS_HOST_FULLSCREEN__;
+  if (!api || typeof api.toggle !== 'function') return false;
+  await api.toggle();
+  return true;
+}
+
 // ---------------------------------------------------------------------------
-// 插件配置（自定义命令持久化；config.json plugins["terminal-desk"]）
+// 插件配置（自定义命令 / 隐藏项 / 自动运行 / 重命名 / UI 偏好持久化）
 // ---------------------------------------------------------------------------
 
 export async function readPluginConfig(): Promise<Record<string, unknown>> {
@@ -140,17 +182,26 @@ export function listenTerminalExit(handler: (event: TerminalExitEvent) => void):
 // ---------------------------------------------------------------------------
 
 export function currentWorkspacePath(): string | null {
+  // 结构化 API 优先：__POLARIS_HOST_WORKSPACE__ 初始为空，且只在 eventBus
+  // workspace-changed 触发后才有值，冷启动会漏。
+  const api = globals().__POLARIS_WORKSPACE_API__;
+  if (api) {
+    try {
+      const id = api.currentId();
+      if (id) {
+        const ws = api.list().find((w) => w.id === id);
+        if (ws?.path) return ws.path;
+      }
+    } catch {
+      /* 宿主 API 未就绪，回落保活字符串 */
+    }
+  }
   const direct = globals().__POLARIS_HOST_WORKSPACE__;
   if (typeof direct === 'string' && direct) return direct;
-  const api = globals().__POLARIS_WORKSPACE_API__;
-  if (!api) return null;
-  const id = api.currentId();
-  if (!id) return null;
-  const ws = api.list().find((w) => w.id === id);
-  return ws?.path ?? null;
+  return null;
 }
 
-/** 订阅工作区变化（路径变化时回调） */
+/** 订阅工作区变化：结构化 API 挂载即回调，冷启动也能拿到值 */
 export function onWorkspaceChanged(handler: (path: string | null) => void): () => void {
   let last = currentWorkspacePath();
   const api = globals().__POLARIS_WORKSPACE_API__;
@@ -161,6 +212,8 @@ export function onWorkspaceChanged(handler: (path: string | null) => void): () =
       handler(next);
     }
   });
+  // 挂载即同步一次（API 的 subscribe 本身保证首帧回调，这里兼容未实现的旧宿主）
+  if (typeof last === 'string') handler(last);
   return off ?? (() => {});
 }
 
@@ -173,7 +226,9 @@ export function currentThemeId(): string {
 }
 
 export function onThemeChanged(handler: () => void): () => void {
-  return globals().__POLARIS_THEME_API__?.subscribe(handler) ?? (() => {});
+  const off = globals().__POLARIS_THEME_API__?.subscribe(handler);
+  if (typeof off === 'function') return off;
+  return () => {};
 }
 
 export const PLUGIN_ID = 'terminal-desk';

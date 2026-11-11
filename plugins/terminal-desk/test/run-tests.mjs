@@ -99,3 +99,142 @@ test('setRuntime: patch 合并保留未指定字段；lastRunAt 刷新', () => {
   assert.equal(rt2.s1.terminalSessionId, 't1');
   assert.ok(rt2.s1.lastRunAt >= rt.s1.lastRunAt);
 });
+
+// ---------------------------------------------------------------------------
+// v0.3 改造：配置 schema / 会话恢复 / 旧数据导入 / 自动运行
+// ---------------------------------------------------------------------------
+
+test('parsePluginConfig: 汇总六个分区并对脏数据兜底', () => {
+  const parsed = core.parsePluginConfig({
+    customCommands: [{ id: 'user:1', name: 'test', command: 'pnpm test' }],
+    hiddenScriptIds: ['pkg:build', 42, null],
+    autoRunRules: { 'pkg:dev': { enabled: true, trigger: 'app_start', confirm: true }, bad: null },
+    sessionNames: { s1: '  我的终端  ', s2: '', s3: 9 },
+    uiState: { scriptCenterCollapsed: false, scriptTab: 'custom', focusMode: true },
+    legacyMigration: 'v1',
+  });
+  assert.equal(parsed.customCommands.length, 1);
+  assert.equal(parsed.customCommands[0].autoRun, false);
+  assert.equal(parsed.customCommands[0].enabled, true);
+  assert.deepEqual(parsed.hiddenScriptIds, ['pkg:build']);
+  assert.deepEqual(parsed.autoRunRules['pkg:dev'], { enabled: true, trigger: 'app_start', confirm: true });
+  assert.deepEqual(parsed.sessionNames, { s1: '我的终端' });
+  assert.deepEqual(parsed.uiState, { scriptCenterCollapsed: false, scriptTab: 'custom', focusMode: true });
+  assert.equal(parsed.legacyMigration, 'v1');
+  const empty = core.parsePluginConfig(null);
+  assert.deepEqual(empty.customCommands, []);
+  assert.equal(empty.uiState.scriptCenterCollapsed, true); // 默认折叠（v4 基线）
+  assert.equal(empty.uiState.scriptTab, 'project');
+  assert.equal(empty.uiState.focusMode, false);
+});
+
+test('parseCustomCommands: 扩展字段规范化（autoRun/trigger/env/enabled）', () => {
+  const parsed = core.parseCustomCommands({
+    customCommands: [
+      { id: 'user:1', name: 'dev', command: 'pnpm dev', autoRun: true, autoRunTrigger: 'bad', env: { A: '1' }, tags: ['x', 3] },
+      { id: 'user:2', name: 'off', command: 'ls', enabled: false, confirmBeforeAutoRun: 'yes' },
+    ],
+  });
+  assert.equal(parsed[0].autoRunTrigger, 'workspace_open');
+  assert.deepEqual(parsed[0].env, { A: '1' });
+  assert.deepEqual(parsed[0].tags, ['x']);
+  assert.equal(parsed[1].enabled, false);
+  assert.equal(parsed[1].confirmBeforeAutoRun, false);
+});
+
+test('mergeRecoveredSessions: 过滤 closed / 保留本地退出态 / 丢弃孤立 / 追加新会话', () => {
+  const local = [
+    { id: 'a', name: 'A', exitCode: 2 },
+    { id: 'ghost', name: 'G', exitCode: null },
+  ];
+  const remote = [
+    { id: 'a', name: 'A-remote', closed: false, scriptId: 'script:1', cwd: '/repo' },
+    { id: 'b', name: 'B', closed: false },
+    { id: 'c', name: 'C', closed: true },
+  ];
+  const { sessions, recoveredIds } = core.mergeRecoveredSessions(local, remote);
+  assert.deepEqual(sessions.map((s) => s.id), ['a', 'b']);
+  assert.equal(sessions[0].exitCode, 2); // 本地 UI 态保留
+  assert.equal(sessions[0].name, 'A-remote'); // 名称以宿主为准
+  assert.equal(sessions[1].scriptId, undefined);
+  assert.deepEqual(recoveredIds, ['b']);
+  assert.deepEqual(core.mergeRecoveredSessions([], null).sessions, []);
+});
+
+test('selectRecentScript: 运行中优先，其次最近运行，最后首项', () => {
+  const scripts = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  assert.equal(core.selectRecentScript(scripts, { b: { status: 'running', lastRunAt: 1 } }).id, 'b');
+  assert.equal(core.selectRecentScript(scripts, { c: { status: 'success', lastRunAt: 99 } }).id, 'c');
+  assert.equal(core.selectRecentScript(scripts, {}).id, 'a');
+  assert.equal(core.selectRecentScript([], {}), null);
+});
+
+test('autoRunCandidates: 触发器匹配 / seenKeys 去重 / 确认标记 / 规则表合并', () => {
+  const commands = [
+    { id: 'user:1', autoRun: true, autoRunTrigger: 'app_start', confirmBeforeAutoRun: true },
+    { id: 'user:2', autoRun: true, autoRunTrigger: 'workspace_open' },
+    { id: 'user:3', autoRun: false, autoRunTrigger: 'terminal_open' },
+  ];
+  const rules = { 'pkg:dev': { enabled: true, trigger: 'workspace_open', confirm: false } };
+  const first = core.autoRunCandidates(commands, rules, 'app_start', '/repo', new Set());
+  assert.equal(first.length, 1);
+  assert.equal(first[0].needsConfirm, true);
+  assert.equal(first[0].key, 'app_start|/repo|user:1');
+  const second = core.autoRunCandidates(commands, rules, 'workspace_open', '/repo', new Set());
+  assert.deepEqual(second.map((c) => c.id).sort(), ['pkg:dev', 'user:2']);
+  const seen = new Set(second.map((c) => c.key));
+  assert.equal(core.autoRunCandidates(commands, rules, 'workspace_open', '/repo', seen).length, 0);
+  assert.equal(core.autoRunCandidates(commands, rules, 'bad-trigger', '/repo', new Set()).length, 0);
+});
+
+test('parseLegacyTerminalScripts: 只导 user / 路径归一 / hidden 带出 / 幂等 id', () => {
+  const raw = {
+    terminalScripts: {
+      'D:\\repo\\': {
+        scripts: [
+          { id: 'user:1', name: '本地测试', command: 'pnpm test', source: 'user', cwd: 'D:\\repo', env: { CI: '1' }, autoRun: true, autoRunTrigger: 'app_start' },
+          { id: 'pkg:dev', name: 'dev', command: 'pnpm dev', source: 'package.json' },
+          { id: 'user:2', name: '空命令', command: '   ', source: 'user' },
+        ],
+        hiddenDiscoveredScriptIds: ['pkg:build'],
+      },
+      '/other': {
+        scripts: [{ id: 'user:3', name: '别的仓库', command: 'ls', source: 'user' }],
+      },
+    },
+  };
+  const result = core.parseLegacyTerminalScripts(raw, 'd:/repo');
+  assert.equal(result.commands.length, 1);
+  assert.equal(result.commands[0].name, '本地测试');
+  assert.equal(result.commands[0].source, 'legacy');
+  assert.equal(result.commands[0].autoRunTrigger, 'app_start');
+  assert.deepEqual(result.commands[0].env, { CI: '1' });
+  assert.deepEqual(result.hiddenScriptIds, ['pkg:build']);
+  assert.deepEqual(core.parseLegacyTerminalScripts(raw, 'd:/repo').commands[0].id, result.commands[0].id);
+  assert.equal(core.parseLegacyTerminalScripts(raw, null).commands.length, 2);
+  assert.deepEqual(core.parseLegacyTerminalScripts('junk', null), { commands: [], hiddenScriptIds: [] });
+});
+
+test('mergeImportedCommands / mergeHiddenIds: 按 id 幂等，返回新增数量', () => {
+  const existing = [{ id: 'user:1' }];
+  const merged = core.mergeImportedCommands(existing, [{ id: 'user:1' }, { id: 'legacy:a' }, null]);
+  assert.equal(merged.addedCount, 1);
+  assert.deepEqual(merged.commands.map((c) => c.id), ['user:1', 'legacy:a']);
+  assert.equal(core.mergeImportedCommands(merged.commands, [{ id: 'legacy:a' }]).addedCount, 0);
+  assert.deepEqual(core.mergeHiddenIds(['a', 3], ['b', 'a']), ['a', 'b']);
+});
+
+test('isLightThemeId: 兼容 light / 自定义浅色主题命名，不误判 dark', () => {
+  assert.equal(core.isLightThemeId('light'), true);
+  assert.equal(core.isLightThemeId('my-light-soft'), true);
+  assert.equal(core.isLightThemeId('dark'), false);
+  assert.equal(core.isLightThemeId(''), false);
+  assert.equal(core.isLightThemeId('high-contrast-dark'), false);
+});
+
+test('stableHash / normalizePath: 稳定且跨平台归一', () => {
+  assert.equal(core.stableHash('abc'), core.stableHash('abc'));
+  assert.notEqual(core.stableHash('abc'), core.stableHash('abd'));
+  assert.equal(core.normalizePath('D:\\Repo\\'), 'd:/repo');
+  assert.equal(core.normalizePath(''), '');
+});

@@ -1,7 +1,9 @@
 /**
- * CSS 变量 → xterm ITheme（移植内置 TerminalPanel.getXtermTheme；主题 token 唯一来源，
- * 禁止硬编码色值——降级 fallback 与内置一致）
+ * CSS 变量 → xterm ITheme（移植内置 TerminalPanel.getXtermTheme；主题 token 唯一来源）。
+ * 背景/前景/光标/主色一律取宿主 CSS 变量；ANSI 16 色沿用内置实现的固定值，
+ * 保证与内置终端输出着色一致。浅色判定兼容用户自定义浅色主题命名。
  */
+import { isLightThemeId } from './model';
 
 export interface XtermThemeLike {
   background: string;
@@ -33,7 +35,7 @@ export function getXtermTheme(themeId: string): XtermThemeLike {
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
   };
 
-  const isLight = themeId === 'light';
+  const isLight = isLightThemeId(themeId);
   const bg = get('--c-bg-base', isLight ? '250 250 252' : '0 0 0');
   const text = get('--c-text-primary', isLight ? '15 23 42' : '248 248 248');
   const textSec = get('--c-text-secondary', isLight ? '51 65 85' : '180 180 184');
