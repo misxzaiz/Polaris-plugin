@@ -1,0 +1,35 @@
+{
+  "id": "radio-broadcast",
+  "name": "AI 连续播报",
+  "version": "1.0.0",
+  "description": "语音电台 / AI 伴播 / 语音输入输出：连续播报、音色库、断点续播、TTS 合成、语音听写与语音浮层。由主仓 RadioBroadcast / VoiceCompanion 域外移而来（core-slimdown B2-1 L1）。TTS 复用宿主 cap.voice 薄通道与 mimo-tts 约定，不新建第二个引擎。当前为骨架版本（步骤 1），面板与控制器实现待步骤 2 迁入，勿上架。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "radio-broadcast.panel",
+        "area": "activityBar",
+        "panelType": "radio-broadcast",
+        "icon": "BookOpen",
+        "labelKey": "labels.radioBroadcastPanel",
+        "labelDefault": "AI 连续播报",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js"
+    }
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true,
+    "network": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/radio-broadcast",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/radio-broadcast/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@radio-broadcast-v1.0.0/plugins/radio-broadcast/radio-broadcast.zip"
+  }
+}

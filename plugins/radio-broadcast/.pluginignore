@@ -1,0 +1,10 @@
+# 面板 bundle 与服务文件进 zip；源码 / 构建依赖 / 测试不进包
+.git/
+node_modules/
+package.json
+package-lock.json
+src/
+tsconfig.json
+test/
+README.md
+*.zip

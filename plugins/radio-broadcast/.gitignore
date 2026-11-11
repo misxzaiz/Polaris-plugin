@@ -1,0 +1,5 @@
+# 分发包必须入 git：tag 内没有 zip 时 CDN downloadUrl 必然 404（B1-6 教训）
+*.zip
+!radio-broadcast.zip
+package-lock.json
+node_modules/
