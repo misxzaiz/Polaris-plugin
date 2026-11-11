@@ -8426,6 +8426,13 @@ var require_td_core = __commonJS({
   "shared/td-core.js"(exports, module) {
     "use strict";
     var CUSTOM_COMMANDS_KEY3 = "customCommands";
+    var HIDDEN_SCRIPTS_KEY3 = "hiddenScriptIds";
+    var AUTO_RUN_KEY3 = "autoRunRules";
+    var SESSION_NAMES_KEY3 = "sessionNames";
+    var UI_STATE_KEY3 = "uiState";
+    var LEGACY_MIGRATION_KEY3 = "legacyMigration";
+    var AUTO_RUN_TRIGGERS3 = ["app_start", "workspace_open", "terminal_open"];
+    var SCRIPT_TABS = ["project", "custom"];
     function upsertSession3(sessions, meta) {
       const idx = sessions.findIndex((s) => s.id === meta.id);
       if (idx === -1) return [...sessions, meta];
@@ -8442,6 +8449,23 @@ var require_td_core = __commonJS({
     function nextSessionName3(sessions) {
       return `Terminal ${sessions.length + 1}`;
     }
+    function mergeRecoveredSessions3(local, remote) {
+      const locals = Array.isArray(local) ? local : [];
+      const remotes = (Array.isArray(remote) ? remote : []).filter(
+        (s) => s && typeof s === "object" && typeof s.id === "string" && s.id && !s.closed
+      );
+      const remoteById = new Map(remotes.map((s) => [s.id, s]));
+      const localIds = new Set(locals.map((s) => s.id));
+      const kept = locals.filter((s) => remoteById.has(s.id)).map((s) => ({ ...s, name: remoteById.get(s.id).name || s.name }));
+      const added = remotes.filter((s) => !localIds.has(s.id)).map((s) => ({
+        id: s.id,
+        name: typeof s.name === "string" ? s.name : "Terminal",
+        exitCode: null,
+        scriptId: typeof s.scriptId === "string" ? s.scriptId : void 0,
+        cwd: typeof s.cwd === "string" ? s.cwd : null
+      }));
+      return { sessions: [...kept, ...added], recoveredIds: added.map((s) => s.id) };
+    }
     var DANGEROUS_PATTERNS = [
       "rm -rf",
       "del /s",
@@ -8457,7 +8481,7 @@ var require_td_core = __commonJS({
     function confirmMessageFor3(command) {
       return isDangerousCommand3(command) ? `\u547D\u4EE4\u53EF\u80FD\u5177\u6709\u7834\u574F\u6027\uFF0C\u786E\u8BA4\u6267\u884C\uFF1A${command}?` : "";
     }
-    function isCustomScript4(script) {
+    function isCustomScript3(script) {
       return !!script && String(script.id).startsWith("user:");
     }
     function makeCustomCommand3(name, command, cwd) {
@@ -8478,29 +8502,199 @@ var require_td_core = __commonJS({
         (item) => !!item && typeof item === "object" && typeof item.id === "string" && typeof item.command === "string" && typeof item.name === "string"
       ).map((item) => ({
         ...item,
-        createdAt: typeof item.createdAt === "number" ? item.createdAt : 0
+        createdAt: typeof item.createdAt === "number" ? item.createdAt : 0,
+        enabled: item.enabled !== false,
+        autoRun: item.autoRun === true,
+        autoRunTrigger: AUTO_RUN_TRIGGERS3.includes(item.autoRunTrigger) ? item.autoRunTrigger : "workspace_open",
+        confirmBeforeAutoRun: item.confirmBeforeAutoRun === true,
+        env: item.env && typeof item.env === "object" && !Array.isArray(item.env) ? item.env : void 0,
+        tags: Array.isArray(item.tags) ? item.tags.filter((t) => typeof t === "string") : []
       }));
     }
-    function setRuntime4(runtimes, scriptId, patch) {
+    function parseStringArray(value) {
+      if (!Array.isArray(value)) return [];
+      return value.filter((x) => typeof x === "string" && x);
+    }
+    function parseHiddenScriptIds(config) {
+      if (!config || typeof config !== "object") return [];
+      return parseStringArray(config[HIDDEN_SCRIPTS_KEY3]);
+    }
+    function parseAutoRunRules(config) {
+      if (!config || typeof config !== "object") return {};
+      const raw = config[AUTO_RUN_KEY3];
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+      const out = {};
+      for (const [id, rule] of Object.entries(raw)) {
+        if (!rule || typeof rule !== "object") continue;
+        out[id] = {
+          enabled: rule.enabled === true,
+          trigger: AUTO_RUN_TRIGGERS3.includes(rule.trigger) ? rule.trigger : "workspace_open",
+          confirm: rule.confirm === true
+        };
+      }
+      return out;
+    }
+    function parseSessionNames(config) {
+      if (!config || typeof config !== "object") return {};
+      const raw = config[SESSION_NAMES_KEY3];
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+      const out = {};
+      for (const [id, name] of Object.entries(raw)) {
+        if (typeof name === "string" && name.trim()) out[id] = name.trim().slice(0, 120);
+      }
+      return out;
+    }
+    function parseUiState(config) {
+      const raw = config && typeof config === "object" ? config[UI_STATE_KEY3] : null;
+      const state = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+      return {
+        scriptCenterCollapsed: state.scriptCenterCollapsed !== false,
+        scriptTab: SCRIPT_TABS.includes(state.scriptTab) ? state.scriptTab : "project",
+        focusMode: state.focusMode === true
+      };
+    }
+    function parsePluginConfig3(config) {
+      return {
+        customCommands: parseCustomCommands3(config),
+        hiddenScriptIds: parseHiddenScriptIds(config),
+        autoRunRules: parseAutoRunRules(config),
+        sessionNames: parseSessionNames(config),
+        uiState: parseUiState(config),
+        legacyMigration: config && typeof config === "object" && typeof config[LEGACY_MIGRATION_KEY3] === "string" ? config[LEGACY_MIGRATION_KEY3] : ""
+      };
+    }
+    function stableHash(text) {
+      let h = 2166136261;
+      for (let i = 0; i < text.length; i += 1) {
+        h ^= text.charCodeAt(i);
+        h = Math.imul(h, 16777619);
+      }
+      return (h >>> 0).toString(36);
+    }
+    function normalizePath(p) {
+      return String(p || "").replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+    }
+    function parseLegacyTerminalScripts3(raw, workspacePath) {
+      if (!raw || typeof raw !== "object") return { commands: [], hiddenScriptIds: [] };
+      const source = raw.terminalScripts && typeof raw.terminalScripts === "object" ? raw.terminalScripts : raw;
+      const wanted = normalizePath(workspacePath);
+      const commands = [];
+      const hidden = /* @__PURE__ */ new Set();
+      for (const [wsPath, entry] of Object.entries(source)) {
+        if (!entry || typeof entry !== "object") continue;
+        if (wanted && normalizePath(wsPath) !== wanted) continue;
+        for (const id of parseStringArray(entry.hiddenDiscoveredScriptIds)) hidden.add(id);
+        const scripts = Array.isArray(entry.scripts) ? entry.scripts : [];
+        for (const s of scripts) {
+          if (!s || typeof s !== "object" || typeof s.command !== "string" || !s.command.trim()) continue;
+          const isUser = s.source === "user" || typeof s.id === "string" && s.id.startsWith("user:");
+          if (!isUser) continue;
+          const originalId = typeof s.id === "string" && s.id ? s.id : s.command;
+          commands.push({
+            id: `legacy:${stableHash(`${normalizePath(wsPath)}|${originalId}`)}`,
+            name: String(s.name || "").trim() || s.command.trim().slice(0, 40),
+            command: s.command.trim(),
+            cwd: typeof s.cwd === "string" && s.cwd ? s.cwd : void 0,
+            env: s.env && typeof s.env === "object" && !Array.isArray(s.env) ? s.env : void 0,
+            tags: Array.isArray(s.tags) ? s.tags.filter((t) => typeof t === "string") : [],
+            source: "legacy",
+            enabled: s.enabled !== false,
+            autoRun: s.autoRun === true,
+            autoRunTrigger: AUTO_RUN_TRIGGERS3.includes(s.autoRunTrigger) ? s.autoRunTrigger : "workspace_open",
+            confirmBeforeAutoRun: s.confirmBeforeAutoRun === true,
+            createdAt: typeof s.createdAt === "number" ? s.createdAt : 0
+          });
+        }
+      }
+      return { commands, hiddenScriptIds: [...hidden] };
+    }
+    function mergeImportedCommands3(existing, imported) {
+      const list = Array.isArray(existing) ? existing : [];
+      const seen = new Set(list.map((c) => c.id));
+      const added = (Array.isArray(imported) ? imported : []).filter((c) => {
+        if (!c || typeof c.id !== "string" || seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      });
+      return { commands: [...list, ...added], addedCount: added.length };
+    }
+    function mergeHiddenIds3(existing, imported) {
+      const set = new Set(parseStringArray(existing));
+      for (const id of parseStringArray(imported)) set.add(id);
+      return [...set];
+    }
+    function setRuntime3(runtimes, scriptId, patch) {
       const prev = runtimes[scriptId] || { status: "running", lastRunAt: 0 };
       return {
         ...runtimes,
         [scriptId]: { ...prev, ...patch, lastRunAt: patch.lastRunAt ?? Date.now() }
       };
     }
+    function selectRecentScript3(scripts, runtimes) {
+      const list = Array.isArray(scripts) ? scripts : [];
+      const rt = runtimes && typeof runtimes === "object" ? runtimes : {};
+      const running = list.find((s) => rt[s.id]?.status === "running");
+      if (running) return running;
+      const sorted = [...list].sort((a, b) => (rt[b.id]?.lastRunAt ?? 0) - (rt[a.id]?.lastRunAt ?? 0));
+      return sorted[0] ?? null;
+    }
+    function autoRunCandidates3(commands, rules, trigger, workspacePath, seenKeys) {
+      if (!AUTO_RUN_TRIGGERS3.includes(trigger)) return [];
+      const seen = seenKeys instanceof Set ? seenKeys : new Set(Array.isArray(seenKeys) ? seenKeys : []);
+      const candidates = [];
+      const visit = (id, enabled, ruleTrigger, confirm2) => {
+        if (!enabled || !id || ruleTrigger !== trigger) return;
+        const key = `${trigger}|${normalizePath(workspacePath)}|${id}`;
+        if (seen.has(key)) return;
+        candidates.push({ id, trigger, key, needsConfirm: confirm2 === true });
+      };
+      for (const c of Array.isArray(commands) ? commands : []) {
+        if (c.enabled === false) continue;
+        visit(c.id, c.autoRun, c.autoRunTrigger, c.confirmBeforeAutoRun);
+      }
+      const ruleMap = rules && typeof rules === "object" ? rules : {};
+      for (const [id, rule] of Object.entries(ruleMap)) {
+        visit(id, rule?.enabled, rule?.trigger, rule?.confirm);
+      }
+      return candidates;
+    }
+    function isLightThemeId3(themeId) {
+      return /(^|[-_])light([-_]|$)/i.test(String(themeId || ""));
+    }
     module.exports = {
       CUSTOM_COMMANDS_KEY: CUSTOM_COMMANDS_KEY3,
+      HIDDEN_SCRIPTS_KEY: HIDDEN_SCRIPTS_KEY3,
+      AUTO_RUN_KEY: AUTO_RUN_KEY3,
+      SESSION_NAMES_KEY: SESSION_NAMES_KEY3,
+      UI_STATE_KEY: UI_STATE_KEY3,
+      LEGACY_MIGRATION_KEY: LEGACY_MIGRATION_KEY3,
+      AUTO_RUN_TRIGGERS: AUTO_RUN_TRIGGERS3,
       DANGEROUS_PATTERNS,
       upsertSession: upsertSession3,
       markExited: markExited3,
       removeSession: removeSession3,
       nextSessionName: nextSessionName3,
+      mergeRecoveredSessions: mergeRecoveredSessions3,
       isDangerousCommand: isDangerousCommand3,
       confirmMessageFor: confirmMessageFor3,
-      isCustomScript: isCustomScript4,
+      isCustomScript: isCustomScript3,
       makeCustomCommand: makeCustomCommand3,
       parseCustomCommands: parseCustomCommands3,
-      setRuntime: setRuntime4
+      parseStringArray,
+      parseHiddenScriptIds,
+      parseAutoRunRules,
+      parseSessionNames,
+      parseUiState,
+      parsePluginConfig: parsePluginConfig3,
+      stableHash,
+      normalizePath,
+      parseLegacyTerminalScripts: parseLegacyTerminalScripts3,
+      mergeImportedCommands: mergeImportedCommands3,
+      mergeHiddenIds: mergeHiddenIds3,
+      setRuntime: setRuntime3,
+      selectRecentScript: selectRecentScript3,
+      autoRunCandidates: autoRunCandidates3,
+      isLightThemeId: isLightThemeId3
     };
   }
 });
@@ -8508,33 +8702,45 @@ var require_td_core = __commonJS({
 // src/model.ts
 var model_exports = {};
 __export(model_exports, {
+  AUTO_RUN_KEY: () => AUTO_RUN_KEY2,
+  AUTO_RUN_TRIGGERS: () => AUTO_RUN_TRIGGERS2,
   CUSTOM_COMMANDS_KEY: () => CUSTOM_COMMANDS_KEY2,
+  HIDDEN_SCRIPTS_KEY: () => HIDDEN_SCRIPTS_KEY2,
+  LEGACY_MIGRATION_KEY: () => LEGACY_MIGRATION_KEY2,
+  SESSION_NAMES_KEY: () => SESSION_NAMES_KEY2,
+  UI_STATE_KEY: () => UI_STATE_KEY2,
+  autoRunCandidates: () => autoRunCandidates2,
   confirmMessageFor: () => confirmMessageFor2,
   decodeBase64ToBytes: () => decodeBase64ToBytes,
   encodeBase64: () => encodeBase64,
   isCustomScript: () => isCustomScript2,
   isDangerousCommand: () => isDangerousCommand2,
+  isLightThemeId: () => isLightThemeId2,
   makeCustomCommand: () => makeCustomCommand2,
   markExited: () => markExited2,
+  mergeHiddenIds: () => mergeHiddenIds2,
+  mergeImportedCommands: () => mergeImportedCommands2,
+  mergeRecoveredSessions: () => mergeRecoveredSessions2,
   nextSessionName: () => nextSessionName2,
   parseCustomCommands: () => parseCustomCommands2,
+  parseLegacyTerminalScripts: () => parseLegacyTerminalScripts2,
+  parsePluginConfig: () => parsePluginConfig2,
   removeSession: () => removeSession2,
+  selectRecentScript: () => selectRecentScript2,
   setRuntime: () => setRuntime2,
   upsertSession: () => upsertSession2
 });
 function encodeBase64(text) {
   const bytes = new TextEncoder().encode(text);
   let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
 }
 function decodeBase64ToBytes(base64) {
   const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return Uint8Array.from(binary, (c) => c.charCodeAt(0));
 }
-var core, upsertSession2, markExited2, removeSession2, nextSessionName2, isDangerousCommand2, confirmMessageFor2, isCustomScript2, makeCustomCommand2, parseCustomCommands2, setRuntime2, CUSTOM_COMMANDS_KEY2;
+var core, upsertSession2, markExited2, removeSession2, nextSessionName2, mergeRecoveredSessions2, isDangerousCommand2, confirmMessageFor2, isCustomScript2, makeCustomCommand2, parseCustomCommands2, parsePluginConfig2, parseLegacyTerminalScripts2, mergeImportedCommands2, mergeHiddenIds2, setRuntime2, selectRecentScript2, autoRunCandidates2, isLightThemeId2, CUSTOM_COMMANDS_KEY2, HIDDEN_SCRIPTS_KEY2, AUTO_RUN_KEY2, SESSION_NAMES_KEY2, UI_STATE_KEY2, LEGACY_MIGRATION_KEY2, AUTO_RUN_TRIGGERS2;
 var init_model = __esm({
   "src/model.ts"() {
     "use strict";
@@ -8543,18 +8749,32 @@ var init_model = __esm({
     markExited2 = core.markExited;
     removeSession2 = core.removeSession;
     nextSessionName2 = core.nextSessionName;
+    mergeRecoveredSessions2 = core.mergeRecoveredSessions;
     isDangerousCommand2 = core.isDangerousCommand;
     confirmMessageFor2 = core.confirmMessageFor;
     isCustomScript2 = core.isCustomScript;
     makeCustomCommand2 = core.makeCustomCommand;
     parseCustomCommands2 = core.parseCustomCommands;
+    parsePluginConfig2 = core.parsePluginConfig;
+    parseLegacyTerminalScripts2 = core.parseLegacyTerminalScripts;
+    mergeImportedCommands2 = core.mergeImportedCommands;
+    mergeHiddenIds2 = core.mergeHiddenIds;
     setRuntime2 = core.setRuntime;
+    selectRecentScript2 = core.selectRecentScript;
+    autoRunCandidates2 = core.autoRunCandidates;
+    isLightThemeId2 = core.isLightThemeId;
     CUSTOM_COMMANDS_KEY2 = core.CUSTOM_COMMANDS_KEY;
+    HIDDEN_SCRIPTS_KEY2 = core.HIDDEN_SCRIPTS_KEY;
+    AUTO_RUN_KEY2 = core.AUTO_RUN_KEY;
+    SESSION_NAMES_KEY2 = core.SESSION_NAMES_KEY;
+    UI_STATE_KEY2 = core.UI_STATE_KEY;
+    LEGACY_MIGRATION_KEY2 = core.LEGACY_MIGRATION_KEY;
+    AUTO_RUN_TRIGGERS2 = core.AUTO_RUN_TRIGGERS;
   }
 });
 
 // src/Panel.tsx
-import { useCallback as useCallback2, useEffect as useEffect4, useMemo as useMemo3, useRef as useRef3, useState as useState4 } from "react";
+import { useCallback as useCallback3, useEffect as useEffect5, useMemo as useMemo4, useRef as useRef4, useState as useState6 } from "react";
 
 // src/SessionView.tsx
 var import_xterm = __toESM(require_xterm());
@@ -8586,6 +8806,28 @@ async function capTerminal(payload) {
   );
   if (!res.ok) throw new Error(res.error || "cap.terminal \u8C03\u7528\u5931\u8D25");
   return res.result ?? {};
+}
+async function listTerminalSessions() {
+  const res = await capTerminal({ action: "list" });
+  return Array.isArray(res.sessions) ? res.sessions : [];
+}
+async function openInExternalTerminal(command, cwd, env) {
+  await capTerminal({
+    action: "open_in_external",
+    command,
+    ...cwd ? { cwd } : {},
+    ...env ? { env } : {}
+  });
+}
+function hasHostFullscreen() {
+  const api = globals().__POLARIS_HOST_FULLSCREEN__;
+  return !!api && typeof api.toggle === "function";
+}
+async function toggleHostFullscreen() {
+  const api = globals().__POLARIS_HOST_FULLSCREEN__;
+  if (!api || typeof api.toggle !== "function") return false;
+  await api.toggle();
+  return true;
 }
 async function readPluginConfig() {
   const invoke = getHostInvoke();
@@ -8630,14 +8872,20 @@ function listenTerminalExit(handler) {
   });
 }
 function currentWorkspacePath() {
+  const api = globals().__POLARIS_WORKSPACE_API__;
+  if (api) {
+    try {
+      const id = api.currentId();
+      if (id) {
+        const ws = api.list().find((w) => w.id === id);
+        if (ws?.path) return ws.path;
+      }
+    } catch {
+    }
+  }
   const direct = globals().__POLARIS_HOST_WORKSPACE__;
   if (typeof direct === "string" && direct) return direct;
-  const api = globals().__POLARIS_WORKSPACE_API__;
-  if (!api) return null;
-  const id = api.currentId();
-  if (!id) return null;
-  const ws = api.list().find((w) => w.id === id);
-  return ws?.path ?? null;
+  return null;
 }
 function onWorkspaceChanged(handler) {
   let last = currentWorkspacePath();
@@ -8649,6 +8897,7 @@ function onWorkspaceChanged(handler) {
       handler(next);
     }
   });
+  if (typeof last === "string") handler(last);
   return off ?? (() => {
   });
 }
@@ -8656,8 +8905,10 @@ function currentThemeId() {
   return globals().__POLARIS_THEME_API__?.activeId() ?? "";
 }
 function onThemeChanged(handler) {
-  return globals().__POLARIS_THEME_API__?.subscribe(handler) ?? (() => {
-  });
+  const off = globals().__POLARIS_THEME_API__?.subscribe(handler);
+  if (typeof off === "function") return off;
+  return () => {
+  };
 }
 var PLUGIN_ID = "terminal-desk";
 
@@ -8665,12 +8916,13 @@ var PLUGIN_ID = "terminal-desk";
 init_model();
 
 // src/xtermTheme.ts
+init_model();
 function getXtermTheme(themeId) {
   const get = (name, fallback) => {
     if (typeof document === "undefined") return fallback;
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
   };
-  const isLight = themeId === "light";
+  const isLight = isLightThemeId2(themeId);
   const bg = get("--c-bg-base", isLight ? "250 250 252" : "0 0 0");
   const text = get("--c-text-primary", isLight ? "15 23 42" : "248 248 248");
   const textSec = get("--c-text-secondary", isLight ? "51 65 85" : "180 180 184");
@@ -8700,8 +8952,88 @@ function getXtermTheme(themeId) {
   };
 }
 
+// src/icons.tsx
+import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+var PATHS = {
+  "chevron-down": /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" }),
+  "chevron-up": /* @__PURE__ */ jsx("path", { d: "m6 15 6-6 6 6" }),
+  close: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }),
+  columns: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+    /* @__PURE__ */ jsx("path", { d: "M12 4v16" })
+  ] }),
+  copy: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("rect", { x: "9", y: "9", width: "12", height: "12", rx: "2" }),
+    /* @__PURE__ */ jsx("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })
+  ] }),
+  download: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M12 3v12m0 0 4-4m-4 4-4-4" }),
+    /* @__PURE__ */ jsx("path", { d: "M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" })
+  ] }),
+  edit: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M12 20h9" }),
+    /* @__PURE__ */ jsx("path", { d: "M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" })
+  ] }),
+  external: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M14 3h7v7M21 3l-9 9" }),
+    /* @__PURE__ */ jsx("path", { d: "M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" })
+  ] }),
+  "eye-off": /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M3 3l18 18" }),
+    /* @__PURE__ */ jsx("path", { d: "M10.6 10.6a2 2 0 0 0 2.8 2.8" }),
+    /* @__PURE__ */ jsx("path", { d: "M9.9 5.2A10.6 10.6 0 0 1 12 5c5 0 9 5 9 7a12 12 0 0 1-2.2 2.9M6.6 6.6C4.3 8 3 10.2 3 12c0 2 4 7 9 7a9.7 9.7 0 0 0 4.2-.9" })
+  ] }),
+  maximize: /* @__PURE__ */ jsx("path", { d: "M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3m13 5h3a2 2 0 0 0 2-2v-3" }),
+  minimize: /* @__PURE__ */ jsx("path", { d: "M3 8h3a2 2 0 0 0 2-2V3m13 5h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3m13-5h-3a2 2 0 0 0-2 2v3" }),
+  play: /* @__PURE__ */ jsx("path", { d: "m7 4 13 8-13 8V4Z" }),
+  plus: /* @__PURE__ */ jsx("path", { d: "M12 5v14M5 12h14" }),
+  refresh: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 1 1-2.6-6.4" }),
+    /* @__PURE__ */ jsx("path", { d: "M21 3v6h-6" })
+  ] }),
+  search: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
+    /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
+  ] }),
+  square: /* @__PURE__ */ jsx("rect", { x: "5", y: "5", width: "14", height: "14", rx: "1.5" }),
+  terminal: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("rect", { x: "2", y: "3", width: "20", height: "18", rx: "2" }),
+    /* @__PURE__ */ jsx("path", { d: "m6 8 3 3-3 3M12 15h5" })
+  ] }),
+  trash: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M4 7h16M10 11v6m4-6v6" }),
+    /* @__PURE__ */ jsx("path", { d: "M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3" })
+  ] }),
+  zap: /* @__PURE__ */ jsx("path", { d: "M13 2 4 14h7l-1 8 9-12h-7l1-8Z" }),
+  alert: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" }),
+    /* @__PURE__ */ jsx("path", { d: "M12 9v4m0 4h.01" })
+  ] })
+};
+function Icon({ name, size = 14, className }) {
+  return /* @__PURE__ */ jsx(
+    "svg",
+    {
+      className,
+      width: size,
+      height: size,
+      viewBox: "0 0 24 24",
+      fill: "none",
+      stroke: "currentColor",
+      strokeWidth: 1.7,
+      strokeLinecap: "round",
+      strokeLinejoin: "round",
+      "aria-hidden": "true",
+      focusable: "false",
+      style: { flexShrink: 0, display: "block" },
+      children: PATHS[name]
+    }
+  );
+}
+
 // src/SessionView.tsx
-import { jsx, jsxs } from "react/jsx-runtime";
+import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+var FONT_FAMILY = 'Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", "Courier New", monospace';
 function SessionView({ sessionId, visible, onExit, registerSearch }) {
   const containerRef = useRef(null);
   const termRef = useRef(null);
@@ -8710,14 +9042,19 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const onExitRef = useRef(onExit);
   onExitRef.current = onExit;
+  const registerSearchRef = useRef(registerSearch);
+  registerSearchRef.current = registerSearch;
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
     const term = new import_xterm.Terminal({
       scrollback: 1e4,
+      fontFamily: FONT_FAMILY,
       fontSize: 14,
-      fontFamily: "Consolas, 'Courier New', monospace",
+      lineHeight: 1.2,
       cursorBlink: true,
+      cursorStyle: "block",
+      allowTransparency: false,
       theme: getXtermTheme(currentThemeId())
     });
     termRef.current = term;
@@ -8747,6 +9084,8 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
     });
     let resizeTimer = null;
     let rafId = 0;
+    let lastCols = 0;
+    let lastRows = 0;
     const observer = new ResizeObserver(() => {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
@@ -8758,19 +9097,19 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
           try {
             fit.fit();
             const dims = fit.proposeDimensions();
-            if (dims && dims.cols > 1 && dims.rows > 1) {
-              void capTerminal({ action: "resize", sessionId, cols: dims.cols, rows: dims.rows }).catch(
-                () => {
-                }
-              );
-            }
+            if (!dims || dims.cols <= 1 || dims.rows <= 1) return;
+            if (dims.cols === lastCols && dims.rows === lastRows) return;
+            lastCols = dims.cols;
+            lastRows = dims.rows;
+            void capTerminal({ action: "resize", sessionId, cols: dims.cols, rows: dims.rows }).catch(() => {
+            });
           } catch {
           }
-        }, 100);
+        }, 80);
       });
     });
     observer.observe(container);
-    registerSearch?.(() => {
+    const unregisterSearch = registerSearchRef.current?.(() => {
       setSearchOpen(true);
       window.setTimeout(() => {
         const input = container.parentElement?.querySelector(".td-search-input");
@@ -8786,6 +9125,10 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
       offOutput();
       offExit();
       try {
+        unregisterSearch?.();
+      } catch {
+      }
+      try {
         term.dispose();
       } catch {
       }
@@ -8794,11 +9137,12 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
       if (searchRef.current === search) searchRef.current = null;
     };
   }, [sessionId]);
-  useEffect(() => {
-    return onThemeChanged(() => {
+  useEffect(
+    () => onThemeChanged(() => {
       if (termRef.current) termRef.current.options.theme = getXtermTheme(currentThemeId());
-    });
-  }, []);
+    }),
+    []
+  );
   useEffect(() => {
     if (!visible) return;
     const id = window.setTimeout(() => {
@@ -8813,8 +9157,8 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
     setSearchOpen(false);
     termRef.current?.focus();
   }
-  return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", flex: 1, minHeight: 0, position: "relative" }, children: [
-    searchOpen && /* @__PURE__ */ jsx(
+  return /* @__PURE__ */ jsxs2("div", { className: "td-session-wrap", children: [
+    searchOpen && /* @__PURE__ */ jsx2(
       SearchBar,
       {
         onSearch: (text, opts) => {
@@ -8826,7 +9170,7 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
         onClose: closeSearch
       }
     ),
-    /* @__PURE__ */ jsx("div", { ref: containerRef, className: "td-session" })
+    /* @__PURE__ */ jsx2("div", { ref: containerRef, className: "td-session" })
   ] });
 }
 function SearchBar({
@@ -8835,8 +9179,9 @@ function SearchBar({
 }) {
   const [text, setText] = useState("");
   const [caseSensitive, setCaseSensitive] = useState(false);
-  return /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 6, padding: "4px 8px", borderBottom: "1px solid rgb(var(--c-border))", flex: "none", alignItems: "center" }, children: [
-    /* @__PURE__ */ jsx(
+  return /* @__PURE__ */ jsxs2("div", { className: "td-searchbar", children: [
+    /* @__PURE__ */ jsx2(Icon, { name: "search", size: 13 }),
+    /* @__PURE__ */ jsx2(
       "input",
       {
         className: "td-search-input td-input",
@@ -8851,309 +9196,891 @@ function SearchBar({
             e.preventDefault();
             onClose();
           }
-        },
-        style: { width: 240 }
+        }
       }
     ),
-    /* @__PURE__ */ jsxs("label", { style: { fontSize: 11, display: "inline-flex", gap: 4, alignItems: "center", cursor: "pointer" }, children: [
-      /* @__PURE__ */ jsx("input", { type: "checkbox", checked: caseSensitive, onChange: (e) => setCaseSensitive(e.target.checked) }),
+    /* @__PURE__ */ jsxs2("label", { className: "td-check", children: [
+      /* @__PURE__ */ jsx2("input", { type: "checkbox", checked: caseSensitive, onChange: (e) => setCaseSensitive(e.target.checked) }),
       "\u533A\u5206\u5927\u5C0F\u5199"
     ] }),
-    /* @__PURE__ */ jsx("button", { className: "td-mini", onClick: onClose, style: { marginLeft: "auto" }, children: "\u2715" })
+    /* @__PURE__ */ jsx2("button", { className: "td-iconbtn", onClick: onClose, title: "\u5173\u95ED\u641C\u7D22", "aria-label": "\u5173\u95ED\u641C\u7D22", children: /* @__PURE__ */ jsx2(Icon, { name: "close", size: 12 }) })
   ] });
 }
 
-// src/ScriptDrawer.tsx
-import { useCallback, useEffect as useEffect2, useMemo, useState as useState2 } from "react";
-init_model();
-import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
-async function saveCustomCommand(name, command, cwd) {
-  const config = await readPluginConfig();
-  const list = parseCustomCommands2(config);
-  const next = makeCustomCommand2(name, command, cwd);
-  await writePluginConfig({ customCommands: [...list, next] });
-  return next;
-}
-function ScriptDrawer({ runtimes, onRun, onStop }) {
-  const [tab, setTab] = useState2("project");
-  const [discovered, setDiscovered] = useState2([]);
-  const [discoveredError, setDiscoveredError] = useState2(null);
-  const [custom, setCustom] = useState2([]);
-  const [search, setSearch] = useState2("");
-  const [loading, setLoading] = useState2(false);
-  const refreshDiscovered = useCallback(async () => {
-    const ws = currentWorkspacePath();
-    if (!ws) {
-      setDiscovered([]);
-      setDiscoveredError(null);
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await capTerminal({
-        action: "discover_scripts",
-        workspacePath: ws
-      });
-      setDiscovered(res.scripts ?? []);
-      setDiscoveredError(null);
-    } catch (e) {
-      setDiscoveredError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  const refreshCustom = useCallback(async () => {
-    const config = await readPluginConfig();
-    setCustom(parseCustomCommands2(config));
-  }, []);
+// src/ScriptCenter.tsx
+import { useCallback, useEffect as useEffect3, useMemo, useState as useState3 } from "react";
+
+// src/Overlays.tsx
+import { useEffect as useEffect2, useRef as useRef2, useState as useState2 } from "react";
+import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
+function ContextMenu({ x, y, items, onClose }) {
+  const ref = useRef2(null);
   useEffect2(() => {
-    void refreshDiscovered();
-    void refreshCustom();
-    return onWorkspaceChanged(() => {
-      void refreshDiscovered();
-    });
-  }, [refreshDiscovered, refreshCustom]);
-  const filteredDiscovered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return discovered;
-    return discovered.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.command.toLowerCase().includes(q)
-    );
-  }, [discovered, search]);
-  const filteredCustom = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return custom;
-    return custom.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.command.toLowerCase().includes(q)
-    );
-  }, [custom, search]);
-  function guardAndRun(script) {
-    const confirmMsg = confirmMessageFor2(script.command);
-    if (confirmMsg && !window.confirm(confirmMsg)) return;
-    void onRun(script).catch(() => {
-    });
-  }
-  async function deleteCustom(id) {
-    const next = custom.filter((c) => c.id !== id);
-    setCustom(next);
-    await writePluginConfig({ customCommands: next });
-  }
-  const rows = [
-    ...filteredDiscovered.map((s) => ({ id: s.id, name: s.name, command: s.command, cwd: s.cwd, env: void 0, custom: false })),
-    ...tab === "custom" ? filteredCustom.map((s) => ({ id: s.id, name: s.name, command: s.command, cwd: s.cwd, env: s.env, custom: true })) : []
-  ];
-  return /* @__PURE__ */ jsxs2("div", { className: "td-drawer", children: [
-    /* @__PURE__ */ jsxs2("div", { className: "td-drawer-head", children: [
-      /* @__PURE__ */ jsx2("button", { className: `td-chip${tab === "project" ? " td-chip-on" : ""}`, onClick: () => setTab("project"), children: "\u9879\u76EE\u811A\u672C" }),
-      /* @__PURE__ */ jsx2("button", { className: `td-chip${tab === "custom" ? " td-chip-on" : ""}`, onClick: () => setTab("custom"), children: "\u81EA\u5B9A\u4E49" }),
-      /* @__PURE__ */ jsx2(
-        "input",
-        {
-          className: "td-input",
-          placeholder: "\u641C\u7D22\u811A\u672C\u2026",
-          value: search,
-          onChange: (e) => setSearch(e.target.value),
-          style: { width: 160, marginLeft: 8 }
-        }
-      ),
-      /* @__PURE__ */ jsx2("span", { style: { flex: 1 } }),
-      discoveredError && /* @__PURE__ */ jsx2("span", { style: { fontSize: 11, color: "rgb(var(--c-danger, #f87171))" }, title: discoveredError, children: "\u53D1\u73B0\u5931\u8D25" }),
-      /* @__PURE__ */ jsx2("button", { className: "td-mini", onClick: () => void refreshDiscovered(), title: "\u91CD\u65B0\u53D1\u73B0\u9879\u76EE\u811A\u672C", children: loading ? "\u2026" : "\u5237\u65B0" })
-    ] }),
-    /* @__PURE__ */ jsxs2("div", { className: "td-drawer-body", children: [
-      tab === "project" && !currentWorkspacePath() && /* @__PURE__ */ jsx2("div", { style: { fontSize: 12, color: "rgb(var(--c-text-secondary))", padding: "8px 4px" }, children: "\u672A\u7ED1\u5B9A\u5DE5\u4F5C\u533A\uFF0C\u65E0\u9879\u76EE\u811A\u672C\u53EF\u53D1\u73B0\u3002\u53EF\u5728\u300C\u81EA\u5B9A\u4E49\u300D\u9875\u6DFB\u52A0\u547D\u4EE4\u3002" }),
-      rows.map((script) => {
-        const rt = runtimes[script.id];
-        return /* @__PURE__ */ jsxs2("div", { className: "td-script", onClick: () => guardAndRun(script), title: "\u70B9\u51FB\u8FD0\u884C", children: [
-          rt && /* @__PURE__ */ jsx2("span", { className: `td-status-dot td-status-${rt.status}` }),
-          /* @__PURE__ */ jsx2("span", { className: "td-script-name", children: script.name }),
-          /* @__PURE__ */ jsx2("span", { className: "td-script-cmd", children: script.command }),
-          /* @__PURE__ */ jsxs2("span", { className: "td-script-actions", onClick: (e) => e.stopPropagation(), children: [
-            rt?.status === "running" && rt.terminalSessionId && /* @__PURE__ */ jsx2("button", { className: "td-mini", onClick: () => void onStop(script.id), children: "\u505C\u6B62" }),
-            /* @__PURE__ */ jsx2("button", { className: "td-mini", onClick: () => guardAndRun(script), children: "\u8FD0\u884C" }),
-            script.custom && /* @__PURE__ */ jsx2("button", { className: "td-mini", onClick: () => void deleteCustom(script.id), children: "\u5220\u9664" })
-          ] })
-        ] }, script.id);
-      }),
-      tab === "project" && filteredDiscovered.length === 0 && currentWorkspacePath() && !loading && !discoveredError && /* @__PURE__ */ jsx2("div", { style: { fontSize: 12, color: "rgb(var(--c-text-secondary))", padding: "8px 4px" }, children: "\u5DE5\u4F5C\u533A package.json \u672A\u58F0\u660E scripts\u3002" }),
-      tab === "custom" && /* @__PURE__ */ jsx2(AddCustomRow, { onAdd: async (name, command) => {
-        const next = makeCustomCommand2(name, command, currentWorkspacePath() ?? void 0);
-        await writePluginConfig({ customCommands: [...custom, next] });
-        setCustom([...custom, next]);
-      } })
-    ] })
-  ] });
-}
-function AddCustomRow({ onAdd }) {
-  const [name, setName] = useState2("");
-  const [command, setCommand] = useState2("");
-  const canSave = command.trim().length > 0;
-  return /* @__PURE__ */ jsxs2("div", { style: { display: "flex", gap: 6, padding: "8px 2px", alignItems: "center" }, children: [
-    /* @__PURE__ */ jsx2(
-      "input",
-      {
-        className: "td-input",
-        placeholder: "\u540D\u79F0\uFF08\u53EF\u9009\uFF09",
-        value: name,
-        onChange: (e) => setName(e.target.value),
-        style: { width: 120 }
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
       }
-    ),
-    /* @__PURE__ */ jsx2(
-      "input",
-      {
-        className: "td-input",
-        placeholder: "\u547D\u4EE4\uFF0C\u5982 pnpm test",
-        value: command,
-        onChange: (e) => setCommand(e.target.value),
-        onKeyDown: (e) => {
-          if (e.key === "Enter" && canSave) {
-            void onAdd(name, command);
-            setName("");
-            setCommand("");
-          }
-        },
-        style: { flex: 1 }
-      }
-    ),
-    /* @__PURE__ */ jsx2(
+    };
+    window.addEventListener("mousedown", onDown, true);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("mousedown", onDown, true);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [onClose]);
+  const left = Math.max(4, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 1200) - 196));
+  const top = Math.max(4, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 800) - 8 - items.length * 30));
+  return /* @__PURE__ */ jsx3("div", { ref, className: "td-menu", style: { left, top }, role: "menu", children: items.map(
+    (item, i) => "separator" in item ? /* @__PURE__ */ jsx3("div", { className: "td-menu-sep" }, `sep-${i}`) : /* @__PURE__ */ jsxs3(
       "button",
       {
-        className: "td-mini",
-        disabled: !canSave,
+        type: "button",
+        role: "menuitem",
+        className: `td-menu-item${item.danger ? " td-menu-danger" : ""}`,
+        disabled: item.disabled,
         onClick: () => {
-          void onAdd(name, command);
-          setName("");
-          setCommand("");
+          onClose();
+          item.onSelect();
         },
-        children: "\u6DFB\u52A0"
-      }
+        children: [
+          item.icon && /* @__PURE__ */ jsx3(Icon, { name: item.icon, size: 13 }),
+          /* @__PURE__ */ jsx3("span", { children: item.label })
+        ]
+      },
+      item.id
     )
+  ) });
+}
+function ConfirmDialog({
+  title,
+  message,
+  detail,
+  confirmText = "\u786E\u8BA4",
+  danger = true,
+  onConfirm,
+  onCancel
+}) {
+  useEffect2(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onCancel]);
+  return /* @__PURE__ */ jsx3("div", { className: "td-modal-mask", role: "presentation", onMouseDown: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ jsxs3("div", { className: "td-dialog", role: "dialog", "aria-modal": "true", "aria-label": title, children: [
+    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-title", children: [
+      danger && /* @__PURE__ */ jsx3(Icon, { name: "alert", size: 15 }),
+      /* @__PURE__ */ jsx3("span", { children: title })
+    ] }),
+    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-body", children: [
+      /* @__PURE__ */ jsx3("div", { children: message }),
+      detail && /* @__PURE__ */ jsx3("code", { className: "td-dialog-detail", children: detail })
+    ] }),
+    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-actions", children: [
+      /* @__PURE__ */ jsx3("button", { className: "td-btn", onClick: onCancel, children: "\u53D6\u6D88" }),
+      /* @__PURE__ */ jsx3("button", { className: `td-btn${danger ? " td-btn-danger" : " td-btn-primary"}`, onClick: onConfirm, autoFocus: true, children: confirmText })
+    ] })
+  ] }) });
+}
+function ImportDialog({ onImport, onCancel }) {
+  const [text, setText] = useState2("");
+  return /* @__PURE__ */ jsx3("div", { className: "td-modal-mask", role: "presentation", onMouseDown: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ jsxs3("div", { className: "td-dialog td-dialog-wide", role: "dialog", "aria-modal": "true", "aria-label": "\u5BFC\u5165\u65E7\u7EC8\u7AEF\u811A\u672C", children: [
+    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-title", children: [
+      /* @__PURE__ */ jsx3(Icon, { name: "download", size: 15 }),
+      /* @__PURE__ */ jsx3("span", { children: "\u5BFC\u5165\u5185\u7F6E\u7EC8\u7AEF\u811A\u672C" })
+    ] }),
+    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-body", children: [
+      /* @__PURE__ */ jsxs3("div", { children: [
+        "\u7C98\u8D34\u4E3B\u4ED3 ",
+        /* @__PURE__ */ jsx3("code", { children: "config.json" }),
+        " \u5168\u6587\uFF0C\u6216\u5176\u4E2D\u7684 ",
+        /* @__PURE__ */ jsx3("code", { children: "terminalScripts" }),
+        " \u7247\u6BB5\u3002 \u4EC5\u5BFC\u5165\u81EA\u5B9A\u4E49\u811A\u672C\uFF08",
+        /* @__PURE__ */ jsx3("code", { children: 'source: "user"' }),
+        "\uFF09\uFF0C\u9879\u76EE\u811A\u672C\u7531\u5DE5\u4F5C\u533A\u81EA\u52A8\u53D1\u73B0\uFF1B\u91CD\u590D\u5BFC\u5165\u4E0D\u4F1A\u65B0\u589E\u526F\u672C\u3002"
+      ] }),
+      /* @__PURE__ */ jsx3(
+        "textarea",
+        {
+          className: "td-textarea",
+          value: text,
+          onChange: (e) => setText(e.target.value),
+          placeholder: '{ "terminalScripts": { "D:/repo": { "scripts": [ ... ] } } }',
+          rows: 8,
+          autoFocus: true
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-actions", children: [
+      /* @__PURE__ */ jsx3("button", { className: "td-btn", onClick: onCancel, children: "\u53D6\u6D88" }),
+      /* @__PURE__ */ jsx3("button", { className: "td-btn td-btn-primary", disabled: !text.trim(), onClick: () => onImport(text), children: "\u89E3\u6790\u5E76\u5BFC\u5165" })
+    ] })
+  ] }) });
+}
+
+// src/ScriptCenter.tsx
+init_model();
+import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+function draftFromScript(script) {
+  return {
+    name: script.name,
+    command: script.command,
+    cwd: script.cwd ?? "",
+    envText: script.env ? JSON.stringify(script.env) : "",
+    autoRun: script.autoRun ?? false,
+    autoRunTrigger: script.autoRunTrigger ?? "workspace_open",
+    confirmBeforeAutoRun: script.confirmBeforeAutoRun ?? false,
+    enabled: true
+  };
+}
+function parseEnv(text) {
+  if (!text.trim()) return void 0;
+  const value = JSON.parse(text);
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("\u73AF\u5883\u53D8\u91CF\u9700\u4E3A JSON \u5BF9\u8C61");
+  const out = {};
+  for (const [k, v] of Object.entries(value)) out[k] = String(v);
+  return out;
+}
+function ScriptCenter({
+  collapsed,
+  tab,
+  onTabChange,
+  workspacePath,
+  scripts,
+  runtimes,
+  config,
+  actions,
+  loading,
+  discoveredError,
+  onRefresh,
+  onRun,
+  onStop,
+  onError,
+  requestConfirm
+}) {
+  const [search, setSearch] = useState3("");
+  const [menu, setMenu] = useState3(null);
+  const [editing, setEditing] = useState3(null);
+  const [draft, setDraft] = useState3(null);
+  const [showImport, setShowImport] = useState3(false);
+  const [showHidden, setShowHidden] = useState3(false);
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return scripts.filter(
+      (s) => tab === "custom" === s.custom && config.hiddenScriptIds.indexOf(s.id) === -1 && (!q || s.name.toLowerCase().includes(q) || s.command.toLowerCase().includes(q))
+    );
+  }, [scripts, search, tab, config.hiddenScriptIds]);
+  const hiddenIds = config.hiddenScriptIds;
+  const guardRun = useCallback((script) => onRun(script), [onRun]);
+  const runExternal = useCallback(
+    (script) => {
+      const msg = confirmMessageFor2(script.command);
+      const run = () => {
+        void openInExternalTerminal(script.command, script.cwd ?? workspacePath ?? void 0, script.env).catch(
+          (e) => onError(`\u5916\u90E8\u7EC8\u7AEF\u542F\u52A8\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`)
+        );
+      };
+      if (msg) requestConfirm("\u5371\u9669\u547D\u4EE4\u786E\u8BA4", msg, `${script.command}\uFF08\u7CFB\u7EDF\u7EC8\u7AEF\uFF09`, run);
+      else run();
+    },
+    [workspacePath, onError, requestConfirm]
+  );
+  const openEditor = useCallback((script) => {
+    if (script) {
+      setEditing({ mode: "edit", id: script.id });
+      setDraft(draftFromScript(script));
+    } else {
+      setEditing({ mode: "new" });
+      setDraft({
+        name: "",
+        command: "",
+        cwd: workspacePath ?? "",
+        envText: "",
+        autoRun: false,
+        autoRunTrigger: "workspace_open",
+        confirmBeforeAutoRun: false,
+        enabled: true
+      });
+    }
+  }, [workspacePath]);
+  const saveDraft = useCallback(async () => {
+    if (!editing || !draft) return;
+    if (!draft.command.trim()) {
+      onError("\u547D\u4EE4\u4E0D\u80FD\u4E3A\u7A7A");
+      return;
+    }
+    let env;
+    try {
+      env = parseEnv(draft.envText);
+    } catch (e) {
+      onError(`\u73AF\u5883\u53D8\u91CF\u683C\u5F0F\u9519\u8BEF\uFF1A${e instanceof Error ? e.message : String(e)}`);
+      return;
+    }
+    const base = makeCustomCommand2(draft.name, draft.command, draft.cwd || void 0);
+    if (editing.mode === "edit" && editing.id) {
+      const next = config.customCommands.map(
+        (c) => c.id === editing.id ? {
+          ...c,
+          name: base.name,
+          command: base.command,
+          cwd: base.cwd,
+          env,
+          autoRun: draft.autoRun,
+          autoRunTrigger: draft.autoRunTrigger,
+          confirmBeforeAutoRun: draft.confirmBeforeAutoRun,
+          enabled: draft.enabled
+        } : c
+      );
+      await actions.setCustomCommands(next);
+    } else {
+      await actions.setCustomCommands([
+        ...config.customCommands,
+        {
+          ...base,
+          env,
+          autoRun: draft.autoRun,
+          autoRunTrigger: draft.autoRunTrigger,
+          confirmBeforeAutoRun: draft.confirmBeforeAutoRun,
+          enabled: draft.enabled
+        }
+      ]);
+    }
+    setEditing(null);
+    setDraft(null);
+  }, [editing, draft, config.customCommands, actions, onError]);
+  const duplicate = useCallback(
+    async (script) => {
+      const copy = makeCustomCommand2(`${script.name} \u526F\u672C`, script.command, script.cwd);
+      await actions.setCustomCommands([
+        ...config.customCommands,
+        { ...copy, env: script.env, autoRun: script.autoRun, autoRunTrigger: script.autoRunTrigger }
+      ]);
+      onTabChange("custom");
+    },
+    [config.customCommands, actions, onTabChange]
+  );
+  const removeOrHide = useCallback(
+    (script) => {
+      const title = script.custom ? "\u5220\u9664\u81EA\u5B9A\u4E49\u547D\u4EE4" : "\u9690\u85CF\u9879\u76EE\u811A\u672C";
+      const message = script.custom ? `\u5C06\u6C38\u4E45\u5220\u9664\u300C${script.name}\u300D\uFF0C\u6B64\u64CD\u4F5C\u4E0D\u53EF\u64A4\u9500\u3002` : `\u300C${script.name}\u300D\u6765\u81EA\u9879\u76EE\u811A\u672C\u6587\u4EF6\uFF0C\u4E0D\u4F1A\u4FEE\u6539\u6E90\u6587\u4EF6\uFF0C\u4EC5\u4ECE\u811A\u672C\u4E2D\u5FC3\u9690\u85CF\u3002`;
+      requestConfirm(title, message, script.command, () => {
+        if (script.custom) {
+          void actions.setCustomCommands(config.customCommands.filter((c) => c.id !== script.id));
+        } else {
+          void actions.setHiddenScriptIds(mergeHiddenIds2(hiddenIds, [script.id]));
+        }
+      });
+    },
+    [requestConfirm, actions, config.customCommands, hiddenIds]
+  );
+  const toggleAutoRun = useCallback(
+    (script) => {
+      if (script.custom) {
+        void actions.setCustomCommands(
+          config.customCommands.map(
+            (c) => c.id === script.id ? { ...c, autoRun: !script.autoRun } : c
+          )
+        );
+      } else {
+        const rule = config.autoRunRules[script.id];
+        void actions.setAutoRunRules({
+          ...config.autoRunRules,
+          [script.id]: {
+            enabled: !rule?.enabled,
+            trigger: rule?.trigger ?? "workspace_open",
+            confirm: rule?.confirm ?? false
+          }
+        });
+      }
+    },
+    [config.customCommands, config.autoRunRules, actions]
+  );
+  const importLegacy = useCallback(
+    (text) => {
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (e) {
+        onError(`JSON \u89E3\u6790\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`);
+        return;
+      }
+      const result = parseLegacyTerminalScripts2(parsed, workspacePath);
+      const merged = mergeImportedCommands2(config.customCommands, result.commands);
+      const hidden = mergeHiddenIds2(hiddenIds, result.hiddenScriptIds);
+      void actions.importLegacy(merged.commands, hidden);
+      setShowImport(false);
+      onTabChange("custom");
+      if (merged.addedCount === 0) onError('\u672A\u53D1\u73B0\u53EF\u5BFC\u5165\u7684\u65B0\u811A\u672C\uFF08\u53EF\u80FD\u5DF2\u5BFC\u5165\u8FC7\uFF0C\u6216\u4E0D\u542B source:"user" \u7684\u81EA\u5B9A\u4E49\u811A\u672C\uFF09');
+    },
+    [workspacePath, config.customCommands, hiddenIds, actions, onTabChange, onError]
+  );
+  const menuItems = useCallback(
+    (script) => {
+      const rt = runtimes[script.id];
+      const running = rt?.status === "running";
+      return [
+        { id: "run", label: "\u8FD0\u884C", icon: "play", onSelect: () => guardRun(script) },
+        {
+          id: "stop",
+          label: "\u505C\u6B62",
+          icon: "square",
+          disabled: !running,
+          onSelect: () => onStop(script.id)
+        },
+        { id: "external", label: "\u5728\u5916\u90E8\u7EC8\u7AEF\u8FD0\u884C", icon: "external", onSelect: () => runExternal(script) },
+        { separator: true },
+        {
+          id: "autorun",
+          label: script.autoRun ? "\u5173\u95ED\u81EA\u52A8\u8FD0\u884C" : "\u542F\u7528\u81EA\u52A8\u8FD0\u884C",
+          icon: "zap",
+          onSelect: () => void toggleAutoRun(script)
+        },
+        { separator: true },
+        ...script.custom ? [
+          { id: "edit", label: "\u7F16\u8F91", icon: "edit", onSelect: () => openEditor(script) },
+          { id: "duplicate", label: "\u521B\u5EFA\u526F\u672C", icon: "copy", onSelect: () => void duplicate(script) },
+          { separator: true },
+          {
+            id: "delete",
+            label: "\u5220\u9664",
+            icon: "trash",
+            danger: true,
+            onSelect: () => removeOrHide(script)
+          }
+        ] : [
+          {
+            id: "hide",
+            label: "\u4ECE\u811A\u672C\u4E2D\u5FC3\u9690\u85CF",
+            icon: "eye-off",
+            danger: true,
+            onSelect: () => removeOrHide(script)
+          }
+        ]
+      ];
+    },
+    [runtimes, guardRun, onStop, runExternal, toggleAutoRun, openEditor, duplicate, removeOrHide]
+  );
+  useEffect3(() => {
+    if (collapsed) {
+      setMenu(null);
+      setEditing(null);
+      setShowHidden(false);
+    }
+  }, [collapsed]);
+  if (collapsed) return null;
+  return /* @__PURE__ */ jsxs4("div", { className: "td-scriptcenter", children: [
+    /* @__PURE__ */ jsxs4("div", { className: "td-sc-head", children: [
+      /* @__PURE__ */ jsx4(
+        "button",
+        {
+          className: `td-chip${tab === "project" ? " td-chip-on" : ""}`,
+          onClick: () => onTabChange("project"),
+          children: "\u9879\u76EE\u811A\u672C"
+        }
+      ),
+      /* @__PURE__ */ jsxs4(
+        "button",
+        {
+          className: `td-chip${tab === "custom" ? " td-chip-on" : ""}`,
+          onClick: () => onTabChange("custom"),
+          children: [
+            "\u81EA\u5B9A\u4E49 ",
+            config.customCommands.length > 0 ? `\xB7 ${config.customCommands.length}` : ""
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsx4(
+        "input",
+        {
+          className: "td-input td-sc-search",
+          placeholder: "\u641C\u7D22\u811A\u672C\u2026",
+          value: search,
+          onChange: (e) => setSearch(e.target.value)
+        }
+      ),
+      discoveredError && /* @__PURE__ */ jsx4("span", { className: "td-sc-error", title: discoveredError, children: "\u53D1\u73B0\u5931\u8D25" }),
+      /* @__PURE__ */ jsx4("button", { className: "td-iconbtn", onClick: onRefresh, title: "\u91CD\u65B0\u53D1\u73B0\u9879\u76EE\u811A\u672C", "aria-label": "\u91CD\u65B0\u53D1\u73B0\u9879\u76EE\u811A\u672C", children: /* @__PURE__ */ jsx4(Icon, { name: "refresh", size: 14 }) }),
+      /* @__PURE__ */ jsx4("button", { className: "td-iconbtn", onClick: () => setShowImport(true), title: "\u5BFC\u5165\u5185\u7F6E\u7EC8\u7AEF\u65E7\u811A\u672C", "aria-label": "\u5BFC\u5165\u5185\u7F6E\u7EC8\u7AEF\u65E7\u811A\u672C", children: /* @__PURE__ */ jsx4(Icon, { name: "download", size: 14 }) }),
+      /* @__PURE__ */ jsx4("button", { className: "td-iconbtn", onClick: () => openEditor(), title: "\u65B0\u589E\u81EA\u5B9A\u4E49\u547D\u4EE4", "aria-label": "\u65B0\u589E\u81EA\u5B9A\u4E49\u547D\u4EE4", children: /* @__PURE__ */ jsx4(Icon, { name: "plus", size: 15 }) })
+    ] }),
+    /* @__PURE__ */ jsxs4("div", { className: "td-sc-body", children: [
+      tab === "project" && !workspacePath && /* @__PURE__ */ jsx4("div", { className: "td-sc-empty", children: "\u672A\u7ED1\u5B9A\u5DE5\u4F5C\u533A\uFF0C\u65E0\u9879\u76EE\u811A\u672C\u53EF\u53D1\u73B0\u3002\u53EF\u5728\u300C\u81EA\u5B9A\u4E49\u300D\u9875\u6DFB\u52A0\u547D\u4EE4\u3002" }),
+      tab === "project" && loading && /* @__PURE__ */ jsx4("div", { className: "td-sc-empty", children: "\u6B63\u5728\u53D1\u73B0\u9879\u76EE\u811A\u672C\u2026" }),
+      tab === "project" && !loading && !discoveredError && workspacePath && visible.length === 0 && /* @__PURE__ */ jsx4("div", { className: "td-sc-empty", children: "\u5DE5\u4F5C\u533A\u672A\u58F0\u660E package.json scripts\uFF0C\u6216\u5168\u90E8\u5DF2\u9690\u85CF\u3002" }),
+      tab === "custom" && visible.length === 0 && !editing && /* @__PURE__ */ jsx4("div", { className: "td-sc-empty", children: "\u6682\u65E0\u81EA\u5B9A\u4E49\u547D\u4EE4\u3002\u70B9\u51FB\u53F3\u4E0A\u89D2 + \u65B0\u589E\uFF0C\u6216\u4ECE\u65E7\u5185\u7F6E\u7EC8\u7AEF\u5BFC\u5165\u3002" }),
+      visible.map((script) => {
+        const rt = runtimes[script.id];
+        const autoRun = script.custom ? script.autoRun : config.autoRunRules[script.id]?.enabled;
+        return /* @__PURE__ */ jsxs4(
+          "div",
+          {
+            className: "td-script",
+            onClick: () => guardRun(script),
+            onContextMenu: (e) => {
+              e.preventDefault();
+              setMenu({ x: e.clientX, y: e.clientY, script });
+            },
+            title: "\u70B9\u51FB\u8FD0\u884C \xB7 \u53F3\u952E\u66F4\u591A\u64CD\u4F5C",
+            children: [
+              /* @__PURE__ */ jsx4("span", { className: `td-status-dot td-status-${rt?.status ?? "idle"}` }),
+              /* @__PURE__ */ jsx4("span", { className: "td-script-name", children: script.name }),
+              /* @__PURE__ */ jsx4("span", { className: "td-script-cmd", children: script.command }),
+              autoRun && /* @__PURE__ */ jsx4("span", { className: "td-script-badge", title: "\u5DF2\u542F\u7528\u81EA\u52A8\u8FD0\u884C", children: /* @__PURE__ */ jsx4(Icon, { name: "zap", size: 11 }) }),
+              /* @__PURE__ */ jsxs4("span", { className: "td-script-actions", onClick: (e) => e.stopPropagation(), children: [
+                rt?.status === "running" && /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: () => onStop(script.id), children: "\u505C\u6B62" }),
+                /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: () => guardRun(script), children: "\u8FD0\u884C" }),
+                /* @__PURE__ */ jsx4(
+                  "button",
+                  {
+                    className: "td-iconbtn",
+                    onClick: (e) => setMenu({ x: e.clientX, y: e.clientY, script }),
+                    title: "\u66F4\u591A\u64CD\u4F5C",
+                    "aria-label": "\u66F4\u591A\u64CD\u4F5C",
+                    children: /* @__PURE__ */ jsx4(Icon, { name: "chevron-down", size: 13 })
+                  }
+                )
+              ] })
+            ]
+          },
+          script.id
+        );
+      }),
+      editing && draft && /* @__PURE__ */ jsxs4("div", { className: "td-editor", children: [
+        /* @__PURE__ */ jsxs4("div", { className: "td-editor-grid", children: [
+          /* @__PURE__ */ jsxs4("label", { children: [
+            "\u540D\u79F0",
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                className: "td-input",
+                value: draft.name,
+                placeholder: "\u7559\u7A7A\u5219\u7528\u547D\u4EE4",
+                onChange: (e) => setDraft({ ...draft, name: e.target.value })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs4("label", { children: [
+            "\u5DE5\u4F5C\u76EE\u5F55\uFF08\u53EF\u9009\uFF09",
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                className: "td-input",
+                value: draft.cwd,
+                onChange: (e) => setDraft({ ...draft, cwd: e.target.value })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs4("label", { className: "td-editor-wide", children: [
+            "\u547D\u4EE4",
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                className: "td-input",
+                value: draft.command,
+                placeholder: "\u5982 pnpm test",
+                onChange: (e) => setDraft({ ...draft, command: e.target.value })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsxs4("label", { className: "td-editor-wide", children: [
+            "\u73AF\u5883\u53D8\u91CF\uFF08JSON \u5BF9\u8C61\uFF0C\u53EF\u9009\uFF09",
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                className: "td-input",
+                value: draft.envText,
+                placeholder: '{"NODE_ENV":"test"}',
+                onChange: (e) => setDraft({ ...draft, envText: e.target.value })
+              }
+            )
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxs4("div", { className: "td-editor-options", children: [
+          /* @__PURE__ */ jsxs4("label", { className: "td-check", children: [
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                type: "checkbox",
+                checked: draft.autoRun,
+                onChange: (e) => setDraft({ ...draft, autoRun: e.target.checked })
+              }
+            ),
+            "\u81EA\u52A8\u8FD0\u884C"
+          ] }),
+          /* @__PURE__ */ jsx4(
+            "select",
+            {
+              className: "td-input",
+              value: draft.autoRunTrigger,
+              disabled: !draft.autoRun,
+              onChange: (e) => setDraft({ ...draft, autoRunTrigger: e.target.value }),
+              children: AUTO_RUN_TRIGGERS2.map((t) => /* @__PURE__ */ jsx4("option", { value: t, children: t === "app_start" ? "\u5E94\u7528\u542F\u52A8" : t === "workspace_open" ? "\u6253\u5F00\u5DE5\u4F5C\u533A" : "\u6253\u5F00\u7EC8\u7AEF" }, t))
+            }
+          ),
+          /* @__PURE__ */ jsxs4("label", { className: "td-check", children: [
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                type: "checkbox",
+                checked: draft.confirmBeforeAutoRun,
+                disabled: !draft.autoRun,
+                onChange: (e) => setDraft({ ...draft, confirmBeforeAutoRun: e.target.checked })
+              }
+            ),
+            "\u81EA\u52A8\u8FD0\u884C\u524D\u786E\u8BA4"
+          ] }),
+          /* @__PURE__ */ jsxs4("label", { className: "td-check", children: [
+            /* @__PURE__ */ jsx4(
+              "input",
+              {
+                type: "checkbox",
+                checked: draft.enabled,
+                onChange: (e) => setDraft({ ...draft, enabled: e.target.checked })
+              }
+            ),
+            "\u542F\u7528"
+          ] }),
+          /* @__PURE__ */ jsx4("span", { className: "td-sc-spacer" }),
+          /* @__PURE__ */ jsx4("button", { className: "td-btn", onClick: () => {
+            setEditing(null);
+            setDraft(null);
+          }, children: "\u53D6\u6D88" }),
+          /* @__PURE__ */ jsx4("button", { className: "td-btn td-btn-primary", onClick: () => void saveDraft(), children: "\u4FDD\u5B58" })
+        ] })
+      ] }),
+      tab === "project" && hiddenIds.length > 0 && /* @__PURE__ */ jsxs4("div", { className: "td-hidden", children: [
+        /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: () => setShowHidden((v) => !v), children: showHidden ? "\u6536\u8D77" : `\u5DF2\u9690\u85CF ${hiddenIds.length} \u4E2A \xB7 \u7BA1\u7406` }),
+        showHidden && hiddenIds.map((id) => /* @__PURE__ */ jsxs4(
+          "button",
+          {
+            className: "td-mini",
+            title: "\u6062\u590D\u663E\u793A",
+            onClick: () => void actions.setHiddenScriptIds(hiddenIds.filter((x) => x !== id)),
+            children: [
+              id,
+              " \xB7 \u6062\u590D"
+            ]
+          },
+          id
+        ))
+      ] })
+    ] }),
+    menu && /* @__PURE__ */ jsx4(ContextMenu, { x: menu.x, y: menu.y, items: menuItems(menu.script), onClose: () => setMenu(null) }),
+    showImport && /* @__PURE__ */ jsx4(ImportDialog, { onImport: importLegacy, onCancel: () => setShowImport(false) })
+  ] });
+}
+
+// src/QuickRunBar.tsx
+import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
+function statusLabel(status) {
+  switch (status) {
+    case "running":
+      return { text: "\u8FD0\u884C\u4E2D", tone: "running" };
+    case "success":
+      return { text: "\u6210\u529F", tone: "success" };
+    case "failed":
+      return { text: "\u5931\u8D25", tone: "failed" };
+    case "stopped":
+      return { text: "\u5DF2\u505C\u6B62", tone: "idle" };
+    default:
+      return { text: "\u672A\u8FD0\u884C", tone: "idle" };
+  }
+}
+function QuickRunBar({
+  collapsed,
+  onToggleCollapsed,
+  script,
+  runtime,
+  onRun,
+  onStop,
+  onOpenRunner
+}) {
+  const isRunning = runtime?.status === "running";
+  const status = statusLabel(runtime?.status);
+  return /* @__PURE__ */ jsxs5("div", { className: "td-quickbar", children: [
+    /* @__PURE__ */ jsx5(
+      "button",
+      {
+        className: "td-qb-btn",
+        onClick: onToggleCollapsed,
+        title: collapsed ? "\u5C55\u5F00\u811A\u672C\u4E2D\u5FC3" : "\u6298\u53E0\u811A\u672C\u4E2D\u5FC3",
+        "aria-label": collapsed ? "\u5C55\u5F00\u811A\u672C\u4E2D\u5FC3" : "\u6298\u53E0\u811A\u672C\u4E2D\u5FC3",
+        children: /* @__PURE__ */ jsx5(Icon, { name: collapsed ? "chevron-down" : "chevron-up", size: 15 })
+      }
+    ),
+    /* @__PURE__ */ jsxs5("div", { className: "td-qb-info", title: script ? `${script.name} \xB7 ${script.command}` : "\u65E0\u53EF\u8FD0\u884C\u811A\u672C", children: [
+      /* @__PURE__ */ jsx5("div", { className: "td-qb-name", children: script ? script.name : "\u65E0\u53EF\u8FD0\u884C\u811A\u672C" }),
+      /* @__PURE__ */ jsx5("div", { className: "td-qb-cmd", children: script ? script.command : "\u6309 Ctrl+Shift+R \u8F93\u5165\u4E34\u65F6\u547D\u4EE4" })
+    ] }),
+    /* @__PURE__ */ jsx5("span", { className: `td-qb-status td-qb-${status.tone}`, children: status.text }),
+    /* @__PURE__ */ jsxs5("button", { className: "td-qb-action td-qb-optional", disabled: !script || isRunning, onClick: onRun, title: "\u8FD0\u884C\u6700\u8FD1\u811A\u672C", children: [
+      /* @__PURE__ */ jsx5(Icon, { name: "play", size: 12 }),
+      " ",
+      /* @__PURE__ */ jsx5("span", { className: "td-qb-label", children: "\u8FD0\u884C" })
+    ] }),
+    /* @__PURE__ */ jsxs5("button", { className: "td-qb-action td-qb-optional", disabled: !isRunning, onClick: onStop, title: "\u505C\u6B62\u811A\u672C\uFF08\u5173\u95ED\u5176\u7EC8\u7AEF\u4F1A\u8BDD\uFF09", children: [
+      /* @__PURE__ */ jsx5(Icon, { name: "square", size: 11 }),
+      " ",
+      /* @__PURE__ */ jsx5("span", { className: "td-qb-label", children: "\u505C\u6B62" })
+    ] }),
+    /* @__PURE__ */ jsxs5("button", { className: "td-qb-action", onClick: onOpenRunner, title: "\u5FEB\u901F\u8FD0\u884C Ctrl+Shift+R", children: [
+      /* @__PURE__ */ jsx5(Icon, { name: "search", size: 13 }),
+      " ",
+      /* @__PURE__ */ jsx5("span", { className: "td-qb-label", children: "\u5FEB\u901F\u8FD0\u884C" })
+    ] })
   ] });
 }
 
 // src/RunCommandModal.tsx
-import { useEffect as useEffect3, useMemo as useMemo2, useRef as useRef2, useState as useState3 } from "react";
-init_model();
-import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
-function RunCommandModal({ onClose, onRun, onSaveAndRun }) {
-  const [query, setQuery] = useState3("");
-  const [scripts, setScripts] = useState3([]);
-  const [selected, setSelected] = useState3(0);
-  const inputRef = useRef2(null);
-  useEffect3(() => {
-    void readPluginConfig().then((config) => setScripts(parseCustomCommands2(config)));
-  }, []);
+import { useMemo as useMemo2, useRef as useRef3, useState as useState4 } from "react";
+import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
+function RunCommandModal({
+  scripts,
+  workspacePath,
+  onClose,
+  onRun,
+  onSaveAndRun
+}) {
+  const [query, setQuery] = useState4("");
+  const [selected, setSelected] = useState4(0);
+  const inputRef = useRef3(null);
   const candidates = useMemo2(() => {
     const q = query.trim().toLowerCase();
     if (!q) return scripts.slice(-8).reverse();
     return scripts.filter((s) => s.name.toLowerCase().includes(q) || s.command.toLowerCase().includes(q)).slice(0, 8);
   }, [scripts, query]);
   const primaryCommand = query.trim();
-  async function runCommand(command) {
-    if (!command) return;
-    const confirmMsg = confirmMessageFor2(command);
-    if (confirmMsg && !window.confirm(confirmMsg)) return;
-    await onRun(command);
-  }
-  return /* @__PURE__ */ jsx3(
+  return /* @__PURE__ */ jsx6(
     "div",
     {
       className: "td-modal-mask",
       onMouseDown: (e) => {
         if (e.target === e.currentTarget) onClose();
       },
-      children: /* @__PURE__ */ jsxs3("div", { className: "td-modal", children: [
-        /* @__PURE__ */ jsx3(
-          "input",
-          {
-            ref: inputRef,
-            autoFocus: true,
-            className: "td-modal-input",
-            placeholder: "\u8FD0\u884C\u547D\u4EE4\uFF08Enter \u8FD0\u884C / Ctrl+Enter \u4FDD\u5B58\u4E3A\u81EA\u5B9A\u4E49\u5E76\u8FD0\u884C / Esc \u5173\u95ED\uFF09",
-            value: query,
-            onChange: (e) => {
-              setQuery(e.target.value);
-              setSelected(0);
-            },
-            onKeyDown: (e) => {
-              if (e.key === "Escape") {
-                e.preventDefault();
-                onClose();
-              } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-                e.preventDefault();
-                if (primaryCommand) {
-                  void onSaveAndRun(primaryCommand, primaryCommand.slice(0, 40));
+      children: /* @__PURE__ */ jsxs6("div", { className: "td-modal", role: "dialog", "aria-modal": "true", "aria-label": "\u8FD0\u884C\u547D\u4EE4", children: [
+        /* @__PURE__ */ jsxs6("div", { className: "td-modal-head", children: [
+          /* @__PURE__ */ jsx6(Icon, { name: "terminal", size: 14 }),
+          /* @__PURE__ */ jsx6(
+            "input",
+            {
+              ref: inputRef,
+              autoFocus: true,
+              className: "td-modal-input",
+              placeholder: "\u8FD0\u884C\u547D\u4EE4\uFF08Enter \u8FD0\u884C / Ctrl+Enter \u4FDD\u5B58\u4E3A\u81EA\u5B9A\u4E49\u5E76\u8FD0\u884C / Esc \u5173\u95ED\uFF09",
+              value: query,
+              onChange: (e) => {
+                setQuery(e.target.value);
+                setSelected(0);
+              },
+              onKeyDown: (e) => {
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  onClose();
+                } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  if (primaryCommand) void onSaveAndRun(primaryCommand, primaryCommand.slice(0, 40));
+                } else if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (candidates[selected] && !primaryCommand) {
+                    void onRun(candidates[selected].command);
+                  } else if (primaryCommand) {
+                    void onRun(primaryCommand);
+                  }
+                } else if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setSelected((i) => Math.min(i + 1, Math.max(candidates.length - 1, 0)));
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setSelected((i) => Math.max(i - 1, 0));
                 }
-              } else if (e.key === "Enter") {
-                e.preventDefault();
-                if (candidates[selected] && !primaryCommand) {
-                  void runCommand(candidates[selected].command);
-                } else if (primaryCommand) {
-                  void runCommand(primaryCommand);
-                }
-              } else if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setSelected((i) => Math.min(i + 1, Math.max(candidates.length - 1, 0)));
-              } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setSelected((i) => Math.max(i - 1, 0));
               }
             }
-          }
-        ),
-        /* @__PURE__ */ jsxs3("div", { className: "td-modal-list", children: [
-          candidates.map((script, i) => /* @__PURE__ */ jsxs3(
+          )
+        ] }),
+        /* @__PURE__ */ jsxs6("div", { className: "td-modal-list", children: [
+          candidates.map((script, i) => /* @__PURE__ */ jsxs6(
             "div",
             {
               className: `td-modal-item${i === selected ? " td-modal-item-on" : ""}`,
               onMouseEnter: () => setSelected(i),
-              onClick: () => void runCommand(script.command),
+              onClick: () => void onRun(script.command),
               children: [
-                /* @__PURE__ */ jsx3("span", { style: { fontWeight: 600, flex: "none" }, children: script.name }),
-                /* @__PURE__ */ jsx3("span", { className: "td-script-cmd", children: script.command })
+                /* @__PURE__ */ jsx6(Icon, { name: "play", size: 12 }),
+                /* @__PURE__ */ jsx6("span", { className: "td-modal-item-name", children: script.name }),
+                /* @__PURE__ */ jsx6("span", { className: "td-script-cmd", children: script.command })
               ]
             },
             script.id
           )),
-          candidates.length === 0 && /* @__PURE__ */ jsx3("div", { style: { padding: "10px 12px", fontSize: 12, color: "rgb(var(--c-text-secondary))" }, children: primaryCommand ? "\u65E0\u5339\u914D\u811A\u672C \u2014 Enter \u76F4\u63A5\u8FD0\u884C\u8BE5\u547D\u4EE4" : `\u6682\u65E0\u81EA\u5B9A\u4E49\u547D\u4EE4\u3002\u8F93\u5165\u547D\u4EE4\u540E Enter \u8FD0\u884C\uFF1BCtrl+Enter \u4FDD\u5B58\u3002\u5DE5\u4F5C\u533A\uFF1A${currentWorkspacePath() ?? "\u672A\u7ED1\u5B9A"}` })
+          candidates.length === 0 && /* @__PURE__ */ jsx6("div", { className: "td-modal-empty", children: primaryCommand ? "\u65E0\u5339\u914D\u811A\u672C \u2014 Enter \u76F4\u63A5\u8FD0\u884C\u8BE5\u547D\u4EE4" : `\u6682\u65E0\u81EA\u5B9A\u4E49\u547D\u4EE4\u3002\u8F93\u5165\u547D\u4EE4\u540E Enter \u8FD0\u884C\uFF1BCtrl+Enter \u4FDD\u5B58\u3002\u5DE5\u4F5C\u533A\uFF1A${workspacePath ?? "\u672A\u7ED1\u5B9A"}` })
         ] }),
-        /* @__PURE__ */ jsxs3("div", { className: "td-modal-hint", children: [
-          /* @__PURE__ */ jsx3("span", { children: "Enter \u8FD0\u884C" }),
-          /* @__PURE__ */ jsx3("span", { children: "Ctrl+Enter \u4FDD\u5B58\u5E76\u8FD0\u884C" }),
-          /* @__PURE__ */ jsx3("span", { children: "\u2191\u2193 \u9009\u62E9" }),
-          /* @__PURE__ */ jsx3("span", { children: "Esc \u5173\u95ED" })
+        /* @__PURE__ */ jsxs6("div", { className: "td-modal-hint", children: [
+          /* @__PURE__ */ jsx6("span", { children: "Enter \u8FD0\u884C" }),
+          /* @__PURE__ */ jsx6("span", { children: "Ctrl+Enter \u4FDD\u5B58\u5E76\u8FD0\u884C" }),
+          /* @__PURE__ */ jsx6("span", { children: "\u2191\u2193 \u9009\u62E9" }),
+          /* @__PURE__ */ jsx6("span", { children: "Esc \u5173\u95ED" })
         ] })
       ] })
     }
   );
 }
 
+// src/config.ts
+import { useCallback as useCallback2, useEffect as useEffect4, useMemo as useMemo3, useState as useState5 } from "react";
+init_model();
+var PluginConfigStore = class {
+  constructor() {
+    this.raw = {};
+    this.state = parsePluginConfig2({});
+    this.listeners = /* @__PURE__ */ new Set();
+    this.loading = null;
+    this.setCustomCommands = (customCommands) => this.commit({ customCommands });
+    this.setHiddenScriptIds = (hiddenScriptIds) => this.commit({ hiddenScriptIds });
+    this.setAutoRunRules = (autoRunRules) => this.commit({ autoRunRules });
+    this.setSessionNames = (sessionNames) => this.commit({ sessionNames });
+    this.setUiState = (patch) => this.commit({ uiState: { ...this.state.uiState, ...patch } });
+    this.markLegacyMigration = (legacyMigration) => this.commit({ legacyMigration });
+    /** 一次性导入旧数据：自定义命令 + 隐藏项 + 迁移标记一起写，保证原子观感 */
+    this.importLegacy = (customCommands, hiddenScriptIds, legacyMigration = "v1") => this.commit({ customCommands, hiddenScriptIds, legacyMigration });
+  }
+  snapshot() {
+    return this.state;
+  }
+  subscribe(listener) {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  }
+  /** 幂等加载：多个组件并发挂载只发一次 IPC */
+  load() {
+    if (this.loading) return this.loading;
+    this.loading = readPluginConfig().then((raw) => {
+      this.raw = raw;
+      this.state = parsePluginConfig2(raw);
+      this.emit();
+    }).catch(() => {
+      this.raw = {};
+      this.state = parsePluginConfig2({});
+      this.emit();
+    });
+    return this.loading;
+  }
+  emit() {
+    for (const fn of this.listeners) fn();
+  }
+  async commit(patch) {
+    await writePluginConfig(patch);
+    const nextRaw = { ...this.raw, ...patch };
+    this.raw = nextRaw;
+    this.state = parsePluginConfig2(nextRaw);
+    this.emit();
+    return this.state;
+  }
+};
+var pluginConfig = new PluginConfigStore();
+function usePluginConfig(onError) {
+  const [state, setState] = useState5(() => pluginConfig.snapshot());
+  useEffect4(() => {
+    const off = pluginConfig.subscribe(() => setState(pluginConfig.snapshot()));
+    void pluginConfig.load();
+    return off;
+  }, []);
+  const wrap = useCallback2(
+    (fn) => async (...args) => {
+      try {
+        await fn(...args);
+      } catch (e) {
+        onError?.(`\u914D\u7F6E\u4FDD\u5B58\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`);
+      }
+    },
+    [onError]
+  );
+  const actions = useMemo3(
+    () => ({
+      setCustomCommands: wrap(pluginConfig.setCustomCommands),
+      setHiddenScriptIds: wrap(pluginConfig.setHiddenScriptIds),
+      setAutoRunRules: wrap(pluginConfig.setAutoRunRules),
+      setSessionNames: wrap(pluginConfig.setSessionNames),
+      setUiState: wrap(pluginConfig.setUiState),
+      markLegacyMigration: wrap(pluginConfig.markLegacyMigration),
+      importLegacy: wrap(pluginConfig.importLegacy)
+    }),
+    [wrap]
+  );
+  return useMemo3(() => ({ config: state, ...actions }), [state, actions]);
+}
+
 // src/Panel.tsx
 init_model();
-import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
+import { Fragment as Fragment2, jsx as jsx7, jsxs as jsxs7 } from "react/jsx-runtime";
 function TerminalDeskPanel(_props) {
-  const [sessions, setSessions] = useState4([]);
-  const [activeId, setActiveId] = useState4(null);
-  const [error, setError] = useState4(null);
-  const [drawerOpen, setDrawerOpen] = useState4(false);
-  const [runnerOpen, setRunnerOpen] = useState4(false);
-  const [renamingId, setRenamingId] = useState4(null);
-  const [splitPartnerId, setSplitPartnerId] = useState4(null);
-  const [runtimes, setRuntimes] = useState4({});
-  const rootRef = useRef3(null);
-  const [nameOverrides, setNameOverrides] = useState4({});
-  const sessionsRef = useRef3([]);
+  const [sessions, setSessions] = useState6([]);
+  const [activeId, setActiveId] = useState6(null);
+  const [error, setError] = useState6(null);
+  const [runnerOpen, setRunnerOpen] = useState6(false);
+  const [renamingId, setRenamingId] = useState6(null);
+  const [splitPartnerId, setSplitPartnerId] = useState6(null);
+  const [runtimes, setRuntimes] = useState6({});
+  const [discovered, setDiscovered] = useState6([]);
+  const [discoveredLoading, setDiscoveredLoading] = useState6(false);
+  const [discoveredError, setDiscoveredError] = useState6(null);
+  const [workspacePath, setWorkspacePath] = useState6(() => currentWorkspacePath());
+  const [ready, setReady] = useState6(false);
+  const [tabMenu, setTabMenu] = useState6(null);
+  const [confirm2, setConfirm] = useState6(null);
+  const rootRef = useRef4(null);
+  const sessionsRef = useRef4([]);
   sessionsRef.current = sessions;
-  const activeSession = useMemo3(
+  const searchTriggersRef = useRef4(/* @__PURE__ */ new Map());
+  const seenAutoRunRef = useRef4(/* @__PURE__ */ new Set());
+  const autoBootDoneRef = useRef4(false);
+  const bootstrappedRef = useRef4(false);
+  const confirmQueueRef = useRef4([]);
+  const onError = useCallback3((message) => setError(message), []);
+  const { config, ...actions } = usePluginConfig(onError);
+  const activeSession = useMemo4(
     () => sessions.find((s) => s.id === activeId) ?? null,
     [sessions, activeId]
   );
-  const partnerSession = useMemo3(
+  const partnerSession = useMemo4(
     () => splitPartnerId && splitPartnerId !== activeId ? sessions.find((s) => s.id === splitPartnerId && s.exitCode === null) ?? null : null,
     [sessions, splitPartnerId, activeId]
   );
-  const createSession = useCallback2(
+  const showNextConfirm = useCallback3(() => {
+    if (confirmQueueRef.current.length === 0) {
+      setConfirm(null);
+      return;
+    }
+    setConfirm(confirmQueueRef.current.shift() ?? null);
+  }, []);
+  const resolveConfirm = useCallback3(
+    (run) => {
+      const current = confirm2;
+      setConfirm(null);
+      if (run) current?.onConfirm();
+      showNextConfirm();
+    },
+    [confirm2, showNextConfirm]
+  );
+  const requestConfirm = useCallback3(
+    (title, message, detail, onConfirm) => {
+      const next = { title, message, detail, onConfirm };
+      if (confirm2 || confirmQueueRef.current.length > 0) {
+        confirmQueueRef.current.push(next);
+      } else {
+        setConfirm(next);
+      }
+    },
+    [confirm2]
+  );
+  const createSession = useCallback3(
     async (opts) => {
       setError(null);
       try {
@@ -9188,14 +10115,209 @@ function TerminalDeskPanel(_props) {
     },
     []
   );
-  const bootstrappedRef = useRef3(false);
-  useEffect4(() => {
+  useEffect5(() => {
     if (bootstrappedRef.current) return;
     bootstrappedRef.current = true;
-    void createSession().catch(() => {
-    });
+    (async () => {
+      try {
+        const remote = await listTerminalSessions();
+        const { sessions: restored } = mergeRecoveredSessions2([], remote);
+        if (restored.length > 0) {
+          setSessions(restored);
+          setActiveId(restored[0].id);
+          const nextRt = {};
+          for (const s of restored) {
+            if (s.scriptId) {
+              nextRt[s.scriptId] = {
+                status: "running",
+                terminalSessionId: s.id,
+                lastRunAt: Date.now()
+              };
+            }
+          }
+          if (Object.keys(nextRt).length > 0) setRuntimes(nextRt);
+        } else {
+          await createSession();
+        }
+      } catch {
+        try {
+          await createSession();
+        } catch {
+        }
+      } finally {
+        setReady(true);
+      }
+    })();
   }, [createSession]);
-  const toggleSplit = useCallback2(() => {
+  const closeSession = useCallback3(async (sessionId) => {
+    try {
+      await capTerminal({ action: "close", sessionId });
+    } catch {
+    }
+    setSessions((prev) => {
+      const next = removeSession2(prev, sessionId);
+      setActiveId((cur) => cur === sessionId ? next[0]?.id ?? null : cur);
+      return next;
+    });
+    setSplitPartnerId((cur) => cur === sessionId ? null : cur);
+    searchTriggersRef.current.delete(sessionId);
+  }, []);
+  useEffect5(
+    () => listenTerminalExit((event) => {
+      const found = sessionsRef.current.find((s) => s.id === event.sessionId);
+      if (found?.scriptId) {
+        setRuntimes(
+          (prev) => setRuntime2(prev, found.scriptId, {
+            status: event.exitCode && event.exitCode !== 0 ? "failed" : "success",
+            terminalSessionId: event.sessionId,
+            exitCode: event.exitCode
+          })
+        );
+      }
+      setSessions((prev) => markExited2(prev, event.sessionId, event.exitCode));
+    }),
+    []
+  );
+  const refreshDiscovered = useCallback3(async () => {
+    const ws = currentWorkspacePath();
+    if (!ws) {
+      setDiscovered([]);
+      setDiscoveredError(null);
+      return;
+    }
+    setDiscoveredLoading(true);
+    try {
+      const res = await capTerminal({ action: "discover_scripts", workspacePath: ws });
+      setDiscovered(
+        (res.scripts ?? []).map((s) => ({
+          id: s.id,
+          name: s.name,
+          command: s.command,
+          cwd: s.cwd,
+          custom: false
+        }))
+      );
+      setDiscoveredError(null);
+    } catch (e) {
+      setDiscoveredError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDiscoveredLoading(false);
+    }
+  }, []);
+  useEffect5(() => {
+    void refreshDiscovered();
+    return onWorkspaceChanged((path) => {
+      setWorkspacePath(path);
+      void refreshDiscovered();
+    });
+  }, [refreshDiscovered]);
+  const scripts = useMemo4(() => {
+    const custom = config.customCommands.map((c) => ({
+      id: c.id,
+      name: c.name,
+      command: c.command,
+      cwd: c.cwd,
+      env: c.env,
+      custom: true,
+      autoRun: c.autoRun,
+      autoRunTrigger: c.autoRunTrigger,
+      confirmBeforeAutoRun: c.confirmBeforeAutoRun
+    }));
+    const project = discovered.map((s) => {
+      const rule = config.autoRunRules[s.id];
+      return {
+        ...s,
+        autoRun: rule?.enabled,
+        autoRunTrigger: rule?.trigger,
+        confirmBeforeAutoRun: rule?.confirm
+      };
+    });
+    const enabledCustom = custom.filter((s) => config.customCommands.find((c) => c.id === s.id)?.enabled !== false);
+    return [...project, ...enabledCustom].filter((s) => config.hiddenScriptIds.indexOf(s.id) === -1);
+  }, [config.customCommands, config.autoRunRules, config.hiddenScriptIds, discovered]);
+  const recentScript = useMemo4(() => selectRecentScript2(scripts, runtimes), [scripts, runtimes]);
+  const runScript = useCallback3(
+    async (script) => {
+      const meta = await createSession({
+        name: script.name,
+        cwd: script.cwd || currentWorkspacePath(),
+        initialCommand: script.command,
+        env: script.env,
+        purpose: "script",
+        scriptId: script.id
+      });
+      setRuntimes(
+        (prev) => setRuntime2(prev, script.id, { status: "running", terminalSessionId: meta.id })
+      );
+    },
+    [createSession]
+  );
+  const lastRunRef = useRef4({ id: "", at: 0 });
+  const guardedRun = useCallback3(
+    (script) => {
+      const now = Date.now();
+      if (lastRunRef.current.id === script.id && now - lastRunRef.current.at < 350) return;
+      lastRunRef.current = { id: script.id, at: now };
+      const msg = confirmMessageFor2(script.command);
+      if (msg) {
+        requestConfirm("\u5371\u9669\u547D\u4EE4\u786E\u8BA4", msg, script.command, () => {
+          void runScript(script).catch(() => {
+          });
+        });
+        return;
+      }
+      void runScript(script).catch(() => {
+      });
+    },
+    [runScript, requestConfirm]
+  );
+  const stopScript = useCallback3(
+    (scriptId) => {
+      const rt = runtimes[scriptId];
+      if (rt?.terminalSessionId) void closeSession(rt.terminalSessionId);
+      setRuntimes((prev) => setRuntime2(prev, scriptId, { status: "stopped" }));
+    },
+    [runtimes, closeSession]
+  );
+  const triggerAutoRun = useCallback3(
+    (trigger, ws) => {
+      const candidates = autoRunCandidates2(
+        config.customCommands,
+        config.autoRunRules,
+        trigger,
+        ws,
+        seenAutoRunRef.current
+      );
+      for (const c of candidates) {
+        seenAutoRunRef.current.add(c.key);
+        const script = scripts.find((s) => s.id === c.id);
+        if (!script) continue;
+        if (c.needsConfirm) {
+          requestConfirm(
+            "\u81EA\u52A8\u8FD0\u884C\u786E\u8BA4",
+            `\u811A\u672C\u300C${script.name}\u300D\u5DF2\u914D\u7F6E\u81EA\u52A8\u8FD0\u884C\uFF0C\u662F\u5426\u6267\u884C\uFF1F`,
+            script.command,
+            () => void runScript(script).catch(() => {
+            })
+          );
+        } else {
+          void runScript(script).catch(() => {
+          });
+        }
+      }
+    },
+    [config.customCommands, config.autoRunRules, scripts, requestConfirm, runScript]
+  );
+  useEffect5(() => {
+    if (!ready) return;
+    if (!autoBootDoneRef.current) {
+      autoBootDoneRef.current = true;
+      triggerAutoRun("app_start", workspacePath);
+      triggerAutoRun("terminal_open", workspacePath);
+    }
+    triggerAutoRun("workspace_open", workspacePath);
+  }, [ready, workspacePath, triggerAutoRun]);
+  const toggleSplit = useCallback3(() => {
     if (partnerSession) {
       setSplitPartnerId(null);
       return;
@@ -9209,58 +10331,26 @@ function TerminalDeskPanel(_props) {
     void createSession({ activate: false }).then((meta) => setSplitPartnerId(meta.id)).catch(() => {
     });
   }, [partnerSession, activeSession, sessions, createSession]);
-  useEffect4(() => {
-    return listenTerminalExit((event) => {
-      setSessions((prev) => {
-        const found = prev.find((s) => s.id === event.sessionId);
-        if (found?.scriptId) {
-          setRuntimes(
-            (prevRt) => setRuntime2(prevRt, found.scriptId, { status: "stopped", terminalSessionId: event.sessionId })
-          );
-        }
-        return markExited2(prev, event.sessionId, event.exitCode);
-      });
-    });
-  }, []);
-  const closeSession = useCallback2(async (sessionId) => {
-    try {
-      await capTerminal({ action: "close", sessionId });
-    } catch {
-    }
-    setSessions((prev) => removeSession2(prev, sessionId));
-    setActiveId((prev) => prev === sessionId ? null : prev);
-  }, []);
-  const runScript = useCallback2(
-    async (script) => {
-      const meta = await createSession({
-        name: script.name,
-        cwd: script.cwd || currentWorkspacePath(),
-        initialCommand: script.command,
-        env: script.env,
-        purpose: "script",
-        scriptId: script.id
-      });
-      setRuntimes(
-        (prev) => setRuntime2(prev, script.id, { status: "running", terminalSessionId: meta.id })
+  const focusMode = config.uiState.focusMode;
+  const toggleFocus = useCallback3(() => {
+    if (hasHostFullscreen()) {
+      void toggleHostFullscreen().catch(
+        (e) => setError(`\u5BBF\u4E3B\u5168\u5C4F\u5207\u6362\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`)
       );
-      return meta.id;
-    },
-    [createSession]
-  );
-  const stopScript = useCallback2(async (scriptId) => {
-    const rt = runtimes[scriptId];
-    if (rt?.terminalSessionId) await closeSession(rt.terminalSessionId);
-  }, [runtimes, closeSession]);
-  useEffect4(() => onWorkspaceChanged(() => {
-  }), []);
-  const searchTriggerRef = useRef3(null);
-  const isPanelVisible = useCallback2(() => {
-    const el = rootRef.current;
-    return !!el && el.offsetParent !== null;
-  }, []);
-  useEffect4(() => {
+      return;
+    }
+    void actions.setUiState({ focusMode: !focusMode });
+  }, [actions, focusMode]);
+  useEffect5(() => {
     const onKeyDown = (e) => {
-      if (!isPanelVisible()) return;
+      const el = rootRef.current;
+      if (!el || el.offsetParent === null) return;
+      if (e.key === "Escape" && focusMode) {
+        e.preventDefault();
+        e.stopPropagation();
+        void actions.setUiState({ focusMode: false });
+        return;
+      }
       if (e.ctrlKey && e.shiftKey && (e.key === "R" || e.key === "r")) {
         e.preventDefault();
         e.stopPropagation();
@@ -9268,126 +10358,242 @@ function TerminalDeskPanel(_props) {
       } else if (e.ctrlKey && (e.key === "f" || e.key === "F")) {
         e.preventDefault();
         e.stopPropagation();
-        searchTriggerRef.current?.();
+        if (activeId) searchTriggersRef.current.get(activeId)?.();
       }
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [isPanelVisible]);
-  const openEmptySession = useCallback2(() => {
-    void createSession().catch(() => {
-    });
-  }, [createSession]);
-  return /* @__PURE__ */ jsxs4("div", { ref: rootRef, className: "td-root", children: [
-    /* @__PURE__ */ jsxs4("div", { className: "td-tabbar", children: [
-      sessions.map((s) => /* @__PURE__ */ jsxs4(
-        "button",
+  }, [focusMode, activeId, actions]);
+  const tabMenuItems = useCallback3(
+    (session) => {
+      const script = session.scriptId ? scripts.find((s) => s.id === session.scriptId) : null;
+      const running = session.scriptId ? runtimes[session.scriptId]?.status === "running" : false;
+      return [
+        { id: "rename", label: "\u91CD\u547D\u540D", icon: "edit", onSelect: () => setRenamingId(session.id) },
+        { id: "new", label: "\u65B0\u5EFA\u7EC8\u7AEF", icon: "plus", onSelect: () => void createSession().catch(() => {
+        }) },
         {
-          className: `td-tab${s.id === activeId ? " td-tab-on" : ""}`,
-          onClick: () => setActiveId(s.id),
-          onDoubleClick: () => setRenamingId(s.id),
-          title: s.id === activeId ? "\u53CC\u51FB\u91CD\u547D\u540D" : void 0,
-          children: [
-            renamingId === s.id ? /* @__PURE__ */ jsx4(
-              "input",
-              {
-                className: "td-tab-input",
-                autoFocus: true,
-                defaultValue: nameOverrides[s.id] ?? s.name,
-                onClick: (e) => e.stopPropagation(),
-                onKeyDown: (e) => {
-                  if (e.key === "Enter") {
-                    const value = e.target.value.trim();
-                    if (value) setNameOverrides((prev) => ({ ...prev, [s.id]: value }));
-                    setRenamingId(null);
-                  } else if (e.key === "Escape") {
-                    setRenamingId(null);
-                  }
-                },
-                onBlur: (e) => {
-                  const value = e.target.value.trim();
-                  if (value) setNameOverrides((prev) => ({ ...prev, [s.id]: value }));
-                  setRenamingId(null);
-                }
-              }
-            ) : /* @__PURE__ */ jsx4("span", { className: "td-tab-name", children: nameOverrides[s.id] ?? s.name }),
-            s.exitCode !== null && /* @__PURE__ */ jsxs4("span", { className: "td-tab-exit", children: [
-              "exit ",
-              s.exitCode
-            ] }),
-            /* @__PURE__ */ jsx4(
-              "span",
-              {
-                className: "td-tab-close",
-                role: "button",
-                tabIndex: -1,
-                onClick: (e) => {
-                  e.stopPropagation();
-                  void closeSession(s.id);
-                },
-                title: "\u5173\u95ED\u4F1A\u8BDD",
-                children: "\u2715"
-              }
-            )
-          ]
+          id: "split",
+          label: partnerSession ? "\u53D6\u6D88\u5206\u5C4F" : "\u5DE6\u53F3\u5206\u5C4F",
+          icon: "columns",
+          onSelect: toggleSplit
         },
-        s.id
-      )),
-      /* @__PURE__ */ jsxs4("span", { className: "td-tabbar-actions", children: [
-        /* @__PURE__ */ jsx4("button", { className: "td-iconbtn", onClick: openEmptySession, title: "\u65B0\u5EFA\u7EC8\u7AEF", children: "\uFF0B" }),
-        /* @__PURE__ */ jsx4(
-          "button",
+        { separator: true },
+        ...script ? [
+          { id: "rerun", label: "\u91CD\u8DD1\u5173\u8054\u811A\u672C", icon: "play", onSelect: () => guardedRun(script) },
           {
-            className: "td-iconbtn",
-            onClick: toggleSplit,
-            title: partnerSession ? "\u53D6\u6D88\u5DE6\u53F3\u5206\u5C4F" : "\u5DE6\u53F3\u5206\u5C4F\uFF08\u5F53\u524D\u4F1A\u8BDD | \u53E6\u4E00\u4F1A\u8BDD\uFF09",
-            children: "\u2FF4"
+            id: "stop",
+            label: "\u505C\u6B62\u5173\u8054\u811A\u672C",
+            icon: "square",
+            disabled: !running,
+            onSelect: () => session.scriptId && stopScript(session.scriptId)
+          },
+          { separator: true }
+        ] : [],
+        {
+          id: "copycmd",
+          label: "\u590D\u5236\u542F\u52A8\u547D\u4EE4",
+          icon: "copy",
+          disabled: !script,
+          onSelect: () => {
+            if (script) void navigator.clipboard?.writeText(script.command).catch(() => {
+            });
           }
-        ),
-        /* @__PURE__ */ jsx4(
-          "button",
+        },
+        {
+          id: "external",
+          label: "\u5728\u5916\u90E8\u7EC8\u7AEF\u8FD0\u884C",
+          icon: "external",
+          disabled: !script,
+          onSelect: () => {
+            if (script) {
+              void openInExternalTerminal(script.command, session.cwd ?? workspacePath ?? void 0, script.env).catch(
+                (e) => setError(`\u5916\u90E8\u7EC8\u7AEF\u542F\u52A8\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`)
+              );
+            }
+          }
+        },
+        { separator: true },
+        {
+          id: "close",
+          label: "\u5173\u95ED\u4F1A\u8BDD",
+          icon: "close",
+          danger: true,
+          onSelect: () => void closeSession(session.id)
+        }
+      ];
+    },
+    [scripts, runtimes, partnerSession, toggleSplit, createSession, guardedRun, stopScript, closeSession, workspacePath]
+  );
+  const renameSession = useCallback3(
+    (id, value) => {
+      const trimmed = value.trim();
+      if (trimmed) void actions.setSessionNames({ ...config.sessionNames, [id]: trimmed });
+      setRenamingId(null);
+    },
+    [actions, config.sessionNames]
+  );
+  const saveAndRun = useCallback3(
+    async (command, name) => {
+      const cmd = makeCustomCommand2(name, command, currentWorkspacePath() ?? void 0);
+      await actions.setCustomCommands([...config.customCommands, cmd]);
+      await runScript({
+        id: cmd.id,
+        name: cmd.name,
+        command: cmd.command,
+        cwd: cmd.cwd,
+        custom: true
+      });
+    },
+    [actions, config.customCommands, runScript]
+  );
+  return /* @__PURE__ */ jsxs7("div", { ref: rootRef, className: `td-root${focusMode ? " td-focus" : ""}`, children: [
+    !focusMode && /* @__PURE__ */ jsxs7(Fragment2, { children: [
+      /* @__PURE__ */ jsx7(
+        QuickRunBar,
+        {
+          collapsed: config.uiState.scriptCenterCollapsed,
+          onToggleCollapsed: () => void actions.setUiState({ scriptCenterCollapsed: !config.uiState.scriptCenterCollapsed }),
+          script: recentScript,
+          runtime: recentScript ? runtimes[recentScript.id] : void 0,
+          onRun: () => recentScript && guardedRun(recentScript),
+          onStop: () => recentScript && stopScript(recentScript.id),
+          onOpenRunner: () => setRunnerOpen(true)
+        }
+      ),
+      /* @__PURE__ */ jsx7(
+        ScriptCenter,
+        {
+          collapsed: config.uiState.scriptCenterCollapsed,
+          tab: config.uiState.scriptTab,
+          onTabChange: (tab) => void actions.setUiState({ scriptTab: tab }),
+          workspacePath,
+          scripts,
+          runtimes,
+          config,
+          actions,
+          loading: discoveredLoading,
+          discoveredError,
+          onRefresh: () => void refreshDiscovered(),
+          onRun: guardedRun,
+          onStop: stopScript,
+          onError,
+          requestConfirm
+        }
+      ),
+      /* @__PURE__ */ jsxs7("div", { className: "td-tabbar", children: [
+        /* @__PURE__ */ jsx7("div", { className: "td-tabstrip", children: sessions.map((s) => /* @__PURE__ */ jsxs7(
+          "div",
           {
-            className: "td-iconbtn",
-            onClick: () => setRunnerOpen(true),
-            title: "\u8FD0\u884C\u547D\u4EE4\uFF08Ctrl+Shift+R\uFF09",
-            children: "\u25B6"
-          }
-        ),
-        /* @__PURE__ */ jsx4(
-          "button",
-          {
-            className: "td-iconbtn",
-            onClick: () => setDrawerOpen((v) => !v),
-            title: drawerOpen ? "\u6536\u8D77\u811A\u672C\u62BD\u5C49" : "\u5C55\u5F00\u811A\u672C\u62BD\u5C49",
-            children: drawerOpen ? "\u25BE" : "\u25B4"
-          }
-        )
+            className: `td-tab${s.id === activeId ? " td-tab-on" : ""}`,
+            onClick: () => setActiveId(s.id),
+            onDoubleClick: () => setRenamingId(s.id),
+            onContextMenu: (e) => {
+              e.preventDefault();
+              setActiveId(s.id);
+              setTabMenu({ x: e.clientX, y: e.clientY, session: s });
+            },
+            title: config.sessionNames[s.id] ?? s.name,
+            role: "button",
+            tabIndex: 0,
+            onKeyDown: (e) => {
+              if (e.key === "Enter" || e.key === " ") setActiveId(s.id);
+            },
+            children: [
+              /* @__PURE__ */ jsx7(Icon, { name: "terminal", size: 13, className: "td-tab-icon" }),
+              renamingId === s.id ? /* @__PURE__ */ jsx7(
+                "input",
+                {
+                  className: "td-tab-input",
+                  autoFocus: true,
+                  defaultValue: config.sessionNames[s.id] ?? s.name,
+                  onClick: (e) => e.stopPropagation(),
+                  onKeyDown: (e) => {
+                    if (e.key === "Enter") renameSession(s.id, e.target.value);
+                    else if (e.key === "Escape") setRenamingId(null);
+                  },
+                  onBlur: (e) => renameSession(s.id, e.target.value)
+                }
+              ) : /* @__PURE__ */ jsx7("span", { className: "td-tab-name", children: config.sessionNames[s.id] ?? s.name }),
+              s.exitCode !== null && /* @__PURE__ */ jsxs7("span", { className: "td-tab-exit", children: [
+                "exit ",
+                s.exitCode
+              ] }),
+              /* @__PURE__ */ jsx7(
+                "span",
+                {
+                  className: "td-tab-close",
+                  role: "button",
+                  tabIndex: -1,
+                  onClick: (e) => {
+                    e.stopPropagation();
+                    void closeSession(s.id);
+                  },
+                  title: "\u5173\u95ED\u4F1A\u8BDD",
+                  children: /* @__PURE__ */ jsx7(Icon, { name: "close", size: 12 })
+                }
+              )
+            ]
+          },
+          s.id
+        )) }),
+        /* @__PURE__ */ jsxs7("div", { className: "td-tabbar-actions", children: [
+          /* @__PURE__ */ jsx7("button", { className: "td-tabaction", onClick: () => void createSession().catch(() => {
+          }), title: "\u65B0\u5EFA\u7EC8\u7AEF", "aria-label": "\u65B0\u5EFA\u7EC8\u7AEF", children: /* @__PURE__ */ jsx7(Icon, { name: "plus", size: 15 }) }),
+          /* @__PURE__ */ jsx7(
+            "button",
+            {
+              className: `td-tabaction${partnerSession ? " td-tabaction-on" : ""}`,
+              onClick: toggleSplit,
+              title: partnerSession ? "\u53D6\u6D88\u5DE6\u53F3\u5206\u5C4F" : "\u5DE6\u53F3\u5206\u5C4F",
+              "aria-label": "\u5DE6\u53F3\u5206\u5C4F",
+              children: /* @__PURE__ */ jsx7(Icon, { name: "columns", size: 14 })
+            }
+          ),
+          /* @__PURE__ */ jsx7(
+            "button",
+            {
+              className: `td-tabaction${focusMode || hasHostFullscreen() ? " td-tabaction-on" : ""}`,
+              onClick: toggleFocus,
+              title: hasHostFullscreen() ? "\u5207\u6362\u5BBF\u4E3B\u5168\u5C4F (Esc \u9000\u51FA)" : "\u4E13\u6CE8\u6A21\u5F0F\uFF1A\u9690\u85CF\u5DE5\u5177\u680F\uFF0CEsc \u9000\u51FA",
+              "aria-label": "\u5168\u5C4F / \u4E13\u6CE8\u6A21\u5F0F",
+              children: /* @__PURE__ */ jsx7(Icon, { name: "maximize", size: 14 })
+            }
+          ),
+          /* @__PURE__ */ jsx7("button", { className: "td-tabaction", onClick: () => setRunnerOpen(true), title: "\u8FD0\u884C\u547D\u4EE4 Ctrl+Shift+R", "aria-label": "\u8FD0\u884C\u547D\u4EE4", children: /* @__PURE__ */ jsx7(Icon, { name: "play", size: 13 }) })
+        ] })
       ] })
     ] }),
-    error && /* @__PURE__ */ jsx4("div", { className: "td-errorbar", children: error }),
-    /* @__PURE__ */ jsxs4("div", { className: "td-stage", style: partnerSession ? { flexDirection: "row" } : void 0, children: [
+    error && /* @__PURE__ */ jsxs7("div", { className: "td-errorbar", children: [
+      /* @__PURE__ */ jsx7(Icon, { name: "alert", size: 13 }),
+      /* @__PURE__ */ jsx7("span", { className: "td-errorbar-text", children: error }),
+      /* @__PURE__ */ jsx7("button", { className: "td-iconbtn", onClick: () => setError(null), title: "\u5173\u95ED\u63D0\u793A", "aria-label": "\u5173\u95ED\u63D0\u793A", children: /* @__PURE__ */ jsx7(Icon, { name: "close", size: 12 }) })
+    ] }),
+    focusMode && /* @__PURE__ */ jsxs7("div", { className: "td-focus-hint", children: [
+      /* @__PURE__ */ jsx7(Icon, { name: "minimize", size: 12 }),
+      " \u4E13\u6CE8\u6A21\u5F0F \xB7 Esc \u9000\u51FA",
+      /* @__PURE__ */ jsx7("button", { className: "td-iconbtn", onClick: toggleFocus, title: "\u9000\u51FA\u4E13\u6CE8\u6A21\u5F0F", "aria-label": "\u9000\u51FA\u4E13\u6CE8\u6A21\u5F0F", children: /* @__PURE__ */ jsx7(Icon, { name: "close", size: 12 }) })
+    ] }),
+    /* @__PURE__ */ jsxs7("div", { className: "td-stage", style: partnerSession ? { flexDirection: "row" } : void 0, children: [
       sessions.map((s) => {
         const inSplit = !!partnerSession && (s.id === activeId || s.id === partnerSession.id);
         const isLeftPane = partnerSession && s.id === activeId;
-        return /* @__PURE__ */ jsxs4(
+        return /* @__PURE__ */ jsxs7(
           "div",
           {
+            className: "td-pane",
             style: {
               display: partnerSession ? inSplit ? "flex" : "none" : s.id === activeId ? "flex" : "none",
-              flexDirection: "column",
-              flex: 1,
-              minWidth: 0,
-              minHeight: 0,
-              borderRight: partnerSession && isLeftPane ? "1px solid rgb(var(--c-border))" : void 0
+              ...partnerSession && isLeftPane ? { borderRight: "1px solid rgb(var(--c-border) / 0.1)" } : {}
             },
             children: [
-              s.exitCode !== null && /* @__PURE__ */ jsxs4("div", { className: "td-exitbanner", children: [
-                /* @__PURE__ */ jsxs4("span", { children: [
+              s.exitCode !== null && /* @__PURE__ */ jsxs7("div", { className: "td-exitbanner", children: [
+                /* @__PURE__ */ jsxs7("span", { children: [
                   "\u4F1A\u8BDD\u5DF2\u9000\u51FA\uFF08exit ",
                   s.exitCode,
                   "\uFF09"
                 ] }),
-                /* @__PURE__ */ jsx4(
+                /* @__PURE__ */ jsx7(
                   "button",
                   {
                     className: "td-mini",
@@ -9398,16 +10604,17 @@ function TerminalDeskPanel(_props) {
                     children: "\u5F00\u65B0\u4F1A\u8BDD"
                   }
                 ),
-                /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: () => void closeSession(s.id), children: "\u5173\u95ED\u6807\u7B7E" })
+                /* @__PURE__ */ jsx7("button", { className: "td-mini", onClick: () => void closeSession(s.id), children: "\u5173\u95ED\u6807\u7B7E" })
               ] }),
-              /* @__PURE__ */ jsx4(
+              /* @__PURE__ */ jsx7(
                 SessionView,
                 {
                   sessionId: s.id,
                   visible: partnerSession ? inSplit : s.id === activeId,
                   onExit: (code) => setSessions((prev) => markExited2(prev, s.id, code)),
                   registerSearch: (open) => {
-                    searchTriggerRef.current = open;
+                    searchTriggersRef.current.set(s.id, open);
+                    return () => searchTriggersRef.current.delete(s.id);
                   }
                 }
               )
@@ -9416,46 +10623,75 @@ function TerminalDeskPanel(_props) {
           s.id
         );
       }),
-      sessions.length === 0 && /* @__PURE__ */ jsxs4("div", { className: "td-empty", children: [
-        /* @__PURE__ */ jsx4("div", { children: "\u6682\u65E0\u7EC8\u7AEF\u4F1A\u8BDD" }),
-        /* @__PURE__ */ jsx4("button", { className: "td-mini", onClick: openEmptySession, children: "\u65B0\u5EFA\u7EC8\u7AEF" })
-      ] }),
-      runnerOpen && /* @__PURE__ */ jsx4(
-        RunCommandModal,
-        {
-          onClose: () => setRunnerOpen(false),
-          onRun: async (command) => {
-            if (!activeSession || activeSession.exitCode !== null) {
-              await createSession({ name: "Run", initialCommand: command });
-            } else {
-              const { encodeBase64: encodeBase642 } = await Promise.resolve().then(() => (init_model(), model_exports));
-              await capTerminal({ action: "write", sessionId: activeSession.id, data: encodeBase642(`${command}\r`) });
-            }
-            setRunnerOpen(false);
-          },
-          onSaveAndRun: async (command, name) => {
-            await saveCustomCommand(name, command, currentWorkspacePath() ?? void 0);
-            await createSession({ name: name || "Run", initialCommand: command });
-            setRunnerOpen(false);
-          }
-        }
-      )
+      sessions.length === 0 && /* @__PURE__ */ jsxs7("div", { className: "td-empty", children: [
+        /* @__PURE__ */ jsx7(Icon, { name: "terminal", size: 36 }),
+        /* @__PURE__ */ jsx7("div", { children: "\u6682\u65E0\u7EC8\u7AEF\u4F1A\u8BDD" }),
+        /* @__PURE__ */ jsx7("button", { className: "td-btn td-btn-primary", onClick: () => void createSession().catch(() => {
+        }), children: "\u65B0\u5EFA\u7EC8\u7AEF" })
+      ] })
     ] }),
-    drawerOpen && /* @__PURE__ */ jsx4(
-      ScriptDrawer,
+    runnerOpen && /* @__PURE__ */ jsx7(
+      RunCommandModal,
       {
-        runtimes,
-        onRun: runScript,
-        onStop: stopScript
+        scripts: scripts.filter((s) => s.custom),
+        workspacePath,
+        onClose: () => setRunnerOpen(false),
+        onRun: async (command) => {
+          const msg = confirmMessageFor2(command);
+          if (msg) {
+            setRunnerOpen(false);
+            requestConfirm("\u5371\u9669\u547D\u4EE4\u786E\u8BA4", msg, command, () => {
+              void runScript({ id: `adhoc:${command}`, name: command.slice(0, 40), command, custom: true }).catch(
+                () => {
+                }
+              );
+            });
+            return;
+          }
+          if (!activeSession || activeSession.exitCode !== null) {
+            await createSession({ name: "Run", initialCommand: command });
+          } else {
+            const { encodeBase64: encodeBase642 } = await Promise.resolve().then(() => (init_model(), model_exports));
+            await capTerminal({
+              action: "write",
+              sessionId: activeSession.id,
+              data: encodeBase642(`${command}\r`)
+            });
+          }
+          setRunnerOpen(false);
+        },
+        onSaveAndRun: async (command, name) => {
+          await saveAndRun(command, name);
+          setRunnerOpen(false);
+        }
+      }
+    ),
+    tabMenu && /* @__PURE__ */ jsx7(
+      ContextMenu,
+      {
+        x: tabMenu.x,
+        y: tabMenu.y,
+        items: tabMenuItems(tabMenu.session),
+        onClose: () => setTabMenu(null)
+      }
+    ),
+    confirm2 && /* @__PURE__ */ jsx7(
+      ConfirmDialog,
+      {
+        title: confirm2.title,
+        message: confirm2.message,
+        detail: confirm2.detail,
+        onConfirm: () => resolveConfirm(true),
+        onCancel: () => resolveConfirm(false)
       }
     )
   ] });
 }
 
 // src/index.tsx
-import { jsx as jsx5 } from "react/jsx-runtime";
+import { jsx as jsx8 } from "react/jsx-runtime";
 function TerminalDeskEntry(props) {
-  return /* @__PURE__ */ jsx5(TerminalDeskPanel, { ...props });
+  return /* @__PURE__ */ jsx8(TerminalDeskPanel, { ...props });
 }
 export {
   TerminalDeskEntry as default
