@@ -1,0 +1,4 @@
+# zip 产物与依赖锁不进 git（打包用 .pluginignore 控制）
+*.zip
+package-lock.json
+node_modules/

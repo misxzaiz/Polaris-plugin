@@ -1,0 +1,19 @@
+{
+  "name": "ai-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI 会话级定时任务台（宿主 Scheduler 域插件化迁移）",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime --log-level=warning",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs && node test/mcp-tests.mjs && node test/render-verify.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.25.0",
+    "lucide-react": "^0.462.0",
+    "react": "^18.3.1",
+    "typescript": "^5.5.0"
+  },
+  "tsconfig": true
+}

@@ -1,0 +1,10 @@
+# 服务与 MCP 零依赖，不需要 node_modules；src/test 不进 zip
+.git/
+node_modules/
+package.json
+package-lock.json
+src/
+tsconfig.json
+test/
+README.md
+*.zip
