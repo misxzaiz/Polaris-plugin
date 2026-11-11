@@ -1,0 +1,9 @@
+# pack.js 打包排除（zip 根需直接含 plugin.json）
+node_modules/
+src/
+scripts/
+test/
+dist.map
+*.zip
+README.md
+.package-lock.json

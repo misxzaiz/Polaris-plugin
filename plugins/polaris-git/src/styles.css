@@ -1,0 +1,555 @@
+/* polaris-git 面板布局样式（pg- 前缀防泄漏；slot 作用域注入）
+   色值一律取主题 CSS 变量（--c-*，RGB 三元组），禁硬编码主题色；
+   颜色不是唯一信息通道：状态字母恒显（spec §8.1） */
+
+.pg-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  background: rgb(var(--c-bg-base));
+  color: rgb(var(--c-text-primary));
+  font-size: 13px;
+  line-height: 20px;
+}
+
+/* ── 仓库头 ─────────────────────────────────────────────── */
+.pg-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 8px;
+  border-bottom: 1px solid rgb(var(--c-border));
+  background: rgb(var(--c-bg-subtle));
+}
+.pg-header-repo {
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.pg-header-branch {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(var(--c-text-secondary));
+}
+.pg-ab-wrap { margin-left: 6px; white-space: nowrap; }
+.pg-ab {
+  color: rgb(var(--c-primary));
+  font-size: 11px;
+  margin-right: 4px;
+}
+.pg-header-repos {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 160px;
+  padding: 2px 4px;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 6px;
+  background: rgb(var(--c-bg-base));
+  color: rgb(var(--c-text-primary));
+  font-size: 12px;
+}
+.pg-header-actions { flex: none; margin-left: auto; display: inline-flex; gap: 2px; }
+
+/* ── Tab strip ──────────────────────────────────────────── */
+.pg-tabstrip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 6px;
+  border-bottom: 1px solid rgb(var(--c-border));
+  overflow-x: auto;
+  scrollbar-width: thin;
+  height: 36px;
+}
+.pg-tab {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: rgb(var(--c-text-secondary));
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pg-tab:hover { background: rgb(var(--c-bg-hover)); }
+.pg-tab-on {
+  background: rgb(var(--c-bg-active));
+  border-color: rgb(var(--c-border));
+  color: rgb(var(--c-text-primary));
+}
+.pg-tab-count {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: rgb(var(--c-bg-hover));
+  color: rgb(var(--c-text-secondary));
+  font-size: 10px;
+  text-align: center;
+}
+
+/* ── 横幅 / 状态 ────────────────────────────────────────── */
+.pg-conflictbar {
+  flex: none;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: rgb(var(--c-danger, 248 113 113));
+  background: rgb(var(--c-bg-subtle));
+  border-bottom: 1px solid rgb(var(--c-border));
+}
+.pg-errorbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: rgb(var(--c-danger, 248 113 113));
+  background: rgb(var(--c-bg-subtle));
+  border-bottom: 1px solid rgb(var(--c-border));
+}
+.pg-errorbar-text { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.pg-okbar {
+  flex: none;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: rgb(var(--c-success, 52 211 153));
+  background: rgb(var(--c-bg-subtle));
+  border-bottom: 1px solid rgb(var(--c-border));
+}
+.pg-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── 列表通用 ───────────────────────────────────────────── */
+.pg-changes, .pg-history, .pg-listtab, .pg-gitignore {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.pg-filelist, .pg-loglist {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 2px 0 8px;
+}
+.pg-group-title {
+  padding: 6px 10px 2px;
+  font-size: 11px;
+  color: rgb(var(--c-text-secondary));
+  letter-spacing: 0.02em;
+}
+.pg-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 5px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: default;
+}
+.pg-row-btn { cursor: pointer; }
+.pg-row-btn:hover { background: rgb(var(--c-bg-hover)); }
+.pg-row-current { background: rgb(var(--c-bg-active)); }
+.pg-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-row-stack { flex-direction: column; align-items: stretch; gap: 1px; }
+.pg-row-sub {
+  color: rgb(var(--c-text-secondary));
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-row-meta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgb(var(--c-text-secondary));
+  font-size: 11px;
+  white-space: nowrap;
+}
+.pg-row-sha { font-family: Consolas, Menlo, 'Courier New', monospace; font-size: 11px; }
+.pg-row-time { color: rgb(var(--c-text-secondary)); }
+.pg-hint {
+  flex: none;
+  padding: 6px 10px;
+  font-size: 11px;
+  color: rgb(var(--c-text-secondary));
+}
+
+/* ── 变更文件行 ─────────────────────────────────────────── */
+.pg-batchbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid rgb(var(--c-border));
+  background: rgb(var(--c-bg-subtle));
+  font-size: 12px;
+}
+.pg-batchbar-count { color: rgb(var(--c-text-secondary)); }
+.pg-fileitem-wrap { border-bottom: 1px solid transparent; }
+.pg-fileitem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+}
+.pg-fileitem:hover { background: rgb(var(--c-bg-hover)); }
+.pg-fileitem-on { background: rgb(var(--c-bg-active)); }
+.pg-fileitem-check { flex: none; margin: 0; }
+.pg-badge {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+  font-weight: 700;
+}
+.pg-badge-danger { background: rgb(var(--c-danger, 248 113 113) / 0.18); color: rgb(var(--c-danger, 248 113 113)); }
+.pg-badge-success { background: rgb(var(--c-success, 52 211 153) / 0.18); color: rgb(var(--c-success, 52 211 153)); }
+.pg-badge-primary { background: rgb(var(--c-primary) / 0.16); color: rgb(var(--c-primary)); }
+.pg-fileitem-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.pg-fileitem-base { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-fileitem-dir {
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgb(var(--c-text-tertiary, var(--c-text-secondary)));
+  font-size: 11px;
+  text-align: right;
+  direction: rtl;
+}
+.pg-conflict-hint { flex: none; font-size: 11px; color: rgb(var(--c-danger, 248 113 113)); }
+.pg-inline-diff {
+  border-top: 1px solid rgb(var(--c-border));
+  background: rgb(var(--c-bg-subtle));
+  max-height: 320px;
+  overflow: auto;
+}
+
+/* ── 提交区 ─────────────────────────────────────────────── */
+.pg-commitbar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  border-top: 1px solid rgb(var(--c-border));
+  background: rgb(var(--c-bg-subtle));
+}
+.pg-commit-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  padding: 5px 8px;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 6px;
+  background: rgb(var(--c-bg-base));
+  color: rgb(var(--c-text-primary));
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+}
+.pg-commit-input:focus { border-color: rgb(var(--c-primary)); }
+.pg-commitbar-row { display: flex; align-items: center; gap: 8px; }
+.pg-commit-scope {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: rgb(var(--c-text-secondary));
+}
+.pg-primary-btn {
+  flex: none;
+  padding: 4px 14px;
+  border: 0;
+  border-radius: 6px;
+  background: rgb(var(--c-primary));
+  color: rgb(var(--c-bg-base, 255 255 255));
+  font-size: 12px;
+  cursor: pointer;
+}
+.pg-primary-btn:hover:not(:disabled) { filter: brightness(1.1); }
+.pg-primary-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── 通用控件 ───────────────────────────────────────────── */
+.pg-mini {
+  flex: none;
+  padding: 2px 8px;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 5px;
+  background: rgb(var(--c-bg-base));
+  color: rgb(var(--c-text-secondary));
+  font-size: 11px;
+  cursor: pointer;
+}
+.pg-mini:hover:not(:disabled) { color: rgb(var(--c-text-primary)); border-color: rgb(var(--c-primary)); }
+.pg-mini:disabled { opacity: 0.4; cursor: not-allowed; }
+.pg-iconbtn {
+  flex: none;
+  min-width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: rgb(var(--c-text-secondary));
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.pg-iconbtn:hover:not(:disabled) { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-text-primary)); }
+.pg-iconbtn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pg-spinning { animation: pg-spin 0.9s linear infinite; }
+@keyframes pg-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .pg-spinning { animation: none; }
+}
+.pg-input {
+  padding: 4px 8px;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 6px;
+  background: rgb(var(--c-bg-base));
+  color: rgb(var(--c-text-primary));
+  font-size: 12px;
+  outline: none;
+  min-width: 0;
+}
+.pg-input:focus { border-color: rgb(var(--c-primary)); }
+.pg-input-grow { flex: 1 1 auto; }
+.pg-searchrow {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid rgb(var(--c-border));
+}
+.pg-more-btn {
+  margin: 6px auto;
+  padding: 3px 12px;
+  border: 1px solid rgb(var(--c-border));
+  border-radius: 6px;
+  background: transparent;
+  color: rgb(var(--c-text-secondary));
+  font-size: 11px;
+  cursor: pointer;
+}
+.pg-more-btn:hover:not(:disabled) { color: rgb(var(--c-text-primary)); }
+.pg-more-btn:disabled { opacity: 0.5; }
+
+/* ── 历史 ───────────────────────────────────────────────── */
+.pg-logitem-wrap { border-bottom: 1px solid rgb(var(--c-border, 63 63 70) / 0.35); }
+.pg-logitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.pg-logitem:hover { background: rgb(var(--c-bg-hover)); }
+.pg-logitem-on { background: rgb(var(--c-bg-active)); }
+.pg-logitem-sha { flex: none; font-family: Consolas, Menlo, 'Courier New', monospace; font-size: 11px; color: rgb(var(--c-text-secondary)); }
+.pg-logitem-msg { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-logitem-meta { flex: none; display: inline-flex; align-items: center; gap: 6px; max-width: 45%; overflow: hidden; }
+.pg-logitem-author, .pg-logitem-time { font-size: 11px; color: rgb(var(--c-text-secondary)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pg-ref {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 8px;
+  font-size: 10px;
+  background: rgb(var(--c-bg-hover));
+  color: rgb(var(--c-text-secondary));
+  max-width: 90px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pg-ref-branch { color: rgb(var(--c-primary)); }
+.pg-ref-tag { color: rgb(var(--c-success, 52 211 153)); }
+.pg-commitdetail { padding: 6px 8px 10px; border-bottom: 1px solid rgb(var(--c-border)); background: rgb(var(--c-bg-subtle)); }
+.pg-commitdetail-msg {
+  margin: 0 0 4px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgb(var(--c-bg-base));
+  font-size: 12px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+}
+.pg-commitdetail-meta { font-size: 11px; color: rgb(var(--c-text-secondary)); margin-bottom: 4px; }
+.pg-commitdetail-file { border-top: 1px solid rgb(var(--c-border, 63 63 70) / 0.35); }
+.pg-fileitem-name-btn { height: 28px; width: 100%; }
+.pg-diffcount { flex: none; font-size: 11px; margin-left: auto; }
+.pg-addcount { color: rgb(var(--c-success, 52 211 153)); }
+.pg-delcount { color: rgb(var(--c-danger, 248 113 113)); }
+
+/* ── Diff ───────────────────────────────────────────────── */
+.pg-diff { display: flex; flex-direction: column; min-width: 0; }
+.pg-diff-file {
+  flex: none;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-family: Consolas, Menlo, 'Courier New', monospace;
+  color: rgb(var(--c-text-secondary));
+  border-bottom: 1px solid rgb(var(--c-border, 63 63 70) / 0.35);
+}
+.pg-diff-scroll { overflow: auto; }
+.pg-diff-table { border-collapse: collapse; width: 100%; }
+.pg-dl-no {
+  width: 1%;
+  min-width: 28px;
+  padding: 0 5px;
+  text-align: right;
+  vertical-align: top;
+  font-family: Consolas, Menlo, 'Courier New', monospace;
+  font-size: 10px;
+  line-height: 18px;
+  color: rgb(var(--c-text-secondary));
+  user-select: none;
+}
+.pg-dl-sign { width: 12px; text-align: center; font-family: Consolas, Menlo, monospace; font-size: 11px; line-height: 18px; user-select: none; }
+.pg-dl-text {
+  padding: 0 6px 0 2px;
+  font-family: Consolas, Menlo, 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 18px;
+  white-space: pre;
+  vertical-align: top;
+}
+.pg-dl-add { background: rgb(var(--c-success, 52 211 153) / 0.10); }
+.pg-dl-add .pg-dl-sign { color: rgb(var(--c-success, 52 211 153)); }
+.pg-dl-del { background: rgb(var(--c-danger, 248 113 113) / 0.10); }
+.pg-dl-del .pg-dl-sign { color: rgb(var(--c-danger, 248 113 113)); }
+.pg-dl-word { border-radius: 3px; }
+.pg-dl-add .pg-dl-word { background: rgb(var(--c-success, 52 211 153) / 0.28); }
+.pg-dl-del .pg-dl-word { background: rgb(var(--c-danger, 248 113 113) / 0.28); }
+.pg-diff-special, .pg-diff-missing { padding: 10px; font-size: 12px; color: rgb(var(--c-text-secondary)); }
+
+/* ── Stash / gitignore ──────────────────────────────────── */
+.pg-stashitem-wrap { border-bottom: 1px solid rgb(var(--c-border, 63 63 70) / 0.35); }
+.pg-gitignore-content {
+  margin: 4px 8px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgb(var(--c-bg-subtle));
+  border: 1px solid rgb(var(--c-border, 63 63 70) / 0.5);
+  font-family: Consolas, Menlo, 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 18px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  overflow: auto;
+  max-height: 50vh;
+}
+.pg-refresh-inline { margin: 6px 8px 0; align-self: flex-start; }
+.pg-tag-annotated { color: rgb(var(--c-text-secondary)); }
+
+/* ── 空态 / 骨架 ────────────────────────────────────────── */
+.pg-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 24px 16px;
+  text-align: center;
+}
+.pg-empty-title { font-size: 13px; color: rgb(var(--c-text-primary)); }
+.pg-empty-hint { font-size: 11px; color: rgb(var(--c-text-secondary)); overflow-wrap: anywhere; }
+.pg-empty-action { margin-top: 4px; }
+.pg-clean { padding: 24px 16px; text-align: center; color: rgb(var(--c-text-secondary)); font-size: 12px; }
+.pg-skeleton { padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.pg-skeleton-row {
+  height: 12px;
+  border-radius: 6px;
+  background: rgb(var(--c-bg-hover));
+  animation: pg-pulse 1.4s ease-in-out infinite;
+}
+@keyframes pg-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .pg-skeleton-row { animation: none; opacity: 0.7; }
+}
+
+/* ── 焦点可见性（spec §9：2px focus ring，不能只改背景）── */
+.pg-root button:focus-visible,
+.pg-root input:focus-visible,
+.pg-root select:focus-visible,
+.pg-root textarea:focus-visible {
+  outline: 2px solid rgb(var(--c-primary));
+  outline-offset: 1px;
+}
+
+/* ── narrow 模式（<280px）：次要信息让位 ───────────────── */
+.pg-root[data-mode='narrow'] .pg-fileitem-dir,
+.pg-root[data-mode='narrow'] .pg-logitem-author,
+.pg-root[data-mode='narrow'] .pg-logitem-time,
+.pg-root[data-mode='narrow'] .pg-commit-scope { display: none; }
+.pg-root[data-mode='narrow'] .pg-header { padding: 0 6px; }
+.pg-root[data-mode='narrow'] .pg-tab { padding: 2px 6px; }
