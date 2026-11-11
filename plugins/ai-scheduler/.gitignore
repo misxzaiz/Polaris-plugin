@@ -1,4 +1,5 @@
-# zip 产物与依赖锁不进 git（打包用 .pluginignore 控制）
+# zip 产物默认不进 git；分发包单独放行——tag 内必须有 zip，否则 CDN downloadUrl 404
 *.zip
+!ai-scheduler.zip
 package-lock.json
 node_modules/
