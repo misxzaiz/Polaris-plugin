@@ -71,7 +71,7 @@ let degraded = false;
 const startedAt = Date.now();
 let lastMetaAt = 0;
 
-let tasksCache = null; // 服务对任务表只读；30s 与 kv 对账一次
+let tasksCache = null; // 服务对任务表只读；30s 与 kv 对账一次（合并视图=定义+运行态）
 let tasksReadAt = 0;
 let executing = false; // 并发=1：同一时刻只推进一个执行链
 const runQueue = []; // { task, missed, viaCommand }
@@ -115,7 +115,9 @@ const wsc = createWsClient({ kv, log, onSchedulerEvent });
 // ── 任务表访问（服务只读任务定义；运行态经 markRunning/markStatus 写）───────
 async function loadTasks() {
   if (tasksCache && Date.now() - tasksReadAt < TASKS_REREAD_MS) return tasksCache;
-  tasksCache = await store.listTasks();
+  // 合并视图（定义+state）：isDue 判定需要 nextRunAt/lastRunStatus/lastRunAt——
+  // listTasks 只有定义，纯定义会让 isDue 永假（真桥冒烟实锤的坑）
+  tasksCache = await store.listTaskViews();
   tasksReadAt = Date.now();
   return tasksCache;
 }
@@ -139,6 +141,10 @@ async function runOne(task, viaCommand) {
   }
 
   await store.markRunning(task.id);
+  // 立即失效任务缓存：markRunning 已置 Running，但 30s 缓存窗口内旧视图会让
+  // isDue 重复命中（真桥冒烟实锤：once 任务每 tick 重触发）
+  tasksCache = null;
+  tasksReadAt = 0;
   log('info', `任务触发${viaCommand ? '(手动)' : ''}: ${task.name} (${task.id}, executor=${et})`);
 
   const startedMs = Date.now();

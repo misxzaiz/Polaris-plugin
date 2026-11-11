@@ -51,7 +51,7 @@ function createWsClient({ kv, log, onSchedulerEvent }) {
     if (now - lastAttemptAt < 1500) return; // 防高频重试
     lastAttemptAt = now;
     let ep;
-    try { ep = await kv.getEndpoint(); } catch (e) { log('warn', `ws endpoint: ${e.message}`); scheduleReconnect(); return; }
+    try { ep = await kv.refreshEndpoint(); } catch (e) { log('warn', `ws endpoint: ${e.message}`); scheduleReconnect(); return; }
     const wsBase = `ws://${ep.host}:${ep.port}`;
     const url = ep.token ? `${wsBase}/api/ws?token=${encodeURIComponent(md5(ep.token))}` : `${wsBase}/api/ws`;
     let socket;
@@ -71,15 +71,20 @@ function createWsClient({ kv, log, onSchedulerEvent }) {
       let msg;
       try { msg = JSON.parse(typeof ev.data === 'string' ? ev.data : ''); } catch (_) { return; }
       if (!msg || msg.event !== 'chat-event') return;
-      const payload = msg.payload;
-      if (!payload || typeof payload.type !== 'string') return;
-      const ctx = typeof payload.contextId === 'string' ? payload.contextId : '';
+      // WS chat-event 帧是嵌套形状（EventBroadcaster 中继直转）：
+      // {event:'chat-event', payload:{contextId, turnId?, payload: AIEvent}}——
+      // AIEvent 的 type/sessionId/reason 在内层（真桥抓包实证，勿按扁平形状解析）
+      const outer = msg.payload;
+      if (!outer || typeof outer !== 'object') return;
+      const ai = outer.payload;
+      if (!ai || typeof ai.type !== 'string') return;
+      const ctx = typeof outer.contextId === 'string' ? outer.contextId : '';
       if (!ctx.startsWith('scheduler-')) return;
       const taskId = ctx.slice('scheduler-'.length);
-      if (payload.type === 'session_end') {
-        onSchedulerEvent({ kind: 'session_end', taskId, payload });
-      } else if (payload.type === 'error') {
-        onSchedulerEvent({ kind: 'error', taskId, payload });
+      if (ai.type === 'session_end') {
+        onSchedulerEvent({ kind: 'session_end', taskId, payload: ai });
+      } else if (ai.type === 'error') {
+        onSchedulerEvent({ kind: 'error', taskId, payload: ai });
       }
     });
 
