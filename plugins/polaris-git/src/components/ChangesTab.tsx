@@ -31,8 +31,20 @@ const drafts = new Map<string, string>();
 export function ChangesTab({ mode }: { mode: WidthMode }) {
   const state = useRepoState();
   const status = state.status;
+  const repoPath = state.repoPath ?? '';
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
+  // 提交草稿：组件 state 驱动受控输入（模块 Map 只做跨 tab/仓库记忆，
+  // 不能直接当受控值——否则输入不触发重渲染，打字即被吞）
+  const [draft, setDraft] = useState<string>(() => drafts.get(repoPath) ?? '');
+  const changeDraft = (v: string): void => {
+    setDraft(v);
+    drafts.set(repoPath, v);
+  };
+  // 仓库切换：草稿切到目标仓库的记忆值
+  useEffect(() => {
+    setDraft(drafts.get(repoPath) ?? '');
+  }, [repoPath]);
 
   const anchorRef = useRef<string | null>(null);
 
@@ -155,11 +167,15 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
         {groups.length === 0 && <div className="pg-clean">没有未提交改动</div>}
       </div>
       <CommitBar
-        draft={drafts.get(state.repoPath ?? '') ?? ''}
-        onDraftChange={(v) => drafts.set(state.repoPath ?? '', v)}
+        draft={draft}
+        onDraftChange={changeDraft}
         stagedCount={rows.staged.length}
         selectedStagedPaths={selectedStaged.map((r) => r.path)}
-        onCommitted={() => setSelected(new Set())}
+        onCommitted={() => {
+          setSelected(new Set());
+          setDraft('');
+          drafts.delete(repoPath);
+        }}
       />
     </div>
   );
@@ -184,9 +200,10 @@ function FileRow({
   onToggleSelect: (shift: boolean) => void;
   onExpand: () => void;
 }) {
-  const letter = row.change ? statusLetterOf(row.change) : row.area === 'conflicted' ? 'U' : 'A';
+  // 无 GitFileChange 的行（untracked/conflicted 字符串清单）按区域给语义，字母恒显
+  const letter = row.change ? statusLetterOf(row.change) : 'U';
   const tone = row.change ? STATUS_TONE[row.change.status] : 'danger';
-  const label = row.change ? STATUS_LABEL[row.change.status] : '冲突';
+  const label = row.change ? STATUS_LABEL[row.change.status] : row.area === 'conflicted' ? '冲突' : '未跟踪';
   const isStagedArea = row.area === 'staged';
   const dir = mode === 'narrow' ? '' : dirOf(row.path);
 

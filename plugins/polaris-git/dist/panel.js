@@ -1,5 +1,5 @@
 // src/components/Panel.tsx
-import { useState as useState6 } from "react";
+import { useEffect as useEffect6, useState as useState7 } from "react";
 
 // src/bridge.ts
 function globals() {
@@ -454,9 +454,16 @@ var GitRepoStore = class {
 var repoStore = new GitRepoStore();
 
 // src/hooks.ts
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 function useRepoState() {
-  return useSyncExternalStore(repoStore.subscribe, repoStore.getSnapshot, repoStore.getSnapshot);
+  const [state, setState] = useState(() => repoStore.getSnapshot());
+  useEffect(
+    () => repoStore.subscribe(() => {
+      setState(repoStore.getSnapshot());
+    }),
+    []
+  );
+  return state;
 }
 function useEnsureList(key, enabled) {
   useEffect(() => {
@@ -530,7 +537,7 @@ function totalChangeCount(status) {
 }
 
 // src/components/width.ts
-import { useEffect as useEffect2, useRef, useState } from "react";
+import { useEffect as useEffect2, useRef, useState as useState2 } from "react";
 function widthMode(px) {
   if (px < 280) return "narrow";
   if (px < 420) return "regular";
@@ -538,7 +545,7 @@ function widthMode(px) {
 }
 function useContainerWidth() {
   const ref = useRef(null);
-  const [width, setWidth] = useState(0);
+  const [width, setWidth] = useState2(0);
   useEffect2(() => {
     const el = ref.current;
     if (!el) return;
@@ -553,7 +560,7 @@ function useContainerWidth() {
 }
 
 // src/components/ChangesTab.tsx
-import { useEffect as useEffect3, useMemo as useMemo2, useRef as useRef2, useState as useState3 } from "react";
+import { useEffect as useEffect3, useMemo as useMemo2, useRef as useRef2, useState as useState4 } from "react";
 
 // src/components/DiffView.tsx
 import { useMemo } from "react";
@@ -921,7 +928,7 @@ function HunkRows({ lines }) {
 }
 
 // src/components/CommitBar.tsx
-import { useState as useState2 } from "react";
+import { useState as useState3 } from "react";
 import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 function CommitBar({
   draft,
@@ -931,7 +938,7 @@ function CommitBar({
   onCommitted
 }) {
   const state = useRepoState();
-  const [notice, setNotice] = useState2(null);
+  const [notice, setNotice] = useState3(null);
   const busy = state.writeBusy !== null;
   const useSelection = selectedStagedPaths.length > 0;
   const scopeCount = useSelection ? selectedStagedPaths.length : stagedCount;
@@ -997,8 +1004,17 @@ var drafts = /* @__PURE__ */ new Map();
 function ChangesTab({ mode }) {
   const state = useRepoState();
   const status = state.status;
-  const [selected, setSelected] = useState3(/* @__PURE__ */ new Set());
-  const [expanded, setExpanded] = useState3(null);
+  const repoPath = state.repoPath ?? "";
+  const [selected, setSelected] = useState4(/* @__PURE__ */ new Set());
+  const [expanded, setExpanded] = useState4(null);
+  const [draft, setDraft] = useState4(() => drafts.get(repoPath) ?? "");
+  const changeDraft = (v) => {
+    setDraft(v);
+    drafts.set(repoPath, v);
+  };
+  useEffect3(() => {
+    setDraft(drafts.get(repoPath) ?? "");
+  }, [repoPath]);
   const anchorRef = useRef2(null);
   const rows = useMemo2(() => {
     const build = (area) => (path, change) => ({
@@ -1124,11 +1140,15 @@ function ChangesTab({ mode }) {
     /* @__PURE__ */ jsx4(
       CommitBar,
       {
-        draft: drafts.get(state.repoPath ?? "") ?? "",
-        onDraftChange: (v) => drafts.set(state.repoPath ?? "", v),
+        draft,
+        onDraftChange: changeDraft,
         stagedCount: rows.staged.length,
         selectedStagedPaths: selectedStaged.map((r) => r.path),
-        onCommitted: () => setSelected(/* @__PURE__ */ new Set())
+        onCommitted: () => {
+          setSelected(/* @__PURE__ */ new Set());
+          setDraft("");
+          drafts.delete(repoPath);
+        }
       }
     )
   ] });
@@ -1143,9 +1163,9 @@ function FileRow({
   onToggleSelect,
   onExpand
 }) {
-  const letter = row.change ? statusLetterOf(row.change) : row.area === "conflicted" ? "U" : "A";
+  const letter = row.change ? statusLetterOf(row.change) : "U";
   const tone = row.change ? STATUS_TONE[row.change.status] : "danger";
-  const label = row.change ? STATUS_LABEL[row.change.status] : "\u51B2\u7A81";
+  const label = row.change ? STATUS_LABEL[row.change.status] : row.area === "conflicted" ? "\u51B2\u7A81" : "\u672A\u8DDF\u8E2A";
   const isStagedArea = row.area === "staged";
   const dir = mode === "narrow" ? "" : dirOf(row.path);
   return /* @__PURE__ */ jsxs4("div", { className: "pg-fileitem-wrap", children: [
@@ -1216,7 +1236,7 @@ function FileRow({
 }
 var diffCache = /* @__PURE__ */ new Map();
 function InlineDiff({ row, statusVersion }) {
-  const [data, setData] = useState3(
+  const [data, setData] = useState4(
     () => diffCache.get(`${statusVersion}:${row.key}`) ?? null
   );
   useEffect3(() => {
@@ -1273,12 +1293,12 @@ function InlineDiff({ row, statusVersion }) {
 }
 
 // src/components/HistoryTab.tsx
-import { useEffect as useEffect4, useState as useState4 } from "react";
+import { useEffect as useEffect4, useState as useState5 } from "react";
 import { jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
 function HistoryTab({ searchRef }) {
   const state = useRepoState();
-  const [input, setInput] = useState4(state.logQuery);
-  const [detailSha, setDetailSha] = useState4(null);
+  const [input, setInput] = useState5(state.logQuery);
+  const [detailSha, setDetailSha] = useState5(null);
   useEffect4(() => {
     if (state.phase === "ready" && state.log.length === 0 && !state.logLoading && !state.logError) {
       void repoStore.loadLog(true);
@@ -1394,9 +1414,9 @@ function LogRow({
   ] });
 }
 function CommitDetail({ sha }) {
-  const [data, setData] = useState4(null);
-  const [error, setError] = useState4(null);
-  const [openFile, setOpenFile] = useState4(null);
+  const [data, setData] = useState5(null);
+  const [error, setError] = useState5(null);
+  const [openFile, setOpenFile] = useState5(null);
   useEffect4(() => {
     let alive = true;
     setData(null);
@@ -1584,13 +1604,13 @@ function GitignoreTab() {
 }
 
 // src/components/StashTab.tsx
-import { useEffect as useEffect5, useState as useState5 } from "react";
+import { useEffect as useEffect5, useState as useState6 } from "react";
 import { jsx as jsx7, jsxs as jsxs7 } from "react/jsx-runtime";
 function StashTab() {
   const state = useRepoState();
   useEnsureList("stashes", state.phase === "ready");
   const list = state.stashes;
-  const [showIndex, setShowIndex] = useState5(null);
+  const [showIndex, setShowIndex] = useState6(null);
   if (list.loading && list.data === null) return /* @__PURE__ */ jsx7(LoadingSkeleton, { rows: 5 });
   if (list.error) {
     return /* @__PURE__ */ jsx7(ErrorNote, { message: list.error, onRetry: () => void repoStore.loadList("stashes", true) });
@@ -1631,8 +1651,8 @@ function StashTab() {
   ] });
 }
 function StashPatch({ index }) {
-  const [patch, setPatch] = useState5(null);
-  const [error, setError] = useState5(null);
+  const [patch, setPatch] = useState6(null);
+  const [error, setError] = useState6(null);
   useEffect5(() => {
     let alive = true;
     setPatch(null);
@@ -1662,8 +1682,11 @@ var TABS = [
 ];
 function Panel() {
   const state = useRepoState();
-  const [tab, setTab] = useState6("changes");
+  const [tab, setTab] = useState7("changes");
   const { ref, mode } = useContainerWidth();
+  useEffect6(() => {
+    repoStore.init();
+  }, []);
   if (!hasHostBridge()) {
     return /* @__PURE__ */ jsx8("div", { className: "pg-root", "data-mode": "regular", children: /* @__PURE__ */ jsx8(
       EmptyBlock,

@@ -3,7 +3,7 @@
  * 纵向结构 = 仓库头(40px) + 7 Tab strip(36px, 横向滚动) + 状态横幅 + 内容滚动区 + 提交区。
  * 数据唯一真相 = cap.git 快照；本组件只持有 activeTab 纯 UI 状态。
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { repoStore } from '../model/repoStore.ts';
 import { hasHostBridge } from '../bridge.ts';
 import { useRepoState } from '../hooks.ts';
@@ -32,6 +32,11 @@ export function Panel() {
   const state = useRepoState();
   const [tab, setTab] = useState<TabId>('changes');
   const { ref, mode } = useContainerWidth();
+
+  // 绑定工作区订阅与宿主事件（幂等；StrictMode 双挂载安全）
+  useEffect(() => {
+    repoStore.init();
+  }, []);
 
   if (!hasHostBridge()) {
     return (
