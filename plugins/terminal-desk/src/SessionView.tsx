@@ -2,13 +2,13 @@
  * terminal-desk 单会话视图：xterm.js 生命周期封装
  *
  * 数据流（plans/terminal-plugin-spec.md §五）：
- *   输出  __POLARIS_HOST_LISTEN__('terminal:output') 按 sessionId 过滤 → decode → term.write
+ *   输出  __POLARIS_HOST_LISTEN__('terminal:output') 按 sessionId 过滤 → 批量解码 → term.write
  *   输入  term.onData → encode → cap.terminal write（base64）
- *   尺寸  ResizeObserver → fit + proposeDimensions → cap.terminal resize（rAF+100ms 去抖）
+ *   尺寸  ResizeObserver → fit + proposeDimensions → 尺寸变化才下发 cap.terminal resize
  *   主题  __POLARIS_THEME_API__.subscribe → options.theme 热更新
  *
- * addon：fit（尺寸）、web-links（链接）、search（搜索条）、webgl（GPU 渲染，
- * 失败静默降级 canvas——WebView2 环境个别版本 WebGL 上下文创建失败属正常路径）。
+ * addon：fit / web-links / search / webgl（GPU 渲染失败静默降级）。
+ * 字体、行高、光标样式对齐内置 TerminalPanel.tsx，消除视觉差异。
  */
 import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
@@ -19,6 +19,7 @@ import { WebglAddon } from '@xterm/addon-webgl';
 import { capTerminal, currentThemeId, listenTerminalExit, listenTerminalOutput, onThemeChanged } from './bridge';
 import { decodeBase64ToBytes, encodeBase64 } from './model';
 import { getXtermTheme } from './xtermTheme';
+import { Icon } from './icons';
 
 export interface SessionViewProps {
   sessionId: string;
@@ -26,9 +27,11 @@ export interface SessionViewProps {
   visible: boolean;
   /** 会话退出（exit 事件），通知父层标记 */
   onExit: (exitCode: number | null) => void;
-  /** 注册打开搜索条的触发器（父层 Ctrl+F 转发到当前会话） */
-  registerSearch?: (open: () => void) => void;
+  /** 注册打开搜索条的触发器；返回清理函数，避免切换会话后触发已卸载的 xterm */
+  registerSearch?: (open: () => void) => () => void;
 }
+
+const FONT_FAMILY = 'Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", "Courier New", monospace';
 
 export default function SessionView({ sessionId, visible, onExit, registerSearch }: SessionViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -37,9 +40,10 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
   const searchRef = useRef<SearchAddon | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // onExit 引用代理：exit 订阅随会话装配一次，回调换绑不重建订阅
   const onExitRef = useRef(onExit);
   onExitRef.current = onExit;
+  const registerSearchRef = useRef(registerSearch);
+  registerSearchRef.current = registerSearch;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -47,9 +51,12 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
 
     const term = new Terminal({
       scrollback: 10000,
+      fontFamily: FONT_FAMILY,
       fontSize: 14,
-      fontFamily: "Consolas, 'Courier New', monospace",
+      lineHeight: 1.2,
       cursorBlink: true,
+      cursorStyle: 'block',
+      allowTransparency: false,
       theme: getXtermTheme(currentThemeId()) as never,
     });
     termRef.current = term;
@@ -61,7 +68,6 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
     term.loadAddon(fit);
     term.loadAddon(new WebLinksAddon());
     term.loadAddon(search);
-    // webgl 渲染：加载失败静默降级默认渲染器
     try {
       term.loadAddon(new WebglAddon());
     } catch {
@@ -71,26 +77,27 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
     term.open(container);
     void fit.fit();
 
-    // 输出订阅：全局事件流按 sessionId 过滤（多会话/多面板共用同一事件）
     const offOutput = listenTerminalOutput((event) => {
       if (event.sessionId !== sessionId) return;
+      // 一次性 Uint8Array 解码，避免逐字节 charCodeAt 循环（大输出场景）
       term.write(decodeBase64ToBytes(event.data));
     });
-    // 退出事件：标记退出码（xterm 保留最终输出）
     const offExit = listenTerminalExit((event) => {
       if (event.sessionId === sessionId) onExitRef.current(event.exitCode);
     });
 
-    // 输入：UTF-8 安全 base64（TextEncoder → btoa，同内置终端）
     const dataDisposable = term.onData((data) => {
       void capTerminal({ action: 'write', sessionId, data: encodeBase64(data) }).catch(() => {
         /* 写失败不致命：会话可能已退出，exit 事件随后到来 */
       });
     });
 
-    // 尺寸：ResizeObserver + rAF + 100ms 尾随去抖（移植内置节奏）
+    // 尺寸：ResizeObserver + rAF + 尾随去抖；仅当 cols/rows 变化才下发后端 resize，
+    // 避免旧实现每次容器微动都 fit + resize 造成 PTY 抖动与重复 IPC。
     let resizeTimer: number | null = null;
     let rafId = 0;
+    let lastCols = 0;
+    let lastRows = 0;
     const observer = new ResizeObserver(() => {
       if (rafId) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
@@ -98,26 +105,25 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
         if (resizeTimer !== null) window.clearTimeout(resizeTimer);
         resizeTimer = window.setTimeout(() => {
           resizeTimer = null;
-          if (container.offsetParent === null) return; // 隐藏中不 propose（尺寸为 0）
+          if (container.offsetParent === null) return;
           try {
             fit.fit();
             const dims = fit.proposeDimensions();
-            if (dims && dims.cols > 1 && dims.rows > 1) {
-              void capTerminal({ action: 'resize', sessionId, cols: dims.cols, rows: dims.rows }).catch(
-                () => {},
-              );
-            }
+            if (!dims || dims.cols <= 1 || dims.rows <= 1) return;
+            if (dims.cols === lastCols && dims.rows === lastRows) return;
+            lastCols = dims.cols;
+            lastRows = dims.rows;
+            void capTerminal({ action: 'resize', sessionId, cols: dims.cols, rows: dims.rows }).catch(() => {});
           } catch {
             /* 容器尺寸异常时忽略本轮 */
           }
-        }, 100);
+        }, 80);
       });
     });
     observer.observe(container);
 
-    registerSearch?.(() => {
+    const unregisterSearch = registerSearchRef.current?.(() => {
       setSearchOpen(true);
-      // 等搜索条渲染后聚焦
       window.setTimeout(() => {
         const input = container.parentElement?.querySelector<HTMLInputElement>('.td-search-input');
         input?.focus();
@@ -125,7 +131,6 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
       }, 30);
     });
 
-    // 卸载：dispose xterm（连带 addon），解绑事件与观察器
     return () => {
       observer.disconnect();
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
@@ -133,6 +138,11 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
       dataDisposable.dispose();
       offOutput();
       offExit();
+      try {
+        unregisterSearch?.();
+      } catch {
+        /* 重复清理安全忽略 */
+      }
       try {
         term.dispose();
       } catch {
@@ -146,14 +156,14 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
 
-  // 主题热跟随
-  useEffect(() => {
-    return onThemeChanged(() => {
-      if (termRef.current) termRef.current.options.theme = getXtermTheme(currentThemeId()) as never;
-    });
-  }, []);
+  useEffect(
+    () =>
+      onThemeChanged(() => {
+        if (termRef.current) termRef.current.options.theme = getXtermTheme(currentThemeId()) as never;
+      }),
+    [],
+  );
 
-  // 可见性恢复补一次 fit（display:none → 显示，ResizeObserver 有时滞后一拍）
   useEffect(() => {
     if (!visible) return;
     const id = window.setTimeout(() => {
@@ -172,7 +182,7 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, position: 'relative' }}>
+    <div className="td-session-wrap">
       {searchOpen && (
         <SearchBar
           onSearch={(text, opts) => {
@@ -199,7 +209,8 @@ function SearchBar({
   const [text, setText] = useState('');
   const [caseSensitive, setCaseSensitive] = useState(false);
   return (
-    <div style={{ display: 'flex', gap: 6, padding: '4px 8px', borderBottom: '1px solid rgb(var(--c-border))', flex: 'none', alignItems: 'center' }}>
+    <div className="td-searchbar">
+      <Icon name="search" size={13} />
       <input
         className="td-search-input td-input"
         placeholder="搜索（Enter 下一个 / Shift+Enter 上一个）"
@@ -214,14 +225,13 @@ function SearchBar({
             onClose();
           }
         }}
-        style={{ width: 240 }}
       />
-      <label style={{ fontSize: 11, display: 'inline-flex', gap: 4, alignItems: 'center', cursor: 'pointer' }}>
+      <label className="td-check">
         <input type="checkbox" checked={caseSensitive} onChange={(e) => setCaseSensitive(e.target.checked)} />
         区分大小写
       </label>
-      <button className="td-mini" onClick={onClose} style={{ marginLeft: 'auto' }}>
-        ✕
+      <button className="td-iconbtn" onClick={onClose} title="关闭搜索" aria-label="关闭搜索">
+        <Icon name="close" size={12} />
       </button>
     </div>
   );
