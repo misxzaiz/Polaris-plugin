@@ -5202,7 +5202,7 @@
     {
       "id": "ai-scheduler",
       "name": "AI 定时任务",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "AI 会话级定时任务台：到点自动构建提示词并驱动宿主 AI 引擎执行。支持 once/cron/interval/after_completion 四种触发、协议模式任务书、提示词模板、工作区绑定与执行历史。常驻服务经 cap.ai.chat 触发宿主 AI 会话并订阅 WS 终态回收，附带 stdio MCP 七工具。由主仓 Scheduler 域插件化迁移而来（core-slimdown B1-6）。",
       "author": "quan",
       "category": "productivity",
@@ -5217,9 +5217,9 @@
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ai-scheduler",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ai-scheduler/plugin.json",
-      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ai-scheduler-v1.0.0/plugins/ai-scheduler/ai-scheduler.zip",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ai-scheduler-v1.0.1/plugins/ai-scheduler/ai-scheduler.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ai-scheduler/update.json",
-      "sha256": "705ecfebceab4c1d8c7979026183a69c04ad9a2a9e352669dda111712f72fbcf",
+      "sha256": "9ba0aa3abc35a7c6c515edd6f2b12f4a916cfbba6b260a84c1aef3f62323cfa9",
       "tier": "production",
       "permissions": {
         "appConfigRead": true,
@@ -5228,11 +5228,11 @@
       "screenshots": [],
       "versions": [
         {
-          "version": "1.0.0",
-          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ai-scheduler-v1.0.0/plugins/ai-scheduler/ai-scheduler.zip"
+          "version": "1.0.1",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ai-scheduler-v1.0.1/plugins/ai-scheduler/ai-scheduler.zip"
         }
       ],
-      "updatedAt": "2026-11-11T06:35:13.000Z",
+      "updatedAt": "2026-11-11T07:39:30.000Z",
       "createdAt": "2026-11-11T06:35:13.000Z"
     }
   ]

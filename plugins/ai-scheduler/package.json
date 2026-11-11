@@ -1,6 +1,6 @@
 {
   "name": "ai-scheduler",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "AI 会话级定时任务台（宿主 Scheduler 域插件化迁移）",
   "scripts": {

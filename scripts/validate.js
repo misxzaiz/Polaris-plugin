@@ -26,6 +26,16 @@ if (!Array.isArray(index.plugins)) {
   process.exit(1)
 }
 
+// 插件 manifest 顶层字段白名单：严格对齐宿主 src-tauri/src/models/plugin.rs 的
+// PluginManifestFile（#[serde(deny_unknown_fields)]）。2026-11-11 B1-6 首发包多写
+// 了一个 author 字段，宿主 read_manifest 会直接报「manifest 格式错误」导致装不上；
+// 这里把契约前移到发布门禁，避免同类问题再进 CDN。全量扫描 plugins/ 目录，
+// 未上架插件也可能经 dev-link 安装，同样要过。
+const MANIFEST_TOP_LEVEL_FIELDS = new Set([
+  'id', 'name', 'version', 'description', 'enabledByDefault', 'core',
+  'manifestVersion', 'contributes', 'permissions', 'origin', 'compat',
+])
+
 const seenIds = new Set()
 for (const p of index.plugins) {
   const required = ['id', 'name', 'version', 'manifestUrl', 'downloadUrl', 'updateUrl']
@@ -78,6 +88,25 @@ for (const p of index.plugins) {
       if (u.id !== p.id) err(`${dirName}: update.json id(${u.id}) ≠ index.id(${p.id})`)
       if (u.version !== p.version) err(`${dirName}: update.json version(${u.version}) ≠ index.version(${p.version})`)
     } catch (e) { err(`${dirName}: update.json 解析失败: ${e.message}`) }
+  }
+}
+
+// 全量 manifest 顶层字段门禁（含未上架插件）
+const pluginsDir = path.join(root, 'plugins')
+for (const dirName of fs.readdirSync(pluginsDir)) {
+  const manifestPath = path.join(pluginsDir, dirName, 'plugin.json')
+  if (!fs.existsSync(manifestPath)) continue
+  let m
+  try {
+    m = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+  } catch (e) {
+    err(`${dirName}/plugin.json 解析失败: ${e.message}`)
+    continue
+  }
+  for (const key of Object.keys(m)) {
+    if (!MANIFEST_TOP_LEVEL_FIELDS.has(key)) {
+      err(`${dirName}/plugin.json 未知顶层字段 "${key}"（宿主 deny_unknown_fields 会拒绝安装）`)
+    }
   }
 }
 

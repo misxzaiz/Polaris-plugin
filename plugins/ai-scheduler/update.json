@@ -1,9 +1,8 @@
 {
   "id": "ai-scheduler",
   "name": "AI 定时任务",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AI 会话级定时任务台：到点自动构建提示词并驱动宿主 AI 引擎执行。支持 once/cron/interval/after_completion 四种触发、协议模式任务书（.polaris/tasks 文档驱动）、提示词模板、工作区绑定与执行历史。与轻量动作台 task-runner 分工：本插件执行的是宿主 AI 引擎会话（可在聊天界面看到执行过程），非一次性动作。",
-  "author": "quan",
   "enabledByDefault": true,
   "contributes": {
     "views": [
@@ -59,6 +58,6 @@
     "repository": "https://github.com/misxzaiz/Polaris-plugin",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/ai-scheduler",
     "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/ai-scheduler/update.json",
-    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ai-scheduler-v1.0.0/plugins/ai-scheduler/ai-scheduler.zip"
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@ai-scheduler-v1.0.1/plugins/ai-scheduler/ai-scheduler.zip"
   }
 }
