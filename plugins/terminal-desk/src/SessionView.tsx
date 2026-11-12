@@ -20,6 +20,7 @@ import { capTerminal, currentThemeId, listenTerminalExit, listenTerminalOutput, 
 import { decodeBase64ToBytes, encodeBase64 } from './model';
 import { getXtermTheme } from './xtermTheme';
 import { Icon } from './icons';
+import { ContextMenu, menuPointFromEvent, type MenuItem, type MenuPoint } from './Overlays';
 
 export interface SessionViewProps {
   sessionId: string;
@@ -39,6 +40,7 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
   const fitRef = useRef<FitAddon | null>(null);
   const searchRef = useRef<SearchAddon | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [canvasMenu, setCanvasMenu] = useState<{ point: MenuPoint; hasSelection: boolean } | null>(null);
 
   const onExitRef = useRef(onExit);
   onExitRef.current = onExit;
@@ -76,6 +78,15 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
 
     term.open(container);
     void fit.fit();
+
+    // 终端画布右键：用 capture 阶段挂在容器上，确保先于 xterm 自身的
+    // contextmenu handler（后者绑在内部元素上）拿到事件；preventDefault 屏蔽浏览器原生菜单。
+    // 坐标同样走面板坐标域换算，否则 contain:paint 下菜单会偏移/被裁。
+    const onCanvasContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+      setCanvasMenu({ point: menuPointFromEvent(e), hasSelection: !!term.getSelection() });
+    };
+    container.addEventListener('contextmenu', onCanvasContextMenu, true);
 
     const offOutput = listenTerminalOutput((event) => {
       if (event.sessionId !== sessionId) return;
@@ -122,16 +133,10 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
     });
     observer.observe(container);
 
-    const unregisterSearch = registerSearchRef.current?.(() => {
-      setSearchOpen(true);
-      window.setTimeout(() => {
-        const input = container.parentElement?.querySelector<HTMLInputElement>('.td-search-input');
-        input?.focus();
-        input?.select();
-      }, 30);
-    });
+    const unregisterSearch = registerSearchRef.current?.(() => setSearchOpen(true));
 
     return () => {
+      container.removeEventListener('contextmenu', onCanvasContextMenu, true);
       observer.disconnect();
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
       if (rafId) cancelAnimationFrame(rafId);
@@ -176,10 +181,61 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
     return () => window.clearTimeout(id);
   }, [visible]);
 
+  useEffect(() => {
+    if (!searchOpen) return;
+    const id = window.setTimeout(() => {
+      const input = containerRef.current?.parentElement?.querySelector<HTMLInputElement>('.td-search-input');
+      input?.focus();
+      input?.select();
+    }, 30);
+    return () => window.clearTimeout(id);
+  }, [searchOpen]);
+
   function closeSearch() {
     setSearchOpen(false);
     termRef.current?.focus();
   }
+
+  const canvasMenuItems = (hasSelection: boolean): Array<MenuItem | { separator: true }> => [
+    {
+      id: 'copy',
+      label: '复制',
+      icon: 'copy',
+      disabled: !hasSelection,
+      onSelect: () => {
+        const text = termRef.current?.getSelection();
+        if (text && navigator.clipboard) void navigator.clipboard.writeText(text).catch(() => {});
+      },
+    },
+    {
+      id: 'paste',
+      label: '粘贴',
+      icon: 'clipboard',
+      onSelect: () => {
+        const cb = navigator.clipboard;
+        if (!cb) return;
+        // paste() 会走 xterm 的 onData → cap.terminal write，保持与键盘输入同一条链路
+        void cb.readText().then((text) => {
+          if (text) termRef.current?.paste(text);
+        }).catch(() => {});
+      },
+    },
+    {
+      id: 'select-all',
+      label: '全选',
+      icon: 'select-all',
+      onSelect: () => termRef.current?.selectAll(),
+    },
+    { separator: true },
+    { id: 'find', label: '查找', icon: 'search', onSelect: () => setSearchOpen(true) },
+    {
+      id: 'clear',
+      label: '清屏',
+      icon: 'eraser',
+      // clear() 清当前视口、保留 scrollback；不用 reset()（会重置终端模式与标题）
+      onSelect: () => termRef.current?.clear(),
+    },
+  ];
 
   return (
     <div className="td-session-wrap">
@@ -195,6 +251,13 @@ export default function SessionView({ sessionId, visible, onExit, registerSearch
         />
       )}
       <div ref={containerRef} className="td-session" />
+      {canvasMenu && (
+        <ContextMenu
+          anchor={canvasMenu.point}
+          items={canvasMenuItems(canvasMenu.hasSelection)}
+          onClose={() => setCanvasMenu(null)}
+        />
+      )}
     </div>
   );
 }

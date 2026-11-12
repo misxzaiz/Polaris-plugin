@@ -8782,7 +8782,7 @@ var import_addon_fit = __toESM(require_addon_fit());
 var import_addon_web_links = __toESM(require_addon_web_links());
 var import_addon_search = __toESM(require_addon_search());
 var import_addon_webgl = __toESM(require_addon_webgl());
-import { useEffect, useRef, useState } from "react";
+import { useEffect as useEffect2, useRef as useRef2, useState as useState2 } from "react";
 
 // src/bridge.ts
 function globals() {
@@ -8957,6 +8957,11 @@ import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 var PATHS = {
   "chevron-down": /* @__PURE__ */ jsx("path", { d: "m6 9 6 6 6-6" }),
   "chevron-up": /* @__PURE__ */ jsx("path", { d: "m6 15 6-6 6 6" }),
+  // lucide Clipboard（画布右键「粘贴」）
+  clipboard: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("rect", { x: "8", y: "2", width: "8", height: "4", rx: "1" }),
+    /* @__PURE__ */ jsx("path", { d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" })
+  ] }),
   close: /* @__PURE__ */ jsx("path", { d: "M18 6 6 18M6 6l12 12" }),
   columns: /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
@@ -8978,6 +8983,10 @@ var PATHS = {
     /* @__PURE__ */ jsx("path", { d: "M14 3h7v7M21 3l-9 9" }),
     /* @__PURE__ */ jsx("path", { d: "M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" })
   ] }),
+  eraser: /* @__PURE__ */ jsxs(Fragment, { children: [
+    /* @__PURE__ */ jsx("path", { d: "m7 21-4.3-4.3a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21" }),
+    /* @__PURE__ */ jsx("path", { d: "M22 21H7M5 11l9 9" })
+  ] }),
   "eye-off": /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx("path", { d: "M3 3l18 18" }),
     /* @__PURE__ */ jsx("path", { d: "M10.6 10.6a2 2 0 0 0 2.8 2.8" }),
@@ -8995,6 +9004,7 @@ var PATHS = {
     /* @__PURE__ */ jsx("circle", { cx: "11", cy: "11", r: "7" }),
     /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
   ] }),
+  "select-all": /* @__PURE__ */ jsx("path", { d: "M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" }),
   square: /* @__PURE__ */ jsx("rect", { x: "5", y: "5", width: "14", height: "14", rx: "1.5" }),
   // 对齐 lucide Terminal：无外框的提示符折线 + 光标横线。
   // 旧版自带矩形窗口外框，与宿主其余线性图标的视觉重量不一致。
@@ -9030,20 +9040,150 @@ function Icon({ name, size = 14, className }) {
   );
 }
 
-// src/SessionView.tsx
+// src/Overlays.tsx
+import { useEffect, useRef, useState } from "react";
 import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
+function menuPointFromEvent(e) {
+  const target = e.target instanceof HTMLElement ? e.target : null;
+  const domain = target?.closest("[data-panel-coordinate-domain]") ?? null;
+  const rect = domain?.getBoundingClientRect();
+  return {
+    x: e.clientX - (rect?.left ?? 0),
+    y: e.clientY - (rect?.top ?? 0),
+    width: rect?.width ?? (typeof window !== "undefined" ? window.innerWidth : 1200),
+    height: rect?.height ?? (typeof window !== "undefined" ? window.innerHeight : 800)
+  };
+}
+function ContextMenu({ anchor, items, onClose }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const onDown = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) onClose();
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener("mousedown", onDown, true);
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("mousedown", onDown, true);
+      window.removeEventListener("keydown", onKey, true);
+    };
+  }, [onClose]);
+  const menuWidth = 196;
+  const menuHeight = items.length * 30 + 8;
+  const left = Math.max(4, Math.min(anchor.x, Math.max(4, anchor.width - menuWidth - 4)));
+  const top = Math.max(4, Math.min(anchor.y, Math.max(4, anchor.height - menuHeight - 4)));
+  return /* @__PURE__ */ jsx2("div", { ref, className: "td-menu", style: { left, top }, role: "menu", children: items.map(
+    (item, i) => "separator" in item ? /* @__PURE__ */ jsx2("div", { className: "td-menu-sep" }, `sep-${i}`) : /* @__PURE__ */ jsxs2(
+      "button",
+      {
+        type: "button",
+        role: "menuitem",
+        className: `td-menu-item${item.danger ? " td-menu-danger" : ""}`,
+        disabled: item.disabled,
+        onClick: () => {
+          onClose();
+          item.onSelect();
+        },
+        children: [
+          item.icon && /* @__PURE__ */ jsx2(Icon, { name: item.icon, size: 13 }),
+          /* @__PURE__ */ jsx2("span", { children: item.label })
+        ]
+      },
+      item.id
+    )
+  ) });
+}
+function ConfirmDialog({
+  title,
+  message,
+  detail,
+  confirmText = "\u786E\u8BA4",
+  danger = true,
+  onConfirm,
+  onCancel
+}) {
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        onCancel();
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [onCancel]);
+  return /* @__PURE__ */ jsx2("div", { className: "td-modal-mask", role: "presentation", onMouseDown: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ jsxs2("div", { className: "td-dialog", role: "dialog", "aria-modal": "true", "aria-label": title, children: [
+    /* @__PURE__ */ jsxs2("div", { className: "td-dialog-title", children: [
+      danger && /* @__PURE__ */ jsx2(Icon, { name: "alert", size: 15 }),
+      /* @__PURE__ */ jsx2("span", { children: title })
+    ] }),
+    /* @__PURE__ */ jsxs2("div", { className: "td-dialog-body", children: [
+      /* @__PURE__ */ jsx2("div", { children: message }),
+      detail && /* @__PURE__ */ jsx2("code", { className: "td-dialog-detail", children: detail })
+    ] }),
+    /* @__PURE__ */ jsxs2("div", { className: "td-dialog-actions", children: [
+      /* @__PURE__ */ jsx2("button", { className: "td-btn", onClick: onCancel, children: "\u53D6\u6D88" }),
+      /* @__PURE__ */ jsx2("button", { className: `td-btn${danger ? " td-btn-danger" : " td-btn-primary"}`, onClick: onConfirm, autoFocus: true, children: confirmText })
+    ] })
+  ] }) });
+}
+function ImportDialog({ onImport, onCancel }) {
+  const [text, setText] = useState("");
+  return /* @__PURE__ */ jsx2("div", { className: "td-modal-mask", role: "presentation", onMouseDown: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ jsxs2("div", { className: "td-dialog td-dialog-wide", role: "dialog", "aria-modal": "true", "aria-label": "\u5BFC\u5165\u65E7\u7EC8\u7AEF\u811A\u672C", children: [
+    /* @__PURE__ */ jsxs2("div", { className: "td-dialog-title", children: [
+      /* @__PURE__ */ jsx2(Icon, { name: "download", size: 15 }),
+      /* @__PURE__ */ jsx2("span", { children: "\u5BFC\u5165\u5185\u7F6E\u7EC8\u7AEF\u811A\u672C" })
+    ] }),
+    /* @__PURE__ */ jsxs2("div", { className: "td-dialog-body", children: [
+      /* @__PURE__ */ jsxs2("div", { children: [
+        "\u7C98\u8D34\u4E3B\u4ED3 ",
+        /* @__PURE__ */ jsx2("code", { children: "config.json" }),
+        " \u5168\u6587\uFF0C\u6216\u5176\u4E2D\u7684 ",
+        /* @__PURE__ */ jsx2("code", { children: "terminalScripts" }),
+        " \u7247\u6BB5\u3002 \u4EC5\u5BFC\u5165\u81EA\u5B9A\u4E49\u811A\u672C\uFF08",
+        /* @__PURE__ */ jsx2("code", { children: 'source: "user"' }),
+        "\uFF09\uFF0C\u9879\u76EE\u811A\u672C\u7531\u5DE5\u4F5C\u533A\u81EA\u52A8\u53D1\u73B0\uFF1B\u91CD\u590D\u5BFC\u5165\u4E0D\u4F1A\u65B0\u589E\u526F\u672C\u3002"
+      ] }),
+      /* @__PURE__ */ jsx2(
+        "textarea",
+        {
+          className: "td-textarea",
+          value: text,
+          onChange: (e) => setText(e.target.value),
+          placeholder: '{ "terminalScripts": { "D:/repo": { "scripts": [ ... ] } } }',
+          rows: 8,
+          autoFocus: true
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxs2("div", { className: "td-dialog-actions", children: [
+      /* @__PURE__ */ jsx2("button", { className: "td-btn", onClick: onCancel, children: "\u53D6\u6D88" }),
+      /* @__PURE__ */ jsx2("button", { className: "td-btn td-btn-primary", disabled: !text.trim(), onClick: () => onImport(text), children: "\u89E3\u6790\u5E76\u5BFC\u5165" })
+    ] })
+  ] }) });
+}
+
+// src/SessionView.tsx
+import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 var FONT_FAMILY = 'Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", "Courier New", monospace';
 function SessionView({ sessionId, visible, onExit, registerSearch }) {
-  const containerRef = useRef(null);
-  const termRef = useRef(null);
-  const fitRef = useRef(null);
-  const searchRef = useRef(null);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const onExitRef = useRef(onExit);
+  const containerRef = useRef2(null);
+  const termRef = useRef2(null);
+  const fitRef = useRef2(null);
+  const searchRef = useRef2(null);
+  const [searchOpen, setSearchOpen] = useState2(false);
+  const [canvasMenu, setCanvasMenu] = useState2(null);
+  const onExitRef = useRef2(onExit);
   onExitRef.current = onExit;
-  const registerSearchRef = useRef(registerSearch);
+  const registerSearchRef = useRef2(registerSearch);
   registerSearchRef.current = registerSearch;
-  useEffect(() => {
+  useEffect2(() => {
     const container = containerRef.current;
     if (!container) return;
     const term = new import_xterm.Terminal({
@@ -9070,6 +9210,11 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
     }
     term.open(container);
     void fit.fit();
+    const onCanvasContextMenu = (e) => {
+      e.preventDefault();
+      setCanvasMenu({ point: menuPointFromEvent(e), hasSelection: !!term.getSelection() });
+    };
+    container.addEventListener("contextmenu", onCanvasContextMenu, true);
     const offOutput = listenTerminalOutput((event) => {
       if (event.sessionId !== sessionId) return;
       term.write(decodeBase64ToBytes(event.data));
@@ -9108,15 +9253,9 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
       });
     });
     observer.observe(container);
-    const unregisterSearch = registerSearchRef.current?.(() => {
-      setSearchOpen(true);
-      window.setTimeout(() => {
-        const input = container.parentElement?.querySelector(".td-search-input");
-        input?.focus();
-        input?.select();
-      }, 30);
-    });
+    const unregisterSearch = registerSearchRef.current?.(() => setSearchOpen(true));
     return () => {
+      container.removeEventListener("contextmenu", onCanvasContextMenu, true);
       observer.disconnect();
       if (resizeTimer !== null) window.clearTimeout(resizeTimer);
       if (rafId) cancelAnimationFrame(rafId);
@@ -9136,13 +9275,13 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
       if (searchRef.current === search) searchRef.current = null;
     };
   }, [sessionId]);
-  useEffect(
+  useEffect2(
     () => onThemeChanged(() => {
       if (termRef.current) termRef.current.options.theme = getXtermTheme(currentThemeId());
     }),
     []
   );
-  useEffect(() => {
+  useEffect2(() => {
     if (!visible) return;
     const id = window.setTimeout(() => {
       try {
@@ -9152,12 +9291,62 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
     }, 60);
     return () => window.clearTimeout(id);
   }, [visible]);
+  useEffect2(() => {
+    if (!searchOpen) return;
+    const id = window.setTimeout(() => {
+      const input = containerRef.current?.parentElement?.querySelector(".td-search-input");
+      input?.focus();
+      input?.select();
+    }, 30);
+    return () => window.clearTimeout(id);
+  }, [searchOpen]);
   function closeSearch() {
     setSearchOpen(false);
     termRef.current?.focus();
   }
-  return /* @__PURE__ */ jsxs2("div", { className: "td-session-wrap", children: [
-    searchOpen && /* @__PURE__ */ jsx2(
+  const canvasMenuItems = (hasSelection) => [
+    {
+      id: "copy",
+      label: "\u590D\u5236",
+      icon: "copy",
+      disabled: !hasSelection,
+      onSelect: () => {
+        const text = termRef.current?.getSelection();
+        if (text && navigator.clipboard) void navigator.clipboard.writeText(text).catch(() => {
+        });
+      }
+    },
+    {
+      id: "paste",
+      label: "\u7C98\u8D34",
+      icon: "clipboard",
+      onSelect: () => {
+        const cb = navigator.clipboard;
+        if (!cb) return;
+        void cb.readText().then((text) => {
+          if (text) termRef.current?.paste(text);
+        }).catch(() => {
+        });
+      }
+    },
+    {
+      id: "select-all",
+      label: "\u5168\u9009",
+      icon: "select-all",
+      onSelect: () => termRef.current?.selectAll()
+    },
+    { separator: true },
+    { id: "find", label: "\u67E5\u627E", icon: "search", onSelect: () => setSearchOpen(true) },
+    {
+      id: "clear",
+      label: "\u6E05\u5C4F",
+      icon: "eraser",
+      // clear() 清当前视口、保留 scrollback；不用 reset()（会重置终端模式与标题）
+      onSelect: () => termRef.current?.clear()
+    }
+  ];
+  return /* @__PURE__ */ jsxs3("div", { className: "td-session-wrap", children: [
+    searchOpen && /* @__PURE__ */ jsx3(
       SearchBar,
       {
         onSearch: (text, opts) => {
@@ -9169,18 +9358,26 @@ function SessionView({ sessionId, visible, onExit, registerSearch }) {
         onClose: closeSearch
       }
     ),
-    /* @__PURE__ */ jsx2("div", { ref: containerRef, className: "td-session" })
+    /* @__PURE__ */ jsx3("div", { ref: containerRef, className: "td-session" }),
+    canvasMenu && /* @__PURE__ */ jsx3(
+      ContextMenu,
+      {
+        anchor: canvasMenu.point,
+        items: canvasMenuItems(canvasMenu.hasSelection),
+        onClose: () => setCanvasMenu(null)
+      }
+    )
   ] });
 }
 function SearchBar({
   onSearch,
   onClose
 }) {
-  const [text, setText] = useState("");
-  const [caseSensitive, setCaseSensitive] = useState(false);
-  return /* @__PURE__ */ jsxs2("div", { className: "td-searchbar", children: [
-    /* @__PURE__ */ jsx2(Icon, { name: "search", size: 13 }),
-    /* @__PURE__ */ jsx2(
+  const [text, setText] = useState2("");
+  const [caseSensitive, setCaseSensitive] = useState2(false);
+  return /* @__PURE__ */ jsxs3("div", { className: "td-searchbar", children: [
+    /* @__PURE__ */ jsx3(Icon, { name: "search", size: 13 }),
+    /* @__PURE__ */ jsx3(
       "input",
       {
         className: "td-search-input td-input",
@@ -9198,147 +9395,16 @@ function SearchBar({
         }
       }
     ),
-    /* @__PURE__ */ jsxs2("label", { className: "td-check", children: [
-      /* @__PURE__ */ jsx2("input", { type: "checkbox", checked: caseSensitive, onChange: (e) => setCaseSensitive(e.target.checked) }),
+    /* @__PURE__ */ jsxs3("label", { className: "td-check", children: [
+      /* @__PURE__ */ jsx3("input", { type: "checkbox", checked: caseSensitive, onChange: (e) => setCaseSensitive(e.target.checked) }),
       "\u533A\u5206\u5927\u5C0F\u5199"
     ] }),
-    /* @__PURE__ */ jsx2("button", { className: "td-iconbtn", onClick: onClose, title: "\u5173\u95ED\u641C\u7D22", "aria-label": "\u5173\u95ED\u641C\u7D22", children: /* @__PURE__ */ jsx2(Icon, { name: "close", size: 12 }) })
+    /* @__PURE__ */ jsx3("button", { className: "td-iconbtn", onClick: onClose, title: "\u5173\u95ED\u641C\u7D22", "aria-label": "\u5173\u95ED\u641C\u7D22", children: /* @__PURE__ */ jsx3(Icon, { name: "close", size: 12 }) })
   ] });
 }
 
 // src/ScriptCenter.tsx
 import { useCallback, useEffect as useEffect3, useMemo, useState as useState3 } from "react";
-
-// src/Overlays.tsx
-import { useEffect as useEffect2, useRef as useRef2, useState as useState2 } from "react";
-import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
-function menuPointFromEvent(e) {
-  const target = e.target instanceof HTMLElement ? e.target : null;
-  const domain = target?.closest("[data-panel-coordinate-domain]") ?? null;
-  const rect = domain?.getBoundingClientRect();
-  return {
-    x: e.clientX - (rect?.left ?? 0),
-    y: e.clientY - (rect?.top ?? 0),
-    width: rect?.width ?? (typeof window !== "undefined" ? window.innerWidth : 1200),
-    height: rect?.height ?? (typeof window !== "undefined" ? window.innerHeight : 800)
-  };
-}
-function ContextMenu({ anchor, items, onClose }) {
-  const ref = useRef2(null);
-  useEffect2(() => {
-    const onDown = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    };
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        onClose();
-      }
-    };
-    window.addEventListener("mousedown", onDown, true);
-    window.addEventListener("keydown", onKey, true);
-    return () => {
-      window.removeEventListener("mousedown", onDown, true);
-      window.removeEventListener("keydown", onKey, true);
-    };
-  }, [onClose]);
-  const menuWidth = 196;
-  const menuHeight = items.length * 30 + 8;
-  const left = Math.max(4, Math.min(anchor.x, Math.max(4, anchor.width - menuWidth - 4)));
-  const top = Math.max(4, Math.min(anchor.y, Math.max(4, anchor.height - menuHeight - 4)));
-  return /* @__PURE__ */ jsx3("div", { ref, className: "td-menu", style: { left, top }, role: "menu", children: items.map(
-    (item, i) => "separator" in item ? /* @__PURE__ */ jsx3("div", { className: "td-menu-sep" }, `sep-${i}`) : /* @__PURE__ */ jsxs3(
-      "button",
-      {
-        type: "button",
-        role: "menuitem",
-        className: `td-menu-item${item.danger ? " td-menu-danger" : ""}`,
-        disabled: item.disabled,
-        onClick: () => {
-          onClose();
-          item.onSelect();
-        },
-        children: [
-          item.icon && /* @__PURE__ */ jsx3(Icon, { name: item.icon, size: 13 }),
-          /* @__PURE__ */ jsx3("span", { children: item.label })
-        ]
-      },
-      item.id
-    )
-  ) });
-}
-function ConfirmDialog({
-  title,
-  message,
-  detail,
-  confirmText = "\u786E\u8BA4",
-  danger = true,
-  onConfirm,
-  onCancel
-}) {
-  useEffect2(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        onCancel();
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [onCancel]);
-  return /* @__PURE__ */ jsx3("div", { className: "td-modal-mask", role: "presentation", onMouseDown: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ jsxs3("div", { className: "td-dialog", role: "dialog", "aria-modal": "true", "aria-label": title, children: [
-    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-title", children: [
-      danger && /* @__PURE__ */ jsx3(Icon, { name: "alert", size: 15 }),
-      /* @__PURE__ */ jsx3("span", { children: title })
-    ] }),
-    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-body", children: [
-      /* @__PURE__ */ jsx3("div", { children: message }),
-      detail && /* @__PURE__ */ jsx3("code", { className: "td-dialog-detail", children: detail })
-    ] }),
-    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-actions", children: [
-      /* @__PURE__ */ jsx3("button", { className: "td-btn", onClick: onCancel, children: "\u53D6\u6D88" }),
-      /* @__PURE__ */ jsx3("button", { className: `td-btn${danger ? " td-btn-danger" : " td-btn-primary"}`, onClick: onConfirm, autoFocus: true, children: confirmText })
-    ] })
-  ] }) });
-}
-function ImportDialog({ onImport, onCancel }) {
-  const [text, setText] = useState2("");
-  return /* @__PURE__ */ jsx3("div", { className: "td-modal-mask", role: "presentation", onMouseDown: (e) => e.target === e.currentTarget && onCancel(), children: /* @__PURE__ */ jsxs3("div", { className: "td-dialog td-dialog-wide", role: "dialog", "aria-modal": "true", "aria-label": "\u5BFC\u5165\u65E7\u7EC8\u7AEF\u811A\u672C", children: [
-    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-title", children: [
-      /* @__PURE__ */ jsx3(Icon, { name: "download", size: 15 }),
-      /* @__PURE__ */ jsx3("span", { children: "\u5BFC\u5165\u5185\u7F6E\u7EC8\u7AEF\u811A\u672C" })
-    ] }),
-    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-body", children: [
-      /* @__PURE__ */ jsxs3("div", { children: [
-        "\u7C98\u8D34\u4E3B\u4ED3 ",
-        /* @__PURE__ */ jsx3("code", { children: "config.json" }),
-        " \u5168\u6587\uFF0C\u6216\u5176\u4E2D\u7684 ",
-        /* @__PURE__ */ jsx3("code", { children: "terminalScripts" }),
-        " \u7247\u6BB5\u3002 \u4EC5\u5BFC\u5165\u81EA\u5B9A\u4E49\u811A\u672C\uFF08",
-        /* @__PURE__ */ jsx3("code", { children: 'source: "user"' }),
-        "\uFF09\uFF0C\u9879\u76EE\u811A\u672C\u7531\u5DE5\u4F5C\u533A\u81EA\u52A8\u53D1\u73B0\uFF1B\u91CD\u590D\u5BFC\u5165\u4E0D\u4F1A\u65B0\u589E\u526F\u672C\u3002"
-      ] }),
-      /* @__PURE__ */ jsx3(
-        "textarea",
-        {
-          className: "td-textarea",
-          value: text,
-          onChange: (e) => setText(e.target.value),
-          placeholder: '{ "terminalScripts": { "D:/repo": { "scripts": [ ... ] } } }',
-          rows: 8,
-          autoFocus: true
-        }
-      )
-    ] }),
-    /* @__PURE__ */ jsxs3("div", { className: "td-dialog-actions", children: [
-      /* @__PURE__ */ jsx3("button", { className: "td-btn", onClick: onCancel, children: "\u53D6\u6D88" }),
-      /* @__PURE__ */ jsx3("button", { className: "td-btn td-btn-primary", disabled: !text.trim(), onClick: () => onImport(text), children: "\u89E3\u6790\u5E76\u5BFC\u5165" })
-    ] })
-  ] }) });
-}
-
-// src/ScriptCenter.tsx
 init_model();
 import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
 function draftFromScript(script) {

@@ -263,3 +263,17 @@ test('右键菜单：脚本项覆盖内置终端的复制命令与重跑语义',
   assert.match(src, /label: running \? '重新运行' : '运行'/);
   assert.match(src, /label: '在外部终端运行'/);
 });
+
+test('终端画布右键菜单：capture 屏蔽原生菜单、坐标域换算、清理监听', () => {
+  const src = readSrc('SessionView.tsx');
+  assert.match(src, /addEventListener\('contextmenu', onCanvasContextMenu, true\)/);
+  assert.match(src, /removeEventListener\('contextmenu', onCanvasContextMenu, true\)/);
+  assert.match(src, /menuPointFromEvent\(e\)/);
+  assert.match(src, /e\.preventDefault\(\)/);
+  for (const label of ['复制', '粘贴', '全选', '查找', '清屏']) {
+    assert.ok(src.includes(`label: '${label}'`), `缺画布菜单项：${label}`);
+  }
+  assert.match(src, /\.paste\(text\)/, '粘贴必须走 xterm paste → onData 链路');
+  assert.match(src, /\.clear\(\)/, '清屏用 clear 而非 reset');
+  assert.doesNotMatch(src, /\.reset\(\)/, 'reset 会重置终端模式与标题，不可用');
+});

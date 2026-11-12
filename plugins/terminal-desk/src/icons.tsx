@@ -6,11 +6,13 @@
 export type IconName =
   | 'chevron-down'
   | 'chevron-up'
+  | 'clipboard'
   | 'close'
   | 'columns'
   | 'copy'
   | 'download'
   | 'edit'
+  | 'eraser'
   | 'external'
   | 'eye-off'
   | 'maximize'
@@ -19,6 +21,7 @@ export type IconName =
   | 'plus'
   | 'refresh'
   | 'search'
+  | 'select-all'
   | 'square'
   | 'terminal'
   | 'trash'
@@ -28,6 +31,13 @@ export type IconName =
 const PATHS: Record<IconName, JSX.Element> = {
   'chevron-down': <path d="m6 9 6 6 6-6" />,
   'chevron-up': <path d="m6 15 6-6 6 6" />,
+  // lucide Clipboard（画布右键「粘贴」）
+  clipboard: (
+    <>
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    </>
+  ),
   close: <path d="M18 6 6 18M6 6l12 12" />,
   columns: (
     <>
@@ -59,6 +69,12 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
     </>
   ),
+  eraser: (
+    <>
+      <path d="m7 21-4.3-4.3a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21" />
+      <path d="M22 21H7M5 11l9 9" />
+    </>
+  ),
   'eye-off': (
     <>
       <path d="M3 3l18 18" />
@@ -81,6 +97,9 @@ const PATHS: Record<IconName, JSX.Element> = {
       <circle cx="11" cy="11" r="7" />
       <path d="m20 20-3.5-3.5" />
     </>
+  ),
+  'select-all': (
+    <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
   ),
   square: <rect x="5" y="5" width="14" height="14" rx="1.5" />,
   // 对齐 lucide Terminal：无外框的提示符折线 + 光标横线。

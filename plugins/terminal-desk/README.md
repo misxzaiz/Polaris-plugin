@@ -42,7 +42,7 @@ Polaris 终端工作台插件。PTY 由宿主 `cap.terminal` 能力提供（端�
 ```bash
 pnpm i               # 安装依赖（xterm 族 + esbuild + typescript）
 npm run typecheck    # tsc --noEmit
-npm test             # node --test：纯逻辑核 20 项 + MCP stdio 2 项（离线 hermetic）
+npm test             # node --test：纯逻辑核 21 项 + MCP stdio 2 项（离线 hermetic）
 npm run build        # esbuild → dist/panel.js；按 styles[].id 幂等同步 CSS 到 plugin.json / update.json
 npm run check:styles # 样式门禁：变量必须存在于宿主 token 表、border 带 alpha、禁硬编码色值、排版/圆角/窗口透明度走宿主 token
 npm run check        # 以上四步一次跑完，提交前门禁
@@ -60,7 +60,21 @@ npm run check        # 以上四步一次跑完，提交前门禁
 2. **脚本菜单对齐内置**：补回「复制命令」，运行项在脚本运行中显示「重新运行」（内置第三项语义，内置实现里与「运行」同指 `runScript`，故不新增重复按钮）。
 3. **「土」的结构性原因**：上一轮修的是 token 名写错 / 纯白描边 / Unicode 图标这些**失效错误**；剩下的是**设计语言没对齐宿主**——插件自带 Consolas + 私有 sans 栈、5/6/7/10px 自由圆角、边框 alpha 全用宿主的 `border-subtle(0.08)`、背景不复合 `--window-opacity`、全表零 transition、无 focus 环、三层头部同色平铺。现统一改用 `--font-sans` / `--font-mono` / `--radius-*` / `--transition-fast`，主分隔线回到宿主 `border(0.15)`，背景复合窗口透明度，激活标签加 accent 顶线，并补 0.15s 过渡 / focus-visible / 按压反馈 / 细化滚动条。`scripts/check-styles.mjs` 增加对应门禁，防止回退。
 
-真组件浏览器冒烟（模拟宿主坐标域 + 明暗主题 + 200/360/600px）：**31/31 通过**。
+真组件浏览器冒烟（模拟宿主坐标域 + 明暗主题 + 200/360/600px）：**36/36 通过**。
+
+## 终端画布右键菜单（内置终端也没有）
+
+`SessionView.tsx` 在 xterm 容器上用 **capture 阶段**的原生 `contextmenu` 监听（先于 xterm 自身绑在内部元素上的 handler），`preventDefault` 屏蔽浏览器原生菜单，坐标同样走 `menuPointFromEvent()` 换算。菜单项：
+
+| 项 | 行为 |
+|---|---|
+| 复制 | `term.getSelection()` → `navigator.clipboard.writeText`；无选区时禁用 |
+| 粘贴 | `clipboard.readText()` → `term.paste()`，经 `onData` → `cap.terminal write`，与键盘输入同一条链路 |
+| 全选 | `term.selectAll()` |
+| 查找 | 复用已有 `SearchAddon` 搜索条并自动聚焦 |
+| 清屏 | `term.clear()`，清视口但保留 scrollback；**不用** `reset()`（会重置终端模式与标题） |
+
+卸载时移除监听，避免会话切换后残留。内置终端的画布区域右键是浏览器默认菜单，插件侧此项为净增能力，不依赖宿主改动。
 
 ## 发布状态
 
