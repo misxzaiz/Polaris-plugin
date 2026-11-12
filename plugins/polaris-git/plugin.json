@@ -56,8 +56,7 @@
         "argsTemplate": [
           "{{pluginDir}}/mcp/server.js",
           "{{appConfigDir}}"
-        ],
-        "description": "Git 工具集：仓库/状态/diff/历史/分支/远程/标签/Stash/变基/冲突/Undo 等 77 个 action，经插件服务执行"
+        ]
       }
     ],
     "uiSlots": [
