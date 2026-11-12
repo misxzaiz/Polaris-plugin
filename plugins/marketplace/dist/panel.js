@@ -176,6 +176,50 @@ async function proxyFetchIndex(url) {
   if (!parsed.data || !Array.isArray(parsed.data.plugins)) throw new Error("proxy_fetch \u8FD4\u56DE\u7684\u7D22\u5F15\u683C\u5F0F\u65E0\u6548");
   return parsed.data;
 }
+async function dispatchCap(target, action, payload = {}) {
+  let res;
+  try {
+    res = await getInvoke()("router_dispatch", {
+      req: { target, payload: { action, ...payload } }
+    });
+  } catch (e) {
+    throw new Error(humanizeError(e));
+  }
+  if (!res.ok) throw new Error(res.error ? humanizeError(res.error) : `${target} ${action} \u5931\u8D25`);
+  return res.result || {};
+}
+async function getPluginStates() {
+  try {
+    return await dispatchCap("cap.pluginState", "get_states");
+  } catch {
+    return {};
+  }
+}
+async function listServiceStatus() {
+  try {
+    const res = await dispatchCap("cap.pluginServiceManager", "list_status");
+    return Array.isArray(res) ? res : [];
+  } catch {
+    return [];
+  }
+}
+async function serviceAction(action, pluginId, serviceId) {
+  return await dispatchCap("cap.pluginServiceManager", action, { pluginId, serviceId });
+}
+function listenServiceStatus(handler) {
+  const g = window;
+  if (typeof g.__POLARIS_HOST_LISTEN__ !== "function") return () => {
+  };
+  try {
+    return g.__POLARIS_HOST_LISTEN__("plugin.service.status", (payload) => {
+      const s2 = payload;
+      if (s2 && typeof s2.pluginId === "string" && typeof s2.serviceId === "string") handler(s2);
+    });
+  } catch {
+    return () => {
+    };
+  }
+}
 async function dispatchPluginDiscovery(action, payload) {
   let res;
   try {
@@ -219,6 +263,22 @@ async function uninstallPlugin(installPath, pluginId) {
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
+}
+async function forceUninstallPlugin(installPath) {
+  try {
+    return await dispatchPluginDiscovery("force_uninstall", { installPath });
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+async function precheckUninstall(p) {
+  const all = await listServiceStatus();
+  return {
+    allServices: all.filter((s2) => s2.pluginId === p.id),
+    runningServices: all.filter((s2) => s2.pluginId === p.id && (s2.state === "running" || s2.state === "starting")),
+    isDev: !!p.dev,
+    isCore: !!p.core
+  };
 }
 async function checkUpdate(installPath) {
   try {
@@ -347,6 +407,107 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const [updates, setUpdates] = useState({});
   const [opLoading, setOpLoading] = useState(null);
   const [opMsg, setOpMsg] = useState(null);
+  const [view, setView] = useState("market");
+  const [pluginStates, setPluginStates] = useState({});
+  const [serviceStatuses, setServiceStatuses] = useState({});
+  const [expanded, setExpanded] = useState(/* @__PURE__ */ new Set());
+  const [mgmtQuery, setMgmtQuery] = useState("");
+  const [mgmtFilter, setMgmtFilter] = useState("all");
+  const [confirmTarget, setConfirmTarget] = useState(null);
+  const [mgmtMsg, setMgmtMsg] = useState(null);
+  const svcKey = (s2) => `${s2.pluginId}::${s2.serviceId}`;
+  const loadMgmtData = useCallback(async () => {
+    const [states, statuses] = await Promise.all([getPluginStates(), listServiceStatus()]);
+    setPluginStates(states);
+    setServiceStatuses((prev) => {
+      const next = { ...prev };
+      for (const s2 of statuses) next[svcKey(s2)] = s2;
+      for (const k of Object.keys(prev)) {
+        const v = prev[k];
+        const transit = v.state === "starting" || v.state === "stopping";
+        if (transit && next[k] && next[k].state === v.state) {
+          next[k] = v;
+        }
+      }
+      return next;
+    });
+  }, []);
+  useEffect(() => {
+    void loadMgmtData();
+  }, [loadMgmtData]);
+  useEffect(() => {
+    const un = listenServiceStatus((status) => {
+      setServiceStatuses((prev) => ({ ...prev, [svcKey(status)]: status }));
+    });
+    return () => {
+      un();
+    };
+  }, []);
+  const isEnabled = useCallback((p) => {
+    const rec = pluginStates[p.id];
+    if (rec) return rec.enabled;
+    return p.enabledByDefault !== false;
+  }, [pluginStates]);
+  const handleToggleEnabled = useCallback(async (p, enabled) => {
+    const next = {
+      ...pluginStates,
+      [p.id]: { ...pluginStates[p.id] ?? { enabled: isEnabled(p) }, enabled }
+    };
+    setPluginStates(next);
+    try {
+      await setPluginStates(next);
+      setMgmtMsg(`\u2713 ${p.name} \u5DF2${enabled ? "\u542F\u7528" : "\u505C\u7528"}\uFF08\u670D\u52A1\u8054\u52A8\u7531\u5BBF\u4E3B\u6267\u884C\uFF09`);
+    } catch (e) {
+      setPluginStates(pluginStates);
+      setMgmtMsg(`\u2717 ${p.name} \u72B6\u6001\u5199\u5165\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`);
+    }
+  }, [pluginStates, isEnabled]);
+  const handleToggleUi = useCallback(async (p, uiEnabled) => {
+    const prev = pluginStates[p.id] ?? { enabled: isEnabled(p) };
+    const next = {
+      ...pluginStates,
+      [p.id]: { ...prev, uiEnabled }
+    };
+    setPluginStates(next);
+    try {
+      await setPluginStates(next);
+      setMgmtMsg(`\u2713 ${p.name} UI \u9762\u5DF2${uiEnabled ? "\u663E\u793A" : "\u9690\u85CF"}`);
+    } catch (e) {
+      setPluginStates(pluginStates);
+      setMgmtMsg(`\u2717 ${p.name} \u72B6\u6001\u5199\u5165\u5931\u8D25\uFF1A${e instanceof Error ? e.message : String(e)}`);
+    }
+  }, [pluginStates, isEnabled]);
+  const handleServiceAction = useCallback(async (pluginId, pluginName, serviceId, action) => {
+    const key = `${pluginId}::${serviceId}`;
+    setOpLoading(`svc-${key}-${action}`);
+    setMgmtMsg(null);
+    try {
+      const status = await serviceAction(action, pluginId, serviceId);
+      setServiceStatuses((prev) => ({ ...prev, [svcKey(status)]: status }));
+      setMgmtMsg(`\u2713 ${pluginName}/${serviceId} ${action === "stop" ? "\u5DF2\u505C\u6B62" : action === "restart" ? "\u5DF2\u91CD\u542F" : "\u5DF2\u542F\u52A8"}\uFF08${status.state}${status.port ? ` :${status.port}` : ""}\uFF09`);
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e);
+      const hint = /not registered|未注册/i.test(raw) ? "\uFF08\u670D\u52A1\u672A\u6CE8\u518C\uFF1A\u8BF7\u5237\u65B0\u63D2\u4EF6\u5217\u8868\u6216\u91CD\u5F00\u5E94\u7528\u540E\u91CD\u8BD5\uFF09" : "";
+      setMgmtMsg(`\u2717 ${pluginName}/${serviceId} ${action} \u5931\u8D25\uFF1A${raw}${hint}`);
+    } finally {
+      setOpLoading(null);
+    }
+  }, []);
+  const requestUninstall = useCallback(async (p) => {
+    if (!p.installPath) return;
+    setMgmtMsg(null);
+    let impact;
+    try {
+      impact = await precheckUninstall(p);
+    } catch {
+      impact = { runningServices: [], allServices: [], isDev: !!p.dev, isCore: !!p.core };
+    }
+    if (impact.isCore) {
+      setMgmtMsg(`\u2717 ${p.name} \u662F\u6838\u5FC3\u901A\u9053\u63D2\u4EF6\uFF0C\u4E0D\u53EF\u5378\u8F7D`);
+      return;
+    }
+    setConfirmTarget({ plugin: p, impact });
+  }, []);
   const loadIndex = useCallback(async (sourceId) => {
     const sid = sourceId ?? getActiveSourceId();
     const src = getSources().find((s2) => s2.id === sid) || getSources()[0];
@@ -429,16 +590,59 @@ function MarketplacePanel({ pluginId: _pluginId }) {
       setILoading(false);
     }
   }, []);
+  const refreshAfterOp = useCallback(async () => {
+    await loadInstalled();
+    setUpdates({});
+  }, [loadInstalled]);
   useEffect(() => {
     loadIndex();
   }, [loadIndex]);
   useEffect(() => {
     loadInstalled();
   }, [loadInstalled]);
-  const refreshAfterOp = useCallback(async () => {
-    await loadInstalled();
-    setUpdates({});
-  }, [loadInstalled]);
+  const executeUninstall = useCallback(async (p) => {
+    if (!p.installPath) return;
+    setConfirmTarget(null);
+    setOpLoading(`uninstall-${p.id}`);
+    setMgmtMsg(null);
+    const r = await uninstallPlugin(p.installPath, p.id);
+    if (r.success) {
+      setMgmtMsg(`\u2713 ${p.name} \u5DF2\u5378\u8F7D`);
+      setPluginStates((prev) => {
+        const n = { ...prev };
+        delete n[p.id];
+        return n;
+      });
+      setServiceStatuses((prev) => {
+        const n = { ...prev };
+        for (const k of Object.keys(n)) if (k.startsWith(`${p.id}::`)) delete n[k];
+        return n;
+      });
+      await refreshAfterOp();
+    } else {
+      const raw = r.error ?? "\u672A\u77E5\u9519\u8BEF";
+      const hint = /错误 32|error 32|占用|being used|ACCESS_DENIED|拒绝访问/i.test(raw) ? "\uFF08\u53EF\u5C1D\u8BD5\u300C\u5F3A\u5236\u5378\u8F7D\u300D\u515C\u5E95\uFF0C\u6216\u68C0\u67E5\u4EFB\u52A1\u7BA1\u7406\u5668\u4E2D\u6B8B\u7559\u8FDB\u7A0B\u540E\u91CD\u8BD5\uFF09" : "";
+      setMgmtMsg(`\u2717 \u5378\u8F7D\u5931\u8D25\uFF1A${raw}${hint}`);
+    }
+    setOpLoading(null);
+  }, [refreshAfterOp]);
+  const executeForceUninstall = useCallback(async (p) => {
+    if (!p.installPath) return;
+    setConfirmTarget(null);
+    setOpLoading(`force-${p.id}`);
+    setMgmtMsg(null);
+    const r = await forceUninstallPlugin(p.installPath);
+    setMgmtMsg(r.success ? `\u2713 ${p.name} \u5DF2\u5F3A\u5236\u5378\u8F7D${r.message ? "\uFF1A" + r.message : ""}` : `\u2717 \u5F3A\u5236\u5378\u8F7D\u5931\u8D25\uFF1A${r.error ?? "\u672A\u77E5\u9519\u8BEF"}`);
+    if (r.success) {
+      setPluginStates((prev) => {
+        const n = { ...prev };
+        delete n[p.id];
+        return n;
+      });
+      await refreshAfterOp();
+    }
+    setOpLoading(null);
+  }, [refreshAfterOp]);
   const isInstalled = useCallback((p) => installed.find((i) => i.id === p.id), [installed]);
   const openDetail = useCallback((p) => {
     setSelected(p);
@@ -458,17 +662,9 @@ function MarketplacePanel({ pluginId: _pluginId }) {
     setInstalling(null);
     if (r.success) await loadInstalled();
   };
-  const handleUninstall = async (p) => {
-    if (!p.installPath) return;
-    if (!confirm(`\u786E\u8BA4\u5378\u8F7D ${p.name}\uFF08${p.id}\uFF09\uFF1F
-\u5C06\u505C\u6B62\u5176\u540E\u53F0\u670D\u52A1\u3001\u7EC8\u6B62\u76F8\u5173\u8FDB\u7A0B\u5E76\u5220\u9664\u63D2\u4EF6\u76EE\u5F55\u3002`)) return;
-    setOpLoading(`uninstall-${p.id}`);
-    setOpMsg(null);
-    const r = await uninstallPlugin(p.installPath, p.id);
-    setOpMsg(r.success ? `\u2713 ${p.name} \u5DF2\u5378\u8F7D` : `\u2717 \u5378\u8F7D\u5931\u8D25\uFF1A${r.error ?? "\u672A\u77E5\u9519\u8BEF"}`);
-    setOpLoading(null);
-    if (r.success) await refreshAfterOp();
-  };
+  const handleUninstall = useCallback(async (p) => {
+    await requestUninstall(p);
+  }, [requestUninstall]);
   const handleCheckUpdate = async (p) => {
     if (!p.installPath) return;
     setOpLoading(`check-${p.id}`);
@@ -500,22 +696,50 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const installedCount = installed.filter((p) => !p.builtin).length;
   return /* @__PURE__ */ jsxs("div", { style: { height: "100%", display: "flex", flexDirection: "column", background: "#1A1A1F", color: "#F8F8F8", fontSize: 13, position: "relative", overflow: "hidden" }, children: [
     /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, padding: "8px 10px", borderBottom: "1px solid #3F3F46", flexShrink: 0 }, children: [
-      /* @__PURE__ */ jsxs("div", { style: {
-        fontSize: 12,
-        fontWeight: 600,
-        padding: "6px 14px",
-        borderRadius: 8,
-        background: "#3B82F6",
-        color: "#fff",
-        display: "flex",
-        alignItems: "center",
-        gap: 5
-      }, children: [
-        "\u{1F9E9} \u63D2\u4EF6\u5E02\u573A",
-        /* @__PURE__ */ jsx("span", { style: { fontSize: 9, background: "rgba(255,255,255,.2)", padding: "1px 6px", borderRadius: 8 }, children: index?.plugins?.length ?? 0 })
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 2, background: "#25252B", borderRadius: 8, padding: 2, flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => setView("market"),
+            style: {
+              fontSize: 11,
+              fontWeight: 600,
+              padding: "5px 10px",
+              borderRadius: 6,
+              cursor: "pointer",
+              border: "none",
+              background: view === "market" ? "#3B82F6" : "transparent",
+              color: view === "market" ? "#fff" : "#8E8E93"
+            },
+            children: "\u{1F9E9} \u5546\u57CE"
+          }
+        ),
+        /* @__PURE__ */ jsxs(
+          "button",
+          {
+            onClick: () => {
+              setView("manage");
+              void loadMgmtData();
+            },
+            style: {
+              fontSize: 11,
+              fontWeight: 600,
+              padding: "5px 10px",
+              borderRadius: 6,
+              cursor: "pointer",
+              border: "none",
+              background: view === "manage" ? "#3B82F6" : "transparent",
+              color: view === "manage" ? "#fff" : "#8E8E93"
+            },
+            children: [
+              "\u2699 \u5DF2\u88C5\u7BA1\u7406",
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 9, marginLeft: 4, opacity: 0.85 }, children: installedCount })
+            ]
+          }
+        )
       ] }),
       /* @__PURE__ */ jsx("div", { style: { flex: 1 } }),
-      installedFilter && installedCount > 0 && /* @__PURE__ */ jsx(
+      view === "market" && installedFilter && installedCount > 0 && /* @__PURE__ */ jsx(
         "button",
         {
           onClick: handleCheckAll,
@@ -527,14 +751,39 @@ function MarketplacePanel({ pluginId: _pluginId }) {
       /* @__PURE__ */ jsx(
         "button",
         {
-          onClick: () => void loadIndex(),
-          title: "\u5237\u65B0\u7D22\u5F15",
+          onClick: () => {
+            view === "market" ? void loadIndex() : void loadMgmtData();
+          },
+          title: "\u5237\u65B0",
           style: { width: 32, height: 32, borderRadius: 8, border: "1px solid #3F3F46", background: "#2D2D33", color: "#B4B4B8", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" },
           children: "\u21BB"
         }
       )
     ] }),
-    /* @__PURE__ */ jsx(
+    view === "manage" ? /* @__PURE__ */ jsx(
+      ManagementView,
+      {
+        installed,
+        iLoading,
+        iError,
+        pluginStates,
+        serviceStatuses,
+        isEnabled,
+        query: mgmtQuery,
+        setQuery: setMgmtQuery,
+        filter: mgmtFilter,
+        setFilter: setMgmtFilter,
+        expanded,
+        setExpanded,
+        msg: mgmtMsg,
+        opLoading,
+        onReload: () => void loadMgmtData(),
+        onToggleEnabled: handleToggleEnabled,
+        onToggleUi: handleToggleUi,
+        onServiceAction: handleServiceAction,
+        onUninstall: requestUninstall
+      }
+    ) : /* @__PURE__ */ jsx(
       MarketView,
       {
         index,
@@ -575,6 +824,16 @@ function MarketplacePanel({ pluginId: _pluginId }) {
         onUninstall: handleUninstall,
         onCheckUpdate: handleCheckUpdate,
         onApplyUpdate: handleApplyUpdate
+      }
+    ),
+    confirmTarget && /* @__PURE__ */ jsx(
+      UninstallConfirmModal,
+      {
+        target: confirmTarget,
+        opLoading,
+        onCancel: () => setConfirmTarget(null),
+        onConfirm: executeUninstall,
+        onForce: executeForceUninstall
       }
     )
   ] });
@@ -1280,6 +1539,385 @@ function FilterChip({ active, onClick, label, color }) {
     flexShrink: 0,
     transition: "background 0.15s, color 0.15s"
   }, children: label });
+}
+function serviceStateColor(state) {
+  switch (state) {
+    case "running":
+      return { fg: "#34D399", bg: "#34D39922", label: "\u8FD0\u884C\u4E2D" };
+    case "starting":
+      return { fg: "#F5B73D", bg: "#F5B73D22", label: "\u542F\u52A8\u4E2D" };
+    case "stopping":
+      return { fg: "#F5B73D", bg: "#F5B73D22", label: "\u505C\u6B62\u4E2D" };
+    case "error":
+      return { fg: "#EF4444", bg: "#EF444422", label: "\u9519\u8BEF" };
+    default:
+      return { fg: "#6B7280", bg: "#6B728022", label: "\u5DF2\u505C\u6B62" };
+  }
+}
+function fmtUptime(sec) {
+  if (typeof sec !== "number" || sec < 0) return "\u2014";
+  if (sec < 60) return `${sec}s`;
+  if (sec < 3600) return `${Math.floor(sec / 60)}m${sec % 60 ? sec % 60 + "s" : ""}`;
+  return `${Math.floor(sec / 3600)}h${Math.floor(sec % 3600 / 60)}m`;
+}
+function ManagementView(props) {
+  const {
+    installed,
+    iLoading,
+    iError,
+    serviceStatuses,
+    isEnabled,
+    query,
+    setQuery,
+    filter,
+    setFilter,
+    expanded,
+    setExpanded,
+    msg,
+    opLoading,
+    onReload,
+    onToggleEnabled,
+    onToggleUi,
+    onServiceAction,
+    onUninstall
+  } = props;
+  const servicesOf = useCallback((pluginId) => Object.values(serviceStatuses).filter((s2) => s2.pluginId === pluginId), [serviceStatuses]);
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return installed.filter((p) => {
+      if (p.builtin) return false;
+      if (q && ![p.id, p.name, p.description ?? ""].join(" ").toLowerCase().includes(q)) return false;
+      const svcs = servicesOf(p.id);
+      const enabled = isEnabled(p);
+      switch (filter) {
+        case "enabled":
+          return enabled;
+        case "disabled":
+          return !enabled;
+        case "running":
+          return svcs.some((s2) => s2.state === "running" || s2.state === "starting");
+        case "error":
+          return svcs.some((s2) => s2.state === "error");
+        default:
+          return true;
+      }
+    });
+  }, [installed, query, filter, servicesOf, isEnabled]);
+  const toggleExpand = (id) => {
+    const next = new Set(expanded);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setExpanded(next);
+  };
+  if (iLoading) return /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93" }, children: "\u52A0\u8F7D\u5DF2\u88C5\u63D2\u4EF6\u4E2D\u2026" });
+  if (iError) return /* @__PURE__ */ jsxs("div", { style: { padding: 24, display: "flex", flexDirection: "column", gap: 12 }, children: [
+    /* @__PURE__ */ jsxs("div", { style: { color: "#EF4444", wordBreak: "break-all" }, children: [
+      "\u52A0\u8F7D\u5931\u8D25\uFF1A",
+      iError
+    ] }),
+    /* @__PURE__ */ jsx("button", { onClick: onReload, style: s.btn, children: "\u91CD\u8BD5" })
+  ] });
+  return /* @__PURE__ */ jsxs("div", { style: { display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }, children: [
+    /* @__PURE__ */ jsx("div", { style: { padding: "8px 10px", display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }, children: /* @__PURE__ */ jsx(
+      "input",
+      {
+        value: query,
+        onChange: (e) => setQuery(e.target.value),
+        placeholder: "\u641C\u7D22\u5DF2\u88C5\u63D2\u4EF6\uFF08\u540D\u79F0 / ID / \u63CF\u8FF0\uFF09\u2026",
+        style: { flex: 1, minWidth: 140, padding: "7px 8px", background: "#25252B", border: "1px solid #3F3F46", borderRadius: 6, color: "#F8F8F8", fontSize: 12, outline: "none" }
+      }
+    ) }),
+    /* @__PURE__ */ jsxs("div", { style: { padding: "0 10px 6px", display: "flex", gap: 4, alignItems: "center", overflowX: "auto", WebkitOverflowScrolling: "touch", flexShrink: 0 }, children: [
+      /* @__PURE__ */ jsx("span", { style: { fontSize: 9, color: "#6B7280", marginRight: 1, flexShrink: 0 }, children: "\u72B6\u6001" }),
+      [
+        ["all", "\u5168\u90E8", "#6B7280"],
+        ["enabled", "\u5DF2\u542F\u7528", "#34D399"],
+        ["disabled", "\u5DF2\u505C\u7528", "#F0616D"],
+        ["running", "\u8FD0\u884C\u4E2D", "#3B82F6"],
+        ["error", "\u6709\u9519\u8BEF", "#EF4444"]
+      ].map(([key, label, color]) => /* @__PURE__ */ jsx(FilterChip, { active: filter === key, onClick: () => setFilter(key), label, color }, key)),
+      /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+      /* @__PURE__ */ jsxs("span", { style: { fontSize: 10, color: "#6B7280", flexShrink: 0 }, children: [
+        rows.length,
+        " \u4E2A\u63D2\u4EF6"
+      ] })
+    ] }),
+    msg && /* @__PURE__ */ jsx("div", { style: { padding: "6px 10px", fontSize: 11, color: msg.startsWith("\u2713") ? "#10B981" : "#EF4444", borderBottom: "1px solid #3F3F46", flexShrink: 0, wordBreak: "break-all" }, children: msg }),
+    /* @__PURE__ */ jsx("div", { style: { flex: 1, overflowY: "auto", padding: "0 10px 12px" }, children: rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93", textAlign: "center" }, children: installed.length === 0 ? "\u5C1A\u672A\u5B89\u88C5\u4EFB\u4F55\u63D2\u4EF6" : "\u65E0\u5339\u914D\u63D2\u4EF6" }) : rows.map((p) => /* @__PURE__ */ jsx(
+      PluginManageRow,
+      {
+        plugin: p,
+        enabled: isEnabled(p),
+        uiEnabled: props.pluginStates[p.id]?.uiEnabled !== false,
+        services: servicesOf(p.id),
+        expanded: expanded.has(p.id),
+        opLoading,
+        onToggleExpand: () => toggleExpand(p.id),
+        onToggleEnabled,
+        onToggleUi,
+        onServiceAction,
+        onUninstall
+      },
+      p.id
+    )) })
+  ] });
+}
+function SourceBadge({ plugin }) {
+  const dev = !!plugin.dev;
+  const kind = plugin.source?.kind;
+  const [label, color] = dev ? ["DEV", "#F59E0B"] : kind === "project" ? ["Project", "#06B6D4"] : ["User", "#6B7280"];
+  return /* @__PURE__ */ jsx("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: color + "22", color, border: `1px solid ${color}44` }, children: label });
+}
+function PluginManageRow({
+  plugin,
+  enabled,
+  uiEnabled,
+  services,
+  expanded,
+  opLoading,
+  onToggleExpand,
+  onToggleEnabled,
+  onToggleUi,
+  onServiceAction,
+  onUninstall
+}) {
+  const running = services.filter((s2) => s2.state === "running" || s2.state === "starting");
+  const errored = services.filter((s2) => s2.state === "error");
+  const hasServices = (plugin.services?.length ?? 0) > 0 || services.length > 0;
+  const renderRunBadge = () => {
+    if (errored.length > 0) {
+      return /* @__PURE__ */ jsxs("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: "#EF444422", color: "#EF4444", border: "1px solid #EF444444" }, children: [
+        "\u2717 ",
+        errored.length,
+        " \u670D\u52A1\u9519\u8BEF"
+      ] });
+    }
+    if (running.length > 0) {
+      return /* @__PURE__ */ jsxs("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: "#34D39922", color: "#34D399", border: "1px solid #34D39944" }, children: [
+        "\u25CF \u8FD0\u884C\u4E2D ",
+        running.length,
+        " \u670D\u52A1"
+      ] });
+    }
+    if (!enabled) {
+      return /* @__PURE__ */ jsx("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 600, background: "#6B728022", color: "#8E8E93", border: "1px solid #6B728044" }, children: "\u5DF2\u505C\u7528" });
+    }
+    if (hasServices) {
+      return /* @__PURE__ */ jsx("span", { style: { fontSize: 9, padding: "1px 6px", borderRadius: 4, background: "#6B72801A", color: "#6B7280" }, children: "\u25CB \u670D\u52A1\u7A7A\u95F2" });
+    }
+    return null;
+  };
+  return /* @__PURE__ */ jsxs("div", { style: { marginBottom: 6, border: `1px solid ${expanded ? "#3B82F6" : "#3F3F46"}`, borderRadius: 8, background: "#25252B", overflow: "hidden" }, children: [
+    /* @__PURE__ */ jsxs(
+      "div",
+      {
+        onClick: onToggleExpand,
+        style: { display: "flex", gap: 10, padding: 10, cursor: "pointer", alignItems: "center" },
+        onMouseEnter: (e) => {
+          e.currentTarget.style.background = "#2A2A30";
+        },
+        onMouseLeave: (e) => {
+          e.currentTarget.style.background = "transparent";
+        },
+        children: [
+          /* @__PURE__ */ jsx("div", { style: { width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, background: "#3B82F622", color: "#3B82F6" }, children: "\u{1F9E9}" }),
+          /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
+            /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }, children: [
+              /* @__PURE__ */ jsx("span", { style: { fontSize: 13, fontWeight: 600, color: enabled ? "#F8F8F8" : "#8E8E93" }, children: plugin.name }),
+              /* @__PURE__ */ jsxs("span", { style: { fontSize: 10, color: "#6B7280" }, children: [
+                "v",
+                plugin.version
+              ] }),
+              /* @__PURE__ */ jsx(SourceBadge, { plugin }),
+              renderRunBadge()
+            ] }),
+            /* @__PURE__ */ jsxs("div", { style: { fontSize: 10, color: "#6B7280", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, children: [
+              plugin.id,
+              plugin.description ? ` \xB7 ${plugin.description}` : ""
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs("label", { onClick: (e) => e.stopPropagation(), style: { display: "flex", alignItems: "center", gap: 6, flexShrink: 0, cursor: "pointer" }, title: enabled ? "\u505C\u7528\u63D2\u4EF6\uFF08\u8054\u52A8\u505C\u6B62\u5176\u670D\u52A1\uFF09" : "\u542F\u7528\u63D2\u4EF6\uFF08\u8054\u52A8\u542F\u52A8\u5176\u670D\u52A1\uFF09", children: [
+            /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: enabled ? "#34D399" : "#6B7280" }, children: enabled ? "\u542F\u7528" : "\u505C\u7528" }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "checkbox",
+                checked: enabled,
+                onChange: (e) => onToggleEnabled(plugin, e.target.checked),
+                style: { width: 16, height: 16, accentColor: "#3B82F6", cursor: "pointer" }
+              }
+            )
+          ] }),
+          /* @__PURE__ */ jsx("span", { style: { fontSize: 10, color: "#6B7280", flexShrink: 0 }, children: expanded ? "\u25BE" : "\u25B8" })
+        ]
+      }
+    ),
+    expanded && /* @__PURE__ */ jsxs("div", { style: { padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 8 }, children: [
+      hasServices ? /* @__PURE__ */ jsx(ServiceTable, { plugin, services, opLoading, onServiceAction }) : /* @__PURE__ */ jsx("div", { style: { fontSize: 10, color: "#6B7280", padding: "4px 0" }, children: "\u8BE5\u63D2\u4EF6\u672A\u58F0\u660E\u540E\u53F0\u670D\u52A1\uFF08contributes.services \u4E3A\u7A7A\uFF09" }),
+      /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsxs(
+          "label",
+          {
+            style: { display: "flex", alignItems: "center", gap: 5, cursor: "pointer", fontSize: 10, color: "#8E8E93" },
+            title: "\u9690\u85CF/\u663E\u793A\u8BE5\u63D2\u4EF6\u7684\u9762\u677F\u8D21\u732E\uFF08\u4E0D\u52A8\u63D2\u4EF6\u542F\u505C\uFF09",
+            children: [
+              /* @__PURE__ */ jsx(
+                "input",
+                {
+                  type: "checkbox",
+                  checked: uiEnabled,
+                  onChange: (e) => onToggleUi(plugin, e.target.checked),
+                  style: { width: 14, height: 14, accentColor: "#8B5CF6", cursor: "pointer" }
+                }
+              ),
+              "UI \u9762\u663E\u793A"
+            ]
+          }
+        ),
+        /* @__PURE__ */ jsx("span", { style: { flex: 1 } }),
+        /* @__PURE__ */ jsx(
+          "button",
+          {
+            onClick: () => onUninstall(plugin),
+            disabled: opLoading === `uninstall-${plugin.id}`,
+            style: { ...s.miniBtn, color: "#F0616D", borderColor: "#7F1D1D", opacity: opLoading ? 0.5 : 1 },
+            children: opLoading === `uninstall-${plugin.id}` ? "\u5378\u8F7D\u4E2D\u2026" : "\u5378\u8F7D"
+          }
+        )
+      ] })
+    ] })
+  ] });
+}
+function ServiceTable({ plugin, services, opLoading, onServiceAction }) {
+  const declared = plugin.services ?? [];
+  const rows = declared.map((d) => ({
+    declared: d,
+    status: services.find((s2) => s2.serviceId === d.id)
+  }));
+  const extra = services.filter((s2) => !declared.some((d) => d.id === s2.serviceId));
+  return /* @__PURE__ */ jsxs("div", { style: { border: "1px solid #3F3F46", borderRadius: 6, overflow: "hidden" }, children: [
+    /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1.2fr 0.8fr 0.6fr 0.6fr 0.7fr 1.4fr auto", gap: 4, padding: "5px 8px", background: "#1F1F24", fontSize: 9, color: "#6B7280" }, children: [
+      /* @__PURE__ */ jsx("span", { children: "\u670D\u52A1" }),
+      /* @__PURE__ */ jsx("span", { children: "\u72B6\u6001" }),
+      /* @__PURE__ */ jsx("span", { children: "\u7AEF\u53E3" }),
+      /* @__PURE__ */ jsx("span", { children: "PID" }),
+      /* @__PURE__ */ jsx("span", { children: "\u8FD0\u884C\u65F6\u957F" }),
+      /* @__PURE__ */ jsx("span", { children: "\u91CD\u542F/\u9519\u8BEF" }),
+      /* @__PURE__ */ jsx("span", { children: "\u64CD\u4F5C" })
+    ] }),
+    [...rows, ...extra.map((s2) => ({ declared: null, status: s2 }))].map((r) => {
+      const st = r.status;
+      const c = st ? serviceStateColor(st.state) : { fg: "#6B7280", bg: "#6B72801A", label: "\u672A\u6CE8\u518C" };
+      const sid = r.declared?.id ?? st?.serviceId ?? "";
+      const busy = opLoading === `svc-${plugin.id}::${sid}-stop` || opLoading === `svc-${plugin.id}::${sid}-restart` || opLoading === `svc-${plugin.id}::${sid}-start`;
+      const key = `${plugin.id}::${sid}`;
+      return /* @__PURE__ */ jsxs("div", { style: { display: "grid", gridTemplateColumns: "1.2fr 0.8fr 0.6fr 0.6fr 0.7fr 1.4fr auto", gap: 4, padding: "5px 8px", fontSize: 10, borderTop: "1px solid #3F3F46", alignItems: "center" }, children: [
+        /* @__PURE__ */ jsx("span", { style: { color: "#B4B4B8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }, title: r.declared?.description || sid, children: sid }),
+        /* @__PURE__ */ jsx("span", { style: { color: c.fg, fontWeight: 600 }, children: c.label }),
+        /* @__PURE__ */ jsx("span", { style: { color: "#8E8E93" }, children: st?.port ?? "\u2014" }),
+        /* @__PURE__ */ jsx("span", { style: { color: "#8E8E93" }, children: st?.pid ?? "\u2014" }),
+        /* @__PURE__ */ jsx("span", { style: { color: "#8E8E93" }, children: fmtUptime(st?.uptime) }),
+        /* @__PURE__ */ jsx(
+          "span",
+          {
+            style: { color: st?.lastError ? "#EF4444" : "#8E8E93", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+            title: st?.lastError ?? "",
+            children: st?.lastError ? `\u21BB${st.restartCount ?? 0} ${st.lastError}` : `\u21BB${st?.restartCount ?? 0}`
+          }
+        ),
+        /* @__PURE__ */ jsxs("span", { style: { display: "flex", gap: 3 }, children: [
+          st && (st.state === "running" || st.state === "starting") ? /* @__PURE__ */ jsx(
+            "button",
+            {
+              disabled: busy,
+              onClick: () => onServiceAction(plugin.id, plugin.name, sid, "stop"),
+              style: { ...s.miniBtn, padding: "2px 6px", opacity: busy ? 0.5 : 1 },
+              children: "\u505C\u6B62"
+            }
+          ) : /* @__PURE__ */ jsx(
+            "button",
+            {
+              disabled: busy,
+              onClick: () => onServiceAction(plugin.id, plugin.name, sid, "start"),
+              style: { ...s.miniBtn, padding: "2px 6px", opacity: busy ? 0.5 : 1 },
+              children: "\u542F\u52A8"
+            }
+          ),
+          /* @__PURE__ */ jsx(
+            "button",
+            {
+              disabled: busy,
+              onClick: () => onServiceAction(plugin.id, plugin.name, sid, "restart"),
+              style: { ...s.miniBtn, padding: "2px 6px", opacity: busy ? 0.5 : 1 },
+              children: "\u91CD\u542F"
+            }
+          )
+        ] })
+      ] }, key);
+    })
+  ] });
+}
+function UninstallConfirmModal({ target, opLoading, onCancel, onConfirm, onForce }) {
+  const { plugin, impact } = target;
+  const busy = !!opLoading;
+  const ports = impact.runningServices.map((s2) => s2.port).filter((p) => typeof p === "number");
+  return /* @__PURE__ */ jsx("div", { onClick: busy ? void 0 : onCancel, style: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 40,
+    background: "rgba(0,0,0,.55)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 16
+  }, children: /* @__PURE__ */ jsxs("div", { onClick: (e) => e.stopPropagation(), style: {
+    width: "100%",
+    maxWidth: 420,
+    background: "#1F1F24",
+    border: "1px solid #3F3F46",
+    borderRadius: 10,
+    padding: 14,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10
+  }, children: [
+    /* @__PURE__ */ jsx("div", { style: { fontSize: 13, fontWeight: 700, color: "#F8F8F8" }, children: impact.isDev ? "\u79FB\u9664 dev \u63D2\u4EF6\u94FE\u63A5" : `\u5378\u8F7D\u63D2\u4EF6\u300C${plugin.name}\u300D` }),
+    /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#B4B4B8", lineHeight: 1.7 }, children: impact.isDev ? /* @__PURE__ */ jsx(Fragment, { children: "\u8BE5\u63D2\u4EF6\u4E3A\u6E90\u7801\u76F4\u8FDE\uFF08dev-link\uFF09\uFF1A\u4EC5\u79FB\u9664\u5B89\u88C5\u76EE\u5F55\u4E2D\u7684\u94FE\u63A5\u672C\u4F53\uFF0C\u6E90\u7801\u76EE\u5F55\u4E0D\u4F1A\u88AB\u52A8\uFF1Bstate.json \u72B6\u6001\u8BB0\u5F55\u4E00\u5E76\u6E05\u9664\u3002" }) : /* @__PURE__ */ jsxs(Fragment, { children: [
+      "\u786E\u8BA4\u540E\u5C06\u4F9D\u6B21\u6267\u884C\uFF1A",
+      /* @__PURE__ */ jsx("br", {}),
+      "\u2460 \u505C\u6B62\u540E\u53F0\u670D\u52A1 ",
+      impact.runningServices.length > 0 ? `\uFF08${impact.runningServices.length} \u4E2A\u8FD0\u884C\u4E2D${ports.length ? `\uFF0C\u7AEF\u53E3 ${ports.join(", ")}` : ""}\uFF09` : "\uFF08\u5F53\u524D\u65E0\u8FD0\u884C\u4E2D\u670D\u52A1\uFF09",
+      /* @__PURE__ */ jsx("br", {}),
+      "\u2461 \u7EC8\u6B62\u76F8\u5173\u8FDB\u7A0B\uFF08\u6309\u63D2\u4EF6\u76EE\u5F55\u7CBE\u51C6\u5339\u914D\uFF09",
+      /* @__PURE__ */ jsx("br", {}),
+      "\u2462 \u5220\u9664\u63D2\u4EF6\u76EE\u5F55\uFF08\u5931\u8D25\u81EA\u52A8\u91CD\u8BD5\uFF09",
+      /* @__PURE__ */ jsx("br", {}),
+      "\u2463 \u6E05\u7406 state.json \u72B6\u6001\u8BB0\u5F55"
+    ] }) }),
+    impact.isCore && /* @__PURE__ */ jsx("div", { style: { fontSize: 11, color: "#EF4444" }, children: "\u26A0 \u6838\u5FC3\u901A\u9053\u63D2\u4EF6\u4E0D\u53EF\u5378\u8F7D\uFF08\u627F\u8F7D\u9762\u677F\u57FA\u7840\u6E32\u67D3\u4E0E\u5386\u53F2\u5361\u7247\uFF09\u3002" }),
+    /* @__PURE__ */ jsxs("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ jsx("button", { onClick: onCancel, disabled: busy, style: { ...s.btn, flex: 1, minHeight: 38, opacity: busy ? 0.5 : 1 }, children: "\u53D6\u6D88" }),
+      !impact.isDev && !impact.isCore && /* @__PURE__ */ jsx(
+        "button",
+        {
+          onClick: () => onForce(plugin),
+          disabled: busy,
+          title: "\u76EE\u5F55\u88AB\u5360\u7528\uFF08\u9519\u8BEF 32\uFF09\u65F6\u7684\u515C\u5E95\uFF1A\u4EC5\u79FB\u9664\u6CE8\u518C\u4FE1\u606F\uFF0C\u76EE\u5F55\u6539\u540D .polaris-plugin-removed-*",
+          style: { ...s.btn, flex: 1, minHeight: 38, color: "#F5B73D", borderColor: "#7C5A11", opacity: busy ? 0.5 : 1 },
+          children: "\u5F3A\u5236\u5378\u8F7D"
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          onClick: () => onConfirm(plugin),
+          disabled: busy || impact.isCore,
+          style: { ...s.btn, flex: 1, minHeight: 38, background: "#B91C1C", borderColor: "#B91C1C", color: "#fff", fontWeight: 600, opacity: busy || impact.isCore ? 0.5 : 1 },
+          children: busy ? "\u5378\u8F7D\u4E2D\u2026" : impact.isDev ? "\u79FB\u9664\u94FE\u63A5" : "\u786E\u8BA4\u5378\u8F7D"
+        }
+      )
+    ] })
+  ] }) });
 }
 export {
   MarketplacePanel as default

@@ -65,9 +65,14 @@ interface InstalledPlugin {
   description?: string
   builtin?: boolean
   enabledByDefault?: boolean
+  core?: boolean
   installPath?: string
   source?: { kind?: string; workspacePath?: string }
   origin?: { repository?: string; updateUrl?: string; downloadUrl?: string }
+  /** dev-link 直连标记（宿主盖戳）：Some = 源码直连（卸载只摘链接） */
+  dev?: { sourcePath: string } | null
+  /** 声明的后台服务（管理中心服务表用；旧宿主缺省为空） */
+  services?: Array<{ id: string; type?: string; autoStart?: boolean; description?: string }>
 }
 
 interface UpdateCheck {
@@ -323,6 +328,100 @@ interface DispatchResponse {
 }
 
 /**
+ * 通用总线调用（router_dispatch → 任意 cap.*）。
+ * 与 dispatchPluginDiscovery 同款错误翻译；管理中心需要触达
+ * cap.pluginState（状态读写）与 cap.pluginServiceManager（服务管理）。
+ */
+async function dispatchCap(
+  target: string,
+  action: string,
+  payload: Record<string, unknown> = {},
+): Promise<Record<string, unknown>> {
+  let res: DispatchResponse
+  try {
+    res = await getInvoke()('router_dispatch', {
+      req: { target, payload: { action, ...payload } },
+    }) as DispatchResponse
+  } catch (e) {
+    throw new Error(humanizeError(e))
+  }
+  if (!res.ok) throw new Error(res.error ? humanizeError(res.error) : `${target} ${action} 失败`)
+  return res.result || {}
+}
+
+/* ---------- 插件状态（cap.pluginState）与服务状态（cap.pluginServiceManager）---------- */
+
+/** 插件状态记录（state.json 单条；camelCase 对齐 Rust PluginState） */
+interface PluginStateEntry {
+  enabled: boolean
+  uiEnabled?: boolean
+  mcpEnabled?: boolean
+  devLink?: { sourcePath: string } | null
+}
+
+type PluginStatesMap = Record<string, PluginStateEntry>
+
+/** 插件后台服务状态（对齐 Rust ServiceStatus / 前端 PluginServiceStatus） */
+interface ServiceStatus {
+  serviceId: string
+  pluginId: string
+  state: 'starting' | 'running' | 'stopping' | 'stopped' | 'error'
+  port?: number
+  pid?: number
+  uptime?: number
+  lastError?: string
+  restartCount: number
+}
+
+/** 读全量插件状态（cap.pluginState:get_states） */
+async function getPluginStates(): Promise<PluginStatesMap> {
+  try {
+    return await dispatchCap('cap.pluginState', 'get_states') as unknown as PluginStatesMap
+  } catch {
+    // 状态读取失败不阻塞商城主流程（旧宿主无该 cap），降级为空表
+    return {}
+  }
+}
+
+/** 批量写插件状态（cap.pluginState:set_states）——后端保存+广播+cap 贡献同步 */
+async function setPluginStates(states: PluginStatesMap): Promise<void> {
+  await dispatchCap('cap.pluginState', 'set_states', { states })
+}
+
+/** 读全部插件服务状态（cap.pluginServiceManager:list_status，裸数组） */
+async function listServiceStatus(): Promise<ServiceStatus[]> {
+  try {
+    const res = await dispatchCap('cap.pluginServiceManager', 'list_status')
+    return Array.isArray(res) ? (res as unknown as ServiceStatus[]) : []
+  } catch {
+    return []
+  }
+}
+
+/** 单服务动作（stop/restart/start） */
+async function serviceAction(
+  action: 'stop' | 'restart' | 'start',
+  pluginId: string,
+  serviceId: string,
+): Promise<ServiceStatus> {
+  return await dispatchCap('cap.pluginServiceManager', action, { pluginId, serviceId }) as unknown as ServiceStatus
+}
+
+/** 订阅 plugin.service.status 实时回填（宿主 __POLARIS_HOST_LISTEN__；不可用静默降级） */
+function listenServiceStatus(handler: (status: ServiceStatus) => void): () => void {
+  const g = window as unknown as {
+    __POLARIS_HOST_LISTEN__?: (event: string, cb: (payload: unknown) => void) => () => void
+  }
+  if (typeof g.__POLARIS_HOST_LISTEN__ !== 'function') return () => {}
+  try {
+    return g.__POLARIS_HOST_LISTEN__('plugin.service.status', (payload) => {
+      const s = payload as ServiceStatus
+      if (s && typeof s.pluginId === 'string' && typeof s.serviceId === 'string') handler(s)
+    })
+  } catch { return () => {} }
+}
+
+/**
  * 经 Polaris 统一总线（router_dispatch → cap.pluginDiscovery）调用插件管理面。
  * 旧命令 plugin_install_remote / plugin_discover / plugin_uninstall_local /
  * plugin_check_update / plugin_apply_update 已删除，统一迁移到该总线协议
@@ -389,7 +488,37 @@ async function uninstallPlugin(installPath: string, pluginId: string): Promise<O
   }
 }
 
-interface UpdateResult { pluginId: string; currentVersion: string; latestVersion?: string; updateAvailable: boolean; downloadUrl?: string; error?: string }
+/** 强制卸载兜底（目录被占用/错误 32 时）：仅移除注册信息，失败目录改名 .polaris-plugin-removed-* */
+async function forceUninstallPlugin(installPath: string): Promise<OpResult> {
+  try {
+    return await dispatchPluginDiscovery('force_uninstall', { installPath }) as unknown as OpResult
+  } catch (e) {
+    return { success: false, error: e instanceof Error ? e.message : String(e) }
+  }
+}
+
+/**
+ * 卸载预检：查该插件当前服务状态，返回影响摘要（供确认弹窗列明）。
+ * dev 插件只摘链接不删目录；core 插件后端拒绝卸载。
+ */
+interface UninstallImpact {
+  runningServices: ServiceStatus[]
+  allServices: ServiceStatus[]
+  isDev: boolean
+  isCore: boolean
+}
+
+async function precheckUninstall(p: InstalledPlugin): Promise<UninstallImpact> {
+  const all = await listServiceStatus()
+  return {
+    allServices: all.filter(s => s.pluginId === p.id),
+    runningServices: all.filter(s => s.pluginId === p.id && (s.state === 'running' || s.state === 'starting')),
+    isDev: !!p.dev,
+    isCore: !!p.core,
+  }
+}
+
+interface UpdateResult { pluginId: string; currentVersion: string; latestVersion?: string; updateAvailable: boolean; downloadUrl?: string; error?: string; checking?: boolean }
 
 async function checkUpdate(installPath: string): Promise<UpdateResult> {
   try {
@@ -540,6 +669,139 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [opLoading, setOpLoading] = useState<string | null>(null)
   const [opMsg, setOpMsg] = useState<string | null>(null)
 
+  // —— 管理中心状态（P1）——
+  /** 面板主视图：market=商城浏览 / manage=已装管理 */
+  const [view, setView] = useState<'market' | 'manage'>('market')
+  /** 插件状态表（cap.pluginState:get_states） */
+  const [pluginStates, setPluginStates] = useState<PluginStatesMap>({})
+  /** 服务状态表（pluginId::serviceId → status），list_status 全量 + 实时事件增量 */
+  const [serviceStatuses, setServiceStatuses] = useState<Record<string, ServiceStatus>>({})
+  /** 管理列表展开行（pluginId 集合） */
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  /** 管理区搜索/筛选 */
+  const [mgmtQuery, setMgmtQuery] = useState('')
+  const [mgmtFilter, setMgmtFilter] = useState<'all' | 'enabled' | 'disabled' | 'running' | 'error'>('all')
+  /** 卸载确认弹窗（含预检影响） */
+  const [confirmTarget, setConfirmTarget] = useState<{ plugin: InstalledPlugin; impact: UninstallImpact } | null>(null)
+  /** 管理区提示 */
+  const [mgmtMsg, setMgmtMsg] = useState<string | null>(null)
+
+  /** 服务状态 key（与宿主 pluginServiceStore 同构） */
+  const svcKey = (s: { pluginId: string; serviceId: string }) => `${s.pluginId}::${s.serviceId}`
+
+  /** 刷新管理中心数据：状态表 + 服务表（挂载/操作后） */
+  const loadMgmtData = useCallback(async () => {
+    const [states, statuses] = await Promise.all([getPluginStates(), listServiceStatus()])
+    setPluginStates(states)
+    setServiceStatuses(prev => {
+      // starting/stopping 中间态不被全量快照回退覆盖（事件驱动更新为主）：
+      // 新快照同键仍处同中间态时保留旧值，避免轮询/刷新打断过渡显示
+      const next: Record<string, ServiceStatus> = { ...prev }
+      for (const s of statuses) next[svcKey(s)] = s
+      for (const k of Object.keys(prev)) {
+        const v: ServiceStatus = prev[k]
+        const transit = v.state === 'starting' || v.state === 'stopping'
+        if (transit && next[k] && next[k].state === v.state) {
+          next[k] = v
+        }
+      }
+      return next
+    })
+  }, [])
+
+  // 挂载即拉取管理数据（商城/管理两视图共用数据，失败静默降级）
+  useEffect(() => { void loadMgmtData() }, [loadMgmtData])
+
+  // 订阅 plugin.service.status 实时回填（后端 supervisor 状态推送）；
+  // 订阅不可用（旧宿主）时退化为操作后手动刷新。
+  useEffect(() => {
+    const un = listenServiceStatus((status) => {
+      setServiceStatuses(prev => ({ ...prev, [svcKey(status)]: status }))
+    })
+    return () => { un() }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** 读某插件生效 enabled（state.json 记录优先，缺省 enabledByDefault/true） */
+  const isEnabled = useCallback((p: InstalledPlugin): boolean => {
+    const rec = pluginStates[p.id]
+    if (rec) return rec.enabled
+    return p.enabledByDefault !== false
+  }, [pluginStates])
+
+  /** 启停开关：写 cap.pluginState（后端联动启停服务），乐观更新 */
+  const handleToggleEnabled = useCallback(async (p: InstalledPlugin, enabled: boolean) => {
+    const next: PluginStatesMap = {
+      ...pluginStates,
+      [p.id]: { ...(pluginStates[p.id] ?? { enabled: isEnabled(p) }), enabled },
+    }
+    setPluginStates(next)
+    try {
+      await setPluginStates(next)
+      setMgmtMsg(`✓ ${p.name} 已${enabled ? '启用' : '停用'}（服务联动由宿主执行）`)
+    } catch (e) {
+      setPluginStates(pluginStates) // 回滚
+      setMgmtMsg(`✗ ${p.name} 状态写入失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [pluginStates, isEnabled])
+
+  /** UI 面开关：仅影响面板可见性（uiEnabled），不动 enabled */
+  const handleToggleUi = useCallback(async (p: InstalledPlugin, uiEnabled: boolean) => {
+    const prev = pluginStates[p.id] ?? { enabled: isEnabled(p) }
+    const next: PluginStatesMap = {
+      ...pluginStates,
+      [p.id]: { ...prev, uiEnabled },
+    }
+    setPluginStates(next)
+    try {
+      await setPluginStates(next)
+      setMgmtMsg(`✓ ${p.name} UI 面已${uiEnabled ? '显示' : '隐藏'}`)
+    } catch (e) {
+      setPluginStates(pluginStates)
+      setMgmtMsg(`✗ ${p.name} 状态写入失败：${e instanceof Error ? e.message : String(e)}`)
+    }
+  }, [pluginStates, isEnabled])
+
+  /** 单服务 stop/restart/start；restart 报 not registered 提示重扫 */
+  const handleServiceAction = useCallback(async (
+    pluginId: string, pluginName: string, serviceId: string,
+    action: 'stop' | 'restart' | 'start',
+  ) => {
+    const key = `${pluginId}::${serviceId}`
+    setOpLoading(`svc-${key}-${action}`); setMgmtMsg(null)
+    try {
+      const status = await serviceAction(action, pluginId, serviceId)
+      setServiceStatuses(prev => ({ ...prev, [svcKey(status)]: status }))
+      setMgmtMsg(`✓ ${pluginName}/${serviceId} ${action === 'stop' ? '已停止' : action === 'restart' ? '已重启' : '已启动'}（${status.state}${status.port ? ` :${status.port}` : ''}）`)
+    } catch (e) {
+      const raw = e instanceof Error ? e.message : String(e)
+      // 热装插件未重扫（autostart）前服务未注册 → restart/start 会报 not registered
+      const hint = /not registered|未注册/i.test(raw)
+        ? '（服务未注册：请刷新插件列表或重开应用后重试）'
+        : ''
+      setMgmtMsg(`✗ ${pluginName}/${serviceId} ${action} 失败：${raw}${hint}`)
+    } finally {
+      setOpLoading(null)
+    }
+  }, [])
+
+  /** 卸载预检 + 弹确认（P1：列明服务/进程/目录影响），确认后走 with_cleanup */
+  const requestUninstall = useCallback(async (p: InstalledPlugin) => {
+    if (!p.installPath) return
+    setMgmtMsg(null)
+    let impact: UninstallImpact
+    try {
+      impact = await precheckUninstall(p)
+    } catch {
+      impact = { runningServices: [], allServices: [], isDev: !!p.dev, isCore: !!p.core }
+    }
+    if (impact.isCore) {
+      setMgmtMsg(`✗ ${p.name} 是核心通道插件，不可卸载`)
+      return
+    }
+    setConfirmTarget({ plugin: p, impact })
+  }, [])
+
   /**
    * 加载索引（单源语义：只拉当前激活源，不聚合多源插件）。
    * sourceId 缺省用当前激活源；官方源（url=''）走 OFFICIAL_INDEX_SOURCES 多镜像。
@@ -622,14 +884,55 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     finally { setILoading(false) }
   }, [])
 
-  // 单视图：挂载即加载索引 + 已装（已装数据供徽标/筛选/详情分流，不再依赖 Tab 切换）
-  useEffect(() => { loadIndex() }, [loadIndex])
-  useEffect(() => { loadInstalled() }, [loadInstalled])
-
   const refreshAfterOp = useCallback(async () => {
     await loadInstalled()
     setUpdates({})
   }, [loadInstalled])
+
+  // 单视图：挂载即加载索引 + 已装（已装数据供徽标/筛选/详情分流，不再依赖 Tab 切换）
+  useEffect(() => { loadIndex() }, [loadIndex])
+  useEffect(() => { loadInstalled() }, [loadInstalled])
+
+  /** 确认卸载执行：with_cleanup；错误 32/目录占用提示 force 兜底 */
+  const executeUninstall = useCallback(async (p: InstalledPlugin) => {
+    if (!p.installPath) return
+    setConfirmTarget(null)
+    setOpLoading(`uninstall-${p.id}`); setMgmtMsg(null)
+    const r = await uninstallPlugin(p.installPath, p.id)
+    if (r.success) {
+      setMgmtMsg(`✓ ${p.name} 已卸载`)
+      // 本地同步清理该插件状态与服务状态投影
+      setPluginStates(prev => { const n = { ...prev }; delete n[p.id]; return n })
+      setServiceStatuses(prev => {
+        const n = { ...prev }
+        for (const k of Object.keys(n)) if (k.startsWith(`${p.id}::`)) delete n[k]
+        return n
+      })
+      await refreshAfterOp()
+    } else {
+      const raw = r.error ?? '未知错误'
+      const hint = /错误 32|error 32|占用|being used|ACCESS_DENIED|拒绝访问/i.test(raw)
+        ? '（可尝试「强制卸载」兜底，或检查任务管理器中残留进程后重试）'
+        : ''
+      setMgmtMsg(`✗ 卸载失败：${raw}${hint}`)
+    }
+    setOpLoading(null)
+  }, [refreshAfterOp])
+
+  /** 强制卸载兜底 */
+  const executeForceUninstall = useCallback(async (p: InstalledPlugin) => {
+    if (!p.installPath) return
+    setConfirmTarget(null)
+    setOpLoading(`force-${p.id}`); setMgmtMsg(null)
+    const r = await forceUninstallPlugin(p.installPath)
+    setMgmtMsg(r.success ? `✓ ${p.name} 已强制卸载${r.message ? '：' + r.message : ''}` : `✗ 强制卸载失败：${r.error ?? '未知错误'}`)
+    if (r.success) {
+      setPluginStates(prev => { const n = { ...prev }; delete n[p.id]; return n })
+      await refreshAfterOp()
+    }
+    setOpLoading(null)
+  }, [refreshAfterOp])
+
 
   /** 已装判定：商城插件 id 命中已装列表 */
   const isInstalled = useCallback((p: MarketPlugin): InstalledPlugin | undefined =>
@@ -654,15 +957,10 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     if (r.success) await loadInstalled()
   }
 
-  const handleUninstall = async (p: InstalledPlugin) => {
-    if (!p.installPath) return
-    if (!confirm(`确认卸载 ${p.name}（${p.id}）？\n将停止其后台服务、终止相关进程并删除插件目录。`)) return
-    setOpLoading(`uninstall-${p.id}`); setOpMsg(null)
-    const r = await uninstallPlugin(p.installPath, p.id)
-    setOpMsg(r.success ? `✓ ${p.name} 已卸载` : `✗ 卸载失败：${r.error ?? '未知错误'}`)
-    setOpLoading(null)
-    if (r.success) await refreshAfterOp()
-  }
+  // 商城详情页卸载入口复用管理中心预检弹窗（P1：详情操作与管理操作同语义）
+  const handleUninstall = useCallback(async (p: InstalledPlugin) => {
+    await requestUninstall(p)
+  }, [requestUninstall])
 
   const handleCheckUpdate = async (p: InstalledPlugin) => {
     if (!p.installPath) return
@@ -697,50 +995,86 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#1A1A1F', color: '#F8F8F8', fontSize: 13, position: 'relative', overflow: 'hidden' }}>
-      {/* 顶栏：单一入口「插件市场」+ 刷新；已装筛选态显示「检查全部更新」 */}
+      {/* 顶栏：视图切换（商城/管理）+ 刷新；商城已装筛选态显示「检查全部更新」 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid #3F3F46', flexShrink: 0 }}>
-        <div style={{
-          fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 8,
-          background: '#3B82F6', color: '#fff', display: 'flex', alignItems: 'center', gap: 5,
-        }}>
-          🧩 插件市场
-          <span style={{ fontSize: 9, background: 'rgba(255,255,255,.2)', padding: '1px 6px', borderRadius: 8 }}>
-            {index?.plugins?.length ?? 0}
-          </span>
+        <div style={{ display: 'flex', gap: 2, background: '#25252B', borderRadius: 8, padding: 2, flexShrink: 0 }}>
+          <button onClick={() => setView('market')}
+            style={{ fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: view === 'market' ? '#3B82F6' : 'transparent', color: view === 'market' ? '#fff' : '#8E8E93' }}>
+            🧩 商城
+          </button>
+          <button onClick={() => { setView('manage'); void loadMgmtData() }}
+            style={{ fontSize: 11, fontWeight: 600, padding: '5px 10px', borderRadius: 6, cursor: 'pointer', border: 'none',
+              background: view === 'manage' ? '#3B82F6' : 'transparent', color: view === 'manage' ? '#fff' : '#8E8E93' }}>
+            ⚙ 已装管理
+            <span style={{ fontSize: 9, marginLeft: 4, opacity: 0.85 }}>{installedCount}</span>
+          </button>
         </div>
         <div style={{ flex: 1 }} />
-        {installedFilter && installedCount > 0 && (
+        {view === 'market' && installedFilter && installedCount > 0 && (
           <button onClick={handleCheckAll} title="检查全部已装插件更新"
             style={{ ...s.btn, padding: '6px 10px', fontSize: 11, minHeight: 32 }}>
             检查全部更新
           </button>
         )}
-        <button onClick={() => void loadIndex()} title="刷新索引"
+        <button onClick={() => { view === 'market' ? void loadIndex() : void loadMgmtData() }} title="刷新"
           style={{ width: 32, height: 32, borderRadius: 8, border: '1px solid #3F3F46', background: '#2D2D33', color: '#B4B4B8', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           ↻
         </button>
       </div>
 
-      <MarketView
-        index={index} loading={mLoading} error={mError}
-        query={query} setQuery={setQuery}
-        category={category} setCategory={setCategory}
-        installedFilter={installedFilter} setInstalledFilter={setInstalledFilter}
-        installedCount={installedCount}
-        sort={sort} setSort={setSort}
-        flatView={flatView} setFlatView={setFlatView}
-        selected={selected} detailOpen={detailOpen}
-        openDetail={openDetail} closeDetail={closeDetail}
-        selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
-        installing={installing} installMsg={installMsg} onInstall={handleInstall}
-        onReload={() => void loadIndex()}
-        sourceUsed={sourceUsed}
-        sources={sources} activeSourceId={activeSourceId}
-        onSwitchSource={switchSource} onAddSource={applyIndexSource} onDeleteSource={deleteSource}
-        installed={installed} isInstalled={isInstalled} updates={updates}
-        opLoading={opLoading} opMsg={opMsg}
-        onUninstall={handleUninstall} onCheckUpdate={handleCheckUpdate} onApplyUpdate={handleApplyUpdate}
-      />
+      {view === 'manage' ? (
+        <ManagementView
+          installed={installed}
+          iLoading={iLoading}
+          iError={iError}
+          pluginStates={pluginStates}
+          serviceStatuses={serviceStatuses}
+          isEnabled={isEnabled}
+          query={mgmtQuery} setQuery={setMgmtQuery}
+          filter={mgmtFilter} setFilter={setMgmtFilter}
+          expanded={expanded} setExpanded={setExpanded}
+          msg={mgmtMsg}
+          opLoading={opLoading}
+          onReload={() => void loadMgmtData()}
+          onToggleEnabled={handleToggleEnabled}
+          onToggleUi={handleToggleUi}
+          onServiceAction={handleServiceAction}
+          onUninstall={requestUninstall}
+        />
+      ) : (
+        <MarketView
+          index={index} loading={mLoading} error={mError}
+          query={query} setQuery={setQuery}
+          category={category} setCategory={setCategory}
+          installedFilter={installedFilter} setInstalledFilter={setInstalledFilter}
+          installedCount={installedCount}
+          sort={sort} setSort={setSort}
+          flatView={flatView} setFlatView={setFlatView}
+          selected={selected} detailOpen={detailOpen}
+          openDetail={openDetail} closeDetail={closeDetail}
+          selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion}
+          installing={installing} installMsg={installMsg} onInstall={handleInstall}
+          onReload={() => void loadIndex()}
+          sourceUsed={sourceUsed}
+          sources={sources} activeSourceId={activeSourceId}
+          onSwitchSource={switchSource} onAddSource={applyIndexSource} onDeleteSource={deleteSource}
+          installed={installed} isInstalled={isInstalled} updates={updates}
+          opLoading={opLoading} opMsg={opMsg}
+          onUninstall={handleUninstall} onCheckUpdate={handleCheckUpdate} onApplyUpdate={handleApplyUpdate}
+        />
+      )}
+
+      {/* 卸载确认弹窗（预检影响列明：服务/端口/进程/目录；普通与强制两条路） */}
+      {confirmTarget && (
+        <UninstallConfirmModal
+          target={confirmTarget}
+          opLoading={opLoading}
+          onCancel={() => setConfirmTarget(null)}
+          onConfirm={executeUninstall}
+          onForce={executeForceUninstall}
+        />
+      )}
     </div>
   )
 }
@@ -1443,5 +1777,379 @@ function FilterChip({ active, onClick, label, color }: { active: boolean; onClic
       whiteSpace: 'nowrap', flexShrink: 0,
       transition: 'background 0.15s, color 0.15s',
     }}>{label}</button>
+  )
+}
+
+/* ========================================================================
+   已装插件管理中心（P1）
+   —— 一等列表：图标+名称+版本+来源徽标+运行状态徽标+启停开关+展开区
+   数据源：discover（已装）+ cap.pluginState:get_states + list_status
+          + plugin.service.status 实时事件（宿主桥）
+   ======================================================================== */
+
+type MgmtFilter = 'all' | 'enabled' | 'disabled' | 'running' | 'error'
+
+interface ManagementViewProps {
+  installed: InstalledPlugin[]
+  iLoading: boolean
+  iError: string | null
+  pluginStates: PluginStatesMap
+  serviceStatuses: Record<string, ServiceStatus>
+  isEnabled: (p: InstalledPlugin) => boolean
+  query: string
+  setQuery: (s: string) => void
+  filter: MgmtFilter
+  setFilter: (f: MgmtFilter) => void
+  expanded: Set<string>
+  setExpanded: (s: Set<string>) => void
+  msg: string | null
+  opLoading: string | null
+  onReload: () => void
+  onToggleEnabled: (p: InstalledPlugin, enabled: boolean) => void
+  onToggleUi: (p: InstalledPlugin, uiEnabled: boolean) => void
+  onServiceAction: (pluginId: string, pluginName: string, serviceId: string, action: 'stop' | 'restart' | 'start') => void
+  onUninstall: (p: InstalledPlugin) => void
+}
+
+/** 服务状态徽标配色 */
+function serviceStateColor(state: ServiceStatus['state']): { fg: string; bg: string; label: string } {
+  switch (state) {
+    case 'running': return { fg: '#34D399', bg: '#34D39922', label: '运行中' }
+    case 'starting': return { fg: '#F5B73D', bg: '#F5B73D22', label: '启动中' }
+    case 'stopping': return { fg: '#F5B73D', bg: '#F5B73D22', label: '停止中' }
+    case 'error': return { fg: '#EF4444', bg: '#EF444422', label: '错误' }
+    default: return { fg: '#6B7280', bg: '#6B728022', label: '已停止' }
+  }
+}
+
+/** uptime 秒 → 人读（60s 内按秒，1h 内按分，其余按小时） */
+function fmtUptime(sec?: number): string {
+  if (typeof sec !== 'number' || sec < 0) return '—'
+  if (sec < 60) return `${sec}s`
+  if (sec < 3600) return `${Math.floor(sec / 60)}m${sec % 60 ? (sec % 60) + 's' : ''}`
+  return `${Math.floor(sec / 3600)}h${Math.floor((sec % 3600) / 60)}m`
+}
+
+function ManagementView(props: ManagementViewProps) {
+  const { installed, iLoading, iError, serviceStatuses, isEnabled,
+    query, setQuery, filter, setFilter, expanded, setExpanded,
+    msg, opLoading, onReload, onToggleEnabled, onToggleUi, onServiceAction, onUninstall } = props
+
+  /** 插件全部服务状态（按 pluginId 聚合） */
+  const servicesOf = useCallback((pluginId: string): ServiceStatus[] =>
+    Object.values(serviceStatuses).filter(s => s.pluginId === pluginId), [serviceStatuses])
+
+  const rows = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return installed.filter(p => {
+      if (p.builtin) return false // 内置宿主能力不进管理列表（不可卸载、无独立服务面）
+      if (q && ![p.id, p.name, p.description ?? ''].join(' ').toLowerCase().includes(q)) return false
+      const svcs = servicesOf(p.id)
+      const enabled = isEnabled(p)
+      switch (filter) {
+        case 'enabled': return enabled
+        case 'disabled': return !enabled
+        case 'running': return svcs.some(s => s.state === 'running' || s.state === 'starting')
+        case 'error': return svcs.some(s => s.state === 'error')
+        default: return true
+      }
+    })
+  }, [installed, query, filter, servicesOf, isEnabled])
+
+  const toggleExpand = (id: string) => {
+    const next = new Set(expanded)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setExpanded(next)
+  }
+
+  if (iLoading) return <div style={{ padding: 24, color: '#8E8E93' }}>加载已装插件中…</div>
+  if (iError) return (
+    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ color: '#EF4444', wordBreak: 'break-all' }}>加载失败：{iError}</div>
+      <button onClick={onReload} style={s.btn}>重试</button>
+    </div>
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {/* 工具栏：搜索 + 状态筛选 */}
+      <div style={{ padding: '8px 10px', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flexShrink: 0 }}>
+        <input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索已装插件（名称 / ID / 描述）…"
+          style={{ flex: 1, minWidth: 140, padding: '7px 8px', background: '#25252B', border: '1px solid #3F3F46', borderRadius: 6, color: '#F8F8F8', fontSize: 12, outline: 'none' }} />
+      </div>
+      <div style={{ padding: '0 10px 6px', display: 'flex', gap: 4, alignItems: 'center', overflowX: 'auto', WebkitOverflowScrolling: 'touch', flexShrink: 0 }}>
+        <span style={{ fontSize: 9, color: '#6B7280', marginRight: 1, flexShrink: 0 }}>状态</span>
+        {([['all', '全部', '#6B7280'], ['enabled', '已启用', '#34D399'], ['disabled', '已停用', '#F0616D'],
+           ['running', '运行中', '#3B82F6'], ['error', '有错误', '#EF4444']] as Array<[MgmtFilter, string, string]>).map(([key, label, color]) => (
+          <FilterChip key={key} active={filter === key} onClick={() => setFilter(key)} label={label} color={color} />
+        ))}
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 10, color: '#6B7280', flexShrink: 0 }}>{rows.length} 个插件</span>
+      </div>
+
+      {/* 操作结果提示条 */}
+      {msg && (
+        <div style={{ padding: '6px 10px', fontSize: 11, color: msg.startsWith('✓') ? '#10B981' : '#EF4444', borderBottom: '1px solid #3F3F46', flexShrink: 0, wordBreak: 'break-all' }}>
+          {msg}
+        </div>
+      )}
+
+      {/* 已装插件列表 */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0 10px 12px' }}>
+        {rows.length === 0 ? (
+          <div style={{ padding: 24, color: '#8E8E93', textAlign: 'center' }}>
+            {installed.length === 0 ? '尚未安装任何插件' : '无匹配插件'}
+          </div>
+        ) : rows.map(p => (
+          <PluginManageRow
+            key={p.id}
+            plugin={p}
+            enabled={isEnabled(p)}
+            uiEnabled={props.pluginStates[p.id]?.uiEnabled !== false}
+            services={servicesOf(p.id)}
+            expanded={expanded.has(p.id)}
+            opLoading={opLoading}
+            onToggleExpand={() => toggleExpand(p.id)}
+            onToggleEnabled={onToggleEnabled}
+            onToggleUi={onToggleUi}
+            onServiceAction={onServiceAction}
+            onUninstall={onUninstall}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ---------- 管理列表行 ---------- */
+
+interface PluginManageRowProps {
+  plugin: InstalledPlugin
+  enabled: boolean
+  uiEnabled: boolean
+  services: ServiceStatus[]
+  expanded: boolean
+  opLoading: string | null
+  onToggleExpand: () => void
+  onToggleEnabled: (p: InstalledPlugin, enabled: boolean) => void
+  onToggleUi: (p: InstalledPlugin, uiEnabled: boolean) => void
+  onServiceAction: (pluginId: string, pluginName: string, serviceId: string, action: 'stop' | 'restart' | 'start') => void
+  onUninstall: (p: InstalledPlugin) => void
+}
+
+/** 来源徽标：Project / User / DEV（dev-link 直连） */
+function SourceBadge({ plugin }: { plugin: InstalledPlugin }) {
+  const dev = !!plugin.dev
+  const kind = plugin.source?.kind
+  const [label, color] = dev ? ['DEV', '#F59E0B']
+    : kind === 'project' ? ['Project', '#06B6D4']
+    : ['User', '#6B7280']
+  return (
+    <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: color + '22', color, border: `1px solid ${color}44` }}>
+      {label}
+    </span>
+  )
+}
+
+function PluginManageRow({ plugin, enabled, uiEnabled, services, expanded, opLoading,
+  onToggleExpand, onToggleEnabled, onToggleUi, onServiceAction, onUninstall }: PluginManageRowProps) {
+
+  const running = services.filter(s => s.state === 'running' || s.state === 'starting')
+  const errored = services.filter(s => s.state === 'error')
+  const hasServices = (plugin.services?.length ?? 0) > 0 || services.length > 0
+
+  // 运行状态徽标：错误 > 运行中 N 服务 > 已停用（enabled=false）> 空闲
+  const renderRunBadge = () => {
+    if (errored.length > 0) {
+      return <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: '#EF444422', color: '#EF4444', border: '1px solid #EF444444' }}>✗ {errored.length} 服务错误</span>
+    }
+    if (running.length > 0) {
+      return <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: '#34D39922', color: '#34D399', border: '1px solid #34D39944' }}>● 运行中 {running.length} 服务</span>
+    }
+    if (!enabled) {
+      return <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, fontWeight: 600, background: '#6B728022', color: '#8E8E93', border: '1px solid #6B728044' }}>已停用</span>
+    }
+    if (hasServices) {
+      return <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 4, background: '#6B72801A', color: '#6B7280' }}>○ 服务空闲</span>
+    }
+    return null
+  }
+
+  return (
+    <div style={{ marginBottom: 6, border: `1px solid ${expanded ? '#3B82F6' : '#3F3F46'}`, borderRadius: 8, background: '#25252B', overflow: 'hidden' }}>
+      {/* 行头（点击展开/收起） */}
+      <div onClick={onToggleExpand} style={{ display: 'flex', gap: 10, padding: 10, cursor: 'pointer', alignItems: 'center' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#2A2A30' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0, background: '#3B82F622', color: '#3B82F6' }}>
+          🧩
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: enabled ? '#F8F8F8' : '#8E8E93' }}>{plugin.name}</span>
+            <span style={{ fontSize: 10, color: '#6B7280' }}>v{plugin.version}</span>
+            <SourceBadge plugin={plugin} />
+            {renderRunBadge()}
+          </div>
+          <div style={{ fontSize: 10, color: '#6B7280', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {plugin.id}{plugin.description ? ` · ${plugin.description}` : ''}
+          </div>
+        </div>
+        {/* 启停开关（点击行头不触发） */}
+        <label onClick={e => e.stopPropagation()} style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, cursor: 'pointer' }} title={enabled ? '停用插件（联动停止其服务）' : '启用插件（联动启动其服务）'}>
+          <span style={{ fontSize: 10, color: enabled ? '#34D399' : '#6B7280' }}>{enabled ? '启用' : '停用'}</span>
+          <input type="checkbox" checked={enabled} onChange={e => onToggleEnabled(plugin, e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: '#3B82F6', cursor: 'pointer' }} />
+        </label>
+        <span style={{ fontSize: 10, color: '#6B7280', flexShrink: 0 }}>{expanded ? '▾' : '▸'}</span>
+      </div>
+
+      {/* 展开区：服务表 + UI 开关 + 操作列 */}
+      {expanded && (
+        <div style={{ padding: '0 10px 10px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {hasServices ? (
+            <ServiceTable plugin={plugin} services={services} opLoading={opLoading} onServiceAction={onServiceAction} />
+          ) : (
+            <div style={{ fontSize: 10, color: '#6B7280', padding: '4px 0' }}>该插件未声明后台服务（contributes.services 为空）</div>
+          )}
+
+          {/* UI 面开关 + 操作列 */}
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 10, color: '#8E8E93' }}
+              title="隐藏/显示该插件的面板贡献（不动插件启停）">
+              <input type="checkbox" checked={uiEnabled} onChange={e => onToggleUi(plugin, e.target.checked)}
+                style={{ width: 14, height: 14, accentColor: '#8B5CF6', cursor: 'pointer' }} />
+              UI 面显示
+            </label>
+            <span style={{ flex: 1 }} />
+            <button onClick={() => onUninstall(plugin)} disabled={opLoading === `uninstall-${plugin.id}`}
+              style={{ ...s.miniBtn, color: '#F0616D', borderColor: '#7F1D1D', opacity: opLoading ? 0.5 : 1 }}>
+              {opLoading === `uninstall-${plugin.id}` ? '卸载中…' : '卸载'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ---------- 服务表 ---------- */
+
+function ServiceTable({ plugin, services, opLoading, onServiceAction }: {
+  plugin: InstalledPlugin
+  services: ServiceStatus[]
+  opLoading: string | null
+  onServiceAction: (pluginId: string, pluginName: string, serviceId: string, action: 'stop' | 'restart' | 'start') => void
+}) {
+  // 以 manifest 声明为权威行序，status 表补运行时观测；未注册服务显示 declared-only 行
+  const declared = plugin.services ?? []
+  const rows = declared.map(d => ({
+    declared: d,
+    status: services.find(s => s.serviceId === d.id),
+  }))
+  const extra = services.filter(s => !declared.some(d => d.id === s.serviceId))
+
+  return (
+    <div style={{ border: '1px solid #3F3F46', borderRadius: 6, overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 0.6fr 0.6fr 0.7fr 1.4fr auto', gap: 4, padding: '5px 8px', background: '#1F1F24', fontSize: 9, color: '#6B7280' }}>
+        <span>服务</span><span>状态</span><span>端口</span><span>PID</span><span>运行时长</span><span>重启/错误</span><span>操作</span>
+      </div>
+      {[...rows, ...extra.map(s => ({ declared: null, status: s }))].map(r => {
+        const st = r.status
+        const c = st ? serviceStateColor(st.state) : { fg: '#6B7280', bg: '#6B72801A', label: '未注册' }
+        const sid = r.declared?.id ?? st?.serviceId ?? ''
+        const busy = opLoading === `svc-${plugin.id}::${sid}-stop`
+          || opLoading === `svc-${plugin.id}::${sid}-restart`
+          || opLoading === `svc-${plugin.id}::${sid}-start`
+        const key = `${plugin.id}::${sid}`
+        return (
+          <div key={key} style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 0.6fr 0.6fr 0.7fr 1.4fr auto', gap: 4, padding: '5px 8px', fontSize: 10, borderTop: '1px solid #3F3F46', alignItems: 'center' }}>
+            <span style={{ color: '#B4B4B8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.declared?.description || sid}>
+              {sid}
+            </span>
+            <span style={{ color: c.fg, fontWeight: 600 }}>{c.label}</span>
+            <span style={{ color: '#8E8E93' }}>{st?.port ?? '—'}</span>
+            <span style={{ color: '#8E8E93' }}>{st?.pid ?? '—'}</span>
+            <span style={{ color: '#8E8E93' }}>{fmtUptime(st?.uptime)}</span>
+            <span style={{ color: st?.lastError ? '#EF4444' : '#8E8E93', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={st?.lastError ?? ''}>
+              {st?.lastError ? `↻${st.restartCount ?? 0} ${st.lastError}` : `↻${st?.restartCount ?? 0}`}
+            </span>
+            <span style={{ display: 'flex', gap: 3 }}>
+              {st && (st.state === 'running' || st.state === 'starting') ? (
+                <button disabled={busy} onClick={() => onServiceAction(plugin.id, plugin.name, sid, 'stop')}
+                  style={{ ...s.miniBtn, padding: '2px 6px', opacity: busy ? 0.5 : 1 }}>停止</button>
+              ) : (
+                <button disabled={busy} onClick={() => onServiceAction(plugin.id, plugin.name, sid, 'start')}
+                  style={{ ...s.miniBtn, padding: '2px 6px', opacity: busy ? 0.5 : 1 }}>启动</button>
+              )}
+              <button disabled={busy} onClick={() => onServiceAction(plugin.id, plugin.name, sid, 'restart')}
+                style={{ ...s.miniBtn, padding: '2px 6px', opacity: busy ? 0.5 : 1 }}>重启</button>
+            </span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ---------- 卸载确认弹窗（预检影响列明） ---------- */
+
+function UninstallConfirmModal({ target, opLoading, onCancel, onConfirm, onForce }: {
+  target: { plugin: InstalledPlugin; impact: UninstallImpact }
+  opLoading: string | null
+  onCancel: () => void
+  onConfirm: (p: InstalledPlugin) => void
+  onForce: (p: InstalledPlugin) => void
+}) {
+  const { plugin, impact } = target
+  const busy = !!opLoading
+  const ports = impact.runningServices.map(s => s.port).filter((p): p is number => typeof p === 'number')
+
+  return (
+    <div onClick={busy ? undefined : onCancel} style={{
+      position: 'absolute', inset: 0, zIndex: 40, background: 'rgba(0,0,0,.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+    }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxWidth: 420, background: '#1F1F24', border: '1px solid #3F3F46',
+        borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 10,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: '#F8F8F8' }}>
+          {impact.isDev ? '移除 dev 插件链接' : `卸载插件「${plugin.name}」`}
+        </div>
+        <div style={{ fontSize: 11, color: '#B4B4B8', lineHeight: 1.7 }}>
+          {impact.isDev ? (
+            <>该插件为源码直连（dev-link）：仅移除安装目录中的链接本体，源码目录不会被动；state.json 状态记录一并清除。</>
+          ) : (
+            <>确认后将依次执行：<br />
+              ① 停止后台服务 {impact.runningServices.length > 0
+                ? `（${impact.runningServices.length} 个运行中${ports.length ? `，端口 ${ports.join(', ')}` : ''}）`
+                : '（当前无运行中服务）'}<br />
+              ② 终止相关进程（按插件目录精准匹配）<br />
+              ③ 删除插件目录（失败自动重试）<br />
+              ④ 清理 state.json 状态记录</>
+          )}
+        </div>
+        {impact.isCore && (
+          <div style={{ fontSize: 11, color: '#EF4444' }}>⚠ 核心通道插件不可卸载（承载面板基础渲染与历史卡片）。</div>
+        )}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button onClick={onCancel} disabled={busy} style={{ ...s.btn, flex: 1, minHeight: 38, opacity: busy ? 0.5 : 1 }}>取消</button>
+          {!impact.isDev && !impact.isCore && (
+            <button onClick={() => onForce(plugin)} disabled={busy}
+              title="目录被占用（错误 32）时的兜底：仅移除注册信息，目录改名 .polaris-plugin-removed-*"
+              style={{ ...s.btn, flex: 1, minHeight: 38, color: '#F5B73D', borderColor: '#7C5A11', opacity: busy ? 0.5 : 1 }}>
+              强制卸载
+            </button>
+          )}
+          <button onClick={() => onConfirm(plugin)} disabled={busy || impact.isCore}
+            style={{ ...s.btn, flex: 1, minHeight: 38, background: '#B91C1C', borderColor: '#B91C1C', color: '#fff', fontWeight: 600, opacity: busy || impact.isCore ? 0.5 : 1 }}>
+            {busy ? '卸载中…' : impact.isDev ? '移除链接' : '确认卸载'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
