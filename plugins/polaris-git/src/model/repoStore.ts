@@ -464,6 +464,207 @@ export class GitRepoStore {
       is_binary: false,
     };
   }
+
+  // ── G1 写路径承接（2026-11-12 第二批：discard/分支/远程/stash/标签/gitignore）──
+  // 全部经 cap.git 写类动作（权限 gate / 审计 / WRITE_GATE 串行在宿主侧）；
+  // 成功后 reconcile status + 强刷关联列表（不依赖 watcher）。
+
+  private async writeWithLists(label: string, lists: ListKey[], run: () => Promise<unknown>): Promise<boolean> {
+    const ok = await this.write(label, run);
+    if (ok) {
+      for (const key of lists) void this.loadList(key, true);
+    }
+    return ok;
+  }
+
+  // 丢弃（危险：未跟踪文件删除不可恢复，确认框由组件层列明）
+  discardFile(filePath: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`丢弃 ${filePath}`, () =>
+      capGit('discard_changes', { workspacePath: repoPath, filePath }),
+    );
+  }
+
+  batchDiscard(filePaths: string[]): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`丢弃 ${filePaths.length} 个文件`, () =>
+      capGit('batch_discard', { workspacePath: repoPath, filePaths }),
+    );
+  }
+
+  // 分支
+  createBranch(name: string, checkout: boolean): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`创建分支 ${name}`, ['branches'], () =>
+      capGit('create_branch', { workspacePath: repoPath, name, checkout }),
+    );
+  }
+
+  checkoutBranch(name: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`切换到 ${name}`, () =>
+      capGit('checkout_branch', { workspacePath: repoPath, name }),
+    );
+  }
+
+  deleteBranch(name: string, force: boolean): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`删除分支 ${name}`, ['branches'], () =>
+      capGit('delete_branch', { workspacePath: repoPath, name, force }),
+    );
+  }
+
+  renameBranch(oldName: string, newName: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`重命名分支`, ['branches'], () =>
+      capGit('rename_branch', { workspacePath: repoPath, oldName, newName }),
+    );
+  }
+
+  mergeBranch(sourceBranch: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`合并 ${sourceBranch}`, () =>
+      capGit('merge_branch', { workspacePath: repoPath, sourceBranch }),
+    );
+  }
+
+  // 远程（网络长任务；WRITE_GATE 串行；冲突/失败经 writeError 呈现）
+  fetchRemote(remoteName?: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(remoteName ? `拉取远端 ${remoteName}` : 'fetch', ['remotes', 'branches'], () =>
+      capGit('fetch', { workspacePath: repoPath, ...(remoteName ? { remoteName } : {}) }),
+    );
+  }
+
+  pullBranch(remoteName?: string, branchName?: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write('pull', () =>
+      capGit('pull', { workspacePath: repoPath, ...(remoteName ? { remoteName } : {}), ...(branchName ? { branchName } : {}) }),
+    );
+  }
+
+  pushBranch(branchName: string, remoteName?: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`推送 ${branchName}`, ['remotes', 'branches'], () =>
+      // push_branch 缺省非 force；后端 force-with-lease 语义按 remote-tracking 自动对照
+      capGit('push_branch', {
+        workspacePath: repoPath,
+        branchName,
+        ...(remoteName ? { remoteName } : {}),
+      }),
+    );
+  }
+
+  pushSetUpstream(branchName: string, remoteName?: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`推送并设上游 ${branchName}`, ['remotes', 'branches'], () =>
+      capGit('push_set_upstream', { workspacePath: repoPath, branchName, ...(remoteName ? { remoteName } : {}) }),
+    );
+  }
+
+  // Stash
+  stashSave(message?: string, includeUntracked?: boolean): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists('stash 保存', ['stashes'], () =>
+      capGit('stash_save', {
+        workspacePath: repoPath,
+        ...(message ? { message } : {}),
+        ...(includeUntracked ? { includeUntracked } : {}),
+      }),
+    );
+  }
+
+  stashApply(index?: number): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`stash 应用 ${index ?? '最新'}`, () =>
+      capGit('stash_apply', { workspacePath: repoPath, ...(index === undefined ? {} : { index }) }),
+    );
+  }
+
+  stashPop(index?: number): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`stash 弹出 ${index ?? '最新'}`, ['stashes'], () =>
+      capGit('stash_pop', { workspacePath: repoPath, ...(index === undefined ? {} : { index }) }),
+    );
+  }
+
+  stashDrop(index: number): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`stash 删除 ${index}`, ['stashes'], () =>
+      capGit('stash_drop', { workspacePath: repoPath, index }),
+    );
+  }
+
+  // 标签
+  createTag(name: string, commitish?: string, message?: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`创建标签 ${name}`, ['tags'], () =>
+      capGit('create_tag', {
+        workspacePath: repoPath,
+        name,
+        ...(commitish ? { commitish } : {}),
+        ...(message ? { message } : {}),
+      }),
+    );
+  }
+
+  deleteTag(name: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists(`删除标签 ${name}`, ['tags'], () =>
+      capGit('delete_tag', { workspacePath: repoPath, name }),
+    );
+  }
+
+  // gitignore
+  saveGitignore(content: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists('保存 .gitignore', ['gitignore'], () =>
+      capGit('save_gitignore', { workspacePath: repoPath, content }),
+    );
+  }
+
+  addToGitignore(rules: string[]): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.writeWithLists('加入 .gitignore', ['gitignore'], () =>
+      capGit('add_to_gitignore', { workspacePath: repoPath, rules }),
+    );
+  }
+
+  // 历史/提交上下文动作
+  cherryPick(commitSha: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`拣选 ${commitSha.slice(0, 7)}`, () =>
+      capGit('cherry_pick', { workspacePath: repoPath, commitSha }),
+    );
+  }
+
+  revertCommit(commitSha: string): Promise<boolean> {
+    const repoPath = this.state.repoPath;
+    if (!repoPath) return Promise.resolve(false);
+    return this.write(`还原 ${commitSha.slice(0, 7)}`, () =>
+      capGit('revert', { workspacePath: repoPath, commitSha }),
+    );
+  }
 }
 
 /** 面板单例 store（blob 每次加载一个实例；保活面板不重复 init） */

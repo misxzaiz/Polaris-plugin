@@ -1,9 +1,8 @@
 /**
- * ChangesTab —— 变更流水线（spec GP-02/GP-03/GP-04）：
- * 分组固定：冲突 → 已暂存 → 未暂存 → 未跟踪（无内容的组不占位）。
- * 选择框只改变选择；文件名点击展开内联 diff；行级主操作 = 暂存/取消暂存。
- * 批量条只展示选择集实际可执行的动作；写操作期间选择集只读（防重复提交）。
- * 本轮写范围 = 暂存/取消暂存/提交（discard 不在裁定范围内，不做）。
+ * ChangesTab —— 变更流水线（spec GP-02/GP-03/GP-04 + 第二批右键菜单）：
+ * 分组固定：冲突 → 已暂存 → 未暂存 → 未跟踪；选择框只改变选择；行内 diff。
+ * 右键菜单（GP-02）：暂存/取消暂存、丢弃（确认）、加入 .gitignore、复制路径。
+ * discard 为危险操作：确认框列明文件与「未跟踪删除不可恢复」（GP-10）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GitDiffEntry, GitFileChange } from '../types.ts';
@@ -12,7 +11,12 @@ import { useRepoState } from '../hooks.ts';
 import { baseName, dirOf, STATUS_LABEL, STATUS_TONE, statusLetterOf } from '../model/format.ts';
 import { DiffView } from './DiffView.tsx';
 import { CommitBar } from './CommitBar.tsx';
+import { PgMenu } from './PgMenu.tsx';
+import type { PgMenuItem } from './PgMenu.tsx';
+import { PgDialogSlot } from './PgDialog.tsx';
+import type { PgConfirmState, PgPromptState } from './PgDialog.tsx';
 import { ErrorNote, LoadingSkeleton } from './states.tsx';
+import { panelRootRef } from '../panelRoot.ts';
 import type { WidthMode } from './width.ts';
 
 type Area = 'conflicted' | 'staged' | 'unstaged' | 'untracked';
@@ -25,7 +29,7 @@ interface Row {
   change?: GitFileChange;
 }
 
-/** 提交草稿按仓库隔离（宽度/主题/tab 切换不丢草稿；会话级不落盘） */
+/** 提交草稿按仓库隔离（模块 Map 只做跨 tab/仓库记忆，受控值走组件 state） */
 const drafts = new Map<string, string>();
 
 export function ChangesTab({ mode }: { mode: WidthMode }) {
@@ -34,14 +38,14 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
   const repoPath = state.repoPath ?? '';
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [expanded, setExpanded] = useState<string | null>(null);
-  // 提交草稿：组件 state 驱动受控输入（模块 Map 只做跨 tab/仓库记忆，
-  // 不能直接当受控值——否则输入不触发重渲染，打字即被吞）
+  const [confirm, setConfirm] = useState<PgConfirmState | null>(null);
+  const [prompt, setPrompt] = useState<PgPromptState | null>(null);
+  const [menu, setMenu] = useState<{ x: number; y: number; items: PgMenuItem[]; header: string } | null>(null);
   const [draft, setDraft] = useState<string>(() => drafts.get(repoPath) ?? '');
   const changeDraft = (v: string): void => {
     setDraft(v);
     drafts.set(repoPath, v);
   };
-  // 仓库切换：草稿切到目标仓库的记忆值
   useEffect(() => {
     setDraft(drafts.get(repoPath) ?? '');
   }, [repoPath]);
@@ -64,7 +68,7 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
     };
   }, [status]);
 
-  // 状态 reconcile 后清掉已不存在的选择项（spec GP-03：成功后清空已不存在项）
+  // 状态 reconcile 后清掉已不存在的选择项
   useEffect(() => {
     setSelected((prev) => {
       const all = new Set<string>();
@@ -98,11 +102,55 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
     });
   };
 
-  const selectedRows = Object.values(rows)
-    .flat()
-    .filter((r) => selected.has(r.key));
+  const selectedRows = Object.values(rows).flat().filter((r) => selected.has(r.key));
   const selectedStaged = selectedRows.filter((r) => r.area === 'staged');
   const selectedUnstaged = selectedRows.filter((r) => r.area === 'unstaged' || r.area === 'untracked');
+
+  const copyText = (text: string): void => {
+    void navigator.clipboard?.writeText(text).catch(() => {});
+  };
+
+  const confirmDiscard = (paths: string[], hasUntracked: boolean): void => {
+    setConfirm({
+      title: paths.length === 1 ? `丢弃 ${baseName(paths[0])} 的改动？` : `丢弃 ${paths.length} 个文件的改动？`,
+      message: '将丢弃这些文件在工作区的全部未提交改动，回到最近一次提交的内容。',
+      lines: [...paths, ...(hasUntracked ? ['⚠ 未跟踪文件将被整文件删除，无法从 git 恢复'] : [])],
+      confirmLabel: paths.length === 1 ? `丢弃 ${baseName(paths[0])}` : `丢弃 ${paths.length} 个文件`,
+      danger: true,
+      onConfirm: () => {
+        void (paths.length === 1 ? repoStore.discardFile(paths[0]) : repoStore.batchDiscard(paths));
+      },
+    });
+  };
+
+  const rowMenu = (row: Row): PgMenuItem[] => {
+    const items: PgMenuItem[] = [];
+    if (row.area === 'staged') {
+      items.push({ key: 'unstage', label: '取消暂存', onSelect: () => void repoStore.unstageFile(row.path) });
+    } else {
+      items.push({ key: 'stage', label: '暂存', onSelect: () => void repoStore.stageFile(row.path) });
+    }
+    if (row.area !== 'conflicted') {
+      items.push({
+        key: 'discard',
+        label: '丢弃改动…',
+        danger: true,
+        onSelect: () => confirmDiscard([row.path], row.area === 'untracked'),
+      });
+    }
+    items.push({ key: 'sep1', label: '', separatorBefore: true });
+    items.push({
+      key: 'ignore',
+      label: '加入 .gitignore',
+      onSelect: () => {
+        const rule = row.path.includes('/') ? row.path.replace(/\\/g, '/') : `/${row.path}`;
+        void repoStore.addToGitignore([rule]);
+      },
+    });
+    items.push({ key: 'copy-path', label: '复制完整路径', onSelect: () => copyText(row.path) });
+    items.push({ key: 'copy-name', label: '复制文件名', onSelect: () => copyText(baseName(row.path)) });
+    return items;
+  };
 
   const allGroups: Array<{ area: Area; title: string; list: Row[] }> = [
     { area: 'conflicted', title: '冲突', list: rows.conflicted },
@@ -114,6 +162,8 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
 
   return (
     <div className="pg-changes">
+      <PgDialogSlot confirm={confirm} prompt={prompt} setConfirm={setConfirm} setPrompt={setPrompt} />
+      {menu && <PgMenu anchorClientX={menu.x} anchorClientY={menu.y} container={panelRootRef.current} items={menu.items} header={menu.header} onClose={() => setMenu(null)} />}
       {state.writeError && <ErrorNote message={state.writeError} />}
       {selectedRows.length > 0 && (
         <div className="pg-batchbar" role="toolbar" aria-label="批量操作">
@@ -140,6 +190,17 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
           >
             取消暂存{selectedStaged.length > 0 ? ` ${selectedStaged.length}` : ''}
           </button>
+          <button
+            type="button"
+            className="pg-mini"
+            disabled={busy || (selectedUnstaged.length === 0 && selectedStaged.length === 0)}
+            onClick={() => {
+              const paths = [...selectedUnstaged.map((r) => r.path), ...selectedStaged.map((r) => r.path)];
+              confirmDiscard(paths, selectedUnstaged.some((r) => r.area === 'untracked'));
+            }}
+          >
+            丢弃…
+          </button>
           <button type="button" className="pg-mini" onClick={() => setSelected(new Set())}>
             清除
           </button>
@@ -160,6 +221,7 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
                 statusVersion={state.statusVersion}
                 onToggleSelect={(shift) => toggle(row.key, shift, g.list)}
                 onExpand={() => setExpanded((cur) => (cur === row.key ? null : row.key))}
+                onContextMenu={(x, y) => setMenu({ x, y, items: rowMenu(row), header: row.path })}
               />
             ))}
           </div>
@@ -171,11 +233,7 @@ export function ChangesTab({ mode }: { mode: WidthMode }) {
         onDraftChange={changeDraft}
         stagedCount={rows.staged.length}
         selectedStagedPaths={selectedStaged.map((r) => r.path)}
-        onCommitted={() => {
-          setSelected(new Set());
-          setDraft('');
-          drafts.delete(repoPath);
-        }}
+        onCommitted={() => setSelected(new Set())}
       />
     </div>
   );
@@ -190,6 +248,7 @@ function FileRow({
   statusVersion,
   onToggleSelect,
   onExpand,
+  onContextMenu,
 }: {
   row: Row;
   mode: WidthMode;
@@ -199,6 +258,7 @@ function FileRow({
   statusVersion: number;
   onToggleSelect: (shift: boolean) => void;
   onExpand: () => void;
+  onContextMenu: (x: number, y: number) => void;
 }) {
   // 无 GitFileChange 的行（untracked/conflicted 字符串清单）按区域给语义，字母恒显
   const letter = row.change ? statusLetterOf(row.change) : 'U';
@@ -209,7 +269,13 @@ function FileRow({
 
   return (
     <div className="pg-fileitem-wrap">
-      <div className={`pg-fileitem${expanded ? ' pg-fileitem-on' : ''}`}>
+      <div
+        className={`pg-fileitem${expanded ? ' pg-fileitem-on' : ''}`}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onContextMenu(e.clientX, e.clientY);
+        }}
+      >
         <input
           type="checkbox"
           className="pg-fileitem-check"
@@ -237,10 +303,10 @@ function FileRow({
           {row.oldPath && <span className="pg-fileitem-dir"> ← {baseName(row.oldPath)}</span>}
         </button>
         {row.area === 'conflicted' && <span className="pg-conflict-hint">解决后暂存</span>}
-        {row.area === 'staged' ? (
+        {isStagedArea ? (
           <button
             type="button"
-            className="pg-mini"
+            className="pg-ghostbtn"
             disabled={busy}
             aria-label={`取消暂存 ${row.path}`}
             onClick={() => void repoStore.unstageFile(row.path)}
@@ -250,7 +316,7 @@ function FileRow({
         ) : (
           <button
             type="button"
-            className="pg-mini"
+            className="pg-ghostbtn"
             disabled={busy}
             aria-label={`暂存 ${row.path}`}
             onClick={() => void repoStore.stageFile(row.path)}
@@ -259,9 +325,7 @@ function FileRow({
           </button>
         )}
       </div>
-      {expanded && (
-        <InlineDiff row={row} statusVersion={statusVersion} />
-      )}
+      {expanded && <InlineDiff row={row} statusVersion={statusVersion} />}
     </div>
   );
 }
@@ -289,13 +353,13 @@ function InlineDiff({ row, statusVersion }: { row: Row; statusVersion: number })
         if (row.area === 'staged') {
           entry = await repoStore.indexFileDiff(row.path);
         } else if (row.area === 'untracked') {
-          entry = (await repoStore.worktreeFileDiff(row.path).catch(() => null)) ?? {
-            file_path: row.path,
-            change_type: 'added',
-            old_content: '',
-            new_content: '',
-          };
-          // 未跟踪文件无内容通道时的占位提示
+          entry =
+            (await repoStore.worktreeFileDiff(row.path).catch(() => null)) ?? {
+              file_path: row.path,
+              change_type: 'added',
+              old_content: '',
+              new_content: '',
+            };
           if (!entry.new_content && !entry.old_content && entry.change_type === 'added') {
             entry = { ...entry, new_content: undefined };
           }
@@ -319,12 +383,7 @@ function InlineDiff({ row, statusVersion }: { row: Row; statusVersion: number })
 
   return (
     <div className="pg-inline-diff">
-      <DiffView
-        entry={data?.entry ?? null}
-        error={data?.error ?? undefined}
-        loading={data === null}
-        filePath={row.path}
-      />
+      <DiffView entry={data?.entry ?? null} error={data?.error ?? undefined} loading={data === null} filePath={row.path} />
     </div>
   );
 }

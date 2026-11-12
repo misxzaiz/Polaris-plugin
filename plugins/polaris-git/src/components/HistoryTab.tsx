@@ -1,7 +1,7 @@
 /**
- * HistoryTab —— 历史（spec GP-07）：搜索（search_log grep）/ 分页加载 / 提交详情内联。
+ * HistoryTab —— 历史（spec GP-07 + 第二批右键菜单）：搜索 / 分页 / 提交详情内联。
+ * 右键提交：复制 SHA / 复制信息 / 在此提交建标签 / 还原此提交(revert) / 拣选(cherry-pick)。
  * 详情文件列表直接使用 GitCommitDetails.files（自带 old/new content）渲染 diff。
- * 【本轮偏差】泳道 lane graph（get_log_with_lanes.rows）暂不渲染， refs 徽章保留。
  */
 import { useEffect, useState } from 'react';
 import { repoStore } from '../model/repoStore.ts';
@@ -9,13 +9,21 @@ import { useRepoState } from '../hooks.ts';
 import type { GitCommitDetails } from '../types.ts';
 import { firstLine, relativeTime } from '../model/format.ts';
 import { DiffView } from './DiffView.tsx';
+import { PgMenu } from './PgMenu.tsx';
+import type { PgMenuItem } from './PgMenu.tsx';
+import { PgDialogSlot } from './PgDialog.tsx';
+import type { PgConfirmState, PgPromptState } from './PgDialog.tsx';
 import { EmptyBlock, ErrorNote, LoadingSkeleton } from './states.tsx';
-import type { RefObject } from 'react';
+import { panelRootRef } from '../panelRoot.ts';
 
-export function HistoryTab({ searchRef }: { searchRef?: RefObject<HTMLInputElement> }) {
+export function HistoryTab() {
   const state = useRepoState();
   const [input, setInput] = useState(state.logQuery);
   const [detailSha, setDetailSha] = useState<string | null>(null);
+  const busy = state.writeBusy !== null;
+  const [menu, setMenu] = useState<{ x: number; y: number; items: PgMenuItem[]; header: string } | null>(null);
+  const [confirm, setConfirm] = useState<PgConfirmState | null>(null);
+  const [prompt, setPrompt] = useState<PgPromptState | null>(null);
 
   useEffect(() => {
     if (state.phase === 'ready' && state.log.length === 0 && !state.logLoading && !state.logError) {
@@ -28,11 +36,67 @@ export function HistoryTab({ searchRef }: { searchRef?: RefObject<HTMLInputEleme
     void repoStore.loadLog(true);
   };
 
+  const copyText = (text: string): void => {
+    void navigator.clipboard?.writeText(text).catch(() => {});
+  };
+
+  const commitMenu = (sha: string, message: string): PgMenuItem[] => [
+    { key: 'copy-sha', label: '复制完整 SHA', onSelect: () => copyText(sha) },
+    { key: 'copy-msg', label: '复制提交信息', onSelect: () => copyText(message) },
+    {
+      key: 'tag',
+      label: '在此提交创建标签…',
+      disabled: busy,
+      separatorBefore: true,
+      onSelect: () =>
+        setPrompt({
+          title: `在 ${sha.slice(0, 7)} 创建标签`,
+          placeholder: '标签名（如 v1.0.0）',
+          confirmLabel: '创建',
+          message: firstLine(message),
+          onSubmit: (v) => {
+            const name = v.trim();
+            if (!name) return null;
+            void repoStore.createTag(name, sha);
+          },
+        }),
+    },
+    {
+      key: 'revert',
+      label: '还原此提交（revert）…',
+      danger: true,
+      disabled: busy,
+      separatorBefore: true,
+      onSelect: () =>
+        setConfirm({
+          title: `还原提交 ${sha.slice(0, 7)}？`,
+          message: '生成一个反向提交抵消该提交的改动；若与当前工作区冲突，将在变更页顶部提示。',
+          lines: [firstLine(message)],
+          confirmLabel: `还原 ${sha.slice(0, 7)}`,
+          danger: true,
+          onConfirm: () => void repoStore.revertCommit(sha),
+        }),
+    },
+    {
+      key: 'cherry-pick',
+      label: '拣选到当前分支（cherry-pick）…',
+      disabled: busy,
+      onSelect: () =>
+        setConfirm({
+          title: `拣选 ${sha.slice(0, 7)} 到当前分支？`,
+          message: '把该提交的改动复制到当前分支并生成新提交；冲突时在变更页处理。',
+          confirmLabel: `拣选 ${sha.slice(0, 7)}`,
+          onConfirm: () => void repoStore.cherryPick(sha),
+        }),
+    },
+  ];
+
   return (
     <div className="pg-history">
+      <PgDialogSlot confirm={confirm} prompt={prompt} setConfirm={setConfirm} setPrompt={setPrompt} />
+      {menu && <PgMenu anchorClientX={menu.x} anchorClientY={menu.y} container={panelRootRef.current} items={menu.items} header={menu.header} onClose={() => setMenu(null)} />}
       <div className="pg-searchrow">
         <input
-          ref={searchRef}
           className="pg-input pg-input-grow"
           placeholder="搜索提交信息 / SHA（Enter 搜索）"
           value={input}
@@ -62,13 +126,21 @@ export function HistoryTab({ searchRef }: { searchRef?: RefObject<HTMLInputEleme
           </button>
         )}
       </div>
-      {state.logError && <ErrorNote message={`历史加载失败：${state.logError}`} onRetry={() => void repoStore.loadLog(true)} />}
+      {state.logError && (
+        <ErrorNote message={`历史加载失败：${state.logError}`} onRetry={() => void repoStore.loadLog(true)} />
+      )}
       {state.logLoading ? (
         <LoadingSkeleton rows={8} />
       ) : state.log.length === 0 ? (
         <EmptyBlock
           title={state.logQuery ? '无匹配提交' : '暂无提交'}
-          hint={state.logQuery ? '调整关键词后重试，或清除筛选。' : state.status?.isEmpty ? '空仓库：提交首个变更后出现在这里。' : undefined}
+          hint={
+            state.logQuery
+              ? '调整关键词后重试，或清除筛选。'
+              : state.status?.isEmpty
+                ? '空仓库：提交首个变更后出现在这里。'
+                : undefined
+          }
         />
       ) : (
         <div className="pg-loglist" role="list">
@@ -82,7 +154,9 @@ export function HistoryTab({ searchRef }: { searchRef?: RefObject<HTMLInputEleme
               timestamp={c.timestamp}
               refs={c.refs ?? []}
               expanded={detailSha === c.sha}
+              busy={busy}
               onToggle={() => setDetailSha((cur) => (cur === c.sha ? null : c.sha))}
+              onContextMenu={(x, y) => setMenu({ x, y, items: commitMenu(c.sha, c.message), header: firstLine(c.message) })}
             />
           ))}
           {!state.logEnd && (
@@ -109,7 +183,9 @@ function LogRow({
   timestamp,
   refs,
   expanded,
+  busy,
   onToggle,
+  onContextMenu,
 }: {
   sha: string;
   shortSha: string;
@@ -118,8 +194,11 @@ function LogRow({
   timestamp?: number;
   refs: Array<{ name: string; kind: string }>;
   expanded: boolean;
+  busy: boolean;
   onToggle: () => void;
+  onContextMenu: (x: number, y: number) => void;
 }) {
+  void busy;
   return (
     <div className="pg-logitem-wrap">
       <button
@@ -128,6 +207,10 @@ function LogRow({
         role="listitem"
         aria-expanded={expanded}
         onClick={onToggle}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          onContextMenu(e.clientX, e.clientY);
+        }}
         title={message}
       >
         <span className="pg-logitem-sha">{shortSha}</span>

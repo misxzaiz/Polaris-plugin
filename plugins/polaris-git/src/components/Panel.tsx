@@ -9,6 +9,7 @@ import { hasHostBridge } from '../bridge.ts';
 import { useRepoState } from '../hooks.ts';
 import { totalChangeCount } from '../model/format.ts';
 import { useContainerWidth } from './width.ts';
+import { panelRootRef } from '../panelRoot.ts';
 import type { WidthMode } from './width.ts';
 import { ChangesTab } from './ChangesTab.tsx';
 import { HistoryTab } from './HistoryTab.tsx';
@@ -37,6 +38,11 @@ export function Panel() {
   useEffect(() => {
     repoStore.init();
   }, []);
+
+  // 浮层（菜单/对话框）定位边界
+  useEffect(() => {
+    panelRootRef.current = ref.current;
+  });
 
   if (!hasHostBridge()) {
     return (
