@@ -1,0 +1,69 @@
+{
+  "id": "browser-desk",
+  "name": "浏览器",
+  "version": "0.1.0",
+  "description": "多窗口浏览器工作台：驱动系统 Chrome（CDP 协议），支持多标签/多窗口、AI 经 MCP 实时交互（desk_* 工具面：搜索/阅读/点击/填表/截图/页内事件流/条件等待）、agentKey 会话绑定与下载事件。与内置浏览器并存，shadow 接管 browser.panel 席位。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "browser-desk.panel",
+        "area": "activityBar",
+        "panelType": "browser-desk",
+        "icon": "Globe2",
+        "labelKey": "plugins.browser-desk",
+        "labelDefault": "浏览器",
+        "order": 31,
+        "slot": "browser",
+        "slotMode": "shadow"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "services": [
+      {
+        "id": "browser-desk-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 8000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "浏览器引擎守护：puppeteer-core 驱动系统 Chrome，管理多标签/多窗口、agentKey 绑定、页面事件环与下载跟踪"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "browser-desk-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{polarisPort}}",
+          "{{polarisToken}}",
+          "{{appConfigDir}}"
+        ]
+      }
+    ],
+    "styles": [
+      {
+        "id": "panel",
+        "target": "slot",
+        "css": "/* browser-desk 面板样式（bd- 前缀防泄漏；slot 作用域注入）\n   色值一律取宿主主题变量（对齐 terminal-desk/polaris-git 教训）：\n   - 背景：--c-bg-base / --c-bg-elevated / --c-bg-surface / --c-bg-hover / --c-bg-active\n   - 文字：--c-text-primary / --c-text-secondary / --c-text-tertiary / --c-text-muted\n   - 状态：--c-status-danger/success/warning/info；--c-primary\n   - 边框：--c-border 是纯白 RGB 基底，必须 /0.08~0.2 透明度使用\n   布局基线：36px 头部（搜索框 + 引擎徽章）+ 标签列表 + AI 日志 */\n\n.bd-root {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n  min-height: 0;\n  min-width: 0;\n  background: rgb(var(--c-bg-base));\n  color: rgb(var(--c-text-primary));\n  font-size: 13px;\n  line-height: 1.45;\n  font-family: -apple-system, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif;\n}\n\n/* ── 头部（36px）：搜索框 + 状态徽章 ─────────────────────────── */\n.bd-header {\n  height: 36px;\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  padding: 0 8px;\n  background: rgb(var(--c-bg-elevated));\n  border-bottom: 1px solid rgb(var(--c-border) / 0.08);\n}\n.bd-search {\n  flex: 1;\n  min-width: 0;\n  height: 24px;\n  padding: 0 8px;\n  border: 1px solid rgb(var(--c-border) / 0.14);\n  border-radius: 6px;\n  background: rgb(var(--c-bg-base));\n  color: rgb(var(--c-text-primary));\n  font-size: 12px;\n  outline: none;\n}\n.bd-search:focus { border-color: rgb(var(--c-primary)); }\n.bd-badge {\n  flex: none;\n  display: inline-flex;\n  align-items: center;\n  gap: 4px;\n  font-size: 11px;\n  color: rgb(var(--c-text-muted));\n  white-space: nowrap;\n}\n.bd-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: rgb(var(--c-text-muted) / 0.5); }\n.bd-dot-ready { background: rgb(var(--c-status-success)); }\n.bd-dot-starting { background: rgb(var(--c-status-warning)); }\n.bd-dot-stopped { background: rgb(var(--c-status-danger)); }\n\n/* ── 引擎不可用引导 ──────────────────────────────────────────── */\n.bd-guide {\n  flex: none;\n  margin: 10px 8px;\n  padding: 10px 12px;\n  border: 1px solid rgb(var(--c-status-warning) / 0.35);\n  border-radius: 8px;\n  background: rgb(var(--c-bg-surface));\n  color: rgb(var(--c-text-secondary));\n  font-size: 12px;\n  line-height: 1.6;\n}\n.bd-guide code {\n  font-family: Consolas, monospace;\n  color: rgb(var(--c-status-info));\n  background: rgb(var(--c-bg-base));\n  padding: 0 4px;\n  border-radius: 3px;\n}\n\n/* ── 区块标题 ────────────────────────────────────────────────── */\n.bd-section {\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  padding: 6px 8px 3px;\n  font-size: 11px;\n  color: rgb(var(--c-text-tertiary));\n  text-transform: uppercase;\n  letter-spacing: 0.04em;\n}\n.bd-section-spacer { flex: 1; }\n.bd-action {\n  border: 0;\n  border-radius: 5px;\n  background: transparent;\n  color: rgb(var(--c-text-secondary));\n  font-size: 11px;\n  padding: 2px 7px;\n  cursor: pointer;\n  white-space: nowrap;\n}\n.bd-action:hover:not(:disabled) { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-text-primary)); }\n.bd-action:disabled { opacity: 0.4; cursor: default; }\n\n/* ── 标签列表 ────────────────────────────────────────────────── */\n.bd-tabs {\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  padding: 0 6px 6px;\n  scrollbar-width: thin;\n}\n.bd-tab {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  padding: 6px 8px;\n  border-radius: 6px;\n  cursor: pointer;\n  min-width: 0;\n}\n.bd-tab:hover { background: rgb(var(--c-bg-hover) / 0.7); }\n.bd-tab-on { background: rgb(var(--c-bg-active)); }\n.bd-tab-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }\n.bd-tab-title {\n  font-size: 12px;\n  color: rgb(var(--c-text-primary));\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.bd-tab-url {\n  font-size: 10px;\n  font-family: Consolas, \"SF Mono\", monospace;\n  color: rgb(var(--c-text-tertiary));\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.bd-tab-agent {\n  flex: none;\n  font-size: 10px;\n  padding: 1px 6px;\n  border-radius: 8px;\n  background: rgb(var(--c-primary) / 0.15);\n  color: rgb(var(--c-primary));\n  max-width: 90px;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.bd-tab-close {\n  flex: none;\n  width: 18px;\n  height: 18px;\n  display: grid;\n  place-items: center;\n  border: 0;\n  border-radius: 4px;\n  background: transparent;\n  color: rgb(var(--c-text-muted));\n  cursor: pointer;\n  visibility: hidden;\n}\n.bd-tab:hover .bd-tab-close { visibility: visible; }\n.bd-tab-close:hover { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-status-danger)); }\n\n/* ── 搜索结果 ────────────────────────────────────────────────── */\n.bd-results { flex: 1; min-height: 0; overflow-y: auto; padding: 0 6px 6px; scrollbar-width: thin; }\n.bd-result {\n  display: block;\n  padding: 7px 8px;\n  border-radius: 6px;\n  cursor: pointer;\n  text-decoration: none;\n}\n.bd-result:hover { background: rgb(var(--c-bg-hover) / 0.7); }\n.bd-result-title {\n  font-size: 12.5px;\n  color: rgb(var(--c-status-info));\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.bd-result-url {\n  font-size: 10px;\n  font-family: Consolas, monospace;\n  color: rgb(var(--c-status-success));\n  margin: 1px 0 2px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n.bd-result-snippet {\n  font-size: 11px;\n  color: rgb(var(--c-text-secondary));\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n/* ── AI 操作日志 ─────────────────────────────────────────────── */\n.bd-log {\n  flex: none;\n  max-height: 160px;\n  overflow-y: auto;\n  margin: 0 6px 6px;\n  padding: 6px 8px;\n  border: 1px solid rgb(var(--c-border) / 0.08);\n  border-radius: 7px;\n  background: rgb(var(--c-bg-surface));\n  font-family: Consolas, \"SF Mono\", monospace;\n  font-size: 10.5px;\n  color: rgb(var(--c-text-tertiary));\n  scrollbar-width: thin;\n}\n.bd-log-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n.bd-log-line b { color: rgb(var(--c-text-secondary)); font-weight: 600; }\n\n.bd-empty {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n  color: rgb(var(--c-text-secondary));\n  font-size: 12px;\n}\n.bd-spin {\n  width: 16px;\n  height: 16px;\n  border: 2px solid rgb(var(--c-border) / 0.2);\n  border-top-color: rgb(var(--c-primary));\n  border-radius: 50%;\n  animation: bd-rotate 0.8s linear infinite;\n}\n@keyframes bd-rotate { to { transform: rotate(360deg); } }\n\n/* 窄栏适配（宿主 LeftPanel 200–600px 钳位） */\n@container (max-width: 320px) {\n  .bd-badge span.bd-badge-text { display: none; }\n  .bd-log { max-height: 100px; }\n}\n",
+        "description": "browser-desk 面板样式（bd- 前缀；slot 作用域注入）"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  }
+}

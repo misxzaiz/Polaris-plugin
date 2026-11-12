@@ -1,0 +1,22 @@
+{
+  "name": "browser-desk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "browser-desk 插件：多窗口浏览器工作台（CDP 驱动系统 Chrome）",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/unit.mjs && node test/mcp-smoke.mjs",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.5",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.5.0"
+  },
+  "type": "commonjs"
+}
