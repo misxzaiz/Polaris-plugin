@@ -1838,13 +1838,8 @@ function DetailPanel({ plugin, installedInfo, updateInfo, open, selectedVersion,
           </div>
         )}
 
-        {/* 二期预留：启用/停用、端口管理（D10，不实现宿主侧逻辑） */}
-        {/*
-          <div style={{ display:'flex', gap:8 }}>
-            <button>启用/停用</button>
-            <button>端口管理</button>
-          </div>
-        */}
+        {/* 启用/停用已随管理中心化落地（P1，管理视图/本详情页均可操作）；
+            端口管理仍为二期预留（D10）。 */}
 
         {/* 未装时显示下载地址 */}
         {!isInstalled && plugin.downloadUrl && (
