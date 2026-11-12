@@ -373,6 +373,32 @@ function createEngine({ loadPuppeteer, log }) {
     return rec;
   }
 
+  /**
+   * 等待搜索结果渲染就绪：结果条目出现或正文充实即提前返回（上限 timeoutMs）。
+   * 相比固定 waitForSelector：正常页 1-2s 返回；CF 挑战/慢页不拖满超时。
+   */
+  async function waitForResultsReady(page, timeoutMs = 6000) {
+    const deadline = now() + timeoutMs;
+    let lastLen = -1;
+    while (now() < deadline) {
+      // eslint-disable-next-line no-await-in-loop
+      const st = await page.evaluate(() => ({
+        items: document.querySelectorAll('#b_results > li.b_algo, #b_results h2 a, #rso h3, article, .result__snippet').length,
+        len: (document.body && document.body.innerText) ? document.body.innerText.length : 0,
+      })).catch(() => null);
+      if (st) {
+        if (st.items > 0) return true;
+        // 正文在增长 → 页面仍在渲染，继续等；正文停滞且为空 → 可能是挑战页，缩短等待
+        if (st.len > 800) return true;
+        if (st.len === lastLen && st.len === 0) return false;
+        lastLen = st.len;
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    return false;
+  }
+
   async function navigateTab(rec, url) {
     const finalUrl = looksLikeUrl(url) ? normalizeUrl(url) : buildSearchUrl(url);
     await withTabLock(rec.tabId, async () => {
@@ -396,9 +422,10 @@ function createEngine({ loadPuppeteer, log }) {
     const rec = await resolveOrCreate({ tabId, agentKey });
     const searchUrl = buildSearchUrl(query, engine);
     await navigateTab(rec, searchUrl);
-    // 等待结果容器出现（各引擎主流选择器）
+    // 等待结果渲染：短轮询（命中结果条目或正文充实即返回，上限 6s）。
+    // 替代固定 waitForSelector(8s)：CF 挑战页/慢渲染不白等，正常页 1-2s 即返回。
     const page = rec.page;
-    await page.waitForSelector('#b_results, #search, .results, #rso, #links', { timeout: 8000 }).catch(() => {});
+    await waitForResultsReady(page, 6000);
     const results = await page.evaluate((max) => {
       const pick = (sel) => Array.from(document.querySelectorAll(sel));
       // bing
@@ -570,7 +597,8 @@ function createEngine({ loadPuppeteer, log }) {
         await rec.page.evaluate((el) => el.click(), handle);
       });
       rec.lastUsedAt = now();
-      await rec.page.waitForNetworkIdle({ idleTime: 400, timeout: 3000 }).catch(() => {});
+      // 点击后等网络空闲：最多 1.2s、空闲 250ms 即返回（页面无后续请求时不白等）
+      await rec.page.waitForNetworkIdle({ idleTime: 250, timeout: 1200 }).catch(() => {});
       return { tabId: rec.tabId, url: rec.page.url(), clicked: true };
     });
   }
@@ -713,8 +741,9 @@ function createEngine({ loadPuppeteer, log }) {
     const rec = resolveTab({ tabId, agentKey });
     const ring = ringFor(rec.tabId);
     const kindSet = Array.isArray(kinds) && kinds.length ? new Set(kinds) : null;
-    const deadline = now() + WATCH_LONGPOLL_MS;
-    // 长轮询：有增量立即返回，否则挂起到超时
+    // 短窗口轮询（3s）：有增量立即返回；无增量快速返回空（AI 侧循环调用即为流式感知，
+    // 避免 25s 长轮询被 AI 侧超时判定为挂死）。
+    const deadline = now() + 3000;
     while (true) {
       const items = ring.filter((e) => e.seq > sinceSeq && (!kindSet || kindSet.has(e.kind)));
       if (items.length > 0) {
@@ -723,7 +752,7 @@ function createEngine({ loadPuppeteer, log }) {
       if (now() >= deadline) {
         return { tabId: rec.tabId, events: [], lastSeq: sinceSeq, timeout: true };
       }
-      await new Promise((r) => setTimeout(r, 300));
+      await new Promise((r) => setTimeout(r, 200));
     }
   }
 

@@ -133,8 +133,25 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  log('info', `browser-desk service v${VERSION} listening on 127.0.0.1:${server.address().port} (appConfigDir=${APP_CONFIG_DIR || '(none)'})`);
+  const boundPort = server.address().port;
+  log('info', `browser-desk service v${VERSION} listening on 127.0.0.1:${boundPort} (appConfigDir=${APP_CONFIG_DIR || '(none)'})`);
+  // R3 预热：启动即拉起 Chrome，消除首次 desk_acquire 的 6-7s 冷启动。
+  // 失败不致命（degraded 由 /__health 与面板引导承接）。
+  engine.ensureBrowser().catch((e) => log('warn', `Chrome 预热失败（首次调用时会重试）: ${e.message}`));
+  // R5 端口上报：写 cap.kv browser-desk/service-port，MCP 端口自发现第二级真正可用
+  reportPort(boundPort);
+  setInterval(() => reportPort(boundPort), 30 * 1000).unref?.();
 });
+
+/** 经 cap.kv 上报服务端口（MCP 自发现用；失败静默——扫描兜底仍在） */
+function reportPort(port) {
+  try {
+    const { createKvReporter } = require('./kvreporter');
+    createKvReporter(APP_CONFIG_DIR).report('browser-desk/service-port', port);
+  } catch (e) {
+    log('debug', `端口上报失败（不影响功能）: ${e.message}`);
+  }
+}
 
 process.on('uncaughtException', (e) => {
   lastError = e.message;

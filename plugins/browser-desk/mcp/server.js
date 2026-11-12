@@ -20,7 +20,10 @@ const crypto = require('crypto');
 const SERVER_NAME = 'browser-desk';
 const SERVER_VERSION = '0.1.0';
 const PROTOCOL_VERSION = '2024-11-05';
-const APP_CONFIG_DIR = process.argv[3] || '';
+// argsTemplate: [{{polarisPort}}, {{polarisToken}}, {{appConfigDir}}] → argv[2..4]
+const POLARIS_PORT = parseInt(process.argv[2], 10) || 0;
+const POLARIS_TOKEN = process.argv[3] || '';
+const APP_CONFIG_DIR = process.argv[4] || '';
 
 function log(level, msg) {
   process.stderr.write(`[${SERVER_NAME}:${level}] ${new Date().toISOString()} ${msg}\n`);
@@ -32,6 +35,7 @@ function md5(s) { return crypto.createHash('md5').update(String(s)).digest('hex'
 function configCandidates(appConfigDir) {
   const cands = [];
   for (const anchor of [
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris-dev', 'anchor.json') : '',
     process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris', 'anchor.json') : '',
     path.join(os.homedir(), '.config', 'Polaris', 'anchor.json'),
   ]) {
@@ -45,21 +49,49 @@ function configCandidates(appConfigDir) {
   return cands;
 }
 
-function readServicePortFromKv(appConfigDir) {
-  // 同步路径：MCP 冷启动时 service 可能还没写 kv，读不到就靠扫描兜底
-  for (const p of configCandidates(appConfigDir)) {
-    try {
-      const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
-      // kv 存储在数据根 kv.json（cap.kv 落盘格式），读 browser-desk/service-port
-      const kvPath = path.join(path.dirname(p), 'kv.json');
-      if (fs.existsSync(kvPath)) {
-        const kv = JSON.parse(fs.readFileSync(kvPath, 'utf8'));
-        const port = kv && kv['browser-desk/service-port'];
-        if (Number.isFinite(Number(port)) && Number(port) > 0) return Number(port);
+/** 经宿主 router-dispatch 读 cap.kv（cap.kv 落盘是 SQLite kv.db，文件直读不可行） */
+function kvGetViaHost(key) {
+  return new Promise((resolve) => {
+    // 端点：宿主注入的 polarisPort 优先，否则读 config 候选
+    let ep = null;
+    if (POLARIS_PORT > 0) {
+      ep = { host: '127.0.0.1', port: POLARIS_PORT, token: POLARIS_TOKEN };
+    } else {
+      for (const p of configCandidates(APP_CONFIG_DIR)) {
+        try {
+          const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+          const web = cfg.web || {};
+          if (typeof web.port === 'number' && web.port > 0) {
+            ep = { host: web.host || '127.0.0.1', port: web.port, token: web.token || '' };
+            break;
+          }
+        } catch (_) { /* skip */ }
       }
-    } catch (_) { /* skip */ }
-  }
-  return null;
+    }
+    if (!ep) { resolve(null); return; }
+    const data = JSON.stringify({ req: { target: 'cap.kv', payload: { action: 'get', key } } });
+    const headers = { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) };
+    if (ep.token) headers.Authorization = `Bearer ${md5(ep.token)}`;
+    const req = http.request({
+      hostname: ep.host, port: ep.port, path: '/api/router-dispatch',
+      method: 'POST', headers, timeout: 5000,
+    }, (res) => {
+      let body = '';
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(body);
+          const value = parsed?.result?.value;
+          const port = Number(value);
+          resolve(Number.isFinite(port) && port > 0 ? port : null);
+        } catch (_) { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.write(data);
+    req.end();
+  });
 }
 
 function healthOnce(port) {
@@ -76,7 +108,7 @@ function healthOnce(port) {
 async function resolveServicePort(appConfigDir) {
   const envPort = parseInt(process.env.BROWSER_DESK_SERVICE_PORT || '', 10);
   if (Number.isFinite(envPort) && envPort > 0 && await healthOnce(envPort)) return envPort;
-  const kvPort = readServicePortFromKv(appConfigDir);
+  const kvPort = await kvGetViaHost('browser-desk/service-port');
   if (kvPort && await healthOnce(kvPort)) return kvPort;
   for (let p = 9700; p <= 9719; p += 1) {
     // eslint-disable-next-line no-await-in-loop
