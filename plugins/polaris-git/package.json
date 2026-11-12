@@ -1,20 +1,21 @@
 {
   "name": "polaris-git-panel",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "description": "polaris-git 插件面板（打包用）：Git 与版本管理",
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node test/diff-engine.test.mjs && node test/model.test.mjs && node test/render-verify.mjs && node --test test/service.test.mjs",
+"test": "node test/diff-engine.test.mjs && node test/model.test.mjs && node test/styles-token-check.mjs && node test/render-verify.mjs && node --test test/service.test.mjs",
     "test:service": "node --test test/service.test.mjs"
   },
   "devDependencies": {
     "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.6",
     "esbuild": "^0.23.0",
-    "typescript": "^5.5.0",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "typescript": "^5.5.0"
   },
   "type": "module"
 }
