@@ -280,7 +280,8 @@ function createEngine({ loadPuppeteer, log }) {
 
   // ── tab 解析 ───────────────────────────────────────────────────────────
   /** 解析目标 tab：显式 tabId > agentKey 绑定 > 最近活跃 */
-  function resolveTab({ tabId, agentKey } = {}) {
+  /** 同步解析：显式 tabId > agentKey 绑定 > 最近活跃；找不到返回 null */
+  function resolveTabSync({ tabId, agentKey } = {}) {
     pruneAgentBinds();
     if (tabId) {
       const rec = tabs.get(tabId);
@@ -297,14 +298,26 @@ function createEngine({ loadPuppeteer, log }) {
         return rec;
       }
     }
-    // 最近活跃
     let best = null;
     for (const rec of tabs.values()) {
       if (!best || rec.lastUsedAt > best.lastUsedAt) best = rec;
     }
-    if (!best) throw new Error('当前没有打开的标签，请先 desk_acquire');
-    best.lastUsedAt = now();
+    if (best) best.lastUsedAt = now();
     return best;
+  }
+
+  function resolveTab(params = {}) {
+    const rec = resolveTabSync(params);
+    if (!rec) throw new Error('当前没有打开的标签，请先 desk_acquire');
+    return rec;
+  }
+
+  /** 浏览类操作专用：无可用标签时自动 acquire 一个（对齐宿主 browser_acquire 的开箱即用语义） */
+  async function resolveOrCreate(params = {}) {
+    const existing = resolveTabSync(params);
+    if (existing) return existing;
+    await ensureBrowser();
+    return openNewTab({ agentKey: params.agentKey });
   }
 
   // ── 操作面 ─────────────────────────────────────────────────────────────
@@ -328,11 +341,17 @@ function createEngine({ loadPuppeteer, log }) {
       }
     }
 
-    const page = await browser.newPage(newWindow || mode === 'require_new' ? { type: 'window' } : undefined);
+    const rec = await openNewTab({ agentKey, url: wantUrl, title, newWindow: newWindow || mode === 'require_new' });
+    return tabInfo(rec);
+  }
+
+  /** 新建一个 tab 并建档（acquire 与 resolveOrCreate 共用的核心） */
+  async function openNewTab({ agentKey, url = 'about:blank', title, newWindow = false } = {}) {
+    const page = await browser.newPage(newWindow ? { type: 'window' } : undefined);
     const tabId = page.target()._targetId;
     let rec = await attachTarget(page.target());
     if (!rec) {
-      // target.page() 失败的兜底：直接以 page 建档（保证 acquire 不因 attach 失败而中断）
+      // target.page() 失败的兜底：直接以 page 建档（保证不因 attach 失败而中断）
       rec = {
         tabId, page, url: page.url(), title: '', agentKey: null,
         createdAt: now(), lastUsedAt: now(), windowId: null,
@@ -343,15 +362,15 @@ function createEngine({ loadPuppeteer, log }) {
     rec.url = page.url();
     if (title) rec.title = title;
     touchAgent(agentKey, tabId);
-    if (wantUrl !== 'about:blank') {
-      await page.goto(wantUrl, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch((e) => {
-        logger.warn(`acquire goto 失败(继续): ${e.message}`);
+    if (url && url !== 'about:blank') {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch((e) => {
+        logger.warn(`openNewTab goto 失败(继续): ${e.message}`);
       });
       rec.url = page.url();
       rec.title = await page.title().catch(() => rec.title);
     }
     pushEvent(tabId, 'navigation', { url: rec.url, reason: 'acquire' });
-    return tabInfo(rec);
+    return rec;
   }
 
   async function navigateTab(rec, url) {
@@ -368,13 +387,13 @@ function createEngine({ loadPuppeteer, log }) {
   async function navigate({ url, query, tabId, agentKey } = {}) {
     const target = url || query;
     if (!target) throw new Error('navigate 需要 url 或 query');
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return navigateTab(rec, target);
   }
 
   async function search({ query, engine, limit = 8, tabId, agentKey } = {}) {
     if (!query) throw new Error('search 需要 query');
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     const searchUrl = buildSearchUrl(query, engine);
     await navigateTab(rec, searchUrl);
     // 等待结果容器出现（各引擎主流选择器）
@@ -387,6 +406,17 @@ function createEngine({ loadPuppeteer, log }) {
         const a = li.querySelector('h2 a');
         return a ? { title: a.textContent.trim(), url: a.href, snippet: (li.querySelector('.b_caption p, .b_lineclamp2') || {}).textContent?.trim() || '' } : null;
       });
+      if (!items.length) {
+        // bing 兜底：结果容器变体（cf 盾放行后的延迟渲染 / 国际版布局差异）
+        items = pick('#b_results h2 a').map((a) => {
+          const li = a.closest('li');
+          return {
+            title: a.textContent.trim(),
+            url: a.href,
+            snippet: li ? ((li.querySelector('.b_caption p, .b_lineclamp2, p') || {}).textContent?.trim() || '') : '',
+          };
+        });
+      }
       if (!items.length) {
         // google
         items = pick('#rso div.g, #rso > div').map((d) => {
@@ -405,7 +435,20 @@ function createEngine({ loadPuppeteer, log }) {
         });
       }
       if (!items.length) {
-        // duckduckgo html
+        // duckduckgo 新版（<article> data-testid 结构）
+        items = Array.from(document.querySelectorAll('article')).map((art) => {
+          const a = art.querySelector('a[data-testid="result-title-a"], h2 a, a[href^="http"]');
+          if (!a) return null;
+          const s = art.querySelector('[data-result="snippet"], .result__snippet');
+          return {
+            title: (art.querySelector('h2') || a).textContent.trim(),
+            url: a.href,
+            snippet: s ? s.textContent.trim().slice(0, 300) : '',
+          };
+        });
+      }
+      if (!items.length) {
+        // duckduckgo html 旧版
         items = pick('#links .result, #links .web-result').map((d) => {
           const a = d.querySelector('a.result__a, h2 a');
           const s = d.querySelector('.result__snippet');
@@ -443,11 +486,11 @@ function createEngine({ loadPuppeteer, log }) {
   async function read({ tabId, agentKey, url, mode = 'article' } = {}) {
     let rec;
     if (url && (!tabId && !agentKey)) {
-      // 读取指定 URL：在当前活跃 tab 导航后读取
-      rec = resolveTab({});
+      // 读取指定 URL：在当前活跃 tab 导航后读取（无 tab 则自动开一个）
+      rec = await resolveOrCreate({});
       await navigateTab(rec, url);
     } else {
-      rec = resolveTab({ tabId, agentKey });
+      rec = await resolveOrCreate({ tabId, agentKey });
     }
     const result = await withTabLock(rec.tabId, () => rec.page.evaluate(READ_SCRIPT));
     if (mode === 'text') {
@@ -484,7 +527,7 @@ function createEngine({ loadPuppeteer, log }) {
   }
 
   async function click({ tabId, agentKey, label, index, text, selector } = {}) {
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return withTabLock(rec.tabId, async () => {
       let handle = null;
       if (selector) {
@@ -534,7 +577,7 @@ function createEngine({ loadPuppeteer, log }) {
 
   async function fill({ tabId, agentKey, label, selector, value } = {}) {
     if (value === undefined) throw new Error('fill 需要 value');
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return withTabLock(rec.tabId, async () => {
       let handle = null;
       if (selector) {
@@ -570,7 +613,7 @@ function createEngine({ loadPuppeteer, log }) {
 
   async function pressKey({ keys, tabId, agentKey } = {}) {
     if (!keys) throw new Error('pressKey 需要 keys');
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return withTabLock(rec.tabId, async () => {
       await rec.page.keyboard.press(String(keys));
       return { tabId: rec.tabId, pressed: keys };
@@ -578,7 +621,7 @@ function createEngine({ loadPuppeteer, log }) {
   }
 
   async function scroll({ amount, direction = 'down', tabId, agentKey } = {}) {
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return withTabLock(rec.tabId, async () => {
       const delta = Math.abs(Number(amount) || 600) * (direction === 'up' ? -1 : 1);
       await rec.page.evaluate((d) => { window.scrollBy(0, d); }, delta);
@@ -588,7 +631,7 @@ function createEngine({ loadPuppeteer, log }) {
 
   async function find({ query, tabId, agentKey } = {}) {
     if (!query) throw new Error('find 需要 query');
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return withTabLock(rec.tabId, async () => {
       const r = await rec.page.evaluate((q) => {
         const needle = q.toLowerCase();
@@ -609,7 +652,7 @@ function createEngine({ loadPuppeteer, log }) {
   }
 
   async function screenshot({ tabId, agentKey, fullPage = false, quality, maxWidth } = {}) {
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     const q = Math.min(100, Math.max(10, Number(quality) || SCREENSHOT_DEFAULTS.quality));
     const mw = Math.max(320, Number(maxWidth) || SCREENSHOT_DEFAULTS.maxWidth);
     return withTabLock(rec.tabId, async () => {
@@ -623,7 +666,7 @@ function createEngine({ loadPuppeteer, log }) {
 
   async function evaluate({ script, tabId, agentKey } = {}) {
     if (!script) throw new Error('evaluate 需要 script');
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     return withTabLock(rec.tabId, async () => {
       const r = await rec.page.evaluate(script);
       return { tabId: rec.tabId, result: r === undefined ? null : r };
@@ -631,7 +674,7 @@ function createEngine({ loadPuppeteer, log }) {
   }
 
   async function history({ tabId, agentKey, action = 'list' } = {}) {
-    const rec = resolveTab({ tabId, agentKey });
+    const rec = await resolveOrCreate({ tabId, agentKey });
     if (action === 'back' || action === 'forward') {
       await withTabLock(rec.tabId, async () => {
         if (action === 'back') await rec.page.goBack({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});

@@ -70,7 +70,8 @@ function makeStubPage() {
     title: async () => page._title,
     target: () => ({ _targetId: page._targetId, type: () => 'page', page: async () => page }),
     goto: async (u) => { page._url = u; },
-    evaluate: async (fn, arg) => (typeof fn === 'function' ? fn(arg) : null),
+    // stub 下不执行浏览器函数体：函数返回 null，字符串原样返回（足够单测断言流转）
+    evaluate: async (fn, arg) => (typeof fn === 'function' ? null : fn),
     close: async () => { page._closed = true; },
     screenshot: async () => 'Zm9v',
     keyboard: { press: async () => {} },
@@ -163,6 +164,16 @@ test('wait: 超时抛错', async () => {
     () => engine.wait({ tabId: info.tabId, urlPattern: 'never-matches-xyz', timeoutMs: 500 }),
     /等待超时/,
   );
+});
+
+test('浏览类操作无 tab 时自动 acquire（search）', async () => {
+  const { engine } = makeStub();
+  // 不先 acquire，直接 search → resolveOrCreate 应自动开标签并导航
+  const r = await engine.search({ query: 'hello world', limit: 3 });
+  assert.ok(r.tabId, 'search 应返回自动创建的 tabId');
+  const st = await engine.status();
+  assert.equal(st.tabs.length, 1);
+  assert.match(r.url, /bing\.com\/search\?q=hello%20world/);
 });
 
 test('close(all) 关闭全部标签', async () => {
