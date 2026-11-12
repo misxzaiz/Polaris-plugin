@@ -5276,6 +5276,44 @@
       ],
       "updatedAt": "2026-11-12T01:38:00.000Z",
       "createdAt": "2026-11-11T17:22:07.293Z"
+    },
+    {
+      "id": "opencode",
+      "name": "OpenCode Engine",
+      "version": "0.1.0",
+      "description": "OpenCode 开源 AI 编程 CLI 引擎适配器（engine-v1）。v0.1.0：迁移自宿主内置引擎——多 provider/免费模型（GLM/DeepSeek 等）、工具调用、流式输出与会话续接。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "opencode",
+        "engine",
+        "cli",
+        "agent",
+        "session",
+        "streaming",
+        "mcp"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/opencode",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/opencode/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@opencode-v0.1.0/plugins/opencode/opencode.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/opencode/update.json",
+      "sha256": "6df66260e8b422030fd963bac8d35bea253c1539a178f637dba8c2f98850be5c",
+      "permissions": {
+        "workspaceRead": true,
+        "workspaceWrite": true,
+        "aiToolAccess": true
+      },
+      "screenshots": [],
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@opencode-v0.1.0/plugins/opencode/opencode.zip"
+        }
+      ],
+      "createdAt": "2026-11-12T08:40:00.000Z",
+      "updatedAt": "2026-11-12T08:35:32.278Z"
     }
   ]
 }

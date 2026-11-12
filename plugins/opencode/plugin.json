@@ -1,0 +1,56 @@
+{
+  "id": "opencode",
+  "name": "OpenCode Engine",
+  "version": "0.1.0",
+  "description": "OpenCode 开源 AI 编程 CLI 引擎适配器（engine-v1）。v0.1.0：迁移自宿主内置引擎——多 provider/免费模型（GLM/DeepSeek 等）、工具调用、流式输出与会话续接。",
+  "enabledByDefault": false,
+  "contributes": {
+    "engines": [
+      {
+        "id": "opencode",
+        "name": "OpenCode",
+        "description": "开源 AI 编程 CLI — 多 provider 支持，内置免费模型（GLM/DeepSeek 等），工具调用与流式输出",
+        "cli": {
+          "command": "opencode",
+          "args": [],
+          "installGuide": "npm install -g opencode"
+        },
+        "npmPackage": "opencode",
+        "protocol": "command",
+        "sessionFlags": "omp",
+        "mcpConsumption": "mcp-servers",
+        "models": [
+          "opencode/glm-5.3-flash-free",
+          "opencode/glm-5.3-flash",
+          "opencode/glm-5.3",
+          "opencode/deepseek-v4.1-flash",
+          "opencode/space-bunny",
+          "opencode/minimax-m3.1-flash",
+          "opencode/kimi-k3.1-pro"
+        ],
+        "capabilities": {
+          "tools": true,
+          "streaming": true,
+          "interrupt": true,
+          "resume": true
+        },
+        "adapter": {
+          "entry": "adapter.js",
+          "runtime": "node",
+          "protocol": "engine-v1"
+        }
+      }
+    ]
+  },
+  "permissions": {
+    "workspaceRead": true,
+    "workspaceWrite": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/opencode",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/opencode/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@opencode-v0.1.0/plugins/opencode/opencode.zip"
+  }
+}
