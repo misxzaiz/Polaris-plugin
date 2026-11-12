@@ -518,6 +518,18 @@ async function precheckUninstall(p: InstalledPlugin): Promise<UninstallImpact> {
   }
 }
 
+/** 有限并发执行器（P2 批量用）：并发上限 concurrency，逐任务回调，全部完成后返回 */
+async function runWithConcurrency<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+  let cursor = 0
+  const lanes = Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, async () => {
+    while (cursor < items.length) {
+      const item = items[cursor++]
+      try { await worker(item) } catch { /* 单项失败不阻塞批次 */ }
+    }
+  })
+  await Promise.all(lanes)
+}
+
 interface UpdateResult { pluginId: string; currentVersion: string; latestVersion?: string; updateAvailable: boolean; downloadUrl?: string; error?: string; checking?: boolean }
 
 async function checkUpdate(installPath: string): Promise<UpdateResult> {
@@ -685,6 +697,9 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
   const [confirmTarget, setConfirmTarget] = useState<{ plugin: InstalledPlugin; impact: UninstallImpact } | null>(null)
   /** 管理区提示 */
   const [mgmtMsg, setMgmtMsg] = useState<string | null>(null)
+  /** 批量多选（pluginId 集合）+ 批量进行中标记 */
+  const [batchSel, setBatchSel] = useState<Set<string>>(new Set())
+  const [batchBusy, setBatchBusy] = useState<'' | 'enable' | 'disable' | 'uninstall' | ''>('')
 
   /** 服务状态 key（与宿主 pluginServiceStore 同构） */
   const svcKey = (s: { pluginId: string; serviceId: string }) => `${s.pluginId}::${s.serviceId}`
@@ -933,6 +948,89 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     setOpLoading(null)
   }, [refreshAfterOp])
 
+  // ================= 批量操作（P2） =================
+
+  /** 批量候选：非 builtin、非 core、非 dev-link、可操作（有 installPath） */
+  const batchable = useCallback((p: InstalledPlugin): boolean =>
+    !p.builtin && !p.core && !p.dev && !!p.installPath, [])
+
+  const toggleBatchSel = useCallback((id: string) => {
+    setBatchSel(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleBatchSelAll = useCallback((all: InstalledPlugin[]) => {
+    const candidates = all.filter(batchable)
+    const allSelected = candidates.length > 0 && candidates.every(p => batchSel.has(p.id))
+    setBatchSel(allSelected ? new Set() : new Set(candidates.map(p => p.id)))
+  }, [batchSel, batchable])
+
+  /** 批量启停：循环 set_states（逐笔走后端保存+联动），聚合结果 */
+  const handleBatchToggle = useCallback(async (all: InstalledPlugin[], enabled: boolean) => {
+    const targets = all.filter(p => batchSel.has(p.id) && batchable(p))
+    if (targets.length === 0) return
+    setBatchBusy(enabled ? 'enable' : 'disable'); setMgmtMsg(null)
+    let ok = 0
+    const failed: string[] = []
+    let states = pluginStates
+    for (const p of targets) {
+      const next = { ...states, [p.id]: { ...(states[p.id] ?? { enabled: isEnabled(p) }), enabled } }
+      try {
+        await setPluginStates(next)
+        states = next
+        ok++
+      } catch (e) {
+        failed.push(`${p.name}: ${e instanceof Error ? e.message : String(e)}`)
+      }
+    }
+    setPluginStates(states)
+    setBatchSel(new Set())
+    setBatchBusy('')
+    setMgmtMsg(
+      failed.length === 0
+        ? `✓ 批量${enabled ? '启用' : '停用'}完成（${ok} 个）`
+        : `⚠ 批量${enabled ? '启用' : '停用'}：成功 ${ok}，失败 ${failed.length}（${failed.slice(0, 3).join('；')}${failed.length > 3 ? '…' : ''}）`
+    )
+  }, [batchSel, batchable, pluginStates, isEnabled])
+
+  /**
+   * 批量卸载：一次聚合确认（复用 UninstallConfirmModal 的列表形态）→
+   * 逐项 uninstall_with_cleanup → 聚合结果。跳过 core/dev-link。
+   */
+  const handleBatchUninstall = useCallback(async (all: InstalledPlugin[]) => {
+    const targets = all.filter(p => batchSel.has(p.id) && batchable(p))
+    if (targets.length === 0) return
+    setBatchBusy('uninstall'); setMgmtMsg(null)
+    let ok = 0
+    const failed: string[] = []
+    for (const p of targets) {
+      const r = await uninstallPlugin(p.installPath!, p.id)
+      if (r.success) {
+        ok++
+        setPluginStates(prev => { const n = { ...prev }; delete n[p.id]; return n })
+        setServiceStatuses(prev => {
+          const n = { ...prev }
+          for (const k of Object.keys(n)) if (k.startsWith(`${p.id}::`)) delete n[k]
+          return n
+        })
+      } else {
+        failed.push(`${p.name}: ${r.error ?? '未知错误'}`)
+      }
+    }
+    setBatchSel(new Set())
+    setBatchBusy('')
+    if (ok > 0) await refreshAfterOp()
+    setMgmtMsg(
+      failed.length === 0
+        ? `✓ 批量卸载完成（${ok} 个）`
+        : `⚠ 批量卸载：成功 ${ok}，失败 ${failed.length}（${failed.slice(0, 3).join('；')}${failed.length > 3 ? '…' : ''}）`
+    )
+  }, [batchSel, batchable, refreshAfterOp])
+
 
   /** 已装判定：商城插件 id 命中已装列表 */
   const isInstalled = useCallback((p: MarketPlugin): InstalledPlugin | undefined =>
@@ -986,9 +1084,12 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
     const list = installed.filter(p => p.installPath && !p.builtin)
     for (const p of list) {
       setUpdates(prev => ({ ...prev, [p.id]: { pluginId: p.id, currentVersion: p.version, updateAvailable: false, checking: true } }))
+    }
+    // 有限并发（P2，并发 4）：串行在插件多时过慢，全并发会打爆商城源/网络
+    await runWithConcurrency<InstalledPlugin>(list, 4, async (p) => {
       const r = await checkUpdate(p.installPath!)
       setUpdates(prev => ({ ...prev, [p.id]: r }))
-    }
+    })
   }
 
   const installedCount = installed.filter(p => !p.builtin).length
@@ -1036,6 +1137,11 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
           expanded={expanded} setExpanded={setExpanded}
           msg={mgmtMsg}
           opLoading={opLoading}
+          batchSel={batchSel} batchBusy={batchBusy}
+          onToggleBatchSel={toggleBatchSel}
+          onToggleBatchSelAll={toggleBatchSelAll}
+          onBatchToggle={handleBatchToggle}
+          onBatchUninstall={handleBatchUninstall}
           onReload={() => void loadMgmtData()}
           onToggleEnabled={handleToggleEnabled}
           onToggleUi={handleToggleUi}
@@ -1804,6 +1910,12 @@ interface ManagementViewProps {
   setExpanded: (s: Set<string>) => void
   msg: string | null
   opLoading: string | null
+  batchSel: Set<string>
+  batchBusy: '' | 'enable' | 'disable' | 'uninstall'
+  onToggleBatchSel: (id: string) => void
+  onToggleBatchSelAll: (all: InstalledPlugin[]) => void
+  onBatchToggle: (all: InstalledPlugin[], enabled: boolean) => void
+  onBatchUninstall: (all: InstalledPlugin[]) => void
   onReload: () => void
   onToggleEnabled: (p: InstalledPlugin, enabled: boolean) => void
   onToggleUi: (p: InstalledPlugin, uiEnabled: boolean) => void
@@ -1833,7 +1945,9 @@ function fmtUptime(sec?: number): string {
 function ManagementView(props: ManagementViewProps) {
   const { installed, iLoading, iError, serviceStatuses, isEnabled,
     query, setQuery, filter, setFilter, expanded, setExpanded,
-    msg, opLoading, onReload, onToggleEnabled, onToggleUi, onServiceAction, onUninstall } = props
+    msg, opLoading, batchSel, batchBusy,
+    onToggleBatchSel, onToggleBatchSelAll, onBatchToggle, onBatchUninstall,
+    onReload, onToggleEnabled, onToggleUi, onServiceAction, onUninstall } = props
 
   /** 插件全部服务状态（按 pluginId 聚合） */
   const servicesOf = useCallback((pluginId: string): ServiceStatus[] =>
@@ -1888,9 +2002,40 @@ function ManagementView(props: ManagementViewProps) {
         <span style={{ fontSize: 10, color: '#6B7280', flexShrink: 0 }}>{rows.length} 个插件</span>
       </div>
 
+      {/* 批量操作栏（P2）：全选 + 批量启用/停用/卸载；跳过 core 与 dev-link（不可批量卸载） */}
+      <div style={{ padding: '0 10px 6px', display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0, flexWrap: 'wrap' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: 10, color: '#8E8E93', flexShrink: 0 }}>
+          <input type="checkbox" style={{ width: 14, height: 14, accentColor: '#3B82F6', cursor: 'pointer' }}
+            checked={batchSel.size > 0 && rows.filter(p => !p.core && !p.dev).every(p => batchSel.has(p.id))}
+            onChange={() => onToggleBatchSelAll(rows)} />
+          全选
+        </label>
+        <span style={{ fontSize: 10, color: batchSel.size > 0 ? '#3B82F6' : '#6B7280', flexShrink: 0 }}>
+          已选 {batchSel.size}
+        </span>
+        <button disabled={batchSel.size === 0 || batchBusy !== ''}
+          onClick={() => onBatchToggle(installed, true)}
+          title="批量启用选中插件（服务联动启动）"
+          style={{ ...s.miniBtn, opacity: batchSel.size === 0 || batchBusy ? 0.5 : 1 }}>
+          {batchBusy === 'enable' ? '启用中…' : '批量启用'}
+        </button>
+        <button disabled={batchSel.size === 0 || batchBusy !== ''}
+          onClick={() => onBatchToggle(installed, false)}
+          title="批量停用选中插件（服务联动停止）"
+          style={{ ...s.miniBtn, opacity: batchSel.size === 0 || batchBusy ? 0.5 : 1 }}>
+          {batchBusy === 'disable' ? '停用中…' : '批量停用'}
+        </button>
+        <button disabled={batchSel.size === 0 || batchBusy !== ''}
+          onClick={() => onBatchUninstall(installed)}
+          title="批量卸载选中插件（core/dev-link 自动跳过；停服务+杀进程+删目录）"
+          style={{ ...s.miniBtn, color: '#F0616D', borderColor: '#7F1D1D', opacity: batchSel.size === 0 || batchBusy ? 0.5 : 1 }}>
+          {batchBusy === 'uninstall' ? '卸载中…' : '批量卸载'}
+        </button>
+      </div>
+
       {/* 操作结果提示条 */}
       {msg && (
-        <div style={{ padding: '6px 10px', fontSize: 11, color: msg.startsWith('✓') ? '#10B981' : '#EF4444', borderBottom: '1px solid #3F3F46', flexShrink: 0, wordBreak: 'break-all' }}>
+        <div style={{ padding: '6px 10px', fontSize: 11, color: msg.startsWith('✓') ? '#10B981' : msg.startsWith('⚠') ? '#F5B73D' : '#EF4444', borderBottom: '1px solid #3F3F46', flexShrink: 0, wordBreak: 'break-all' }}>
           {msg}
         </div>
       )}
@@ -1910,6 +2055,9 @@ function ManagementView(props: ManagementViewProps) {
             services={servicesOf(p.id)}
             expanded={expanded.has(p.id)}
             opLoading={opLoading}
+            batchChecked={batchSel.has(p.id)}
+            batchDisabled={!!p.core || !!p.dev}
+            onToggleBatchSel={onToggleBatchSel}
             onToggleExpand={() => toggleExpand(p.id)}
             onToggleEnabled={onToggleEnabled}
             onToggleUi={onToggleUi}
@@ -1931,6 +2079,11 @@ interface PluginManageRowProps {
   services: ServiceStatus[]
   expanded: boolean
   opLoading: string | null
+  /** 批量多选态 */
+  batchChecked: boolean
+  /** core/dev-link 不可批量卸载：checkbox 禁用 */
+  batchDisabled: boolean
+  onToggleBatchSel: (id: string) => void
   onToggleExpand: () => void
   onToggleEnabled: (p: InstalledPlugin, enabled: boolean) => void
   onToggleUi: (p: InstalledPlugin, uiEnabled: boolean) => void
@@ -1953,6 +2106,7 @@ function SourceBadge({ plugin }: { plugin: InstalledPlugin }) {
 }
 
 function PluginManageRow({ plugin, enabled, uiEnabled, services, expanded, opLoading,
+  batchChecked, batchDisabled, onToggleBatchSel,
   onToggleExpand, onToggleEnabled, onToggleUi, onServiceAction, onUninstall }: PluginManageRowProps) {
 
   const running = services.filter(s => s.state === 'running' || s.state === 'starting')
@@ -1982,6 +2136,11 @@ function PluginManageRow({ plugin, enabled, uiEnabled, services, expanded, opLoa
       <div onClick={onToggleExpand} style={{ display: 'flex', gap: 10, padding: 10, cursor: 'pointer', alignItems: 'center' }}
         onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#2A2A30' }}
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+        {/* 批量多选（core/dev-link 禁用：title 说明） */}
+        <input type="checkbox" onClick={e => e.stopPropagation()} checked={batchChecked} disabled={batchDisabled}
+          onChange={() => onToggleBatchSel(plugin.id)}
+          title={batchDisabled ? 'core/dev-link 插件不可批量卸载' : '加入批量操作'}
+          style={{ width: 14, height: 14, accentColor: '#3B82F6', cursor: batchDisabled ? 'not-allowed' : 'pointer', flexShrink: 0, opacity: batchDisabled ? 0.35 : 1 }} />
         <div style={{ width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0, background: '#3B82F622', color: '#3B82F6' }}>
           🧩
         </div>

@@ -280,6 +280,19 @@ async function precheckUninstall(p) {
     isCore: !!p.core
   };
 }
+async function runWithConcurrency(items, concurrency, worker) {
+  let cursor = 0;
+  const lanes = Array.from({ length: Math.max(1, Math.min(concurrency, items.length)) }, async () => {
+    while (cursor < items.length) {
+      const item = items[cursor++];
+      try {
+        await worker(item);
+      } catch {
+      }
+    }
+  });
+  await Promise.all(lanes);
+}
 async function checkUpdate(installPath) {
   try {
     const r = await dispatchPluginDiscovery("check_update", { installPath });
@@ -415,6 +428,8 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   const [mgmtFilter, setMgmtFilter] = useState("all");
   const [confirmTarget, setConfirmTarget] = useState(null);
   const [mgmtMsg, setMgmtMsg] = useState(null);
+  const [batchSel, setBatchSel] = useState(/* @__PURE__ */ new Set());
+  const [batchBusy, setBatchBusy] = useState("");
   const svcKey = (s2) => `${s2.pluginId}::${s2.serviceId}`;
   const loadMgmtData = useCallback(async () => {
     const [states, statuses] = await Promise.all([getPluginStates(), listServiceStatus()]);
@@ -643,6 +658,77 @@ function MarketplacePanel({ pluginId: _pluginId }) {
     }
     setOpLoading(null);
   }, [refreshAfterOp]);
+  const batchable = useCallback((p) => !p.builtin && !p.core && !p.dev && !!p.installPath, []);
+  const toggleBatchSel = useCallback((id) => {
+    setBatchSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleBatchSelAll = useCallback((all) => {
+    const candidates = all.filter(batchable);
+    const allSelected = candidates.length > 0 && candidates.every((p) => batchSel.has(p.id));
+    setBatchSel(allSelected ? /* @__PURE__ */ new Set() : new Set(candidates.map((p) => p.id)));
+  }, [batchSel, batchable]);
+  const handleBatchToggle = useCallback(async (all, enabled) => {
+    const targets = all.filter((p) => batchSel.has(p.id) && batchable(p));
+    if (targets.length === 0) return;
+    setBatchBusy(enabled ? "enable" : "disable");
+    setMgmtMsg(null);
+    let ok = 0;
+    const failed = [];
+    let states = pluginStates;
+    for (const p of targets) {
+      const next = { ...states, [p.id]: { ...states[p.id] ?? { enabled: isEnabled(p) }, enabled } };
+      try {
+        await setPluginStates(next);
+        states = next;
+        ok++;
+      } catch (e) {
+        failed.push(`${p.name}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+    setPluginStates(states);
+    setBatchSel(/* @__PURE__ */ new Set());
+    setBatchBusy("");
+    setMgmtMsg(
+      failed.length === 0 ? `\u2713 \u6279\u91CF${enabled ? "\u542F\u7528" : "\u505C\u7528"}\u5B8C\u6210\uFF08${ok} \u4E2A\uFF09` : `\u26A0 \u6279\u91CF${enabled ? "\u542F\u7528" : "\u505C\u7528"}\uFF1A\u6210\u529F ${ok}\uFF0C\u5931\u8D25 ${failed.length}\uFF08${failed.slice(0, 3).join("\uFF1B")}${failed.length > 3 ? "\u2026" : ""}\uFF09`
+    );
+  }, [batchSel, batchable, pluginStates, isEnabled]);
+  const handleBatchUninstall = useCallback(async (all) => {
+    const targets = all.filter((p) => batchSel.has(p.id) && batchable(p));
+    if (targets.length === 0) return;
+    setBatchBusy("uninstall");
+    setMgmtMsg(null);
+    let ok = 0;
+    const failed = [];
+    for (const p of targets) {
+      const r = await uninstallPlugin(p.installPath, p.id);
+      if (r.success) {
+        ok++;
+        setPluginStates((prev) => {
+          const n = { ...prev };
+          delete n[p.id];
+          return n;
+        });
+        setServiceStatuses((prev) => {
+          const n = { ...prev };
+          for (const k of Object.keys(n)) if (k.startsWith(`${p.id}::`)) delete n[k];
+          return n;
+        });
+      } else {
+        failed.push(`${p.name}: ${r.error ?? "\u672A\u77E5\u9519\u8BEF"}`);
+      }
+    }
+    setBatchSel(/* @__PURE__ */ new Set());
+    setBatchBusy("");
+    if (ok > 0) await refreshAfterOp();
+    setMgmtMsg(
+      failed.length === 0 ? `\u2713 \u6279\u91CF\u5378\u8F7D\u5B8C\u6210\uFF08${ok} \u4E2A\uFF09` : `\u26A0 \u6279\u91CF\u5378\u8F7D\uFF1A\u6210\u529F ${ok}\uFF0C\u5931\u8D25 ${failed.length}\uFF08${failed.slice(0, 3).join("\uFF1B")}${failed.length > 3 ? "\u2026" : ""}\uFF09`
+    );
+  }, [batchSel, batchable, refreshAfterOp]);
   const isInstalled = useCallback((p) => installed.find((i) => i.id === p.id), [installed]);
   const openDetail = useCallback((p) => {
     setSelected(p);
@@ -689,9 +775,11 @@ function MarketplacePanel({ pluginId: _pluginId }) {
     const list = installed.filter((p) => p.installPath && !p.builtin);
     for (const p of list) {
       setUpdates((prev) => ({ ...prev, [p.id]: { pluginId: p.id, currentVersion: p.version, updateAvailable: false, checking: true } }));
+    }
+    await runWithConcurrency(list, 4, async (p) => {
       const r = await checkUpdate(p.installPath);
       setUpdates((prev) => ({ ...prev, [p.id]: r }));
-    }
+    });
   };
   const installedCount = installed.filter((p) => !p.builtin).length;
   return /* @__PURE__ */ jsxs("div", { style: { height: "100%", display: "flex", flexDirection: "column", background: "#1A1A1F", color: "#F8F8F8", fontSize: 13, position: "relative", overflow: "hidden" }, children: [
@@ -777,6 +865,12 @@ function MarketplacePanel({ pluginId: _pluginId }) {
         setExpanded,
         msg: mgmtMsg,
         opLoading,
+        batchSel,
+        batchBusy,
+        onToggleBatchSel: toggleBatchSel,
+        onToggleBatchSelAll: toggleBatchSelAll,
+        onBatchToggle: handleBatchToggle,
+        onBatchUninstall: handleBatchUninstall,
         onReload: () => void loadMgmtData(),
         onToggleEnabled: handleToggleEnabled,
         onToggleUi: handleToggleUi,
@@ -1575,6 +1669,12 @@ function ManagementView(props) {
     setExpanded,
     msg,
     opLoading,
+    batchSel,
+    batchBusy,
+    onToggleBatchSel,
+    onToggleBatchSelAll,
+    onBatchToggle,
+    onBatchUninstall,
     onReload,
     onToggleEnabled,
     onToggleUi,
@@ -1642,7 +1742,55 @@ function ManagementView(props) {
         " \u4E2A\u63D2\u4EF6"
       ] })
     ] }),
-    msg && /* @__PURE__ */ jsx("div", { style: { padding: "6px 10px", fontSize: 11, color: msg.startsWith("\u2713") ? "#10B981" : "#EF4444", borderBottom: "1px solid #3F3F46", flexShrink: 0, wordBreak: "break-all" }, children: msg }),
+    /* @__PURE__ */ jsxs("div", { style: { padding: "0 10px 6px", display: "flex", gap: 6, alignItems: "center", flexShrink: 0, flexWrap: "wrap" }, children: [
+      /* @__PURE__ */ jsxs("label", { style: { display: "flex", alignItems: "center", gap: 4, cursor: "pointer", fontSize: 10, color: "#8E8E93", flexShrink: 0 }, children: [
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "checkbox",
+            style: { width: 14, height: 14, accentColor: "#3B82F6", cursor: "pointer" },
+            checked: batchSel.size > 0 && rows.filter((p) => !p.core && !p.dev).every((p) => batchSel.has(p.id)),
+            onChange: () => onToggleBatchSelAll(rows)
+          }
+        ),
+        "\u5168\u9009"
+      ] }),
+      /* @__PURE__ */ jsxs("span", { style: { fontSize: 10, color: batchSel.size > 0 ? "#3B82F6" : "#6B7280", flexShrink: 0 }, children: [
+        "\u5DF2\u9009 ",
+        batchSel.size
+      ] }),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          disabled: batchSel.size === 0 || batchBusy !== "",
+          onClick: () => onBatchToggle(installed, true),
+          title: "\u6279\u91CF\u542F\u7528\u9009\u4E2D\u63D2\u4EF6\uFF08\u670D\u52A1\u8054\u52A8\u542F\u52A8\uFF09",
+          style: { ...s.miniBtn, opacity: batchSel.size === 0 || batchBusy ? 0.5 : 1 },
+          children: batchBusy === "enable" ? "\u542F\u7528\u4E2D\u2026" : "\u6279\u91CF\u542F\u7528"
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          disabled: batchSel.size === 0 || batchBusy !== "",
+          onClick: () => onBatchToggle(installed, false),
+          title: "\u6279\u91CF\u505C\u7528\u9009\u4E2D\u63D2\u4EF6\uFF08\u670D\u52A1\u8054\u52A8\u505C\u6B62\uFF09",
+          style: { ...s.miniBtn, opacity: batchSel.size === 0 || batchBusy ? 0.5 : 1 },
+          children: batchBusy === "disable" ? "\u505C\u7528\u4E2D\u2026" : "\u6279\u91CF\u505C\u7528"
+        }
+      ),
+      /* @__PURE__ */ jsx(
+        "button",
+        {
+          disabled: batchSel.size === 0 || batchBusy !== "",
+          onClick: () => onBatchUninstall(installed),
+          title: "\u6279\u91CF\u5378\u8F7D\u9009\u4E2D\u63D2\u4EF6\uFF08core/dev-link \u81EA\u52A8\u8DF3\u8FC7\uFF1B\u505C\u670D\u52A1+\u6740\u8FDB\u7A0B+\u5220\u76EE\u5F55\uFF09",
+          style: { ...s.miniBtn, color: "#F0616D", borderColor: "#7F1D1D", opacity: batchSel.size === 0 || batchBusy ? 0.5 : 1 },
+          children: batchBusy === "uninstall" ? "\u5378\u8F7D\u4E2D\u2026" : "\u6279\u91CF\u5378\u8F7D"
+        }
+      )
+    ] }),
+    msg && /* @__PURE__ */ jsx("div", { style: { padding: "6px 10px", fontSize: 11, color: msg.startsWith("\u2713") ? "#10B981" : msg.startsWith("\u26A0") ? "#F5B73D" : "#EF4444", borderBottom: "1px solid #3F3F46", flexShrink: 0, wordBreak: "break-all" }, children: msg }),
     /* @__PURE__ */ jsx("div", { style: { flex: 1, overflowY: "auto", padding: "0 10px 12px" }, children: rows.length === 0 ? /* @__PURE__ */ jsx("div", { style: { padding: 24, color: "#8E8E93", textAlign: "center" }, children: installed.length === 0 ? "\u5C1A\u672A\u5B89\u88C5\u4EFB\u4F55\u63D2\u4EF6" : "\u65E0\u5339\u914D\u63D2\u4EF6" }) : rows.map((p) => /* @__PURE__ */ jsx(
       PluginManageRow,
       {
@@ -1652,6 +1800,9 @@ function ManagementView(props) {
         services: servicesOf(p.id),
         expanded: expanded.has(p.id),
         opLoading,
+        batchChecked: batchSel.has(p.id),
+        batchDisabled: !!p.core || !!p.dev,
+        onToggleBatchSel,
         onToggleExpand: () => toggleExpand(p.id),
         onToggleEnabled,
         onToggleUi,
@@ -1675,6 +1826,9 @@ function PluginManageRow({
   services,
   expanded,
   opLoading,
+  batchChecked,
+  batchDisabled,
+  onToggleBatchSel,
   onToggleExpand,
   onToggleEnabled,
   onToggleUi,
@@ -1720,6 +1874,18 @@ function PluginManageRow({
           e.currentTarget.style.background = "transparent";
         },
         children: [
+          /* @__PURE__ */ jsx(
+            "input",
+            {
+              type: "checkbox",
+              onClick: (e) => e.stopPropagation(),
+              checked: batchChecked,
+              disabled: batchDisabled,
+              onChange: () => onToggleBatchSel(plugin.id),
+              title: batchDisabled ? "core/dev-link \u63D2\u4EF6\u4E0D\u53EF\u6279\u91CF\u5378\u8F7D" : "\u52A0\u5165\u6279\u91CF\u64CD\u4F5C",
+              style: { width: 14, height: 14, accentColor: "#3B82F6", cursor: batchDisabled ? "not-allowed" : "pointer", flexShrink: 0, opacity: batchDisabled ? 0.35 : 1 }
+            }
+          ),
           /* @__PURE__ */ jsx("div", { style: { width: 32, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0, background: "#3B82F622", color: "#3B82F6" }, children: "\u{1F9E9}" }),
           /* @__PURE__ */ jsxs("div", { style: { flex: 1, minWidth: 0 }, children: [
             /* @__PURE__ */ jsxs("div", { style: { display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }, children: [
