@@ -5239,7 +5239,7 @@
       "id": "polaris-git",
       "name": "Git 与版本管理",
       "version": "0.1.0",
-      "description": "Git 查询与提交面板：变更(status/diff)/暂存/提交、历史(搜索+详情+文件diff)、分支/远程/标签/Stash/.gitignore 只读查询。全部数据经宿主 cap.git 能力（router_dispatch），冷启动自动绑定当前工作区，写动作经宿主权限 gate、审计流水与 WRITE_GATE 写串行。以 slotMode=shadow 接管内置 git.panel 席位，禁用插件即回退。",
+      "description": "Git 与版本管理面板 + 自带引擎：变更(status/diff)/暂存/提交、历史(搜索+详情+文件 diff)、分支/远程/标签/Stash/.gitignore、交互式变基、冲突合并、Undo 快照与操作流水。引擎内置于插件 service（本机 git CLI，77 个 action），AI 工具经插件 MCP 提供；面板经宿主 cap.pluginServiceManager.request 通用转发访问本机服务，宿主不再保留 Git 后端。文件树分支徽章经 H7 fileExplorerToolbar 槽位注入。",
       "author": "Polaris",
       "category": "dev",
       "tags": [
@@ -5257,10 +5257,11 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@polaris-git-v0.1.0/plugins/polaris-git/polaris-git.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/polaris-git/update.json",
-      "sha256": "363e350c514c4fa8a4f32cad7f9c40d951b87e21de1f36430817166cea25b895",
+      "sha256": "2c81121c417fccd2ae4a863f1ab39ad19951c55ad71933e67829a8d4016b0772",
       "tier": 4,
       "permissions": {
-        "workspaceRead": true
+        "workspaceRead": true,
+        "appConfigRead": true
       },
       "screenshots": [],
       "readme": "# polaris-git — Git 与版本管理插件\n\n以插件形态提供的 Git 查询与提交面板，`slotMode: shadow` 接管主仓内置 `git.panel` 席位（禁用插件即回退占位说明）。\n\n## 能力范围（v0.1.0，按 2026-11-12 用户裁定）\n\n- **查询**：变更（status 分组 + 内联 diff）、历史（搜索 + 提交详情 + 文件 diff）、分支 / 远程 / 标签 / Stash（含 stash_show patch）/ .gitignore —— 全部只读。\n- **写路径（Phase 1 纵切）**：暂存 / 取消暂存（单文件 + 批量）→ 提交（index 或 selectedFiles 定向）。\n- **不做**（后续批次待批）：discard / 分支写操作 / fetch/pull/push / 冲突合并器 / AI 提交信息（需宿主 H2）/ 编辑器 gutter（需宿主 H3）/ 中央 Tab（需宿主 H4）。\n\n## 数据通道（唯一）\n\n```\npanel.js → __POLARIS_HOST_INVOKE__('router_dispatch', { req: { target: 'cap.git', payload } })\n```\n\nwire 类型与 `Polaris/src-tauri/src/models/git.rs` 逐字段对齐（注意 GitDiffEntry/GitRemote/GitStashEntry 为 snake_case，见 src/types.ts 头注）。\n\n## 构建 / 测试\n\n```bash\nnpm install\nnpm run build      # dist/panel.js + 样式同步进 plugin.json/update.json\nnpm run typecheck  # tsc --noEmit\nnpm test           # diff 引擎 + 模型/格式 + SSR 渲染冒烟\n```\n",

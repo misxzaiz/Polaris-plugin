@@ -59,16 +59,18 @@ const cannedStatus = () => ({
 
 // 假宿主桥：记录调用并按 action 返回
 const fakeInvoke = async (_cmd, args) => {
-  const action = args?.req?.payload?.action;
-  calls.push(action);
   const payload = args?.req?.payload ?? {};
-  const wrap = (result) => ({ ok: true, result });
+  const viaService = payload.action === 'request';
+  const action = viaService ? payload.body?.action : payload.action;
+  const params = viaService ? (payload.body?.params ?? {}) : payload;
+  calls.push(action);
+  const wrap = (data) => ({ ok: true, result: { ok: true, data } });
   switch (action) {
     case 'is_repository':
-      return wrap(payload.workspacePath === 'D:/ws' || payload.workspacePath === 'D:/ws2');
+      return wrap(params.workspacePath === 'D:/ws' || params.workspacePath === 'D:/ws2');
     case 'discover_repositories':
       return wrap(
-        payload.workspacePath === 'D:/multi'
+        params.workspacePath === 'D:/multi'
           ? [
               { path: 'D:/ws/proj-a', name: 'proj-a', branch: 'main', shortCommit: 'a1', isEmpty: false, hasChanges: true },
               { path: 'D:/ws/proj-b', name: 'proj-b', branch: 'dev', shortCommit: 'b1', isEmpty: false, hasChanges: false },
@@ -76,7 +78,7 @@ const fakeInvoke = async (_cmd, args) => {
           : [],
       );
     case 'get_status':
-      return wrap({ ...cannedStatus(), branch: payload.workspacePath === 'D:/ws/proj-b' ? 'dev' : 'main' });
+      return wrap({ ...cannedStatus(), branch: params.workspacePath === 'D:/ws/proj-b' ? 'dev' : 'main' });
     case 'get_log':
       return wrap([]);
     case 'stage_file':
@@ -120,7 +122,7 @@ async function storeTests() {
   ok(store.getSnapshot().phase === 'ready', `冷启动绑定仓库（phase=${store.getSnapshot().phase}）`);
   ok(store.getSnapshot().repoPath === 'D:/ws', '工作区即仓库');
   ok(store.getSnapshot().status?.branch === 'main', 'status 已装载');
-  ok(calls.includes('is_repository') && calls.includes('get_status'), '走 cap.git action');
+  ok(calls.includes('is_repository') && calls.includes('get_status'), '走插件服务 action');
   ok(notified > 0, '订阅者被通知');
 
   // 写操作：stage → 成功后 reconcile（再次 get_status）
@@ -151,8 +153,9 @@ async function storeTests() {
   // 嵌套仓库工作区 → 发现并选第一个
   // （让 is_repository 对 D:/multi 返回 false）
   globalThis.window.__POLARIS_HOST_INVOKE__ = async (_cmd, args) => {
-    const action = args?.req?.payload?.action;
-    if (action === 'is_repository') return { ok: true, result: false };
+    const payload = args?.req?.payload ?? {};
+    const action = payload.action === 'request' ? payload.body?.action : payload.action;
+    if (action === 'is_repository') return { ok: true, result: { ok: true, data: false } };
     return fakeInvoke(_cmd, args);
   };
   store.setWorkspace('D:/multi');

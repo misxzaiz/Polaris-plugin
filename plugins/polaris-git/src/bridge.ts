@@ -2,11 +2,15 @@
  * polaris-git 宿主桥 —— 唯一允许接触 window 全局的层（spec §7.2 D7）。
  *
  * 数据通道（唯一，禁止第二通道）：
- *   __POLARIS_HOST_INVOKE__('router_dispatch', { req: { target: 'cap.git', payload } })
- * 面板运行在主窗口（label=main）→ Source::Bootstrap，cap.git 查询/写动作均放行；
- * 权限 gate / 审计流水 / WRITE_GATE 写串行 / Web 桥由宿主总线统一承担。
+ *   __POLARIS_HOST_INVOKE__('router_dispatch',
+ *     { req: { target: 'cap.pluginServiceManager',
+ *             payload: { action: 'request', serviceId: 'polaris-git-service',
+ *                        path: '/dispatch', body: { action, params } } } })
+ * 面板运行在主窗口（label=main）→ Source::Bootstrap，宿主通用转发放行；
+ * 引擎在插件自带 service（本机 git CLI），宿主不再保留 Git 后端与 cap.git。
+ * 权限 gate 由宿主 policy 层统一裁决，写串行 / undo 快照 / 操作流水在 service 内。
  *
- * 事件：__POLARIS_HOST_LISTEN__（非 chat-event 全透传）→ git-operation / git-undo-snapshot。
+ * 事件：__POLARIS_HOST_LISTEN__（非 chat-event 全透传）→ file-system-change。
  * 工作区：__POLARIS_WORKSPACE_API__（冷启动有值：subscribe 挂载即回调一次）。
  */
 
@@ -52,14 +56,33 @@ function getHostInvoke(): HostInvoke {
 }
 
 // ---------------------------------------------------------------------------
-// cap.git（唯一 Git 数据入口）
+// Git 引擎（唯一数据入口 → 插件自带 service）
 // ---------------------------------------------------------------------------
+
+/** contributes.services[].id —— 宿主按此 id 查运行中实例端口并转发 */
+const SERVICE_ID = 'polaris-git-service';
+/** 冷启动时 supervisor 拉起服务有延迟：对「未就绪」类错误短重试 */
+const SERVICE_RETRY_MS = 400;
+const SERVICE_RETRY_MAX = 8;
 
 interface RouterEnvelope<T> {
   msgId?: string;
   ok: boolean;
   result?: T | null;
   error?: unknown;
+}
+
+/** 插件服务的统一信封（service/main.js 契约） */
+interface ServiceEnvelope<T> {
+  ok: boolean;
+  data?: T;
+  error?: string;
+}
+
+/** 服务未就绪（进程刚拉起 / 端口未监听）——可重试 */
+function isServiceWarmingUp(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /未运行或无端口|插件服务请求失败|ECONNREFUSED|connection refused|socket hang up/i.test(msg);
 }
 
 /** 把总线 error 字段转成人类可读消息（string 或 {message} 对象都兜住） */
@@ -72,16 +95,59 @@ function envelopeErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
-/** cap.git 调用：action + 参数（camelCase，与 git_capability.rs action_docs 对齐） */
-export async function capGit<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
+/** 单次转发：宿主 cap.pluginServiceManager.request → 本机插件服务 /dispatch */
+async function dispatchOnce<T>(action: string, params: Record<string, unknown>): Promise<T> {
   const invoke = getHostInvoke();
-  const res = await invoke<RouterEnvelope<T>>('router_dispatch', {
-    req: { target: 'cap.git', payload: { action, ...params } },
+  const res = await invoke<RouterEnvelope<ServiceEnvelope<T>>>('router_dispatch', {
+    req: {
+      target: 'cap.pluginServiceManager',
+      payload: {
+        action: 'request',
+        serviceId: SERVICE_ID,
+        path: '/dispatch',
+        body: { action, params },
+      },
+    },
   });
   if (!res.ok) {
-    throw new Error(envelopeErrorMessage(res.error, `cap.git ${action} 调用失败`));
+    throw new Error(envelopeErrorMessage(res.error, `Git 引擎 ${action} 调用失败`));
   }
-  return res.result as T;
+  const env = res.result;
+  if (!env || typeof env !== 'object') {
+    throw new Error(`Git 引擎 ${action} 返回空响应`);
+  }
+  if (!env.ok) {
+    throw new Error(env.error || `Git 引擎 ${action} 执行失败`);
+  }
+  return env.data as T;
+}
+
+/**
+ * Git 引擎调用：action + 参数（camelCase，与 service/engine.js 契约对齐）。
+ * 服务冷启动未就绪时短重试，避免面板首次打开即报错。
+ */
+export async function capGit<T>(action: string, params: Record<string, unknown> = {}): Promise<T> {
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < SERVICE_RETRY_MAX; attempt += 1) {
+    try {
+      return await dispatchOnce<T>(action, params);
+    } catch (err) {
+      lastErr = err;
+      if (!isServiceWarmingUp(err) || attempt === SERVICE_RETRY_MAX - 1) break;
+      await new Promise((resolve) => setTimeout(resolve, SERVICE_RETRY_MS));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
+}
+
+/** 服务健康探测（诊断用；面板头部可显示「引擎未就绪」） */
+export async function probeService(): Promise<boolean> {
+  try {
+    await dispatchOnce('is_repository', { workspacePath: '.' });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

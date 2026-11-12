@@ -6,7 +6,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node test/diff-engine.test.mjs && node test/model.test.mjs && node test/render-verify.mjs"
+    "test": "node test/diff-engine.test.mjs && node test/model.test.mjs && node test/render-verify.mjs && node --test test/service.test.mjs",
+    "test:service": "node --test test/service.test.mjs"
   },
   "devDependencies": {
     "@types/react": "^18.3.31",

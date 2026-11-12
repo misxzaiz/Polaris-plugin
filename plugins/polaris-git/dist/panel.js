@@ -15,6 +15,13 @@ function getHostInvoke() {
   }
   return fn;
 }
+var SERVICE_ID = "polaris-git-service";
+var SERVICE_RETRY_MS = 400;
+var SERVICE_RETRY_MAX = 8;
+function isServiceWarmingUp(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /未运行或无端口|插件服务请求失败|ECONNREFUSED|connection refused|socket hang up/i.test(msg);
+}
 function envelopeErrorMessage(err, fallback) {
   if (typeof err === "string" && err.trim()) return err;
   if (err && typeof err === "object") {
@@ -23,15 +30,43 @@ function envelopeErrorMessage(err, fallback) {
   }
   return fallback;
 }
-async function capGit(action, params = {}) {
+async function dispatchOnce(action, params) {
   const invoke = getHostInvoke();
   const res = await invoke("router_dispatch", {
-    req: { target: "cap.git", payload: { action, ...params } }
+    req: {
+      target: "cap.pluginServiceManager",
+      payload: {
+        action: "request",
+        serviceId: SERVICE_ID,
+        path: "/dispatch",
+        body: { action, params }
+      }
+    }
   });
   if (!res.ok) {
-    throw new Error(envelopeErrorMessage(res.error, `cap.git ${action} \u8C03\u7528\u5931\u8D25`));
+    throw new Error(envelopeErrorMessage(res.error, `Git \u5F15\u64CE ${action} \u8C03\u7528\u5931\u8D25`));
   }
-  return res.result;
+  const env = res.result;
+  if (!env || typeof env !== "object") {
+    throw new Error(`Git \u5F15\u64CE ${action} \u8FD4\u56DE\u7A7A\u54CD\u5E94`);
+  }
+  if (!env.ok) {
+    throw new Error(env.error || `Git \u5F15\u64CE ${action} \u6267\u884C\u5931\u8D25`);
+  }
+  return env.data;
+}
+async function capGit(action, params = {}) {
+  let lastErr = null;
+  for (let attempt = 0; attempt < SERVICE_RETRY_MAX; attempt += 1) {
+    try {
+      return await dispatchOnce(action, params);
+    } catch (err) {
+      lastErr = err;
+      if (!isServiceWarmingUp(err) || attempt === SERVICE_RETRY_MAX - 1) break;
+      await new Promise((resolve) => setTimeout(resolve, SERVICE_RETRY_MS));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 function subscribeHostEvent(event, handler) {
   const listen = globals().__POLARIS_HOST_LISTEN__;
@@ -1808,11 +1843,134 @@ function TabStrip({
   }) });
 }
 
+// src/badge.tsx
+import { useEffect as useEffect7, useRef as useRef3, useState as useState8 } from "react";
+import { jsx as jsx9, jsxs as jsxs9 } from "react/jsx-runtime";
+var DEBOUNCE_MS = 600;
+var FALLBACK_MS = 3e4;
+var badgeStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 4,
+  maxWidth: 150,
+  minWidth: 0,
+  padding: "0 5px",
+  height: 20,
+  borderRadius: 4,
+  border: "1px solid rgb(var(--c-border) / 0.15)",
+  background: "rgb(var(--c-bg-subtle))",
+  color: "rgb(var(--c-text-secondary))",
+  fontSize: 11,
+  lineHeight: "18px",
+  cursor: "default",
+  userSelect: "none"
+};
+var branchStyle = {
+  maxWidth: 100,
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap"
+};
+var countStyle = {
+  minWidth: 14,
+  padding: "0 3px",
+  borderRadius: 7,
+  background: "rgb(var(--c-primary) / 0.16)",
+  color: "rgb(var(--c-primary))",
+  fontSize: 10,
+  textAlign: "center"
+};
+var aheadBehindStyle = {
+  fontSize: 10,
+  color: "rgb(var(--c-text-tertiary, var(--c-text-secondary)))",
+  whiteSpace: "nowrap"
+};
+function BranchBadge() {
+  const [status, setStatus] = useState8(null);
+  const timerRef = useRef3(null);
+  const disposedRef = useRef3(false);
+  useEffect7(() => {
+    disposedRef.current = false;
+    const load = async () => {
+      const workspacePath = currentWorkspacePath();
+      if (!workspacePath) {
+        if (!disposedRef.current) setStatus(null);
+        return;
+      }
+      try {
+        const next = await capGit("get_status", { workspacePath });
+        if (!disposedRef.current) setStatus(next?.exists ? next : null);
+      } catch {
+        if (!disposedRef.current) setStatus(null);
+      }
+    };
+    const schedule = () => {
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null;
+        void load();
+      }, DEBOUNCE_MS);
+    };
+    const offWorkspace = onWorkspaceChanged(() => schedule());
+    const offFs = listenFileSystemChange(schedule);
+    const interval = window.setInterval(() => void load(), FALLBACK_MS);
+    return () => {
+      disposedRef.current = true;
+      offWorkspace();
+      offFs();
+      window.clearInterval(interval);
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+  if (!status) return null;
+  const changes = status.staged.length + status.unstaged.length + status.untracked.length;
+  const ahead = status.ahead ?? 0;
+  const behind = status.behind ?? 0;
+  const branch = status.branch || "HEAD";
+  const title = [
+    `Git: ${branch}`,
+    changes > 0 ? `${changes} \u4E2A\u53D8\u66F4` : "\u5DE5\u4F5C\u533A\u5E72\u51C0",
+    ahead > 0 ? `\u9886\u5148 ${ahead}` : "",
+    behind > 0 ? `\u843D\u540E ${behind}` : ""
+  ].filter(Boolean).join(" \xB7 ");
+  return /* @__PURE__ */ jsxs9("span", { className: "pg-branch-badge", style: badgeStyle, title, "aria-label": title, children: [
+    /* @__PURE__ */ jsx9("span", { style: branchStyle, children: branch }),
+    (ahead > 0 || behind > 0) && /* @__PURE__ */ jsxs9("span", { style: aheadBehindStyle, children: [
+      ahead > 0 ? `\u2191${ahead}` : "",
+      behind > 0 ? `\u2193${behind}` : ""
+    ] }),
+    changes > 0 && /* @__PURE__ */ jsx9("span", { style: countStyle, children: changes })
+  ] });
+}
+
 // src/index.tsx
-import { jsx as jsx9 } from "react/jsx-runtime";
+import { jsx as jsx10 } from "react/jsx-runtime";
 function PolarisGitEntry(props) {
-  return /* @__PURE__ */ jsx9(Panel, {});
+  return /* @__PURE__ */ jsx10(Panel, {});
+}
+function registerUi(host, ctx) {
+  host.registerFileExplorerToolbar(
+    "branch-badge",
+    BranchBadge,
+    10
+  );
+  host.registerDiffRefreshProvider(async (filePath, workspacePath) => {
+    try {
+      const entry = await capGit("get_worktree_file_diff", {
+        workspacePath,
+        filePath
+      });
+      if (!entry || typeof entry !== "object") return null;
+      return entry;
+    } catch {
+      return null;
+    }
+  });
 }
 export {
-  PolarisGitEntry as default
+  PolarisGitEntry as default,
+  registerUi
 };
