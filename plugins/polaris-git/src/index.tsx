@@ -4,7 +4,8 @@
  * 同时导出 `registerUi`（H7 UI 槽位）：
  * - `fileExplorerToolbar`：文件树分支徽章（原宿主 GitStatusIndicator 的替代）
  * - `diffRefresh`：宿主 diff tab 恢复时取该文件的最新工作区差异
- * 两者数据均来自插件自带 service，宿主不保留 gitStore / cap.git。
+ * - `editorScmProvider`：编辑器 gutter / blame / 变更导航的数据源（H3）
+ * 以上数据均来自插件自带 service，宿主不保留 gitStore / cap.git。
  */
 import type { ComponentType } from 'react'
 import { Panel } from './components/Panel.tsx'
@@ -27,6 +28,21 @@ interface PluginUiHostApi {
   registerDiffRefreshProvider(
     provider: (filePath: string, workspacePath: string) => Promise<unknown | null>,
   ): void
+  registerEditorScmProvider(provider: {
+    getStatus: (workspacePath: string) => Promise<{
+      exists: boolean
+      branch?: string
+      staged: { path: string }[]
+      unstaged: { path: string }[]
+      untracked: string[]
+    } | null>
+    getFileDiff: (
+      workspacePath: string,
+      filePath: string,
+      kind: 'worktree' | 'index',
+    ) => Promise<{ old_content?: string | null; new_content?: string | null } | null>
+    getBlame: (workspacePath: string, filePath: string) => Promise<unknown | null>
+  }): void
 }
 
 /**
@@ -53,5 +69,35 @@ export function registerUi(host: PluginUiHostApi, ctx: { pluginId: string }): vo
       // 未跟踪/已删除/服务未就绪：返回 null，宿主退回旧 diffData
       return null
     }
+  })
+
+  // 编辑器 SCM 数据（gutter / blame / 变更导航）—— 宿主只保留 CM6 渲染壳
+  host.registerEditorScmProvider({
+    async getStatus(workspacePath) {
+      const status = await capGit<{
+        exists: boolean
+        branch?: string
+        staged: { path: string }[]
+        unstaged: { path: string }[]
+        untracked: string[]
+      }>('get_status', { workspacePath })
+      if (!status || !status.exists) return null
+      return {
+        exists: true,
+        branch: status.branch,
+        staged: status.staged ?? [],
+        unstaged: status.unstaged ?? [],
+        untracked: status.untracked ?? [],
+      }
+    },
+    async getFileDiff(workspacePath, filePath, kind) {
+      const action = kind === 'index' ? 'get_index_file_diff' : 'get_worktree_file_diff'
+      const entry = await capGit<GitDiffEntry>(action, { workspacePath, filePath })
+      if (!entry) return null
+      return { old_content: entry.old_content ?? '', new_content: entry.new_content ?? '' }
+    },
+    async getBlame(workspacePath, filePath) {
+      return capGit<unknown>('blame_file', { workspacePath, filePath })
+    },
   })
 }

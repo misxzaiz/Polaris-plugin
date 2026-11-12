@@ -62,7 +62,8 @@
     ],
     "uiSlots": [
       "fileExplorerToolbar",
-      "diffRefresh"
+      "diffRefresh",
+      "editorScmProvider"
     ]
   },
   "permissions": {

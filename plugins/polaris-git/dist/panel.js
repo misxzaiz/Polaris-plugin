@@ -1969,6 +1969,28 @@ function registerUi(host, ctx) {
       return null;
     }
   });
+  host.registerEditorScmProvider({
+    async getStatus(workspacePath) {
+      const status = await capGit("get_status", { workspacePath });
+      if (!status || !status.exists) return null;
+      return {
+        exists: true,
+        branch: status.branch,
+        staged: status.staged ?? [],
+        unstaged: status.unstaged ?? [],
+        untracked: status.untracked ?? []
+      };
+    },
+    async getFileDiff(workspacePath, filePath, kind) {
+      const action = kind === "index" ? "get_index_file_diff" : "get_worktree_file_diff";
+      const entry = await capGit(action, { workspacePath, filePath });
+      if (!entry) return null;
+      return { old_content: entry.old_content ?? "", new_content: entry.new_content ?? "" };
+    },
+    async getBlame(workspacePath, filePath) {
+      return capGit("blame_file", { workspacePath, filePath });
+    }
+  });
 }
 export {
   PolarisGitEntry as default,
