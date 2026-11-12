@@ -26,7 +26,15 @@ const POLARIS_TOKEN = process.argv[3] || '';
 const APP_CONFIG_DIR = process.argv[4] || '';
 
 function log(level, msg) {
-  process.stderr.write(`[${SERVER_NAME}:${level}] ${new Date().toISOString()} ${msg}\n`);
+  process.stderr.write(`[${SERVER_NAME}
+  // 诊断留痕：端口发现失败时宿主不收集 MCP stderr，落盘到数据根便于排查
+  if (level === 'error' && msg.includes('端点发现失败')) {
+    try {
+      const diagDir = APP_CONFIG_DIR || (process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris-dev') : os.tmpdir());
+      fs.writeFileSync(path.join(diagDir, 'browser-desk-mcp-diag.txt'), new Date().toISOString() + ' ' + msg + '
+', 'utf8');
+    } catch (_) { /* ignore */ }
+  }:${level}] ${new Date().toISOString()} ${msg}\n`);
 }
 
 // ── 服务端点自发现 ─────────────────────────────────────────────────────────
@@ -96,7 +104,7 @@ function kvGetViaHost(key) {
 
 function healthOnce(port) {
   return new Promise((resolve) => {
-    const req = http.get({ hostname: '127.0.0.1', port, path: '/__health', timeout: 800 }, (res) => {
+    const req = http.get({ hostname: '127.0.0.1', port, path: '/__health', timeout: 3500 }, (res) => {
       res.resume();
       resolve(res.statusCode === 200);
     });
@@ -105,15 +113,38 @@ function healthOnce(port) {
   });
 }
 
+function readServicePortFromFile(appConfigDir) {
+  // 数据根/browser-desk-service.port（service 每次上报同步写；与 polaris-git-service.port 同款）
+  for (const p of configCandidates(appConfigDir)) {
+    try {
+      const f = path.join(path.dirname(p), 'browser-desk-service.port');
+      if (fs.existsSync(f)) {
+        const port = parseInt(fs.readFileSync(f, 'utf8').trim(), 10);
+        if (Number.isFinite(port) && port > 0) return port;
+      }
+    } catch (_) { /* skip */ }
+  }
+  return null;
+}
+
 async function resolveServicePort(appConfigDir) {
+  const tried = [];
   const envPort = parseInt(process.env.BROWSER_DESK_SERVICE_PORT || '', 10);
-  if (Number.isFinite(envPort) && envPort > 0 && await healthOnce(envPort)) return envPort;
+  if (Number.isFinite(envPort) && envPort > 0) {
+    tried.push(`env:${envPort}=${await healthOnce(envPort)}`);
+    if (tried[tried.length - 1].endsWith('true')) return envPort;
+  }
+  const filePort = readServicePortFromFile(appConfigDir);
+  tried.push(`file:${filePort}`);
+  if (filePort && await healthOnce(filePort)) return filePort;
   const kvPort = await kvGetViaHost('browser-desk/service-port');
+  tried.push(`kv:${kvPort}`);
   if (kvPort && await healthOnce(kvPort)) return kvPort;
   for (let p = 9700; p <= 9719; p += 1) {
     // eslint-disable-next-line no-await-in-loop
     if (await healthOnce(p)) return p;
   }
+  log('error', `service 端点发现失败: argv(port=${POLARIS_PORT},token=${POLARIS_TOKEN ? 'set' : 'empty'},cfg=${APP_CONFIG_DIR || 'empty'}) tried=${tried.join(',')}`);
   return null;
 }
 

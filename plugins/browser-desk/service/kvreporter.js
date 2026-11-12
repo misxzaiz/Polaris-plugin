@@ -30,6 +30,20 @@ function configCandidates(appConfigDir) {
   return cands;
 }
 
+function resolveDataRoot(appConfigDir) {
+  for (const anchor of [
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris-dev', 'anchor.json') : '',
+    process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris', 'anchor.json') : '',
+    path.join(os.homedir(), '.config', 'Polaris', 'anchor.json'),
+  ]) {
+    try {
+      const a = JSON.parse(fs.readFileSync(anchor, 'utf8'));
+      if (a && typeof a.dataRoot === 'string' && a.dataRoot) return a.dataRoot;
+    } catch (_) { /* skip */ }
+  }
+  return '';
+}
+
 function resolveEndpoint(appConfigDir) {
   const envHost = process.env.POLARIS_HOST || '';
   const envPort = parseInt(process.env.POLARIS_PORT || '', 10);
@@ -49,7 +63,19 @@ function resolveEndpoint(appConfigDir) {
 }
 
 function createKvReporter(appConfigDir) {
+  /** 同步写端口文件（<dataRoot>/browser-desk-service.port），与 polaris-git-service.port 同款；
+   *  MCP server 的文件级自发现用（比 cap.kv 更早可用、无 HTTP 依赖）。 */
+  function reportPortFile(dataRoot, port) {
+    try {
+      if (!dataRoot) return;
+      fs.writeFileSync(path.join(dataRoot, 'browser-desk-service.port'), String(port), 'utf8');
+    } catch (_) { /* ignore */ }
+  }
+
   function report(key, value) {
+    if (key === 'browser-desk/service-port') {
+      reportPortFile(resolveDataRoot(appConfigDir), value);
+    }
     const ep = resolveEndpoint(appConfigDir);
     if (!ep) return;
     const data = JSON.stringify({ req: { target: 'cap.kv', payload: { action: 'set', key, value } } });

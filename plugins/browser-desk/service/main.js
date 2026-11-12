@@ -78,26 +78,13 @@ function sendJson(res, code, obj) {
 }
 
 let lastError = null;
+let lastEngineStatus = { engine: 'stopped', chromePath: null, tabs: 0 };
 
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && (req.url === '/__health' || req.url.startsWith('/__health?'))) {
-      let engineStatus = 'stopped';
-      try {
-        const st = await engine.status();
-        engineStatus = st.engine;
-        sendJson(res, 200, {
-          ok: true, status: 'ok', version: VERSION, engine: engineStatus,
-          chromePath: st.chromePath, tabs: st.tabs.length,
-        });
-      } catch (e) {
-        // 引擎异常也返回 200 + degraded（服务活着，浏览器不可用）；
-        // 只有致命配置错误（如 Chrome 完全缺失）才 503，让面板给引导
-        sendJson(res, 200, {
-          ok: true, status: 'degraded', version: VERSION, engine: engineStatus,
-          lastError: e.message,
-        });
-      }
+      // 轻量健康检查：同步内存快照，绝不等引擎锁/CDP（健康探测 800ms 超时会误判）
+      sendJson(res, 200, { ok: true, status: 'ok', version: VERSION, engine: lastEngineStatus.engine, chromePath: lastEngineStatus.chromePath, tabs: lastEngineStatus.tabs });
       return;
     }
     if (req.method === 'POST' && (req.url === '/dispatch' || req.url.startsWith('/dispatch?'))) {
@@ -116,6 +103,9 @@ const server = http.createServer(async (req, res) => {
       const t0 = Date.now();
       try {
         const result = await fn(payload);
+        if (payload.action === 'status' && result && typeof result === 'object') {
+          lastEngineStatus = { engine: result.engine, chromePath: result.chromePath, tabs: (result.tabs || []).length };
+        }
         sendJson(res, 200, { ok: true, result, tookMs: Date.now() - t0 });
       } catch (e) {
         lastError = e.message;
