@@ -213,9 +213,9 @@ async function discoverInstalled() {
     throw new Error(e instanceof Error ? e.message : String(e));
   }
 }
-async function uninstallPlugin(installPath) {
+async function uninstallPlugin(installPath, pluginId) {
   try {
-    return await dispatchPluginDiscovery("uninstall_local", { installPath });
+    return await dispatchPluginDiscovery("uninstall_with_cleanup", { installPath, pluginId });
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) };
   }
@@ -460,10 +460,11 @@ function MarketplacePanel({ pluginId: _pluginId }) {
   };
   const handleUninstall = async (p) => {
     if (!p.installPath) return;
-    if (!confirm(`\u786E\u8BA4\u5378\u8F7D ${p.name}\uFF08${p.id}\uFF09\uFF1F`)) return;
+    if (!confirm(`\u786E\u8BA4\u5378\u8F7D ${p.name}\uFF08${p.id}\uFF09\uFF1F
+\u5C06\u505C\u6B62\u5176\u540E\u53F0\u670D\u52A1\u3001\u7EC8\u6B62\u76F8\u5173\u8FDB\u7A0B\u5E76\u5220\u9664\u63D2\u4EF6\u76EE\u5F55\u3002`)) return;
     setOpLoading(`uninstall-${p.id}`);
     setOpMsg(null);
-    const r = await uninstallPlugin(p.installPath);
+    const r = await uninstallPlugin(p.installPath, p.id);
     setOpMsg(r.success ? `\u2713 ${p.name} \u5DF2\u5378\u8F7D` : `\u2717 \u5378\u8F7D\u5931\u8D25\uFF1A${r.error ?? "\u672A\u77E5\u9519\u8BEF"}`);
     setOpLoading(null);
     if (r.success) await refreshAfterOp();

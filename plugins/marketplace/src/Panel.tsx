@@ -375,9 +375,15 @@ async function discoverInstalled(): Promise<InstalledPlugin[]> {
   }
 }
 
-async function uninstallPlugin(installPath: string): Promise<OpResult> {
+/**
+ * 卸载统一走 uninstall_with_cleanup（P0 治理，2026-11-13）：
+ * 旧 uninstall_local 不停服务/不杀进程，进程活着会锁目录导致删除失败（错误 32），
+ * 且卸载后 state.json 残留条目。with_cleanup 链 = 停服务 → 杀进程 → 删目录（带重试）
+ * → 清 state.json 残留，与设置页 PluginTab 卸载语义对齐。
+ */
+async function uninstallPlugin(installPath: string, pluginId: string): Promise<OpResult> {
   try {
-    return await dispatchPluginDiscovery('uninstall_local', { installPath }) as unknown as OpResult
+    return await dispatchPluginDiscovery('uninstall_with_cleanup', { installPath, pluginId }) as unknown as OpResult
   } catch (e) {
     return { success: false, error: e instanceof Error ? e.message : String(e) }
   }
@@ -650,9 +656,9 @@ export default function MarketplacePanel({ pluginId: _pluginId }: { pluginId: st
 
   const handleUninstall = async (p: InstalledPlugin) => {
     if (!p.installPath) return
-    if (!confirm(`确认卸载 ${p.name}（${p.id}）？`)) return
+    if (!confirm(`确认卸载 ${p.name}（${p.id}）？\n将停止其后台服务、终止相关进程并删除插件目录。`)) return
     setOpLoading(`uninstall-${p.id}`); setOpMsg(null)
-    const r = await uninstallPlugin(p.installPath)
+    const r = await uninstallPlugin(p.installPath, p.id)
     setOpMsg(r.success ? `✓ ${p.name} 已卸载` : `✗ 卸载失败：${r.error ?? '未知错误'}`)
     setOpLoading(null)
     if (r.success) await refreshAfterOp()
