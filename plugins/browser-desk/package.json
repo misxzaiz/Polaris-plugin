@@ -7,7 +7,8 @@
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node test/unit.mjs && node test/mcp-smoke.mjs",
-    "check": "npm run typecheck && npm test && npm run build"
+    "check": "npm run typecheck && npm test && npm run build",
+    "postinstall": "node -e \"console.log('[browser-desk] deps ready; puppeteer-core', require('puppeteer-core/package.json').version)\""
   },
   "dependencies": {},
   "devDependencies": {
@@ -16,7 +17,8 @@
     "esbuild": "^0.23.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "puppeteer-core": "^25.11.0"
   },
   "type": "commonjs"
 }

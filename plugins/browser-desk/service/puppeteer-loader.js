@@ -29,7 +29,12 @@ function tryResolve(pluginDir) {
         // eslint-disable-next-line global-require, import/no-dynamic-require
         return require(p);
       }
-    } catch (_) { /* 继续找 */ }
+    } catch (e) {
+      // junction 场景 require 可能被安全策略拦截：留痕便于排查
+      if (process.env.BROWSER_DESK_DEBUG) {
+        process.stderr.write(`[browser-desk:debug] tryResolve ${p} 失败: ${e.message}\n`);
+      }
+    }
   }
   return null;
 }
@@ -38,10 +43,13 @@ function install(pluginDir, log) {
   const dir = pluginDir;
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   log('info', 'puppeteer-core 缺失，开始 npm install --no-save puppeteer-core（首次约 1-2 分钟）...');
+  // Node ≥ 18.20/20.12/21.7 安全修复：Windows 上 spawn .cmd 必须 shell:true，
+  // 否则 spawnSync 抛 EINVAL（CVE-2024-27980 加固）。
   execFileSync(npm, ['install', '--no-save', 'puppeteer-core@25'], {
     cwd: dir,
     stdio: 'ignore',
     timeout: 5 * 60 * 1000,
+    shell: process.platform === 'win32',
   });
   log('info', 'puppeteer-core 安装完成');
 }
