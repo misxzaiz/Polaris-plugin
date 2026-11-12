@@ -5162,7 +5162,7 @@
       "id": "terminal-desk",
       "name": "终端",
       "version": "0.2.2",
-      "description": "终端工作台（v0.3 UI/交互改造）：QuickRunBar + 顶部可折叠脚本中心 + 36px 标签栏（对齐 v4 视觉基线）、宿主 PTY 会话恢复、重命名持久化、脚本编辑/复制/隐藏/外部终端/自动运行、脚本与标签右键菜单、旧内置脚本导入、危险命令插件内确认、主题 token 与 200–600px 窄栏适配修正。PTY 由宿主 cap.terminal 提供（零端口、零后台服务），输出经 terminal:output 事件推送。附带 stdio MCP 三工具：terminal_list / terminal_run_in_new_session / terminal_write。",
+      "description": "终端工作台（v0.3 UI/交互改造）：QuickRunBar + 顶部可折叠脚本中心 + 36px 标签栏（对齐 v4 视觉基线）、宿主 PTY 会话恢复、重命名持久化、脚本编辑/复制/隐藏/外部终端/自动运行、脚本与标签右键菜单、旧内置脚本导入、危险命令插件内确认、主题 token 与 200–600px 窄栏适配修正；右键菜单按宿主面板坐标域定位（窄栏不再被裁）、脚本菜单补齐复制命令/重跑语义；字体/圆角/边框/动效/窗口透明度统一走宿主设计 token。PTY 由宿主 cap.terminal 提供（零端口、零后台服务），输出经 terminal:output 事件推送。附带 stdio MCP 三工具：terminal_list / terminal_run_in_new_session / terminal_write。",
       "author": "Polaris",
       "category": "dev",
       "tags": [
@@ -5181,7 +5181,7 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/terminal-desk/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@terminal-desk-v0.2.2/plugins/terminal-desk/terminal-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/terminal-desk/update.json",
-      "sha256": "87285c4e8130403e597c49431f7fd5ac21075451dda131c478b8fb4c38d70c9a",
+      "sha256": "8072bcc0fcb3e1c6995c5390907a0b27bd98689ac5f74570f523336c6fb2cbc6",
       "tier": 7,
       "permissions": {
         "appConfigRead": true,

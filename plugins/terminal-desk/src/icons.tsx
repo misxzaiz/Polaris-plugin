@@ -1,7 +1,7 @@
 /**
  * 内联 SVG 图标（不引入 lucide 依赖；插件 bundle 与宿主 React shim 同源）。
- * 统一 currentColor + 1.7 stroke，替代旧版 Unicode 字形（＋ ⿴ ▶ ▴ ✕），
- * 解决图标大小不一、字体缺失与对齐抖动。
+ * 统一 currentColor + 1.9 stroke（对齐宿主 lucide 的 2），替代旧版 Unicode 字形
+ * （＋ ⿴ ▶ ▴ ✕），解决图标大小不一、字体缺失与对齐抖动。
  */
 export type IconName =
   | 'chevron-down'
@@ -83,12 +83,9 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   square: <rect x="5" y="5" width="14" height="14" rx="1.5" />,
-  terminal: (
-    <>
-      <rect x="2" y="3" width="20" height="18" rx="2" />
-      <path d="m6 8 3 3-3 3M12 15h5" />
-    </>
-  ),
+  // 对齐 lucide Terminal：无外框的提示符折线 + 光标横线。
+  // 旧版自带矩形窗口外框，与宿主其余线性图标的视觉重量不一致。
+  terminal: <path d="m4 17 6-6-6-6M12 19h8" />,
   trash: (
     <>
       <path d="M4 7h16M10 11v6m4-6v6" />
@@ -119,7 +116,7 @@ export function Icon({ name, size = 14, className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.7}
+      strokeWidth={1.9}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

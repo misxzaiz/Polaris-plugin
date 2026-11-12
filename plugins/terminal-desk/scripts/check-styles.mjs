@@ -48,6 +48,16 @@ for (const filename of ['plugin.json', 'update.json']) {
   if (inline !== css) errors.push(`${filename}: styles[panel].css 与 src/styles.css 不一致（请运行 npm run build）`);
 }
 
+// 4) 排版/形状/透明度必须走宿主设计 token。
+//    旧版自带 Consolas + 私有 sans 栈 + 5/6/7/10px 自由圆角 + 不复合窗口透明度，
+//    与旁边宿主面板接缝明显，是「土」的结构性来源，禁止回退。
+for (const token of ['var(--font-sans,', 'var(--font-mono,']) {
+  if (!code.includes(token)) errors.push(`未继承宿主排版 token: ${token.slice(0, -1)}`);
+}
+if (!code.includes('--window-opacity')) errors.push('背景未复合宿主 --window-opacity（半透明窗口下会变成不透明补丁）');
+const freeRadius = [...code.matchAll(/border-radius:\s*\d+px/g)].map((m) => m[0]);
+if (freeRadius.length > 0) errors.push(`自由圆角 ${freeRadius.length} 处（应走 --radius-* token）: ${[...new Set(freeRadius)].join(', ')}`);
+
 if (errors.length > 0) {
   console.error('✗ 样式门禁失败：');
   for (const e of errors) console.error(`  - ${e}`);

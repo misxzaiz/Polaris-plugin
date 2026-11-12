@@ -13,7 +13,7 @@ import SessionView from './SessionView';
 import ScriptCenter from './ScriptCenter';
 import QuickRunBar from './QuickRunBar';
 import RunCommandModal from './RunCommandModal';
-import { ConfirmDialog, ContextMenu, type MenuItem } from './Overlays';
+import { ConfirmDialog, ContextMenu, menuPointFromEvent, type MenuItem, type MenuPoint } from './Overlays';
 import { Icon } from './icons';
 import { usePluginConfig } from './config';
 import {
@@ -75,7 +75,7 @@ export default function TerminalDeskPanel(_props: PanelProps) {
   const [discoveredError, setDiscoveredError] = useState<string | null>(null);
   const [workspacePath, setWorkspacePath] = useState<string | null>(() => currentWorkspacePath());
   const [ready, setReady] = useState(false);
-  const [tabMenu, setTabMenu] = useState<{ x: number; y: number; session: SessionMeta } | null>(null);
+  const [tabMenu, setTabMenu] = useState<{ point: MenuPoint; session: SessionMeta } | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -597,7 +597,7 @@ export default function TerminalDeskPanel(_props: PanelProps) {
                   onContextMenu={(e) => {
                     e.preventDefault();
                     setActiveId(s.id);
-                    setTabMenu({ x: e.clientX, y: e.clientY, session: s });
+                    setTabMenu({ point: menuPointFromEvent(e), session: s });
                   }}
                   title={config.sessionNames[s.id] ?? s.name}
                   role="button"
@@ -775,8 +775,7 @@ export default function TerminalDeskPanel(_props: PanelProps) {
 
       {tabMenu && (
         <ContextMenu
-          x={tabMenu.x}
-          y={tabMenu.y}
+          anchor={tabMenu.point}
           items={tabMenuItems(tabMenu.session)}
           onClose={() => setTabMenu(null)}
         />

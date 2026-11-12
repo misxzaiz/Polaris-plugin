@@ -9,7 +9,10 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import * as core from '../shared/td-core.js';
+
+const readSrc = (name) => readFileSync(new URL(`../src/${name}`, import.meta.url), 'utf8');
 
 test('upsertSession: 不存在追加；存在合并且不改引用外元素', () => {
   const a = { id: 's1', name: 'A', exitCode: null };
@@ -237,4 +240,26 @@ test('stableHash / normalizePath: 稳定且跨平台归一', () => {
   assert.notEqual(core.stableHash('abc'), core.stableHash('abd'));
   assert.equal(core.normalizePath('D:\\Repo\\'), 'd:/repo');
   assert.equal(core.normalizePath(''), '');
+});
+
+test('右键菜单：按面板坐标域换算，且边界按域而非 window 收敛', () => {
+  // 宿主 LeftPanel 的 contain:paint 让 fixed 后代以面板为基准；内置
+  // TerminalScriptPanel.tsx:238-249 已做换算，插件不得直接塞 clientX/Y。
+  const overlays = readSrc('Overlays.tsx');
+  assert.match(overlays, /data-panel-coordinate-domain/);
+  assert.match(overlays, /clientX\s*-\s*\(rect\?\.left/);
+  assert.match(overlays, /anchor\.width/);
+  assert.doesNotMatch(overlays, /window\.innerWidth\s*-\s*196/);
+  for (const file of ['Panel.tsx', 'ScriptCenter.tsx']) {
+    const src = readSrc(file);
+    assert.match(src, /menuPointFromEvent\(e\)/, `${file} 未使用坐标域换算`);
+    assert.doesNotMatch(src, /x:\s*e\.clientX/, `${file} 仍把 clientX 直接当 fixed 坐标`);
+  }
+});
+
+test('右键菜单：脚本项覆盖内置终端的复制命令与重跑语义', () => {
+  const src = readSrc('ScriptCenter.tsx');
+  assert.match(src, /label: '复制命令'/);
+  assert.match(src, /label: running \? '重新运行' : '运行'/);
+  assert.match(src, /label: '在外部终端运行'/);
 });

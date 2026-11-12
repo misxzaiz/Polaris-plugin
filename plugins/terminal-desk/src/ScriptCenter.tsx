@@ -6,7 +6,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { openInExternalTerminal } from './bridge';
-import { ContextMenu, ImportDialog, type MenuItem } from './Overlays';
+import { ContextMenu, ImportDialog, menuPointFromEvent, type MenuItem, type MenuPoint } from './Overlays';
 import { Icon } from './icons';
 import {
   AUTO_RUN_TRIGGERS,
@@ -102,7 +102,7 @@ export default function ScriptCenter({
   requestConfirm,
 }: ScriptCenterProps) {
   const [search, setSearch] = useState('');
-  const [menu, setMenu] = useState<{ x: number; y: number; script: ScriptRow } | null>(null);
+  const [menu, setMenu] = useState<{ point: MenuPoint; script: ScriptRow } | null>(null);
   const [editing, setEditing] = useState<{ mode: 'new' | 'edit'; id?: string } | null>(null);
   const [draft, setDraft] = useState<EditorDraft | null>(null);
   const [showImport, setShowImport] = useState(false);
@@ -282,7 +282,7 @@ export default function ScriptCenter({
       const rt = runtimes[script.id];
       const running = rt?.status === 'running';
       return [
-        { id: 'run', label: '运行', icon: 'play', onSelect: () => guardRun(script) },
+        { id: 'run', label: running ? '重新运行' : '运行', icon: 'play', onSelect: () => guardRun(script) },
         {
           id: 'stop',
           label: '停止',
@@ -292,6 +292,12 @@ export default function ScriptCenter({
         },
         { id: 'external', label: '在外部终端运行', icon: 'external', onSelect: () => runExternal(script) },
         { separator: true },
+        {
+          id: 'copycmd',
+          label: '复制命令',
+          icon: 'copy',
+          onSelect: () => void navigator.clipboard?.writeText(script.command).catch(() => {}),
+        },
         {
           id: 'autorun',
           label: script.autoRun ? '关闭自动运行' : '启用自动运行',
@@ -398,7 +404,7 @@ export default function ScriptCenter({
               onClick={() => guardRun(script)}
               onContextMenu={(e) => {
                 e.preventDefault();
-                setMenu({ x: e.clientX, y: e.clientY, script });
+                setMenu({ point: menuPointFromEvent(e), script });
               }}
               title="点击运行 · 右键更多操作"
             >
@@ -421,7 +427,7 @@ export default function ScriptCenter({
                 </button>
                 <button
                   className="td-iconbtn"
-                  onClick={(e) => setMenu({ x: e.clientX, y: e.clientY, script })}
+                  onClick={(e) => setMenu({ point: menuPointFromEvent(e), script })}
                   title="更多操作"
                   aria-label="更多操作"
                 >
@@ -540,7 +546,7 @@ export default function ScriptCenter({
         )}
       </div>
 
-      {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu.script)} onClose={() => setMenu(null)} />}
+      {menu && <ContextMenu anchor={menu.point} items={menuItems(menu.script)} onClose={() => setMenu(null)} />}
       {showImport && <ImportDialog onImport={importLegacy} onCancel={() => setShowImport(false)} />}
     </div>
   );

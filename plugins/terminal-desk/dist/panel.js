@@ -8996,10 +8996,9 @@ var PATHS = {
     /* @__PURE__ */ jsx("path", { d: "m20 20-3.5-3.5" })
   ] }),
   square: /* @__PURE__ */ jsx("rect", { x: "5", y: "5", width: "14", height: "14", rx: "1.5" }),
-  terminal: /* @__PURE__ */ jsxs(Fragment, { children: [
-    /* @__PURE__ */ jsx("rect", { x: "2", y: "3", width: "20", height: "18", rx: "2" }),
-    /* @__PURE__ */ jsx("path", { d: "m6 8 3 3-3 3M12 15h5" })
-  ] }),
+  // 对齐 lucide Terminal：无外框的提示符折线 + 光标横线。
+  // 旧版自带矩形窗口外框，与宿主其余线性图标的视觉重量不一致。
+  terminal: /* @__PURE__ */ jsx("path", { d: "m4 17 6-6-6-6M12 19h8" }),
   trash: /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx("path", { d: "M4 7h16M10 11v6m4-6v6" }),
     /* @__PURE__ */ jsx("path", { d: "M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13M9 7V4h6v3" })
@@ -9020,7 +9019,7 @@ function Icon({ name, size = 14, className }) {
       viewBox: "0 0 24 24",
       fill: "none",
       stroke: "currentColor",
-      strokeWidth: 1.7,
+      strokeWidth: 1.9,
       strokeLinecap: "round",
       strokeLinejoin: "round",
       "aria-hidden": "true",
@@ -9213,7 +9212,18 @@ import { useCallback, useEffect as useEffect3, useMemo, useState as useState3 } 
 // src/Overlays.tsx
 import { useEffect as useEffect2, useRef as useRef2, useState as useState2 } from "react";
 import { jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
-function ContextMenu({ x, y, items, onClose }) {
+function menuPointFromEvent(e) {
+  const target = e.target instanceof HTMLElement ? e.target : null;
+  const domain = target?.closest("[data-panel-coordinate-domain]") ?? null;
+  const rect = domain?.getBoundingClientRect();
+  return {
+    x: e.clientX - (rect?.left ?? 0),
+    y: e.clientY - (rect?.top ?? 0),
+    width: rect?.width ?? (typeof window !== "undefined" ? window.innerWidth : 1200),
+    height: rect?.height ?? (typeof window !== "undefined" ? window.innerHeight : 800)
+  };
+}
+function ContextMenu({ anchor, items, onClose }) {
   const ref = useRef2(null);
   useEffect2(() => {
     const onDown = (e) => {
@@ -9232,8 +9242,10 @@ function ContextMenu({ x, y, items, onClose }) {
       window.removeEventListener("keydown", onKey, true);
     };
   }, [onClose]);
-  const left = Math.max(4, Math.min(x, (typeof window !== "undefined" ? window.innerWidth : 1200) - 196));
-  const top = Math.max(4, Math.min(y, (typeof window !== "undefined" ? window.innerHeight : 800) - 8 - items.length * 30));
+  const menuWidth = 196;
+  const menuHeight = items.length * 30 + 8;
+  const left = Math.max(4, Math.min(anchor.x, Math.max(4, anchor.width - menuWidth - 4)));
+  const top = Math.max(4, Math.min(anchor.y, Math.max(4, anchor.height - menuHeight - 4)));
   return /* @__PURE__ */ jsx3("div", { ref, className: "td-menu", style: { left, top }, role: "menu", children: items.map(
     (item, i) => "separator" in item ? /* @__PURE__ */ jsx3("div", { className: "td-menu-sep" }, `sep-${i}`) : /* @__PURE__ */ jsxs3(
       "button",
@@ -9527,7 +9539,7 @@ function ScriptCenter({
       const rt = runtimes[script.id];
       const running = rt?.status === "running";
       return [
-        { id: "run", label: "\u8FD0\u884C", icon: "play", onSelect: () => guardRun(script) },
+        { id: "run", label: running ? "\u91CD\u65B0\u8FD0\u884C" : "\u8FD0\u884C", icon: "play", onSelect: () => guardRun(script) },
         {
           id: "stop",
           label: "\u505C\u6B62",
@@ -9537,6 +9549,13 @@ function ScriptCenter({
         },
         { id: "external", label: "\u5728\u5916\u90E8\u7EC8\u7AEF\u8FD0\u884C", icon: "external", onSelect: () => runExternal(script) },
         { separator: true },
+        {
+          id: "copycmd",
+          label: "\u590D\u5236\u547D\u4EE4",
+          icon: "copy",
+          onSelect: () => void navigator.clipboard?.writeText(script.command).catch(() => {
+          })
+        },
         {
           id: "autorun",
           label: script.autoRun ? "\u5173\u95ED\u81EA\u52A8\u8FD0\u884C" : "\u542F\u7528\u81EA\u52A8\u8FD0\u884C",
@@ -9626,7 +9645,7 @@ function ScriptCenter({
             onClick: () => guardRun(script),
             onContextMenu: (e) => {
               e.preventDefault();
-              setMenu({ x: e.clientX, y: e.clientY, script });
+              setMenu({ point: menuPointFromEvent(e), script });
             },
             title: "\u70B9\u51FB\u8FD0\u884C \xB7 \u53F3\u952E\u66F4\u591A\u64CD\u4F5C",
             children: [
@@ -9641,7 +9660,7 @@ function ScriptCenter({
                   "button",
                   {
                     className: "td-iconbtn",
-                    onClick: (e) => setMenu({ x: e.clientX, y: e.clientY, script }),
+                    onClick: (e) => setMenu({ point: menuPointFromEvent(e), script }),
                     title: "\u66F4\u591A\u64CD\u4F5C",
                     "aria-label": "\u66F4\u591A\u64CD\u4F5C",
                     children: /* @__PURE__ */ jsx4(Icon, { name: "chevron-down", size: 13 })
@@ -9773,7 +9792,7 @@ function ScriptCenter({
         ))
       ] })
     ] }),
-    menu && /* @__PURE__ */ jsx4(ContextMenu, { x: menu.x, y: menu.y, items: menuItems(menu.script), onClose: () => setMenu(null) }),
+    menu && /* @__PURE__ */ jsx4(ContextMenu, { anchor: menu.point, items: menuItems(menu.script), onClose: () => setMenu(null) }),
     showImport && /* @__PURE__ */ jsx4(ImportDialog, { onImport: importLegacy, onCancel: () => setShowImport(false) })
   ] });
 }
@@ -10491,7 +10510,7 @@ function TerminalDeskPanel(_props) {
             onContextMenu: (e) => {
               e.preventDefault();
               setActiveId(s.id);
-              setTabMenu({ x: e.clientX, y: e.clientY, session: s });
+              setTabMenu({ point: menuPointFromEvent(e), session: s });
             },
             title: config.sessionNames[s.id] ?? s.name,
             role: "button",
@@ -10669,8 +10688,7 @@ function TerminalDeskPanel(_props) {
     tabMenu && /* @__PURE__ */ jsx7(
       ContextMenu,
       {
-        x: tabMenu.x,
-        y: tabMenu.y,
+        anchor: tabMenu.point,
         items: tabMenuItems(tabMenu.session),
         onClose: () => setTabMenu(null)
       }

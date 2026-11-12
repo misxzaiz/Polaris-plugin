@@ -42,15 +42,25 @@ Polaris 终端工作台插件。PTY 由宿主 `cap.terminal` 能力提供（端�
 ```bash
 pnpm i               # 安装依赖（xterm 族 + esbuild + typescript）
 npm run typecheck    # tsc --noEmit
-npm test             # node --test：纯逻辑核 18 项 + MCP stdio 2 项（离线 hermetic）
+npm test             # node --test：纯逻辑核 20 项 + MCP stdio 2 项（离线 hermetic）
 npm run build        # esbuild → dist/panel.js；按 styles[].id 幂等同步 CSS 到 plugin.json / update.json
-npm run check:styles # 样式门禁：变量必须存在于宿主 token 表、border 必须带 alpha、禁硬编码色值
+npm run check:styles # 样式门禁：变量必须存在于宿主 token 表、border 带 alpha、禁硬编码色值、排版/圆角/窗口透明度走宿主 token
 npm run check        # 以上四步一次跑完，提交前门禁
 ```
 
 **改 `src/styles.css` 后必须 `npm run build`**：内联样式是 manifest 的 `contributes.styles[].css`，旧版构建脚本只做一次性占位符替换，改源码不会同步（本轮已修为按 id 覆盖 + 一致性自检）。
 
 真机冒烟：主仓 dev-link 或本地 zip 安装（插件管理页 → 本地安装）。
+
+## 验收反馈修正（v0.2.2 第二轮）
+
+对照内置 `src/components/Terminal/` 逐项复核后的两处修正：
+
+1. **右键菜单「有但看不见」**：宿主 `LeftPanel` 的 wrapper 带 `contain: paint` + `data-panel-coordinate-domain`，是面板内所有 `fixed` 后代的 containing block。内置 `TerminalScriptPanel.tsx:238-249` 会把 `clientX/Y` 减去域墙原点，插件旧版直接塞视口坐标，导致菜单整体偏移；200px 窄侧栏下更会被 `contain:paint` 整块裁掉。现由 `menuPointFromEvent()` 统一换算，边界也按「域宽高」而非 `window.innerWidth/Height` 收敛。另把脚本行的「更多操作」入口从 `opacity:0` 改为 `0.55` 常驻，提升可发现性。
+2. **脚本菜单对齐内置**：补回「复制命令」，运行项在脚本运行中显示「重新运行」（内置第三项语义，内置实现里与「运行」同指 `runScript`，故不新增重复按钮）。
+3. **「土」的结构性原因**：上一轮修的是 token 名写错 / 纯白描边 / Unicode 图标这些**失效错误**；剩下的是**设计语言没对齐宿主**——插件自带 Consolas + 私有 sans 栈、5/6/7/10px 自由圆角、边框 alpha 全用宿主的 `border-subtle(0.08)`、背景不复合 `--window-opacity`、全表零 transition、无 focus 环、三层头部同色平铺。现统一改用 `--font-sans` / `--font-mono` / `--radius-*` / `--transition-fast`，主分隔线回到宿主 `border(0.15)`，背景复合窗口透明度，激活标签加 accent 顶线，并补 0.15s 过渡 / focus-visible / 按压反馈 / 细化滚动条。`scripts/check-styles.mjs` 增加对应门禁，防止回退。
+
+真组件浏览器冒烟（模拟宿主坐标域 + 明暗主题 + 200/360/600px）：**31/31 通过**。
 
 ## 发布状态
 
