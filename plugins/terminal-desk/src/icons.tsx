@@ -1,16 +1,18 @@
 /**
  * 内联 SVG 图标（不引入 lucide 依赖；插件 bundle 与宿主 React shim 同源）。
- * 统一 currentColor + 1.7 stroke，替代旧版 Unicode 字形（＋ ⿴ ▶ ▴ ✕），
- * 解决图标大小不一、字体缺失与对齐抖动。
+ * 统一 currentColor + 1.9 stroke（对齐宿主 lucide 的 2），替代旧版 Unicode 字形
+ * （＋ ⿴ ▶ ▴ ✕），解决图标大小不一、字体缺失与对齐抖动。
  */
 export type IconName =
   | 'chevron-down'
   | 'chevron-up'
+  | 'clipboard'
   | 'close'
   | 'columns'
   | 'copy'
   | 'download'
   | 'edit'
+  | 'eraser'
   | 'external'
   | 'eye-off'
   | 'maximize'
@@ -19,6 +21,7 @@ export type IconName =
   | 'plus'
   | 'refresh'
   | 'search'
+  | 'select-all'
   | 'square'
   | 'terminal'
   | 'trash'
@@ -28,6 +31,13 @@ export type IconName =
 const PATHS: Record<IconName, JSX.Element> = {
   'chevron-down': <path d="m6 9 6 6 6-6" />,
   'chevron-up': <path d="m6 15 6-6 6 6" />,
+  // lucide Clipboard（画布右键「粘贴」）
+  clipboard: (
+    <>
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+    </>
+  ),
   close: <path d="M18 6 6 18M6 6l12 12" />,
   columns: (
     <>
@@ -59,6 +69,12 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
     </>
   ),
+  eraser: (
+    <>
+      <path d="m7 21-4.3-4.3a2.4 2.4 0 0 1 0-3.4l9.6-9.6a2.4 2.4 0 0 1 3.4 0l5.6 5.6a2.4 2.4 0 0 1 0 3.4L13 21" />
+      <path d="M22 21H7M5 11l9 9" />
+    </>
+  ),
   'eye-off': (
     <>
       <path d="M3 3l18 18" />
@@ -82,13 +98,13 @@ const PATHS: Record<IconName, JSX.Element> = {
       <path d="m20 20-3.5-3.5" />
     </>
   ),
-  square: <rect x="5" y="5" width="14" height="14" rx="1.5" />,
-  terminal: (
-    <>
-      <rect x="2" y="3" width="20" height="18" rx="2" />
-      <path d="m6 8 3 3-3 3M12 15h5" />
-    </>
+  'select-all': (
+    <path d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3" />
   ),
+  square: <rect x="5" y="5" width="14" height="14" rx="1.5" />,
+  // 对齐 lucide Terminal：无外框的提示符折线 + 光标横线。
+  // 旧版自带矩形窗口外框，与宿主其余线性图标的视觉重量不一致。
+  terminal: <path d="m4 17 6-6-6-6M12 19h8" />,
   trash: (
     <>
       <path d="M4 7h16M10 11v6m4-6v6" />
@@ -119,7 +135,7 @@ export function Icon({ name, size = 14, className }: IconProps) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.7}
+      strokeWidth={1.9}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

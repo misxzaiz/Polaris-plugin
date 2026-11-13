@@ -15,14 +15,47 @@ export interface MenuItem {
   onSelect: () => void;
 }
 
-export interface ContextMenuProps {
+/**
+ * 面板坐标域换算（对齐内置 TerminalScriptPanel.tsx:238-249）。
+ * 宿主 LeftPanel 的 wrapper 带 `contain: paint` + `data-panel-coordinate-domain`，
+ * 使它成为面板内所有 fixed 后代的 containing block：此时 left/top 是「面板相对」
+ * 而非视口坐标。旧实现直接把 clientX/Y 塞给 fixed 菜单，会整体偏移域墙左上角，
+ * 在 200px 窄侧栏里更会被 contain:paint 裁到完全看不见（用户以为没有右键菜单）。
+ */
+export interface MenuPoint {
   x: number;
   y: number;
+  width: number;
+  height: number;
+}
+
+interface PointLike {
+  clientX: number;
+  clientY: number;
+  target: EventTarget | null;
+}
+
+export function menuPointFromEvent(e: PointLike): MenuPoint {
+  const target = e.target instanceof HTMLElement ? e.target : null;
+  const domain = target?.closest('[data-panel-coordinate-domain]') ?? null;
+  const rect = domain?.getBoundingClientRect();
+  return {
+    x: e.clientX - (rect?.left ?? 0),
+    y: e.clientY - (rect?.top ?? 0),
+    width: rect?.width ?? (typeof window !== 'undefined' ? window.innerWidth : 1200),
+    height: rect?.height ?? (typeof window !== 'undefined' ? window.innerHeight : 800),
+  };
+}
+
+export type ContextMenuAnchor = MenuPoint;
+
+export interface ContextMenuProps {
+  anchor: ContextMenuAnchor;
   items: Array<MenuItem | { separator: true }>;
   onClose: () => void;
 }
 
-export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
+export function ContextMenu({ anchor, items, onClose }: ContextMenuProps) {
   const ref = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -43,9 +76,11 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
     };
   }, [onClose]);
 
-  // 视口边界收敛，避免菜单溢出窗口
-  const left = Math.max(4, Math.min(x, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 196));
-  const top = Math.max(4, Math.min(y, (typeof window !== 'undefined' ? window.innerHeight : 800) - 8 - items.length * 30));
+  // 边界按「坐标域」而非 window 收敛：窄侧栏(200px)下 window 尺寸会让菜单整块溢出被裁
+  const menuWidth = 196;
+  const menuHeight = items.length * 30 + 8;
+  const left = Math.max(4, Math.min(anchor.x, Math.max(4, anchor.width - menuWidth - 4)));
+  const top = Math.max(4, Math.min(anchor.y, Math.max(4, anchor.height - menuHeight - 4)));
 
   return (
     <div ref={ref} className="td-menu" style={{ left, top }} role="menu">

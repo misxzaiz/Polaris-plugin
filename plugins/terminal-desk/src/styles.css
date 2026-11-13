@@ -11,7 +11,20 @@
    QuickRunBar(36) + ScriptCenter(可折叠 ≤200) + TabBar(36) + 终端区。 */
 
 .td-root {
-  --td-mono: Consolas, "SF Mono", "Cascadia Mono", Menlo, "DejaVu Sans Mono", monospace;
+  /* 排版 / 形状 / 动效一律继承宿主设计 token，不在插件里另起一套视觉语言。
+     旧实现自带 Consolas + 私有 sans 栈 + 5/6/7/10px 自由圆角 + 0 动效，
+     与旁边宿主面板接缝明显，是「土」的主要来源。 */
+  --td-mono: var(--font-mono, Consolas, "Cascadia Mono", Menlo, monospace);
+  --td-radius-sm: var(--radius-sm, 4px);
+  --td-radius-md: var(--radius-md, 8px);
+  --td-radius-lg: var(--radius-lg, 12px);
+  --td-fast: var(--transition-fast, 0.15s);
+  --td-ease: var(--ease-out, ease-out);
+  /* 宿主所有背景都复合 --window-opacity；插件不复合会在半透明窗口下变成一块补丁 */
+  --td-bg-base: rgb(var(--c-bg-base) / var(--window-opacity, 1));
+  --td-bg-secondary: rgb(var(--c-bg-secondary) / var(--window-opacity, 1));
+  --td-bg-elevated: rgb(var(--c-bg-elevated) / var(--window-opacity, 1));
+  --td-bg-surface: rgb(var(--c-bg-surface) / var(--window-opacity, 1));
   position: relative;
   container-type: inline-size;
   display: flex;
@@ -20,9 +33,11 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-  background: rgb(var(--c-bg-base));
+  background: var(--td-bg-base);
   color: rgb(var(--c-text-primary));
-  font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-size: 13px;
   line-height: 1.45;
 }
@@ -35,8 +50,9 @@
   align-items: center;
   gap: 6px;
   flex: none;
-  background: rgb(var(--c-bg-elevated));
-  border-bottom: 1px solid rgb(var(--c-border) / 0.08);
+  /* 三段头部用 secondary → elevated → elevated 拉出层次，避免三层同色平铺 */
+  background: var(--td-bg-secondary);
+  border-bottom: 1px solid rgb(var(--c-border) / 0.15);
 }
 .td-qb-btn {
   width: 26px;
@@ -45,7 +61,7 @@
   display: grid;
   place-items: center;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--td-radius-sm);
   background: transparent;
   color: rgb(var(--c-text-secondary));
   cursor: pointer;
@@ -87,7 +103,7 @@
   align-items: center;
   gap: 4px;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--td-radius-sm);
   background: transparent;
   color: rgb(var(--c-text-secondary));
   font-size: 11px;
@@ -103,8 +119,8 @@
   max-height: 200px;
   display: flex;
   flex-direction: column;
-  background: rgb(var(--c-bg-elevated));
-  border-bottom: 1px solid rgb(var(--c-border) / 0.08);
+  background: var(--td-bg-elevated);
+  border-bottom: 1px solid rgb(var(--c-border) / 0.15);
   overflow: hidden;
 }
 .td-sc-head {
@@ -113,7 +129,7 @@
   gap: 5px;
   padding: 5px 7px;
   flex: none;
-  border-bottom: 1px solid rgb(var(--c-border) / 0.06);
+  border-bottom: 1px solid rgb(var(--c-border) / 0.08);
 }
 .td-sc-search { flex: 1; min-width: 60px; max-width: 220px; }
 .td-sc-spacer { flex: 1; min-width: 0; }
@@ -127,7 +143,7 @@
   align-items: center;
   gap: 7px;
   padding: 4px 6px;
-  border-radius: 5px;
+  border-radius: var(--td-radius-sm);
   cursor: pointer;
   min-width: 0;
 }
@@ -152,7 +168,9 @@
   color: rgb(var(--c-text-tertiary));
 }
 .td-script-badge { flex: none; display: inline-flex; color: rgb(var(--c-status-warning)); }
-.td-script-actions { display: inline-flex; align-items: center; gap: 3px; flex: none; opacity: 0; }
+/* 常驻低透明度：旧版 opacity:0 让「更多操作」入口完全不可发现，
+   用户以为没有右键菜单。hover/focus 时再升到全不透明。 */
+.td-script-actions { display: inline-flex; align-items: center; gap: 3px; flex: none; opacity: 0.55; }
 .td-script:hover .td-script-actions, .td-script:focus-within .td-script-actions { opacity: 1; }
 .td-status-dot { width: 6px; height: 6px; border-radius: 50%; flex: none; background: rgb(var(--c-text-muted) / 0.5); }
 .td-status-running { background: rgb(var(--c-status-info)); }
@@ -165,8 +183,8 @@
   margin: 6px 2px;
   padding: 8px;
   border: 1px solid rgb(var(--c-border) / 0.12);
-  border-radius: 7px;
-  background: rgb(var(--c-bg-surface));
+  border-radius: var(--td-radius-md);
+  background: var(--td-bg-surface);
 }
 .td-editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
 .td-editor-grid label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; color: rgb(var(--c-text-secondary)); min-width: 0; }
@@ -182,8 +200,8 @@
   display: flex;
   align-items: stretch;
   flex: none;
-  background: rgb(var(--c-bg-elevated));
-  border-bottom: 1px solid rgb(var(--c-border) / 0.08);
+  background: var(--td-bg-elevated);
+  border-bottom: 1px solid rgb(var(--c-border) / 0.15);
 }
 .td-tabstrip { flex: 1; min-width: 0; display: flex; overflow-x: auto; scrollbar-width: none; }
 .td-tabstrip::-webkit-scrollbar { height: 0; }
@@ -195,13 +213,18 @@
   min-width: 96px;
   max-width: 200px;
   flex: none;
-  border-right: 1px solid rgb(var(--c-border) / 0.08);
+  border-right: 1px solid rgb(var(--c-border) / 0.15);
   color: rgb(var(--c-text-secondary));
   cursor: pointer;
   white-space: nowrap;
 }
 .td-tab:hover { background: rgb(var(--c-bg-hover) / 0.6); }
-.td-tab-on { background: rgb(var(--c-bg-base)); color: rgb(var(--c-text-primary)); }
+.td-tab-on {
+  background: var(--td-bg-base);
+  color: rgb(var(--c-text-primary));
+  /* 宿主其它面板的激活态都有 accent 指示；旧版仅换背景，选中态偏「闷」 */
+  box-shadow: inset 0 2px 0 rgb(var(--c-primary) / 0.85);
+}
 .td-tab-icon { color: rgb(var(--c-text-tertiary)); }
 .td-tab-on .td-tab-icon { color: rgb(var(--c-status-info)); }
 .td-tab-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
@@ -210,8 +233,8 @@
   min-width: 60px;
   padding: 1px 4px;
   border: 1px solid rgb(var(--c-primary));
-  border-radius: 4px;
-  background: rgb(var(--c-bg-base));
+  border-radius: var(--td-radius-sm);
+  background: var(--td-bg-base);
   color: rgb(var(--c-text-primary));
   font-size: 12px;
   outline: none;
@@ -222,7 +245,7 @@
   flex: none;
   display: grid;
   place-items: center;
-  border-radius: 3px;
+  border-radius: var(--td-radius-sm);
   color: rgb(var(--c-text-muted));
   visibility: hidden;
 }
@@ -231,8 +254,8 @@
 .td-tab-exit {
   flex: none;
   font-size: 10px;
-  padding: 0 4px;
-  border-radius: 8px;
+  padding: 0 5px;
+  border-radius: var(--radius-full, 9999px);
   background: rgb(var(--c-bg-hover));
   color: rgb(var(--c-text-secondary));
 }
@@ -258,7 +281,7 @@
   padding: 5px 9px;
   font-size: 12px;
   color: rgb(var(--c-status-danger));
-  background: rgb(var(--c-bg-elevated));
+  background: var(--td-bg-elevated);
   border-bottom: 1px solid rgb(var(--c-status-danger) / 0.25);
 }
 .td-errorbar-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -272,7 +295,7 @@
   gap: 5px;
   padding: 3px 5px 3px 8px;
   border: 1px solid rgb(var(--c-border) / 0.14);
-  border-radius: 6px;
+  border-radius: var(--td-radius-sm);
   background: rgb(var(--c-bg-elevated) / 0.92);
   color: rgb(var(--c-text-secondary));
   font-size: 11px;
@@ -304,8 +327,8 @@
   gap: 8px;
   padding: 5px 9px;
   font-size: 12px;
-  background: rgb(var(--c-bg-elevated));
-  border-bottom: 1px solid rgb(var(--c-border) / 0.08);
+  background: var(--td-bg-elevated);
+  border-bottom: 1px solid rgb(var(--c-border) / 0.15);
   color: rgb(var(--c-text-secondary));
 }
 .td-exitbanner > span:first-child { flex: 1; min-width: 0; }
@@ -315,8 +338,8 @@
   align-items: center;
   gap: 6px;
   padding: 4px 7px;
-  border-bottom: 1px solid rgb(var(--c-border) / 0.08);
-  background: rgb(var(--c-bg-elevated));
+  border-bottom: 1px solid rgb(var(--c-border) / 0.15);
+  background: var(--td-bg-elevated);
   color: rgb(var(--c-text-secondary));
 }
 .td-search-input { flex: 1; min-width: 0; max-width: 280px; }
@@ -329,7 +352,7 @@
   display: inline-grid;
   place-items: center;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--td-radius-sm);
   background: transparent;
   color: rgb(var(--c-text-secondary));
   cursor: pointer;
@@ -338,8 +361,8 @@
 .td-iconbtn:hover { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-text-primary)); }
 .td-mini {
   border: 1px solid rgb(var(--c-border) / 0.12);
-  border-radius: 5px;
-  background: rgb(var(--c-bg-base));
+  border-radius: var(--td-radius-sm);
+  background: var(--td-bg-base);
   color: rgb(var(--c-text-secondary));
   cursor: pointer;
   font-size: 11px;
@@ -349,8 +372,8 @@
 .td-mini:hover:not(:disabled) { color: rgb(var(--c-text-primary)); border-color: rgb(var(--c-primary) / 0.6); }
 .td-btn {
   border: 1px solid rgb(var(--c-border) / 0.12);
-  border-radius: 6px;
-  background: rgb(var(--c-bg-surface));
+  border-radius: var(--td-radius-sm);
+  background: var(--td-bg-surface);
   color: rgb(var(--c-text-primary));
   cursor: pointer;
   font-size: 12px;
@@ -361,12 +384,12 @@
 .td-btn:disabled { opacity: 0.45; cursor: default; }
 .td-btn-primary { background: rgb(var(--c-primary)); border-color: rgb(var(--c-primary)); color: rgb(var(--c-on-primary)); }
 .td-btn-primary:hover:not(:disabled) { background: rgb(var(--c-primary)); filter: brightness(1.12); }
-.td-btn-danger { background: rgb(var(--c-status-danger)); border-color: rgb(var(--c-status-danger)); color: rgb(var(--c-bg-base)); }
+.td-btn-danger { background: rgb(var(--c-status-danger)); border-color: rgb(var(--c-status-danger)); color: var(--td-bg-base); }
 .td-input {
   padding: 4px 8px;
   border: 1px solid rgb(var(--c-border) / 0.14);
-  border-radius: 6px;
-  background: rgb(var(--c-bg-base));
+  border-radius: var(--td-radius-sm);
+  background: var(--td-bg-base);
   color: rgb(var(--c-text-primary));
   outline: none;
   font-size: 12px;
@@ -380,8 +403,8 @@
   margin-top: 8px;
   padding: 8px;
   border: 1px solid rgb(var(--c-border) / 0.14);
-  border-radius: 6px;
-  background: rgb(var(--c-bg-base));
+  border-radius: var(--td-radius-sm);
+  background: var(--td-bg-base);
   color: rgb(var(--c-text-primary));
   font-family: var(--td-mono);
   font-size: 11px;
@@ -391,7 +414,7 @@
 .td-textarea:focus { border-color: rgb(var(--c-primary)); }
 .td-chip {
   padding: 3px 9px;
-  border-radius: 5px;
+  border-radius: var(--td-radius-sm);
   font-size: 11px;
   background: transparent;
   color: rgb(var(--c-text-muted));
@@ -409,8 +432,8 @@
   min-width: 178px;
   padding: 4px;
   border: 1px solid rgb(var(--c-border) / 0.16);
-  border-radius: 8px;
-  background: rgb(var(--c-bg-elevated));
+  border-radius: var(--td-radius-md);
+  background: var(--td-bg-elevated);
   box-shadow: 0 10px 32px rgb(var(--c-overlay) / 0.55);
 }
 .td-menu-item {
@@ -420,10 +443,10 @@
   gap: 8px;
   padding: 6px 9px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--td-radius-sm);
   background: transparent;
   color: rgb(var(--c-text-primary));
-  font-size: 12px;
+  font-size: 13px;
   text-align: left;
   cursor: pointer;
 }
@@ -446,9 +469,9 @@
 }
 .td-modal {
   width: min(560px, 100%);
-  background: rgb(var(--c-bg-elevated));
+  background: var(--td-bg-elevated);
   border: 1px solid rgb(var(--c-border) / 0.16);
-  border-radius: 10px;
+  border-radius: var(--td-radius-lg);
   box-shadow: 0 16px 44px rgb(var(--c-overlay) / 0.6);
   overflow: hidden;
 }
@@ -477,7 +500,7 @@
   align-items: center;
   gap: 8px;
   padding: 7px 10px;
-  border-radius: 6px;
+  border-radius: var(--td-radius-sm);
   cursor: pointer;
   font-size: 12px;
   color: rgb(var(--c-text-secondary));
@@ -496,9 +519,9 @@
 }
 .td-dialog {
   width: min(420px, 100%);
-  background: rgb(var(--c-bg-elevated));
+  background: var(--td-bg-elevated);
   border: 1px solid rgb(var(--c-border) / 0.16);
-  border-radius: 10px;
+  border-radius: var(--td-radius-lg);
   box-shadow: 0 16px 44px rgb(var(--c-overlay) / 0.6);
   overflow: hidden;
 }
@@ -521,8 +544,8 @@
   margin-top: 9px;
   padding: 7px 9px;
   border: 1px solid rgb(var(--c-border) / 0.1);
-  border-radius: 6px;
-  background: rgb(var(--c-bg-base));
+  border-radius: var(--td-radius-sm);
+  background: var(--td-bg-base);
   color: rgb(var(--c-text-primary)) !important;
   font-size: 11px;
   white-space: pre-wrap;
@@ -549,4 +572,43 @@
   .td-chip { padding: 3px 5px; font-size: 10px; }
   .td-tabaction:nth-child(2), .td-tabaction:nth-child(4) { display: none; }
   .td-editor-grid { grid-template-columns: 1fr; }
+}
+
+/* ── 交互质感：宿主级 0.15s 过渡 / focus-visible / 按压反馈 / 细化滚动条 ──
+   旧版全表只有一处 transition，hover 是硬切，且无焦点环，观感廉价。
+   注意：宿主 scopeCss 以逗号拆分选择器后逐条加 [data-plugin-scope] 前缀，
+   因此这里只用「逗号分隔的独立选择器」，不用 :is()/:where() 这类内含逗号的函数。 */
+.td-root button,
+.td-root .td-tab,
+.td-root .td-script,
+.td-root input,
+.td-root select,
+.td-root textarea {
+  transition: background-color var(--td-fast) var(--td-ease),
+              color var(--td-fast) var(--td-ease),
+              border-color var(--td-fast) var(--td-ease),
+              box-shadow var(--td-fast) var(--td-ease),
+              opacity var(--td-fast) var(--td-ease);
+}
+.td-root button:focus-visible,
+.td-root .td-tab:focus-visible,
+.td-root input:focus-visible,
+.td-root select:focus-visible,
+.td-root textarea:focus-visible {
+  outline: 2px solid rgb(var(--c-primary) / 0.6);
+  outline-offset: 1px;
+}
+.td-root button:active:not(:disabled) { filter: brightness(0.9); }
+.td-root ::selection { background: rgb(var(--c-primary) / 0.35); }
+.td-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+.td-root ::-webkit-scrollbar-track { background: transparent; }
+.td-root ::-webkit-scrollbar-thumb {
+  background: rgb(var(--c-border) / 0.15);
+  border-radius: var(--td-radius-sm);
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+.td-root ::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--c-border) / 0.25);
+  background-clip: content-box;
 }
