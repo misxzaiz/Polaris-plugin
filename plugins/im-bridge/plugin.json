@@ -10,7 +10,7 @@
         "id": "im-bridge.panel",
         "area": "activityBar",
         "panelType": "im-bridge",
-        "icon": "MessageSquare",
+        "icon": "Bot",
         "labelKey": "plugins.im-bridge",
         "labelDefault": "IM 机器人",
         "order": 32
