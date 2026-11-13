@@ -1,0 +1,20 @@
+{
+  "name": "history-desk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "history-desk 插件面板（打包用）：会话历史",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/run-tests.mjs",
+    "check": "npm run typecheck && npm test && npm run build"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "type": "commonjs"
+}

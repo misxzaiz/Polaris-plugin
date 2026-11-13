@@ -1,0 +1,9 @@
+{
+  "id": "history-desk",
+  "name": "会话历史",
+  "version": "0.1.0",
+  "description": "会话历史面板（P1 共存版）：统一时间线、组合筛选、全文搜索、Fork 树、只读预览、继续/Fork/删除（宿主编排墓碑）、标注、跨端进行中条。数据经 cap.history v2 + __POLARIS_SESSION_API__；以 overlays shadow 接管 session-history 抽屉，禁用即回退内置面板。",
+  "enabledByDefault": false,
+  "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@v0.1.0/plugins/history-desk/history-desk.zip",
+  "sha256": "2f6349d898e441236cbeb501bebf98a8913a542976cfb2ab8c98135d351a202b"
+}
