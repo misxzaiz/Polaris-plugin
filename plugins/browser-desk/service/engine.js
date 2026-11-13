@@ -423,11 +423,30 @@ function createEngine({ loadPuppeteer, log }) {
     if (!query) throw new Error('search 需要 query');
     const rec = await resolveOrCreate({ tabId, agentKey });
     const searchUrl = buildSearchUrl(query, engine);
-    await navigateTab(rec, searchUrl);
+    // 导航重试：搜索引擎偶发连接重置（ERR_CONNECTION_CLOSED / ERR_NETWORK_CHANGED），
+    // Chrome 对同域名连接复用被 reset 时一次重试即可恢复；最多 2 次重试。
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await navigateTab(rec, searchUrl);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        if (!/ERR_CONNECTION|ERR_NETWORK|ERR_EMPTY_RESPONSE|ERR_TIMED_OUT/i.test(e.message)) throw e;
+        logger.warn(`search 导航失败(重试 ${attempt + 1}/2): ${e.message}`);
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+      }
+    }
+    if (lastErr) throw lastErr;
     // 等待结果渲染：短轮询（命中结果条目或正文充实即返回，上限 6s）。
     // 替代固定 waitForSelector(8s)：CF 挑战页/慢渲染不白等，正常页 1-2s 即返回。
     const page = rec.page;
     await waitForResultsReady(page, 6000);
+    // 首轮渲染未就绪（正文 <400 字符视为未就绪——搜索页正常 >1000）→ 再等一轮。
+    // 实测约 1/10 概率 goto 返回时 bing 结果容器尚未挂载，read 会拿到空文本。
+    const early = await page.evaluate(() => (document.body ? document.body.innerText.length : 0)).catch(() => 0);
+    if (early < 400) await waitForResultsReady(page, 4000);
     const results = await page.evaluate((max) => {
       const pick = (sel) => Array.from(document.querySelectorAll(sel));
       // bing
@@ -508,7 +527,18 @@ function createEngine({ loadPuppeteer, log }) {
     const paras = Array.from(best.querySelectorAll('p,h1,h2,h3,li,blockquote,pre'))
       .map((p) => p.innerText.trim())
       .filter((t) => t.length > 0);
-    const text = (paras.length ? paras.join('\n\n') : best.innerText).slice(0, 50000);
+    // 容器无段落（如搜索结果页是 div+span 拼装）→ 降级取容器全文；
+    // 再退一步取 body.innerText，保证 read 永不空手而归（空文本=引擎健康下的语义失败）。
+    // 注意 bing 搜索结果页 <link> 样式注入会让 li.innerText 为空串，
+    // 故降级链用 textContent（含隐藏文本，但只作兜底，不做主路径）。
+    let text = paras.length ? paras.join('\n\n') : (best.innerText || '').trim();
+    if (!text.trim()) {
+      text = (best.textContent || '').trim().replace(/\s{3,}/g, '\n');
+    }
+    if (!text.trim()) {
+      text = (document.body ? document.body.innerText : '') || '';
+    }
+    text = text.slice(0, 50000);
     return { title: document.title, url: location.href, text, textLength: text.length };
   };
 
