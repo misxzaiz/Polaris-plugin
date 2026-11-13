@@ -48,6 +48,11 @@ const ACTIONS = {
   close: (p) => engine.closeTab(p),
   watch: (p) => engine.watch(p),
   wait: (p) => engine.wait(p),
+  screencast_start: (p) => engine.screencastStart(p),
+  screencast_frame: (p) => engine.screencastFrame(p),
+  screencast_stop: (p) => engine.screencastStop(p),
+  input_mouse: (p) => engine.inputMouse(p),
+  input_key: (p) => engine.inputKey(p),
 };
 
 function readBody(req, maxBytes = 10 * 1024 * 1024) {

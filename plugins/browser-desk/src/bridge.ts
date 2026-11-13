@@ -109,6 +109,33 @@ export async function closeTab(tabId: string): Promise<{ closed: number }> {
   return callService<{ closed: number }>('close', { tabId });
 }
 
+// ── Screencast 内嵌视图 ──────────────────────────────────────────────────
+export interface ScreencastStartResult { tabId: string; streaming: boolean; hasFrame: boolean; seq: number }
+export interface ScreencastFrame { data: string; deviceWidth: number; deviceHeight: number }
+export interface ScreencastFrameResult { tabId: string; frame: ScreencastFrame | null; seq: number }
+
+export async function screencastStart(tabId?: string, quality = 55, maxWidth = 1100): Promise<ScreencastStartResult> {
+  return callService<ScreencastStartResult>('screencast_start', { tabId, quality, maxWidth });
+}
+export async function screencastFrame(tabId: string | undefined, sinceSeq: number): Promise<ScreencastFrameResult> {
+  return callService<ScreencastFrameResult>('screencast_frame', { tabId, sinceSeq });
+}
+export async function screencastStop(tabId?: string): Promise<{ tabId: string; streaming: boolean }> {
+  return callService<{ tabId: string; streaming: boolean }>('screencast_stop', { tabId });
+}
+export async function inputMouse(
+  tabId: string | undefined,
+  type: 'mousePressed' | 'mouseReleased' | 'mouseMoved' | 'mouseWheel',
+  x: number, y: number,
+  opts?: { button?: 'left' | 'middle' | 'right'; clickCount?: number; deltaX?: number; deltaY?: number },
+): Promise<unknown> {
+  return callService('input_mouse', { tabId, type, x, y, button: opts?.button ?? 'left', clickCount: opts?.clickCount ?? 1, deltaX: opts?.deltaX ?? 0, deltaY: opts?.deltaY ?? 0 });
+}
+export async function inputKey(tabId: string | undefined, key: string, text?: string): Promise<unknown> {
+  const type = text ? 'char' : 'keyDown';
+  return callService('input_key', text ? { tabId, type, key, text } : { tabId, type, key });
+}
+
 /** 主题订阅（可选能力，宿主未注入时静默降级） */
 export function subscribeTheme(listener: (id: string) => void): () => void {
   const api = globals().__POLARIS_THEME_API__;

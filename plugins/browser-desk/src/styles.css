@@ -245,3 +245,36 @@
   .bd-badge span.bd-badge-text { display: none; }
   .bd-log { max-height: 100px; }
 }
+
+/* ── 内嵌实时画面（screencast）────────────────────────────────── */
+.bd-embed {
+  flex: none;
+  margin: 0 6px 6px;
+  border: 1px solid rgb(var(--c-border) / 0.12);
+  border-radius: 7px;
+  overflow: hidden;
+  background: rgb(var(--c-bg-surface));
+  position: relative;
+  outline: none;
+  cursor: crosshair;
+}
+.bd-embed img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.bd-embed-meta {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 10px;
+  font-family: Consolas, monospace;
+  color: rgb(var(--c-text-muted));
+  background: rgb(var(--c-bg-base) / 0.7);
+  padding: 0 5px;
+  border-radius: 4px;
+}

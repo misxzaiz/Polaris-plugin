@@ -236,6 +236,8 @@ function createEngine({ loadPuppeteer, log }) {
       createdAt: now(),
       lastUsedAt: now(),
       windowId: null,
+      cdp: null,
+      screencastOn: false,
     };
     tabs.set(tabId, rec);
     ringFor(tabId); // 初始化事件环
@@ -801,6 +803,100 @@ function createEngine({ loadPuppeteer, log }) {
     throw new Error('wait 需要 selector/urlPattern/downloadComplete/dialog 之一');
   }
 
+  // ── Screencast 内嵌视图（面板实时画面 + 交互回传）─────────────────────
+  /** 每 tab 最新帧：tabId → { data(base64), seq, ts, deviceWidth, deviceHeight } */
+  const latestFrames = new Map();
+  let frameSeq = 0;
+
+  async function ensureTabCdp(rec) {
+    if (rec.cdp) return rec.cdp;
+    const cdp = await rec.page.createCDPSession();
+    rec.cdp = cdp;
+    cdp.on('Page.screencastFrame', (p) => {
+      frameSeq += 1;
+      latestFrames.set(rec.tabId, {
+        data: p.data,
+        seq: frameSeq,
+        ts: now(),
+        deviceWidth: p.metadata ? p.metadata.deviceWidth : 0,
+        deviceHeight: p.metadata ? p.metadata.deviceHeight : 0,
+      });
+      // ack 上限保护：不 ack Chrome 会停止推帧
+      cdp.send('Page.screencastFrameAck', { sessionId: p.sessionId }).catch(() => {});
+    });
+    return cdp;
+  }
+
+  async function screencastStart({ tabId, agentKey, quality = 50, maxWidth = 1280, everyNth = 1 } = {}) {
+    const rec = await resolveOrCreate({ tabId, agentKey });
+    const cdp = await ensureTabCdp(rec);
+    if (!rec.screencastOn) {
+      await cdp.send('Page.startScreencast', {
+        format: 'jpeg',
+        quality: Math.min(90, Math.max(20, Number(quality) || 50)),
+        maxWidth: Math.min(1920, Math.max(320, Number(maxWidth) || 1280)),
+        everyNthFrame: Math.max(1, Number(everyNth) || 1),
+      }).catch((e) => { throw new Error(`screencast 启动失败: ${e.message}`); });
+      rec.screencastOn = true;
+    }
+    const f = latestFrames.get(rec.tabId);
+    return { tabId: rec.tabId, streaming: true, hasFrame: !!f, seq: f ? f.seq : 0 };
+  }
+
+  async function screencastFrame({ tabId, agentKey, sinceSeq = 0 } = {}) {
+    const rec = resolveTab({ tabId, agentKey });
+    const f = latestFrames.get(rec.tabId);
+    if (!f) return { tabId: rec.tabId, frame: null, seq: 0 };
+    if (f.seq <= sinceSeq) return { tabId: rec.tabId, frame: null, seq: f.seq };
+    return { tabId: rec.tabId, frame: { data: f.data, deviceWidth: f.deviceWidth, deviceHeight: f.deviceHeight }, seq: f.seq, ts: f.ts };
+  }
+
+  async function screencastStop({ tabId, agentKey } = {}) {
+    const rec = resolveTab({ tabId, agentKey });
+    if (rec.cdp && rec.screencastOn) {
+      await rec.cdp.send('Page.stopScreencast').catch(() => {});
+      rec.screencastOn = false;
+    }
+    return { tabId: rec.tabId, streaming: false };
+  }
+
+  /** 交互回传：鼠标（move/down/up/click/dblclick/wheel）与键盘 */
+  async function inputMouse({ tabId, agentKey, type, x, y, button = 'left', clickCount = 1, deltaX = 0, deltaY = 0 } = {}) {
+    const rec = resolveTab({ tabId, agentKey });
+    const cdp = await ensureTabCdp(rec);
+    const allowed = ['mousePressed', 'mouseReleased', 'mouseMoved', 'mouseWheel'];
+    if (!allowed.includes(type)) throw new Error(`inputMouse 不支持 type: ${type}`);
+    const params = { type, x: Number(x) || 0, y: Number(y) || 0, button: ['left', 'middle', 'right'].includes(button) ? button : 'left', clickCount: Number(clickCount) || 1 };
+    if (type === 'mouseWheel') { params.deltaX = Number(deltaX) || 0; params.deltaY = Number(deltaY) || -60; }
+    await cdp.send('Input.dispatchMouseEvent', params);
+    return { tabId: rec.tabId, dispatched: type };
+  }
+
+  async function inputKey({ tabId, agentKey, type = 'keyDown', key, text } = {}) {
+    const rec = resolveTab({ tabId, agentKey });
+    const cdp = await ensureTabCdp(rec);
+    if (text) {
+      await cdp.send('Input.insertText', { text: String(text) });
+      return { tabId: rec.tabId, inserted: String(text) };
+    }
+    const allowed = ['keyDown', 'keyUp', 'char'];
+    if (!allowed.includes(type)) throw new Error(`inputKey 不支持 type: ${type}`);
+    // 常见键 → CDP windowsVirtualKeyCode/key 简化映射；未识别键交由 text 路径
+    const KEY_MAP = {
+      Enter: { key: 'Enter', keyCode: 13 }, Tab: { key: 'Tab', keyCode: 9 },
+      Escape: { key: 'Escape', keyCode: 27 }, Backspace: { key: 'Backspace', keyCode: 8 },
+      Delete: { key: 'Delete', keyCode: 46 }, ArrowUp: { key: 'ArrowUp', keyCode: 38 },
+      ArrowDown: { key: 'ArrowDown', keyCode: 40 }, ArrowLeft: { key: 'ArrowLeft', keyCode: 37 },
+      ArrowRight: { key: 'ArrowRight', keyCode: 39 }, Space: { key: ' ', keyCode: 32 },
+    };
+    const k = KEY_MAP[key];
+    const params = k
+      ? { type, key: k.key, windowsVirtualKeyCode: k.keyCode, nativeVirtualKeyCode: k.keyCode }
+      : { type, key: String(key || ''), text: String(key || '') };
+    await cdp.send('Input.dispatchKeyEvent', params);
+    return { tabId: rec.tabId, dispatched: type, key };
+  }
+
   // ── 状态 ───────────────────────────────────────────────────────────────
   function tabInfo(rec) {
     return {
@@ -847,6 +943,11 @@ function createEngine({ loadPuppeteer, log }) {
     wait,
     status,
     resolveTab,
+    screencastStart,
+    screencastFrame,
+    screencastStop,
+    inputMouse,
+    inputKey,
     // 测试钩子
     _internal: { tabs, agentBinds, eventRings, downloads, pushEvent, findChromePath, advanceClock: (ms) => { clockOffset += ms; } },
   };

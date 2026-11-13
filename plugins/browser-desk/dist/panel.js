@@ -47,6 +47,22 @@ async function activateTab(tabId) {
 async function closeTab(tabId) {
   return callService("close", { tabId });
 }
+async function screencastStart(tabId, quality = 55, maxWidth = 1100) {
+  return callService("screencast_start", { tabId, quality, maxWidth });
+}
+async function screencastFrame(tabId, sinceSeq) {
+  return callService("screencast_frame", { tabId, sinceSeq });
+}
+async function screencastStop(tabId) {
+  return callService("screencast_stop", { tabId });
+}
+async function inputMouse(tabId, type, x, y, opts) {
+  return callService("input_mouse", { tabId, type, x, y, button: opts?.button ?? "left", clickCount: opts?.clickCount ?? 1, deltaX: opts?.deltaX ?? 0, deltaY: opts?.deltaY ?? 0 });
+}
+async function inputKey(tabId, key, text) {
+  const type = text ? "char" : "keyDown";
+  return callService("input_key", text ? { tabId, type, key, text } : { tabId, type, key });
+}
 function subscribeTheme(listener) {
   const api = globals().__POLARIS_THEME_API__;
   if (!api) return () => {
@@ -60,6 +76,83 @@ function activeTheme() {
 
 // src/Panel.tsx
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
+function EmbeddedView({ tabId, onLog }) {
+  const imgRef = useRef(null);
+  const [frameInfo, setFrameInfo] = useState(null);
+  const seqRef = useRef(0);
+  const deadRef = useRef(false);
+  useEffect(() => {
+    deadRef.current = false;
+    let cancelled = false;
+    (async () => {
+      try {
+        await screencastStart(tabId);
+      } catch {
+      }
+      const loop = async () => {
+        while (!cancelled && !deadRef.current) {
+          try {
+            const r = await screencastFrame(tabId, seqRef.current);
+            if (r.frame && r.seq > seqRef.current && imgRef.current) {
+              seqRef.current = r.seq;
+              imgRef.current.src = `data:image/jpeg;base64,${r.frame.data}`;
+              setFrameInfo({ w: r.frame.deviceWidth, h: r.frame.deviceHeight });
+            }
+          } catch {
+          }
+          await new Promise((res) => setTimeout(res, 250));
+        }
+      };
+      void loop();
+    })();
+    return () => {
+      cancelled = true;
+      deadRef.current = true;
+      void screencastStop(tabId).catch(() => {
+      });
+    };
+  }, [tabId]);
+  const toPage = (clientX, clientY) => {
+    const el = imgRef.current;
+    if (!el || !frameInfo || !frameInfo.w) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    const sx = frameInfo.w / rect.width;
+    const sy = frameInfo.h / rect.height;
+    return { x: Math.round((clientX - rect.left) * sx), y: Math.round((clientY - rect.top) * sy) };
+  };
+  const onMouse = (e, type) => {
+    const { x, y } = toPage(e.clientX, e.clientY);
+    void inputMouse(tabId, type, x, y, { button: e.button === 2 ? "right" : "left", clickCount: type === "mousePressed" ? 1 : 0 });
+  };
+  const onWheel = (e) => {
+    const { x, y } = toPage(e.clientX, e.clientY);
+    void inputMouse(tabId, "mouseWheel", x, y, { deltaX: e.deltaX, deltaY: e.deltaY });
+  };
+  const onKeyDown = (e) => {
+    const key = e.key.length === 1 ? e.key : e.key;
+    void inputKey(tabId, key);
+  };
+  return /* @__PURE__ */ jsxs(
+    "div",
+    {
+      className: "bd-embed",
+      tabIndex: 0,
+      onMouseMove: (e) => onMouse(e, "mouseMoved"),
+      onMouseDown: (e) => onMouse(e, "mousePressed"),
+      onMouseUp: (e) => onMouse(e, "mouseReleased"),
+      onWheel,
+      onKeyDown,
+      children: [
+        /* @__PURE__ */ jsx("img", { ref: imgRef, alt: "browser view", draggable: false }),
+        frameInfo && /* @__PURE__ */ jsxs("span", { className: "bd-embed-meta", children: [
+          frameInfo.w,
+          "\xD7",
+          frameInfo.h
+        ] })
+      ]
+    }
+  );
+}
 var logSeq = 0;
 function Panel() {
   const [status, setStatus] = useState(null);
@@ -69,6 +162,7 @@ function Panel() {
   const [error, setError] = useState(null);
   const [logs, setLogs] = useState([]);
   const [theme, setTheme] = useState(activeTheme());
+  const [embedTabId, setEmbedTabId] = useState(null);
   const mountedRef = useRef(true);
   const addLog = useCallback((text) => {
     logSeq += 1;
@@ -206,6 +300,12 @@ function Panel() {
         `${i}-${r.url}`
       )) })
     ] }),
+    /* @__PURE__ */ jsxs("div", { className: "bd-section", children: [
+      "\u5B9E\u65F6\u753B\u9762",
+      /* @__PURE__ */ jsx("span", { className: "bd-section-spacer" }),
+      /* @__PURE__ */ jsx("button", { className: "bd-action", onClick: () => setEmbedTabId(embedTabId ? null : status?.tabs?.[0]?.tabId ?? null), disabled: !status?.tabs?.length, children: embedTabId ? "\u6536\u8D77" : "\u663E\u793A" })
+    ] }),
+    embedTabId && /* @__PURE__ */ jsx(EmbeddedView, { tabId: embedTabId, onLog: addLog }),
     /* @__PURE__ */ jsxs("div", { className: "bd-section", children: [
       "\u6807\u7B7E",
       /* @__PURE__ */ jsx("span", { className: "bd-section-spacer" }),

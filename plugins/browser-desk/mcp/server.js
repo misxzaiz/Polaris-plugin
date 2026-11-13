@@ -299,6 +299,18 @@ const tools = [
     },
     async (a) => (await dispatch('watch', a, 35000)).result),
 
+  tool('desk_screencast_start', '开启页面实时画面推流（供面板内嵌显示）。quality/maxWidth 控制帧质量。', { type: 'object', properties: { quality: { type: 'number' }, maxWidth: { type: 'number' }, ...TAB_REF.properties } },
+    async (a) => (await dispatch('screencast_start', a, 20000)).result),
+  tool('desk_screencast_frame', '获取最新页面帧（base64 JPEG + 设备尺寸）。sinceSeq 增量：无新帧返回 frame:null。', { type: 'object', properties: { sinceSeq: { type: 'number' }, ...TAB_REF.properties } },
+    async (a) => (await dispatch('screencast_frame', a, 20000)).result),
+  tool('desk_screencast_stop', '停止页面画面推流。', { type: 'object', properties: TAB_REF.properties },
+    async (a) => (await dispatch('screencast_stop', a, 20000)).result),
+  tool('desk_input_mouse', '向页面派发鼠标事件（内嵌视图交互回传）。type: mousePressed/mouseReleased/mouseMoved/mouseWheel；x/y 为页面坐标。',
+    { type: 'object', required: ['type', 'x', 'y'], properties: { type: { type: 'string', enum: ['mousePressed', 'mouseReleased', 'mouseMoved', 'mouseWheel'] }, x: { type: 'number' }, y: { type: 'number' }, button: { type: 'string', enum: ['left', 'middle', 'right'] }, clickCount: { type: 'number' }, deltaX: { type: 'number' }, deltaY: { type: 'number' }, ...TAB_REF.properties } },
+    async (a) => (await dispatch('input_mouse', a, 15000)).result),
+  tool('desk_input_key', '向页面派发键盘事件或插入文本。key 支持 Enter/Tab/Escape/Backspace/Delete/Arrow*/Space 或单字符；text 直接插入文本。',
+    { type: 'object', properties: { type: { type: 'string', enum: ['keyDown', 'keyUp', 'char'] }, key: { type: 'string' }, text: { type: 'string' }, ...TAB_REF.properties } },
+    async (a) => (await dispatch('input_key', a, 15000)).result),
   tool('desk_wait', '等待条件满足（服务端挂起，AI 一次调用即可）。四选一：selector(CSS 出现)/urlPattern(URL 正则)/downloadComplete(true)/dialog(true)。',
     {
       type: 'object',

@@ -8,11 +8,83 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   getStatus, search, openUrl, activateTab, closeTab,
+  screencastStart, screencastFrame, screencastStop, inputMouse, inputKey,
   subscribeTheme, activeTheme,
   type EngineStatus, type SearchResult, type TabInfo,
 } from './bridge';
 
 interface LogLine { ts: number; text: string }
+
+/** 内嵌实时视图：screencast 帧轮询 + 鼠标/键盘回传（坐标按帧设备尺寸等比映射） */
+function EmbeddedView({ tabId, onLog }: { tabId: string; onLog: (t: string) => void }) {
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const [frameInfo, setFrameInfo] = useState<{ w: number; h: number } | null>(null);
+  const seqRef = useRef(0);
+  const deadRef = useRef(false);
+
+  useEffect(() => {
+    deadRef.current = false;
+    let cancelled = false;
+    (async () => {
+      try {
+        await screencastStart(tabId);
+      } catch { /* 引擎忙时降级：轮询仍会尝试 */ }
+      const loop = async () => {
+        while (!cancelled && !deadRef.current) {
+          try {
+            const r = await screencastFrame(tabId, seqRef.current);
+            if (r.frame && r.seq > seqRef.current && imgRef.current) {
+              seqRef.current = r.seq;
+              imgRef.current.src = `data:image/jpeg;base64,${r.frame.data}`;
+              setFrameInfo({ w: r.frame.deviceWidth, h: r.frame.deviceHeight });
+            }
+          } catch { /* 服务暂不可达，下轮重试 */ }
+          await new Promise((res) => setTimeout(res, 250));
+        }
+      };
+      void loop();
+    })();
+    return () => { cancelled = true; deadRef.current = true; void screencastStop(tabId).catch(() => {}); };
+  }, [tabId]);
+
+  /** 面板显示坐标 → 页面坐标（按帧 deviceWidth 与显示宽度等比） */
+  const toPage = (clientX: number, clientY: number) => {
+    const el = imgRef.current;
+    if (!el || !frameInfo || !frameInfo.w) return { x: 0, y: 0 };
+    const rect = el.getBoundingClientRect();
+    const sx = frameInfo.w / rect.width;
+    const sy = frameInfo.h / rect.height;
+    return { x: Math.round((clientX - rect.left) * sx), y: Math.round((clientY - rect.top) * sy) };
+  };
+
+  const onMouse = (e: React.MouseEvent, type: 'mousePressed' | 'mouseReleased' | 'mouseMoved') => {
+    const { x, y } = toPage(e.clientX, e.clientY);
+    void inputMouse(tabId, type, x, y, { button: e.button === 2 ? 'right' : 'left', clickCount: type === 'mousePressed' ? 1 : 0 });
+  };
+  const onWheel = (e: React.WheelEvent) => {
+    const { x, y } = toPage(e.clientX, e.clientY);
+    void inputMouse(tabId, 'mouseWheel', x, y, { deltaX: e.deltaX, deltaY: e.deltaY });
+  };
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    const key = e.key.length === 1 ? e.key : e.key;
+    void inputKey(tabId, key);
+  };
+
+  return (
+    <div
+      className="bd-embed"
+      tabIndex={0}
+      onMouseMove={(e) => onMouse(e, 'mouseMoved')}
+      onMouseDown={(e) => onMouse(e, 'mousePressed')}
+      onMouseUp={(e) => onMouse(e, 'mouseReleased')}
+      onWheel={onWheel}
+      onKeyDown={onKeyDown}
+    >
+      <img ref={imgRef} alt="browser view" draggable={false} />
+      {frameInfo && <span className="bd-embed-meta">{frameInfo.w}×{frameInfo.h}</span>}
+    </div>
+  );
+}
 
 let logSeq = 0;
 
@@ -24,6 +96,7 @@ export default function Panel() {
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<LogLine[]>([]);
   const [theme, setTheme] = useState(activeTheme());
+  const [embedTabId, setEmbedTabId] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
   const addLog = useCallback((text: string) => {
@@ -163,6 +236,14 @@ export default function Panel() {
         </>
       )}
 
+      <div className="bd-section">
+        实时画面
+        <span className="bd-section-spacer" />
+        <button className="bd-action" onClick={() => setEmbedTabId(embedTabId ? null : (status?.tabs?.[0]?.tabId ?? null))} disabled={!status?.tabs?.length}>
+          {embedTabId ? '收起' : '显示'}
+        </button>
+      </div>
+      {embedTabId && <EmbeddedView tabId={embedTabId} onLog={addLog} />}
       <div className="bd-section">
         标签
         <span className="bd-section-spacer" />
