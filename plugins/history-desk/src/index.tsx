@@ -3,6 +3,10 @@
  */
 import HistoryDeskPanel from './Panel';
 
-export default function HistoryDeskEntry(props: { pluginId?: string; onSendToChat?: (m: string) => void }) {
+export default function HistoryDeskEntry(props: {
+  pluginId?: string;
+  onSendToChat?: (m: string) => void;
+  onClose?: () => void;
+}) {
   return <HistoryDeskPanel {...props} />;
 }
