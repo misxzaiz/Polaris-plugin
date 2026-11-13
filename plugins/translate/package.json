@@ -1,0 +1,20 @@
+{
+  "name": "translate",
+  "version": "1.0.0",
+  "private": true,
+  "description": "translate 插件：百度翻译工作台 + 划词翻译（原宿主 commands/translate.rs 语义等价搬移）",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/unit.cjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.5",
+    "esbuild": "^0.23.0",
+    "lucide-react": "^0.462.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}

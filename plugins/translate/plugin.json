@@ -1,0 +1,84 @@
+{
+  "id": "translate",
+  "name": "翻译",
+  "version": "1.0.0",
+  "description": "百度翻译工作台 + 全局划词翻译菜单：面板互译（中英方向）、翻译历史、划词菜单（复制/搜索/翻译/复制引用/引用问 AI）、译文送回会话。百度 API 在插件 service 内直连（原 commands/translate.rs 语义等价搬移），凭证走插件配置。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "translate.panel",
+        "area": "activityBar",
+        "panelType": "translate",
+        "icon": "Languages",
+        "labelKey": "plugins.translate",
+        "labelDefault": "翻译",
+        "order": 40,
+        "slot": "translate",
+        "slotMode": "shadow"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "services": [
+      {
+        "id": "translate-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "百度翻译 REST 代理（MD5 签名在插件内完成，凭证不落宿主 config）"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "translate-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{polarisPort}}",
+          "{{polarisToken}}"
+        ],
+        "description": "AI 翻译工具面：translate_text"
+      }
+    ],
+    "styles": [
+      {
+        "id": "panel",
+        "target": "slot",
+        "css": ".tp-root {\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  background: rgb(var(--c-bg-base));\n  color: rgb(var(--c-text-primary));\n  font-size: 13px;\n}\n.tp-header {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  padding: 10px 16px;\n  border-bottom: 1px solid rgb(var(--c-border) / 0.1);\n}\n.tp-title { display: flex; align-items: center; gap: 8px; font-weight: 500; }\n.tp-dir { display: flex; gap: 6px; padding: 8px 16px; }\n.tp-dir-btn {\n  padding: 4px 12px;\n  border-radius: 9999px;\n  border: 1px solid rgb(var(--c-border) / 0.15);\n  font-size: 12px;\n  color: rgb(var(--c-text-secondary));\n  background: transparent;\n  cursor: pointer;\n}\n.tp-dir-btn:hover { background: rgb(var(--c-bg-hover)); }\n.tp-dir-on {\n  border-color: rgb(var(--c-primary));\n  color: rgb(var(--c-primary));\n  background: rgb(var(--c-primary) / 0.1);\n}\n.tp-body { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; overflow: hidden; }\n.tp-area {\n  flex: 1;\n  min-height: 72px;\n  padding: 10px;\n  border-radius: 8px;\n  border: 1px solid rgb(var(--c-border) / 0.15);\n  background: rgb(var(--c-bg-surface));\n  color: rgb(var(--c-text-primary));\n  font-size: 13px;\n  resize: none;\n  outline: none;\n}\n.tp-area:focus { border-color: rgb(var(--c-primary)); }\n.tp-out {\n  flex: 1;\n  min-height: 72px;\n  padding: 10px;\n  border-radius: 8px;\n  border: 1px solid rgb(var(--c-border) / 0.15);\n  background: rgb(var(--c-bg-elevated));\n  overflow: auto;\n  white-space: pre-wrap;\n}\n.tp-actions { display: flex; gap: 8px; }\n.tp-btn {\n  flex: 1;\n  padding: 6px 0;\n  border-radius: 8px;\n  border: 1px solid rgb(var(--c-border) / 0.15);\n  background: transparent;\n  color: rgb(var(--c-text-secondary));\n  font-size: 12px;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  gap: 4px;\n}\n.tp-btn:hover:not(:disabled) { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-text-primary)); }\n.tp-btn:disabled { opacity: 0.4; cursor: default; }\n.tp-primary {\n  background: rgb(var(--c-primary));\n  border-color: rgb(var(--c-primary));\n  color: #fff;\n}\n.tp-error {\n  padding: 8px 12px;\n  font-size: 12px;\n  border-radius: 6px;\n  border: 1px solid rgb(var(--c-status-danger) / 0.35);\n  color: rgb(var(--c-status-danger));\n  background: rgb(var(--c-status-danger) / 0.06);\n}\n.tp-hist {\n  max-height: 160px;\n  overflow: auto;\n  border: 1px solid rgb(var(--c-border) / 0.12);\n  border-radius: 8px;\n}\n.tp-hist-item {\n  width: 100%;\n  text-align: left;\n  padding: 8px 12px;\n  background: transparent;\n  border: 0;\n  border-bottom: 1px solid rgb(var(--c-border) / 0.08);\n  cursor: pointer;\n}\n.tp-hist-item:hover { background: rgb(var(--c-bg-hover)); }\n",
+        "description": "translate 面板样式（tp- 前缀；slot 作用域注入）"
+      }
+    ]
+  },
+  "permissions": {
+    "aiToolAccess": true
+  },
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "appId": {
+        "type": "string",
+        "title": "百度翻译 App ID",
+        "default": ""
+      },
+      "secretKey": {
+        "type": "string",
+        "title": "百度翻译密钥",
+        "default": "",
+        "secret": true
+      }
+    }
+  }
+}
