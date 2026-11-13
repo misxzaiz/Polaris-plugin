@@ -1,0 +1,69 @@
+{
+  "id": "im-bridge",
+  "name": "IM 机器人",
+  "version": "0.1.0",
+  "description": "外部 IM 平台接入（QQ Bot / 飞书 / 钉钉）：多实例管理、消息收发、AI 自动回复。常驻 Node 服务维护平台长连接，经宿主 cap.ai.chat 驱动 AI 会话；面板提供实例配置与状态监控。迁移自宿主内置 integrations 域（plans/im-integration-extraction-spec.md）。",
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "im-bridge.panel",
+        "area": "activityBar",
+        "panelType": "im-bridge",
+        "icon": "MessageSquare",
+        "labelKey": "plugins.im-bridge",
+        "labelDefault": "IM 机器人",
+        "order": 32
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "services": [
+      {
+        "id": "im-bridge-service",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "IM 平台守护：维护 QQ/飞书/钉钉长连接，收发消息，经宿主 RouterBus 驱动 AI 会话"
+      }
+    ],
+    "mcpServers": [
+      {
+        "id": "im-bridge-mcp",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.js",
+          "{{appConfigDir}}"
+        ]
+      }
+    ],
+    "styles": [
+      {
+        "id": "panel",
+        "target": "slot",
+        "css": "/* im-bridge 面板样式（im- 前缀防泄漏；[data-plugin-scope] 作用域注入）\n   色值一律取宿主主题变量（对齐 browser-desk/terminal-desk 教训）：\n   - 背景：--c-bg-base / --c-bg-elevated / --c-bg-surface / --c-bg-hover / --c-bg-active\n   - 文字：--c-text-primary / --c-text-secondary / --c-text-tertiary / --c-text-muted\n   - 状态：--c-status-danger/success/warning/info；--c-primary\n   - 边框：--c-border 必须带 alpha（/0.08~0.2） */\n\n.im-root {\n  position: relative;\n  display: flex;\n  flex-direction: column;\n  height: 100%;\n  min-height: 0;\n  min-width: 0;\n  background: rgb(var(--c-bg-base));\n  color: rgb(var(--c-text-primary));\n  font-size: 13px;\n  line-height: 1.45;\n}\n\n/* ── 头部 Tab（36px）────────────────────────────────────────── */\n.im-header {\n  height: 36px;\n  flex: none;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n  padding: 0 8px;\n  background: rgb(var(--c-bg-elevated));\n  border-bottom: 1px solid rgb(var(--c-border) / 0.08);\n}\n.im-tab {\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n  height: 26px;\n  padding: 0 10px;\n  border: 0;\n  border-radius: 6px;\n  background: transparent;\n  color: rgb(var(--c-text-secondary));\n  font-size: 12px;\n  cursor: pointer;\n}\n.im-tab:hover { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-text-primary)); }\n.im-tab.on { background: rgb(var(--c-bg-active)); color: rgb(var(--c-primary)); }\n.im-spacer { flex: 1; }\n.im-action {\n  border: 0;\n  border-radius: 5px;\n  background: transparent;\n  color: rgb(var(--c-text-secondary));\n  font-size: 11px;\n  padding: 2px 7px;\n  cursor: pointer;\n  white-space: nowrap;\n}\n.im-action:hover:not(:disabled) { background: rgb(var(--c-bg-hover)); color: rgb(var(--c-text-primary)); }\n.im-action:disabled { opacity: 0.4; cursor: default; }\n.im-action.danger:hover:not(:disabled) { color: rgb(var(--c-status-danger)); }\n\n/* 状态点 */\n.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: rgb(var(--c-text-muted) / 0.5); }\n.dot-ready { background: rgb(var(--c-status-success)); }\n.dot-starting { background: rgb(var(--c-status-warning)); }\n.dot-stopped { background: rgb(var(--c-status-danger)); }\n\n/* ── 主体 ───────────────────────────────────────────────────── */\n.im-body {\n  flex: 1;\n  min-height: 0;\n  overflow-y: auto;\n  padding: 8px;\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n  scrollbar-width: thin;\n}\n.im-error {\n  flex: none;\n  margin: 8px 8px 0;\n  padding: 8px 10px;\n  border: 1px solid rgb(var(--c-status-danger) / 0.35);\n  border-radius: 7px;\n  background: rgb(var(--c-bg-surface));\n  color: rgb(var(--c-status-danger));\n  font-size: 12px;\n}\n.im-card {\n  border: 1px solid rgb(var(--c-border) / 0.1);\n  border-radius: 8px;\n  background: rgb(var(--c-bg-surface));\n  padding: 8px 10px;\n}\n.im-card-title {\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  font-size: 12px;\n  font-weight: 600;\n  color: rgb(var(--c-text-primary));\n  margin-bottom: 6px;\n}\n.im-kv {\n  display: grid;\n  grid-template-columns: auto 1fr;\n  gap: 2px 10px;\n  font-size: 12px;\n  color: rgb(var(--c-text-tertiary));\n  margin-bottom: 8px;\n}\n.im-kv b { font-weight: 500; color: rgb(var(--c-text-primary)); text-align: right; }\n.im-err-text { color: rgb(var(--c-status-danger)); }\n.im-row { display: flex; align-items: center; gap: 6px; }\n.im-btn {\n  height: 24px;\n  padding: 0 10px;\n  border: 1px solid rgb(var(--c-border) / 0.14);\n  border-radius: 6px;\n  background: rgb(var(--c-bg-base));\n  color: rgb(var(--c-text-secondary));\n  font-size: 12px;\n  cursor: pointer;\n}\n.im-btn:hover:not(:disabled) { border-color: rgb(var(--c-primary)); color: rgb(var(--c-primary)); }\n.im-btn:disabled { opacity: 0.4; cursor: default; }\n.im-btn.primary {\n  background: rgb(var(--c-primary) / 0.14);\n  border-color: rgb(var(--c-primary) / 0.4);\n  color: rgb(var(--c-primary));\n}\n.im-empty {\n  padding: 14px 0;\n  text-align: center;\n  color: rgb(var(--c-text-muted));\n  font-size: 12px;\n}\n.im-inst {\n  display: flex;\n  align-items: center;\n  gap: 7px;\n  padding: 5px 4px;\n  border-radius: 6px;\n  font-size: 12px;\n}\n.im-inst:hover { background: rgb(var(--c-bg-hover) / 0.6); }\n.im-inst-name { color: rgb(var(--c-text-primary)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }\n.im-inst-meta { color: rgb(var(--c-text-tertiary)); font-size: 11px; white-space: nowrap; }\n\n/* ── 编辑弹层 ───────────────────────────────────────────────── */\n.im-mask {\n  position: absolute;\n  inset: 0;\n  background: rgb(0 0 0 / 0.4);\n  display: grid;\n  place-items: center;\n  z-index: 10;\n}\n.im-modal {\n  width: min(420px, calc(100% - 24px));\n  max-height: calc(100% - 24px);\n  overflow-y: auto;\n  background: rgb(var(--c-bg-elevated));\n  border: 1px solid rgb(var(--c-border) / 0.14);\n  border-radius: 10px;\n  padding: 12px;\n  box-shadow: 0 8px 28px rgb(0 0 0 / 0.25);\n}\n.im-form { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 10px; }\n.im-field { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 8px; font-size: 12px; color: rgb(var(--c-text-secondary)); }\n.im-field input[type='text'], .im-field input[type='password'] {\n  height: 26px;\n  padding: 0 8px;\n  border: 1px solid rgb(var(--c-border) / 0.14);\n  border-radius: 6px;\n  background: rgb(var(--c-bg-base));\n  color: rgb(var(--c-text-primary));\n  font-size: 12px;\n  outline: none;\n  width: 100%;\n  box-sizing: border-box;\n}\n.im-field input:focus { border-color: rgb(var(--c-primary)); }\n.im-field input[type='checkbox'] { justify-self: start; }\n\n/* 窄栏适配 */\n@container (max-width: 320px) {\n  .im-tab { padding: 0 6px; font-size: 11px; }\n}\n",
+        "description": "im-bridge 面板样式（im- 前缀；slot 作用域注入）"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/im-bridge"
+  }
+}

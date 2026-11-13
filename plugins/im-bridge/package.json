@@ -1,0 +1,19 @@
+{
+  "name": "im-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "im-bridge 插件：外部 IM 平台接入（QQ Bot / 飞书 / 钉钉），AI 自动回复",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node test/unit.cjs"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.5",
+    "esbuild": "^0.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  }
+}
