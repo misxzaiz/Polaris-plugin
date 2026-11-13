@@ -1,9 +1,9 @@
 {
   "id": "history-desk",
   "name": "会话历史",
-  "version": "0.1.0",
-  "description": "会话历史面板（P1 共存版，enabledByDefault=false）：统一时间线（继续工作卡片 + 日期分组列表）、组合筛选（工作区/引擎/星标/归档）、全文搜索（FTS 命中片段高亮）、Fork 树视图、只读预览（精简渲染器 + 向上补读）、继续/Fork/删除（确认 + 宿主编排墓碑）、星标/置顶/归档标注、跨端进行中会话条。数据经 cap.history v2（query/search/mark/archive_page/delete_session/list_running）+ __POLARIS_SESSION_API__（restore/fork）；存储仍在宿主数据根，插件零写入。以 contributes.overlays shadow 接管 session-history 右侧抽屉，禁用即回退内置面板。",
-  "enabledByDefault": false,
+  "version": "0.2.0",
+  "description": "会话历史面板（P2 接管版，enabledByDefault=true）：统一时间线（继续工作卡片 + 日期分组列表）、组合筛选（工作区/引擎/星标/归档）、全文搜索（FTS 命中片段高亮）、Fork 树视图、只读预览（精简渲染器 + 向上补读）、继续/Fork/删除（确认 + 宿主编排墓碑）、星标/置顶/归档标注、跨端进行中会话条。数据经 cap.history v2（query/search/mark/archive_page/delete_session/list_running）+ __POLARIS_SESSION_API__（restore/fork）；存储仍在宿主数据根，插件零写入。以 contributes.overlays shadow 接管 session-history 右侧抽屉，禁用即回退内置面板。",
+  "enabledByDefault": true,
   "contributes": {
     "panel": {
       "entry": "./dist/panel.js",

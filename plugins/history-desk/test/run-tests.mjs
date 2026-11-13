@@ -251,7 +251,8 @@ test('toRenderMessage: 非消息类型 / 缺 id 兜底', () => {
 test('plugin.json: overlays 声明 session-history shadow + panel entry', () => {
   const manifest = JSON.parse(readFileSync(join(pluginRoot, 'plugin.json'), 'utf-8'));
   assert.equal(manifest.id, 'history-desk');
-  assert.equal(manifest.enabledByDefault, false, 'P1 共存期必须默认关闭');
+  // P2 起翻默认接管（P0-P1 共存期为 false；翻默认经 P2 对照清单 12 项全过后落定）
+  assert.equal(manifest.enabledByDefault, true, 'P2 接管版默认启用');
   const overlays = manifest.contributes.overlays;
   assert.ok(Array.isArray(overlays) && overlays.length === 1);
   assert.equal(overlays[0].slot, 'session-history');
