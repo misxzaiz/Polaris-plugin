@@ -861,24 +861,48 @@ function PreviewModal({ item, onRestore, onFork, onClose }) {
     setEarliestSeq(null);
     setHasMore(false);
     (async () => {
+      let archived = [];
+      let page = null;
       try {
-        const page = await fetchArchivePage(item.id, null, PAGE_SIZE);
-        if (cancelled) return;
-        setMessages(page.messages ?? []);
-        setEarliestSeq(page.earliestSeq);
-        setHasMore(page.hasMore);
+        page = await fetchArchivePage(item.id, null, PAGE_SIZE);
+        archived = page.messages ?? [];
       } catch {
-        try {
-          const backend = await fetchBackendMessages(item.id);
-          if (cancelled) return;
-          setMessages(backend);
-          if (backend.length === 0) setError(true);
-        } catch {
-          if (!cancelled) setError(true);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
+      const backend = await fetchBackendMessages(item.id);
+      let native = [];
+      if (item.source === "claude-code-native" && archived.length === 0 && backend.length === 0) {
+        try {
+          const items = await capHistory(
+            "get_claude_history",
+            { sessionId: item.id }
+          );
+          native = (items ?? []).filter((m) => m.role === "user" || m.role === "assistant").map((m, idx) => {
+            let text = "";
+            if (typeof m.content === "string") {
+              text = m.content;
+            } else if (Array.isArray(m.content)) {
+              text = m.content.filter((b) => b.type === "text" && typeof b.text === "string").map((b) => b.text).join("");
+            }
+            return {
+              id: m.messageId || `${m.role}-${idx}`,
+              type: m.role === "assistant" ? "assistant" : "user",
+              content: text,
+              timestamp: m.timestamp,
+              blocks: m.role === "assistant" ? [{ type: "text", content: text }] : void 0
+            };
+          });
+        } catch {
+        }
+      }
+      if (cancelled) return;
+      const known = new Set(archived.map((m) => String(m.id)));
+      const extra = backend.filter((m) => !known.has(String(m.id)));
+      const merged = native.length > 0 ? native : [...archived, ...extra];
+      setMessages(merged);
+      setEarliestSeq(page?.earliestSeq ?? null);
+      setHasMore(page?.hasMore ?? false);
+      if (merged.length === 0) setError(true);
+      setLoading(false);
     })();
     return () => {
       cancelled = true;

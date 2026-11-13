@@ -5,7 +5,7 @@
  * JSONL 归档不存在时回退 message_read（后端消息库兜底）。
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchArchivePage, fetchBackendMessages, type ArchiveMessage, type UnifiedHistoryItem } from './host';
+import { fetchArchivePage, fetchBackendMessages, capHistory, type ArchiveMessage, type UnifiedHistoryItem } from './host';
 import { MessageView } from './messageRender';
 import { Icon } from './icons';
 import { t } from './i18n';
@@ -38,25 +38,59 @@ export function PreviewModal({ item, onRestore, onFork, onClose }: PreviewModalP
     setEarliestSeq(null);
     setHasMore(false);
     (async () => {
+      // 三级数据源合并（对齐宿主 sessionRestore.loadMessagesForItem 优先级）：
+      // 1. JSONL 归档（archive_page，富块完整，仅「继续」过的会话有）；
+      // 2. 后端消息库（message_read，中断轮兜底）；
+      // 3. 引擎原生（get_claude_history，纯 native 会话正文在引擎侧）。
+      let archived: ArchiveMessage[] = [];
+      let page: Awaited<ReturnType<typeof fetchArchivePage>> | null = null;
       try {
-        const page = await fetchArchivePage(item.id, null, PAGE_SIZE);
-        if (cancelled) return;
-        setMessages(page.messages ?? []);
-        setEarliestSeq(page.earliestSeq);
-        setHasMore(page.hasMore);
+        page = await fetchArchivePage(item.id, null, PAGE_SIZE);
+        archived = page.messages ?? [];
       } catch {
-        // JSONL 归档不存在（中断会话）→ 后端消息库兜底
-        try {
-          const backend = await fetchBackendMessages(item.id);
-          if (cancelled) return;
-          setMessages(backend);
-          if (backend.length === 0) setError(true);
-        } catch {
-          if (!cancelled) setError(true);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
+        // 归档不存在（native / 中断会话）→ 继续走兜底
       }
+      const backend = await fetchBackendMessages(item.id);
+      let native: ArchiveMessage[] = [];
+      if (item.source === 'claude-code-native' && archived.length === 0 && backend.length === 0) {
+        try {
+          // cap.history get_claude_history 返回 ClaudeHistoryMessage[]（数组而非包对象）
+          const items = await capHistory<Array<{ role: string; content: string | Array<{ type: string; text?: string }>; messageId?: string; timestamp?: string }>>(
+            'get_claude_history',
+            { sessionId: item.id },
+          );
+          native = (items ?? [])
+            .filter((m) => m.role === 'user' || m.role === 'assistant')
+            .map((m, idx) => {
+              // content 兼容 string 与 [{type:'text',text}] 两种形态
+              let text = '';
+              if (typeof m.content === 'string') {
+                text = m.content;
+              } else if (Array.isArray(m.content)) {
+                text = m.content.filter((b) => b.type === 'text' && typeof b.text === 'string').map((b) => b.text).join('');
+              }
+              return {
+                id: m.messageId || `${m.role}-${idx}`,
+                type: m.role === 'assistant' ? 'assistant' : 'user',
+                content: text,
+                timestamp: m.timestamp,
+                blocks: m.role === 'assistant' ? [{ type: 'text', content: text }] : undefined,
+              } as ArchiveMessage;
+            });
+        } catch {
+          // 引擎读取失败 → 保持空 → error 态
+        }
+      }
+      if (cancelled) return;
+      // 合并去重：归档优先，消息库按 id 补缺（中断轮兜底）；native 命中则整体采用
+      const known = new Set(archived.map((m) => String(m.id)));
+      const extra = backend.filter((m) => !known.has(String(m.id)));
+      const merged = native.length > 0 ? native : [...archived, ...extra];
+      setMessages(merged);
+      setEarliestSeq(page?.earliestSeq ?? null);
+      setHasMore(page?.hasMore ?? false);
+      if (merged.length === 0) setError(true);
+      setLoading(false);
     })();
     return () => {
       cancelled = true;
