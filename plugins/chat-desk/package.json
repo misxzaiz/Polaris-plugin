@@ -1,0 +1,20 @@
+{
+  "name": "chat-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "chat-desk 插件面板（P2 骨架）：AI 对话域",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.5.0"
+  },
+  "dependencies": {
+    "zustand": "^5.1.0"
+  }
+}

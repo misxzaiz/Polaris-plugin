@@ -1,0 +1,39 @@
+{
+  "id": "chat-desk",
+  "name": "AI 对话",
+  "version": "0.1.0",
+  "description": "AI 对话域插件（P2 骨架，ai-chat-plugin-extraction-spec）：mainSurface 主面板 shadow 接管。P2 最小闭环 = 新建会话/发送（cap.ai.chat start/continue 流式）+ 中断 + 文本/思考/工具块渲染 + 会话切换/删除。会话状态暂存本插件（独立于宿主 conversationStore），P3 等价阶段完成全功能对齐与宿主状态收敛。chat-event 以 permissions.chatEvents=full 接收正文流。",
+  "core": true,
+  "enabledByDefault": false,
+  "contributes": {
+    "views": [
+      {
+        "id": "chat-desk.main",
+        "area": "mainSurface",
+        "panelType": "chat-desk",
+        "icon": "Bot",
+        "labelKey": "plugins.chat-desk",
+        "labelDefault": "AI 对话",
+        "order": 10,
+        "slot": "chat.main",
+        "slotMode": "shadow"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "styles": [
+      {
+        "id": "panel",
+        "target": "global",
+        "css": "/* chat-desk P2 骨架样式：token 全取宿主 --c-* 变量，禁硬编码色值（check 与 build 同步自检） */\n.cd-root{display:flex;flex-direction:column;height:100%;min-height:0;min-width:0;overflow:hidden;background:rgb(var(--c-bg-base));color:rgb(var(--c-text-primary));font-family:var(--font-sans,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif);font-size:14px}\n.cd-toolbar{flex:none;display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid rgb(var(--c-border)/0.1);background:rgb(var(--c-bg-elevated))}\n.cd-title{font-size:12px;font-weight:600;color:rgb(var(--c-text-secondary));min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}\n.cd-badge{flex:none;font-size:10px;padding:1px 6px;border-radius:999px;background:rgb(var(--c-primary)/0.14);color:rgb(var(--c-primary))}\n.cd-badge-off{background:rgb(var(--c-bg-hover));color:rgb(var(--c-text-muted))}\n.cd-msgs{flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}\n.cd-msg{padding:8px 14px}\n.cd-role{font-size:10px;font-weight:700;letter-spacing:.04em;margin-bottom:3px;color:rgb(var(--c-text-tertiary))}\n.cd-role-user{color:rgb(var(--c-primary))}\n.cd-role-ai{color:rgb(var(--c-status-success))}\n.cd-bubble{font-size:13px;line-height:1.6;white-space:pre-wrap;word-break:break-word;color:rgb(var(--c-text-primary))}\n.cd-msg-user .cd-bubble{background:rgb(var(--c-primary)/0.1);border:1px solid rgb(var(--c-primary)/0.18);border-radius:9px;padding:7px 10px;display:inline-block}\n.cd-tool{display:flex;align-items:center;gap:6px;margin-top:4px;padding:4px 8px;border-radius:6px;background:rgb(var(--c-bg-hover)/0.6);font-size:11px;color:rgb(var(--c-text-secondary))}\n.cd-tool-name{font-weight:600}\n.cd-tool-status-ok{color:rgb(var(--c-status-success))}\n.cd-tool-status-err{color:rgb(var(--c-status-danger))}\n.cd-think{margin:2px 0 4px;padding:5px 8px;border-left:2px solid rgb(var(--c-border)/0.3);font-size:11px;line-height:1.55;color:rgb(var(--c-text-tertiary));white-space:pre-wrap;word-break:break-word}\n.cd-caret{display:inline-block;width:2px;height:1.05em;margin-left:2px;vertical-align:-0.15em;background:currentColor;opacity:.8;animation:cd-blink 1s steps(1,end) infinite}\n@keyframes cd-blink{0%,49%{opacity:1}50%,100%{opacity:0}}\n.cd-inputrow{flex:none;display:flex;gap:6px;padding:8px 10px;border-top:1px solid rgb(var(--c-border)/0.1);background:rgb(var(--c-bg-elevated))}\n.cd-input{flex:1;min-width:0;box-sizing:border-box;padding:7px 10px;border:1px solid rgb(var(--c-border)/0.14);border-radius:8px;background:rgb(var(--c-bg-surface));color:rgb(var(--c-text-primary));font-size:13px;font-family:inherit;outline:none;resize:none}\n.cd-input:focus{border-color:rgb(var(--c-primary)/0.7)}\n.cd-input::placeholder{color:rgb(var(--c-text-muted))}\n.cd-btn{flex:none;padding:7px 12px;border:1px solid rgb(var(--c-border)/0.12);border-radius:8px;background:rgb(var(--c-bg-surface));color:rgb(var(--c-text-primary));font-size:12px;cursor:pointer;white-space:nowrap}\n.cd-btn:hover:not(:disabled){background:rgb(var(--c-bg-hover))}\n.cd-btn:disabled{opacity:.5;cursor:default}\n.cd-btn-primary{background:rgb(var(--c-primary));border-color:rgb(var(--c-primary));color:rgb(var(--c-on-primary))}\n.cd-btn-danger{background:rgb(var(--c-status-danger));border-color:rgb(var(--c-status-danger));color:rgb(var(--c-bg-base))}\n.cd-sessions{flex:none;max-height:180px;overflow-y:auto;border-bottom:1px solid rgb(var(--c-border)/0.08);scrollbar-width:thin}\n.cd-sessrow{display:flex;align-items:center;gap:8px;padding:6px 14px;cursor:pointer;border-bottom:1px solid rgb(var(--c-border)/0.05)}\n.cd-sessrow:hover{background:rgb(var(--c-bg-hover)/0.55)}\n.cd-sessrow-on{background:rgb(var(--c-primary)/0.1)}\n.cd-sess-title{flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:rgb(var(--c-text-primary))}\n.cd-sess-meta{flex:none;font-size:10px;color:rgb(var(--c-text-tertiary))}\n.cd-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:40px 20px;color:rgb(var(--c-text-tertiary));font-size:12.5px;text-align:center}\n.cd-err{margin:8px 14px;padding:8px 10px;border-radius:8px;border:1px solid rgb(var(--c-status-danger)/0.3);background:rgb(var(--c-status-danger)/0.08);color:rgb(var(--c-status-danger));font-size:12px}\n"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "aiToolAccess": true,
+    "chatEvents": "full"
+  }
+}
