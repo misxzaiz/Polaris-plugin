@@ -32,6 +32,8 @@ export interface SessionState {
   /** 轮次代际：每次发送/续聊 +1；迟到旧轮终态事件据此丢弃（spec F1） */
   turnEpoch: number
   activeTurnId: string | null
+  /** 最近一条进行中进度文案（progress 事件，非终态）；终态清空 */
+  lastProgress: string | null
   pendingQueue: PendingMessage[]
 }
 
@@ -75,6 +77,7 @@ function emptySession(sessionId: string, opts?: { engineId?: string; title?: str
     error: null,
     turnEpoch: 0,
     activeTurnId: null,
+    lastProgress: null,
     pendingQueue: [],
   }
 }
@@ -160,9 +163,52 @@ function reduceEvent(session: SessionState, payload: Record<string, unknown>, tu
       if (next.isInterrupting) return next // 用户主动中断的 fallback error：静默
       return { ...next, error: String(payload['error'] ?? '未知错误'), isStreaming: false }
     }
+    case 'user_message': {
+      // 跨端回显去重（对齐宿主 eventHandler user_message 分支）：
+      // 优先 clientMessageId 精确匹配；缺失时仅在本机流式期间做 content 回退比对。
+      const content = String(payload['content'] ?? '')
+      if (!content) return next
+      const clientId = payload['clientMessageId'] ? String(payload['clientMessageId']) : undefined
+      const isLocalEcho = clientId
+        ? session.messages.some((m) => m.id === clientId)
+        : session.isStreaming &&
+          [...session.messages].reverse().find((m) => m.type === 'user')?.content === content
+      if (isLocalEcho) return next
+      const msg: ChatMessage = {
+        id: clientId || genId(),
+        type: 'user',
+        content,
+        timestamp: new Date().toISOString(),
+      }
+      return { ...next, messages: [...next.messages, msg] }
+    }
+    case 'progress': {
+      // P3：工具进度暂只落 currentMessage 尾部思考区旁的轻量提示（island P3+ 再接）。
+      // 终态（✅/❌）不残留——工具块状态已由 tool_call_end 表达。
+      const msg = String(payload['message'] ?? '')
+      if (msg.startsWith('✅') || msg.startsWith('❌')) return next
+      next.lastProgress = msg || null
+      return next
+    }
     case 'session_end': {
       const finished = finishCurrent(next)
-      return { ...finished, currentMessage: null, isStreaming: false, isInterrupting: false, activeTurnId: null }
+      const cleared: SessionState = {
+        ...finished,
+        currentMessage: null,
+        isStreaming: false,
+        isInterrupting: false,
+        activeTurnId: null,
+        lastProgress: null,
+      }
+      // 待发队列自动派发（对齐宿主 dispatchNextPending）：取队首立即发送。
+      // reduceEvent 是纯函数不能 set()，改由消费侧（事件订阅处）检测并触发；
+      // 这里仅把队首弹出标记到返回值外——通过挂到 next 的临时字段传出。
+      const head = cleared.pendingQueue[0]
+      if (head) {
+        cleared.pendingQueue = cleared.pendingQueue.slice(1)
+        ;(cleared as SessionState & { __dispatchNext?: PendingMessage }).__dispatchNext = head
+      }
+      return cleared
     }
     default:
       // P2 忽略其余事件（usage/progress/result/user_message/...）
@@ -254,8 +300,14 @@ export const chatDeskStore = createStore<ChatDeskState & ChatDeskActions>()((set
         const nextSession = reduceEvent(session, payload, env?.turnId)
         if (nextSession !== session) {
           const sessions = new Map(get().sessions)
+          const dispatchNext = (nextSession as SessionState & { __dispatchNext?: PendingMessage }).__dispatchNext
+          if (dispatchNext) delete (nextSession as SessionState & { __dispatchNext?: PendingMessage }).__dispatchNext
           sessions.set(sid, nextSession)
           set({ sessions })
+          // session_end 后自动派发队首（对齐宿主 dispatchNextPending）
+          if (dispatchNext) {
+            void get().sendMessage(sid, dispatchNext.text)
+          }
         }
       } catch {
         // 解析失败忽略（心跳/非 JSON 帧）
@@ -301,10 +353,22 @@ export const chatDeskStore = createStore<ChatDeskState & ChatDeskActions>()((set
   },
 
   sendMessage: async (sessionId, text) => {
-    const session = get().sessions.get(sessionId)
-    if (!session || session.isStreaming) return false
+    let session = get().sessions.get(sessionId)
+    if (!session) return false
     const trimmed = text.trim()
     if (!trimmed) return false
+
+    // 流式中：入待发队列（对齐宿主 pendingQueue 语义；session_end 后逐条派发）
+    if (session.isStreaming) {
+      const sessions0 = new Map(get().sessions)
+      sessions0.set(sessionId, {
+        ...session,
+        pendingQueue: [...session.pendingQueue, { id: genId(), text: trimmed, createdAt: Date.now() }],
+      })
+      set({ sessions: sessions0 })
+      return true
+    }
+    session = get().sessions.get(sessionId) ?? session
 
     // 用户消息本地先渲染（与宿主一致：本机 addMessage，广播回显按 id 去重）
     const userMessage: ChatMessage = {
@@ -330,6 +394,7 @@ export const chatDeskStore = createStore<ChatDeskState & ChatDeskActions>()((set
       contextId: `${CONTEXT_PREFIX}${sessionId}`,
       engineId: session.engineId,
       enableMcpTools: true,
+      clientMessageId: userMessage.id,
     }
     try {
       if (session.conversationId) {
