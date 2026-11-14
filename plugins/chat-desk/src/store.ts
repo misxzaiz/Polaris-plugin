@@ -1,19 +1,22 @@
 /**
  * chat-desk store.ts —— P2 骨架会话状态（插件内 zustand，缓存层）
  *
- * 设计（对齐 spec §6「原样搬运、最小改动」的精神，但 P2 用精简实现）：
- * - 多会话：sessions Map（sessionId → 会话状态），activeSessionId 单写者=本插件
- * - 事件归约：chat-event（full 授权）→ 按 contextId `session-<id>` 路由 →
- *   token/thinking 追加 currentMessage、tool_call 建块、session_end 收尾
- * - 发送：cap.ai.chat start/continue（流式 ack；正文经 chat-event 回流渲染）
- * - 中断：cap.ai.chat interrupt（8s 超时兜底对齐宿主 createConversationStore）
- * - P3 等价阶段：本 store 与宿主 conversationStore 的关系（替换/共存/收敛）
- *   在 P3 spec 评审时定案；P2 先验证总线链路与渲染。
+ * 事件路由（对齐 multichat 已验证的插件会话命名空间方案）：
+ * - 本插件会话的 contextId 一律用 `mc-cd-<sessionId>`（mc- 前缀 = 宿主桥
+ *   无条件透传的插件会话命名空间，正文流可达；与宿主 `session-` 前缀零冲突）。
+ * - chat-event 订阅后按 contextId 前缀过滤，只消费本插件的会话。
+ * - 轮次代际过滤（对齐宿主 spec F1）：后端信封 turnId 标识轮次；旧轮迟到的
+ *   session_end/error 丢弃，防误杀新一轮流式。
+ *
+ * P3 等价阶段：本 store 与宿主 conversationStore 的关系（替换/收敛）在 P3 评审定案。
  */
-import { createStore } from "zustand/vanilla"
+import { createStore } from 'zustand/vanilla'
 import type { StoreApi } from 'zustand/vanilla'
 import { aiChatDispatch, aiChatDispatchStream, subscribeChatEvent } from './bridge'
 import type { ChatMessage, ChatEnvelope, ContentBlock, PendingMessage } from './types'
+
+/** 插件会话 contextId 前缀（mc- = 宿主桥透传命名空间；cd- = chat-desk 子命名空间） */
+export const CONTEXT_PREFIX = 'mc-cd-'
 
 export interface SessionState {
   sessionId: string
@@ -26,6 +29,9 @@ export interface SessionState {
   isStreaming: boolean
   isInterrupting: boolean
   error: string | null
+  /** 轮次代际：每次发送/续聊 +1；迟到旧轮终态事件据此丢弃（spec F1） */
+  turnEpoch: number
+  activeTurnId: string | null
   pendingQueue: PendingMessage[]
 }
 
@@ -67,30 +73,40 @@ function emptySession(sessionId: string, opts?: { engineId?: string; title?: str
     isStreaming: false,
     isInterrupting: false,
     error: null,
+    turnEpoch: 0,
+    activeTurnId: null,
     pendingQueue: [],
   }
 }
 
-/** 从 contextId `session-<id>` 提取前端 sessionId */
+/** 从 contextId 提取本插件 sessionId（仅认 mc-cd- 前缀） */
 function extractSessionId(contextId: string | undefined): string | null {
-  if (!contextId) return null
-  if (contextId.startsWith('session-')) return contextId.slice('session-'.length)
-  return null
+  if (!contextId || !contextId.startsWith(CONTEXT_PREFIX)) return null
+  return contextId.slice(CONTEXT_PREFIX.length) || null
 }
 
-function genId(): string {
+function genId(_prefix?: string): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID()
   return newId('id')
 }
 
-/** AIEvent 归约（P2 最小集）到指定会话（immutably，返回新 state 片段） */
-function reduceEvent(session: SessionState, payload: Record<string, unknown>): SessionState {
+/**
+ * AIEvent 归约（P2 最小集）到指定会话。
+ *
+ * turnId 代际规则（对齐宿主 spec F1）：带 turnId 的终态事件（session_end/error）
+ * 若落后于 activeTurnId → 丢弃（旧轮迟到，防误杀新轮）。
+ */
+function reduceEvent(session: SessionState, payload: Record<string, unknown>, turnId?: string): SessionState {
   const type = payload['type'] as string | undefined
+  const isTerminal = type === 'session_end' || type === 'error'
+  if (isTerminal && turnId && session.activeTurnId && turnId !== session.activeTurnId) {
+    // 旧轮次迟到的终态：丢弃（新一轮已在跑）
+    return session
+  }
   const next: SessionState = { ...session }
 
   switch (type) {
     case 'session_start': {
-      // 会话启动：开新流式消息（若当前已有流式则先归档）
       const base = next.currentMessage ? finishCurrent(next) : next
       const msg: ChatMessage = {
         id: genId(),
@@ -145,9 +161,8 @@ function reduceEvent(session: SessionState, payload: Record<string, unknown>): S
       return { ...next, error: String(payload['error'] ?? '未知错误'), isStreaming: false }
     }
     case 'session_end': {
-      // 收尾：currentMessage 归档 + isStreaming=false（对齐宿主 finishMessage 语义）
       const finished = finishCurrent(next)
-      return { ...finished, currentMessage: null, isStreaming: false, isInterrupting: false }
+      return { ...finished, currentMessage: null, isStreaming: false, isInterrupting: false, activeTurnId: null }
     }
     default:
       // P2 忽略其余事件（usage/progress/result/user_message/...）
@@ -175,10 +190,13 @@ function appendToCurrent(session: SessionState, block: ContentBlock): SessionSta
   const msg = base.currentMessage!
   const blocks = [...(msg.blocks ?? [])]
   const last = blocks[blocks.length - 1]
-  if (last && last.type === block.type && block.type !== 'tool_call' && last.type !== 'tool_call') {
+  const mergeable =
+    last && last.type === block.type && (last.type === 'text' || last.type === 'thinking') &&
+    (block.type === 'text' || block.type === 'thinking')
+  if (mergeable) {
     blocks[blocks.length - 1] = {
       ...last,
-      content: last.content + (block as { content: string }).content,
+      content: last.content + block.content,
     } as ContentBlock
   } else {
     blocks.push(block)
@@ -218,20 +236,22 @@ export const chatDeskStore = createStore<ChatDeskState & ChatDeskActions>()((set
 
   initialize: () => {
     if (get().initialized) return
-    // 订阅 chat-event（full 授权；宿主桥按调用方插件上下文裁决）
+    // 订阅 chat-event：宿主桥对 mc- 前缀信封无条件透传（multichat 既有语义），
+    // 本插件只消费 mc-cd- 子命名空间（自己的会话）。
     let unlisten: (() => void) | null = null
     let disposed = false
     void subscribeChatEvent((raw) => {
       if (disposed) return
       try {
         const env = (typeof raw === 'string' ? JSON.parse(raw) : raw) as ChatEnvelope
-        const payload = (env?.payload ?? raw) as Record<string, unknown>
-        if (!payload || typeof payload !== 'object') return
-        const sid = extractSessionId(env?.contextId)
+        const contextId = env?.contextId
+        if (!contextId || !contextId.startsWith(CONTEXT_PREFIX)) return
+        const payload = (env?.payload ?? {}) as Record<string, unknown>
+        const sid = extractSessionId(contextId)
         if (!sid) return
         const session = get().sessions.get(sid)
-        if (!session) return // 非本插件会话（宿主/其他插件）忽略
-        const nextSession = reduceEvent(session, payload)
+        if (!session) return
+        const nextSession = reduceEvent(session, payload, env?.turnId)
         if (nextSession !== session) {
           const sessions = new Map(get().sessions)
           sessions.set(sid, nextSession)
@@ -293,18 +313,21 @@ export const chatDeskStore = createStore<ChatDeskState & ChatDeskActions>()((set
       content: trimmed,
       timestamp: new Date().toISOString(),
     }
+    const turnId = genId('turn')
     const sessions = new Map(get().sessions)
     const withUser: SessionState = {
       ...session,
       messages: [...session.messages, userMessage],
       isStreaming: true,
       error: null,
+      turnEpoch: session.turnEpoch + 1,
+      activeTurnId: turnId,
     }
     sessions.set(sessionId, withUser)
     set({ sessions })
 
     const chatOptions = {
-      contextId: `session-${sessionId}`,
+      contextId: `${CONTEXT_PREFIX}${sessionId}`,
       engineId: session.engineId,
       enableMcpTools: true,
     }
@@ -359,8 +382,8 @@ export const chatDeskStore = createStore<ChatDeskState & ChatDeskActions>()((set
           setTimeout(() => reject(new Error('interrupt invoke 超时（后端无响应）')), 8000),
         ),
       ])
-      // 等待 session_end 收尾（有界；超时由 reduceEvent 的 session_end 兜底，
-      // 极端卡死时 P2 骨架接受 UI 停留 interrupting（与宿主 5s 强收尾对齐留 P3）
+      // 等待 session_end 收尾（有界；极端卡死时 P2 骨架接受 UI 停留 interrupting，
+      // 5s 强制收尾对齐宿主——P3 补齐 turnEpoch 校验后一致）
       await new Promise<void>((resolve) => {
         const started = Date.now()
         const tick = () => {
