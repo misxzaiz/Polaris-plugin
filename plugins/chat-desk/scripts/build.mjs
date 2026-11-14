@@ -36,6 +36,10 @@ function resolveHostFile(base) {
   return base + '.ts'
 }
 function resolveAlias(sub) {
+  // 会话域单实例：sessionStoreManager/useActiveSession/... 一律走 shims/stores（宿主桥单例），
+  // 不指 host/ 拷贝（否则面板树与宿主各持一份 manager，状态分裂）。
+  if (sub.startsWith('stores/conversationStore/')) return join(srcRoot, 'shims', 'stores.ts');
+  if (sub === 'stores') return join(srcRoot, 'shims', 'stores.ts');
   for (const prefix of HOST_PREFIXES) {
     if (sub === prefix || sub.startsWith(prefix)) {
       const rel = sub
@@ -48,7 +52,15 @@ function resolveAlias(sub) {
   // 这里兜底 @/stores/<x>（非 conversationStore）→ shims/stores.ts（宿主单例）。
   if (sub.startsWith('types')) return join(srcRoot, 'shims', 'types.ts');
   if (sub.startsWith('services/')) return join(srcRoot, 'shims', 'services.ts');
-  if (sub.startsWith('utils/')) return join(srcRoot, 'shims', 'utils.ts');
+  // utils 细分：有同名 shim 文件的走专用 shim（避免 barrel 循环依赖），其余回 utils.ts
+  if (sub.startsWith('utils/')) {
+    const name = sub.slice('utils/'.length);
+    const shim = join(srcRoot, 'shims', name + '.ts');
+    const shimTsx = join(srcRoot, 'shims', name + '.tsx');
+    if (exists(shim)) return shim;
+    if (exists(shimTsx)) return shimTsx;
+    return join(srcRoot, 'shims', 'utils.ts');
+  }
   if (sub.startsWith('hooks/')) return join(srcRoot, 'shims', 'hooks.ts');
   if (sub.startsWith('stores/') || sub === 'stores') return join(srcRoot, 'shims', 'stores.ts');
   return join(srcRoot, 'shims', 'misc.ts');
@@ -58,6 +70,7 @@ function resolveAlias(sub) {
 const aliasPlugin = {
   name: 'chat-desk-alias',
   setup(build) {
+    build.onResolve({ filter: /^(react-i18next|i18next)$/ }, () => ({ path: join(srcRoot, 'shims', 'i18n.ts'), external: false }));
     build.onResolve({ filter: /^@\/.*/ }, (args) => {
       const sub = args.path.slice(2);
       return { path: resolveAlias(sub), external: false };

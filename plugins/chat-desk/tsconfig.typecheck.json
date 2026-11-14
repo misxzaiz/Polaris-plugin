@@ -72,13 +72,13 @@
         "src/host/conversationStore/types.ts"
       ],
       "@/stores/conversationStore/sessionStoreManager": [
-        "src/host/conversationStore/sessionStoreManager.ts"
+        "src/shims/stores.ts"
       ],
       "@/stores/conversationStore/useActiveSession": [
-        "src/host/conversationStore/useActiveSession.ts"
+        "src/shims/stores.ts"
       ],
       "@/stores/conversationStore/conversationStoreUtils": [
-        "src/host/conversationStore/conversationStoreUtils.ts"
+        "src/shims/stores.ts"
       ],
       "@/plugin-system/uiFrameTypes": [
         "src/host/plugin-system/uiFrameTypes.ts"

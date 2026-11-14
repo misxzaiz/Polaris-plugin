@@ -751,7 +751,7 @@ export function deriveRuntimeSummary(
 export function useRuntimeSummary(sessionId: string | null): RuntimeSummary {
   const activeId = useActiveSessionId();
   const targetId = sessionId ?? activeId;
-  const stores = useStore(sessionStoreManager, (state) => state.stores);
+  const stores = useStore(sessionStoreManager, (state: any) => state.stores) as Map<string, any>;
   const store = targetId ? stores.get(targetId) : null;
 
   // 1s tick：驱动 elapsedMs 更新（仅当有运行中活动时才计时）

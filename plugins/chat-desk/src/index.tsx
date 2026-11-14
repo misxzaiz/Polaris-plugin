@@ -15,9 +15,7 @@ import { CompactHandoffButton } from './host/Chat/compact-handoff/CompactHandoff
 import { CompactHandoffProgress } from './host/Chat/compact-handoff/CompactHandoffProgress';
 import { MultiWindowMenu } from './host/Chat/session/MultiWindowMenu';
 import { NewSessionButton } from './host/Chat/session/NewSessionButton';
-import { sessionStoreManager, useWorkspaceStore } from './shims/stores';
-import { useActiveSessionActions, useActiveSessionStreaming, useActiveSessionError } from './host/conversationStore/useActiveSession';
-import { useActiveSessionId, useSessionMetadataList } from './host/conversationStore/sessionStoreManager';
+import { sessionStoreManager, useWorkspaceStore, useActiveSessionActions, useActiveSessionStreaming, useActiveSessionError, useActiveSessionId, useSessionMetadataList } from './shims/stores';
 
 interface EntryProps {
   pluginId?: string;

@@ -44,7 +44,7 @@ export const useCompactHandoffStore = useStoreHook('useCompactHandoffStore') as 
 export const useDispatchStore = useStoreHook('useDispatchStore') as any
 
 // sessionStoreManager（宿主 zustand store，非 hook 命名）
-export const sessionStoreManager: AnyStore = store('sessionStoreManager')
+export const sessionStoreManager: any = store('sessionStoreManager')
 
 // ── 非 hook 具名导出（宿主单例转发）──
 export function getSessionConfig(): any {
@@ -55,10 +55,47 @@ export function selectSlotFill(slots: Record<string, unknown> | undefined, slotI
   return (slots as Record<string, any>)[slotId] ?? null
 }
 
-// ── 会话域转发（host/conversationStore 同实例，host 树相对引用不可达时经桥取）──
-export * from '../host/conversationStore/sessionStoreManager'
-export * from '../host/conversationStore/useActiveSession'
-export * from '../host/conversationStore/conversationStoreUtils'
+// ── 会话域转发（宿主单实例）：全部经 appCore.stores 桥取，禁用 host/ 拷贝模块 ──
+const hostActive: any = new Proxy({}, {
+  get: (_t, p) => {
+    const ua = coreStore<Record<string, any>>('useActiveSession') as Record<string, any>
+    const v = ua[p as string]
+    if (typeof v === 'function') return v
+    // 宿主命名空间缺该导出 → 用 sessionStoreManager 派生（选择器型 hook）
+    const sm: any = coreStore<any>('sessionStoreManager')
+    if (p === 'useActiveSessionId') return () => sm.getState().activeSessionId
+    if (p === 'useSessionMetadataList') return () => { const m = sm.getState().sessionMetadata; return m ? [...m.values()] : [] }
+    if (p === 'useSessionManagerActions2') return () => {
+      // 宿主版从 manager actions 命名空间取；桥上 store 即 manager 实例
+      const st = sm.getState()
+      return { switchSession: (id: string) => st.switchSession(id), closeSession: (id: string) => st.deleteSession(id), createSession: st.createSession, createSessionFromHistory: st.createSessionFromHistory, renameSession: (id: string, title: string) => st.updateSessionTitle(id, title) }
+    }
+    return undefined
+  },
+})
+export const useActiveSessionId: any = (...args: unknown[]) => (hostActive.useActiveSessionId as any)(...args)
+export const useSessionMetadataList: any = (...args: unknown[]) => (hostActive.useSessionMetadataList as any)(...args)
+export const useActiveSessionActions: any = (...args: unknown[]) => (hostActive.useActiveSessionActions as any)(...args)
+export const useActiveSessionMessages: any = (...args: unknown[]) => (hostActive.useActiveSessionMessages as any)(...args)
+export const useActiveSessionStreaming: any = (...args: unknown[]) => (hostActive.useActiveSessionStreaming as any)(...args)
+export const useActiveSessionError: any = (...args: unknown[]) => (hostActive.useActiveSessionError as any)(...args)
+export const useActiveSessionConversationId: any = (...args: unknown[]) => (hostActive.useActiveSessionConversationId as any)(...args)
+export const useActiveSessionWorkspace: any = (...args: unknown[]) => (hostActive.useActiveSessionWorkspace as any)(...args)
+export const useActiveSessionInputDraft: any = (...args: unknown[]) => (hostActive.useActiveSessionInputDraft as any)(...args)
+export const useActiveSessionPendingQueue: any = (...args: unknown[]) => (hostActive.useActiveSessionPendingQueue as any)(...args)
+export const useActiveSessionPendingBriefing: any = (...args: unknown[]) => (hostActive.useActiveSessionPendingBriefing as any)(...args)
+export const useActiveSessionPromptOptimize: any = (...args: unknown[]) => (hostActive.useActiveSessionPromptOptimize as any)(...args)
+export const useActiveSessionPromptSuggestion: any = (...args: unknown[]) => (hostActive.useActiveSessionPromptSuggestion as any)(...args)
+export const useActiveSessionStreamRate: any = (...args: unknown[]) => (hostActive.useActiveSessionStreamRate as any)(...args)
+export const useActiveSessionUsage: any = (...args: unknown[]) => (hostActive.useActiveSessionUsage as any)(...args)
+export const useActiveSessionKernelStreaming: any = (...args: unknown[]) => (hostActive.useActiveSessionKernelStreaming as any)(...args)
+export const useSessionState: any = (...args: unknown[]) => (hostActive.useSessionState as any)(...args)
+export const useSessionStreaming: any = (...args: unknown[]) => (hostActive.useSessionStreaming as any)(...args)
+export const useHasActivePlan: any = (...args: unknown[]) => (hostActive.useHasActivePlan as any)(...args)
+export const useHasPendingQuestion: any = (...args: unknown[]) => (hostActive.useHasPendingQuestion as any)(...args)
+export const useSessionHasPendingQuestion: any = (...args: unknown[]) => (hostActive.useSessionHasPendingQuestion as any)(...args)
+export const useSessionHasPendingCards: any = (...args: unknown[]) => (hostActive.useSessionHasPendingCards as any)(...args)
+export const conversationStoreUtils: any = new Proxy({}, { get: (_t, p) => (coreStore<Record<string, any>>('conversationStoreUtils') as Record<string, any>)[p as string] })
 
 // ── uiSlotStore 类型（宿主同形定义）──
 export type SlotId = string
@@ -74,4 +111,34 @@ export interface InputBanner {
   title?: string
   message?: string
   [k: string]: unknown
+}
+
+export function useSessionManagerActions(): any {
+  const sm: any = coreStore<any>('sessionStoreManager')
+  const st = sm.getState()
+  return {
+    switchSession: (id: string) => st.switchSession(id),
+    closeSession: (id: string) => st.deleteSession(id),
+    createSession: st.createSession,
+    createSessionFromHistory: st.createSessionFromHistory,
+    renameSession: (id: string, title: string) => st.updateSessionTitle(id, title),
+  }
+}
+
+// ── 会话域工具函数（宿主 conversationStoreUtils / modelProfileStore 同源转发）──
+export function resolveEffectiveProfileId(...args: unknown[]): any {
+  const u = coreStore<Record<string, any>>('conversationStoreUtils').resolveEffectiveProfileId
+  return u(...args)
+}
+export function resolveSessionEngine(...args: unknown[]): any {
+  const u = coreStore<Record<string, any>>('conversationStoreUtils').resolveSessionEngine
+  return u(...args)
+}
+export function findStoreByConversationId(...args: unknown[]): any {
+  const sm: any = coreStore<any>('sessionStoreManager')
+  if (typeof sm.findStoreByConversationId === 'function') return sm.findStoreByConversationId(...args)
+  // 宿主版为模块级函数：从 useActiveSession 命名空间兜底
+  const ua = coreStore<Record<string, any>>('useActiveSession')
+  if (typeof ua.findStoreByConversationId === 'function') return ua.findStoreByConversationId(...args)
+  return null
 }

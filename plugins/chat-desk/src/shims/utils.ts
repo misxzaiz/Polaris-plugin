@@ -43,7 +43,6 @@ export { groupConversationRounds, findCurrentRoundIndexForRange, getRoundScrollT
 export { markdownCache } from './cache'
 export { highlightCache, LANGUAGE_DISPLAY_NAMES } from './highlight'
 export { getLanguageFromPath } from './language'
-export { ProgressiveStreamingMarkdown } from './lightweightMarkdown'
 export { getMermaidConfig } from './mermaid-config'
 export { sanitizeMermaidSvg } from './sanitizeMermaidSvg'
 export { highlightCode } from './syntaxHighlight'
