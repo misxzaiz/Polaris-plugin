@@ -5,20 +5,31 @@
   "description": "chat-desk 插件面板（P2 骨架）：AI 对话域",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "devDependencies": {
+    "@codemirror/state": "^6.7.6",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^18.3.31",
     "esbuild": "^0.23.0",
+    "mermaid": "^12.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "vite": "^5.4.21",
+    "vitest": "^5.1.0"
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "diff": "^8.0.4",
+    "dompurify": "^3.4.18",
+    "highlight.js": "^11.12.0",
     "i18next": "^24.2.3",
+    "katex": "^0.18.11",
     "lucide-react": "^0.562.0",
+    "marked": "^17.0.6",
     "react-i18next": "^15.7.4",
+    "react-virtuoso": "^4.18.22",
     "zustand": "^5.1.0"
   }
 }

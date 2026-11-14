@@ -1,0 +1,299 @@
+/**
+ * 配置相关类型定义
+ */
+
+import type { CSSProperties } from 'react'
+import type { ModelProfile } from './modelProfile'
+import type { WorkspaceTerminalScripts } from './terminalScript'
+
+/**  引擎 ID（支持动态插件引擎） */
+export type EngineId = 'claude-code' | 'simple-ai' | (string & NonNullable<unknown>)
+
+/** 支持的语言 */
+export type Language = 'zh-CN' | 'en-US'
+
+/** 界面主题短名（@deprecated 使用 activeThemeId 替代；spiderman 已随内置主题移除） */
+export type Theme = 'dark' | 'light'
+
+/** 对话显示密度 */
+export type ChatDisplayDensity = 'compact' | 'comfortable' | 'spacious'
+
+/** 对话字体族 */
+export type ChatDisplayFontFamily = 'system' | 'serif' | 'mono'
+
+/** AI 对话窗口显示设置 */
+export interface ChatDisplaySettings {
+  /** 正文字号 (px) */
+  fontSize: number;
+  /** 正文行高 */
+  lineHeight: number;
+  /** Markdown 段落间距 (px) */
+  paragraphSpacing: number;
+  /** 消息垂直密度 */
+  messageSpacing: ChatDisplayDensity;
+  /** @deprecated no longer constrains width — content adapts to flex parent width */
+  contentWidth: number;
+  /** 代码字号 (px) */
+  codeFontSize: number;
+  /** 输入框字号 (px)，为空时跟随正文字号 */
+  inputFontSize?: number;
+  /** 对话字体族 */
+  fontFamily: ChatDisplayFontFamily;
+}
+
+export const DEFAULT_CHAT_DISPLAY_SETTINGS: ChatDisplaySettings = {
+  fontSize: 14,
+  lineHeight: 1.55,
+  paragraphSpacing: 4,
+  messageSpacing: 'comfortable',
+  contentWidth: 78,
+  codeFontSize: 13,
+  fontFamily: 'system',
+}
+
+const CHAT_DISPLAY_FONT_FAMILIES: Record<ChatDisplayFontFamily, string> = {
+  system: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+  serif: 'Georgia, "Times New Roman", "Noto Serif SC", serif',
+  mono: '"JetBrains Mono", "Fira Code", "Cascadia Code", "SF Mono", Consolas, monospace',
+}
+
+const CHAT_DISPLAY_DENSITY = {
+  compact: {
+    messageGap: 6,
+    blockGap: 4,
+    bubblePaddingX: 12,
+    bubblePaddingY: 8,
+    bubbleRadius: 14,
+    codePadding: 12,
+  },
+  comfortable: {
+    messageGap: 10,
+    blockGap: 6,
+    bubblePaddingX: 16,
+    bubblePaddingY: 12,
+    bubbleRadius: 16,
+    codePadding: 16,
+  },
+  spacious: {
+    messageGap: 16,
+    blockGap: 10,
+    bubblePaddingX: 18,
+    bubblePaddingY: 14,
+    bubbleRadius: 18,
+    codePadding: 18,
+  },
+} as const
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.min(max, Math.max(min, value))
+    : fallback
+}
+
+export function normalizeChatDisplaySettings(settings?: Partial<ChatDisplaySettings> | null): ChatDisplaySettings {
+  const density = settings?.messageSpacing && settings.messageSpacing in CHAT_DISPLAY_DENSITY
+    ? settings.messageSpacing
+    : DEFAULT_CHAT_DISPLAY_SETTINGS.messageSpacing
+  const fontFamily = settings?.fontFamily && settings.fontFamily in CHAT_DISPLAY_FONT_FAMILIES
+    ? settings.fontFamily
+    : DEFAULT_CHAT_DISPLAY_SETTINGS.fontFamily
+
+  return {
+    fontSize: clampNumber(settings?.fontSize, 10, 20, DEFAULT_CHAT_DISPLAY_SETTINGS.fontSize),
+    lineHeight: clampNumber(settings?.lineHeight, 1.35, 1.8, DEFAULT_CHAT_DISPLAY_SETTINGS.lineHeight),
+    paragraphSpacing: clampNumber(settings?.paragraphSpacing, 0, 12, DEFAULT_CHAT_DISPLAY_SETTINGS.paragraphSpacing),
+    messageSpacing: density,
+    contentWidth: clampNumber(settings?.contentWidth, 60, 90, DEFAULT_CHAT_DISPLAY_SETTINGS.contentWidth),
+    codeFontSize: clampNumber(settings?.codeFontSize, 9, 18, DEFAULT_CHAT_DISPLAY_SETTINGS.codeFontSize),
+    inputFontSize: settings?.inputFontSize === undefined
+      ? undefined
+      : clampNumber(settings.inputFontSize, 10, 20, DEFAULT_CHAT_DISPLAY_SETTINGS.fontSize),
+    fontFamily,
+  }
+}
+
+export function getChatDisplayStyleVars(settings?: Partial<ChatDisplaySettings> | null): CSSProperties {
+  const normalized = normalizeChatDisplaySettings(settings)
+  const density = CHAT_DISPLAY_DENSITY[normalized.messageSpacing]
+  const inputFontSize = normalized.inputFontSize ?? normalized.fontSize
+
+  return {
+    '--chat-font-size': `${normalized.fontSize}px`,
+    '--chat-line-height': normalized.lineHeight,
+    '--chat-paragraph-spacing': `${normalized.paragraphSpacing}px`,
+    '--chat-message-gap': `${density.messageGap}px`,
+    '--chat-block-gap': `${density.blockGap}px`,
+    '--chat-bubble-padding-x': `${density.bubblePaddingX}px`,
+    '--chat-bubble-padding-y': `${density.bubblePaddingY}px`,
+    '--chat-bubble-radius': `${density.bubbleRadius}px`,
+    // '--chat-content-width': removed — content width is unconstrained (flex parent handles it)
+    '--chat-code-font-size': `${normalized.codeFontSize}px`,
+    '--chat-code-padding': `${density.codePadding}px`,
+    '--chat-input-font-size': `${inputFontSize}px`,
+    '--chat-font-family': CHAT_DISPLAY_FONT_FAMILIES[normalized.fontFamily],
+  } as CSSProperties
+}
+
+/** AI 引擎配置 */
+export interface EngineConfig {
+  /** 引擎 ID */
+  id: EngineId;
+  /** 引擎名称 */
+  name: string;
+  /** CLI 命令路径 */
+  cliPath?: string;
+  /** 是否可用 */
+  available?: boolean;
+}
+
+/** Web 服务配置 */
+export interface WebConfig {
+  /** 是否启用 Web 服务 */
+  enabled: boolean;
+  /** 监听地址 */
+  host: string;
+  /** 监听端口 */
+  port: number;
+  /** 认证 token（自动生成） */
+  token?: string;
+}
+
+/** 派发队员预设：角色 → 引擎/供应商/模型/职责提示词 */
+export interface DispatchPreset {
+  id: string;
+  /** 角色名（dispatch_task role 参数按此匹配） */
+  name: string;
+  /** 引擎 ID */
+  engineId: string;
+  /** 模型 Profile ID（第三方端点）；空 = 官方端点 */
+  modelProfileId?: string;
+  /** 具体模型名 */
+  model?: string;
+  /** 角色职责系统提示词 */
+  appendSystemPrompt?: string;
+  /** 权限模式 */
+  permissionMode?: string;
+}
+
+/** 派发任务配置（dispatch_task MCP 行为） */
+export interface DispatchConfig {
+  /** 派发策略："auto"（直接执行）| "ask"（每次派发弹确认） */
+  policy?: 'auto' | 'ask';
+  /** 完成后是否把结果摘要注入来源会话下一回合 */
+  autoInjectReports?: boolean;
+  /** 队员预设列表 */
+  presets?: DispatchPreset[];
+}
+
+/** 工作区条目（持久化到服务端配置，跨桌面/Web 共享） */
+export interface WorkspaceEntry {
+  id: string;
+  name: string;
+  path: string;
+  createdAt?: string;
+  lastAccessed?: string;
+}
+
+/** 应用配置 */
+export interface Config {
+  /** 当前选择的引擎 */
+  defaultEngine: EngineId;
+  /** 辅助任务引擎（标题生成 / 润色等低频辅助任务的专用引擎）。
+   *  空串/缺省 = 跟随 defaultEngine。用于将辅助任务路由到更便宜的引擎以降本。 */
+  auxiliaryEngine?: string;
+  /** 界面语言 */
+  language?: Language;
+  /** 界面主题（@deprecated 使用 activeThemeId 替代） */
+  theme?: Theme;
+  /** 当前激活的主题 ID（UUID 格式，替换旧 theme 字段） */
+  activeThemeId?: string;
+  /** Claude Code 引擎配置 */
+  claudeCode: {
+    /** Claude CLI 命令路径 */
+    cliPath: string;
+  };
+  /** 工作目录 */
+  workDir?: string;
+  /** 会话保存路径 */
+  sessionDir?: string;
+  /** Git 二进制路径（自定义 Git 安装位置时使用） */
+  gitBinPath?: string;
+  /** 开机自动启动（OS 登录自启宿主，最小化启动）。
+   *  意图真源：走设置保存流（SettingsPage buildPatch → cap.config 透传）；
+   *  OS 事实由 configStore 保存成功后的 cap.app.autolaunch apply 与启动对账同步 */
+  autoLaunch?: boolean;
+  /** Web 服务配置 */
+  web?: WebConfig;
+  /** 派发任务配置（策略/结果注入/队员预设） */
+  dispatch?: DispatchConfig;
+  /** 允许 AI 控制界面（cap.ui.* 工具暴露）。默认 false——关闭时 bus MCP
+   *  被禁用，AI 工具集不含 cap.ui.theme / cap.ui.chat。开启后 AI 可改
+   *  主题配色与对话渲染配置（三端同源生效）。 */
+  uiControlEnabled?: boolean;
+  /** AI 对话窗口显示设置 */
+  chatDisplay?: ChatDisplaySettings;
+  /** 工作区列表（跨桌面/Web 共享） */
+  workspaces?: WorkspaceEntry[];
+  /** 当前激活的工作区 ID */
+  currentWorkspaceId?: string;
+  /** 工作区终端脚本配置，key 为工作区绝对路径 */
+  terminalScripts?: Record<string, WorkspaceTerminalScripts>;
+  /** 模型 Profile 列表（配置第三方模型端点） */
+  modelProfiles?: ModelProfile[];
+  /** 当前激活的模型 Profile ID（为空时使用官方模型） */
+  activeModelProfileId?: string;
+  /** Skill 读取路径列表（支持全局绝对路径，工作区相对路径由应用层处理） */
+  skillPaths?: string[];
+  /** 性能与资源管理：各资源密集型功能的开关。
+   *  所有字段默认关闭（false），用户按需开启。
+   *  变更通过 config-changed 事件热切换，无需重启。 */
+  performance?: PerformanceFeatures;
+  /** 性能开关迁移引导横幅是否已 dismiss（持久化到 config 以跨设备同步）。
+   *  首次升级到"默认全关"版本时，若未 dismiss，显示引导横幅。 */
+  perfMigrationDismissed?: boolean;
+  /** 插件配置命名空间。key 为插件 id，value 为该插件配置对象。
+   *  由 manifest.contributes.configSchema 声明字段，设置页自动渲染表单，
+   *  插件通过 MCP 工具 / TS API 读写（受 appConfigRead/Write 权限约束）。 */
+  plugins?: Record<string, Record<string, unknown>>;
+}
+
+/** 性能与资源功能开关 */
+export interface PerformanceFeatures {
+  /** 文件系统监听（默认关闭） */
+  fileWatcher?: boolean;
+  /** 编辑器语法高亮 highlight.js（默认关闭） */
+  syntaxHighlighting?: boolean;
+  /** Mermaid 图表渲染（默认关闭） */
+  mermaidDiagrams?: boolean;
+  /** KaTeX 数学公式渲染（默认关闭） */
+  katexMath?: boolean;
+  /** 代码编辑器语言包预加载（默认关闭） */
+  codeEditorLanguages?: boolean;
+  /** 插件服务自动启动（默认关闭） */
+  pluginAutoStart?: boolean;
+}
+
+/** 配置 patch：只包含要更新的顶层字段，null 用于清空可选字段 */
+export type ConfigPatch = Partial<{
+  [K in keyof Config]: Config[K] | null;
+}>;
+
+/** 健康状态 */
+export interface HealthStatus {
+  /** Claude CLI 是否可用 */
+  claudeAvailable: boolean;
+  /** Claude 版本 */
+  claudeVersion?: string;
+  /** 工作目录 */
+  workDir?: string;
+  /** 配置是否有效 */
+  configValid: boolean;
+}
+
+/** 系统提示词配置（localStorage 独立存储） */
+export interface SystemPromptConfig {
+  /** 用户自定义提示词内容 */
+  customPrompt: string;
+  /** 是否启用自定义提示词 */
+  enabled: boolean;
+}

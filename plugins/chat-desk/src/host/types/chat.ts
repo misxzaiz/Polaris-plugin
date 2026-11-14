@@ -1,0 +1,832 @@
+/**
+ * 聊天相关类型定义
+ */
+
+import type { EngineId } from './config';
+
+/** 消息角色 */
+export type MessageRole = 'user' | 'assistant' | 'system';
+
+/** 工具调用状态 */
+export type ToolStatus = 'pending' | 'running' | 'completed' | 'failed' | 'partial';
+
+/** 工具调用信息 */
+export interface ToolCall {
+  id: string;
+  name: string;
+  status: ToolStatus;
+  input?: Record<string, unknown>;
+  output?: string;
+  startedAt: string;
+  completedAt?: string;
+  /** Diff 相关数据 (用于 Edit 工具) */
+  diff?: {
+    /** 修改前的文件内容 */
+    oldContent?: string;
+    /** 修改后的文件内容 */
+    newContent?: string;
+    /** 文件路径 */
+    filePath?: string;
+  };
+}
+
+/** 编辑工具的 Diff 数据（引擎无关统一展示模型）
+ *
+ * - 字符串形态（old_string/new_string）：oldContent 为被替换片段，可为实际内容
+ * - 行号形态（start_line/end_line/replacement_text）：无法恢复被替换片段，
+ *   oldContent 为 undefined，仍提供 newContent 与 firstChangedLine
+ */
+export interface DiffData {
+  /** 修改前的文件内容（仅被替换的部分）；行号形态无法恢复时为 undefined */
+  oldContent?: string;
+  /** 修改后的文件内容（仅被替换的部分） */
+  newContent: string;
+  /** 文件路径 */
+  filePath: string;
+  /** 原始 edits 数组（用于统一展示，引擎无关） */
+  edits?: Array<{ oldText: string; newText: string }>;
+  /** 引擎已计算好的 diff 字符串（如引擎输出的 details.diff） */
+  diffString?: string;
+  /** 引擎已计算好的 patch 字符串 */
+  patchString?: string;
+  /** 首个变更行号（用于编辑器导航） */
+  firstChangedLine?: number;
+}
+
+/** 聊天消息 */
+export interface Message {
+  id: string;
+  role: MessageRole;
+  content: string;
+  timestamp: string;
+  /** 工具调用摘要（替代完整的 toolCalls） */
+  toolSummary?: {
+    count: number;
+    names: string[];
+  };
+}
+
+/**
+ * 待发送队列消息（流式回复期间的预输入/多行拆分入队项）。
+ *
+ * 纯前端内存态、绑定会话生命周期，不落盘、不进入 messages 流。
+ * 由 ConversationStore.pendingQueue 持有，session_end 后自动逐条发送。
+ */
+export interface PendingMessage {
+  /** 队列项唯一标识（crypto.randomUUID） */
+  id: string;
+  /** 消息文本（单条，多行拆分后逐条入队） */
+  text: string;
+  /** 附件（可选项；入队消息通常仅文本） */
+  attachments?: import('./attachment').Attachment[];
+  /** 入队时间戳（毫秒） */
+  createdAt: number;
+  /**
+   * 派发状态（纯前端投影）：'queued' 排队等待 / 'sending' 正在发送。
+   * 用于 UI 展示「哪条正在发」与锁定正在发送的条目（禁止编辑/删除）。
+   */
+  status?: 'queued' | 'sending';
+}
+
+/** 权限拒绝详情 */
+export interface PermissionDenial {
+  toolName: string;
+  reason: string;
+  details: Record<string, unknown>;
+}
+
+/** 权限请求 */
+export interface PermissionRequest {
+  id: string;
+  sessionId: string;
+  denials: PermissionDenial[];
+  createdAt: string;
+}
+
+/**
+ * ========================================
+ * 新型消息类型定义 - 分层对话流
+ * ========================================
+ */
+
+/** 内容块类型 - 用于 Assistant 消息的内容分段 */
+export type ContentBlock = TextBlock | ThinkingBlock | ToolCallBlock | QuestionBlock | FormBlock | PlanModeBlock | AgentRunBlock | TaskBoardBlock | ToolGroupBlock | PermissionRequestBlock | PluginCardBlock | ContextCompactBlock;
+
+/** 文本内容块 */
+export interface TextBlock {
+  type: 'text';
+  content: string;
+}
+
+/**
+ * 上下文压缩分隔块 - Claude CLI /compact 或 autoCompact 完成后插入，
+ * 渲染为聊天流中的细分隔条，标记此处之前的上下文已被摘要压缩。
+ */
+export interface ContextCompactBlock {
+  type: 'context_compact';
+  id: string;
+  /** 触发方式："manual"（/compact）| "auto"（自动压缩） */
+  trigger: string;
+  /** 压缩前 token 数 */
+  preTokens?: number;
+  /** 压缩后 token 数 */
+  postTokens?: number;
+  /** 压缩完成时间（ISO 8601） */
+  createdAt: string;
+}
+
+/** 思考过程内容块 */
+export interface ThinkingBlock {
+  type: 'thinking';
+  /** 思考内容 */
+  content: string;
+  /** 是否已折叠 */
+  collapsed?: boolean;
+}
+
+/** 工具调用内容块 */
+export interface ToolCallBlock {
+  type: 'tool_call';
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  status: ToolStatus;
+  output?: string;
+  error?: string;
+  startedAt: string;
+  completedAt?: string;
+  duration?: number;
+  /** cap.bash 后台任务 ID（bash 工具异步任务，供管理面板关联/停止） */
+  taskId?: string;
+  /** Diff 数据（用于 Edit 工具显示差异） */
+  diffData?: DiffData;
+  /** 补丁数据（用于 apply_patch 多文件补丁渲染） */
+  patchData?: {
+    type: 'add' | 'update' | 'delete';
+    filePath: string;
+    movePath?: string;
+    chunkCount: number;
+    addedLines: number;
+    removedLines: number;
+    oldContent: string;
+    newContent: string;
+  }[];
+}
+
+/** 插件自定义卡片渲染模式 */
+export type PluginCardMode = 'result' | 'interaction';
+
+/** 插件卡片状态 */
+export type PluginCardStatus = 'ready' | 'pending' | 'answered' | 'declined' | 'failed';
+
+/**
+ * 插件自定义卡片内容块 - 由插件按 mcp__{server}__{tool} 匹配后自定义渲染。
+ * 一种 block 覆盖展示型（result）与交互型（interaction）两种模式。
+ */
+export interface PluginCardBlock {
+  type: 'plugin_card';
+  /** result 模式 = callId；interaction 模式 = interactionId */
+  id: string;
+  /** 归属插件 id */
+  pluginId: string;
+  /** 贡献点 id（chatCards[].id） */
+  cardId: string;
+  /** 完整工具名 mcp__{server}__{tool}，兜底展示用 */
+  toolName: string;
+  /**
+   * 注册表加载 key（Code Mode 载体 execute 解析后的 mcp__{server}__{tool}）。
+   * 宿主 PluginCardHost 用它 load/match 组件；历史块缺失时回落 toolName。
+   */
+  cardKey?: string;
+  /** 渲染模式 */
+  mode: PluginCardMode;
+  /** 渲染状态 */
+  status: PluginCardStatus;
+  /**
+   * 卡片数据。
+   * - result：MCP 工具结果最佳解析（结构化对象或原始字符串）
+   * - interaction：伴生进程发来的请求 payload
+   */
+  data: unknown;
+  /** 交互应答路由的会话 ID（interaction 模式） */
+  sessionId?: string;
+  /** interaction 已提交的应答（历史恢复回显） */
+  response?: unknown;
+  /** 创建时间（ISO 8601） */
+  createdAt: string;
+}
+
+/** 问题选项 */
+export interface QuestionOption {
+  /** 选项值 */
+  value: string;
+  /** 显示文本（可选，默认使用 value） */
+  label?: string;
+  /** 选项描述（可选） */
+  description?: string;
+  /** 预览文本（可选，展示示例） */
+  preview?: string;
+}
+
+/** 问题回答状态 */
+export type QuestionStatus = 'pending' | 'answered';
+
+/** 单条子答案（与 QuestionItem 一一对齐） */
+export interface SubAnswer {
+  /** 选中的选项值（按 label 文本对齐） */
+  selected: string[];
+  /** 自定义输入 */
+  customInput?: string;
+  /** 该题是否被单独跳过（部分跳过场景） */
+  declined?: boolean;
+}
+
+/** 问题答案（兼容字段保留 selected/customInput 以承接旧路径） */
+export interface QuestionAnswer {
+  /** 多题答案数组（新版） */
+  answers?: SubAnswer[];
+  /** 是否整体跳过 */
+  declined?: boolean;
+  /** @deprecated 兼容字段：单题路径下的 selected */
+  selected?: string[];
+  /** @deprecated 兼容字段：单题路径下的 customInput */
+  customInput?: string;
+}
+
+/** 单条子问题（同一 MCP call 包含 1-4 个） */
+export interface QuestionItem {
+  /** 完整问题文本（卡片正文） */
+  question: string;
+  /** 短标签（≤12 字，类别 chip） */
+  header: string;
+  /** 是否多选 */
+  multiSelect?: boolean;
+  /** 选项列表 */
+  options: QuestionOption[];
+  /** 是否允许自定义输入 */
+  allowCustomInput?: boolean;
+}
+
+/** 问题内容块 - 用于 AskUserQuestion 工具 */
+export interface QuestionBlock {
+  type: 'question';
+  /** 工具调用 ID（与 tool_call_start 的 callId 对应） */
+  id: string;
+  /** 后端/路由会话 ID，用于提交答案和 question_answered 事件回路 */
+  sessionId?: string;
+  /** 同一 call 内的全部问题（新版主字段） */
+  questions: QuestionItem[];
+  /** 回答状态 */
+  status: QuestionStatus;
+  /** 每题答案数组（新版） */
+  answers?: SubAnswer[];
+  /** 是否整体被跳过 */
+  declined?: boolean;
+  // ===== 兼容字段（旧单题路径） =====
+  /** @deprecated 旧字段：问题标题（首题摘要） */
+  header?: string;
+  /** @deprecated 旧字段：类别标签 */
+  categoryLabel?: string;
+  /** @deprecated 旧字段：是否多选 */
+  multiSelect?: boolean;
+  /** @deprecated 旧字段：选项列表 */
+  options?: QuestionOption[];
+  /** @deprecated 旧字段：是否允许自定义输入 */
+  allowCustomInput?: boolean;
+  /** @deprecated 旧字段：用户答案（首题摘要） */
+  answer?: QuestionAnswer;
+}
+
+/** ========================================
+ * Form（表单工具）相关类型
+ * ======================================== */
+
+/** 表单字段类型（schema 驱动面板支持的控件） */
+export type FormFieldType =
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'textarea'
+  | 'select'
+  | 'secret'
+  | 'date'
+  | 'time'
+  | 'datetime'
+  | 'month'
+  | 'week';
+
+/** 表单字段 schema（由 AI 声明的 form 工具参数，前端据此渲染控件） */
+export interface FormFieldSchema {
+  name: string;
+  type?: FormFieldType;
+  label?: string;
+  placeholder?: string;
+  /** select 字段的可选项（type=select 必需） */
+  options?: string[];
+  /** 是否必填 */
+  required?: boolean;
+  /** 默认值 */
+  default?: string | number | boolean;
+  /** secret 字段：值在服务端强制掩码，AI 上下文与前端回执都不可见原文 */
+  secret?: boolean;
+  /** 隐藏字段：值仍参与转发/回喂，但回执中显示为 <已隐藏>（方向 2 信任边界由服务端强制） */
+  hidden?: boolean;
+  /** 时间类字段的可选约束（date/time/datetime 类型） */
+  min?: string;
+  max?: string;
+  /** 时间步进（仅 time/datetime，单位与 input step 对齐） */
+  step?: number;
+  /** 占位提示行（小字，显示在控件下方） */
+  help?: string;
+  /** 栅格跨列数（1-4；配合 form style.gridCols 使用） */
+  col?: number;
+}
+
+/** 表单内容块 - 用于 form 工具（schema 驱动面板，read 信任边界由服务端强制） */
+export interface FormBlock {
+  type: 'form';
+  /** 表单 ID（与 form_submit 的 formId 对应） */
+  id: string;
+  /** 后端/路由会话 ID */
+  sessionId?: string;
+  /** 表单标题 */
+  title?: string;
+  /** read 模式：full=AI 可见字段值；none=仅字段名（值不写入 DOM） */
+  read: 'full' | 'none';
+  /** 目标能力（付给 form_submit）；collect 模式无目标，可为空 */
+  target: string;
+  /** 目标动作；collect 模式无动作，可为空 */
+  action: string;
+  /** 表单模式：dispatch（默认，转发目标能力）/ collect（仅收集参数，不转发） */
+  mode: 'dispatch' | 'collect';
+  /** AI 声明的样式（accent/bg/gridCols/gap/radius），前端按白名单键应用 */
+  style?: Record<string, string | number>;
+  /** 模板引用（name/version），显示「来自模板 X」 */
+  template?: { name: string; version?: string };
+  /** 字段 schema（前端渲染控件） */
+  fields: FormFieldSchema[];
+  /** 提交状态 */
+  status: 'pending' | 'submitted' | 'skipped';
+  /** 服务端回执（read=none 时不含字段值） */
+  receipt?: string;
+  /** 提交是否成功 */
+  ok?: boolean;
+  /** 创建时间（ISO 8601） */
+  createdAt: string;
+}
+
+/** ========================================
+ * PlanMode 相关类型
+ * ======================================== */
+
+/** PlanMode 状态 */
+export type PlanModeStatus = 
+  | 'drafting'         // 正在起草计划
+  | 'pending_approval' // 等待审批
+  | 'approved'         // 已批准
+  | 'rejected'         // 已拒绝
+  | 'executing'        // 正在执行
+  | 'completed'        // 已完成
+  | 'canceled';        // 已取消
+
+/** 计划任务（内容块内） */
+export interface PlanTaskBlock {
+  /** 任务 ID */
+  taskId: string;
+  /** 任务描述 */
+  description: string;
+  /** 任务状态 */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+}
+
+/** 计划阶段（内容块内） */
+export interface PlanStageBlock {
+  /** 阶段 ID */
+  stageId: string;
+  /** 阶段名称 */
+  name: string;
+  /** 阶段描述 */
+  description?: string;
+  /** 阶段状态 */
+  status: 'pending' | 'in_progress' | 'completed' | 'failed';
+  /** 阶段内的任务列表 */
+  tasks: PlanTaskBlock[];
+  /** 是否折叠 */
+  collapsed?: boolean;
+}
+
+/** PlanMode 内容块 - 用于计划模式 */
+export interface PlanModeBlock {
+  type: 'plan_mode';
+  /** 计划 ID */
+  id: string;
+  /** 会话 ID */
+  sessionId: string;
+  /** 计划标题 */
+  title?: string;
+  /** 计划描述 */
+  description?: string;
+  /** 阶段列表 */
+  stages: PlanStageBlock[];
+  /** 当前计划状态 */
+  status: PlanModeStatus;
+  /** 修改建议（拒绝时的反馈） */
+  feedback?: string;
+  /** 是否激活（正在编辑/审批中） */
+  isActive?: boolean;
+}
+
+/** ========================================
+ * AgentRun 相关类型
+ * ======================================== */
+
+/** Agent 运行状态 */
+export type AgentRunStatus = 
+  | 'pending'    // 等待开始
+  | 'running'    // 运行中
+  | 'success'    // 成功完成
+  | 'error'      // 出错
+  | 'canceled';  // 已取消
+
+/** 嵌套工具调用（AgentRun 内部） */
+export interface AgentNestedToolCall {
+  /** 工具调用 ID */
+  id: string;
+  /** 工具名称 */
+  name: string;
+  /** 工具状态 */
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  /** 简短描述 */
+  summary?: string;
+}
+
+/** Agent 运行内容块 - 用于 Agent 任务聚合展示 */
+export interface AgentRunBlock {
+  type: 'agent_run';
+  /** 任务 ID */
+  id: string;
+  /** Agent 类型/名称 */
+  agentType: string;
+  /** Agent 能力描述 */
+  capabilities?: string[];
+  /** 运行状态 */
+  status: AgentRunStatus;
+  /** 进度消息 */
+  progressMessage?: string;
+  /** 进度百分比 0-100 */
+  progressPercent?: number;
+  /** 输出内容（流式） */
+  output?: string;
+  /** 嵌套的工具调用列表 */
+  toolCalls: AgentNestedToolCall[];
+  /** 执行时长（毫秒） */
+  duration?: number;
+  /** 错误信息 */
+  error?: string;
+  /** 开始时间 */
+  startedAt: string;
+  /** 完成时间 */
+  completedAt?: string;
+}
+
+/** ========================================
+ * TaskBoard 相关类型
+ * ======================================== */
+
+/** 任务板单项状态（在 pending/in_progress/completed 基础上扩展 blocked/stopped） */
+export type TaskItemStatus = 'pending' | 'in_progress' | 'completed' | 'blocked' | 'stopped';
+
+/** 任务板单项 */
+export interface TaskBoardItem {
+  /** 任务 ID（taskId） */
+  id: string;
+  /** 任务标题 */
+  subject: string;
+  /** 进行中描述（比 subject 更适合做进行中展示） */
+  activeForm?: string;
+  /** 状态 */
+  status: TaskItemStatus;
+  /** 依赖的任务 ID 列表 */
+  blockedBy?: string[];
+  /** 该行被 TaskUpdate 触过的次数 */
+  updateCount?: number;
+  /** 任务详情描述 */
+  description?: string;
+}
+
+/** 任务板内容块 - TaskCreate/Update/List 聚合展示（run 级单板，幂等合并） */
+export interface TaskBoardBlock {
+  type: 'task_board';
+  /** 板 ID（run 级唯一，首个 Task 工具 callId） */
+  id: string;
+  /** 任务列表 */
+  items: TaskBoardItem[];
+  /** 已完成数 */
+  completed: number;
+  /** 进行中数 */
+  inProgress: number;
+  /** 阻塞数 */
+  blocked: number;
+  /** 总数 */
+  total: number;
+  /** 更新时间戳 */
+  updatedAt: string;
+}
+
+/** ========================================
+ * ToolGroup 相关类型
+ * ======================================== */
+
+/** 工具组状态 */
+export type ToolGroupStatus = 'pending' | 'running' | 'completed' | 'partial' | 'failed';
+
+/** 工具组内的单个工具信息 */
+export interface ToolGroupItem {
+  /** 工具调用 ID */
+  id: string;
+  /** 工具名称 */
+  name: string;
+  /** 工具状态 */
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  /** 简短描述 */
+  summary?: string;
+  /** 工具输入（用于详情展示） */
+  input?: Record<string, unknown>;
+  /** 工具输出 */
+  output?: string;
+  /** 开始时间 */
+  startedAt: string;
+  /** 完成时间 */
+  completedAt?: string;
+  /** 执行时长（毫秒） */
+  duration?: number;
+}
+
+/** 工具组内容块 - 用于多个工具调用的聚合展示 */
+export interface ToolGroupBlock {
+  type: 'tool_group';
+  /** 工具组 ID */
+  id: string;
+  /** 包含的工具列表 */
+  tools: ToolGroupItem[];
+  /** 工具名称列表（用于快速统计） */
+  toolNames: string[];
+  /** 工具组整体状态 */
+  status: ToolGroupStatus;
+  /** 智能摘要 */
+  summary: string;
+  /** 开始时间 */
+  startedAt: string;
+  /** 完成时间 */
+  completedAt?: string;
+  /** 执行时长（毫秒） */
+  duration?: number;
+  /** 是否折叠 */
+  collapsed?: boolean;
+}
+
+/** ========================================
+ * PermissionRequest 相关类型
+ * ======================================== */
+
+/**
+ * 权限请求状态
+ * - pending: 待用户处理（仅在「实时且后端正在等待授权」时有效）
+ * - approved/denied: 用户已决策
+ * - expired: 已失效（上下文推进 / 历史会话恢复后归一化），不可再交互
+ */
+export type PermissionRequestStatus = 'pending' | 'approved' | 'denied' | 'expired';
+
+/**
+ * 授权范围
+ * - once: 仅本次（当前回合放行，下次同样操作仍询问）
+ * - session: 本会话（会话存活期内不再询问）
+ * - global: 全局永久（写入 ~/.claude/settings.json 的 permissions.allow）
+ */
+export type PermissionScope = 'once' | 'session' | 'global';
+
+/** 权限拒绝详情（内容块内） */
+export interface PermissionDenialBlock {
+  /** 工具名称 */
+  toolName: string;
+  /** 拒绝原因 */
+  reason: string;
+  /** 工具入参（来自后端 flatten 的 tool_input，按工具类型展示文件/命令/内容等） */
+  toolInput?: Record<string, unknown>;
+  /** 工具调用 ID（来自后端 tool_use_id） */
+  toolUseId?: string;
+  /** 逐项决策状态（支持单卡内多工具独立批准/拒绝；缺省视为 pending） */
+  status?: 'pending' | 'approved' | 'denied';
+  /** 该项批准时选择的授权范围 */
+  scope?: PermissionScope;
+  /** 额外信息 */
+  extra?: Record<string, unknown>;
+}
+
+/** 权限请求内容块 - 用于工具调用被拒绝时的确认界面 */
+export interface PermissionRequestBlock {
+  type: 'permission_request';
+  /** 请求 ID */
+  id: string;
+  /** 会话 ID */
+  sessionId: string;
+  /** 拒绝详情列表 */
+  denials: PermissionDenialBlock[];
+  /** 当前状态 */
+  status: PermissionRequestStatus;
+  /** 用户决策（批准/拒绝后的额外信息） */
+  decision?: {
+    /** 是否批准 */
+    approved: boolean;
+    /** 时间戳 */
+    timestamp: string;
+  };
+}
+
+/** 聊天消息类型标识符 */
+export type ChatMessageType = 'user' | 'assistant' | 'system' | 'tool' | 'tool_group';
+
+/** 基础消息字段 */
+interface BaseChatMessage {
+  id: string;
+  timestamp: string;
+}
+
+/** 用户消息 */
+export interface UserChatMessage extends BaseChatMessage {
+  type: 'user';
+  content: string;
+  /** 附件列表（用于显示） */
+  attachments?: Array<{
+    id: string;
+    type: 'image' | 'file';
+    fileName: string;
+    fileSize: number;
+    mimeType: string;
+  }>;
+}
+
+/** 助手消息 - 使用内容块数组 */
+export interface AssistantChatMessage extends BaseChatMessage {
+  type: 'assistant';
+  /** 生成此回复的 AI 引擎 */
+  engineId?: EngineId;
+  /** 内容块数组 - 实现工具穿插在文本中间 */
+  blocks: ContentBlock[];
+  /** 是否正在流式输出 */
+  isStreaming?: boolean;
+  /** 恢复自流式 checkpoint 的中断残留（应用关闭/异常中断时回复未完成）。
+   *  仅由恢复流程设置；UI 据此展示「回复中断」提示，不进入发给引擎的上下文。 */
+  interrupted?: boolean;
+  /** 兼容字段：完整文本内容（由 blocks 合成） */
+  content?: string;
+  /** 工具调用摘要（用于历史恢复和导出） */
+  toolSummary?: {
+    count: number;
+    names: string[];
+  };
+}
+
+/** 系统消息 */
+export interface SystemChatMessage extends BaseChatMessage {
+  type: 'system';
+  content: string;
+}
+
+/** 工具消息 - 单个工具调用的独立消息 */
+export interface ToolChatMessage {
+  id: string;
+  type: 'tool';
+  timestamp: string;
+  /** 工具唯一标识 */
+  toolId: string;
+  /** 工具名称 */
+  toolName: string;
+  /** 工具状态 */
+  status: ToolStatus;
+  /** 智能摘要（单行描述） */
+  summary: string;
+  /** 工具输入参数 */
+  input?: Record<string, unknown>;
+  /** 工具输出结果 */
+  output?: string;
+  /** 关联的助手消息 ID */
+  relatedMessageId?: string;
+  /** 开始时间 */
+  startedAt: string;
+  /** 完成时间 */
+  completedAt?: string;
+  /** 执行时长（毫秒） */
+  duration?: number;
+  /** 错误信息 */
+  error?: string;
+}
+
+/** 工具组消息 - 多个工具调用的聚合展示 */
+export interface ToolGroupChatMessage {
+  id: string;
+  type: 'tool_group';
+  timestamp: string;
+  /** 包含的工具 ID 列表 */
+  toolIds: string[];
+  /** 包含的工具名称列表 */
+  toolNames: string[];
+  /** 工具组状态 */
+  status: ToolStatus;
+  /** 智能摘要 */
+  summary: string;
+  /** 开始时间 */
+  startedAt: string;
+  /** 完成时间 */
+  completedAt?: string;
+  /** 执行时长（毫秒） */
+  duration?: number;
+}
+
+/** 联合聊天消息类型 */
+export type ChatMessage =
+  | UserChatMessage
+  | AssistantChatMessage
+  | SystemChatMessage
+  | ToolChatMessage
+  | ToolGroupChatMessage;
+
+/** 类型守卫：判断是否为工具消息 */
+export function isToolMessage(message: ChatMessage): message is ToolChatMessage {
+  return message.type === 'tool';
+}
+
+/** 类型守卫：判断是否为工具组消息 */
+export function isToolGroupMessage(message: ChatMessage): message is ToolGroupChatMessage {
+  return message.type === 'tool_group';
+}
+
+/** 类型守卫：判断是否为助手消息 */
+export function isAssistantMessage(message: ChatMessage): message is AssistantChatMessage {
+  return message.type === 'assistant';
+}
+
+/** 类型守卫：判断是否为用户消息 */
+export function isUserMessage(message: ChatMessage): message is UserChatMessage {
+  return message.type === 'user';
+}
+
+/** 类型守卫：判断是否为系统消息 */
+export function isSystemMessage(message: ChatMessage): message is SystemChatMessage {
+  return message.type === 'system';
+}
+
+/** 类型守卫：判断是否为文本块 */
+export function isTextBlock(block: ContentBlock): block is TextBlock {
+  return block.type === 'text';
+}
+
+/** 类型守卫：判断是否为思考块 */
+export function isThinkingBlock(block: ContentBlock): block is ThinkingBlock {
+  return block.type === 'thinking';
+}
+
+/** 类型守卫：判断是否为工具调用块 */
+export function isToolCallBlock(block: ContentBlock): block is ToolCallBlock {
+  return block.type === 'tool_call';
+}
+
+/** 类型守卫：判断是否为问题块 */
+export function isQuestionBlock(block: ContentBlock): block is QuestionBlock {
+  return block.type === 'question';
+}
+
+/** 类型守卫：判断是否为表单块 */
+export function isFormBlock(block: ContentBlock): block is FormBlock {
+  return block.type === 'form';
+}
+
+/** 类型守卫：判断是否为计划模式块 */
+export function isPlanModeBlock(block: ContentBlock): block is PlanModeBlock {
+  return block.type === 'plan_mode';
+}
+
+/** 类型守卫：判断是否为 Agent 运行块 */
+export function isAgentRunBlock(block: ContentBlock): block is AgentRunBlock {
+  return block.type === 'agent_run';
+}
+
+/** 类型守卫：判断是否为任务板块 */
+export function isTaskBoardBlock(block: ContentBlock): block is TaskBoardBlock {
+  return block.type === 'task_board';
+}
+
+/** 类型守卫：判断是否为工具组块 */
+export function isToolGroupBlock(block: ContentBlock): block is ToolGroupBlock {
+  return block.type === 'tool_group';
+}
+
+/** 类型守卫：判断是否为权限请求块 */
+export function isPermissionRequestBlock(block: ContentBlock): block is PermissionRequestBlock {
+  return block.type === 'permission_request';
+}
+
+/** 类型守卫：判断是否为插件自定义卡片块 */
+export function isPluginCardBlock(block: ContentBlock): block is PluginCardBlock {
+  return block.type === 'plugin_card';
+}

@@ -1,0 +1,157 @@
+/**
+ * AI 对话存储类型定义（JSONL 文件存储）
+ *
+ * 存储模型：一个会话 = 一个 .jsonl 文件，参考 Claude Code 的存储思路。
+ * 文件结构：
+ *   第 1 行：DialogMeta（会话主表信息：externalId、引擎、标题、工作区等）
+ *   第 2+ 行：DialogMessageLine（对话明细：每行一条完整 ChatMessage + 顺序号 seq）
+ *
+ * 设计要点：
+ * - 整存整取：每次保存全量覆写文件 → 幂等、不重复、天然保序
+ * - 无损存储：直接序列化完整 ChatMessage（含 blocks/attachments）→ 恢复时无信息损失
+ * - seq 顺序号：解析时按 seq 排序，即使文件行被意外重排也能恢复正确顺序
+ */
+
+import type { ChatMessage, EngineId } from './index'
+
+/** 当前 JSONL 格式版本（用于未来兼容性迁移）。v2：新增 preview（最后一条消息摘要）；v3：新增 tokenUsage（会话级 token 用量汇总） */
+export const DIALOG_FORMAT_VERSION = 3
+
+// ============================================================================
+// JSONL 行类型
+// ============================================================================
+
+/** 会话级 token 用量汇总（写入 JSONL meta 行，供跨会话聚合查询） */
+export interface TokenUsageSummary {
+  /** 输入 token */
+  input: number
+  /** 输出 token */
+  output: number
+  /** 缓存写入 token */
+  cacheCreation: number
+  /** 缓存读取 token */
+  cacheRead: number
+  /** 花费（美元） */
+  costUsd: number
+  /** 缓存命中率（成本口径 B：cacheRead / (input + cacheRead)），0~1；分母为 0 时为 0 */
+  cacheHitRate?: number
+  /** 按模型维度的用量（key=模型名，value=该模型用量） */
+  modelBreakdown?: Record<string, {
+    input: number
+    output: number
+    cacheCreation: number
+    cacheRead: number
+    costUsd: number
+  }>
+}
+
+/** 会话主表行（每个文件的第一行） */
+export interface DialogMeta {
+  /** 格式版本 */
+  v: number
+  /** 行类型判别 */
+  type: 'meta'
+  /** 外部会话 ID（= 前端 conversationId，文件名也用它） */
+  externalId: string
+  /** AI 引擎 */
+  engineId: EngineId
+  /** 会话标题 */
+  title: string
+  /** 工作区 ID */
+  workspaceId: string | null
+  /** 工作区路径（用于按项目过滤 / 恢复时定位工作区） */
+  workspacePath: string | null
+  /** 创建时间 ISO */
+  createdAt: string
+  /** 更新时间 ISO */
+  updatedAt: string
+  /** 消息数量 */
+  messageCount: number
+  // === 分析列 ===
+  /** 首条用户消息文本（用于摘要/搜索） */
+  firstUserText?: string
+  /** 最后一条消息摘要（续聊场景的列表预览，v2 新增） */
+  preview?: string
+  /** 标签（工具调用名称去重，用于分析/检索） */
+  tags?: string[]
+  /** 会话级 token 用量汇总（v3 新增，轮末保存时写入） */
+  tokenUsage?: TokenUsageSummary
+}
+
+/** 对话明细行（每条消息一行） */
+export interface DialogMessageLine {
+  /** 行类型判别 */
+  type: 'msg'
+  /** 顺序号（从 0 开始，保证消息顺序） */
+  seq: number
+  /** 完整消息对象（无损存储） */
+  message: ChatMessage
+}
+
+/** JSONL 文件中的任意一行 */
+export type DialogLine = DialogMeta | DialogMessageLine
+
+// ============================================================================
+// 业务对象
+// ============================================================================
+
+/** 完整对话记录（meta + 有序消息列表） */
+export interface DialogRecord {
+  meta: DialogMeta
+  messages: ChatMessage[]
+}
+
+/** 会话列表摘要（从 meta 行提取，不含完整消息） */
+export type DialogSummary = DialogMeta
+
+/** 保存会话的输入参数 */
+export interface SaveDialogInput {
+  externalId: string
+  engineId: EngineId
+  title: string
+  workspaceId?: string | null
+  workspacePath?: string | null
+  messages: ChatMessage[]
+  /**
+   * messages[0] 对应的磁盘 seq（尾部优先分页恢复的会话 > 0）。
+   * 整体覆写时磁盘上 seq < baseSeq 的更早消息会被保留合并，防止分页窗口覆写截断历史。
+   */
+  baseSeq?: number
+  /**
+   * 前缀兜底来源：引擎轮换 conversationId 后，新文件缺少 seq < baseSeq 的前缀时，
+   * 从该会话文件复制（通常为分页恢复时的原会话 ID）。
+   */
+  prefixSourceExternalId?: string
+  /** 会话级 token 用量汇总（轮末保存时写入 meta） */
+  tokenUsage?: import('./tokenUsage').TokenUsageSummary
+}
+
+/** 分页选项 */
+export interface ListOptions {
+  page?: number
+  pageSize?: number
+  sortOrder?: 'asc' | 'desc'
+}
+
+/** 分页结果 */
+export interface PaginatedResult<T> {
+  items: T[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  hasMore: boolean
+}
+
+/** 尾部优先分页读取结果（恢复/预览大会话时只取一页） */
+export interface DialogPageResult {
+  meta: DialogMeta
+  /** 本页消息（seq 升序） */
+  messages: ChatMessage[]
+  /** 本页最早一条消息的 seq（作为下一页 beforeSeq 游标）；空页为 null */
+  earliestSeq: number | null
+  /** 消息总数 */
+  total: number
+  /** 本页之前是否还有更早的消息 */
+  hasMore: boolean
+}

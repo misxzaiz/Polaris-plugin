@@ -1,0 +1,96 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@/utils/*": [
+        "src/shims/*"
+      ],
+      "@/hooks/*": [
+        "src/shims/hooks.ts"
+      ],
+      "@/services/*": [
+        "src/shims/services.ts"
+      ],
+      "@/services": [
+        "src/shims/services.ts"
+      ],
+      "@/stores/*": [
+        "src/shims/stores.ts"
+      ],
+      "@/stores": [
+        "src/shims/stores.ts"
+      ],
+      "@/types/*": [
+        "src/types/*"
+      ],
+      "@/types": [
+        "src/types/index.ts"
+      ],
+      "@/i18n": [
+        "src/shims/misc.ts"
+      ],
+      "@/ai-runtime": [
+        "src/host/ai-runtime/index.ts"
+      ],
+      "@/ai-runtime/*": [
+        "src/host/ai-runtime/*"
+      ],
+      "@/plugin-system": [
+        "src/shims/misc.ts"
+      ],
+      "@/plugin-system/*": [
+        "src/shims/misc.ts"
+      ],
+      "@/session-v2/*": [
+        "src/host/session-v2/*"
+      ],
+      "@/engines/*": [
+        "src/host/engines/*"
+      ],
+      "@/components/Chat/*": [
+        "src/host/Chat/*"
+      ],
+      "@/components/Common/*": [
+        "src/shims/misc.ts"
+      ],
+      "@/components/Workspace/*": [
+        "src/shims/misc.ts"
+      ],
+      "@/components/Diff/*": [
+        "src/shims/misc.ts"
+      ],
+      "@/components/Session/*": [
+        "src/shims/misc.ts"
+      ],
+      "@/mobile/*": [
+        "src/shims/misc.ts"
+      ],
+      "@/stores/conversationStore/types": [
+        "src/host/conversationStore/types.ts"
+      ],
+      "@/stores/conversationStore/sessionStoreManager": [
+        "src/host/conversationStore/sessionStoreManager.ts"
+      ],
+      "@/stores/conversationStore/useActiveSession": [
+        "src/host/conversationStore/useActiveSession.ts"
+      ],
+      "@/stores/conversationStore/conversationStoreUtils": [
+        "src/host/conversationStore/conversationStoreUtils.ts"
+      ],
+      "@/plugin-system/uiFrameTypes": [
+        "src/host/plugin-system/uiFrameTypes.ts"
+      ],
+      "@/plugin-system/chatCardRegistry": [
+        "src/host/plugin-system/chatCardRegistry.ts"
+      ],
+      "@/plugin-system/types": [
+        "src/host/plugin-system/types.ts"
+      ]
+    },
+    "noImplicitAny": false,
+    "strict": false
+  }
+}

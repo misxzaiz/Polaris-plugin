@@ -1,0 +1,301 @@
+/**
+ * 会话配置相关类型定义
+ *
+ * 用于 CLI Agent/Model/Effort/PermissionMode 选择
+ */
+
+/**
+ * CLI Agent 类型
+ *
+ * Agent 是 CLI 预设的"角色"，每个角色有不同的模型和人格配置
+ */
+export interface CLIAgent {
+  /** Agent ID */
+  id: string
+  /** Agent 显示名称 */
+  name: string
+  /** Agent 描述 */
+  description?: string
+  /** 默认模型 */
+  defaultModel?: string
+  /** Agent 类型标签 */
+  tags?: string[]
+}
+
+/**
+ * CLI 模型类型
+ */
+export interface CLIModel {
+  /** 模型 ID */
+  id: string
+  /** 模型显示名称 */
+  name: string
+  /** 模型描述 */
+  description?: string
+  /** 是否支持流式输出 */
+  supportsStreaming?: boolean
+  /** 上下文窗口大小 */
+  contextWindow?: number
+  /** 是否为默认模型 */
+  isDefault?: boolean
+}
+
+/**
+ * 供应商选择模式
+ *
+ * 状态栏「模型供应商」选择器的显式二态，配套后端 `ChatRequestOptions.profile_mode`：
+ * - `official`：强制官方端点，不用 Profile。
+ * - `profile`：使用指定 Profile（`modelProfileId` 承载 id）。
+ *
+ * 未设置（undefined）时走旧逻辑：有 modelProfileId → 该 Profile；否则官方。
+ *
+ * 历史 `'group'`（供应商分组路由）已随功能移除，持久化数据中的该值在
+ * normalizeSessionConfig 中被归一化为 `'profile'`（modelProfileId 为空即官方，语义安全）。
+ */
+export type ProfileMode = 'official' | 'profile'
+
+/**
+ * 努力级别
+ *
+ * 控制模型在回答时投入的努力程度
+ * 空字符串表示不传参数，使用 CLI 默认
+ */
+export type EffortLevel = '' | 'low' | 'medium' | 'high' | 'xhigh' | 'max'
+
+/**
+ * 权限模式
+ *
+ * 控制如何处理敏感操作
+ * - default: 需要确认敏感操作（默认）
+ * - auto: 自动批准安全操作
+ * - plan: 仅规划不执行
+ * - acceptEdits: 自动接受编辑
+ * - dontAsk: 拒绝危险操作
+ * - bypassPermissions: 跳过所有检查
+ */
+export type PermissionMode =
+  | ''
+  | 'default'
+  | 'auto'
+  | 'plan'
+  | 'acceptEdits'
+  | 'dontAsk'
+  | 'bypassPermissions'
+
+/**
+ * 会话运行时配置
+ *
+ * 这些配置影响 CLI 的行为，在会话级别生效
+ */
+export interface SessionRuntimeConfig {
+  /** 选择的 Agent */
+  agent?: string
+  /** 选择的模型 */
+  model?: string
+  /** 努力级别 */
+  effort?: EffortLevel
+  /** 权限模式 */
+  permissionMode?: PermissionMode
+  /** 模型 Profile ID（第三方端点配置） */
+  modelProfileId?: string
+  /** 供应商选择模式（official / profile；undefined = 跟随全局旧逻辑） */
+  profileMode?: ProfileMode
+}
+
+/**
+ * 会话配置默认值
+ */
+export const DEFAULT_SESSION_CONFIG: Required<SessionRuntimeConfig> = {
+  agent: '',
+  model: '',
+  effort: '',
+  permissionMode: 'bypassPermissions',
+  modelProfileId: '',
+  profileMode: 'profile', // 默认「指定 Profile」语义，保持旧行为（modelProfileId 为空即官方）
+}
+/**
+ * 预设 Agent 列表
+ *
+ * Claude CLI 内置 + 插件的 Agent 类型
+ * 注意: 这只是降级默认值，运行时应通过 cliInfoStore 动态获取
+ */
+export const PRESET_AGENTS: CLIAgent[] = [
+  // 空值选项：不传 agent 参数
+  {
+    id: '',
+    name: '不设置',
+    description: '不传 Agent 参数，使用 CLI 默认模式',
+    defaultModel: undefined,
+    tags: ['内置'],
+  },
+  // 内置 Agent
+  {
+    id: 'general-purpose',
+    name: '通用',
+    description: '默认通用助手',
+    defaultModel: undefined, // inherit
+    tags: ['内置'],
+  },
+  {
+    id: 'Explore',
+    name: '探索',
+    description: '快速探索代码库，查找文件和代码模式',
+    defaultModel: 'haiku',
+    tags: ['内置'],
+  },
+  {
+    id: 'Plan',
+    name: '规划',
+    description: '架构设计，规划实现方案',
+    defaultModel: undefined, // inherit
+    tags: ['内置'],
+  },
+  {
+    id: 'statusline-setup',
+    name: '状态栏设置',
+    description: '配置状态栏设置',
+    defaultModel: 'sonnet',
+    tags: ['内置'],
+  },
+  // 插件 Agent
+  {
+    id: 'pua:cto-p10',
+    name: 'PUA:CTO',
+    description: 'P10 CTO / 架构委员会模式，定义战略方向',
+    defaultModel: 'opus',
+    tags: ['插件', 'pua'],
+  },
+  {
+    id: 'pua:tech-lead-p9',
+    name: 'PUA:Tech Lead',
+    description: 'P9 Tech Lead 模式，任务拆解与团队管理',
+    defaultModel: undefined, // inherit
+    tags: ['插件', 'pua'],
+  },
+  {
+    id: 'pua:senior-engineer-p7',
+    name: 'PUA:Senior',
+    description: 'P7 骨干模式，方案驱动执行',
+    defaultModel: undefined, // inherit
+    tags: ['插件', 'pua'],
+  },
+  {
+    id: 'superpowers:code-reviewer',
+    name: '代码审查',
+    description: '代码审查，检查代码质量和最佳实践',
+    defaultModel: undefined, // inherit
+    tags: ['插件', 'superpowers'],
+  },
+]
+
+/**
+ * 预设模型列表
+ */
+export const PRESET_MODELS: CLIModel[] = [
+  {
+    id: '',
+    name: '不设置',
+    description: '不传模型参数，使用 Agent 默认或 CLI 默认模型',
+    isDefault: false,
+    supportsStreaming: true,
+  },
+  {
+    id: 'opus',
+    name: 'Opus',
+    description: '最强性能，适合复杂推理任务',
+    supportsStreaming: true,
+    contextWindow: 200000,
+  },
+  {
+    id: 'sonnet',
+    name: 'Sonnet',
+    description: '平衡性能和速度，适合大多数任务',
+    isDefault: true,
+    supportsStreaming: true,
+    contextWindow: 200000,
+  },
+  {
+    id: 'haiku',
+    name: 'Haiku',
+    description: '快速响应，适合简单任务',
+    supportsStreaming: true,
+    contextWindow: 200000,
+  },
+]
+
+/**
+ * 努力级别选项
+ */
+export const EFFORT_OPTIONS: Array<{ value: EffortLevel; label: string; description: string }> = [
+  {
+    value: '',
+    label: '不设置',
+    description: '不传努力参数，使用 CLI 默认级别',
+  },
+  {
+    value: 'max',
+    label: '最高',
+    description: '全力以赴，最高质量输出',
+  },
+  {
+    value: 'xhigh',
+    label: '极高',
+    description: '适合复杂编码和长程 Agent 任务，质量与成本更均衡',
+  },
+  {
+    value: 'high',
+    label: '高',
+    description: '深入思考，适合复杂问题',
+  },
+  {
+    value: 'medium',
+    label: '中',
+    description: '平衡速度和质量',
+  },
+  {
+    value: 'low',
+    label: '低',
+    description: '快速响应，适合简单问题',
+  },
+]
+
+/**
+ * 权限模式选项
+ */
+export const PERMISSION_MODE_OPTIONS: Array<{ value: PermissionMode | ''; label: string; description: string }> = [
+  {
+    value: '',
+    label: '不设置',
+    description: '不传权限参数，使用 CLI 默认权限策略',
+  },
+  {
+    value: 'default',
+    label: '默认',
+    description: '敏感操作需要确认，推荐日常使用',
+  },
+  {
+    value: 'auto',
+    label: '自动',
+    description: '安全操作自动批准，高风险操作仍会受限',
+  },
+  {
+    value: 'acceptEdits',
+    label: '接受编辑',
+    description: '自动接受文件编辑，但不跳过所有权限检查',
+  },
+  {
+    value: 'plan',
+    label: '规划',
+    description: '仅规划不执行',
+  },
+  {
+    value: 'dontAsk',
+    label: '拒绝危险',
+    description: '拒绝需要确认的危险操作',
+  },
+  {
+    value: 'bypassPermissions',
+    label: '跳过权限（高风险）',
+    description: '绕过所有权限检查，仅建议在隔离且无外网的沙箱中使用',
+  },
+]

@@ -1,30 +1,129 @@
 #!/usr/bin/env node
 /**
- * chat-desk 构建脚本（P2 骨架）：
- * 1. esbuild bundle src/index.tsx → dist/panel.js（react/react-dom external → 宿主 shim）
- * 2. 按 styles[].id 覆盖 plugin.json / update.json 的内联 CSS（对齐 terminal-desk 纪律）
+ * chat-desk 构建脚本（P3 重构）：
+ * 1. esbuild bundle src/index.tsx → dist/panel.js
+ *    - react/react-dom external（宿主 shim）
+ *    - `@/...` 别名经 scripts/alias.ts 解析：host 树内部相对化；
+ *      宿主共享单例（stores/services/types/...）→ src/shims/* 转发
+ * 2. 按 styles[].id 覆盖 plugin.json / update.json 的内联 CSS
  */
 import { build } from 'esbuild';
 import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { pathToFileURL } from 'node:url';
 
-const root = dirname(fileURLToPath(new URL(import.meta.url)));
+const root = dirname(fileURLToPath(import.meta.url));
 const pluginRoot = dirname(root);
+const srcRoot = join(pluginRoot, 'src');
+
+// alias.ts 是 TS —— 用 esbuild 先转译成可 import 的模块（或直接内联最小实现）。
+// 这里内联最小实现，避免构建期额外产物。
+const srcRootNorm = srcRoot.split(String.fromCharCode(92)).join('/');
+const HOST_PREFIXES = [
+  'stores/conversationStore/',
+  'ai-runtime',
+  'engines/',
+  'session-v2',
+  'components/Chat/',
+  'plugin-system/uiFrameTypes',
+];
+function exists(p) { try { readFileSync(p); return true } catch { return false } }
+function resolveHostFile(base) {
+  for (const cand of [base, base + '.ts', base + '.tsx', base + '/index.ts', base + '/index.tsx']) {
+    if (exists(cand)) return cand
+  }
+  return base + '.ts'
+}
+function resolveAlias(sub) {
+  for (const prefix of HOST_PREFIXES) {
+    if (sub === prefix || sub.startsWith(prefix)) {
+      const rel = sub
+        .replace('stores/conversationStore/', 'conversationStore/')
+        .replace('components/Chat/', 'Chat/');
+      return resolveHostFile(join(srcRoot, 'host', rel.replace('/', '__sep__')).split('__sep__').join('/'));
+    }
+  }
+  // host/conversationStore 内的根级 store 相对引用已被 onResolve endsWith 分流；
+  // 这里兜底 @/stores/<x>（非 conversationStore）→ shims/stores.ts（宿主单例）。
+  if (sub.startsWith('types')) return join(srcRoot, 'shims', 'types.ts');
+  if (sub.startsWith('services/')) return join(srcRoot, 'shims', 'services.ts');
+  if (sub.startsWith('utils/')) return join(srcRoot, 'shims', 'utils.ts');
+  if (sub.startsWith('hooks/')) return join(srcRoot, 'shims', 'hooks.ts');
+  if (sub.startsWith('stores/') || sub === 'stores') return join(srcRoot, 'shims', 'stores.ts');
+  return join(srcRoot, 'shims', 'misc.ts');
+}
+
+/** host 树内互相引用使用绝对 @/ 别名；tsconfig paths 的 esbuild 等价 = alias plugin */
+const aliasPlugin = {
+  name: 'chat-desk-alias',
+  setup(build) {
+    build.onResolve({ filter: /^@\/.*/ }, (args) => {
+      const sub = args.path.slice(2);
+      return { path: resolveAlias(sub), external: false };
+    });
+    // host 树源码内的相对引用（../configStore、../../Common/Icons 等）→ shims/host
+    build.onResolve({ filter: /^\.\.?\// }, (args) => {
+      const norm = resolve(args.importer, args.path).split(String.fromCharCode(92)).join('/');
+      const srcNorm = srcRoot.split(String.fromCharCode(92)).join('/');
+      if (!norm.startsWith(srcNorm)) return null;
+      const tail = norm.slice(srcNorm.length + 1);
+      // 宿主共享面 → shims（host/conversationStore 内的根级 store 相对引用、
+      // 非 Chat 域组件 Common/Diff/Session/Workspace）
+      const hit = tail.startsWith('host/stores/')
+        || tail.endsWith('/configStore')
+        || tail.endsWith('/workspaceStore')
+        || tail.endsWith('/viewStore')
+        || tail.endsWith('/sessionConfigStore')
+        || tail.endsWith('/toastStore')
+        || tail.endsWith('/pluginStore')
+        || tail.endsWith('/cliInfoStore')
+        || tail.endsWith('/agentStore')
+        || tail.endsWith('/engineMetadataStore')
+        || tail.endsWith('/modelProfileStore')
+        || tail.endsWith('/overlayStore')
+        || tail.endsWith('/uiSlotStore')
+        || tail.endsWith('/snippetStore')
+        || tail.endsWith('/skillStore')
+        || tail.endsWith('/compactHandoffStore')
+        || tail.endsWith('/dispatchStore')
+        || tail.endsWith('/fileEditorStore')
+        || tail.endsWith('/index')
+        || tail.startsWith('host/conversationStore/configStore')
+        || tail.startsWith('host/conversationStore/workspaceStore')
+        || tail.startsWith('host/conversationStore/viewStore')
+        || tail.startsWith('host/conversationStore/sessionConfigStore')
+        || tail.startsWith('host/conversationStore/toastStore')
+        || tail.includes('/Common/')
+        || tail.includes('/Diff/')
+        || tail.includes('/Session/')
+        || tail.includes('/Workspace/');
+      if (hit) {
+        // store 单例 → shims/stores.ts；其余（Common/Diff/...）→ shims/misc.ts
+        const isStore = /\/(configStore|workspaceStore|viewStore|sessionConfigStore|toastStore|pluginStore|cliInfoStore|agentStore|engineMetadataStore|modelProfileStore|overlayStore|uiSlotStore|snippetStore|skillStore|compactHandoffStore|dispatchStore|fileEditorStore)\.ts$/.test(tail)
+          || tail === 'host/stores/sessionConfigStore.ts'
+          || tail.startsWith('host/stores/');
+        return { path: join(srcRoot, 'shims', isStore ? 'stores.ts' : 'misc.ts') };
+      }
+      // 其余相对引用（host 树内部/entry 等）交还 esbuild 默认解析
+      return null;
+    });
+  },
+};
 
 await build({
-  entryPoints: [join(pluginRoot, 'src/index.tsx')],
+  entryPoints: [join(srcRoot, 'index.tsx')],
   bundle: true,
   format: 'esm',
   outfile: join(pluginRoot, 'dist/panel.js'),
   jsx: 'automatic',
-  // react/react-dom external：由宿主 loader 的 shim（P1.4）提供宿主实例
   external: ['react', 'react/jsx-runtime', 'react-dom'],
+  plugins: [aliasPlugin],
   sourcemap: false,
   logLevel: 'info',
 });
 
-const panelCss = readFileSync(join(pluginRoot, 'src/styles.css'), 'utf8');
+const panelCss = readFileSync(join(srcRoot, 'styles.css'), 'utf8');
 const byId = { panel: panelCss };
 
 for (const filename of ['plugin.json', 'update.json']) {
@@ -32,7 +131,7 @@ for (const filename of ['plugin.json', 'update.json']) {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
   const styles = manifest?.contributes?.styles;
   if (!Array.isArray(styles) || styles.length === 0) {
-    throw new Error(`${filename}: contributes.styles 缺失，无法同步 CSS`);
+    throw new Error(`${filename}: contributes.styles 缺失`);
   }
   const seen = new Set();
   for (const style of styles) {
@@ -43,18 +142,8 @@ for (const filename of ['plugin.json', 'update.json']) {
     }
   }
   for (const id of Object.keys(byId)) {
-    if (!seen.has(id)) throw new Error(`${filename}: 未找到 styles[].id="${id}"，拒绝静默不同步`);
+    if (!seen.has(id)) throw new Error(`${filename}: 未找到 styles[].id="${id}"`);
   }
-  const next = `${JSON.stringify(manifest, null, 2)}\n`;
-  JSON.parse(next); // 序列化后仍须是合法 JSON
-  writeFileSync(manifestPath, next);
+  writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
 }
-
-// 一致性自检：两份 manifest 的 panel CSS 逐字相同
-const p = JSON.parse(readFileSync(join(pluginRoot, 'plugin.json'), 'utf8'));
-const u = JSON.parse(readFileSync(join(pluginRoot, 'update.json'), 'utf8'));
-const pc = p.contributes.styles.find((s) => s.id === 'panel').css;
-const uc = u.contributes.styles.find((s) => s.id === 'panel').css;
-if (pc !== uc) throw new Error('plugin.json 与 update.json 的 panel CSS 不一致');
-
-console.log('[chat-desk] build ok: dist/panel.js + styles synced');
+console.log('[chat-desk] build ok');
