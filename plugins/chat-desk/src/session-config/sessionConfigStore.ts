@@ -1,0 +1,172 @@
+/**
+ * 会话配置 Store
+ *
+ * 管理会话级别的 CLI 配置：Agent、Model、Effort、PermissionMode
+ */
+
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import type {
+  SessionRuntimeConfig,
+  EffortLevel,
+  PermissionMode,
+  ProfileMode,
+} from './sessionConfig'
+import { DEFAULT_SESSION_CONFIG } from './sessionConfig'
+
+/**
+ * 清洗会话配置：剔除废弃值，并用默认值补全缺失字段。
+ * 用于 persist 反序列化（merge）时兜底，兼容旧版本持久化数据。
+ * - effort='max' → 回退默认（'max' 已废弃）
+ * - profileMode='group'（供应商分组路由已移除）→ 归一化为 'profile'（modelProfileId 为空即官方）
+ * - permissionMode 保留持久化值（默认值已为 bypassPermissions，见 DEFAULT_SESSION_CONFIG）
+ */
+export function normalizeSessionConfig(config: SessionRuntimeConfig | undefined): SessionRuntimeConfig {
+  const c = config ?? {}
+  // 持久化数据可能含已移除的 'group'（历史遗留），归一化为 'profile'（modelProfileId 为空即官方）。
+  const profileMode: ProfileMode = (c.profileMode as ProfileMode | 'group' | undefined) === 'group'
+    ? 'profile'
+    : (c.profileMode ?? DEFAULT_SESSION_CONFIG.profileMode)
+  return {
+    ...DEFAULT_SESSION_CONFIG,
+    ...c,
+    effort: c.effort === 'max' ? DEFAULT_SESSION_CONFIG.effort : c.effort ?? DEFAULT_SESSION_CONFIG.effort,
+    permissionMode: c.permissionMode ?? DEFAULT_SESSION_CONFIG.permissionMode,
+    // 旧持久化数据无 profileMode：默认「profile」语义（modelProfileId 为空即官方，与旧行为完全一致）。
+    profileMode,
+  }
+}
+
+interface SessionConfigState {
+  /** 当前会话配置 */
+  config: SessionRuntimeConfig
+
+  // Actions
+  setAgent: (agent: string) => void
+  setModel: (model: string) => void
+  setEffort: (effort: EffortLevel) => void
+  setPermissionMode: (mode: PermissionMode) => void
+  setModelProfileId: (profileId: string) => void
+  setProfileMode: (mode: ProfileMode) => void
+  setConfig: (config: Partial<SessionRuntimeConfig>) => void
+  resetConfig: () => void
+}
+
+/**
+ * 会话配置 Store
+ *
+ * 使用 persist 中间件，配置会保存到 localStorage
+ */
+export const useSessionConfig = create<SessionConfigState>()(
+  persist(
+    (set) => ({
+      config: { ...DEFAULT_SESSION_CONFIG },
+
+      setAgent: (agent) =>
+        set((state) => ({
+          config: { ...state.config, agent },
+        })),
+
+      setModel: (model) =>
+        set((state) => ({
+          config: { ...state.config, model },
+        })),
+
+      setEffort: (effort) =>
+        set((state) => ({
+          config: { ...state.config, effort },
+        })),
+
+      setPermissionMode: (permissionMode) =>
+        set((state) => ({
+          config: { ...state.config, permissionMode },
+        })),
+
+      setModelProfileId: (modelProfileId) =>
+        set((state) => {
+          // 空串 / 未传 = 仅清空单 Profile，不改变当前模式（保持 official 语义）。
+          if (!modelProfileId) {
+            return { config: { ...state.config, modelProfileId: '' } }
+          }
+          // 非空 = 选择单 Profile，同步把模式置为 profile（互斥清理，避免「official 却残留 profileId」穿帮）
+          return { config: { ...state.config, modelProfileId, profileMode: 'profile' } }
+        }),
+
+      /** 设置供应商模式（official/profile）。
+       *  mode=official 时清空 modelProfileId（官方不绑定单 Profile）；
+       *  mode=profile 时保留 modelProfileId（由调用方先 setModelProfileId 或随后设置）。
+       */
+      setProfileMode: (mode) =>
+        set((state) => {
+          const next: SessionRuntimeConfig = { ...state.config, profileMode: mode }
+          if (mode === 'official') {
+            next.modelProfileId = ''
+          }
+          return { config: next }
+        }),
+
+      setConfig: (newConfig) =>
+        set((state) => ({
+          config: { ...state.config, ...newConfig },
+        })),
+
+      resetConfig: () =>
+        set({ config: { ...DEFAULT_SESSION_CONFIG } }),
+    }),
+    {
+      name: 'polaris-session-config',
+      // 持久化本机会话偏好：agent/model/effort/permissionMode + 供应商二态
+      // （modelProfileId/profileMode）。
+      //
+      // 背景：两字段此前刻意不持久化（派生自 configStore 后端 config.json，由 applyConfig
+      // 注入），但代价是「状态栏手动切换」只存在于内存镜像，刷新即丢。方案 A 将其加回，
+      // 让状态栏手动选择（Profile/官方）刷新后保留。
+      //
+      // 与后端 config.json 的双写一致性由两条路径保证：
+      // - 设置页激活（ModelProviderTab.handleActivate）双向同步：写镜像 + 写后端 activeModelProfileId
+      // - 状态栏切换（SessionConfigSelector.handleSelect）写镜像 + 会话 metadata
+      // 两者都更新镜像，镜像始终反映「最近的全局默认或手动选择」。
+      partialize: (state) => ({
+        config: {
+          agent: state.config.agent,
+          model: state.config.model,
+          effort: state.config.effort,
+          permissionMode: state.config.permissionMode,
+          modelProfileId: state.config.modelProfileId,
+          profileMode: state.config.profileMode,
+        }
+      }),
+      // 反序列化时清洗废弃值（effort='max' / permissionMode='bypassPermissions'），
+      // 并用 DEFAULT_SESSION_CONFIG 补全缺失字段（兼容旧版本持久化数据）。
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as { config?: SessionRuntimeConfig } | undefined
+        return {
+          ...currentState,
+          config: normalizeSessionConfig(persisted?.config),
+        }
+      },
+    }
+  )
+)
+
+/**
+ * 获取会话配置（用于传递给后端）
+ */
+export function getSessionConfig(): SessionRuntimeConfig {
+  return useSessionConfig.getState().config
+}
+
+/**
+ * 检查是否有非默认配置
+ */
+export function hasCustomConfig(): boolean {
+  const config = useSessionConfig.getState().config
+  return (
+    config.agent !== DEFAULT_SESSION_CONFIG.agent ||
+    config.model !== DEFAULT_SESSION_CONFIG.model ||
+    config.effort !== DEFAULT_SESSION_CONFIG.effort ||
+    config.permissionMode !== DEFAULT_SESSION_CONFIG.permissionMode ||
+    Boolean(config.modelProfileId && config.modelProfileId !== DEFAULT_SESSION_CONFIG.modelProfileId) ||
+    (config.profileMode ?? 'profile') !== DEFAULT_SESSION_CONFIG.profileMode
+  )
+}

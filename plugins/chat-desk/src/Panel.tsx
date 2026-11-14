@@ -8,7 +8,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chatDeskStore, type ChatDeskStore, type SessionState } from './store';
 import type { ChatMessage } from './types';
+import { SessionConfigSelector } from './session-config/SessionConfigSelector';
+import { useSessionConfig } from './session-config/sessionConfigStore';
+// sessionConfigStore 内部 create 来自 zustand（v5 无 .js 后缀问题）
+import { setSessionConfigHostDeps, fetchHostConfig } from './session-config/hostDeps';
 import { aiChatDispatch } from './bridge';
+
+/** 全局会话配置（persist localStorage 'polaris-session-config'；插件内独立实例） */
+const sessionConfigStore = useSessionConfig;
 
 interface PanelProps {
   pluginId?: string;
@@ -121,6 +128,8 @@ export default function ChatDeskPanel(_props: PanelProps) {
   const [state, setState] = useState(() => chatDeskStore.getState());
   const [input, setInput] = useState('');
   const [showSessions, setShowSessions] = useState(true);
+  const [hostConfig, setHostConfig] = useState<{ defaultEngine?: string } | null>(null);
+  const hostConfigRef = useRef<{ defaultEngine?: string } | null>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
 
   // vanilla store 订阅（面板卸载时退订）
@@ -137,6 +146,33 @@ export default function ChatDeskPanel(_props: PanelProps) {
     if (chatDeskStore.getState().sessions.size === 0) {
       chatDeskStore.getState().createSession({ title: '新对话' });
     }
+    // P3.b：会话配置选择器宿主依赖注入
+    // - getConfig：宿主 config（cap.config get full；defaultEngine/activeModelProfileId）
+    // - getActiveSessionMeta：P3 过渡期从本插件 store 取活跃会话（engineId 等）——
+    //   chat-desk 自己的会话自己持有；宿主 conversationStore 会话在 P3.d 收敛前不混读
+    // - writeBackSessionOverrides：写回本插件 store 的会话级覆盖（engineId/profile/agent）
+    void fetchHostConfig().then((cfg) => {
+      setHostConfig(cfg as { defaultEngine?: string } | null);
+    });
+    setSessionConfigHostDeps({
+      getConfig: () => hostConfigRef.current,
+      getActiveSessionMeta: () => {
+        const st = chatDeskStore.getState();
+        const sid = st.activeSessionId;
+        if (!sid) return null;
+        const s = st.sessions.get(sid);
+        if (!s) return null;
+        return { sessionId: sid, engineId: s.engineId };
+      },
+      writeBackSessionOverrides: (sessionId, patch) => {
+        const st = chatDeskStore.getState();
+        const s = st.sessions.get(sessionId);
+        if (!s) return;
+        const sessions = new Map(st.sessions);
+        sessions.set(sessionId, { ...s, title: patch.agent !== undefined ? s.title : s.title });
+        chatDeskStore.setState({ sessions });
+      },
+    });
     return () => {
       chatDeskStore.getState().dispose();
     };

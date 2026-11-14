@@ -422,6 +422,349 @@ var chatDeskStore = createStore()((set, get) => ({
   }
 }));
 
+// node_modules/zustand/esm/react.mjs
+import React from "react";
+var identity = (arg) => arg;
+function useStore(api, selector = identity) {
+  const slice = React.useSyncExternalStore(
+    api.subscribe,
+    React.useCallback(() => selector(api.getState()), [api, selector]),
+    () => selector(api.getInitialState())
+  );
+  React.useDebugValue(slice);
+  return slice;
+}
+var createImpl = (createState) => {
+  const api = createStore(createState);
+  const useBoundStore = (selector) => useStore(api, selector);
+  Object.assign(useBoundStore, api);
+  return useBoundStore;
+};
+var create = (createState) => createState ? createImpl(createState) : createImpl;
+
+// node_modules/zustand/esm/middleware.mjs
+function createJSONStorage(getStorage, options) {
+  let storage;
+  try {
+    storage = getStorage();
+  } catch (e) {
+    return;
+  }
+  const persistStorage = {
+    getItem: (name) => {
+      var _a;
+      const parse = (str2) => {
+        if (str2 === null) {
+          return null;
+        }
+        return JSON.parse(str2, options == null ? void 0 : options.reviver);
+      };
+      const str = (_a = storage.getItem(name)) != null ? _a : null;
+      if (isPromiseLike(str)) {
+        return str.then(parse);
+      }
+      return parse(str);
+    },
+    setItem: (name, newValue) => storage.setItem(name, JSON.stringify(newValue, options == null ? void 0 : options.replacer)),
+    removeItem: (name) => storage.removeItem(name)
+  };
+  return persistStorage;
+}
+var isPromiseLike = (value) => typeof (value == null ? void 0 : value.then) === "function";
+var toSyncThenable = (value) => ({
+  then(onFulfilled) {
+    return onFulfilled ? toThenable(onFulfilled)(value) : this;
+  }
+});
+var toThenable = (fn) => (input) => {
+  try {
+    const result = fn(input);
+    return isPromiseLike(result) ? result : toSyncThenable(result);
+  } catch (error) {
+    return {
+      then(_onFulfilled, onRejected) {
+        return onRejected ? toThenable(onRejected)(error) : this;
+      }
+    };
+  }
+};
+var persistImpl = (config, baseOptions) => (set, get, api) => {
+  let options = {
+    storage: createJSONStorage(() => window.localStorage),
+    partialize: (state) => state,
+    version: 0,
+    merge: (persistedState, currentState) => ({
+      ...currentState,
+      ...persistedState
+    }),
+    ...baseOptions
+  };
+  let hasHydrated = false;
+  let hydrationVersion = 0;
+  const hydrationListeners = /* @__PURE__ */ new Set();
+  const finishHydrationListeners = /* @__PURE__ */ new Set();
+  let storage = options.storage;
+  if (!storage) {
+    return config(
+      (...args) => {
+        console.warn(
+          `[zustand persist middleware] Unable to update item '${options.name}', the given storage is currently unavailable.`
+        );
+        set(...args);
+      },
+      get,
+      api
+    );
+  }
+  const setItem = () => {
+    const state = options.partialize({ ...get() });
+    return storage.setItem(options.name, {
+      state,
+      version: options.version
+    });
+  };
+  const savedSetState = api.setState;
+  api.setState = (...args) => {
+    savedSetState(...args);
+    return setItem();
+  };
+  const configResult = config(
+    (...args) => {
+      set(...args);
+      return setItem();
+    },
+    get,
+    api
+  );
+  api.getInitialState = () => configResult;
+  let stateFromStorage;
+  const hydrate = () => {
+    var _a, _b;
+    if (!storage) return;
+    const currentVersion = ++hydrationVersion;
+    hasHydrated = false;
+    hydrationListeners.forEach((cb) => {
+      var _a2;
+      return cb((_a2 = get()) != null ? _a2 : configResult);
+    });
+    const postRehydrationCallback = ((_b = options.onRehydrateStorage) == null ? void 0 : _b.call(options, (_a = get()) != null ? _a : configResult)) || void 0;
+    return toThenable(storage.getItem.bind(storage))(options.name).then((deserializedStorageValue) => {
+      if (deserializedStorageValue) {
+        if (typeof deserializedStorageValue.version === "number" && deserializedStorageValue.version !== options.version) {
+          if (options.migrate) {
+            const migration = options.migrate(
+              deserializedStorageValue.state,
+              deserializedStorageValue.version
+            );
+            if (isPromiseLike(migration)) {
+              return migration.then((result) => [true, result]);
+            }
+            return [true, migration];
+          }
+          console.error(
+            `State loaded from storage couldn't be migrated since no migrate function was provided`
+          );
+        } else {
+          return [false, deserializedStorageValue.state];
+        }
+      }
+      return [false, void 0];
+    }).then((migrationResult) => {
+      var _a2;
+      if (currentVersion !== hydrationVersion) {
+        return;
+      }
+      const [migrated, migratedState] = migrationResult;
+      stateFromStorage = options.merge(
+        migratedState,
+        (_a2 = get()) != null ? _a2 : configResult
+      );
+      set(stateFromStorage, true);
+      if (migrated) {
+        return setItem();
+      }
+    }).then(() => {
+      if (currentVersion !== hydrationVersion) {
+        return;
+      }
+      postRehydrationCallback == null ? void 0 : postRehydrationCallback(get(), void 0);
+      stateFromStorage = get();
+      hasHydrated = true;
+      finishHydrationListeners.forEach((cb) => cb(stateFromStorage));
+    }).then(
+      () => void 0,
+      (e) => {
+        if (currentVersion !== hydrationVersion) {
+          return;
+        }
+        postRehydrationCallback == null ? void 0 : postRehydrationCallback(void 0, e);
+      }
+    );
+  };
+  api.persist = {
+    setOptions: (newOptions) => {
+      options = {
+        ...options,
+        ...newOptions
+      };
+      if (newOptions.storage) {
+        storage = newOptions.storage;
+      }
+    },
+    clearStorage: () => {
+      ++hydrationVersion;
+      storage == null ? void 0 : storage.removeItem(options.name);
+    },
+    getOptions: () => options,
+    rehydrate: () => {
+      try {
+        return Promise.resolve(hydrate());
+      } catch (error) {
+        return Promise.reject(error);
+      }
+    },
+    hasHydrated: () => hasHydrated,
+    onHydrate: (cb) => {
+      hydrationListeners.add(cb);
+      return () => {
+        hydrationListeners.delete(cb);
+      };
+    },
+    onFinishHydration: (cb) => {
+      finishHydrationListeners.add(cb);
+      return () => {
+        finishHydrationListeners.delete(cb);
+      };
+    }
+  };
+  if (!options.skipHydration) {
+    hydrate();
+  }
+  return stateFromStorage || configResult;
+};
+var persist = persistImpl;
+
+// src/session-config/sessionConfig.ts
+var DEFAULT_SESSION_CONFIG = {
+  agent: "",
+  model: "",
+  effort: "",
+  permissionMode: "bypassPermissions",
+  modelProfileId: "",
+  profileMode: "profile"
+  // 默认「指定 Profile」语义，保持旧行为（modelProfileId 为空即官方）
+};
+
+// src/session-config/sessionConfigStore.ts
+function normalizeSessionConfig(config) {
+  const c = config ?? {};
+  const profileMode = c.profileMode === "group" ? "profile" : c.profileMode ?? DEFAULT_SESSION_CONFIG.profileMode;
+  return {
+    ...DEFAULT_SESSION_CONFIG,
+    ...c,
+    effort: c.effort === "max" ? DEFAULT_SESSION_CONFIG.effort : c.effort ?? DEFAULT_SESSION_CONFIG.effort,
+    permissionMode: c.permissionMode ?? DEFAULT_SESSION_CONFIG.permissionMode,
+    // 旧持久化数据无 profileMode：默认「profile」语义（modelProfileId 为空即官方，与旧行为完全一致）。
+    profileMode
+  };
+}
+var useSessionConfig = create()(
+  persist(
+    (set) => ({
+      config: { ...DEFAULT_SESSION_CONFIG },
+      setAgent: (agent) => set((state) => ({
+        config: { ...state.config, agent }
+      })),
+      setModel: (model) => set((state) => ({
+        config: { ...state.config, model }
+      })),
+      setEffort: (effort) => set((state) => ({
+        config: { ...state.config, effort }
+      })),
+      setPermissionMode: (permissionMode) => set((state) => ({
+        config: { ...state.config, permissionMode }
+      })),
+      setModelProfileId: (modelProfileId) => set((state) => {
+        if (!modelProfileId) {
+          return { config: { ...state.config, modelProfileId: "" } };
+        }
+        return { config: { ...state.config, modelProfileId, profileMode: "profile" } };
+      }),
+      /** 设置供应商模式（official/profile）。
+       *  mode=official 时清空 modelProfileId（官方不绑定单 Profile）；
+       *  mode=profile 时保留 modelProfileId（由调用方先 setModelProfileId 或随后设置）。
+       */
+      setProfileMode: (mode) => set((state) => {
+        const next = { ...state.config, profileMode: mode };
+        if (mode === "official") {
+          next.modelProfileId = "";
+        }
+        return { config: next };
+      }),
+      setConfig: (newConfig) => set((state) => ({
+        config: { ...state.config, ...newConfig }
+      })),
+      resetConfig: () => set({ config: { ...DEFAULT_SESSION_CONFIG } })
+    }),
+    {
+      name: "polaris-session-config",
+      // 持久化本机会话偏好：agent/model/effort/permissionMode + 供应商二态
+      // （modelProfileId/profileMode）。
+      //
+      // 背景：两字段此前刻意不持久化（派生自 configStore 后端 config.json，由 applyConfig
+      // 注入），但代价是「状态栏手动切换」只存在于内存镜像，刷新即丢。方案 A 将其加回，
+      // 让状态栏手动选择（Profile/官方）刷新后保留。
+      //
+      // 与后端 config.json 的双写一致性由两条路径保证：
+      // - 设置页激活（ModelProviderTab.handleActivate）双向同步：写镜像 + 写后端 activeModelProfileId
+      // - 状态栏切换（SessionConfigSelector.handleSelect）写镜像 + 会话 metadata
+      // 两者都更新镜像，镜像始终反映「最近的全局默认或手动选择」。
+      partialize: (state) => ({
+        config: {
+          agent: state.config.agent,
+          model: state.config.model,
+          effort: state.config.effort,
+          permissionMode: state.config.permissionMode,
+          modelProfileId: state.config.modelProfileId,
+          profileMode: state.config.profileMode
+        }
+      }),
+      // 反序列化时清洗废弃值（effort='max' / permissionMode='bypassPermissions'），
+      // 并用 DEFAULT_SESSION_CONFIG 补全缺失字段（兼容旧版本持久化数据）。
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState;
+        return {
+          ...currentState,
+          config: normalizeSessionConfig(persisted?.config)
+        };
+      }
+    }
+  )
+);
+
+// src/session-config/hostDeps.ts
+var deps = {
+  getConfig: () => null,
+  getActiveSessionMeta: () => null,
+  writeBackSessionOverrides: () => {
+  }
+};
+function setSessionConfigHostDeps(next) {
+  deps = { ...deps, ...next };
+}
+async function fetchHostConfig() {
+  try {
+    const invoke = getHostInvoke();
+    const res = await invoke("router_dispatch", {
+      req: { target: "cap.config", payload: { action: "get", section: "full" } }
+    });
+    if (!res?.ok) return null;
+    return res.result ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // src/Panel.tsx
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 function formatTime(ts) {
@@ -511,6 +854,8 @@ function ChatDeskPanel(_props) {
   const [state, setState] = useState(() => chatDeskStore.getState());
   const [input, setInput] = useState("");
   const [showSessions, setShowSessions] = useState(true);
+  const [hostConfig, setHostConfig] = useState(null);
+  const hostConfigRef = useRef(null);
   const msgsRef = useRef(null);
   useEffect(() => {
     const unsub = chatDeskStore.subscribe(() => setState({ ...chatDeskStore.getState() }));
@@ -523,6 +868,28 @@ function ChatDeskPanel(_props) {
     if (chatDeskStore.getState().sessions.size === 0) {
       chatDeskStore.getState().createSession({ title: "\u65B0\u5BF9\u8BDD" });
     }
+    void fetchHostConfig().then((cfg) => {
+      setHostConfig(cfg);
+    });
+    setSessionConfigHostDeps({
+      getConfig: () => hostConfigRef.current,
+      getActiveSessionMeta: () => {
+        const st = chatDeskStore.getState();
+        const sid = st.activeSessionId;
+        if (!sid) return null;
+        const s = st.sessions.get(sid);
+        if (!s) return null;
+        return { sessionId: sid, engineId: s.engineId };
+      },
+      writeBackSessionOverrides: (sessionId, patch) => {
+        const st = chatDeskStore.getState();
+        const s = st.sessions.get(sessionId);
+        if (!s) return;
+        const sessions = new Map(st.sessions);
+        sessions.set(sessionId, { ...s, title: patch.agent !== void 0 ? s.title : s.title });
+        chatDeskStore.setState({ sessions });
+      }
+    });
     return () => {
       chatDeskStore.getState().dispose();
     };
