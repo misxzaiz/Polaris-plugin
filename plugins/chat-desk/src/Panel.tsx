@@ -15,7 +15,6 @@ import { setSessionConfigHostDeps, fetchHostConfig } from './session-config/host
 import { aiChatDispatch } from './bridge';
 
 /** 全局会话配置（persist localStorage 'polaris-session-config'；插件内独立实例） */
-const sessionConfigStore = useSessionConfig;
 
 interface PanelProps {
   pluginId?: string;
@@ -131,6 +130,8 @@ export default function ChatDeskPanel(_props: PanelProps) {
   const [hostConfig, setHostConfig] = useState<{ defaultEngine?: string } | null>(null);
   const hostConfigRef = useRef<{ defaultEngine?: string } | null>(null);
   const msgsRef = useRef<HTMLDivElement>(null);
+  // 全局会话配置（选择器受控值）；react store 用 useSyncExternalStore 订阅
+  const sessionConfigState = useSessionConfig((s) => s);
 
   // vanilla store 订阅（面板卸载时退订）
   useEffect(() => {
@@ -232,6 +233,15 @@ export default function ChatDeskPanel(_props: PanelProps) {
         <button type="button" className="cd-btn" onClick={handleNewSession}>
           + 新会话
         </button>
+      </div>
+
+      {/* P3.b：会话配置选择器（engine/model/effort/permission/agent；写穿透到本插件会话覆盖） */}
+      <div className="cd-configrow">
+        <SessionConfigSelector
+          config={sessionConfigState.config}
+          onChange={(next) => useSessionConfig.getState().setConfig(next)}
+          disabled={active?.isStreaming}
+        />
       </div>
 
       {showSessions && (
