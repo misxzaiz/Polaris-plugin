@@ -175,6 +175,10 @@ export function useSessionMetadata(sessionId: string | null): any {
 export { coreStore }
 
 // ── 会话域工具函数（宿主 conversationStoreUtils / modelProfileStore 同源转发）──
+export function getActiveModelProfile(): any {
+  const s = coreStore<Record<string, any>>('useModelProfileStore')
+  return s?.getActiveModelProfile?.() ?? null
+}
 export function resolveEffectiveProfileId(...args: unknown[]): any {
   return (_localUtils as unknown as Record<string, AnyFn>).resolveEffectiveProfileId(...args)
 }

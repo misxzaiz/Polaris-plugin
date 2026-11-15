@@ -26,17 +26,19 @@ function lazyObj(name: string): Record<string, unknown> {
 export function invoke<T = unknown>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   return (coreService<{ invoke: (c: string, a?: Record<string, unknown>) => Promise<unknown> }>('transport').invoke)(cmd, args) as Promise<T>
 }
-export function listen<T = unknown>(event: string, handler: (e: { payload: T }) => void): Promise<() => void> {
-  return (coreService<{ listen: (e: string, h: (ev: { payload: unknown }) => void) => Promise<() => void> }>('transport').listen)(event, handler as (ev: { payload: unknown }) => void) as Promise<() => void>
+export function listen<T = unknown>(event: string, handler: (p: T) => void): Promise<() => void> {
+  return (coreService<{ listen: (e: string, h: (p: unknown) => void) => Promise<() => void> }>('transport').listen)(event, handler as (p: unknown) => void) as Promise<() => void>
 }
 export const emit: AnyFn = (...args) => (coreService<{ emit: AnyFn }>('transport').emit)(...args)
+export const manualReconnect: AnyFn = (...args) => (coreService<{ manualReconnect: AnyFn }>('transport').manualReconnect)(...args)
 export const currentMode: string = coreService<{ currentMode: string }>('transport').currentMode
 
 // ── aiChatDispatch ──
 export function aiChatDispatch<T = unknown>(payload: Record<string, unknown>): Promise<T> {
   return (coreService<{ aiChatDispatch: (p: Record<string, unknown>) => Promise<unknown> }>('aiChatDispatch').aiChatDispatch)(payload) as Promise<T>
 }
-export const aiChatDispatchStream: AnyFn = (...args) => (coreService<{ aiChatDispatchStream: AnyFn }>('aiChatDispatch').aiChatDispatchStream)(...args)
+import * as _aiChatDispatchLocal from '../host/services/aiChatDispatch'
+export const aiChatDispatchStream: AnyFn = (...args) => ((_aiChatDispatchLocal as unknown as Record<string, AnyFn>).aiChatDispatchStream)(...args)
 
 // ── dialogStorage ──
 export const dialogStorageService: any = lazyObj('dialogStorageService')
@@ -52,8 +54,9 @@ export const eventBus: any = lazyObj('eventBus')
 
 // ── 跨端/静默服务 ──
 export const remoteSessionFollower: any = lazyObj('remoteSessionFollower')
-export const resyncAfterResumeGap: AnyFn = (...args) => (coreService<{ resyncAfterResumeGap: AnyFn }>('webReconnectResync').resyncAfterResumeGap)(...args)
-export const manualRefreshActiveSession: AnyFn = (...args) => (coreService<{ manualRefreshActiveSession: AnyFn }>('webReconnectResync').manualRefreshActiveSession)(...args)
+import * as _webReconnectResyncLocal from '../host/services/webReconnectResync'
+export const resyncAfterResumeGap: AnyFn = (...args) => ((_webReconnectResyncLocal as unknown as Record<string, AnyFn>).resyncAfterResumeGap)(...args)
+export const manualRefreshActiveSession: AnyFn = (...args) => ((_webReconnectResyncLocal as unknown as Record<string, AnyFn>).manualRefreshActiveSession)(...args)
 
 // ── chatService（tauri/chatService.ts 具名导出）──
 export const registerPendingQuestion: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('chatService').registerPendingQuestion)(...args)
