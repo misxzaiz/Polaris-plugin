@@ -337,12 +337,22 @@ function timingSafeEq(a, b) {
   return crypto.timingSafeEqual(ba, bb);
 }
 
+// CORS：面板运行在宿主页 origin（如 http://localhost:9827），跨源直连本服务
+// 必须放行（repo-lens 同款 CORS 头）；仅 127.0.0.1 监听 + Bearer 鉴权兜底。
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
 function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(body),
     'Cache-Control': 'no-store',
+    ...CORS_HEADERS,
   });
   res.end(body);
 }
@@ -371,6 +381,8 @@ function statsPayload(entry) {
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
   const p = url.pathname;
+
+  if (req.method === 'OPTIONS') { res.writeHead(204, CORS_HEADERS); res.end(); return; }
 
   if (p === '/__health') {
     return sendJson(res, 200, { ok: true, service: 'loc-lens', version: VERSION, uptime: Date.now() - STARTED_AT });
