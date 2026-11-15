@@ -70,6 +70,11 @@ export const useDispatchStore = useStoreHook('useDispatchStore') as any
 import { sessionStoreManager as _localManager } from '../host/conversationStore/sessionStoreManager'
 export const sessionStoreManager: any = _localManager
 
+/** 兼容旧桥读写的取 manager 入口（恒为插件内实现） */
+function localManager(): any {
+  return _localManager
+}
+
 // ── 非 hook 具名导出（宿主单例转发）──
 export function getSessionConfig(): any {
   return useSessionConfig.getState().config
@@ -85,12 +90,12 @@ const hostActive: any = new Proxy({}, {
   get: (_t, p) => {
     const local = (_localUseActiveSession as Record<string, unknown>)[p as string]
     if (typeof local === 'function') return local
-    const ua = coreStore<Record<string, any>>('useActiveSession') as Record<string, any> | undefined
+    const ua = _localUseActiveSession as Record<string, any> as Record<string, any> | undefined
     if (!ua) return undefined
     const v = ua[p as string]
     if (typeof v === 'function') return v
     // 宿主命名空间缺该导出 → 用 sessionStoreManager 派生（选择器型 hook）
-    const sm: any = coreStore<any>('sessionStoreManager')
+    const sm: any = localManager()
     if (p === 'useActiveSessionId') return () => sm.getState().activeSessionId
     if (p === 'useSessionMetadataList') return () => { const m = sm.getState().sessionMetadata; return m ? [...m.values()] : [] }
     if (p === 'useSessionManagerActions2') return () => {
@@ -122,7 +127,8 @@ export const useHasActivePlan: any = (...args: unknown[]) => (hostActive.useHasA
 export const useHasPendingQuestion: any = (...args: unknown[]) => (hostActive.useHasPendingQuestion as any)(...args)
 export const useSessionHasPendingQuestion: any = (...args: unknown[]) => (hostActive.useSessionHasPendingQuestion as any)(...args)
 export const useSessionHasPendingCards: any = (...args: unknown[]) => (hostActive.useSessionHasPendingCards as any)(...args)
-export const conversationStoreUtils: any = new Proxy({}, { get: (_t, p) => (coreStore<Record<string, any>>('conversationStoreUtils') as Record<string, any>)[p as string] })
+import * as _localUtils from '../host/conversationStore/conversationStoreUtils'
+export const conversationStoreUtils: any = new Proxy({}, { get: (_t, p) => (_localUtils as unknown as Record<string, any>)[p as string] })
 
 // ── uiSlotStore 类型（宿主同形定义）──
 export type SlotId = string
@@ -141,7 +147,7 @@ export interface InputBanner {
 }
 
 export function useSessionManagerActions(): any {
-  const sm: any = coreStore<any>('sessionStoreManager')
+  const sm: any = localManager()
   const st = sm.getState()
   return {
     switchSession: (id: string) => st.switchSession(id),
@@ -153,7 +159,7 @@ export function useSessionManagerActions(): any {
 }
 // SessionCell 等按会话订阅元数据（标题/状态/工作区联动刷新）
 export function useSessionMetadata(sessionId: string | null): any {
-  const sm: any = coreStore<any>('sessionStoreManager')
+  const sm: any = localManager()
   return useSyncExternalStore(
     (cb: () => void) => sm.subscribe(cb),
     () => (sessionId ? sm.getState().sessionMetadata.get(sessionId) ?? null : null),
@@ -164,7 +170,6 @@ export function useSessionMetadata(sessionId: string | null): any {
 export { coreStore }
 
 // ── 会话域工具函数（宿主 conversationStoreUtils / modelProfileStore 同源转发）──
-import * as _localUtils from '../host/conversationStore/conversationStoreUtils'
 export function resolveEffectiveProfileId(...args: unknown[]): any {
   return (_localUtils as unknown as Record<string, AnyFn>).resolveEffectiveProfileId(...args)
 }
@@ -172,10 +177,10 @@ export function resolveSessionEngine(...args: unknown[]): any {
   return (_localUtils as unknown as Record<string, AnyFn>).resolveSessionEngine(...args)
 }
 export function findStoreByConversationId(...args: unknown[]): any {
-  const sm: any = coreStore<any>('sessionStoreManager')
+  const sm: any = localManager()
   if (typeof sm.findStoreByConversationId === 'function') return sm.findStoreByConversationId(...args)
   // 宿主版为模块级函数：从 useActiveSession 命名空间兜底
-  const ua = coreStore<Record<string, any>>('useActiveSession')
+  const ua = _localUseActiveSession as Record<string, any>
   if (typeof ua.findStoreByConversationId === 'function') return ua.findStoreByConversationId(...args)
   return null
 }

@@ -6774,9 +6774,31 @@ var init_messageCompactor = __esm({
 });
 
 // src/host/conversationStore/conversationStoreUtils.ts
+var conversationStoreUtils_exports = {};
+__export(conversationStoreUtils_exports, {
+  buildWorkspacePrompts: () => buildWorkspacePrompts,
+  generateTitleFromMessage: () => generateTitleFromMessage,
+  getDisabledPluginMcpServers: () => getDisabledPluginMcpServers,
+  isProfileModeWithoutProfile: () => isProfileModeWithoutProfile,
+  isValidMessageStructure: () => isValidMessageStructure,
+  normalizeForInvoke: () => normalizeForInvoke,
+  resolveAuxiliaryEngine: () => resolveAuxiliaryEngine,
+  resolveChatError: () => resolveChatError,
+  resolveEffectiveProfileId: () => resolveEffectiveProfileId,
+  resolveEffectiveProfileMode: () => resolveEffectiveProfileMode,
+  resolveRuntimeConfigForEngine: () => resolveRuntimeConfigForEngine,
+  resolveSessionEngine: () => resolveSessionEngine
+});
 function resolveSessionEngine(sessionId, configEngineId) {
   const metadataEngineId = sessionStoreManager.getState().sessionMetadata.get(sessionId)?.engineId;
   return normalizeEngineId(metadataEngineId || configEngineId);
+}
+function resolveAuxiliaryEngine(config3) {
+  const aux = config3?.auxiliaryEngine;
+  if (aux && aux.trim()) {
+    return normalizeEngineId(aux);
+  }
+  return normalizeEngineId(config3?.defaultEngine);
 }
 function resolveRuntimeConfigForEngine(sessionConfig, engineId) {
   const model = sessionConfig.model || void 0;
@@ -6833,6 +6855,14 @@ function resolveChatError(e3, context) {
     return raw;
   }
   return toAppError(e3, { source: "ai" /* AI */, context }).getUserMessage();
+}
+function isValidMessageStructure(msg) {
+  if (!msg || typeof msg !== "object") return false;
+  const m4 = msg;
+  if (typeof m4.id !== "string" || typeof m4.type !== "string" || typeof m4.timestamp !== "string") return false;
+  if (m4.type === "assistant") return Array.isArray(m4.blocks);
+  if (m4.type === "user") return typeof m4.content === "string";
+  return true;
 }
 function generateTitleFromMessage(content) {
   const cleanContent = content.replace(/\n/g, " ").trim();
@@ -11003,6 +11033,9 @@ function useStoreHook(name) {
   hook2.setState = (p3) => s3.setState(p3);
   return hook2;
 }
+function localManager() {
+  return sessionStoreManager;
+}
 function getSessionConfig() {
   return useSessionConfig.getState().config;
 }
@@ -11011,7 +11044,7 @@ function selectSlotFill(slots, slotId) {
   return slots[slotId] ?? null;
 }
 function useSessionManagerActions() {
-  const sm = coreStore("sessionStoreManager");
+  const sm = localManager();
   const st3 = sm.getState();
   return {
     switchSession: (id38) => st3.switchSession(id38),
@@ -11022,7 +11055,7 @@ function useSessionManagerActions() {
   };
 }
 function useSessionMetadata(sessionId) {
-  const sm = coreStore("sessionStoreManager");
+  const sm = localManager();
   return useSyncExternalStore3(
     (cb) => sm.subscribe(cb),
     () => sessionId ? sm.getState().sessionMetadata.get(sessionId) ?? null : null,
@@ -11036,9 +11069,9 @@ function resolveSessionEngine2(...args) {
   return resolveSessionEngine(...args);
 }
 function findStoreByConversationId(...args) {
-  const sm = coreStore("sessionStoreManager");
+  const sm = localManager();
   if (typeof sm.findStoreByConversationId === "function") return sm.findStoreByConversationId(...args);
-  const ua = coreStore("useActiveSession");
+  const ua = useActiveSession_exports;
   if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
   return null;
 }
@@ -11075,11 +11108,11 @@ var init_stores = __esm({
       get: (_t, p3) => {
         const local2 = useActiveSession_exports[p3];
         if (typeof local2 === "function") return local2;
-        const ua = coreStore("useActiveSession");
+        const ua = useActiveSession_exports;
         if (!ua) return void 0;
         const v5 = ua[p3];
         if (typeof v5 === "function") return v5;
-        const sm = coreStore("sessionStoreManager");
+        const sm = localManager();
         if (p3 === "useActiveSessionId") return () => sm.getState().activeSessionId;
         if (p3 === "useSessionMetadataList") return () => {
           const m4 = sm.getState().sessionMetadata;
@@ -11112,7 +11145,7 @@ var init_stores = __esm({
     useHasPendingQuestion2 = (...args) => hostActive.useHasPendingQuestion(...args);
     useSessionHasPendingQuestion2 = (...args) => hostActive.useSessionHasPendingQuestion(...args);
     useSessionHasPendingCards2 = (...args) => hostActive.useSessionHasPendingCards(...args);
-    conversationStoreUtils = new Proxy({}, { get: (_t, p3) => coreStore("conversationStoreUtils")[p3] });
+    conversationStoreUtils = new Proxy({}, { get: (_t, p3) => conversationStoreUtils_exports[p3] });
   }
 });
 
