@@ -2395,9 +2395,9 @@ var init_logger = __esm({
     };
     ResetColor = "\x1B[0m";
     ConsoleTransport = class {
+      name = "console";
+      level = 2 /* Info */;
       constructor(level) {
-        this.name = "console";
-        this.level = 2 /* Info */;
         this.level = level ?? 2 /* Info */;
       }
       setLevel(level) {
@@ -2437,9 +2437,9 @@ var init_logger = __esm({
       }
     };
     JsonTransport = class {
+      name = "json";
+      level = 2 /* Info */;
       constructor(level) {
-        this.name = "json";
-        this.level = 2 /* Info */;
         this.level = level ?? 2 /* Info */;
       }
       setLevel(level) {
@@ -2451,6 +2451,8 @@ var init_logger = __esm({
       }
     };
     ModuleLogger = class _ModuleLogger {
+      config;
+      transports;
       constructor(config3) {
         this.config = {
           level: 2 /* Info */,
@@ -6544,7 +6546,7 @@ function getModelProfileById(id38) {
   const s3 = core().stores.useModelProfileStore.getState();
   return s3.profiles?.find?.((p3) => p3.id === id38);
 }
-var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
+var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, parseEventToLog, IconSend, IconStop, IconPaperclip;
 var init_misc = __esm({
   "src/shims/misc.ts"() {
     init_stores();
@@ -6573,6 +6575,7 @@ var init_misc = __esm({
     useWorkspaceFilter = core().components.useWorkspaceFilter;
     CreateWorkspaceModal = core().components.CreateWorkspaceModal;
     Icons = new Proxy({}, { get: () => core().components.Icons });
+    parseEventToLog = (...args) => globalThis.__POLARIS_APP_CORE__.services.schedulerStoreUtils.parseEventToLog(...args);
     IconSend = core().components.Icons.IconSend;
     IconStop = core().components.Icons.IconStop;
     IconPaperclip = core().components.Icons.IconPaperclip;
@@ -333732,55 +333735,7 @@ init_stores();
 init_stores();
 init_stores();
 init_stores();
-
-// src/host/stores/schedulerStoreUtils.ts
-function parseEventToLog(event3) {
-  const type3 = event3.type;
-  switch (type3) {
-    case "session_start":
-      return { type: "session_start", content: "\u5F00\u59CB\u6267\u884C\u4EFB\u52A1..." };
-    case "progress":
-      return { type: "message", content: event3.message || "\u5904\u7406\u4E2D..." };
-    case "thinking":
-      return { type: "thinking", content: event3.content || "\u601D\u8003\u4E2D..." };
-    case "assistant_message":
-    case "assistant":
-      return { type: "message", content: event3.content || "" };
-    case "tool_call_start": {
-      const toolName = event3.tool || event3.toolName || event3.name || "unknown";
-      return {
-        type: "tool_call_start",
-        content: `\u8C03\u7528\u5DE5\u5177: ${toolName}`,
-        metadata: { toolName, args: event3.args }
-      };
-    }
-    case "tool_call_end": {
-      const endToolName = event3.tool || event3.toolName || event3.name || "unknown";
-      const success = event3.success !== false;
-      return {
-        type: "tool_call_end",
-        content: success ? `${endToolName} \u5B8C\u6210` : `${endToolName} \u5931\u8D25`,
-        metadata: { toolName: endToolName, success }
-      };
-    }
-    case "session_end": {
-      const reason = event3.reason;
-      if (reason === "error" || reason === "failed") {
-        return {
-          type: "error",
-          content: event3.error || "\u6267\u884C\u5931\u8D25"
-        };
-      }
-      return { type: "session_end", content: "\u4EFB\u52A1\u6267\u884C\u5B8C\u6210", metadata: { success: true } };
-    }
-    case "error":
-      return { type: "error", content: event3.error || event3.message || "\u672A\u77E5\u9519\u8BEF" };
-    default:
-      return null;
-  }
-}
-
-// src/host/services/dispatchTaskService.ts
+init_misc();
 init_conversationStoreUtils();
 init_useKernelSessionState();
 init_stores();

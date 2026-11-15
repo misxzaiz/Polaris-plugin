@@ -77,6 +77,10 @@ export function listPluginMcpServerStatuses(pluginStates: unknown) {
   return (core().pluginSystem as Record<string, any>).listPluginMcpServerStatuses?.(pluginStates) ?? []
 }
 
+// ── schedulerStoreUtils（宿主保留，dispatchTaskService 消费）──
+export const parseEventToLog: any = (...args: unknown[]) =>
+  ((globalThis as unknown as { __POLARIS_APP_CORE__: any }).__POLARIS_APP_CORE__.services.schedulerStoreUtils.parseEventToLog)(...args)
+
 // ── 相对引用兜底（host 树 ../xxxStore 等，别名分流至本文件）──
 export {
   useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore,
