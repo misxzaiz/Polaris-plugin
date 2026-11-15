@@ -73,8 +73,15 @@ const hostActive: any = new Proxy({}, {
     return undefined
   },
 })
-export const useActiveSessionId: any = (...args: unknown[]) => (hostActive.useActiveSessionId as any)(...args)
-export const useSessionMetadataList: any = (...args: unknown[]) => (hostActive.useSessionMetadataList as any)(...args)
+export function useActiveSessionId(): any {
+  const sm: any = coreStore<any>('sessionStoreManager')
+  return sm.getState().activeSessionId
+}
+export function useSessionMetadataList(): any {
+  const sm: any = coreStore<any>('sessionStoreManager')
+  const m = sm.getState().sessionMetadata
+  return m ? [...m.values()] : []
+}
 export const useActiveSessionActions: any = (...args: unknown[]) => (hostActive.useActiveSessionActions as any)(...args)
 export const useActiveSessionMessages: any = (...args: unknown[]) => (hostActive.useActiveSessionMessages as any)(...args)
 export const useActiveSessionStreaming: any = (...args: unknown[]) => (hostActive.useActiveSessionStreaming as any)(...args)

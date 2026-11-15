@@ -2071,6 +2071,15 @@ function selectSlotFill(slots, slotId) {
   if (!slots) return null;
   return slots[slotId] ?? null;
 }
+function useActiveSessionId() {
+  const sm = coreStore("sessionStoreManager");
+  return sm.getState().activeSessionId;
+}
+function useSessionMetadataList() {
+  const sm = coreStore("sessionStoreManager");
+  const m4 = sm.getState().sessionMetadata;
+  return m4 ? [...m4.values()] : [];
+}
 function useSessionManagerActions() {
   const sm = coreStore("sessionStoreManager");
   const st3 = sm.getState();
@@ -2097,7 +2106,7 @@ function findStoreByConversationId(...args) {
   if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
   return null;
 }
-var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, useActiveSessionId, useSessionMetadataList, useActiveSessionActions, useActiveSessionMessages, useActiveSessionStreaming, useActiveSessionError, useActiveSessionConversationId, useActiveSessionWorkspace, useActiveSessionInputDraft, useActiveSessionPendingQueue, useActiveSessionPendingBriefing, useActiveSessionPromptOptimize, useActiveSessionPromptSuggestion, useActiveSessionStreamRate, useActiveSessionUsage, useActiveSessionKernelStreaming, useSessionState, useSessionStreaming, useHasActivePlan, useHasPendingQuestion, useSessionHasPendingQuestion, useSessionHasPendingCards, conversationStoreUtils;
+var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, useActiveSessionActions, useActiveSessionMessages, useActiveSessionStreaming, useActiveSessionError, useActiveSessionConversationId, useActiveSessionWorkspace, useActiveSessionInputDraft, useActiveSessionPendingQueue, useActiveSessionPendingBriefing, useActiveSessionPromptOptimize, useActiveSessionPromptSuggestion, useActiveSessionStreamRate, useActiveSessionUsage, useActiveSessionKernelStreaming, useSessionState, useSessionStreaming, useHasActivePlan, useHasPendingQuestion, useSessionHasPendingQuestion, useSessionHasPendingCards, conversationStoreUtils;
 var init_stores = __esm({
   "src/shims/stores.ts"() {
     init_core();
@@ -2140,8 +2149,6 @@ var init_stores = __esm({
         return void 0;
       }
     });
-    useActiveSessionId = (...args) => hostActive.useActiveSessionId(...args);
-    useSessionMetadataList = (...args) => hostActive.useSessionMetadataList(...args);
     useActiveSessionActions = (...args) => hostActive.useActiveSessionActions(...args);
     useActiveSessionMessages = (...args) => hostActive.useActiveSessionMessages(...args);
     useActiveSessionStreaming = (...args) => hostActive.useActiveSessionStreaming(...args);
