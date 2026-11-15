@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-12T01:38:00.000Z",
+  "updated": "2026-11-15T04:10:07.372Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -5314,6 +5314,37 @@
       ],
       "createdAt": "2026-11-12T08:40:00.000Z",
       "updatedAt": "2026-11-12T08:35:32.278Z"
+    },
+    {
+      "id": "chat-desk",
+      "name": "AI 对话",
+      "version": "0.1.0",
+      "description": "AI 对话域插件：完整 Chat UI（多会话窗口、流式回复、工具/思考块、会话配置选择器、压缩交接、静默服务），经 cap.ai.chat / cap.session 总线与宿主协作。core 插件，不可卸载。",
+      "author": "Polaris",
+      "category": "ai",
+      "tags": [
+        "chat",
+        "ai",
+        "session",
+        "panel",
+        "streaming",
+        "core"
+      ],
+      "icon": "Bot",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/chat-desk",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chat-desk/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@chat-desk-v0.1.0/plugins/chat-desk/chat-desk.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chat-desk/update.json",
+      "sha256": "f8934f30a9e6564fa71806df545ffd9e51847ccafdd9978471d7cad8c44fe5ed",
+      "versions": [
+        {
+          "version": "0.1.0",
+          "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@chat-desk-v0.1.0/plugins/chat-desk/chat-desk.zip"
+        }
+      ],
+      "updatedAt": "2026-11-15T04:23:25.733Z",
+      "createdAt": "2026-11-15T04:23:25.733Z"
     }
   ]
 }
