@@ -5360,7 +5360,7 @@
         "panel",
         "devtools"
       ],
-      "icon": "Barcode",
+      "icon": "Activity",
       "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/loc-lens",
       "repository": "https://github.com/misxzaiz/Polaris-plugin",
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/loc-lens/plugin.json",

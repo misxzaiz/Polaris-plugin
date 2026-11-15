@@ -10,7 +10,7 @@
         "id": "loc-lens.panel",
         "area": "activityBar",
         "panelType": "locLens",
-        "icon": "Barcode",
+        "icon": "Activity",
         "labelKey": "plugins.locLens",
         "labelDefault": "行数透视台",
         "order": 95
@@ -24,7 +24,11 @@
         "id": "loc-lens-server",
         "type": "http",
         "command": "node",
-        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "argsTemplate": [
+          "{{pluginDir}}/service/main.js",
+          "{{port}}",
+          "{{appConfigDir}}"
+        ],
         "port": 9881,
         "healthCheck": "/__health",
         "healthCheckTimeout": 5000,
