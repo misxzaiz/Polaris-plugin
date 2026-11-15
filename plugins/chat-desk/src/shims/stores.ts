@@ -61,7 +61,9 @@ export const useOverlayStore = useStoreHook('useOverlayStore') as any
 export const useSnippetStore = useStoreHook('useSnippetStore') as any
 export const useSkillStore = useStoreHook('useSkillStore') as any
 export const useFileEditorStore = useStoreHook('useFileEditorStore') as any
-export const useCompactHandoffStore = useStoreHook('useCompactHandoffStore') as any
+// P6：compactHandoffStore 随对话域迁入插件（宿主已删）——直接用本地实现
+import { useCompactHandoffStore as _localCompactHandoffStore } from '../host/stores/compactHandoffStore'
+export const useCompactHandoffStore: any = _localCompactHandoffStore
 export const useDispatchStore = useStoreHook('useDispatchStore') as any
 
 // sessionStoreManager（P6：单写者随域迁入插件）——直接用本地实现

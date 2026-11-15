@@ -84,8 +84,12 @@ export const getHistoryHandoffEligibility: AnyFn = (...args) => (coreService<Rec
 export const handoffHistorySessionToNewSession: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionHandoff').handoffHistorySessionToNewSession)(...args)
 export const loadConversationMessages: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionHandoff').loadConversationMessages)(...args)
 
-export const requestCompactHandoff: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('contextCompactHandoff').requestCompactHandoff)(...args)
-export const cancelCompactHandoff: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('contextCompactHandoff').cancelCompactHandoff)(...args)
+import * as _localCCH from '../host/services/contextCompactHandoff'
+export const compactAndHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).compactAndHandoff)(...args)
+export type CompactHandoffStage = import('../host/services/contextCompactHandoff').CompactHandoffStage
+export type CompactHandoffParams = import('../host/services/contextCompactHandoff').CompactHandoffParams
+export const requestCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).requestCompactHandoff)(...args)
+export const cancelCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).cancelCompactHandoff)(...args)
 
 import * as _localPromptOptimize from '../host/services/promptOptimizeService'
 export const runPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).runPromptOptimize)(...args)
@@ -164,7 +168,6 @@ export type { TokenUsageSummary } from '../host/types/tokenUsage'
 // ── 类型/别名补齐（与宿主服务文件同形）──
 export const openExternalLink: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('linkExternal').openExternal)(...args)
 export type HandoffMode = 'newSession' | 'copyPrompt'
-export type CompactHandoffStage = 'loading' | 'packing' | 'compacting' | 'creating'
 export type PromptOptimizeMode = 'quick' | 'deep'
 export type OptimizeDirection = 'structured' | 'convergent' | 'divergent' | 'elaborate' | 'custom'
 export interface FileMatch { name: string; relativePath: string; fullPath: string; isDir: boolean; extension?: string; size?: number }

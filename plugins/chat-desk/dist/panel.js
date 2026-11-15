@@ -1999,6 +1999,68 @@ var init_lucide_react = __esm({
   }
 });
 
+// src/shims/misc.ts
+function core() {
+  return globalThis.__POLARIS_APP_CORE__;
+}
+function isMobileUserAgent() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function isMobileTauriRuntime() {
+  return isMobileUserAgent() && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+function listEnabledPluginMcpServers(pluginStates) {
+  return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
+}
+function convertFileSrc(path4) {
+  return core().tauri.convertFileSrc(path4);
+}
+function listPluginMcpServerStatuses(pluginStates) {
+  return core().pluginSystem.listPluginMcpServerStatuses?.(pluginStates) ?? [];
+}
+function getActiveModelProfile() {
+  return core().stores.useModelProfileStore.getState().getActiveProfile?.() ?? core().stores.useModelProfileStore.getState().activeProfile;
+}
+function getModelProfileById(id38) {
+  const s3 = core().stores.useModelProfileStore.getState();
+  return s3.profiles?.find?.((p3) => p3.id === id38);
+}
+var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
+var init_misc = __esm({
+  "src/shims/misc.ts"() {
+    init_stores();
+    i18n = new Proxy({}, {
+      get: (_t, prop) => {
+        const inst2 = core().i18n;
+        return inst2 ? inst2[prop] : void 0;
+      }
+    });
+    pluginRegistry = new Proxy({}, {
+      get: (_t, prop) => core().pluginSystem.pluginRegistry[prop]
+    });
+    chatCardRegistry = new Proxy({}, {
+      get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
+    });
+    Button = core().components.Button;
+    JsonTreeView = core().components.JsonTreeView;
+    OverlayGuard = core().components.OverlayGuard;
+    ConfirmDialog = core().components.ConfirmDialog;
+    Modal = core().components.Modal;
+    DropdownMenu = core().components.DropdownMenu;
+    DiffViewer = core().components.DiffViewer;
+    WorkspaceBadge = core().components.WorkspaceBadge;
+    WorkspaceMenu = core().components.WorkspaceMenu;
+    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
+    useWorkspaceFilter = core().components.useWorkspaceFilter;
+    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
+    Icons = new Proxy({}, { get: () => core().components.Icons });
+    IconSend = core().components.Icons.IconSend;
+    IconStop = core().components.Icons.IconStop;
+    IconPaperclip = core().components.Icons.IconPaperclip;
+  }
+});
+
 // src/shims/uuid.ts
 function generateUUID() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -2622,7 +2684,7 @@ var init_eventRouter = __esm({
             }
             if (RENDER_EVENT_TYPES.has(payload?.type ?? "")) {
               try {
-                sessionStoreManager.getState().dispatchEvent(payload);
+                sessionStoreManager2.getState().dispatchEvent(payload);
               } catch (e3) {
                 log.error("\u5206\u53D1\u65E0\u4FE1\u5C01\u6E32\u67D3\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
               }
@@ -2651,7 +2713,7 @@ var init_eventRouter = __esm({
             _routeSessionId: frontendSessionId,
             ...turnId ? { _turnId: turnId } : {}
           };
-          sessionStoreManager.getState().dispatchEvent(eventWithRouteId);
+          sessionStoreManager2.getState().dispatchEvent(eventWithRouteId);
         } catch (e3) {
           log.error("\u5206\u53D1\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3, { frontendSessionId });
         }
@@ -3782,7 +3844,7 @@ async function restoreFromHistory(sessionId, engineId, projectPath, claudeProjec
     }
     const effectiveProjectPath = projectPath || loaded.workspacePath || void 0;
     const workspaceId = await ensureWorkspace(effectiveProjectPath);
-    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
+    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
       loaded.messages,
       loaded.externalSessionId || sessionId,
       { title: loaded.title, workspaceId, engineId: loaded.engineId, paging: loaded.paging }
@@ -3825,7 +3887,7 @@ async function forkSession(sessionId, engineId, projectPath, claudeProjectName, 
     }
     const title2 = branchName || `Fork: \u4F1A\u8BDD ${sessionId.slice(0, 8)}`;
     const workspaceId = await ensureWorkspace(projectPath);
-    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
+    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
       messages,
       null,
       // 不传 conversationId，确保发消息走 start_chat
@@ -3863,6 +3925,445 @@ var init_sessionRestore = __esm({
   }
 });
 
+// src/shims/path.ts
+function joinPath(basePath, name) {
+  const cleanBase = basePath.replace(/[/\\]+$/, "");
+  return `${cleanBase}/${name}`;
+}
+function isAbsolutePath(path4) {
+  return /^(?:[a-zA-Z]:[\\/]|\\\\|\/)/.test(path4);
+}
+function resolveWorkspacePath(workspacePath, filePath) {
+  if (!workspacePath || isAbsolutePath(filePath)) return filePath;
+  const separator = workspacePath.includes("\\") ? "\\" : "/";
+  const basePath = workspacePath.replace(/[\\/]+$/, "");
+  const relativePath = filePath.replace(/^[\\/]+/, "").replace(/[\\/]/g, separator);
+  return `${basePath}${separator}${relativePath}`;
+}
+var platform, isMac, modKey;
+var init_path = __esm({
+  "src/shims/path.ts"() {
+    platform = (() => {
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes("win")) return "windows";
+      if (ua.includes("mac")) return "mac";
+      return "linux";
+    })();
+    isMac = platform === "mac";
+    modKey = isMac ? "Cmd" : "Ctrl";
+  }
+});
+
+// src/shims/sessionExport.ts
+function messagesToMarkdown(messages, options2 = {}) {
+  const { title: title2, includeThinking = false, compact = false } = options2;
+  const lines = [];
+  if (title2) {
+    lines.push(`# ${title2}`, "");
+  }
+  lines.push(
+    compact ? "> \u672C\u6587\u4EF6\u7531 Polaris \u4ECE\u5386\u53F2\u4F1A\u8BDD\u751F\u6210\u7684\u7CBE\u7B80\u6458\u8981\uFF0C\u4EC5\u4FDD\u7559\u7528\u6237\u610F\u56FE\u4E0E\u52A9\u624B\u8981\u70B9\uFF08\u5DE5\u5177\u8F93\u51FA\u5DF2\u7701\u7565\uFF09\u3002" : "> \u672C\u6587\u4EF6\u7531 Polaris \u4ECE\u5386\u53F2\u4F1A\u8BDD\u5BFC\u51FA\uFF0C\u4F9B\u65B0\u4F1A\u8BDD\u5FEB\u901F\u4E86\u89E3\u6B64\u524D\u7684\u5BF9\u8BDD\u4E0E\u8FDB\u5C55\u3002",
+    "",
+    "---",
+    ""
+  );
+  for (const message of messages) {
+    if (message.type === "user") {
+      const content = typeof message.content === "string" ? message.content.trim() : "";
+      if (!content) continue;
+      lines.push("## \u{1F464} \u7528\u6237", "", content, "");
+    } else if (message.type === "assistant") {
+      const blockLines = renderBlocks(message.blocks ?? [], includeThinking, compact);
+      if (blockLines.length === 0) continue;
+      lines.push("## \u{1F916} \u52A9\u624B", "", ...blockLines);
+    } else if (message.type === "system") {
+      const content = typeof message.content === "string" ? message.content.trim() : "";
+      if (!content) continue;
+      lines.push("## \u2699\uFE0F \u7CFB\u7EDF", "", content, "");
+    }
+  }
+  return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trim()}
+`;
+}
+function renderBlocks(blocks2, includeThinking, compact) {
+  const out = [];
+  for (const block2 of blocks2) {
+    switch (block2.type) {
+      case "text": {
+        const raw = block2.content.trim();
+        if (!raw) break;
+        const text5 = compact && raw.length > COMPACT_TEXT_MAX ? `${raw.slice(0, COMPACT_TEXT_MAX)}\u2026` : raw;
+        out.push(text5, "");
+        break;
+      }
+      case "thinking": {
+        if (!includeThinking) break;
+        const text5 = block2.content.trim();
+        if (text5) out.push("<details><summary>\u601D\u8003\u8FC7\u7A0B</summary>", "", text5, "", "</details>", "");
+        break;
+      }
+      case "tool_call": {
+        const args = summarizeToolInput(block2.input);
+        out.push(`**\u{1F527} ${block2.name}**${args ? ` \u2014 \`${args}\`` : ""}`, "");
+        if (!compact && block2.output) {
+          const output2 = block2.output.length > TOOL_OUTPUT_MAX ? `${block2.output.slice(0, TOOL_OUTPUT_MAX)}
+\u2026\uFF08\u5DF2\u622A\u65AD ${block2.output.length - TOOL_OUTPUT_MAX} \u5B57\u7B26\uFF09` : block2.output;
+          out.push("```", output2, "```", "");
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+  return out;
+}
+function summarizeToolInput(input) {
+  if (!input || typeof input !== "object") return "";
+  const priorityKeys = ["file_path", "path", "command", "pattern", "query", "url", "description", "prompt"];
+  for (const key of priorityKeys) {
+    const value3 = input[key];
+    if (typeof value3 === "string" && value3.trim()) {
+      return truncate(value3.trim(), 120);
+    }
+  }
+  try {
+    return truncate(JSON.stringify(input), 120);
+  } catch {
+    return "";
+  }
+}
+function truncate(text5, max10) {
+  return text5.length > max10 ? `${text5.slice(0, max10)}\u2026` : text5;
+}
+var TOOL_OUTPUT_MAX, COMPACT_TEXT_MAX;
+var init_sessionExport = __esm({
+  "src/shims/sessionExport.ts"() {
+    TOOL_OUTPUT_MAX = 800;
+    COMPACT_TEXT_MAX = 200;
+  }
+});
+
+// src/host/services/conversationPackager/index.ts
+function resolveTransferMode(input) {
+  const sourceId = normalizeEngineId(input.sourceEngineId);
+  const targetId = normalizeEngineId(input.targetEngineId);
+  const sameEngine = sourceId === targetId;
+  if (sameEngine && ENGINE_FORK_CAPABILITY[targetId]) {
+    return "fork";
+  }
+  if (input.estimatedTokens < TOKEN_FULL_CAP) {
+    return "full-file";
+  }
+  if (targetId === "simple-ai" && input.estimatedTokens < TOKEN_MSG_HISTORY_CAP) {
+    return "message-history";
+  }
+  return "summary";
+}
+function estimateTokens(messages) {
+  let chars = 0;
+  for (const m4 of messages) {
+    if (m4.type === "user" || m4.type === "system") {
+      if (typeof m4.content === "string") chars += m4.content.length;
+    } else if (m4.type === "assistant" && m4.blocks) {
+      for (const b12 of m4.blocks) {
+        if (b12.type === "text" && typeof b12.content === "string") {
+          chars += b12.content.length;
+        } else if (b12.type === "tool_call" && typeof b12.output === "string") {
+          chars += b12.output.length;
+        }
+      }
+    }
+  }
+  return Math.ceil(chars / 4);
+}
+function sanitizeFileName(name) {
+  const cleaned = name.replace(/[/\\:*?"<>|]/g, "_").trim();
+  return (cleaned || "session").slice(0, 60);
+}
+async function packToFile(messages, title2, idSeed, workspacePath) {
+  const markdown2 = messagesToMarkdown(messages, { title: title2 });
+  const fileName = `${sanitizeFileName(title2)}-${idSeed.slice(0, 8)}.md`;
+  const relPath = `${HANDOFF_DIR}/${fileName}`;
+  const absPath = joinPath(workspacePath, relPath);
+  await invoke("create_file", { path: absPath, content: markdown2 });
+  log3.info("\u5BF9\u8BDD\u5DF2\u6253\u5305\u843D\u76D8", { absPath, messageCount: messages.length });
+  return {
+    fileRef: {
+      absPath,
+      relPath,
+      tokenEstimate: estimateTokens(messages)
+    },
+    markdown: markdown2
+  };
+}
+async function packToSummary(messages, title2, idSeed, workspacePath) {
+  const markdown2 = messagesToMarkdown(messages, { title: title2, compact: true });
+  const fileName = `${sanitizeFileName(title2)}-${idSeed.slice(0, 8)}-summary.md`;
+  const relPath = `${HANDOFF_DIR}/${fileName}`;
+  const absPath = joinPath(workspacePath, relPath);
+  await invoke("create_file", { path: absPath, content: markdown2 });
+  log3.info("\u5BF9\u8BDD\u6458\u8981\u5DF2\u6253\u5305\u843D\u76D8", { absPath, messageCount: messages.length });
+  return {
+    fileRef: {
+      absPath,
+      relPath,
+      // 摘要体积远小于原文，用实际 markdown 长度估算
+      tokenEstimate: Math.ceil(markdown2.length / 4)
+    },
+    markdown: markdown2
+  };
+}
+var log3, HANDOFF_DIR, ENGINE_FORK_CAPABILITY, TOKEN_FULL_CAP, TOKEN_MSG_HISTORY_CAP;
+var init_conversationPackager = __esm({
+  "src/host/services/conversationPackager/index.ts"() {
+    init_services();
+    init_path();
+    init_engineDisplay();
+    init_sessionExport();
+    init_logger();
+    log3 = createLogger("ConversationPackager");
+    HANDOFF_DIR = ".polaris-handoff";
+    ENGINE_FORK_CAPABILITY = {
+      "claude-code": true,
+      "simple-ai": false
+    };
+    TOKEN_FULL_CAP = 3e3;
+    TOKEN_MSG_HISTORY_CAP = 8e3;
+  }
+});
+
+// src/host/services/sessionHandoff.ts
+var sessionHandoff_exports = {};
+__export(sessionHandoff_exports, {
+  getHandoffEligibility: () => getHandoffEligibility,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
+  handoffSessionToNewSession: () => handoffSessionToNewSession,
+  loadConversationMessages: () => loadConversationMessages
+});
+function getHandoffEligibility(sessionId) {
+  const manager = sessionStoreManager2.getState();
+  const meta3 = manager.sessionMetadata.get(sessionId);
+  const store3 = manager.stores.get(sessionId)?.getState();
+  if (!meta3 || !store3) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
+  if (!meta3.workspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
+  if (!store3.conversationId && store3.messages.length === 0) {
+    return { enabled: false, reasonKey: "handoff.reasonEmpty" };
+  }
+  return { enabled: true };
+}
+async function handoffSessionToNewSession(sessionId, targetEngineId) {
+  const manager = sessionStoreManager2.getState();
+  const meta3 = manager.sessionMetadata.get(sessionId);
+  const store3 = manager.stores.get(sessionId)?.getState();
+  if (!meta3 || !store3) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoSession") };
+  }
+  if (!meta3.workspaceId) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+  }
+  const sourceEngineId = normalizeEngineId(meta3.engineId);
+  const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
+  const conversationId = store3.conversationId ?? "";
+  const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === meta3.workspaceId);
+  if (!workspace?.path) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+  }
+  try {
+    const fallbackMessages = [...store3.getPersistableMessages(), ...store3.archivedMessages ?? []];
+    const chatMessages = await loadConversationMessages(sourceEngineId, conversationId, fallbackMessages);
+    if (chatMessages.length === 0) {
+      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
+    }
+    return await createHandoffSession({
+      messages: chatMessages,
+      sourceTitle: meta3.title,
+      sourceEngineId,
+      sourceConversationId: conversationId,
+      targetEngineId: targetEngine,
+      workspaceId: meta3.workspaceId,
+      workspacePath: workspace.path
+    });
+  } catch (e3) {
+    const err = e3 instanceof Error ? e3 : new Error(String(e3));
+    log4.error("\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sessionId });
+    return { ok: false, error: err.message };
+  }
+}
+function getHistoryHandoffEligibility(item, fallbackWorkspaceId) {
+  if (!item.id) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
+  if (!item.projectPath && !fallbackWorkspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
+  return { enabled: true };
+}
+async function handoffHistorySessionToNewSession(item, fallbackWorkspaceId, targetEngineId) {
+  try {
+    const workspaceId = await resolveHistoryWorkspaceId(item, fallbackWorkspaceId);
+    if (!workspaceId) {
+      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+    }
+    const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
+    if (!workspace?.path) {
+      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+    }
+    const chatMessages = await loadHistoryChatMessages(item);
+    if (chatMessages.length === 0) {
+      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
+    }
+    const sourceEngineId = normalizeEngineId(item.engineId);
+    const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
+    return await createHandoffSession({
+      messages: chatMessages,
+      sourceTitle: item.title,
+      sourceEngineId,
+      sourceConversationId: item.id,
+      targetEngineId: targetEngine,
+      workspaceId,
+      workspacePath: workspace.path
+    });
+  } catch (e3) {
+    const err = e3 instanceof Error ? e3 : new Error(String(e3));
+    log4.error("\u5386\u53F2\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sourceId: item.id });
+    return { ok: false, error: err.message };
+  }
+}
+async function createHandoffSession(params) {
+  const {
+    messages,
+    sourceTitle,
+    sourceEngineId,
+    sourceConversationId,
+    targetEngineId,
+    workspaceId,
+    workspacePath
+  } = params;
+  const estimatedTokens = estimateTokens(messages);
+  let mode = resolveTransferMode({
+    sourceEngineId,
+    targetEngineId,
+    messageCount: messages.length,
+    estimatedTokens
+  });
+  if (mode === "fork" && !sourceConversationId) mode = "summary";
+  if (mode === "message-history") mode = "summary";
+  const manager = sessionStoreManager2.getState();
+  const newTitle = i18n_default.t("chat:handoff.newSessionTitle", { title: sourceTitle });
+  if (mode === "fork") {
+    const newSessionId2 = manager.createSession({
+      type: "project",
+      workspaceId,
+      title: newTitle,
+      engineId: targetEngineId,
+      forkFromId: sourceConversationId
+    });
+    log4.info("\u7EED\u63A5\u65B0\u4F1A\u8BDD\u5DF2\u521B\u5EFA\uFF08fork\uFF09", { sourceConversationId, newSessionId: newSessionId2, targetEngineId });
+    return { ok: true, newSessionId: newSessionId2 };
+  }
+  const packer = mode === "full-file" ? packToFile : packToSummary;
+  const { fileRef } = await packer(messages, sourceTitle, sourceConversationId, workspacePath);
+  log4.info("\u4F1A\u8BDD\u5DF2\u5BFC\u51FA", { mode, absPath: fileRef.absPath, messageCount: messages.length, targetEngineId });
+  const newSessionId = manager.createSession({
+    type: "project",
+    workspaceId,
+    title: newTitle,
+    engineId: targetEngineId
+  });
+  const newStore = manager.stores.get(newSessionId)?.getState();
+  if (newStore) {
+    const guide = i18n_default.t("chat:handoff.guidePrompt", { ref: `@${fileRef.relPath}` });
+    newStore.updateInputDraft({ text: guide, attachments: [] });
+  }
+  log4.info("\u7EED\u63A5\u65B0\u4F1A\u8BDD\u5DF2\u521B\u5EFA", { mode, newSessionId, targetEngineId });
+  return { ok: true, newSessionId };
+}
+async function loadConversationMessages(engineId, conversationId, fallbackMessages) {
+  if (conversationId) {
+    try {
+      if (engineId === "claude-code") {
+        const raw = await aiHistoryDispatch({
+          action: "get_claude_history",
+          sessionId: conversationId
+        });
+        if (raw.length > 0) return withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId);
+      } else {
+        const msgs = await dialogStorageService.getConversationMessages(conversationId);
+        if (msgs.length > 0) {
+          return withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId);
+        }
+      }
+    } catch (e3) {
+      log4.warn("\u6309\u5F15\u64CE\u52A0\u8F7D\u6E90\u4F1A\u8BDD\u5931\u8D25\uFF0C\u56DE\u9000\u5185\u5B58\u6D88\u606F", { engineId, conversationId, error: String(e3) });
+    }
+  }
+  if (fallbackMessages.length > 0) {
+    log4.warn("\u4F7F\u7528\u5185\u5B58\u6D88\u606F\u4F5C\u4E3A\u7EED\u63A5\u6E90\uFF08\u53EF\u80FD\u5DF2\u88AB\u538B\u7F29\uFF0C\u5185\u5BB9\u53EF\u80FD\u4E0D\u5B8C\u6574\uFF09", { engineId, conversationId });
+    return withAssistantEngineId2(fallbackMessages, engineId);
+  }
+  return [];
+}
+async function loadHistoryChatMessages(item) {
+  const engineId = normalizeEngineId(item.engineId);
+  try {
+    if (engineId === "claude-code") {
+      const raw = await aiHistoryDispatch({
+        action: "get_claude_history",
+        sessionId: item.id,
+        projectPath: item.claudeProjectName
+      });
+      return raw.length > 0 ? withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId) : [];
+    }
+    const msgs = await dialogStorageService.getConversationMessages(item.id);
+    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId) : [];
+  } catch (e3) {
+    log4.warn("\u52A0\u8F7D\u5386\u53F2\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { sourceId: item.id, engineId, error: String(e3) });
+    return [];
+  }
+}
+function withAssistantEngineId2(messages, engineId) {
+  return messages.map((message) => {
+    if (message.type !== "assistant" || message.engineId) return message;
+    return { ...message, engineId };
+  });
+}
+async function resolveHistoryWorkspaceId(item, fallbackWorkspaceId) {
+  const projectPath = item.projectPath?.trim();
+  const workspaceState = useWorkspaceStore.getState();
+  if (projectPath) {
+    const normalizedProjectPath = normalizeWorkspacePath(projectPath);
+    let workspace = workspaceState.workspaces.find(
+      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+    );
+    if (workspace) return workspace.id;
+    try {
+      await workspaceState.createWorkspace(getPathBasename(projectPath), projectPath, false);
+      workspace = useWorkspaceStore.getState().workspaces.find(
+        (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+      );
+      if (workspace) return workspace.id;
+    } catch (error3) {
+      log4.warn("Failed to resolve handoff workspace", { error: String(error3), projectPath });
+    }
+  }
+  return fallbackWorkspaceId ?? void 0;
+}
+var log4;
+var init_sessionHandoff = __esm({
+  "src/host/services/sessionHandoff.ts"() {
+    init_i18n();
+    init_logger();
+    init_sessionStoreManager();
+    init_stores();
+    init_services();
+    init_claudeHistoryConvert();
+    init_services();
+    init_dedupMessages();
+    init_conversationPackager();
+    init_engineDisplay();
+    init_workspacePath();
+    log4 = createLogger("SessionHandoff");
+  }
+});
+
 // src/host/session-v2/hooks/useKernelSessionState.ts
 import { useEffect, useState } from "react";
 function getKernelSessionStateSnapshot(sessionId) {
@@ -3890,6 +4391,80 @@ function subscribeKernelSessionState(sessionId, onChange) {
     unsubKernel?.();
   };
 }
+function waitKernelSessionStreamEnd(sessionId, opts) {
+  const { timeoutMs, signal, requireRunEvidence = false } = opts ?? {};
+  return new Promise((resolve2, reject2) => {
+    const cleanupFns = [];
+    let settled = false;
+    let sawRunning = false;
+    let unsubscribe = null;
+    let timer4 = null;
+    const cleanup2 = () => {
+      cleanupFns.forEach((fn3) => {
+        try {
+          fn3();
+        } catch {
+        }
+      });
+      cleanupFns.length = 0;
+    };
+    const onAbort = () => {
+      if (settled) return;
+      cleanup2();
+      reject2(new Error("aborted"));
+    };
+    const settleIdle = () => {
+      if (settled) return;
+      settled = true;
+      cleanup2();
+      resolve2();
+    };
+    const onState = (state5) => {
+      if (state5.state === "running") {
+        sawRunning = true;
+        return;
+      }
+      if (requireRunEvidence && !sawRunning) return;
+      settleIdle();
+    };
+    unsubscribe = subscribeKernelSessionState(sessionId, onState);
+    cleanupFns.push(() => unsubscribe?.());
+    if (timeoutMs) {
+      timer4 = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup2();
+        reject2(new Error("timeout"));
+      }, timeoutMs);
+      cleanupFns.push(() => {
+        if (timer4) clearTimeout(timer4);
+      });
+    }
+    signal?.addEventListener("abort", onAbort);
+    cleanupFns.push(() => {
+      signal?.removeEventListener("abort", onAbort);
+    });
+    void kernelSessionIsStreaming(sessionId).then((streaming) => {
+      if (settled) return;
+      if (streaming) {
+        sawRunning = true;
+      } else if (!requireRunEvidence) {
+        settleIdle();
+      }
+    }).catch(() => {
+    });
+  });
+}
+async function kernelSessionIsStreaming(sessionId) {
+  if (!sessionId) return false;
+  try {
+    const kernel = await getKernel();
+    const state5 = await kernel.getSessionState(sessionId);
+    return state5.state === "running" || state5.isStreaming;
+  } catch {
+    return false;
+  }
+}
 function useKernelSessionState(sessionId) {
   const [state5, setState] = useState(() => getKernelSessionStateSnapshot(sessionId));
   useEffect(() => {
@@ -3897,7 +4472,7 @@ function useKernelSessionState(sessionId) {
       setState(getKernelSessionStateSnapshot(null));
       return;
     }
-    const localStore = sessionStoreManager2.getState().stores.get(sessionId);
+    const localStore = sessionStoreManager.getState().stores.get(sessionId);
     const localStreaming = localStore?.getState().isStreaming ?? false;
     const localError = localStore?.getState().error ?? null;
     setState({
@@ -3947,6 +4522,9 @@ var init_useKernelSessionState = __esm({
 });
 
 // src/host/types/chat.ts
+function isAssistantMessage(message) {
+  return message.type === "assistant";
+}
 function isUserMessage(message) {
   return message.type === "user";
 }
@@ -4777,6 +5355,184 @@ var init_types2 = __esm({
   }
 });
 
+// src/host/services/contextCompactHandoff.ts
+async function compactAndHandoff(params) {
+  const { sessionId, compact, onStage, signal } = params;
+  const mode = params.mode ?? "newSession";
+  const manager = sessionStoreManager2.getState();
+  const meta3 = manager.sessionMetadata.get(sessionId);
+  const store3 = manager.stores.get(sessionId)?.getState();
+  if (!meta3 || !store3) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoSession") };
+  }
+  const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === meta3.workspaceId);
+  if (!workspace?.path) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+  }
+  const sourceEngineId = normalizeEngineId(meta3.engineId);
+  const conversationId = store3.conversationId ?? "";
+  let compactSessionId = null;
+  try {
+    onStage?.("loading");
+    const fallbackMessages = [...store3.getPersistableMessages(), ...store3.archivedMessages ?? []];
+    const messages = await loadConversationMessages(sourceEngineId, conversationId, fallbackMessages);
+    if (messages.length === 0) {
+      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
+    }
+    throwIfAborted(signal);
+    onStage?.("packing");
+    const { fileRef } = await packToFile(messages, meta3.title, conversationId || sessionId, workspace.path);
+    log5.info("\u538B\u7F29\u4EA4\u63A5\uFF1A\u6E90\u4F1A\u8BDD\u5DF2\u5B58\u6863", { absPath: fileRef.absPath, messageCount: messages.length });
+    throwIfAborted(signal);
+    onStage?.("compacting");
+    compactSessionId = sessionStoreManager2.getState().createSession({
+      type: "project",
+      workspaceId: meta3.workspaceId,
+      title: i18n_default.t("chat:compactHandoff.compactSessionTitle", { title: meta3.title }),
+      engineId: normalizeEngineId(compact.engineId || sourceEngineId),
+      silentMode: true,
+      modelProfileId: compact.modelProfileId || void 0,
+      model: compact.model || void 0
+    });
+    const compactStore = sessionStoreManager2.getState().stores.get(compactSessionId);
+    if (!compactStore) {
+      return { ok: false, error: i18n_default.t("chat:compactHandoff.failCreateCompactSession") };
+    }
+    const prompt = `${i18n_default.t("chat:compactHandoff.readInstruction", { ref: `@${fileRef.relPath}` })}
+
+${compact.instruction}`;
+    await compactStore.getState().sendMessage(prompt, workspace.path, void 0, {
+      // 静默会话不可见，任何交互式权限等待都会永久挂起 —— 强制 bypass
+      runtimeOverride: {
+        permissionMode: "bypassPermissions"
+      }
+    });
+    if (compactStore.getState().error) {
+      return { ok: false, error: compactStore.getState().error ?? i18n_default.t("chat:compactHandoff.failToast") };
+    }
+    await waitForIdle(compactSessionId, signal);
+    const stateAfter = compactStore.getState();
+    if (stateAfter.error) {
+      return { ok: false, error: stateAfter.error };
+    }
+    let briefingRaw = extractLastAssistantText(compactStore);
+    if (!briefingRaw) {
+      const cur = compactStore.getState().currentMessage;
+      if (cur?.blocks?.length) {
+        briefingRaw = cur.blocks.filter((b12) => b12.type === "text").map((b12) => b12.content).join("\n\n").trim();
+        log5.info("\u538B\u7F29\u4EA4\u63A5\uFF1A\u7B80\u62A5\u6B63\u6587\u6EDE\u7559 currentMessage\uFF0C\u5DF2\u515C\u5E95\u63D0\u53D6\uFF08finishMessage \u672A\u53CA\u65F6\u5F52\u6863\uFF09");
+      }
+    }
+    const briefing = sanitizeBriefing(briefingRaw);
+    if (!briefing) {
+      return { ok: false, error: i18n_default.t("chat:compactHandoff.emptyBriefing") };
+    }
+    sessionStoreManager2.getState().deleteSession(compactSessionId);
+    compactSessionId = null;
+    throwIfAborted(signal);
+    if (mode === "copyPrompt") {
+      const backtrack2 = i18n_default.t("chat:compactHandoff.backtrackNote", {
+        ref: `@${fileRef.relPath}`,
+        title: meta3.title
+      });
+      const fullBriefing2 = `${briefing}
+
+${backtrack2}`;
+      log5.info("\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt \u6A21\u5F0F\uFF09", { sourceSessionId: sessionId, briefingLength: fullBriefing2.length });
+      return { ok: true, briefing: fullBriefing2 };
+    }
+    const newSession = params.newSession ?? {};
+    onStage?.("creating");
+    const newSessionId = sessionStoreManager2.getState().createSession({
+      type: "project",
+      workspaceId: meta3.workspaceId,
+      title: i18n_default.t("chat:compactHandoff.newSessionTitle", { title: meta3.title }),
+      engineId: normalizeEngineId(newSession.engineId || sourceEngineId)
+    });
+    const backtrack = i18n_default.t("chat:compactHandoff.backtrackNote", {
+      ref: `@${fileRef.relPath}`,
+      title: meta3.title
+    });
+    const fullBriefing = `${briefing}
+
+${backtrack}`;
+    sessionStoreManager2.getState().stores.get(newSessionId)?.getState().setPendingBriefing(fullBriefing);
+    log5.info("\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { sourceSessionId: sessionId, newSessionId, briefingLength: fullBriefing.length });
+    return { ok: true, newSessionId, briefing: fullBriefing };
+  } catch (e3) {
+    const err = e3 instanceof Error ? e3 : new Error(String(e3));
+    log5.error("\u538B\u7F29\u4EA4\u63A5\u5931\u8D25", err, { sessionId });
+    return { ok: false, error: err.message };
+  } finally {
+    if (compactSessionId) {
+      const leftover = sessionStoreManager2.getState().stores.get(compactSessionId);
+      if (leftover?.getState().isStreaming) {
+        void leftover.getState().interrupt();
+      }
+      sessionStoreManager2.getState().deleteSession(compactSessionId);
+    }
+  }
+}
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw new Error(i18n_default.t("chat:compactHandoff.cancelled"));
+  }
+}
+function waitForIdle(sessionId, signal) {
+  return waitKernelSessionStreamEnd(sessionId, {
+    timeoutMs: COMPACT_TIMEOUT_MS,
+    signal,
+    requireRunEvidence: true
+  }).catch(async (err) => {
+    const store3 = sessionStoreManager2.getState().stores.get(sessionId);
+    if (store3?.getState().isStreaming) {
+      void store3.getState().interrupt();
+    }
+    throw err instanceof Error ? err : new Error(String(err));
+  });
+}
+function extractLastAssistantText(store3) {
+  const { messages, currentMessage } = store3.getState();
+  const lastAssistant = [...messages].reverse().find(isAssistantMessage);
+  if (!lastAssistant?.blocks) {
+    log5.warn("extractLastAssistantText\uFF1Amessages \u4E2D\u65E0 assistant \u6D88\u606F", {
+      messageCount: messages.length,
+      hasCurrentMessage: !!currentMessage,
+      currentBlocks: currentMessage?.blocks?.length ?? 0
+    });
+    return "";
+  }
+  return lastAssistant.blocks.filter((b12) => b12.type === "text").map((b12) => b12.content).join("\n\n").trim();
+}
+function sanitizeBriefing(raw) {
+  let text5 = raw.trim();
+  if (!text5) return "";
+  const fenced = text5.match(/^```(?:markdown|md)?\s*\n([\s\S]*?)\n```$/);
+  if (fenced) text5 = fenced[1].trim();
+  const headingIdx = text5.search(/^#{1,3}\s+/m);
+  if (headingIdx > 0) {
+    text5 = text5.slice(headingIdx).trim();
+  }
+  if (!text5) return raw.trim();
+  return text5;
+}
+var log5, COMPACT_TIMEOUT_MS;
+var init_contextCompactHandoff = __esm({
+  "src/host/services/contextCompactHandoff.ts"() {
+    init_i18n();
+    init_logger();
+    init_sessionStoreManager();
+    init_stores();
+    init_conversationPackager();
+    init_sessionHandoff();
+    init_useKernelSessionState();
+    init_types2();
+    init_engineDisplay();
+    log5 = createLogger("ContextCompactHandoff");
+    COMPACT_TIMEOUT_MS = 15 * 60 * 1e3;
+  }
+});
+
 // src/host/services/assistantTextUtils.ts
 function extractAssistantText(message) {
   if (!message) return "";
@@ -4893,7 +5649,7 @@ function executeSingleRound(opts) {
       abortSignal
     } = opts;
     const isDeep = mode === "deep";
-    const manager = sessionStoreManager2.getState();
+    const manager = sessionStoreManager.getState();
     const settle = (r3) => {
       if (abortSignal.aborted) {
         resolve2({ ok: false, error: null });
@@ -4913,7 +5669,7 @@ function executeSingleRound(opts) {
       silentMode: true,
       kind: "prompt-optimize"
     });
-    const optStore = sessionStoreManager2.getState().stores.get(optimizeSessionId);
+    const optStore = sessionStoreManager.getState().stores.get(optimizeSessionId);
     if (!optStore) {
       settle({ ok: false, error: i18n_default.t("chat:promptOptimize.errorCreateSession", "\u4F18\u5316\u4F1A\u8BDD\u521B\u5EFA\u5931\u8D25") });
       return;
@@ -5026,10 +5782,10 @@ async function runPromptOptimize(options2) {
   const mode = options2.mode === "deep" ? "deep" : "quick";
   const dir2 = direction2 ?? "structured";
   const iterations2 = Math.max(1, Math.min(MAX_ITERATIONS, options2.iterations ?? 1));
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const srcStore = manager.stores.get(sourceSessionId);
   if (!srcStore) {
-    log3.warn("\u6E90\u4F1A\u8BDD\u4E0D\u5B58\u5728\uFF0C\u5FFD\u7565\u4F18\u5316\u8BF7\u6C42", { sourceSessionId });
+    log6.warn("\u6E90\u4F1A\u8BDD\u4E0D\u5B58\u5728\uFF0C\u5FFD\u7565\u4F18\u5316\u8BF7\u6C42", { sourceSessionId });
     return;
   }
   activeRuns.get(sourceSessionId)?.();
@@ -5037,7 +5793,7 @@ async function runPromptOptimize(options2) {
   activeRuns.set(sourceSessionId, () => {
     abort.aborted = true;
   });
-  log3.info("\u5F00\u59CB\u63D0\u793A\u8BCD\u4F18\u5316", {
+  log6.info("\u5F00\u59CB\u63D0\u793A\u8BCD\u4F18\u5316", {
     sourceSessionId,
     engineId,
     mode,
@@ -5048,7 +5804,7 @@ async function runPromptOptimize(options2) {
   let currentText = sourceText;
   for (let i2 = 1; i2 <= iterations2; i2++) {
     if (abort.aborted) {
-      log3.info("\u8FED\u4EE3\u88AB\u53D6\u6D88\uFF0C\u505C\u6B62\u540E\u7EED\u8F6E", { sourceSessionId, atIteration: i2 });
+      log6.info("\u8FED\u4EE3\u88AB\u53D6\u6D88\uFF0C\u505C\u6B62\u540E\u7EED\u8F6E", { sourceSessionId, atIteration: i2 });
       break;
     }
     const isLast = i2 === iterations2;
@@ -5073,15 +5829,15 @@ async function runPromptOptimize(options2) {
     if (result.ok) {
       if (isLast) {
         src.completePromptOptimize(result.text);
-        log3.info("\u63D0\u793A\u8BCD\u4F18\u5316\u5B8C\u6210", { sourceSessionId, resultLength: result.text.length, iteration: i2 });
+        log6.info("\u63D0\u793A\u8BCD\u4F18\u5316\u5B8C\u6210", { sourceSessionId, resultLength: result.text.length, iteration: i2 });
       } else {
         src.continuePromptOptimize(result.text);
-        log3.info("\u8FED\u4EE3\u8F6E\u5B8C\u6210", { sourceSessionId, iteration: i2, of: iterations2, resultLength: result.text.length });
+        log6.info("\u8FED\u4EE3\u8F6E\u5B8C\u6210", { sourceSessionId, iteration: i2, of: iterations2, resultLength: result.text.length });
       }
     } else {
       const failReason = "error" in result ? result.error ?? "" : "";
       src.failPromptOptimize(failReason);
-      log3.warn("\u63D0\u793A\u8BCD\u4F18\u5316\u5931\u8D25", { sourceSessionId, atIteration: i2, error: failReason });
+      log6.warn("\u63D0\u793A\u8BCD\u4F18\u5316\u5931\u8D25", { sourceSessionId, atIteration: i2, error: failReason });
       break;
     }
     if (isLast) break;
@@ -5099,7 +5855,7 @@ async function runPromptOptimize(options2) {
   }
 }
 function cancelPromptOptimize(sourceSessionId) {
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const srcStore = manager.stores.get(sourceSessionId);
   const po2 = srcStore?.getState().promptOptimize;
   activeRuns.get(sourceSessionId)?.();
@@ -5108,10 +5864,10 @@ function cancelPromptOptimize(sourceSessionId) {
     void optStore?.getState().interrupt().catch(() => void 0);
   }
   srcStore?.getState().failPromptOptimize(null);
-  log3.info("\u53D6\u6D88\u63D0\u793A\u8BCD\u4F18\u5316", { sourceSessionId });
+  log6.info("\u53D6\u6D88\u63D0\u793A\u8BCD\u4F18\u5316", { sourceSessionId });
 }
 function usePromptOptimizePreview(optimizeSessionId) {
-  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
   const store3 = optimizeSessionId ? stores.get(optimizeSessionId) ?? null : null;
   const cachedRef = useRef(EMPTY_PREVIEW);
   const getSnapshot = useCallback(() => {
@@ -5127,7 +5883,7 @@ function usePromptOptimizePreview(optimizeSessionId) {
   const subscribe = useCallback(
     (onChange) => {
       if (!store3) {
-        return sessionStoreManager2.subscribe(onChange);
+        return sessionStoreManager.subscribe(onChange);
       }
       return store3.subscribe(onChange);
     },
@@ -5135,7 +5891,7 @@ function usePromptOptimizePreview(optimizeSessionId) {
   );
   return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_PREVIEW);
 }
-var log3, OPTIMIZE_CONFIG_STORAGE_KEY, QUICK_TIMEOUT_MS, DEEP_TIMEOUT_MS, MAX_ITERATIONS, PROMPT_OPTIMIZE_SYSTEM_PROMPT, PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT, DEEP_ALLOWED_TOOLS, DIRECTION_INSTRUCTIONS, CUSTOM_DIRECTION_MAX, activeRuns, RECENT_CONTEXT_TURNS, RECENT_CONTEXT_PER_MSG, EMPTY_PREVIEW;
+var log6, OPTIMIZE_CONFIG_STORAGE_KEY, QUICK_TIMEOUT_MS, DEEP_TIMEOUT_MS, MAX_ITERATIONS, PROMPT_OPTIMIZE_SYSTEM_PROMPT, PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT, DEEP_ALLOWED_TOOLS, DIRECTION_INSTRUCTIONS, CUSTOM_DIRECTION_MAX, activeRuns, RECENT_CONTEXT_TURNS, RECENT_CONTEXT_PER_MSG, EMPTY_PREVIEW;
 var init_promptOptimizeService = __esm({
   "src/host/services/promptOptimizeService.ts"() {
     init_esm();
@@ -5145,7 +5901,7 @@ var init_promptOptimizeService = __esm({
     init_assistantTextUtils();
     init_engineDisplay();
     init_logger();
-    log3 = createLogger("PromptOptimize");
+    log6 = createLogger("PromptOptimize");
     OPTIMIZE_CONFIG_STORAGE_KEY = "polaris.promptOptimize.config";
     QUICK_TIMEOUT_MS = 18e4;
     DEEP_TIMEOUT_MS = 33e4;
@@ -5203,10 +5959,11 @@ __export(services_exports, {
   buildCapDetailBlock: () => buildCapDetailBlock,
   buildCapDigestBlock: () => buildCapDigestBlock,
   buildCapReferenceBlock: () => buildCapReferenceBlock,
-  cancelCompactHandoff: () => cancelCompactHandoff,
+  cancelCompactHandoff: () => cancelCompactHandoff2,
   cancelPromptOptimize: () => cancelPromptOptimize2,
   clearAnsweredQuestions: () => clearAnsweredQuestions,
   clearProcessedPlans: () => clearProcessedPlans,
+  compactAndHandoff: () => compactAndHandoff2,
   consumeCapUiDispatch: () => consumeCapUiDispatch,
   currentMode: () => currentMode,
   detectClientDescriptor: () => detectClientDescriptor,
@@ -5216,27 +5973,27 @@ __export(services_exports, {
   dropTracker: () => dropTracker,
   emit: () => emit,
   ensureWorkspace: () => ensureWorkspace2,
-  estimateTokens: () => estimateTokens,
+  estimateTokens: () => estimateTokens2,
   eventBus: () => eventBus,
   forkSession: () => forkSession2,
   getClaudeSettingsPath: () => getClaudeSettingsPath,
   getCliCommandSuggestions: () => getCliCommandSuggestions,
   getDefaultCompactInstruction: () => getDefaultCompactInstruction,
   getEventRouter: () => getEventRouter2,
-  getHandoffEligibility: () => getHandoffEligibility,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  getHandoffEligibility: () => getHandoffEligibility2,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility2,
   getPendingPlans: () => getPendingPlans,
   getPendingQuestions: () => getPendingQuestions,
   getTracker: () => getTracker,
   getUserSystemPrompt: () => getUserSystemPrompt,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
-  handoffSessionToNewSession: () => handoffSessionToNewSession,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession2,
+  handoffSessionToNewSession: () => handoffSessionToNewSession2,
   initDispatchTaskListener: () => initDispatchTaskListener,
   invoke: () => invoke,
   isListableRemote: () => isListableRemote,
   listen: () => listen,
   loadBackendMessages: () => loadBackendMessages,
-  loadConversationMessages: () => loadConversationMessages,
+  loadConversationMessages: () => loadConversationMessages2,
   loadMessagesForItem: () => loadMessagesForItem2,
   manualRefreshActiveSession: () => manualRefreshActiveSession,
   matchBlockedCliCommand: () => matchBlockedCliCommand,
@@ -5245,8 +6002,8 @@ __export(services_exports, {
   openExternal: () => openExternal,
   openExternalLink: () => openExternalLink,
   packForReference: () => packForReference,
-  packToFile: () => packToFile,
-  packToSummary: () => packToSummary,
+  packToFile: () => packToFile2,
+  packToSummary: () => packToSummary2,
   parseAgentSlashCommand: () => parseAgentSlashCommand,
   parseAssaultSlashCommand: () => parseAssaultSlashCommand,
   parseCapSlashCommand: () => parseCapSlashCommand,
@@ -5265,7 +6022,7 @@ __export(services_exports, {
   registerPendingQuestion: () => registerPendingQuestion,
   rejectPlan: () => rejectPlan,
   remoteSessionFollower: () => remoteSessionFollower,
-  requestCompactHandoff: () => requestCompactHandoff,
+  requestCompactHandoff: () => requestCompactHandoff2,
   resetTracker: () => resetTracker,
   resolveTemplateVariables: () => resolveTemplateVariables,
   respondPluginCard: () => respondPluginCard,
@@ -5298,12 +6055,13 @@ function aiChatDispatch(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility, handoffSessionToNewSession, getHistoryHandoffEligibility, handoffHistorySessionToNewSession, loadConversationMessages, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile, packToSummary, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction, openExternalLink;
+var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff2, cancelCompactHandoff2, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
     init_eventRouter();
     init_sessionRestore();
+    init_contextCompactHandoff();
     init_promptOptimizeService();
     emit = (...args) => coreService("transport").emit(...args);
     currentMode = coreService("transport").currentMode;
@@ -5333,13 +6091,14 @@ var init_services = __esm({
     loadMessagesForItem2 = (...args) => loadMessagesForItem(...args);
     loadBackendMessages = (...args) => coreService("sessionArchive").loadBackendMessages(...args);
     aiHistoryDispatch = (...args) => coreService("aiHistoryDispatch").aiHistoryDispatch(...args);
-    getHandoffEligibility = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
-    handoffSessionToNewSession = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
-    getHistoryHandoffEligibility = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
-    handoffHistorySessionToNewSession = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
-    loadConversationMessages = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
-    requestCompactHandoff = (...args) => coreService("contextCompactHandoff").requestCompactHandoff(...args);
-    cancelCompactHandoff = (...args) => coreService("contextCompactHandoff").cancelCompactHandoff(...args);
+    getHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
+    handoffSessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
+    getHistoryHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
+    handoffHistorySessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
+    loadConversationMessages2 = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
+    compactAndHandoff2 = (...args) => compactAndHandoff(...args);
+    requestCompactHandoff2 = (...args) => (void 0)(...args);
+    cancelCompactHandoff2 = (...args) => (void 0)(...args);
     runPromptOptimize2 = (...args) => runPromptOptimize(...args);
     cancelPromptOptimize2 = (...args) => cancelPromptOptimize(...args);
     readStoredOptimizeConfig2 = (...args) => readStoredOptimizeConfig(...args);
@@ -5354,7 +6113,7 @@ var init_services = __esm({
     getTracker = (...args) => coreService("streamRateTracker").getTracker(...args);
     resetTracker = (...args) => coreService("streamRateTracker").resetTracker(...args);
     dropTracker = (...args) => coreService("streamRateTracker").dropTracker(...args);
-    estimateTokens = (...args) => coreService("streamRateTracker").estimateTokens(...args);
+    estimateTokens2 = (...args) => coreService("streamRateTracker").estimateTokens(...args);
     consumeCapUiDispatch = (...args) => coreService("uiDispatchService").consumeCapUiDispatch(...args);
     dispatchCapUiAction = (...args) => coreService("uiDispatchService").dispatchCapUiAction(...args);
     parseCapSlashCommand = (...args) => coreService("capSlashCommand").parseCapSlashCommand(...args);
@@ -5373,8 +6132,8 @@ var init_services = __esm({
     rewriteDispatchPromptWithAgent = (...args) => coreService("agentSlashCommand").rewriteDispatchPromptWithAgent(...args);
     NEXUS_SCENARIOS = coreService("agentSlashCommand").NEXUS_SCENARIOS;
     packForReference = (...args) => coreService("conversationPackager").packForReference(...args);
-    packToFile = (...args) => coreService("conversationPackager").packToFile(...args);
-    packToSummary = (...args) => coreService("conversationPackager").packToSummary(...args);
+    packToFile2 = (...args) => coreService("conversationPackager").packToFile(...args);
+    packToSummary2 = (...args) => coreService("conversationPackager").packToSummary(...args);
     readNewSessionPrefs = (...args) => coreService("newSessionPrefsService").readNewSessionPrefs(...args);
     persistNewSessionPrefs = (...args) => coreService("newSessionPrefsService").persistNewSessionPrefs(...args);
     searchFiles = (...args) => coreService("fileSearch").searchFiles(...args);
@@ -5662,68 +6421,6 @@ var init_patchParser = __esm({
   }
 });
 
-// src/shims/misc.ts
-function core() {
-  return globalThis.__POLARIS_APP_CORE__;
-}
-function isMobileUserAgent() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-function isMobileTauriRuntime() {
-  return isMobileUserAgent() && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-function listEnabledPluginMcpServers(pluginStates) {
-  return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
-}
-function convertFileSrc(path4) {
-  return core().tauri.convertFileSrc(path4);
-}
-function listPluginMcpServerStatuses(pluginStates) {
-  return core().pluginSystem.listPluginMcpServerStatuses?.(pluginStates) ?? [];
-}
-function getActiveModelProfile() {
-  return core().stores.useModelProfileStore.getState().getActiveProfile?.() ?? core().stores.useModelProfileStore.getState().activeProfile;
-}
-function getModelProfileById(id38) {
-  const s3 = core().stores.useModelProfileStore.getState();
-  return s3.profiles?.find?.((p3) => p3.id === id38);
-}
-var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
-var init_misc = __esm({
-  "src/shims/misc.ts"() {
-    init_stores();
-    i18n = new Proxy({}, {
-      get: (_t, prop) => {
-        const inst2 = core().i18n;
-        return inst2 ? inst2[prop] : void 0;
-      }
-    });
-    pluginRegistry = new Proxy({}, {
-      get: (_t, prop) => core().pluginSystem.pluginRegistry[prop]
-    });
-    chatCardRegistry = new Proxy({}, {
-      get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
-    });
-    Button = core().components.Button;
-    JsonTreeView = core().components.JsonTreeView;
-    OverlayGuard = core().components.OverlayGuard;
-    ConfirmDialog = core().components.ConfirmDialog;
-    Modal = core().components.Modal;
-    DropdownMenu = core().components.DropdownMenu;
-    DiffViewer = core().components.DiffViewer;
-    WorkspaceBadge = core().components.WorkspaceBadge;
-    WorkspaceMenu = core().components.WorkspaceMenu;
-    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
-    useWorkspaceFilter = core().components.useWorkspaceFilter;
-    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
-    Icons = new Proxy({}, { get: () => core().components.Icons });
-    IconSend = core().components.Icons.IconSend;
-    IconStop = core().components.Icons.IconStop;
-    IconPaperclip = core().components.Icons.IconPaperclip;
-  }
-});
-
 // src/host/conversationStore/eventHandler.ts
 function pushStreamDelta(state5, set5, at2, text5) {
   if (!at2 || !text5) return;
@@ -5867,7 +6564,7 @@ function handleAIEvent(event3, set5, get6) {
       {
         const isSilentStart = (() => {
           try {
-            return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
+            return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
           } catch {
             return void 0;
           }
@@ -5882,17 +6579,17 @@ function handleAIEvent(event3, set5, get6) {
         });
       }
       if (event3.engineId && state5.sessionId) {
-        const managerState = sessionStoreManager.getState();
+        const managerState = sessionStoreManager2.getState();
         const currentMeta = managerState.sessionMetadata.get(state5.sessionId);
         if (currentMeta && currentMeta.engineId !== event3.engineId) {
           const newMeta = { ...currentMeta, engineId: event3.engineId };
           const newMetadata = new Map(managerState.sessionMetadata);
           newMetadata.set(state5.sessionId, newMeta);
-          sessionStoreManager.setState({ sessionMetadata: newMetadata });
-          log4.info("\u4F1A\u8BDD\u5F15\u64CE\u5DF2\u66F4\u65B0", { sessionId: state5.sessionId, engineId: event3.engineId });
+          sessionStoreManager2.setState({ sessionMetadata: newMetadata });
+          log7.info("\u4F1A\u8BDD\u5F15\u64CE\u5DF2\u66F4\u65B0", { sessionId: state5.sessionId, engineId: event3.engineId });
         }
       }
-      log4.info("Session started", { sessionId: event3.sessionId });
+      log7.info("Session started", { sessionId: event3.sessionId });
       break;
     case "session_end": {
       const rateTracker = getTracker(state5.sessionId);
@@ -5916,7 +6613,7 @@ function handleAIEvent(event3, set5, get6) {
       });
       const sessionMeta = (() => {
         try {
-          return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
+          return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
         } catch {
           return void 0;
         }
@@ -5932,7 +6629,7 @@ function handleAIEvent(event3, set5, get6) {
       }
       if (event3.reason === "error" && !get6().error) {
         if (get6().isInterrupting) {
-          log4.info("Session end after user interrupt, suppressed error display");
+          log7.info("Session end after user interrupt, suppressed error display");
         } else {
           set5({ error: "errors:appError.ai" });
         }
@@ -5943,7 +6640,7 @@ function handleAIEvent(event3, set5, get6) {
       if (typeof get6().dispatchNextPending === "function") {
         void get6().dispatchNextPending();
       }
-      log4.info("Session ended", {
+      log7.info("Session ended", {
         sessionId: state5.sessionId,
         reason: event3.reason,
         isStreaming: false
@@ -5965,7 +6662,7 @@ function handleAIEvent(event3, set5, get6) {
         if (cur) {
           const hasText = cur.blocks.some((b12) => b12.type === "text" && (b12.content || "").length > 0);
           if (hasText) {
-            log4?.debug?.("[eventHandler] assistant_message(isDelta=false) \u8DF3\u8FC7\uFF1A\u5DF2\u6709\u6D41\u5F0F\u6587\u672C\uFF0C\u5B8C\u6574\u5E27\u56DE\u653E");
+            log7?.debug?.("[eventHandler] assistant_message(isDelta=false) \u8DF3\u8FC7\uFF1A\u5DF2\u6709\u6D41\u5F0F\u6587\u672C\uFF0C\u5B8C\u6574\u5E27\u56DE\u653E");
             break;
           }
         }
@@ -5978,7 +6675,7 @@ function handleAIEvent(event3, set5, get6) {
       if (isBusDispatchTool(toolName)) {
         const { consumed, message } = consumeCapUiDispatch(event3.args);
         if (consumed) {
-          log4.info("cap.ui consumed", { tool: toolName, message });
+          log7.info("cap.ui consumed", { tool: toolName, message });
         }
       }
       if (isInteractiveTool(toolName)) {
@@ -6201,7 +6898,7 @@ function handleAIEvent(event3, set5, get6) {
       if (event3.phase === "completed" && event3.outcome && event3.outcome !== "success") {
         set5({ progressMessage: `\u{1FA9D} ${event3.hookEvent || event3.hookName}: ${event3.outcome}` });
       } else {
-        log4.debug("Hook event", {
+        log7.debug("Hook event", {
           hookName: event3.hookName,
           phase: event3.phase,
           outcome: event3.outcome
@@ -6423,12 +7120,12 @@ function handleAIEvent(event3, set5, get6) {
     }
     default: {
       const _exhaustive = event3;
-      log4.warn("Unhandled event type", { type: _exhaustive.type });
+      log7.warn("Unhandled event type", { type: _exhaustive.type });
     }
   }
 }
 function buildDialogMetaInput(state5, messages) {
-  const metadata = sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
+  const metadata = sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
   const engineId = normalizeEngineId(metadata?.engineId);
   const firstUserMessage = messages.find((m4) => m4.type === "user");
   let title2 = metadata?.title || "\u65B0\u4F1A\u8BDD";
@@ -6495,12 +7192,12 @@ async function saveDialog(get6, set5) {
         historyPaging: prefixCount > 0 ? { earliestSeq: prefixCount, hasMore: true, sourceId: conversationId } : null
       });
     }
-    log4.info("\u4F1A\u8BDD\u5DF2\u4FDD\u5B58\u5230 JSONL", { conversationId, messageCount: messages.length });
+    log7.info("\u4F1A\u8BDD\u5DF2\u4FDD\u5B58\u5230 JSONL", { conversationId, messageCount: messages.length });
   } catch (e3) {
-    log4.error("\u4FDD\u5B58\u4F1A\u8BDD\u5230 JSONL \u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log7.error("\u4FDD\u5B58\u4F1A\u8BDD\u5230 JSONL \u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
-var log4, CODE_MODE_CODE_RE;
+var log7, CODE_MODE_CODE_RE;
 var init_eventHandler = __esm({
   "src/host/conversationStore/eventHandler.ts"() {
     init_uuid();
@@ -6515,7 +7212,7 @@ var init_eventHandler = __esm({
     init_services();
     init_services();
     init_services();
-    log4 = createLogger("EventHandler");
+    log7 = createLogger("EventHandler");
     CODE_MODE_CODE_RE = /\btools\[\s*["'][^"']+["']\s*\]\s*\./;
   }
 });
@@ -6524,7 +7221,7 @@ var init_eventHandler = __esm({
 function isCompacted(message) {
   return COMPACT_MARKER in message;
 }
-function truncate(str2, maxLen) {
+function truncate2(str2, maxLen) {
   if (maxLen === 0) return "";
   if (str2.length <= maxLen) return str2;
   return str2.slice(0, maxLen) + `... [compacted, original ${str2.length} chars]`;
@@ -6689,7 +7386,7 @@ var init_messageCompactor = __esm({
       compactUserMessage(message) {
         return {
           ...message,
-          content: truncate(message.content, TRUNCATE.userContent),
+          content: truncate2(message.content, TRUNCATE.userContent),
           attachments: message.attachments?.map((a3) => ({
             id: a3.id,
             type: a3.type,
@@ -6743,7 +7440,7 @@ var init_messageCompactor = __esm({
       compactThinkingBlock(block2) {
         return {
           ...block2,
-          content: truncate(block2.content, TRUNCATE.thinkingContent),
+          content: truncate2(block2.content, TRUNCATE.thinkingContent),
           collapsed: true
         };
       }
@@ -6753,7 +7450,7 @@ var init_messageCompactor = __esm({
       compactTextBlock(block2) {
         return {
           ...block2,
-          content: truncate(block2.content, TRUNCATE.textContent)
+          content: truncate2(block2.content, TRUNCATE.textContent)
         };
       }
       /**
@@ -6790,7 +7487,7 @@ __export(conversationStoreUtils_exports, {
   resolveSessionEngine: () => resolveSessionEngine
 });
 function resolveSessionEngine(sessionId, configEngineId) {
-  const metadataEngineId = sessionStoreManager.getState().sessionMetadata.get(sessionId)?.engineId;
+  const metadataEngineId = sessionStoreManager2.getState().sessionMetadata.get(sessionId)?.engineId;
   return normalizeEngineId(metadataEngineId || configEngineId);
 }
 function resolveAuxiliaryEngine(config3) {
@@ -6952,7 +7649,7 @@ ${r3.summary.trim()}` : "";
       interpolation: { escapeValue: false }
     });
   } catch (e3) {
-    log5.warn("\u6D3E\u53D1\u62A5\u544A\u6CE8\u5165\u5931\u8D25", { error: String(e3) });
+    log8.warn("\u6D3E\u53D1\u62A5\u544A\u6CE8\u5165\u5931\u8D25", { error: String(e3) });
     return "";
   }
 }
@@ -7228,7 +7925,7 @@ function createConversationStore(sessionId, deps) {
       },
       // ===== 临时上下文块（TCB） =====
       addContextBlock: (block2) => {
-        log5.info("[TCB] addContextBlock \u88AB\u8C03\u7528", {
+        log8.info("[TCB] addContextBlock \u88AB\u8C03\u7528", {
           id: block2?.id,
           kind: block2?.kind,
           title: block2?.title,
@@ -8603,7 +9300,7 @@ function createConversationStore(sessionId, deps) {
               i18n_default.t("chat:input.sendFailedQueued", "\u53D1\u9001\u5931\u8D25\uFF0C\u5DF2\u4FDD\u7559\u5728\u5F85\u53D1\u961F\u5217\uFF0C\u53EF\u70B9\u51FB\u300C\u7ACB\u5373\u53D1\u9001\u300D\u91CD\u8BD5")
             );
           } catch (toastErr) {
-            log5.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
+            log8.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
           }
           return;
         }
@@ -8669,7 +9366,7 @@ function createConversationStore(sessionId, deps) {
               );
             });
           } catch (toastErr) {
-            log5.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
+            log8.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
           }
           return;
         }
@@ -8703,7 +9400,7 @@ function createConversationStore(sessionId, deps) {
           contextWorkspaces,
           currentWorkspace?.id || null
         );
-        log5.info("sendMessage debug", {
+        log8.info("sendMessage debug", {
           sessionId: sessionId2,
           conversationId,
           providedWorkspaceDir: workspaceDir,
@@ -8730,7 +9427,7 @@ function createConversationStore(sessionId, deps) {
         get6().addMessage(userMessage);
         if (messages.length === 0) {
           const placeholder = generateTitleFromMessage(content);
-          sessionStoreManager.getState().updateSessionTitle(sessionId2, placeholder);
+          sessionStoreManager2.getState().updateSessionTitle(sessionId2, placeholder);
         }
         get6().clearInputDraft();
         set5({
@@ -8748,7 +9445,7 @@ function createConversationStore(sessionId, deps) {
           // 与 eventHandler session_start/session_end 的 silentMode 守卫保持一致。
           runStartAtMs: (() => {
             try {
-              const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
+              const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
               return meta3?.silentMode ? null : Date.now();
             } catch {
               return Date.now();
@@ -8770,7 +9467,7 @@ function createConversationStore(sessionId, deps) {
           }));
           const sessionConfig = getSessionConfig();
           const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, engine);
-          const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
+          const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
           const modelProfileId = resolveEffectiveProfileId(
             sessionMeta?.modelProfileId,
             sessionConfig.modelProfileId,
@@ -8832,7 +9529,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
               options: chatOptions
             });
           } else {
-            const sessionMeta2 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
+            const sessionMeta2 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
             const forkSessionId = sessionMeta2?.forkFromId;
             const newSessionId = await aiChatDispatch({
               action: "start",
@@ -8845,7 +9542,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
             set5({ conversationId: newSessionId });
           }
           try {
-            const mgrState = sessionStoreManager.getState();
+            const mgrState = sessionStoreManager2.getState();
             const meta3 = mgrState.sessionMetadata.get(sessionId2);
             if (meta3 && meta3.status !== "running" && meta3.status !== "background-running") {
               const newMetadata = new Map(mgrState.sessionMetadata);
@@ -8854,14 +9551,14 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
                 status: "running",
                 updatedAt: (/* @__PURE__ */ new Date()).toISOString()
               });
-              sessionStoreManager.setState({ sessionMetadata: newMetadata });
+              sessionStoreManager2.setState({ sessionMetadata: newMetadata });
             }
           } catch {
           }
           return true;
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log5.error("sendMessage failed", err, { sessionId: sessionId2, conversationId, workspaceDir: actualWorkspaceDir });
+          log8.error("sendMessage failed", err, { sessionId: sessionId2, conversationId, workspaceDir: actualWorkspaceDir });
           const draftNow = get6().inputDraft;
           const draftEmpty = !draftNow?.text && (!draftNow?.attachments || draftNow.attachments.length === 0);
           set5({
@@ -8901,7 +9598,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         if (!conversationId || !isStreaming) return;
         const config3 = deps.getConfig();
         const engine = resolveSessionEngine(get6().sessionId, config3?.defaultEngine);
-        log5.info("Attempting to interrupt session", { conversationId, engine, isStreaming });
+        log8.info("Attempting to interrupt session", { conversationId, engine, isStreaming });
         set5({ isInterrupting: true });
         try {
           const interruptInvoke = aiChatDispatch({
@@ -8913,7 +9610,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
             (_5, reject2) => setTimeout(() => reject2(new Error("interrupt invoke \u8D85\u65F6\uFF08\u540E\u7AEF\u65E0\u54CD\u5E94\uFF09")), 8e3)
           );
           await Promise.race([interruptInvoke, invokeTimeout]);
-          log5.info("Session interrupted, waiting for backend session_end to finalize", {
+          log8.info("Session interrupted, waiting for backend session_end to finalize", {
             conversationId
           });
           await waitFor(() => !get6().isStreaming, 8e3);
@@ -8923,7 +9620,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
             if (st3.conversationId !== conversationId) return;
             if (st3.turnEpoch !== epochAtInterrupt) return;
             if (st3.isStreaming || st3.isInterrupting) {
-              log5.warn("Interrupt timeout fallback: backend session_end not received, force-finishing streaming", {
+              log8.warn("Interrupt timeout fallback: backend session_end not received, force-finishing streaming", {
                 conversationId,
                 isStreaming: st3.isStreaming,
                 isInterrupting: st3.isInterrupting,
@@ -8937,7 +9634,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
           }, 5e3);
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log5.error("Interrupt failed", err, { conversationId, engine });
+          log8.error("Interrupt failed", err, { conversationId, engine });
           get6().settleSessionElapsedMs();
           set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
           get6().finishMessage();
@@ -8949,7 +9646,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
               i18n_default.t("chat:error.interruptFailedHint")
             );
           } catch (toastErr) {
-            log5.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
+            log8.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
           }
         }
       },
@@ -8966,7 +9663,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         const config3 = deps.getConfig();
         const currentEngine = resolveSessionEngine(get6().sessionId, config3?.defaultEngine);
         const { workspacePrompt, userPrompt, contextWorkspaces } = buildWorkspacePrompts(deps.getWorkspace, deps.getContextWorkspaceIds, deps.getAllWorkspaces);
-        log5.info("continueChat debug", {
+        log8.info("continueChat debug", {
           conversationId,
           actualWorkspaceDir,
           currentWorkspace: currentWorkspace ? { id: currentWorkspace.id, name: currentWorkspace.name, path: currentWorkspace.path } : null,
@@ -8976,7 +9673,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         set5({ isStreaming: true, error: null });
         const sessionConfig = getSessionConfig();
         const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, currentEngine);
-        const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
+        const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
         const modelProfileId = resolveEffectiveProfileId(
           sessionMeta?.modelProfileId,
           sessionConfig.modelProfileId,
@@ -9026,7 +9723,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
           });
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log5.error("continueChat failed", err, { conversationId, workspaceDir: actualWorkspaceDir });
+          log8.error("continueChat failed", err, { conversationId, workspaceDir: actualWorkspaceDir });
           set5({
             error: resolveChatError(e3, { conversationId, workspaceDir: actualWorkspaceDir }),
             isStreaming: false,
@@ -9038,12 +9735,12 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
       regenerateResponse: async (assistantMessageId) => {
         const { messages, isStreaming } = get6();
         if (isStreaming) {
-          log5.warn("regenerateResponse: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
+          log8.warn("regenerateResponse: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
           return;
         }
         const messageIndex = messages.findIndex((m4) => m4.id === assistantMessageId);
         if (messageIndex === -1) {
-          log5.warn("regenerateResponse: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { assistantMessageId });
+          log8.warn("regenerateResponse: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { assistantMessageId });
           return;
         }
         let userMessageIndex = -1;
@@ -9054,7 +9751,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
           }
         }
         if (userMessageIndex === -1) {
-          log5.warn("regenerateResponse: \u672A\u627E\u5230\u5BF9\u5E94\u7684\u7528\u6237\u6D88\u606F");
+          log8.warn("regenerateResponse: \u672A\u627E\u5230\u5BF9\u5E94\u7684\u7528\u6237\u6D88\u606F");
           return;
         }
         const userMessage = messages[userMessageIndex];
@@ -9074,7 +9771,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
           isStreaming: false,
           error: null
         });
-        log5.info("regenerateResponse: \u91CD\u65B0\u751F\u6210\u54CD\u5E94", {
+        log8.info("regenerateResponse: \u91CD\u65B0\u751F\u6210\u54CD\u5E94", {
           userMessageId: userMessage.id,
           removedCount: messages.length - userMessageIndex
         });
@@ -9083,7 +9780,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         const { sendMessage } = get6();
         const sent = await sendMessage(userContent, workspaceDir);
         if (sent === false) {
-          log5.warn("regenerateResponse: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
+          log8.warn("regenerateResponse: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
             removedCount: messages.length - userMessageIndex
           });
           set5({ messages, currentMessage: null });
@@ -9099,17 +9796,17 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
       editAndResend: async (userMessageId, newContent) => {
         const { messages, isStreaming } = get6();
         if (isStreaming) {
-          log5.warn("editAndResend: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
+          log8.warn("editAndResend: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
           return;
         }
         const messageIndex = messages.findIndex((m4) => m4.id === userMessageId);
         if (messageIndex === -1) {
-          log5.warn("editAndResend: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { userMessageId });
+          log8.warn("editAndResend: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { userMessageId });
           return;
         }
         const targetMessage = messages[messageIndex];
         if (targetMessage.type !== "user") {
-          log5.warn("editAndResend: \u76EE\u6807\u6D88\u606F\u4E0D\u662F\u7528\u6237\u6D88\u606F");
+          log8.warn("editAndResend: \u76EE\u6807\u6D88\u606F\u4E0D\u662F\u7528\u6237\u6D88\u606F");
           return;
         }
         const newMessages = messages.slice(0, messageIndex);
@@ -9128,7 +9825,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
           isStreaming: false,
           error: null
         });
-        log5.info("editAndResend: \u7F16\u8F91\u5E76\u91CD\u53D1\u6D88\u606F", {
+        log8.info("editAndResend: \u7F16\u8F91\u5E76\u91CD\u53D1\u6D88\u606F", {
           originalMessageId: userMessageId,
           removedCount: messages.length - messageIndex
         });
@@ -9137,7 +9834,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         const { sendMessage } = get6();
         const sent = await sendMessage(newContent, workspaceDir);
         if (sent === false) {
-          log5.warn("editAndResend: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
+          log8.warn("editAndResend: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
             removedCount: messages.length - messageIndex
           });
           set5({ messages, currentMessage: null });
@@ -9308,7 +10005,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
   );
   return store3;
 }
-var log5;
+var log8;
 var init_createConversationStore = __esm({
   "src/host/conversationStore/createConversationStore.ts"() {
     init_uuid();
@@ -9332,7 +10029,7 @@ var init_createConversationStore = __esm({
     init_dedupMessages2();
     init_stores();
     init_stores();
-    log5 = createLogger("ConversationStore");
+    log8 = createLogger("ConversationStore");
   }
 });
 
@@ -9365,11 +10062,11 @@ var init_event = __esm({
 function getEventBus(config3) {
   return EventBus.getInstance(config3);
 }
-var log6, NamespacedEventBus, EventBus, EventChannel;
+var log9, NamespacedEventBus, EventBus, EventChannel;
 var init_event_bus = __esm({
   "src/host/ai-runtime/event-bus.ts"() {
     init_logger();
-    log6 = createLogger("EventBus");
+    log9 = createLogger("EventBus");
     NamespacedEventBus = class {
       constructor(config3 = {}) {
         this.listeners = /* @__PURE__ */ new Map();
@@ -9462,7 +10159,7 @@ var init_event_bus = __esm({
               toRemove.push(wrapper.id);
             }
           } catch (error3) {
-            log6.error(`Listener error`, error3, { eventType });
+            log9.error(`Listener error`, error3, { eventType });
           }
         }
         toRemove.forEach((id38) => this.off(eventType, id38));
@@ -9486,7 +10183,7 @@ var init_event_bus = __esm({
       clear() {
         this.listeners.clear();
         if (this.config.debug) {
-          log6.debug("Cleared all listeners");
+          log9.debug("Cleared all listeners");
         }
       }
       /**
@@ -9500,7 +10197,7 @@ var init_event_bus = __esm({
        */
       log(message, context) {
         if (this.config.debug) {
-          log6.debug(message, context);
+          log9.debug(message, context);
         }
       }
     };
@@ -9674,31 +10371,31 @@ var init_event_bus = __esm({
 });
 
 // src/host/ai-runtime/engine-registry.ts
-var log7;
+var log10;
 var init_engine_registry = __esm({
   "src/host/ai-runtime/engine-registry.ts"() {
     init_event_bus();
     init_logger();
-    log7 = createLogger("AIEngineRegistry");
+    log10 = createLogger("AIEngineRegistry");
   }
 });
 
 // src/host/ai-runtime/tool-registry.ts
-var log8, ToolRegistryImpl, globalToolRegistry;
+var log11, ToolRegistryImpl, globalToolRegistry;
 var init_tool_registry = __esm({
   "src/host/ai-runtime/tool-registry.ts"() {
     init_logger();
-    log8 = createLogger("ToolRegistry");
+    log11 = createLogger("ToolRegistry");
     ToolRegistryImpl = class {
       constructor() {
         this.tools = /* @__PURE__ */ new Map();
       }
       register(tool) {
         if (this.tools.has(tool.name)) {
-          log8.warn("Tool already registered, overwriting", { toolName: tool.name });
+          log11.warn("Tool already registered, overwriting", { toolName: tool.name });
         }
         this.tools.set(tool.name, tool);
-        log8.info("Registered tool", { toolName: tool.name });
+        log11.info("Registered tool", { toolName: tool.name });
       }
       registerBatch(tools) {
         for (const tool of tools) {
@@ -9727,12 +10424,12 @@ var init_tool_registry = __esm({
           };
         }
         try {
-          log8.info("Executing tool", { toolName: name, input });
+          log11.info("Executing tool", { toolName: name, input });
           const result = await tool.execute(input);
-          log8.info("Tool completed", { toolName: name, success: result.success });
+          log11.info("Tool completed", { toolName: name, success: result.success });
           return result;
         } catch (error3) {
-          log8.error(`Tool failed: ${name}`, error3 instanceof Error ? error3 : new Error(String(error3)));
+          log11.error(`Tool failed: ${name}`, error3 instanceof Error ? error3 : new Error(String(error3)));
           return {
             success: false,
             error: error3 instanceof Error ? error3.message : String(error3),
@@ -9783,11 +10480,11 @@ var init_tool_registry = __esm({
       }
       unregister(name) {
         this.tools.delete(name);
-        log8.debug(`Unregistered tool: ${name}`);
+        log11.debug(`Unregistered tool: ${name}`);
       }
       clear() {
         this.tools.clear();
-        log8.debug("Cleared all tools");
+        log11.debug("Cleared all tools");
       }
     };
     globalToolRegistry = new ToolRegistryImpl();
@@ -9850,9 +10547,9 @@ function createSessionManagerStore() {
     createSession: (options2) => {
       const sessionId = options2.id || generateUUID();
       const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
-      log9.info("createSession \u8C03\u7528", { sessionId, optionsWorkspaceId: options2.workspaceId, optionsType: options2.type, optionsTitle: options2.title, engineId: options2.engineId });
+      log12.info("createSession \u8C03\u7528", { sessionId, optionsWorkspaceId: options2.workspaceId, optionsType: options2.type, optionsTitle: options2.title, engineId: options2.engineId });
       if (get6().stores.has(sessionId)) {
-        log9.info("\u4F1A\u8BDD\u5DF2\u5B58\u5728", { sessionId });
+        log12.info("\u4F1A\u8BDD\u5DF2\u5B58\u5728", { sessionId });
         return sessionId;
       }
       const configEngineId = useConfigStore.getState().config?.defaultEngine;
@@ -9879,7 +10576,7 @@ function createSessionManagerStore() {
         kind: options2.kind,
         commitWorkspaceId: options2.commitWorkspaceId
       };
-      log9.info("\u521B\u5EFA\u4F1A\u8BDD\u5143\u6570\u636E", { sessionId, metadataWorkspaceId: metadata.workspaceId, metadataType: metadata.type, engineId: metadata.engineId });
+      log12.info("\u521B\u5EFA\u4F1A\u8BDD\u5143\u6570\u636E", { sessionId, metadataWorkspaceId: metadata.workspaceId, metadataType: metadata.type, engineId: metadata.engineId });
       const contextId = `session-${sessionId}`;
       const deps = {
         getConfig: () => {
@@ -9927,7 +10624,7 @@ function createSessionManagerStore() {
         };
       });
       conversationStore.setState({ workspaceId: metadata.workspaceId });
-      log9.info("\u521B\u5EFA\u4F1A\u8BDD", { sessionId });
+      log12.info("\u521B\u5EFA\u4F1A\u8BDD", { sessionId });
       if (!options2.silentMode) {
         useViewStore.getState().addToMultiView(sessionId);
       }
@@ -9944,7 +10641,7 @@ function createSessionManagerStore() {
       const store3 = get6().stores.get(sessionId);
       if (store3) {
         store3.getState().setMessagesFromHistory(messages, conversationId, metadata?.paging);
-        log9.info("\u4ECE\u5386\u53F2\u521B\u5EFA\u4F1A\u8BDD", { sessionId, messageCount: messages.length, conversationId, forkFromId: metadata?.forkFromId });
+        log12.info("\u4ECE\u5386\u53F2\u521B\u5EFA\u4F1A\u8BDD", { sessionId, messageCount: messages.length, conversationId, forkFromId: metadata?.forkFromId });
       }
       return sessionId;
     },
@@ -9952,7 +10649,7 @@ function createSessionManagerStore() {
       const state5 = get6();
       const store3 = state5.stores.get(sessionId);
       if (!store3) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       const conversationId = store3.getState().conversationId;
@@ -9962,13 +10659,13 @@ function createSessionManagerStore() {
             const { dialogStorageService: dialogStorageService2 } = await Promise.resolve().then(() => (init_services(), services_exports));
             await dialogStorageService2.deleteConversation(conversationId);
           } catch (e3) {
-            log9.warn("\u5220\u9664\u4F1A\u8BDD JSONL \u5931\u8D25", { conversationId, error: String(e3) });
+            log12.warn("\u5220\u9664\u4F1A\u8BDD JSONL \u5931\u8D25", { conversationId, error: String(e3) });
           }
           try {
             const { invoke: invoke2 } = await Promise.resolve().then(() => (init_services(), services_exports));
             await invoke2("message_delete_by_conversation", { conversationId });
           } catch (e3) {
-            log9.warn("\u5220\u9664\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+            log12.warn("\u5220\u9664\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
           }
         })();
       }
@@ -9998,13 +10695,13 @@ function createSessionManagerStore() {
         };
       });
       useViewStore.getState().removeFromMultiView(sessionId);
-      log9.info("\u5220\u9664\u4F1A\u8BDD", { sessionId });
+      log12.info("\u5220\u9664\u4F1A\u8BDD", { sessionId });
     },
     switchSession: (sessionId) => {
       const state5 = get6();
       const store3 = state5.stores.get(sessionId);
       if (!store3) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       const currentStore = state5.activeSessionId ? state5.stores.get(state5.activeSessionId) : null;
@@ -10029,12 +10726,12 @@ function createSessionManagerStore() {
           targetMetadata.profileMode ?? globalProfileMode
         );
       }
-      log9.info("\u5207\u6362\u4F1A\u8BDD", { sessionId });
+      log12.info("\u5207\u6362\u4F1A\u8BDD", { sessionId });
     },
     updateSessionTitle: (sessionId, title2) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       set5((state5) => {
@@ -10046,17 +10743,17 @@ function createSessionManagerStore() {
         });
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u6807\u9898", { sessionId, title: title2 });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD\u6807\u9898", { sessionId, title: title2 });
     },
     updateSessionEngine: (sessionId, engineId) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return false;
       }
       const store3 = get6().stores.get(sessionId)?.getState();
       if (store3 && (store3.isStreaming || store3.conversationId || store3.messages.length > 0)) {
-        log9.warn("\u5DF2\u6709\u5185\u5BB9\u7684\u4F1A\u8BDD\u4E0D\u5141\u8BB8\u5207\u6362\u5F15\u64CE", {
+        log12.warn("\u5DF2\u6709\u5185\u5BB9\u7684\u4F1A\u8BDD\u4E0D\u5141\u8BB8\u5207\u6362\u5F15\u64CE", {
           sessionId,
           isStreaming: store3.isStreaming,
           hasConversationId: Boolean(store3.conversationId),
@@ -10077,13 +10774,13 @@ function createSessionManagerStore() {
         });
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u5F15\u64CE", { sessionId, engineId: normalizedEngineId });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD\u5F15\u64CE", { sessionId, engineId: normalizedEngineId });
       return true;
     },
     updateSessionModelProfile: (sessionId, modelProfileId) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       set5((state5) => {
@@ -10097,12 +10794,12 @@ function createSessionManagerStore() {
         });
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD Profile", { sessionId, modelProfileId });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD Profile", { sessionId, modelProfileId });
     },
     updateSessionProfileMode: (sessionId, profileMode) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       set5((state5) => {
@@ -10117,12 +10814,12 @@ function createSessionManagerStore() {
         });
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u4F9B\u5E94\u5546\u6A21\u5F0F", { sessionId, profileMode });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD\u4F9B\u5E94\u5546\u6A21\u5F0F", { sessionId, profileMode });
     },
     updateSessionModel: (sessionId, model) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       set5((state5) => {
@@ -10136,12 +10833,12 @@ function createSessionManagerStore() {
         });
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u6A21\u578B", { sessionId, model });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD\u6A21\u578B", { sessionId, model });
     },
     updateSessionAgent: (sessionId, agent) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       set5((state5) => {
@@ -10154,12 +10851,12 @@ function createSessionManagerStore() {
         });
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u4E13\u5BB6", { sessionId, agent });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD\u4E13\u5BB6", { sessionId, agent });
     },
     makeSessionVisible: (sessionId) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       if (!metadata.silentMode) {
@@ -10176,7 +10873,7 @@ function createSessionManagerStore() {
         return { sessionMetadata: newMetadata };
       });
       get6().switchSession(sessionId);
-      log9.info("\u4F1A\u8BDD\u5DF2\u8F6C\u4E3A\u53EF\u89C1", { sessionId });
+      log12.info("\u4F1A\u8BDD\u5DF2\u8F6C\u4E3A\u53EF\u89C1", { sessionId });
     },
     // ===== Store 访问 =====
     getStore: (sessionId) => {
@@ -10196,16 +10893,16 @@ function createSessionManagerStore() {
       const routeSessionId = event3._routeSessionId;
       if (!routeSessionId) {
         if (!RENDER_EVENT_TYPES.has(event3.type)) {
-          log9.warn("\u4E8B\u4EF6\u7F3A\u5C11 _routeSessionId\uFF0C\u4E22\u5F03", { type: event3.type });
+          log12.warn("\u4E8B\u4EF6\u7F3A\u5C11 _routeSessionId\uFF0C\u4E22\u5F03", { type: event3.type });
           return;
         }
         const activeId = get6().activeSessionId;
         const activeStore = activeId ? get6().stores.get(activeId) : void 0;
         if (!activeId || !activeStore) {
-          log9.warn("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID \u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { type: event3.type });
+          log12.warn("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID \u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { type: event3.type });
           return;
         }
-        log9.info("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID\uFF08sessionId \u672A\u586B\uFF09\uFF0C\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
+        log12.info("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID\uFF08sessionId \u672A\u586B\uFF09\uFF0C\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
           target: activeId,
           type: event3.type
         });
@@ -10220,7 +10917,7 @@ function createSessionManagerStore() {
               ([, s3]) => s3.getState().conversationId === conversationId
             ) : void 0;
             if (entry) {
-              log9.info("\u6E32\u67D3\u4E8B\u4EF6\u6309 conversationId \u53CD\u67E5\u6295\u9012", {
+              log12.info("\u6E32\u67D3\u4E8B\u4EF6\u6309 conversationId \u53CD\u67E5\u6295\u9012", {
                 routeSessionId,
                 target: entry[0],
                 type: event3.type
@@ -10230,14 +10927,14 @@ function createSessionManagerStore() {
               const activeId = get6().activeSessionId;
               const activeStore = activeId ? get6().stores.get(activeId) : void 0;
               if (activeId && activeStore) {
-                log9.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u539F\u59CB\u4F1A\u8BDD\uFF0C\u515C\u5E95\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
+                log12.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u539F\u59CB\u4F1A\u8BDD\uFF0C\u515C\u5E95\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
                   routeSessionId,
                   fallback: activeId,
                   type: event3.type
                 });
                 targetSessionId = activeId;
               } else {
-                log9.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
+                log12.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
                 return;
               }
             }
@@ -10249,7 +10946,7 @@ function createSessionManagerStore() {
             if (entry) {
               targetSessionId = entry[0];
             } else {
-              log9.warn("\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
+              log12.warn("\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
               return;
             }
           }
@@ -10257,12 +10954,12 @@ function createSessionManagerStore() {
       }
       const targetStore = get6().stores.get(targetSessionId);
       if (!targetStore) {
-        log9.warn("\u4E8B\u4EF6\u6295\u9012\u5931\u8D25\uFF1A\u76EE\u6807\u4F1A\u8BDD store \u4E0D\u5B58\u5728", { targetSessionId, type: event3.type });
+        log12.warn("\u4E8B\u4EF6\u6295\u9012\u5931\u8D25\uFF1A\u76EE\u6807\u4F1A\u8BDD store \u4E0D\u5B58\u5728", { targetSessionId, type: event3.type });
         return;
       }
       const turnId = event3._turnId;
       if (turnId && !targetStore.getState().observeTurnEvent(turnId, event3.type)) {
-        log9.info("\u65E7\u8F6E\u6B21\u8FDF\u5230\u7684\u7EC8\u6001\u4E8B\u4EF6\u5DF2\u4E22\u5F03", { targetSessionId, type: event3.type, turnId });
+        log12.info("\u65E7\u8F6E\u6B21\u8FDF\u5230\u7684\u7EC8\u6001\u4E8B\u4EF6\u5DF2\u4E22\u5F03", { targetSessionId, type: event3.type, turnId });
         return;
       }
       targetStore.getState().handleAIEvent(event3);
@@ -10295,7 +10992,7 @@ function createSessionManagerStore() {
       try {
         getEventBus().emit(event3);
       } catch (e3) {
-        log9.warn("EventBus emit \u5931\u8D25", { error: String(e3) });
+        log12.warn("EventBus emit \u5931\u8D25", { error: String(e3) });
       }
       const metadata = get6().sessionMetadata.get(targetSessionId);
       if (metadata) {
@@ -10349,7 +11046,7 @@ function createSessionManagerStore() {
           return { sessionMetadata: newMetadata };
         });
       }
-      log9.info("\u4F1A\u8BDD\u8FDB\u5165\u540E\u53F0", { sessionId });
+      log12.info("\u4F1A\u8BDD\u8FDB\u5165\u540E\u53F0", { sessionId });
     },
     removeFromBackground: (sessionId) => {
       set5((state5) => ({
@@ -10375,30 +11072,30 @@ function createSessionManagerStore() {
     interruptSession: async (sessionId) => {
       const store3 = get6().stores.get(sessionId);
       if (!store3) {
-        log9.warn("interruptSession: \u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("interruptSession: \u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       const state5 = store3.getState();
-      log9.info("interruptSession", { frontendSessionId: sessionId, backendConversationId: state5.conversationId, isStreaming: state5.isStreaming });
+      log12.info("interruptSession", { frontendSessionId: sessionId, backendConversationId: state5.conversationId, isStreaming: state5.isStreaming });
       try {
         await state5.interrupt();
       } catch (e3) {
-        log9.error("\u6253\u65AD\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { sessionId });
+        log12.error("\u6253\u65AD\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { sessionId });
       }
     },
     // ===== 工作区管理 =====
     updateSessionWorkspace: (sessionId, workspaceId) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
-      log9.info("updateSessionWorkspace \u8C03\u7528", { sessionId, newWorkspaceId: workspaceId, oldWorkspaceId: metadata.workspaceId });
+      log12.info("updateSessionWorkspace \u8C03\u7528", { sessionId, newWorkspaceId: workspaceId, oldWorkspaceId: metadata.workspaceId });
       let workspaceName;
       if (workspaceId) {
         const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
         workspaceName = workspace?.name;
-        log9.info("\u627E\u5230\u5DE5\u4F5C\u533A", { workspaceId, workspaceName, workspacePath: workspace?.path });
+        log12.info("\u627E\u5230\u5DE5\u4F5C\u533A", { workspaceId, workspaceName, workspacePath: workspace?.path });
       }
       const updatedMetadata = {
         ...metadata,
@@ -10418,12 +11115,12 @@ function createSessionManagerStore() {
       if (store3) {
         store3.setState({ workspaceId });
       }
-      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u5DE5\u4F5C\u533A\u5B8C\u6210", { sessionId, workspaceId });
+      log12.info("\u66F4\u65B0\u4F1A\u8BDD\u5DE5\u4F5C\u533A\u5B8C\u6210", { sessionId, workspaceId });
     },
     addContextWorkspace: (sessionId, workspaceId) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       if (metadata.contextWorkspaceIds.includes(workspaceId)) {
@@ -10439,12 +11136,12 @@ function createSessionManagerStore() {
         newMetadata.set(sessionId, updatedMetadata);
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u6DFB\u52A0\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
+      log12.info("\u6DFB\u52A0\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
     },
     removeContextWorkspace: (sessionId, workspaceId) => {
       const metadata = get6().sessionMetadata.get(sessionId);
       if (!metadata) {
-        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        log12.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
         return;
       }
       const updatedMetadata = {
@@ -10457,7 +11154,7 @@ function createSessionManagerStore() {
         newMetadata.set(sessionId, updatedMetadata);
         return { sessionMetadata: newMetadata };
       });
-      log9.info("\u79FB\u9664\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
+      log12.info("\u79FB\u9664\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
     },
     // ===== 初始化 =====
     initialize: async () => {
@@ -10475,16 +11172,16 @@ function createSessionManagerStore() {
             title: "\u65B0\u5BF9\u8BDD"
           }
         );
-        log9.info("\u5DF2\u521B\u5EFA\u9ED8\u8BA4\u4F1A\u8BDD");
+        log12.info("\u5DF2\u521B\u5EFA\u9ED8\u8BA4\u4F1A\u8BDD");
       }
       set5({ isInitialized: true });
-      log9.info("\u521D\u59CB\u5316\u5B8C\u6210");
+      log12.info("\u521D\u59CB\u5316\u5B8C\u6210");
     }
   }));
 }
 function useSessionMetadataList() {
   return useStore(
-    sessionStoreManager,
+    sessionStoreManager2,
     (state5) => {
       if (state5.sessionMetadata === cachedMetadataMap && cachedMetadataArray !== null) {
         return cachedMetadataArray;
@@ -10497,9 +11194,9 @@ function useSessionMetadataList() {
   );
 }
 function useActiveSessionId() {
-  return useStore(sessionStoreManager, (state5) => state5.activeSessionId);
+  return useStore(sessionStoreManager2, (state5) => state5.activeSessionId);
 }
-var log9, RENDER_EVENT_TYPES, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
+var log12, RENDER_EVENT_TYPES, sessionStoreManager2, cachedMetadataMap, cachedMetadataArray;
 var init_sessionStoreManager = __esm({
   "src/host/conversationStore/sessionStoreManager.ts"() {
     init_uuid();
@@ -10514,9 +11211,9 @@ var init_sessionStoreManager = __esm({
     init_engineDisplay();
     init_stores();
     init_types2();
-    log9 = createLogger("SessionStoreManager");
+    log12 = createLogger("SessionStoreManager");
     RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
-    sessionStoreManager = createSessionManagerStore();
+    sessionStoreManager2 = createSessionManagerStore();
     cachedMetadataMap = null;
     cachedMetadataArray = null;
   }
@@ -10556,11 +11253,11 @@ __export(useActiveSession_exports, {
 });
 import { useMemo, useCallback as useCallback2, useSyncExternalStore as useSyncExternalStore2 } from "react";
 function useSessionState(sessionId, selector2, fallback) {
-  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
   const store3 = sessionId ? stores.get(sessionId) ?? null : null;
   const subscribe = useCallback2(
     (onChange) => {
-      if (!store3) return sessionStoreManager.subscribe(onChange);
+      if (!store3) return sessionStoreManager2.subscribe(onChange);
       return store3.subscribe(onChange);
     },
     [store3]
@@ -10696,9 +11393,9 @@ function useActiveSessionBlockMaps() {
 function useActiveSessionActions() {
   return useMemo(() => {
     const getStore = () => {
-      const sid = sessionStoreManager.getState().activeSessionId;
+      const sid = sessionStoreManager2.getState().activeSessionId;
       if (!sid) return null;
-      return sessionStoreManager.getState().stores.get(sid)?.getState() ?? null;
+      return sessionStoreManager2.getState().stores.get(sid)?.getState() ?? null;
     };
     const call = (method, ...args) => {
       const store3 = getStore();
@@ -10708,7 +11405,7 @@ function useActiveSessionActions() {
     };
     return {
       sendMessage: async (...args) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return false;
         const kernel = await getKernel();
         const result = await kernel.sendMessage({
@@ -10721,25 +11418,25 @@ function useActiveSessionActions() {
         return result.ok !== false;
       },
       interrupt: async () => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.interrupt(sid);
       },
       continueChat: async (prompt, allowedTools) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.continueChat(sid, prompt ?? "", { allowedTools });
       },
       editAndResend: async (messageId, newContent) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.editAndResend(sid, messageId, newContent);
       },
       regenerateResponse: async (messageId) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.regenerate(sid, messageId);
@@ -10770,15 +11467,15 @@ function useActiveSessionActions() {
       loadMoreArchivedMessages: (count2 = 20) => call("loadMoreArchivedMessages", count2),
       onVisibleRangeChange: (start2, end) => call("onVisibleRangeChange", start2, end),
       // Manager actions
-      switchSession: sessionStoreManager.getState().switchSession,
-      deleteSession: sessionStoreManager.getState().deleteSession,
-      createSession: sessionStoreManager.getState().createSession
+      switchSession: sessionStoreManager2.getState().switchSession,
+      deleteSession: sessionStoreManager2.getState().deleteSession,
+      createSession: sessionStoreManager2.getState().createSession
     };
   }, []);
 }
 function useActiveSessionChat() {
   const sessionId = useActiveSessionId();
-  const stores = useStore(sessionStoreManager, (s3) => s3.stores);
+  const stores = useStore(sessionStoreManager2, (s3) => s3.stores);
   const store3 = sessionId ? stores.get(sessionId) ?? null : null;
   return useMemo(() => store3 ? store3.getState() : null, [store3]);
 }
@@ -10967,7 +11664,7 @@ __export(stores_exports, {
   resolveEffectiveProfileId: () => resolveEffectiveProfileId2,
   resolveSessionEngine: () => resolveSessionEngine2,
   selectSlotFill: () => selectSlotFill,
-  sessionStoreManager: () => sessionStoreManager2,
+  sessionStoreManager: () => sessionStoreManager,
   useActiveSessionActions: () => useActiveSessionActions2,
   useActiveSessionConversationId: () => useActiveSessionConversationId2,
   useActiveSessionError: () => useActiveSessionError2,
@@ -11034,7 +11731,7 @@ function useStoreHook(name) {
   return hook2;
 }
 function localManager() {
-  return sessionStoreManager;
+  return sessionStoreManager2;
 }
 function getSessionConfig() {
   return useSessionConfig.getState().config;
@@ -11075,10 +11772,11 @@ function findStoreByConversationId(...args) {
   if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
   return null;
 }
-var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager2, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
+var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
 var init_stores = __esm({
   "src/shims/stores.ts"() {
     init_core();
+    init_misc();
     init_sessionStoreManager();
     init_useActiveSession();
     init_sessionStoreManager();
@@ -11101,9 +11799,9 @@ var init_stores = __esm({
     useSnippetStore = useStoreHook("useSnippetStore");
     useSkillStore = useStoreHook("useSkillStore");
     useFileEditorStore = useStoreHook("useFileEditorStore");
-    useCompactHandoffStore = useStoreHook("useCompactHandoffStore");
+    useCompactHandoffStore = useCompactHandoffStore;
     useDispatchStore = useStoreHook("useDispatchStore");
-    sessionStoreManager2 = sessionStoreManager;
+    sessionStoreManager = sessionStoreManager2;
     hostActive = new Proxy({}, {
       get: (_t, p3) => {
         const local2 = useActiveSession_exports[p3];
@@ -27399,35 +28097,6 @@ var init_katex = __esm({
   }
 });
 
-// src/shims/path.ts
-function joinPath(basePath, name) {
-  const cleanBase = basePath.replace(/[/\\]+$/, "");
-  return `${cleanBase}/${name}`;
-}
-function isAbsolutePath(path4) {
-  return /^(?:[a-zA-Z]:[\\/]|\\\\|\/)/.test(path4);
-}
-function resolveWorkspacePath(workspacePath, filePath) {
-  if (!workspacePath || isAbsolutePath(filePath)) return filePath;
-  const separator = workspacePath.includes("\\") ? "\\" : "/";
-  const basePath = workspacePath.replace(/[\\/]+$/, "");
-  const relativePath = filePath.replace(/^[\\/]+/, "").replace(/[\\/]/g, separator);
-  return `${basePath}${separator}${relativePath}`;
-}
-var platform, isMac, modKey;
-var init_path = __esm({
-  "src/shims/path.ts"() {
-    platform = (() => {
-      const ua = navigator.userAgent.toLowerCase();
-      if (ua.includes("win")) return "windows";
-      if (ua.includes("mac")) return "mac";
-      return "linux";
-    })();
-    isMac = platform === "mac";
-    modKey = isMac ? "Cmd" : "Ctrl";
-  }
-});
-
 // node_modules/.pnpm/mermaid@12.3.0/node_modules/mermaid/dist/chunks/mermaid.core/chunk-Y2CYZVJY.mjs
 var __defProp2, __name, __export2;
 var init_chunk_Y2CYZVJY = __esm({
@@ -30922,7 +31591,7 @@ var require_dayjs_min = __commonJS({
 });
 
 // node_modules/.pnpm/mermaid@12.3.0/node_modules/mermaid/dist/chunks/mermaid.core/chunk-X3CZISLH.mjs
-var import_dayjs, LEVELS, log15, setLogLevel, format;
+var import_dayjs, LEVELS, log18, setLogLevel, format;
 var init_chunk_X3CZISLH = __esm({
   "node_modules/.pnpm/mermaid@12.3.0/node_modules/mermaid/dist/chunks/mermaid.core/chunk-X3CZISLH.mjs"() {
     init_chunk_Y2CYZVJY();
@@ -30935,7 +31604,7 @@ var init_chunk_X3CZISLH = __esm({
       error: 4,
       fatal: 5
     };
-    log15 = {
+    log18 = {
       trace: /* @__PURE__ */ __name((..._args) => {
       }, "trace"),
       debug: /* @__PURE__ */ __name((..._args) => {
@@ -30958,35 +31627,35 @@ var init_chunk_X3CZISLH = __esm({
       } else if (typeof level === "number") {
         numericLevel = level;
       }
-      log15.trace = () => {
+      log18.trace = () => {
       };
-      log15.debug = () => {
+      log18.debug = () => {
       };
-      log15.info = () => {
+      log18.info = () => {
       };
-      log15.warn = () => {
+      log18.warn = () => {
       };
-      log15.error = () => {
+      log18.error = () => {
       };
-      log15.fatal = () => {
+      log18.fatal = () => {
       };
       if (numericLevel <= LEVELS.fatal) {
-        log15.fatal = console.error ? console.error.bind(console, format("FATAL"), "color: orange") : console.log.bind(console, "\x1B[35m", format("FATAL"));
+        log18.fatal = console.error ? console.error.bind(console, format("FATAL"), "color: orange") : console.log.bind(console, "\x1B[35m", format("FATAL"));
       }
       if (numericLevel <= LEVELS.error) {
-        log15.error = console.error ? console.error.bind(console, format("ERROR"), "color: orange") : console.log.bind(console, "\x1B[31m", format("ERROR"));
+        log18.error = console.error ? console.error.bind(console, format("ERROR"), "color: orange") : console.log.bind(console, "\x1B[31m", format("ERROR"));
       }
       if (numericLevel <= LEVELS.warn) {
-        log15.warn = console.warn ? console.warn.bind(console, format("WARN"), "color: orange") : console.log.bind(console, `\x1B[33m`, format("WARN"));
+        log18.warn = console.warn ? console.warn.bind(console, format("WARN"), "color: orange") : console.log.bind(console, `\x1B[33m`, format("WARN"));
       }
       if (numericLevel <= LEVELS.info) {
-        log15.info = console.info ? console.info.bind(console, format("INFO"), "color: lightblue") : console.log.bind(console, "\x1B[34m", format("INFO"));
+        log18.info = console.info ? console.info.bind(console, format("INFO"), "color: lightblue") : console.log.bind(console, "\x1B[34m", format("INFO"));
       }
       if (numericLevel <= LEVELS.debug) {
-        log15.debug = console.debug ? console.debug.bind(console, format("DEBUG"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("DEBUG"));
+        log18.debug = console.debug ? console.debug.bind(console, format("DEBUG"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("DEBUG"));
       }
       if (numericLevel <= LEVELS.trace) {
-        log15.trace = console.debug ? console.debug.bind(console, format("TRACE"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("TRACE"));
+        log18.trace = console.debug ? console.debug.bind(console, format("TRACE"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("TRACE"));
       }
     }, "setLogLevel");
     format = /* @__PURE__ */ __name((level) => {
@@ -32076,10 +32745,10 @@ var init_chunk_BG4553SI = __esm({
     }, "registerLazyLoadedDiagrams");
     addDetector = /* @__PURE__ */ __name((key, detector38, loader38) => {
       if (detectors[key]) {
-        log15.warn(`Detector with key ${key} already exists. Overwriting.`);
+        log18.warn(`Detector with key ${key} already exists. Overwriting.`);
       }
       detectors[key] = { detector: detector38, loader: loader38 };
-      log15.debug(`Detector with key ${key} added${loader38 ? " with loader" : ""}`);
+      log18.debug(`Detector with key ${key} added${loader38 ? " with loader" : ""}`);
     }, "addDetector");
     getDiagramLoader = /* @__PURE__ */ __name((key) => {
       return detectors[key].loader;
@@ -36942,13 +37611,13 @@ var init_chunk_BG4553SI = __esm({
       for (const key of Object.keys(dict)) {
         const value3 = dict[key];
         if (key.startsWith("__") || key.includes("proto") || key.includes("constr") || typeof value3 !== "string" || !valuePattern.test(value3)) {
-          log15.debug("sanitize deleting dictionary entry:", key, value3);
+          log18.debug("sanitize deleting dictionary entry:", key, value3);
           delete dict[key];
         }
       }
     }, "sanitizeDictionaryConfig");
     sanitizeDirective = /* @__PURE__ */ __name((args) => {
-      log15.debug("sanitizeDirective called with", args);
+      log18.debug("sanitizeDirective called with", args);
       if (typeof args !== "object" || args == null) {
         return;
       }
@@ -36957,9 +37626,9 @@ var init_chunk_BG4553SI = __esm({
         return;
       }
       for (const key of Object.keys(args)) {
-        log15.debug("Checking key", key);
+        log18.debug("Checking key", key);
         if (key.startsWith("__") || key.includes("proto") || key.includes("constr") || !configKeys.has(key) || args[key] == null) {
-          log15.debug("sanitize deleting key: ", key);
+          log18.debug("sanitize deleting key: ", key);
           delete args[key];
           continue;
         }
@@ -36968,7 +37637,7 @@ var init_chunk_BG4553SI = __esm({
           if (valuePattern) {
             sanitizeDictionaryConfig(args[key], valuePattern);
           } else {
-            log15.debug("sanitizing object", key);
+            log18.debug("sanitizing object", key);
             sanitizeDirective(args[key]);
           }
           continue;
@@ -36976,7 +37645,7 @@ var init_chunk_BG4553SI = __esm({
         const cssMatchers = ["themeCSS", "fontFamily", "altFontFamily"];
         for (const cssKey of cssMatchers) {
           if (key.includes(cssKey)) {
-            log15.debug("sanitizing css option", key);
+            log18.debug("sanitizing css option", key);
             args[key] = sanitizeCss(args[key]);
           }
         }
@@ -36989,7 +37658,7 @@ var init_chunk_BG4553SI = __esm({
           }
         }
       }
-      log15.debug("After sanitization", args);
+      log18.debug("After sanitization", args);
     }, "sanitizeDirective");
     sanitizeCss = /* @__PURE__ */ __name((str2) => {
       let startCnt = 0;
@@ -37122,7 +37791,7 @@ var init_chunk_BG4553SI = __esm({
       }
       ["secure", ...siteConfig.secure ?? []].forEach((key) => {
         if (Object.hasOwn(options2, key)) {
-          log15.debug(`Denied attempt to modify a secure key ${key}`, options2[key]);
+          log18.debug(`Denied attempt to modify a secure key ${key}`, options2[key]);
           delete options2[key];
         }
       });
@@ -37165,7 +37834,7 @@ var init_chunk_BG4553SI = __esm({
       if (issuedWarnings[warning]) {
         return;
       }
-      log15.warn(ConfigWarning[warning]);
+      log18.warn(ConfigWarning[warning]);
       issuedWarnings[warning] = true;
     }, "issueWarning");
     checkConfig = /* @__PURE__ */ __name((config22) => {
@@ -37413,13 +38082,13 @@ var init_chunk_BG4553SI = __esm({
       const svgBounds = svgElem.node().getBBox();
       const sWidth = svgBounds.width;
       const sHeight = svgBounds.height;
-      log15.info(`SVG bounds: ${sWidth}x${sHeight}`, svgBounds);
+      log18.info(`SVG bounds: ${sWidth}x${sHeight}`, svgBounds);
       let width3 = 0;
       let height2 = 0;
-      log15.info(`Graph bounds: ${width3}x${height2}`, graph);
+      log18.info(`Graph bounds: ${width3}x${height2}`, graph);
       width3 = sWidth + padding * 2;
       height2 = sHeight + padding * 2;
-      log15.info(`Calculated bounds: ${width3}x${height2}`);
+      log18.info(`Calculated bounds: ${width3}x${height2}`);
       configureSvgSize(svgElem, height2, width3, useMaxWidth);
       const vBox = `${svgBounds.x - padding} ${svgBounds.y - padding} ${svgBounds.width + 2 * padding} ${svgBounds.height + 2 * padding}`;
       svgElem.attr("viewBox", vBox);
@@ -37431,7 +38100,7 @@ var init_chunk_BG4553SI = __esm({
       if (type3 in themes && themes[type3]) {
         diagramStyles = themes[type3]({ ...options2, svgId });
       } else {
-        log15.warn(`No theme found for ${type3}`);
+        log18.warn(`No theme found for ${type3}`);
       }
       return `& {
     font-family: ${options2.fontFamily};
@@ -37593,7 +38262,7 @@ var init_chunk_BG4553SI = __esm({
       diagramTitle = sanitizeText2(txt);
     }, "setDiagramTitle");
     getDiagramTitle = /* @__PURE__ */ __name(() => diagramTitle, "getDiagramTitle");
-    log22 = log15;
+    log22 = log18;
     setLogLevel2 = setLogLevel;
     getConfig2 = getConfig;
     setConfig2 = setConfig;
@@ -38161,13 +38830,13 @@ var init_chunk_R3KSYZAL = __esm({
             'Invalid icon loader. Must have a "name" property with non-empty string value.'
           );
         }
-        log15.debug("Registering icon pack:", iconLoader.name);
+        log18.debug("Registering icon pack:", iconLoader.name);
         if ("loader" in iconLoader) {
           loaderStore.set(iconLoader.name, iconLoader.loader);
         } else if ("icons" in iconLoader) {
           iconsStore.set(iconLoader.name, iconLoader.icons);
         } else {
-          log15.error("Invalid icon loader:", iconLoader);
+          log18.error("Invalid icon loader:", iconLoader);
           throw new Error('Invalid icon loader. Must have either "icons" or "loader" property.');
         }
       }
@@ -38193,7 +38862,7 @@ var init_chunk_R3KSYZAL = __esm({
           icons = { ...loaded, prefix };
           iconsStore.set(prefix, icons);
         } catch (e3) {
-          log15.error(e3);
+          log18.error(e3);
           throw new Error(`Failed to load icon set: ${data6.prefix}`);
         }
       }
@@ -38216,7 +38885,7 @@ var init_chunk_R3KSYZAL = __esm({
       try {
         iconData = await getRegisteredIconData(iconName, customisations?.fallbackPrefix);
       } catch (e3) {
-        log15.error(e3);
+        log18.error(e3);
         iconData = unknownIcon;
       }
       const renderData = iconToSVG(iconData, customisations);
@@ -42652,7 +43321,7 @@ function azimuthalInvert(angle2) {
   };
 }
 function mercatorRaw(lambda, phi2) {
-  return [lambda, log16(tan((halfPi3 + phi2) / 2))];
+  return [lambda, log19(tan((halfPi3 + phi2) / 2))];
 }
 function equirectangularRaw(lambda, phi2) {
   return [lambda, phi2];
@@ -42683,9 +43352,9 @@ function stereographicRaw(x7, y8) {
   return [cy * sin(x7) / k6, sin(y8) / k6];
 }
 function transverseMercatorRaw(lambda, phi2) {
-  return [log16(tan((halfPi3 + phi2) / 2)), -lambda];
+  return [log19(tan((halfPi3 + phi2) / 2)), -lambda];
 }
-var epsilon4, epsilon22, pi4, halfPi3, quarterPi, tau5, degrees3, radians2, abs2, atan, atan2, cos, exp, log16, sin, sign, sqrt, tan, areaRingSum$1, areaSum$1, clipAntimeridian, clipMax, clipMin, areaSum, areaRingSum, x0$2, x1, lengthSum, cosMinDistance, transformRadians, azimuthalEqualAreaRaw, azimuthalEquidistantRaw, A1, A22, A3, A4, M2, iterations;
+var epsilon4, epsilon22, pi4, halfPi3, quarterPi, tau5, degrees3, radians2, abs2, atan, atan2, cos, exp, log19, sin, sign, sqrt, tan, areaRingSum$1, areaSum$1, clipAntimeridian, clipMax, clipMin, areaSum, areaRingSum, x0$2, x1, lengthSum, cosMinDistance, transformRadians, azimuthalEqualAreaRaw, azimuthalEquidistantRaw, A1, A22, A3, A4, M2, iterations;
 var init_d3_geo = __esm({
   "node_modules/.pnpm/d3-geo@3.1.2/node_modules/d3-geo/dist/d3-geo.mjs"() {
     init_d3_array();
@@ -42702,7 +43371,7 @@ var init_d3_geo = __esm({
     atan2 = Math.atan2;
     cos = Math.cos;
     exp = Math.exp;
-    log16 = Math.log;
+    log19 = Math.log;
     sin = Math.sin;
     sign = Math.sign || function(x7) {
       return x7 > 0 ? 1 : x7 < 0 ? -1 : 0;
@@ -47049,7 +47718,7 @@ function calcLabelPosition(points) {
 }
 function calcTerminalLabelPosition(terminalMarkerSize, position5, _points) {
   const points = structuredClone(_points);
-  log15.info("our points", points);
+  log18.info("our points", points);
   if (position5 !== "start_left" && position5 !== "start_right") {
     points.reverse();
   }
@@ -47191,7 +47860,7 @@ var init_chunk_6MUBBAK2 = __esm({
           "ig"
         );
         text5 = text5.trim().replace(commentWithoutDirectives, "").replace(/'/gm, '"');
-        log15.debug(
+        log18.debug(
           `Detecting diagram directive${type3 !== null ? " type:" + type3 : ""} based on the text:${text5}`
         );
         let match3;
@@ -47211,7 +47880,7 @@ var init_chunk_6MUBBAK2 = __esm({
         }
         return result.length === 1 ? result[0] : result;
       } catch (error3) {
-        log15.error(
+        log18.error(
           `ERROR: ${error3.message} - Unable to parse directive type: '${type3}' based on the text: '${text5}'`
         );
         return { type: void 0, args: null };
@@ -47238,7 +47907,7 @@ var init_chunk_6MUBBAK2 = __esm({
       for (let i2 = 0; i2 < len; i2++) {
         obj = obj[arrPaths[i2]];
         if (!obj) {
-          log15.error(`Function name: ${functionName} not found in window`);
+          log18.error(`Function name: ${functionName} not found in window`);
           return;
         }
       }
@@ -47283,7 +47952,7 @@ var init_chunk_6MUBBAK2 = __esm({
       throw new Error("Could not find a suitable point for the given distance");
     }, "calculatePoint");
     calcCardinalityPosition = /* @__PURE__ */ __name((isRelationTypePresent, points, initialPosition) => {
-      log15.info(`our points ${JSON.stringify(points)}`);
+      log18.info(`our points ${JSON.stringify(points)}`);
       if (points[0] !== initialPosition) {
         points = points.reverse();
       }
@@ -48846,7 +49515,7 @@ function markdownToHTML(markdown2, { markdownAutoWrap } = {}) {
     } else if (node2.type === "escape") {
       return node2.text;
     }
-    log15.warn(`Unsupported markdown: ${node2.type}`);
+    log18.warn(`Unsupported markdown: ${node2.type}`);
     return node2.raw;
   }
   __name(output2, "output");
@@ -49548,7 +50217,7 @@ ${lines.join("\n")}`);
       minWidth = 0,
       addSvgBackground = false
     } = {}, config3) => {
-      log15.debug(
+      log18.debug(
         "XYZ createText",
         text5,
         style3,
@@ -51005,7 +51674,7 @@ function anchor(parent4, node2) {
   circleElem.attr("class", "anchor").attr("style", handleUndefinedAttr(cssStyles));
   updateNodeBounds(node2, circleElem);
   node2.intersect = function(point3) {
-    log15.info("Circle intersect", node2, radius2, point3);
+    log18.info("Circle intersect", node2, radius2, point3);
     return intersect_default.circle(node2, radius2, point3);
   };
   return shapeSvg;
@@ -51413,7 +52082,7 @@ async function circle(parent4, node2, options2) {
     return intersect_default.circle(bounds4, radius22, point3);
   };
   node2.intersect = function(point3) {
-    log15.info("Circle intersect", node2, radius2, point3);
+    log18.info("Circle intersect", node2, radius2, point3);
     return intersect_default.circle(node2, radius2, point3);
   };
   return shapeSvg;
@@ -51511,7 +52180,7 @@ function crossedCircle(parent4, node2) {
   }
   updateNodeBounds(node2, crossedCircle2);
   node2.intersect = function(point3) {
-    log15.info("crossedCircle intersect", node2, { radius: radius2, point: point3 });
+    log18.info("crossedCircle intersect", node2, { radius: radius2, point: point3 });
     const pos = intersect_default.circle(node2, radius2, point3);
     return pos;
   };
@@ -52146,7 +52815,7 @@ async function doublecircle(parent4, node2) {
   }
   updateNodeBounds(node2, circleGroup);
   node2.intersect = function(point3) {
-    log15.info("DoubleCircle intersect", node2, outerRadius, point3);
+    log18.info("DoubleCircle intersect", node2, outerRadius, point3);
     return intersect_default.circle(node2, outerRadius, point3);
   };
   return shapeSvg;
@@ -52211,7 +52880,7 @@ function filledCircle(parent4, node2, { config: { themeVariables } }) {
   }
   updateNodeBounds(node2, filledCircle2);
   node2.intersect = function(point3) {
-    log15.info("filledCircle intersect", node2, { radius: radius2, point: point3 });
+    log18.info("filledCircle intersect", node2, { radius: radius2, point: point3 });
     const pos = intersect_default.circle(node2, radius2, point3);
     return pos;
   };
@@ -52265,7 +52934,7 @@ async function flippedTriangle(parent4, node2) {
     `translate(${-bbox.width / 2 - (bbox.x - (bbox.left ?? 0))}, ${-h2 / 2 + (node2.padding ?? 0) / 2 + (bbox.y - (bbox.top ?? 0))})`
   );
   node2.intersect = function(point3) {
-    log15.info("Triangle intersect", node2, points, point3);
+    log18.info("Triangle intersect", node2, points, point3);
     return intersect_default.polygon(node2, points, point3);
   };
   return shapeSvg;
@@ -52410,7 +53079,7 @@ async function halfRoundedRectangle(parent4, node2) {
   }
   updateNodeBounds(node2, polygon2);
   node2.intersect = function(point3) {
-    log15.info("Pill intersect", node2, { radius: radius2, point: point3 });
+    log18.info("Pill intersect", node2, { radius: radius2, point: point3 });
     const pos = intersect_default.polygon(node2, points, point3);
     return pos;
   };
@@ -52501,7 +53170,7 @@ async function hourglass(parent4, node2) {
   polygon2.attr("transform", `translate(${-w5 / 2}, ${-h2 / 2})`);
   updateNodeBounds(node2, polygon2);
   node2.intersect = function(point3) {
-    log15.info("Pill intersect", node2, { points });
+    log18.info("Pill intersect", node2, { points });
     const pos = intersect_default.polygon(node2, points, point3);
     return pos;
   };
@@ -52570,7 +53239,7 @@ async function icon(parent4, node2, { config: { themeVariables, flowchart } }) {
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log15.info("iconSquare intersect", node2, point3);
+    log18.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -52669,7 +53338,7 @@ async function iconCircle(parent4, node2, { config: { themeVariables, flowchart 
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log15.info("iconSquare intersect", node2, point3);
+    log18.info("iconSquare intersect", node2, point3);
     const pos = intersect_default.rect(node2, point3);
     return pos;
   };
@@ -52744,7 +53413,7 @@ async function iconRounded(parent4, node2, { config: { themeVariables, flowchart
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log15.info("iconSquare intersect", node2, point3);
+    log18.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -52849,7 +53518,7 @@ async function iconSquare(parent4, node2, { config: { themeVariables, flowchart 
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log15.info("iconSquare intersect", node2, point3);
+    log18.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -52945,7 +53614,7 @@ async function imageSquare(parent4, node2, { config: { flowchart } }) {
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log15.info("iconSquare intersect", node2, point3);
+    log18.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -53154,7 +53823,7 @@ function lightningBolt(parent4, node2) {
   lightningBolt2.attr("transform", `translate(-${width3 / 2},${-height2})`);
   updateNodeBounds(node2, lightningBolt2);
   node2.intersect = function(point3) {
-    log15.info("lightningBolt intersect", node2, point3);
+    log18.info("lightningBolt intersect", node2, point3);
     const pos = intersect_default.polygon(node2, points, point3);
     return pos;
   };
@@ -53869,7 +54538,7 @@ async function rectWithTitle(parent4, node2) {
     dv2.attr("width", bbox.width);
     dv2.attr("height", bbox.height);
   }
-  log15.info("Text 2", description);
+  log18.info("Text 2", description);
   const textRows = description || [];
   const titleBox = text22.getBBox();
   const descr = await createLabel_default(
@@ -53919,11 +54588,11 @@ async function rectWithTitle(parent4, node2) {
       options2
     );
     innerLine = shapeSvg.insert(() => {
-      log15.debug("Rough node insert CXC", roughNode);
+      log18.debug("Rough node insert CXC", roughNode);
       return roughLine;
     }, ":first-child");
     rect2 = shapeSvg.insert(() => {
-      log15.debug("Rough node insert CXC", roughNode);
+      log18.debug("Rough node insert CXC", roughNode);
       return roughNode;
     }, ":first-child");
   } else {
@@ -54631,7 +55300,7 @@ async function triangle(parent4, node2) {
     `translate(${-bbox.width / 2 - (bbox.x - (bbox.left ?? 0))}, ${h2 / 2 - (bbox.height + (node2.padding ?? 0) / (useHtmlLabels ? 2 : 1) - (bbox.y - (bbox.top ?? 0)))})`
   );
   node2.intersect = function(point3) {
-    log15.info("Triangle intersect", node2, points, point3);
+    log18.info("Triangle intersect", node2, points, point3);
     return intersect_default.polygon(node2, points, point3);
   };
   return shapeSvg;
@@ -55724,7 +56393,7 @@ async function bang(parent4, node2) {
     return intersect_default.rect(bounds4, point3);
   };
   node2.intersect = function(point3) {
-    log15.info("Bang intersect", node2, point3);
+    log18.info("Bang intersect", node2, point3);
     return intersect_default.rect(node2, point3);
   };
   return shapeSvg;
@@ -55776,7 +56445,7 @@ async function cloud(parent4, node2) {
     return intersect_default.rect(bounds4, point3);
   };
   node2.intersect = function(point3) {
-    log15.info("Cloud intersect", node2, point3);
+    log18.info("Cloud intersect", node2, point3);
     return intersect_default.rect(node2, point3);
   };
   return shapeSvg;
@@ -57707,7 +58376,7 @@ var init_chunk_LEVMRMFU = __esm({
     }, "clear");
     positionNode = /* @__PURE__ */ __name((node2) => {
       const el = nodeElems.get(node2.id);
-      log15.trace(
+      log18.trace(
         "Transforming node",
         node2.diff,
         node2,
@@ -57864,7 +58533,7 @@ var init_chunk_M57EVK23 = __esm({
         const labelY = laneTop + (titleHeight - bbox.height) / 2;
         labelEl.attr("transform", `translate(${labelX}, ${labelY})`);
       }
-      log15.trace("Swimlane data ", node2, JSON.stringify(node2));
+      log18.trace("Swimlane data ", node2, JSON.stringify(node2));
       if (labelStyles) {
         const span = labelEl.select("span");
         if (span) {
@@ -57881,7 +58550,7 @@ var init_chunk_M57EVK23 = __esm({
       return { cluster: shapeSvg, labelBBox: bbox };
     }, "swimlane");
     rect = /* @__PURE__ */ __name(async (parent4, node2) => {
-      log15.info("Creating subgraph rect for ", node2.id, node2);
+      log18.info("Creating subgraph rect for ", node2.id, node2);
       const siteConfig2 = getConfig2();
       const { theme, themeVariables, handDrawnSeed } = siteConfig2;
       const { clusterBkg, clusterBorder, borderColorArray } = themeVariables;
@@ -57918,7 +58587,7 @@ var init_chunk_M57EVK23 = __esm({
       const height2 = node2.height;
       const x7 = node2.x - width3 / 2;
       const y8 = node2.y - height2 / 2;
-      log15.trace("Data ", node2, JSON.stringify(node2));
+      log18.trace("Data ", node2, JSON.stringify(node2));
       let rect2;
       if (node2.look === "handDrawn") {
         const rc = at.svg(shapeSvg);
@@ -57932,7 +58601,7 @@ var init_chunk_M57EVK23 = __esm({
         });
         const roughNode = rc.path(createRoundedRectPathD(x7, y8, width3, height2, 0), options2);
         rect2 = shapeSvg.insert(() => {
-          log15.debug("Rough node insert CXC", roughNode);
+          log18.debug("Rough node insert CXC", roughNode);
           return roughNode;
         }, ":first-child");
         rect2.select("path:nth-child(2)").attr("style", borderStyles.join(";"));
@@ -58058,7 +58727,7 @@ var init_chunk_M57EVK23 = __esm({
       return { cluster: shapeSvg, labelBBox: bbox };
     }, "roundedWithTitle");
     kanbanSection = /* @__PURE__ */ __name(async (parent4, node2) => {
-      log15.info("Creating subgraph rect for ", node2.id, node2);
+      log18.info("Creating subgraph rect for ", node2.id, node2);
       const siteConfig2 = getConfig2();
       const { themeVariables, handDrawnSeed } = siteConfig2;
       const { clusterBkg, clusterBorder } = themeVariables;
@@ -58089,7 +58758,7 @@ var init_chunk_M57EVK23 = __esm({
       const height2 = node2.height;
       const x7 = node2.x - width3 / 2;
       const y8 = node2.y - height2 / 2;
-      log15.trace("Data ", node2, JSON.stringify(node2));
+      log18.trace("Data ", node2, JSON.stringify(node2));
       let rect2;
       if (node2.look === "handDrawn") {
         const rc = at.svg(shapeSvg);
@@ -58103,7 +58772,7 @@ var init_chunk_M57EVK23 = __esm({
         });
         const roughNode = rc.path(createRoundedRectPathD(x7, y8, width3, height2, node2.rx), options2);
         rect2 = shapeSvg.insert(() => {
-          log15.debug("Rough node insert CXC", roughNode);
+          log18.debug("Rough node insert CXC", roughNode);
           return roughNode;
         }, ":first-child");
         rect2.select("path:nth-child(2)").attr("style", borderStyles.join(";"));
@@ -58191,7 +58860,7 @@ var init_chunk_M57EVK23 = __esm({
       return { cluster: shapeSvg, labelBBox: {} };
     }, "divider");
     createContainerGroup = /* @__PURE__ */ __name(async (parent4, node2, opts) => {
-      log15.info(`Creating ${opts.cssClass} for `, node2.id, node2);
+      log18.info(`Creating ${opts.cssClass} for `, node2.id, node2);
       const siteConfig2 = getConfig2();
       const { theme, themeVariables, handDrawnSeed } = siteConfig2;
       const { borderColorArray } = themeVariables;
@@ -58310,7 +58979,7 @@ var init_chunk_M57EVK23 = __esm({
       };
     }, "getUsecaseSystemBoundaryGeometry");
     usecaseSystemBoundary = /* @__PURE__ */ __name(async (parent4, node2) => {
-      log15.info("Creating usecase system boundary for ", node2.id, node2);
+      log18.info("Creating usecase system boundary for ", node2.id, node2);
       const siteConfig2 = getConfig2();
       const { theme, themeVariables, handDrawnSeed } = siteConfig2;
       const { clusterBkg, clusterBorder, borderColorArray } = themeVariables;
@@ -59156,7 +59825,7 @@ var init_chunk_DQASFODM = __esm({
       const arrowTypeInfo = arrowTypesMap[arrowType];
       const marginSupport = arrowTypeInfo && arrowTypesWithMarginSupport.includes(arrowTypeInfo.type);
       if (!arrowTypeInfo) {
-        log15.warn(`Unknown arrow type: ${arrowType}`);
+        log18.warn(`Unknown arrow type: ${arrowType}`);
         return;
       }
       const endMarkerType = arrowTypeInfo.type;
@@ -59231,7 +59900,7 @@ var init_chunk_DQASFODM = __esm({
         config3
       );
       label.node().appendChild(labelElement);
-      log15.info("abc82", edge, edge.labelType);
+      log18.info("abc82", edge, edge.labelType);
       let bbox;
       let transformBbox;
       if (useHtmlLabels) {
@@ -59386,13 +60055,13 @@ var init_chunk_DQASFODM = __esm({
       return { x: x7, y: y8 };
     }, "resolveEdgeLabelPosition");
     positionEdgeLabel = /* @__PURE__ */ __name((edge, paths) => {
-      log15.debug("Moving label abc88 ", edge.id, edge.label, edgeLabels.get(edge.id), paths);
+      log18.debug("Moving label abc88 ", edge.id, edge.label, edgeLabels.get(edge.id), paths);
       const siteConfig2 = getConfig2();
       const { subGraphTitleTotalMargin } = getSubGraphTitleMargins(siteConfig2);
       if (edge.label) {
         const el = edgeLabels.get(edge.id);
         const { x: x7, y: y8 } = resolveEdgeLabelPosition(edge, paths);
-        log15.debug(
+        log18.debug(
           "Moving label " + edge.label + " from (",
           edge.x,
           ",",
@@ -59494,7 +60163,7 @@ var init_chunk_DQASFODM = __esm({
       return dx >= w5 || dy >= h2;
     }, "outsideNode");
     intersection = /* @__PURE__ */ __name((node2, outsidePoint, insidePoint) => {
-      log15.debug(`intersection calc abc89:
+      log18.debug(`intersection calc abc89:
   outsidePoint: ${JSON.stringify(outsidePoint)}
   insidePoint : ${JSON.stringify(insidePoint)}
   node        : x:${node2.x} y:${node2.y} w:${node2.width} h:${node2.height}`);
@@ -59523,7 +60192,7 @@ var init_chunk_DQASFODM = __esm({
         if (Q4 === 0) {
           res.y = outsidePoint.y;
         }
-        log15.debug(`abc89 top/bottom calc, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, res);
+        log18.debug(`abc89 top/bottom calc, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, res);
         return res;
       } else {
         if (insidePoint.x < outsidePoint.x) {
@@ -59534,7 +60203,7 @@ var init_chunk_DQASFODM = __esm({
         let q5 = Q4 * r3 / R2;
         let _x = insidePoint.x < outsidePoint.x ? insidePoint.x + R2 - r3 : insidePoint.x - R2 + r3;
         let _y = insidePoint.y < outsidePoint.y ? insidePoint.y + q5 : insidePoint.y - q5;
-        log15.debug(`sides calc abc89, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, { _x, _y });
+        log18.debug(`sides calc abc89, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, { _x, _y });
         if (r3 === 0) {
           _x = outsidePoint.x;
           _y = outsidePoint.y;
@@ -59549,16 +60218,16 @@ var init_chunk_DQASFODM = __esm({
       }
     }, "intersection");
     cutPathAtIntersect = /* @__PURE__ */ __name((_points, boundaryNode) => {
-      log15.warn("abc88 cutPathAtIntersect", _points, boundaryNode);
+      log18.warn("abc88 cutPathAtIntersect", _points, boundaryNode);
       let points = [];
       let lastPointOutside = _points[0];
       let isInside2 = false;
       _points.forEach((point22) => {
-        log15.info("abc88 checking point", point22, boundaryNode);
+        log18.info("abc88 checking point", point22, boundaryNode);
         if (!outsideNode(boundaryNode, point22) && !isInside2) {
           const inter = intersection(boundaryNode, lastPointOutside, point22);
-          log15.debug("abc88 inside", point22, lastPointOutside, inter);
-          log15.debug("abc88 intersection", inter, boundaryNode);
+          log18.debug("abc88 inside", point22, lastPointOutside, inter);
+          log18.debug("abc88 intersection", inter, boundaryNode);
           let pointPresent = false;
           points.forEach((p3) => {
             pointPresent = pointPresent || p3.x === inter.x && p3.y === inter.y;
@@ -59566,18 +60235,18 @@ var init_chunk_DQASFODM = __esm({
           if (!points.some((e3) => e3.x === inter.x && e3.y === inter.y)) {
             points.push(inter);
           } else {
-            log15.warn("abc88 no intersect", inter, points);
+            log18.warn("abc88 no intersect", inter, points);
           }
           isInside2 = true;
         } else {
-          log15.warn("abc88 outside", point22, lastPointOutside);
+          log18.warn("abc88 outside", point22, lastPointOutside);
           lastPointOutside = point22;
           if (!isInside2) {
             points.push(point22);
           }
         }
       });
-      log15.debug("returning points", points);
+      log18.debug("returning points", points);
       return points;
     }, "cutPathAtIntersect");
     __name(extractCornerPoints, "extractCornerPoints");
@@ -59604,7 +60273,7 @@ var init_chunk_DQASFODM = __esm({
           const a3 = Math.sqrt(2) * 2;
           let newCornerPoint = { x: cornerPoint.x, y: cornerPoint.y };
           if (Math.abs(nextPoint.x - prevPoint.x) > 10 && Math.abs(nextPoint.y - prevPoint.y) >= 10) {
-            log15.debug(
+            log18.debug(
               "Corner point fixing",
               Math.abs(nextPoint.x - prevPoint.x),
               Math.abs(nextPoint.y - prevPoint.y)
@@ -59622,7 +60291,7 @@ var init_chunk_DQASFODM = __esm({
               };
             }
           } else {
-            log15.debug(
+            log18.debug(
               "Corner point skipping fixing",
               Math.abs(nextPoint.x - prevPoint.x),
               Math.abs(nextPoint.y - prevPoint.y)
@@ -59699,12 +60368,12 @@ var init_chunk_DQASFODM = __esm({
       }
       const pointsStr = btoa(JSON.stringify(points));
       if (edge.toCluster) {
-        log15.info("to cluster abc88", clusterDb2.get(edge.toCluster));
+        log18.info("to cluster abc88", clusterDb2.get(edge.toCluster));
         points = cutPathAtIntersect(edge.points, clusterDb2.get(edge.toCluster).node);
         pointsHasChanged = true;
       }
       if (edge.fromCluster) {
-        log15.debug(
+        log18.debug(
           "from cluster abc88",
           clusterDb2.get(edge.fromCluster),
           JSON.stringify(points, null, 2)
@@ -59862,8 +60531,8 @@ var init_chunk_DQASFODM = __esm({
         url = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.search;
         url = url.replace(/\(/g, "\\(").replace(/\)/g, "\\)");
       }
-      log15.info("arrowTypeStart", edge.arrowTypeStart);
-      log15.info("arrowTypeEnd", edge.arrowTypeEnd);
+      log18.info("arrowTypeStart", edge.arrowTypeStart);
+      log18.info("arrowTypeEnd", edge.arrowTypeEnd);
       const useMargin = !animatedEdge && edge?.look === "neo";
       addEdgeMarkers(svgPath, edge, url, diagramId3, diagramType, useMargin, strokeColor);
       const midIndex = Math.floor(points.length / 2);
@@ -59887,7 +60556,7 @@ var init_chunk_DQASFODM = __esm({
       });
     }, "insertMarkers");
     extension = /* @__PURE__ */ __name((elem, type3, id38) => {
-      log15.trace("Making markers for ", id38);
+      log18.trace("Making markers for ", id38);
       elem.append("defs").append("marker").attr("id", id38 + "_" + type3 + "-extensionStart").attr("class", "marker extension " + type3).attr("refX", 18).attr("refY", 7).attr("markerWidth", 20).attr("markerHeight", 28).attr("orient", "auto").attr("markerUnits", "userSpaceOnUse").append("path").attr("d", "M 1,7 L18,13 V 1 Z");
       elem.append("defs").append("marker").attr("id", id38 + "_" + type3 + "-extensionEnd").attr("class", "marker extension " + type3).attr("refX", 1).attr("refY", 7).attr("markerWidth", 20).attr("markerHeight", 28).attr("orient", "auto").attr("markerUnits", "userSpaceOnUse").append("path").attr("d", "M 1,1 V 13 L18,7 Z");
       elem.append("marker").attr("id", id38 + "_" + type3 + "-extensionStart-margin").attr("class", "marker extension " + type3).attr("refX", 18).attr("refY", 7).attr("markerWidth", 20).attr("markerHeight", 28).attr("orient", "auto").attr("markerUnits", "userSpaceOnUse").attr("viewBox", "0 0 20 14").append("polygon").attr("points", "10,7 18,13 18,1").style("stroke-width", 2).style("stroke-dasharray", "0");
@@ -66166,24 +66835,24 @@ var init_chunk_KQLB2F66 = __esm({
     }, "clear");
     isDescendant = /* @__PURE__ */ __name((id38, ancestorId) => {
       const ancestorDescendants = descendants.get(ancestorId) || [];
-      log15.trace("In isDescendant", ancestorId, " ", id38, " = ", ancestorDescendants.includes(id38));
+      log18.trace("In isDescendant", ancestorId, " ", id38, " = ", ancestorDescendants.includes(id38));
       return ancestorDescendants.includes(id38);
     }, "isDescendant");
     edgeInCluster = /* @__PURE__ */ __name((edge, clusterId) => {
       const clusterDescendants = descendants.get(clusterId) || [];
-      log15.info("Descendants of ", clusterId, " is ", clusterDescendants);
-      log15.info("Edge is ", edge);
+      log18.info("Descendants of ", clusterId, " is ", clusterDescendants);
+      log18.info("Edge is ", edge);
       if (edge.v === clusterId || edge.w === clusterId) {
         return false;
       }
       if (!clusterDescendants) {
-        log15.debug("Tilt, ", clusterId, ",not in descendants");
+        log18.debug("Tilt, ", clusterId, ",not in descendants");
         return false;
       }
       return clusterDescendants.includes(edge.v) || isDescendant(edge.v, clusterId) || isDescendant(edge.w, clusterId) || clusterDescendants.includes(edge.w);
     }, "edgeInCluster");
     copy = /* @__PURE__ */ __name((clusterId, graph, newGraph, rootId) => {
-      log15.debug(
+      log18.debug(
         "Copying children of ",
         clusterId,
         "root",
@@ -66196,24 +66865,24 @@ var init_chunk_KQLB2F66 = __esm({
       if (clusterId !== rootId) {
         nodes5.push(clusterId);
       }
-      log15.debug("Copying (nodes) clusterId", clusterId, "nodes", nodes5);
+      log18.debug("Copying (nodes) clusterId", clusterId, "nodes", nodes5);
       nodes5.forEach((node2) => {
         if (graph.children(node2).length > 0) {
           copy(node2, graph, newGraph, rootId);
         } else {
           const data6 = graph.node(node2);
-          log15.info("cp ", node2, " to ", rootId, " with parent ", clusterId);
+          log18.info("cp ", node2, " to ", rootId, " with parent ", clusterId);
           newGraph.setNode(node2, data6);
           if (rootId !== graph.parent(node2)) {
-            log15.debug("Setting parent", node2, graph.parent(node2));
+            log18.debug("Setting parent", node2, graph.parent(node2));
             newGraph.setParent(node2, graph.parent(node2));
           }
           if (clusterId !== rootId && node2 !== clusterId) {
-            log15.debug("Setting parent", node2, clusterId);
+            log18.debug("Setting parent", node2, clusterId);
             newGraph.setParent(node2, clusterId);
           } else {
-            log15.info("In copy ", clusterId, "root", rootId, "data", graph.node(clusterId), rootId);
-            log15.debug(
+            log18.info("In copy ", clusterId, "root", rootId, "data", graph.node(clusterId), rootId);
+            log18.debug(
               "Not Setting parent for node=",
               node2,
               "cluster!==rootId",
@@ -66223,18 +66892,18 @@ var init_chunk_KQLB2F66 = __esm({
             );
           }
           const edges3 = graph.edges(node2);
-          log15.debug("Copying Edges", edges3);
+          log18.debug("Copying Edges", edges3);
           edges3.forEach((edge) => {
-            log15.info("Edge", edge);
+            log18.info("Edge", edge);
             const data22 = graph.edge(edge.v, edge.w, edge.name);
-            log15.info("Edge data", data22, rootId);
+            log18.info("Edge data", data22, rootId);
             try {
               if (edgeInCluster(edge, rootId)) {
-                log15.info("Copying as ", edge.v, edge.w, data22, edge.name);
+                log18.info("Copying as ", edge.v, edge.w, data22, edge.name);
                 newGraph.setEdge(edge.v, edge.w, data22, edge.name);
-                log15.info("newGraph edges ", newGraph.edges(), newGraph.edge(newGraph.edges()[0]));
+                log18.info("newGraph edges ", newGraph.edges(), newGraph.edge(newGraph.edges()[0]));
               } else {
-                log15.info(
+                log18.info(
                   "Skipping copy of edge ",
                   edge.v,
                   "-->",
@@ -66246,11 +66915,11 @@ var init_chunk_KQLB2F66 = __esm({
                 );
               }
             } catch (e3) {
-              log15.error(e3);
+              log18.error(e3);
             }
           });
         }
-        log15.debug("Removing node", node2);
+        log18.debug("Removing node", node2);
         graph.removeNode(node2);
       });
     }, "copy");
@@ -66279,7 +66948,7 @@ var init_chunk_KQLB2F66 = __esm({
     }, "findCommonEdges");
     findNonClusterChild = /* @__PURE__ */ __name((id38, graph, clusterId) => {
       const children2 = graph.children(id38);
-      log15.trace("Searching children of id ", id38, children2);
+      log18.trace("Searching children of id ", id38, children2);
       if (children2.length < 1) {
         return id38;
       }
@@ -66311,15 +66980,15 @@ var init_chunk_KQLB2F66 = __esm({
     }, "getAnchorId");
     adjustClustersAndEdges = /* @__PURE__ */ __name((graph, depth) => {
       if (!graph || depth > 10) {
-        log15.debug("Opting out, no graph ");
+        log18.debug("Opting out, no graph ");
         return;
       } else {
-        log15.debug("Opting in, graph ");
+        log18.debug("Opting in, graph ");
       }
       graph.nodes().forEach(function(id38) {
         const children2 = graph.children(id38);
         if (children2.length > 0) {
-          log15.debug(
+          log18.debug(
             "Cluster identified",
             id38,
             " Replacement id in edges: ",
@@ -66333,18 +67002,18 @@ var init_chunk_KQLB2F66 = __esm({
         const children2 = graph.children(id38);
         const edges3 = graph.edges();
         if (children2.length > 0) {
-          log15.debug("Cluster identified", id38, descendants);
+          log18.debug("Cluster identified", id38, descendants);
           edges3.forEach((edge) => {
             const d1 = isDescendant(edge.v, id38);
             const d22 = isDescendant(edge.w, id38);
             if (d1 ^ d22) {
-              log15.debug("Edge: ", edge, " leaves cluster ", id38);
-              log15.debug("Descendants of XXX ", id38, ": ", descendants.get(id38));
+              log18.debug("Edge: ", edge, " leaves cluster ", id38);
+              log18.debug("Descendants of XXX ", id38, ": ", descendants.get(id38));
               clusterDb.get(id38).externalConnections = true;
             }
           });
         } else {
-          log15.debug("Not a cluster ", id38, descendants);
+          log18.debug("Not a cluster ", id38, descendants);
         }
       });
       for (let id38 of clusterDb.keys()) {
@@ -66363,11 +67032,11 @@ var init_chunk_KQLB2F66 = __esm({
       }
       graph.edges().forEach(function(e3) {
         const edge = graph.edge(e3);
-        log15.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
-        log15.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(graph.edge(e3)));
+        log18.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
+        log18.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(graph.edge(e3)));
         let v5 = e3.v;
         let w5 = e3.w;
-        log15.debug(
+        log18.debug(
           "Fix XXX",
           clusterDb,
           "ids:",
@@ -66379,7 +67048,7 @@ var init_chunk_KQLB2F66 = __esm({
           clusterDb.get(e3.w)
         );
         if (clusterDb.get(e3.v) || clusterDb.get(e3.w)) {
-          log15.debug("Fixing and trying - removing XXX", e3.v, e3.w, e3.name);
+          log18.debug("Fixing and trying - removing XXX", e3.v, e3.w, e3.name);
           v5 = getAnchorId(e3.v);
           w5 = getAnchorId(e3.w);
           graph.removeEdge(e3.v, e3.w, e3.name);
@@ -66393,16 +67062,16 @@ var init_chunk_KQLB2F66 = __esm({
             clusterDb.get(parent4).externalConnections = true;
             edge.toCluster = e3.w;
           }
-          log15.debug("Fix Replacing with XXX", v5, w5, e3.name);
+          log18.debug("Fix Replacing with XXX", v5, w5, e3.name);
           graph.setEdge(v5, w5, edge, e3.name);
         }
       });
       extractor(graph, 0);
-      log15.trace(clusterDb);
+      log18.trace(clusterDb);
     }, "adjustClustersAndEdges");
     extractor = /* @__PURE__ */ __name((graph, depth) => {
       if (depth > 10) {
-        log15.error("Bailing out");
+        log18.error("Bailing out");
         return;
       }
       let nodes5 = graph.nodes();
@@ -66412,12 +67081,12 @@ var init_chunk_KQLB2F66 = __esm({
         hasChildren = hasChildren || children2.length > 0;
       }
       if (!hasChildren) {
-        log15.debug("Done, no node has children", graph.nodes());
+        log18.debug("Done, no node has children", graph.nodes());
         return;
       }
-      log15.debug("Nodes = ", nodes5, depth);
+      log18.debug("Nodes = ", nodes5, depth);
       for (const node2 of nodes5) {
-        log15.debug(
+        log18.debug(
           "Extracting node",
           node2,
           clusterDb,
@@ -66429,9 +67098,9 @@ var init_chunk_KQLB2F66 = __esm({
           depth
         );
         if (!clusterDb.has(node2)) {
-          log15.debug("Not a cluster", node2, depth);
+          log18.debug("Not a cluster", node2, depth);
         } else if (!clusterDb.get(node2).externalConnections && graph.children(node2) && graph.children(node2).length > 0) {
-          log15.debug(
+          log18.debug(
             "Cluster without external connections, without a parent and with children",
             node2,
             depth
@@ -66440,7 +67109,7 @@ var init_chunk_KQLB2F66 = __esm({
           let dir2 = graphSettings.rankdir === "TB" ? "LR" : "TB";
           if (clusterDb.get(node2)?.clusterData?.dir) {
             dir2 = clusterDb.get(node2).clusterData.dir;
-            log15.debug("Fixing dir", clusterDb.get(node2).clusterData.dir, dir2);
+            log18.debug("Fixing dir", clusterDb.get(node2).clusterData.dir, dir2);
           }
           const clusterGraph = new Graph({
             multigraph: true,
@@ -66463,7 +67132,7 @@ var init_chunk_KQLB2F66 = __esm({
             graph: clusterGraph
           });
         } else {
-          log15.debug(
+          log18.debug(
             "Cluster ** ",
             node2,
             " **not meeting the criteria !externalConnections:",
@@ -66475,14 +67144,14 @@ var init_chunk_KQLB2F66 = __esm({
             graph.children("D"),
             depth
           );
-          log15.debug(clusterDb);
+          log18.debug(clusterDb);
         }
       }
       nodes5 = graph.nodes();
-      log15.debug("New list of nodes", nodes5);
+      log18.debug("New list of nodes", nodes5);
       for (const node2 of nodes5) {
         const data6 = graph.node(node2);
-        log15.debug(" Now next level", node2, data6);
+        log18.debug(" Now next level", node2, data6);
         if (data6?.clusterNode) {
           extractor(data6.graph, depth + 1);
         }
@@ -160794,12 +161463,12 @@ function clearContainerAlgorithmOptions(layoutOptions) {
   layoutOptions["spacing.baseValue"] = DEFAULT_SUBGRAPH_SPACING_BASE_VALUE;
   layoutOptions["spacing.nodeNode"] = DEFAULT_SUBGRAPH_NODE_SPACING;
 }
-function resolveContainerAlgorithm(requested, log28) {
+function resolveContainerAlgorithm(requested, log29) {
   if (typeof requested !== "string") {
     return void 0;
   }
   if (!CONTAINER_ALGORITHMS.has(requested)) {
-    log28?.warn(
+    log29?.warn(
       `Unknown container layout algorithm "${requested}". Supported values: ${[...CONTAINER_ALGORITHMS].join(", ")}. Falling back to the diagram's layout algorithm.`
     );
     return void 0;
@@ -160836,7 +161505,7 @@ function groupTitleSizeOptions(node2) {
     "nodeSize.minimum": `(${groupTitleWidth(node2)}, 0)`
   };
 }
-function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log28) {
+function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log29) {
   const labelW = node2.labelData?.width ?? 0;
   const pad4 = node2.padding ?? 0;
   const minWidth = labelW + 2 * pad4;
@@ -160904,7 +161573,7 @@ function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log28) {
     // cross-boundary edge attaches to the frame rather than to a node inside it.
     "elk.spacing.portsSurrounding": PORTS_SURROUNDING
   };
-  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log28);
+  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log29);
   if (algo) {
     const padTop = labelH + CONTAINER_PADDING;
     layoutOptions["nodeSize.constraints"] = "[MINIMUM_SIZE, NODE_LABELS]";
@@ -161210,10 +161879,10 @@ function createRootElkGraph(data4Layout, algorithm, rootLayoutOptions) {
   );
   return graph;
 }
-function addSubGraphs(nodeArr, log28) {
+function addSubGraphs(nodeArr, log29) {
   const parentLookupDb = { parentById: {}, childrenById: {} };
   const subgraphs = nodeArr.filter((node2) => node2.isGroup);
-  log28.info("Subgraphs - ", subgraphs);
+  log29.info("Subgraphs - ", subgraphs);
   subgraphs.forEach((subgraph) => {
     const children2 = nodeArr.filter((node2) => node2.parentId === subgraph.id);
     children2.forEach((node2) => {
@@ -161377,39 +162046,39 @@ function configureSubgraphNodes(data4Layout, nodeDb2, parentLookupDb, elkContext
     delete node2.height;
   });
 }
-function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log28) {
-  log28.debug("APA01 processing edges, count:", elkGraph.edges.length);
+function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log29) {
+  log29.debug("APA01 processing edges, count:", elkGraph.edges.length);
   elkGraph.edges.forEach((edge, index2) => {
-    log28.debug("APA01 processing edge", index2, ":", edge);
+    log29.debug("APA01 processing edge", index2, ":", edge);
     const source = edge.sources[0];
     const target = edge.targets[0];
-    log28.debug("APA01 source:", source, "target:", target);
-    log28.debug("APA01 nodeDb[source]:", nodeDb2[source]);
-    log28.debug("APA01 nodeDb[target]:", nodeDb2[target]);
+    log29.debug("APA01 source:", source, "target:", target);
+    log29.debug("APA01 nodeDb[source]:", nodeDb2[source]);
+    log29.debug("APA01 nodeDb[target]:", nodeDb2[target]);
     if (nodeDb2[source] && nodeDb2[target] && nodeDb2[source].parentId !== nodeDb2[target].parentId) {
       const ancestorId = findCommonAncestor(source, target, parentLookupDb);
-      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log28);
-      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log28);
+      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log29);
+      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log29);
     }
   });
 }
-function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log28) {
+function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log29) {
   const node2 = nodeDb2[nodeId];
   if (!node2) {
     return;
   }
   node2.layoutOptions ??= {};
   if (node2.layoutOptions["elk.hierarchyHandling"] === "SEPARATE_CHILDREN" && resolveContainerAlgorithm(node2.metadata?.algorithm)) {
-    log28.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
+    log29.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
     clearContainerAlgorithmOptions(node2.layoutOptions);
     Object.assign(node2.layoutOptions, groupTitleSizeOptions(node2));
   }
   node2.layoutOptions["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
   if (node2.id !== ancestorId && node2.parentId) {
-    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log28);
+    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log29);
   }
 }
-async function runElkLayout(elk, elkGraph, log28) {
+async function runElkLayout(elk, elkGraph, log29) {
   const profiler4 = globalThis.__mermaidProfiler;
   try {
     profiler4?.begin("layoutCore");
@@ -161419,19 +162088,19 @@ async function runElkLayout(elk, elkGraph, log28) {
     } finally {
       profiler4?.end();
     }
-    log28.debug("APA01 after - success");
-    log28.debug("APA01 layout result:", graph);
+    log29.debug("APA01 after - success");
+    log29.debug("APA01 layout result:", graph);
     return graph;
   } catch (error3) {
-    log28.error("ELK layout error:", error3);
+    log29.error("ELK layout error:", error3);
     throw error3;
   }
 }
-function applyElkLayoutResult(data4Layout, graph, layoutState, log28) {
+function applyElkLayoutResult(data4Layout, graph, layoutState, log29) {
   const nodeById = new Map(data4Layout.nodes.map((node2) => [node2.id, node2]));
-  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log28);
+  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log29);
   evenGroupFrames(graph.children ?? [], layoutState, nodeById, graph);
-  applyElkEdgeLayout(data4Layout, graph, layoutState, log28);
+  applyElkEdgeLayout(data4Layout, graph, layoutState, log29);
 }
 function collectDescendantIds(elkNode, into = /* @__PURE__ */ new Set()) {
   for (const child of elkNode.children ?? []) {
@@ -161522,7 +162191,7 @@ function evenGroupFrames(elkNodes, layoutState, nodeById, graph = {}) {
     }
   }
 }
-function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log28) {
+function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log29) {
   nodeArray.forEach((node2) => {
     if (!node2) {
       return;
@@ -161554,7 +162223,7 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
       layoutNodeLabels.labels = node2.labels;
     }
     if (node2.isGroup) {
-      log28.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
+      log29.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
       applyElkNodePositions(
         node2.children ?? [],
         layoutState,
@@ -161562,10 +162231,10 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
         offset.posX,
         offset.posY,
         depth + 1,
-        log28
+        log29
       );
     } else {
-      log28.info(
+      log29.info(
         "Id NODE = ",
         node2.id,
         node2.x,
@@ -161755,7 +162424,7 @@ function straightenEdgeTerminals(edges3) {
   }
   return changed;
 }
-function applyElkEdgeLayout(data4Layout, graph, layoutState, log28) {
+function applyElkEdgeLayout(data4Layout, graph, layoutState, log29) {
   const edgeById = new Map(data4Layout.edges.map((edge) => [edge.id, edge]));
   const straightenEdges = data4Layout.config.elk?.straightenEdges !== false;
   const terminalLabelPorts = /* @__PURE__ */ new Map();
@@ -161821,20 +162490,20 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log28) {
       startNode.y = from2.y;
       endNode.x = to2.x;
       endNode.y = to2.y;
-      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log28);
+      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log29);
       layoutEdge.points = straightPoints;
       layoutEdge.curve = "linear";
       const lineStart = straightPoints[0];
       const lineEnd = straightPoints[straightPoints.length - 1];
       layoutEdge.x = (lineStart.x + lineEnd.x) / 2;
       layoutEdge.y = (lineStart.y + lineEnd.y) / 2;
-      log28.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
+      log29.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
       return;
     }
     const sourceId = edge.start ?? edge.sourceId ?? startId;
     const targetId = edge.end ?? edge.targetId ?? endId;
     const offset = calcOffset(sourceId, targetId, layoutState.parentLookupDb, layoutState.nodeDb);
-    log28.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
+    log29.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
     const section = edge.sections[0];
     const points = createEdgePointsFromSection(section, offset);
     if (reversed) {
@@ -161851,17 +162520,17 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log28) {
     if (endNode.shape !== "rect33") {
       points.push({ x: endNode.x, y: endNode.y });
     }
-    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log28);
+    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log29);
     layoutEdge.points = ensureStartMarkerSegmentLength(
       ensureEndMarkerSegmentLength(
         clipped,
         boundsFor(endNode),
         getEndMarkerPathOffset(layoutEdge),
-        log28
+        log29
       ),
       boundsFor(startNode),
       getStartMarkerPathOffset(layoutEdge),
-      log28
+      log29
     );
     layoutEdge.curve = "rounded";
     const label = edge.labels?.[0];
@@ -162126,10 +162795,10 @@ function calcOffset(src, dest, parentLookupDb, nodeDb2) {
     y: ancestorOffset?.posY ?? 0
   };
 }
-function sanitizeElkEdgePoints(points, startNode, endNode, log28) {
+function sanitizeElkEdgePoints(points, startNode, endNode, log29) {
   const prevPoints = Array.isArray(points) ? [...points] : [];
   const endBounds = boundsFor(endNode);
-  log28.debug(
+  log29.debug(
     "PPP cutter2: Points before cutter2:",
     JSON.stringify(points),
     "endBounds:",
@@ -162164,12 +162833,12 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log28) {
     }
     if (skipStart || skipEnd) {
       if (!skipStart) {
-        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log28);
+        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log29);
       }
       if (!skipEnd) {
-        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log28);
+        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log29);
       }
-      log28.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
+      log29.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
         skipStart,
         skipEnd,
         startCenterApprox,
@@ -162179,22 +162848,22 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log28) {
       });
       clippedPoints = prevPoints;
     } else {
-      clippedPoints = cutter2(startNode, endNode, prevPoints, log28);
+      clippedPoints = cutter2(startNode, endNode, prevPoints, log29);
     }
   }
-  log28.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
+  log29.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
   if (!Array.isArray(clippedPoints) || clippedPoints.length < 2 || hasInvalidPoint(clippedPoints)) {
-    log28.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
+    log29.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
     const cleaned = prevPoints.filter((p3) => Number.isFinite(p3?.x) && Number.isFinite(p3?.y));
     clippedPoints = cleaned.length >= 2 ? cleaned : prevPoints;
   }
-  log28.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
-  return dedupeConsecutivePoints(clippedPoints, log28);
+  log29.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
+  return dedupeConsecutivePoints(clippedPoints, log29);
 }
 function hasInvalidPoint(points) {
   return points?.some((point3) => !Number.isFinite(point3?.x) || !Number.isFinite(point3?.y));
 }
-function dedupeConsecutivePoints(points, log28) {
+function dedupeConsecutivePoints(points, log29) {
   const deduped = points.filter((point3, index2, arr) => {
     if (index2 === 0) {
       return true;
@@ -162203,7 +162872,7 @@ function dedupeConsecutivePoints(points, log28) {
     return Math.abs(point3.x - prev2.x) > 1e-6 || Math.abs(point3.y - prev2.y) > 1e-6;
   });
   if (deduped.length !== points.length) {
-    log28.debug("UIO cutter2: removed consecutive duplicate points", {
+    log29.debug("UIO cutter2: removed consecutive duplicate points", {
       before: points,
       after: deduped
     });
@@ -162216,7 +162885,7 @@ function getEndMarkerPathOffset(edge) {
 function getStartMarkerPathOffset(edge) {
   return markerPathOffset(edge.arrowTypeStart);
 }
-function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log28) {
+function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log29) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -162230,7 +162899,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log28
     return points;
   }
   const adjusted = [start2, ...points.slice(2)];
-  log28.debug("UIO cutter2: removed short start marker segment", {
+  log29.debug("UIO cutter2: removed short start marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -162238,7 +162907,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log28
   });
   return adjusted;
 }
-function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log28) {
+function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log29) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -162252,7 +162921,7 @@ function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log28) {
     return points;
   }
   const adjusted = [...points.slice(0, -2), end];
-  log28.debug("UIO cutter2: removed short end marker segment", {
+  log29.debug("UIO cutter2: removed short end marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -162422,7 +163091,7 @@ function clipGroupEndpoint(points, bounds4, side) {
   }
   return true;
 }
-function applyStartIntersectionIfNeeded(points, startNode, startBounds, log28) {
+function applyStartIntersectionIfNeeded(points, startNode, startBounds, log29) {
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (outsideNode2(startBounds, point3)) {
@@ -162440,10 +163109,10 @@ function applyStartIntersectionIfNeeded(points, startNode, startBounds, log28) {
       startCenter
     );
     replaceEndpoint(points, "start", startIntersection);
-    log28.debug("UIO cutter2: start-only intersection applied", { startIntersection });
+    log29.debug("UIO cutter2: start-only intersection applied", { startIntersection });
   }
 }
-function applyEndIntersectionIfNeeded(points, endNode, endBounds, log28) {
+function applyEndIntersectionIfNeeded(points, endNode, endBounds, log29) {
   let outsideIndexForEnd = -1;
   for (let index2 = points.length - 1; index2 >= 0; index2--) {
     if (outsideNode2(endBounds, points[index2])) {
@@ -162461,7 +163130,7 @@ function applyEndIntersectionIfNeeded(points, endNode, endBounds, log28) {
       endCenter
     );
     replaceEndpoint(points, "end", endIntersection);
-    log28.debug("UIO cutter2: end-only intersection applied", { endIntersection });
+    log29.debug("UIO cutter2: end-only intersection applied", { endIntersection });
   }
 }
 function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
@@ -162475,7 +163144,7 @@ function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
   }
   return outlineAttachPoint(node2, bounds4, port, next3);
 }
-function cutter2(startNode, endNode, originalPoints, log28) {
+function cutter2(startNode, endNode, originalPoints, log29) {
   const startBounds = boundsFor(startNode);
   const endBounds = boundsFor(endNode);
   if (originalPoints.length === 0) {
@@ -162484,8 +163153,8 @@ function cutter2(startNode, endNode, originalPoints, log28) {
   const points = [...originalPoints];
   const startCenter = points[0];
   const endCenter = points[points.length - 1];
-  log28.debug("PPP cutter2: bounds", { startBounds, endBounds });
-  log28.debug("PPP cutter2: original points", originalPoints);
+  log29.debug("PPP cutter2: bounds", { startBounds, endBounds });
+  log29.debug("PPP cutter2: original points", originalPoints);
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (firstOutsideStartIndex === -1 && outsideNode2(startBounds, point3)) {
@@ -162500,7 +163169,7 @@ function cutter2(startNode, endNode, originalPoints, log28) {
       // is all a non-axis-aligned or shapeless endpoint can offer.
       attachAlongDepartureAxis(startNode, startBounds, points, firstOutsideStartIndex, 1) ?? computeNodeIntersection(startNode, startBounds, outsidePointForStart, startCenter)
     );
-    log28.debug("UIO cutter2: start intersection", startIntersection);
+    log29.debug("UIO cutter2: start intersection", startIntersection);
     replaceEndpoint(points, "start", startIntersection);
   }
   let outsidePointForEnd = null;
@@ -162518,7 +163187,7 @@ function cutter2(startNode, endNode, originalPoints, log28) {
   }
   if (outsidePointForEnd) {
     const endIntersection = attachAlongDepartureAxis(endNode, endBounds, points, outsideIndexForEnd, -1) ?? computeNodeIntersection(endNode, endBounds, outsidePointForEnd, endCenter);
-    log28.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
+    log29.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
     replaceEndpoint(points, "end", endIntersection);
   }
   if (points.length > 1) {
@@ -162528,7 +163197,7 @@ function cutter2(startNode, endNode, originalPoints, log28) {
       (lastPoint2.x - secondLastPoint.x) ** 2 + (lastPoint2.y - secondLastPoint.y) ** 2
     );
     if (distance3 < 2) {
-      log28.debug("UIO cutter2: trimming tail point (too close)", {
+      log29.debug("UIO cutter2: trimming tail point (too close)", {
         distance: distance3,
         lastPoint: lastPoint2,
         secondLastPoint
@@ -162536,7 +163205,7 @@ function cutter2(startNode, endNode, originalPoints, log28) {
       points.pop();
     }
   }
-  log28.debug("UIO cutter2: final points", points);
+  log29.debug("UIO cutter2: final points", points);
   return points;
 }
 var import_elk_bundled, findCommonAncestor, ROOT, JUMP_RADIUS, PLACEMENT_OPTIONS, EDGE_ROUTING_OPTIONS, ROOT_EXPERIMENT_OVERRIDES, SUBGRAPH_EXPERIMENT_OVERRIDES, EPS, PUSH_OUT, onBorder, intersection2, outsideNode2, ensureTrulyOutside, makeInsidePoint, tryNodeIntersect, fallbackIntersection, OUTLINE_RAY_STEPS, DEPARTURE_AXIS_EPS, insideOutline, outlineAttachPoint, computeNodeIntersection, replaceEndpoint, MIN_END_MARKER_SEGMENT_LENGTH, markerPathOffset, ARROW_MAP, PORTS_SURROUNDING_MARGIN, PORTS_SURROUNDING, SUBGRAPH_PADDING, DEFAULT_SUBGRAPH_SPACING_BASE_VALUE, DEFAULT_SUBGRAPH_NODE_SPACING, CONTAINER_PADDING, RECTPACKING_CONTAINER_PADDING, RECTPACKING_OPTIONS, CONTAINER_ALGORITHM_OVERRIDES, CONTAINER_ALGORITHMS, render3, ELK_PRESETS, TERMINAL_LABEL_MARKER_CLEARANCE, TERMINAL_JOG_MAX, TERMINAL_RUN_MAX, JOG_EPS, labelBox, OPPOSITE_LABEL_MIN_GAP, boxesOverlap, TERMINAL_LABEL_FRAME_CLEARANCE;
@@ -165676,7 +166345,7 @@ var init_dagre_SPEB5RXH = __esm({
       siteConfig: siteConfig2
     }) => {
       const dir2 = graph.graph().rankdir;
-      log15.trace("Dir in recursive render - dir:", dir2);
+      log18.trace("Dir in recursive render - dir:", dir2);
       const {
         clusters,
         edgePaths,
@@ -165687,12 +166356,12 @@ var init_dagre_SPEB5RXH = __esm({
         edgePathsClass: "edgePaths"
       });
       if (!graph.nodes()) {
-        log15.info("No nodes found for", graph);
+        log18.info("No nodes found for", graph);
       } else {
-        log15.info("Recursive render XXX", graph.nodes());
+        log18.info("Recursive render XXX", graph.nodes());
       }
       if (graph.edges().length > 0) {
-        log15.info("Recursive edges", graph.edge(graph.edges()[0]));
+        log18.info("Recursive edges", graph.edge(graph.edges()[0]));
       }
       const mergeSelfLoops = shouldMergeSelfLoopSegments(diagramType);
       await Promise.all(
@@ -165700,7 +166369,7 @@ var init_dagre_SPEB5RXH = __esm({
           const node2 = graph.node(v5);
           if (parentCluster !== void 0) {
             const data6 = JSON.parse(JSON.stringify(parentCluster.clusterData));
-            log15.trace(
+            log18.trace(
               "Setting data for parent cluster XXX\n Node.id = ",
               v5,
               "\n data=",
@@ -165710,13 +166379,13 @@ var init_dagre_SPEB5RXH = __esm({
             );
             graph.setNode(parentCluster.id, data6);
             if (!graph.parent(v5)) {
-              log15.trace("Setting parent", v5, parentCluster.id);
+              log18.trace("Setting parent", v5, parentCluster.id);
               graph.setParent(v5, parentCluster.id, data6);
             }
           }
-          log15.info("(Insert) Node XXX" + v5 + ": " + JSON.stringify(graph.node(v5)));
+          log18.info("(Insert) Node XXX" + v5 + ": " + JSON.stringify(graph.node(v5)));
           if (node2?.clusterNode) {
-            log15.info("Cluster identified XBX", v5, node2.width, graph.node(v5));
+            log18.info("Cluster identified XBX", v5, node2.width, graph.node(v5));
             const { ranksep, nodesep } = graph.graph();
             node2.graph.setGraph({
               ...node2.graph.graph(),
@@ -165734,7 +166403,7 @@ var init_dagre_SPEB5RXH = __esm({
             const newEl = o2.elem;
             updateNodeBounds(node2, newEl);
             node2.diff = o2.diff || 0;
-            log15.info(
+            log18.info(
               "New compound node after recursive render XAX",
               v5,
               "width",
@@ -165748,7 +166417,7 @@ var init_dagre_SPEB5RXH = __esm({
             setNodeElem(newEl, node2);
           } else {
             if (graph.children(v5).length > 0) {
-              log15.trace(
+              log18.trace(
                 "Cluster - the non recursive path XBX",
                 v5,
                 node2.id,
@@ -165757,10 +166426,10 @@ var init_dagre_SPEB5RXH = __esm({
                 "Graph:",
                 graph
               );
-              log15.trace(findNonClusterChild(node2.id, graph));
+              log18.trace(findNonClusterChild(node2.id, graph));
               clusterDb.set(node2.id, { id: findNonClusterChild(node2.id, graph), node: node2 });
             } else {
-              log15.trace("Node - the non recursive path XAX", v5, nodes5, graph.node(v5), dir2);
+              log18.trace("Node - the non recursive path XAX", v5, nodes5, graph.node(v5), dir2);
               await insertMeasuredNode(nodes5, graph.node(v5), { config: siteConfig2, dir: dir2 });
             }
           }
@@ -165769,9 +166438,9 @@ var init_dagre_SPEB5RXH = __esm({
       const processEdges = /* @__PURE__ */ __name(async () => {
         const edgePromises = graph.edges().map(async function(e3) {
           const edge = graph.edge(e3.v, e3.w, e3.name);
-          log15.info("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
-          log15.info("Edge " + e3.v + " -> " + e3.w + ": ", e3, " ", JSON.stringify(graph.edge(e3)));
-          log15.info(
+          log18.info("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
+          log18.info("Edge " + e3.v + " -> " + e3.w + ": ", e3, " ", JSON.stringify(graph.edge(e3)));
+          log18.info(
             "Fix",
             clusterDb,
             "ids:",
@@ -165817,9 +166486,9 @@ var init_dagre_SPEB5RXH = __esm({
       };
     }, "measureDagreGraph");
     runDagreGraphLayout = /* @__PURE__ */ __name((graph) => {
-      log15.info("############################################# XXX");
-      log15.info("###                Layout                 ### XXX");
-      log15.info("############################################# XXX");
+      log18.info("############################################# XXX");
+      log18.info("###                Layout                 ### XXX");
+      log18.info("############################################# XXX");
       if (false) {
         profiler.begin("layoutCore");
       }
@@ -165892,7 +166561,7 @@ var init_dagre_SPEB5RXH = __esm({
       await Promise.all(
         sortNodesByHierarchy(graph).map(async function(v5) {
           const node2 = graph.node(v5);
-          log15.info(
+          log18.info(
             "Position XBX => " + v5 + ": (" + node2.x,
             "," + node2.y,
             ") width: ",
@@ -165902,7 +166571,7 @@ var init_dagre_SPEB5RXH = __esm({
           );
           if (node2?.clusterNode) {
             node2.y += subGraphTitleTotalMargin;
-            log15.info(
+            log18.info(
               "A tainted cluster node XBX1",
               v5,
               node2.id,
@@ -165916,7 +166585,7 @@ var init_dagre_SPEB5RXH = __esm({
             positionNode(node2);
           } else {
             if (graph.children(v5).length > 0) {
-              log15.info(
+              log18.info(
                 "A pure cluster node XBX1",
                 v5,
                 node2.id,
@@ -165931,13 +166600,13 @@ var init_dagre_SPEB5RXH = __esm({
               const halfPadding = node2?.padding / 2 || 0;
               const labelHeight = node2?.labelBBox?.height || 0;
               const offsetY = labelHeight - halfPadding || 0;
-              log15.debug("OffsetY", offsetY, "labelHeight", labelHeight, "halfPadding", halfPadding);
+              log18.debug("OffsetY", offsetY, "labelHeight", labelHeight, "halfPadding", halfPadding);
               await insertCluster(clusters, node2);
               clusterDb.get(node2.id).node = node2;
             } else {
               const parent4 = graph.node(node2.parentId);
               node2.y += subGraphTitleTotalMargin / 2;
-              log15.info(
+              log18.info(
                 "A regular node XBX1 - using the padding",
                 node2.id,
                 "parent",
@@ -165961,7 +166630,7 @@ var init_dagre_SPEB5RXH = __esm({
       const edgeOffsetY = subGraphTitleTotalMargin / 2;
       const edgesToRender = getEdgesToRender(graph, edgeOffsetY, { mergeSelfLoops });
       edgesToRender.forEach(function({ edge, start: start2, end }) {
-        log15.info("Edge " + start2 + " -> " + end + ": " + JSON.stringify(edge), edge);
+        log18.info("Edge " + start2 + " -> " + end + ": " + JSON.stringify(edge), edge);
         edge.points.forEach((point3) => point3.y += edgeOffsetY);
         const startNode = graph.node(start2);
         const endNode = graph.node(end);
@@ -165970,12 +166639,12 @@ var init_dagre_SPEB5RXH = __esm({
       });
       graph.nodes().forEach(function(v5) {
         const n2 = graph.node(v5);
-        log15.info(v5, n2.type, n2.diff);
+        log18.info(v5, n2.type, n2.diff);
         if (n2.isGroup) {
           diff2 = n2.diff;
         }
       });
-      log15.warn("Returning from recursive render XAX", elem, diff2);
+      log18.warn("Returning from recursive render XAX", elem, diff2);
       return { elem, diff: diff2 };
     }, "paintDagreLayoutCore");
     renderDagreSubgraph = /* @__PURE__ */ __name(async (options2) => {
@@ -166008,7 +166677,7 @@ var init_dagre_SPEB5RXH = __esm({
           graph.setParent(node2.id, node2.parentId);
         }
       });
-      log15.debug("Edges:", data4Layout.edges);
+      log18.debug("Edges:", data4Layout.edges);
       data4Layout.edges.forEach((edge) => {
         if (edge.start === edge.end) {
           const nodeId = edge.start;
@@ -166396,7 +167065,7 @@ function dropLanesEmptiedBySharedNodes(layout7, nodes5) {
   for (const { node: node2, keptBy, droppedFrom } of sharedMembers(layout7)) {
     const keptByLane = laneIdOrSelf(model, keptBy);
     if (keptByLane && keptByLane !== droppedFrom && laneIds.has(droppedFrom)) {
-      log15.warn(
+      log18.warn(
         `Swimlane node "${node2}" is listed in lanes "${keptByLane}" and "${droppedFrom}"; it is drawn in "${keptByLane}" only.`
       );
       emptied.add(droppedFrom);
@@ -166407,7 +167076,7 @@ function dropLanesEmptiedBySharedNodes(layout7, nodes5) {
 function warnAboutNestedGroups(nodes5, model) {
   for (const node2 of nodes5) {
     if (node2.isGroup && !model.isLane(node2.id) && !model.isPool(node2.id)) {
-      log15.warn(
+      log18.warn(
         `Swimlane subgraph "${node2.id}" is nested in "${node2.parentId}"; only top-level subgraphs are lanes, so it is drawn as a plain box.`
       );
     }
@@ -166694,7 +167363,7 @@ function createEdgeLabelNodes(data6) {
     const sourceNode = edge.start ? nodeById.get(edge.start) : void 0;
     const targetNode = edge.end ? nodeById.get(edge.end) : void 0;
     if (!sourceNode || !targetNode) {
-      log15.warn(EDGE_LABEL_LOG_PREFIX, `Edge ${edge.id} has missing source or target node`);
+      log18.warn(EDGE_LABEL_LOG_PREFIX, `Edge ${edge.id} has missing source or target node`);
       continue;
     }
     const labelNodeId = `edge-label-${edge.start}-${edge.end}-${edge.id}`;
@@ -171083,11 +171752,11 @@ function validateSwimlanesLayout(layout7) {
   if (issues.length > 0) {
     const overlaps = issues.filter((i2) => i2.type === "edge-node-overlap").length;
     const crossings = issues.filter((i2) => i2.type === "edge-edge-crossing").length;
-    log15.warn(
+    log18.warn(
       `[SWIMLANE_VALIDATE] ${issues.length} issue(s) detected: ${overlaps} edge-node overlap(s), ${crossings} edge crossing(s)`
     );
     for (const issue of issues) {
-      log15.warn(`[SWIMLANE_VALIDATE]   ${issue.type}: ${issue.detail}`);
+      log18.warn(`[SWIMLANE_VALIDATE]   ${issue.type}: ${issue.detail}`);
     }
   }
   return issues;
@@ -210246,7 +210915,7 @@ function createCytoscapeInstance(data6) {
     };
     cy.layout(layoutConfig).run();
     cy.ready((e3) => {
-      log15.info("Cytoscape ready", e3);
+      log18.info("Cytoscape ready", e3);
       resolve2(cy);
     });
   });
@@ -210292,19 +210961,19 @@ function extractPositionedEdges(cy) {
   });
 }
 async function executeCoseBilkentLayout(data6, _config) {
-  log15.debug("Starting cose-bilkent layout algorithm");
+  log18.debug("Starting cose-bilkent layout algorithm");
   try {
     validateLayoutData(data6);
     const cy = await createCytoscapeInstance(data6);
     const positionedNodes = extractPositionedNodes(cy);
     const positionedEdges = extractPositionedEdges(cy);
-    log15.debug(`Layout completed: ${positionedNodes.length} nodes, ${positionedEdges.length} edges`);
+    log18.debug(`Layout completed: ${positionedNodes.length} nodes, ${positionedEdges.length} edges`);
     return {
       nodes: positionedNodes,
       edges: positionedEdges
     };
   } catch (error3) {
-    log15.error("Error in cose-bilkent layout algorithm:", error3);
+    log18.error("Error in cose-bilkent layout algorithm:", error3);
     throw error3;
   }
 }
@@ -210348,7 +211017,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
       insertEdgeLabel: insertEdgeLabel2,
       insertMarkers: insertMarkers2,
       insertNode: insertNode2,
-      log: log28,
+      log: log29,
       positionEdgeLabel: positionEdgeLabel2
     }, { algorithm: _algorithm }) => {
       const nodeDb2 = {};
@@ -210359,7 +211028,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
       const edgePaths = element3.insert("g").attr("class", "edgePaths");
       const edgeLabels2 = element3.insert("g").attr("class", "edgeLabels");
       const nodes5 = element3.insert("g").attr("class", "nodes");
-      log28.debug("Inserting nodes into DOM for dimension calculation");
+      log29.debug("Inserting nodes into DOM for dimension calculation");
       await Promise.all(
         data4Layout.nodes.map(async (node2) => {
           if (node2.isGroup) {
@@ -210378,11 +211047,11 @@ var init_cose_bilkent_JH36ORCC = __esm({
             nodeWithPosition.width = boundingBox3.width;
             nodeWithPosition.height = boundingBox3.height;
             nodeWithPosition.domId = nodeEl;
-            log28.debug(`Node ${node2.id} dimensions: ${boundingBox3.width}x${boundingBox3.height}`);
+            log29.debug(`Node ${node2.id} dimensions: ${boundingBox3.width}x${boundingBox3.height}`);
           }
         })
       );
-      log28.debug("Running cose-bilkent layout algorithm");
+      log29.debug("Running cose-bilkent layout algorithm");
       const updatedLayoutData = {
         ...data4Layout,
         nodes: data4Layout.nodes.map((node2) => {
@@ -210395,7 +211064,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
         })
       };
       const layoutResult = await executeCoseBilkentLayout(updatedLayoutData, data4Layout.config);
-      log28.debug("Positioning nodes based on layout results");
+      log29.debug("Positioning nodes based on layout results");
       layoutResult.nodes.forEach((positionedNode) => {
         const node2 = nodeDb2[positionedNode.id];
         if (node2?.domId) {
@@ -210405,7 +211074,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           );
           node2.x = positionedNode.x;
           node2.y = positionedNode.y;
-          log28.debug(`Positioned node ${node2.id} at center (${positionedNode.x}, ${positionedNode.y})`);
+          log29.debug(`Positioned node ${node2.id} at center (${positionedNode.x}, ${positionedNode.y})`);
         }
       });
       layoutResult.edges.forEach((positionedEdge) => {
@@ -210418,7 +211087,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           ];
         }
       });
-      log28.debug("Inserting and positioning edges");
+      log29.debug("Inserting and positioning edges");
       await Promise.all(
         data4Layout.edges.map(async (edge) => {
           const _edgeLabel = await insertEdgeLabel2(edgeLabels2, edge);
@@ -210427,7 +211096,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           if (startNode && endNode) {
             const positionedEdge = layoutResult.edges.find((e3) => e3.id === edge.id);
             if (positionedEdge) {
-              log28.debug("APA01 positionedEdge", positionedEdge);
+              log29.debug("APA01 positionedEdge", positionedEdge);
               const edgeWithPath = { ...edge };
               const paths = insertEdge2(
                 edgePaths,
@@ -210461,7 +211130,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           }
         })
       );
-      log28.debug("Cose-bilkent rendering completed");
+      log29.debug("Cose-bilkent rendering completed");
     }, "render");
     render22 = render6;
   }
@@ -210490,7 +211159,7 @@ var init_chunk_CFHHFPVC = __esm({
       insertNode,
       interpolateToCurve,
       labelHelper,
-      log: log15,
+      log: log18,
       positionEdgeLabel
     };
     ELK_ALGORITHMS = [
@@ -210563,7 +211232,7 @@ var init_chunk_CFHHFPVC = __esm({
       }
       for (const candidate of [fallback, LAST_RESORT_LAYOUT]) {
         if (Object.hasOwn(layoutAlgorithms, candidate)) {
-          log15.warn(`Layout algorithm ${algorithm} is not registered. Using ${candidate} as fallback.`);
+          log18.warn(`Layout algorithm ${algorithm} is not registered. Using ${candidate} as fallback.`);
           return candidate;
         }
       }
@@ -213493,7 +214162,7 @@ var init_c4Diagram_KJ2TOQU5 = __esm({
       db14.setWrap(conf.wrap);
       c4ShapeInRow2 = db14.getC4ShapeInRow();
       c4BoundaryInRow2 = db14.getC4BoundaryInRow();
-      log15.debug(`C:${JSON.stringify(conf, null, 2)}`);
+      log18.debug(`C:${JSON.stringify(conf, null, 2)}`);
       const diagram210 = root4.select(`[id="${id38}"]`);
       svgDraw_default.insertComputerIcon(diagram210, id38);
       svgDraw_default.insertDatabaseIcon(diagram210, id38);
@@ -213534,7 +214203,7 @@ var init_c4Diagram_KJ2TOQU5 = __esm({
         "viewBox",
         boxStartx - conf.diagramMarginX + " -" + (conf.diagramMarginY + extraVertForTitle) + " " + width3 + " " + (height2 + extraVertForTitle)
       );
-      log15.debug(`models:`, box);
+      log18.debug(`models:`, box);
     }, "draw");
     c4Renderer_default = {
       drawPersonOrSystemArray: drawC4ShapeArray,
@@ -213665,7 +214334,7 @@ var init_chunk_TU62E6Q5 = __esm({
       configureSvgSize(svg3, height2, width3, useMaxWidth);
       const viewBox = createViewBox(x7, y8, width3, height2, padding);
       svg3.attr("viewBox", viewBox);
-      log15.debug(`viewBox configured: ${viewBox} with padding: ${padding}`);
+      log18.debug(`viewBox configured: ${viewBox} with padding: ${padding}`);
     }, "setupViewPortForSVG");
     calculateDimensionsWithPadding = /* @__PURE__ */ __name((svg3, padding) => {
       const bounds4 = svg3.node()?.getBBox() || { width: 0, height: 0, x: 0, y: 0 };
@@ -213838,7 +214507,7 @@ var init_chunk_QB3YPZ4I = __esm({
             if (isStepEdge(edgeDoc)) {
               edge.step = edgeDoc.step;
             } else {
-              log15.warn(`Ignoring step on edge ${id38}: expected a positive integer`, edgeDoc.step);
+              log18.warn(`Ignoring step on edge ${id38}: expected a positive integer`, edgeDoc.step);
             }
           }
           return;
@@ -213847,7 +214516,7 @@ var init_chunk_QB3YPZ4I = __esm({
         let vertex = this.vertices.get(id38);
         if (vertex === void 0) {
           if (textObj === void 0 && type3 === void 0 && style3 !== void 0 && style3 !== null) {
-            log15.warn(
+            log18.warn(
               `Style applied to unknown node "${id38}". This may indicate a typo. The node will be created automatically.`
             );
           }
@@ -213954,7 +214623,7 @@ var init_chunk_QB3YPZ4I = __esm({
           isUserDefinedId: false,
           interpolate: this.edges.defaultInterpolate
         };
-        log15.info("abc78 Got edge...", edge);
+        log18.info("abc78 Got edge...", edge);
         const linkTextObj = type3.text;
         if (linkTextObj !== void 0) {
           edge.text = this.sanitizeText(linkTextObj.text.trim());
@@ -213983,7 +214652,7 @@ var init_chunk_QB3YPZ4I = __esm({
           }
         }
         if (this.edges.length < (this.config.maxEdges ?? 500)) {
-          log15.info("Pushing edge...");
+          log18.info("Pushing edge...");
           this.edges.push(edge);
         } else {
           throw new Error(
@@ -214000,7 +214669,7 @@ You have to call mermaid.initialize.`
       }
       addLink(_start, _end, linkData) {
         const id38 = this.isLinkData(linkData) ? linkData.id.replace("@", "") : void 0;
-        log15.info("addLink", _start, _end, id38);
+        log18.info("addLink", _start, _end, id38);
         for (const start2 of _start) {
           for (const end of _end) {
             const isLastStart = start2 === _start[_start.length - 1];
@@ -214315,7 +214984,7 @@ You have to call mermaid.initialize.`
           dir: dir2,
           labelType: this.sanitizeNodeLabelType(_title?.type)
         };
-        log15.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
+        log18.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
         const uniqueNodes = this.makeUniq(subGraph, this.subGraphs).nodes;
         this.recordDroppedMembers(subGraph, uniqueNodes);
         subGraph.nodes = uniqueNodes.filter((nodeId) => nodeId !== id38);
@@ -214848,13 +215517,13 @@ You have to call mermaid.initialize.`
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw2 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log15.info("REF0:");
-      log15.info("Drawing state diagram (v2)", id38);
+      log18.info("REF0:");
+      log18.info("Drawing state diagram (v2)", id38);
       const { securityLevel, flowchart: conf4, layout: layout7 } = getConfig2();
       diag.db.setDiagramId(id38);
-      log15.debug("Before getData: ");
+      log18.debug("Before getData: ");
       const data4Layout = diag.db.getData();
-      log15.debug("Data: ", data4Layout);
+      log18.debug("Data: ", data4Layout);
       const svg3 = getDiagramElement(id38, securityLevel);
       const direction2 = diag.db.getDirection();
       data4Layout.type = diag.type;
@@ -214864,7 +215533,7 @@ You have to call mermaid.initialize.`
       data4Layout.rankSpacing = conf4?.rankSpacing || 50;
       data4Layout.markers = ["point", "circle", "cross"];
       data4Layout.diagramId = id38;
-      log15.debug("REF1:", data4Layout);
+      log18.debug("REF1:", data4Layout);
       await render7(data4Layout, svg3);
       const padding = data4Layout.config.flowchart?.diagramPadding ?? 8;
       utils_default2.insertTitle(
@@ -216454,7 +217123,7 @@ function normaliseNodeShapes(nodes5, sink) {
       if (sink?.emitError) {
         sink.emitError("SHAPE_REMOVED", msg, { nodeId: node2.id });
       } else {
-        log15.warn(`agentflow: ${msg}`);
+        log18.warn(`agentflow: ${msg}`);
       }
       node2.shape = DEFAULT_SHAPE;
       continue;
@@ -216464,7 +217133,7 @@ function normaliseNodeShapes(nodes5, sink) {
       if (sink?.emitWarning) {
         sink.emitWarning("SHAPE_UNSUPPORTED", msg, { nodeId: node2.id });
       } else {
-        log15.warn(`agentflow: ${msg}`);
+        log18.warn(`agentflow: ${msg}`);
       }
       node2.shape = DEFAULT_SHAPE;
     }
@@ -217190,7 +217859,7 @@ ${snippet2.join("\n")}`,
           isUserDefinedId: false,
           interpolate: this.edges.defaultInterpolate
         };
-        log15.info("abc78 Got edge...", edge);
+        log18.info("abc78 Got edge...", edge);
         const linkTextObj = type3.text;
         if (linkTextObj !== void 0) {
           edge.text = this.sanitizeText(linkTextObj.text.trim());
@@ -217222,7 +217891,7 @@ ${snippet2.join("\n")}`,
           }
         }
         if (this.edges.length < (this.config.maxEdges ?? 500)) {
-          log15.info("Pushing edge...");
+          log18.info("Pushing edge...");
           this.edges.push(edge);
         } else {
           throw new Error(
@@ -217239,7 +217908,7 @@ You have to call mermaid.initialize.`
       }
       addLink(_start, _end, linkData) {
         const id38 = this.isLinkData(linkData) ? linkData.id.replace("@", "") : void 0;
-        log15.info("addLink", _start, _end, id38);
+        log18.info("addLink", _start, _end, id38);
         for (const start2 of _start) {
           for (const end of _end) {
             const isLastStart = start2 === _start[_start.length - 1];
@@ -217608,7 +218277,7 @@ You have to call mermaid.initialize.`
           labelType: this.sanitizeNodeLabelType(_title?.type),
           type: type3 ?? "flow"
         };
-        log15.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
+        log18.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
         subGraph.nodes = this.makeUniq(subGraph, this.subGraphs).nodes;
         const existingPos = this.getPosForId(id38);
         if (existingPos !== -1) {
@@ -218570,9 +219239,9 @@ You have to call mermaid.initialize.`
         this.diagnostics.push(diagnostic);
         const formatted = `agentflow[${id38}]: ${message}`;
         if (severity === "error") {
-          log15.error(formatted);
+          log18.error(formatted);
         } else {
-          log15.warn(formatted);
+          log18.warn(formatted);
         }
       }
       emitWarning(id38, message, ctx) {
@@ -218594,18 +219263,18 @@ You have to call mermaid.initialize.`
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw3 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log15.debug("Drawing agentflow diagram", id38);
+      log18.debug("Drawing agentflow diagram", id38);
       const { securityLevel, agentflow: conf4, layout: layout7 } = getConfig2();
       diag.db.setDiagramId(id38);
-      log15.debug("Before getData: ");
+      log18.debug("Before getData: ");
       const data4Layout = diag.db.getData();
-      log15.debug("Data: ", data4Layout);
+      log18.debug("Data: ", data4Layout);
       const svg3 = getDiagramElement(id38, securityLevel);
       const direction2 = diag.db.getDirection();
       data4Layout.type = diag.type;
       data4Layout.layoutAlgorithm = getRegisteredLayoutAlgorithm(layout7);
       if (data4Layout.layoutAlgorithm === "dagre" && layout7 === "elk") {
-        log15.warn(
+        log18.warn(
           "flowchart-elk was moved to an external package in Mermaid v11. Please refer [release notes](https://github.com/mermaid-js/mermaid/releases/tag/v11.0.0) for more details. This diagram will be rendered using `dagre` layout as a fallback."
         );
       }
@@ -218614,7 +219283,7 @@ You have to call mermaid.initialize.`
       data4Layout.rankSpacing = conf4?.rankSpacing || 50;
       data4Layout.markers = ["point", "circle", "cross", "hierarchy"];
       data4Layout.diagramId = id38;
-      log15.debug("REF1:", data4Layout);
+      log18.debug("REF1:", data4Layout);
       await render7(data4Layout, svg3);
       const padding = conf4?.diagramPadding ?? 8;
       utils_default2.insertTitle(
@@ -221317,10 +221986,10 @@ var init_erDiagram_EYBAPDEH = __esm({
             cssStyles: [],
             labelType: "markdown"
           });
-          log15.info("Added new entity :", name);
+          log18.info("Added new entity :", name);
         } else if (!this.entities.get(name)?.alias && alias) {
           this.entities.get(name).alias = alias;
-          log15.info(`Add alias '${alias}' to entity '${name}'`);
+          log18.info(`Add alias '${alias}' to entity '${name}'`);
         }
         return this.entities.get(name);
       }
@@ -221344,7 +222013,7 @@ var init_erDiagram_EYBAPDEH = __esm({
             attribs[i2].comment = "";
           }
           entity.attributes.push(attribs[i2]);
-          log15.debug("Added attribute ", attribs[i2].name);
+          log18.debug("Added attribute ", attribs[i2].name);
         }
       }
       /**
@@ -221383,7 +222052,7 @@ var init_erDiagram_EYBAPDEH = __esm({
           relSpec: rSpec
         };
         this.relationships.push(rel2);
-        log15.debug("Added new relationship :", rel2);
+        log18.debug("Added new relationship :", rel2);
       }
       getRelationships() {
         return this.relationships;
@@ -221491,7 +222160,7 @@ var init_erDiagram_EYBAPDEH = __esm({
           dir: dir2,
           labelType: this.sanitizeNodeLabelType(_title?.type)
         };
-        log15.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
+        log18.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
         subGraph.nodes = this.makeUniq(subGraph, this.subGraphs).nodes;
         this.subGraphs.push(subGraph);
         this.subGraphLookup.set(id38, subGraph);
@@ -221537,7 +222206,7 @@ var init_erDiagram_EYBAPDEH = __esm({
         const res = [];
         subGraph.nodes.forEach((_id, pos) => {
           if (existingNodes.has(_id)) {
-            log15.warn(`Entity '${_id}' already belongs to another subgraph and will be ignored`);
+            log18.warn(`Entity '${_id}' already belongs to another subgraph and will be ignored`);
           } else {
             res.push(subGraph.nodes[pos]);
           }
@@ -221649,8 +222318,8 @@ var init_erDiagram_EYBAPDEH = __esm({
       draw: () => draw4
     });
     draw4 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log15.info("REF0:");
-      log15.info("Drawing er diagram (unified)", id38);
+      log18.info("REF0:");
+      log18.info("Drawing er diagram (unified)", id38);
       const { securityLevel, er: conf4, layout: layout7 } = getConfig2();
       const data4Layout = diag.db.getData();
       const svg3 = getDiagramElement(id38, securityLevel);
@@ -251450,7 +252119,7 @@ function prettyPrintCommitHistory(commitArr) {
       label.push(branch2);
     }
   }
-  log15.debug(label.join(" "));
+  log18.debug(label.join(" "));
   if (commit22.parents && commit22.parents.length == 2 && commit22.parents[0] && commit22.parents[1]) {
     const newCommit = state2.records.commits.get(commit22.parents[0]);
     upsert(commitArr, commit22, newCommit);
@@ -251516,13 +252185,13 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       state2.records.direction = dir2;
     }, "setDirection");
     setOptions6 = /* @__PURE__ */ __name(function(rawOptString) {
-      log15.debug("options str", rawOptString);
+      log18.debug("options str", rawOptString);
       rawOptString = rawOptString?.trim();
       rawOptString = rawOptString || "{}";
       try {
         state2.records.options = JSON.parse(rawOptString);
       } catch (e3) {
-        log15.error("error while parsing gitGraph options", e3.message);
+        log18.error("error while parsing gitGraph options", e3.message);
       }
     }, "setOptions");
     getOptions = /* @__PURE__ */ __name(function() {
@@ -251533,8 +252202,8 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       let id38 = commitDB.id;
       const type3 = commitDB.type;
       let tags2 = commitDB.tags;
-      log15.info("commit", msg, id38, type3, tags2);
-      log15.debug("Entering commit:", msg, id38, type3, tags2);
+      log18.info("commit", msg, id38, type3, tags2);
+      log18.debug("Entering commit:", msg, id38, type3, tags2);
       const config3 = getConfig3();
       id38 = common_default.sanitizeText(id38, config3);
       msg = common_default.sanitizeText(msg, config3);
@@ -251549,13 +252218,13 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
         branch: state2.records.currBranch
       };
       state2.records.head = newCommit;
-      log15.info("main branch", config3.mainBranchName);
+      log18.info("main branch", config3.mainBranchName);
       if (state2.records.commits.has(newCommit.id)) {
-        log15.warn(`Commit ID ${newCommit.id} already exists`);
+        log18.warn(`Commit ID ${newCommit.id} already exists`);
       }
       state2.records.commits.set(newCommit.id, newCommit);
       state2.records.branches.set(state2.records.currBranch, newCommit.id);
-      log15.debug("in pushCommit " + newCommit.id);
+      log18.debug("in pushCommit " + newCommit.id);
     }, "commit");
     branch = /* @__PURE__ */ __name(function(branchDB) {
       let name = branchDB.name;
@@ -251569,7 +252238,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       state2.records.branches.set(name, state2.records.head != null ? state2.records.head.id : null);
       state2.records.branchConfig.set(name, { name, order: order2 });
       checkout(name);
-      log15.debug("in createBranch");
+      log18.debug("in createBranch");
     }, "branch");
     merge6 = /* @__PURE__ */ __name((mergeDB) => {
       let otherBranch = mergeDB.branch;
@@ -251667,15 +252336,15 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       state2.records.head = commit22;
       state2.records.commits.set(commit22.id, commit22);
       state2.records.branches.set(state2.records.currBranch, commit22.id);
-      log15.debug(state2.records.branches);
-      log15.debug("in mergeBranch");
+      log18.debug(state2.records.branches);
+      log18.debug("in mergeBranch");
     }, "merge");
     cherryPick = /* @__PURE__ */ __name(function(cherryPickDB) {
       let sourceId = cherryPickDB.id;
       let targetId = cherryPickDB.targetId;
       let tags2 = cherryPickDB.tags;
       let parentCommitId = cherryPickDB.parent;
-      log15.debug("Entering cherryPick:", sourceId, targetId, tags2);
+      log18.debug("Entering cherryPick:", sourceId, targetId, tags2);
       const config3 = getConfig3();
       sourceId = common_default.sanitizeText(sourceId, config3);
       targetId = common_default.sanitizeText(targetId, config3);
@@ -251759,8 +252428,8 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
         state2.records.head = commit22;
         state2.records.commits.set(commit22.id, commit22);
         state2.records.branches.set(state2.records.currBranch, commit22.id);
-        log15.debug(state2.records.branches);
-        log15.debug("in cherryPick");
+        log18.debug(state2.records.branches);
+        log18.debug("in cherryPick");
       }
     }, "cherryPick");
     checkout = /* @__PURE__ */ __name(function(branch2) {
@@ -251788,7 +252457,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     __name(upsert, "upsert");
     __name(prettyPrintCommitHistory, "prettyPrintCommitHistory");
     prettyPrint = /* @__PURE__ */ __name(function() {
-      log15.debug(state2.records.commits);
+      log18.debug(state2.records.commits);
       const node2 = getCommitsArray()[0];
       prettyPrintCommitHistory([node2]);
     }, "prettyPrint");
@@ -251817,7 +252486,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     getCommitsArray = /* @__PURE__ */ __name(function() {
       const commitArr = [...state2.records.commits.values()];
       commitArr.forEach(function(o2) {
-        log15.debug(o2.id);
+        log18.debug(o2.id);
       });
       commitArr.sort((a3, b12) => a3.seq - b12.seq);
       return commitArr;
@@ -251880,7 +252549,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       if (parser210) {
         parser210(statement);
       } else {
-        log15.error(`Unknown statement type: ${statement.$type}`);
+        log18.error(`Unknown statement type: ${statement.$type}`);
       }
     }, "parseStatement");
     parseCommit = /* @__PURE__ */ __name((commit22) => {
@@ -251924,7 +252593,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     parser6 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("gitGraph", input);
-        log15.debug(ast);
+        log18.debug(ast);
         populate15(ast, db);
       }, "parse")
     };
@@ -252708,10 +253377,10 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     }, "setBranchPosition");
     draw5 = /* @__PURE__ */ __name(function(txt, id38, ver, diagObj) {
       clear32();
-      log15.debug("in gitgraph renderer", txt + "\n", "id:", id38, ver);
+      log18.debug("in gitgraph renderer", txt + "\n", "id:", id38, ver);
       const db22 = diagObj.db;
       if (!db22.getConfig) {
-        log15.error("getConfig method is not available on db");
+        log18.error("getConfig method is not available on db");
         return;
       }
       const gitGraphConfig = db22.getConfig();
@@ -254669,7 +255338,7 @@ var init_ganttDiagram_23REXITY = __esm({
       return [endTime, renderEndTime];
     }, "fixTaskDates");
     warnAboutUnknownTaskIds = /* @__PURE__ */ __name(function(keyword2, ids) {
-      log15.warn(
+      log18.warn(
         `Gantt: the "${keyword2}" statement references unknown task id(s): ${ids.join(", ")}. Make sure the referenced tasks exist and declare an id. Milestones need both an id and a duration, e.g. "Milestone :milestone, m1, 2023-01-01, 0d".`
       );
     }, "warnAboutUnknownTaskIds");
@@ -254712,8 +255381,8 @@ var init_ganttDiagram_23REXITY = __esm({
       if (mDate.isValid()) {
         return mDate.toDate();
       } else {
-        log15.debug("Invalid date:" + str2);
-        log15.debug("With date format:" + dateFormat2.trim());
+        log18.debug("Invalid date:" + str2);
+        log18.debug("With date format:" + dateFormat2.trim());
         const d3 = new Date(str2);
         if (d3 === void 0 || isNaN(d3.getTime()) || // WebKit browsers can mis-parse invalid dates to be ridiculously
         // huge numbers, e.g. new Date('202304') gets parsed as January 1, 202304.
@@ -254771,7 +255440,7 @@ var init_ganttDiagram_23REXITY = __esm({
       let endTime = (0, import_dayjs2.default)(prevTime);
       const [durationValue, durationUnit] = parseDuration(str2);
       if (Number.isNaN(durationValue)) {
-        log15.warn(
+        log18.warn(
           `Gantt: "${str2}" is neither a valid date for the "${dateFormat2.trim()}" date format nor a valid duration (e.g. "3d"), so it is ignored and the task gets a zero duration. Milestones need a duration too, e.g. "Milestone :milestone, m1, 2023-01-01, 0d".`
         );
       } else {
@@ -255109,7 +255778,7 @@ var init_ganttDiagram_23REXITY = __esm({
     __name(getTaskTags, "getTaskTags");
     import_dayjs3.default.extend(import_duration.default);
     setConf2 = /* @__PURE__ */ __name(function() {
-      log15.debug("Something is calling, setConf, remove the call");
+      log18.debug("Something is calling, setConf, remove the call");
     }, "setConf");
     mapWeekdayToTimeFunction = {
       monday: timeMonday,
@@ -255451,7 +256120,7 @@ var init_ganttDiagram_23REXITY = __esm({
           return;
         }
         if ((0, import_dayjs3.default)(maxTime).diff((0, import_dayjs3.default)(minTime), "year") > 5) {
-          log15.warn(
+          log18.warn(
             "The difference between the min and max time is more than 5 years. This will cause performance issues. Skipping drawing exclude days."
           );
           return;
@@ -255515,7 +256184,7 @@ var init_ganttDiagram_23REXITY = __esm({
         if (resultTickInterval !== null) {
           const every2 = parseInt(resultTickInterval[1], 10);
           if (isNaN(every2) || every2 <= 0) {
-            log15.warn(
+            log18.warn(
               `Invalid tick interval value: "${resultTickInterval[1]}". Skipping custom tick interval.`
             );
           } else {
@@ -255526,7 +256195,7 @@ var init_ganttDiagram_23REXITY = __esm({
             const maxTime = domain[1];
             const estimatedTicks = getEstimatedTickCount(minTime, maxTime, every2, interval);
             if (estimatedTicks > MAX_TICK_COUNT) {
-              log15.warn(
+              log18.warn(
                 `The tick interval "${every2}${interval}" would generate ${estimatedTicks} ticks, which exceeds the maximum allowed (${MAX_TICK_COUNT}). This may indicate an invalid date or time range. Skipping custom tick interval.`
               );
             } else {
@@ -255562,7 +256231,7 @@ var init_ganttDiagram_23REXITY = __esm({
           if (resultTickInterval !== null) {
             const every2 = parseInt(resultTickInterval[1], 10);
             if (isNaN(every2) || every2 <= 0) {
-              log15.warn(
+              log18.warn(
                 `Invalid tick interval value: "${resultTickInterval[1]}". Skipping custom tick interval.`
               );
             } else {
@@ -255985,7 +256654,7 @@ var init_infoDiagram_KBXO4MBG = __esm({
     parser8 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("info", input);
-        log15.debug(ast);
+        log18.debug(ast);
       }, "parse")
     };
     DEFAULT_INFO_DB = {
@@ -255996,7 +256665,7 @@ var init_infoDiagram_KBXO4MBG = __esm({
       getVersion
     };
     draw7 = /* @__PURE__ */ __name((text5, id38, version3) => {
-      log15.debug("rendering info diagram\n" + text5);
+      log18.debug("rendering info diagram\n" + text5);
       const svg3 = selectSvgElement(id38);
       configureSvgSize(svg3, 100, 400, true);
       const group2 = svg3.append("g");
@@ -256050,7 +256719,7 @@ var init_pieDiagram_J4AKIIQI = __esm({
       }
       if (!sections2.has(label)) {
         sections2.set(label, value3);
-        log15.debug(`added new section: ${label}, with value: ${value3}`);
+        log18.debug(`added new section: ${label}, with value: ${value3}`);
       }
     }, "addSection");
     getSections2 = /* @__PURE__ */ __name(() => sections2, "getSections");
@@ -256080,7 +256749,7 @@ var init_pieDiagram_J4AKIIQI = __esm({
     parser9 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("pie", input);
-        log15.debug(ast);
+        log18.debug(ast);
         populateDb(ast, db3);
       }, "parse")
     };
@@ -256130,7 +256799,7 @@ var init_pieDiagram_J4AKIIQI = __esm({
       return pie3(pieData);
     }, "createPieArcs");
     draw8 = /* @__PURE__ */ __name((text5, id38, _version, diagObj) => {
-      log15.debug("rendering pie chart\n" + text5);
+      log18.debug("rendering pie chart\n" + text5);
       const db22 = diagObj.db;
       const globalConfig = getConfig2();
       const pieConfig = cleanAndMerge(db22.getConfig(), globalConfig.pie);
@@ -257228,7 +257897,7 @@ var init_quadrantDiagram_XTYBLID2 = __esm({
         this.themeConfig = this.getDefaultThemeConfig();
         this.data = this.getDefaultData();
         this.classes = /* @__PURE__ */ new Map();
-        log15.info("clear called");
+        log18.info("clear called");
       }
       setData(data6) {
         this.data = { ...this.data, ...data6 };
@@ -257240,11 +257909,11 @@ var init_quadrantDiagram_XTYBLID2 = __esm({
         this.classes.set(className, styles7);
       }
       setConfig(config3) {
-        log15.trace("setConfig called with: ", config3);
+        log18.trace("setConfig called with: ", config3);
         this.config = { ...this.config, ...config3 };
       }
       setThemeConfig(themeConfig) {
-        log15.trace("setThemeConfig called with: ", themeConfig);
+        log18.trace("setThemeConfig called with: ", themeConfig);
         this.themeConfig = { ...this.themeConfig, ...themeConfig };
       }
       calculateSpace(xAxisPosition, showXAxis, showYAxis, showTitle) {
@@ -257631,7 +258300,7 @@ var init_quadrantDiagram_XTYBLID2 = __esm({
       }
       __name(getTransformation, "getTransformation");
       const conf4 = getConfig2();
-      log15.debug("Rendering quadrant chart\n" + txt);
+      log18.debug("Rendering quadrant chart\n" + txt);
       const securityLevel = conf4.securityLevel;
       let sandboxElement;
       if (securityLevel === "sandbox") {
@@ -259035,7 +259704,7 @@ var init_xychartDiagram_GGNKY7IX = __esm({
       }
       recalculateScale() {
         this.scale = band().domain(this.categories).range(this.getRange()).paddingInner(1).paddingOuter(0).align(0.5);
-        log15.trace("BandAxis axis final categories, range: ", this.categories, this.getRange());
+        log18.trace("BandAxis axis final categories, range: ", this.categories, this.getRange());
       }
       getTickValues() {
         return this.categories;
@@ -259731,7 +260400,7 @@ var init_xychartDiagram_GGNKY7IX = __esm({
         return `translate(${data6.x}, ${data6.y}) rotate(${data6.rotation || 0})`;
       }
       __name(getTextTransformation, "getTextTransformation");
-      log15.debug("Rendering xychart chart\n" + txt);
+      log18.debug("Rendering xychart chart\n" + txt);
       const svg3 = selectSvgElement(id38);
       const group2 = svg3.append("g").attr("class", "main");
       const background = group2.append("rect").attr("width", chartConfig.width).attr("height", chartConfig.height).attr("class", "background");
@@ -260864,7 +261533,7 @@ var init_requirementDiagram_Y7LWUY3S = __esm({
             cssStyles: [],
             classes: ["default"]
           });
-          log15.info("Added new element: ", name);
+          log18.info("Added new element: ", name);
         }
         this.resetLatestElement();
         return this.elements.get(name);
@@ -261116,8 +261785,8 @@ var init_requirementDiagram_Y7LWUY3S = __esm({
       draw: () => draw11
     });
     draw11 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log15.info("REF0:");
-      log15.info("Drawing requirement diagram (unified)", id38);
+      log18.info("REF0:");
+      log18.info("Drawing requirement diagram (unified)", id38);
       const { securityLevel, state: conf4, layout: layout7, look } = getConfig2();
       const data4Layout = diag.db.getData();
       const svg3 = getDiagramElement(id38, securityLevel);
@@ -261204,7 +261873,7 @@ function adjustLoopHeightForWrap(loopWidths, msg, preMargin, postMargin, addLoop
     const textDims = utils_default2.calculateTextDimensions(msg.message, textConf);
     const totalOffset = common_default.getMax(textDims.height, conf2.labelBoxHeight);
     heightAdjust = postMargin + totalOffset;
-    log15.debug(`${totalOffset} - ${msg.message}`);
+    log18.debug(`${totalOffset} - ${msg.message}`);
   }
   addLoopFn(msg);
   bounds2.bumpVerticalPos(heightAdjust);
@@ -261342,7 +262011,7 @@ async function getMaxMessageWidthPerActor(actors2, messages, diagObj) {
       }
     }
   }
-  log15.debug("maxMessageWidthPerActor:", maxMessageWidthPerActor);
+  log18.debug("maxMessageWidthPerActor:", maxMessageWidthPerActor);
   return maxMessageWidthPerActor;
 }
 async function calculateActorMargins(actors2, actorToMessageWidth, boxes) {
@@ -262832,7 +263501,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           text: cleanedText,
           wrap: wrap3
         };
-        log15.debug(`parseMessage: ${JSON.stringify(message)}`);
+        log18.debug(`parseMessage: ${JSON.stringify(message)}`);
         return message;
       }
       // We expect the box statement to be color first then description
@@ -262890,7 +263559,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           const links3 = JSON.parse(sanitizedText);
           this.insertLinks(actor, links3);
         } catch (e3) {
-          log15.error("error while parsing actor link text", e3);
+          log18.error("error while parsing actor link text", e3);
         }
       }
       addALink(actorId, text5) {
@@ -262906,7 +263575,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           links3[label] = link3;
           this.insertLinks(actor, links3);
         } catch (e3) {
-          log15.error("error while parsing actor link text", e3);
+          log18.error("error while parsing actor link text", e3);
         }
       }
       insertLinks(actor, links3) {
@@ -262925,7 +263594,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           const properties = JSON.parse(sanitizedText);
           this.insertProperties(actor, properties);
         } catch (e3) {
-          log15.error("error while parsing actor properties text", e3);
+          log18.error("error while parsing actor properties text", e3);
         }
       }
       insertProperties(actor, properties) {
@@ -262953,7 +263622,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
             this.insertLinks(actor, details.links);
           }
         } catch (e3) {
-          log15.error("error while parsing actor details text", e3);
+          log18.error("error while parsing actor details text", e3);
         }
       }
       getActorProperty(actor, key) {
@@ -265183,7 +265852,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
       const root4 = securityLevel === "sandbox" ? select(sandboxElement.nodes()[0].contentDocument.body) : select("body");
       const doc = securityLevel === "sandbox" ? sandboxElement.nodes()[0].contentDocument : document;
       bounds2.init();
-      log15.debug(diagObj.db);
+      log18.debug(diagObj.db);
       const diagram210 = securityLevel === "sandbox" ? root4.select(`[id="${id38}"]`) : select(`[id="${id38}"]`);
       const actors2 = diagObj.db.getActors();
       const createdActors = diagObj.db.getCreatedActors();
@@ -265437,7 +266106,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
               messagesToDraw.push({ messageModel: msgModel, lineStartY, msg });
               bounds2.models.addMessage(msgModel);
             } catch (e3) {
-              log15.error("error while drawing message", e3);
+              log18.error("error while drawing message", e3);
             }
         }
         if ([
@@ -265472,8 +266141,8 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
         }
         index2++;
       }
-      log15.debug("createdActors", createdActors);
-      log15.debug("destroyedActors", destroyedActors);
+      log18.debug("createdActors", createdActors);
+      log18.debug("destroyedActors", destroyedActors);
       await drawActors(diagram210, actors2, actorKeys, false, id38, diagObj, actorIndexMap);
       for (const e3 of messagesToDraw) {
         await drawMessage(diagram210, e3.messageModel, e3.lineStartY, diagObj, e3.msg, id38);
@@ -265534,7 +266203,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
         "viewBox",
         box.startx - conf2.diagramMarginX + " -" + (conf2.diagramMarginY + extraVertForTitle) + " " + width3 + " " + (height2 + extraVertForTitle + extraHeightForNeoActors)
       );
-      log15.debug(`models:`, bounds2.models);
+      log18.debug(`models:`, bounds2.models);
     }, "draw");
     __name(getMaxMessageWidthPerActor, "getMaxMessageWidthPerActor");
     getRequiredPopupWidth = /* @__PURE__ */ __name(function(actor) {
@@ -265599,7 +266268,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           noteFont(conf2)
         );
       }
-      log15.debug(
+      log18.debug(
         `NM:[${noteModel.startx},${noteModel.stopx},${noteModel.starty},${noteModel.stopy}:${noteModel.width},${noteModel.height}=${msg.message}]`
       );
       return noteModel;
@@ -265869,7 +266538,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
         }
       }
       bounds2.activations = [];
-      log15.debug("Loop type widths:", loops);
+      log18.debug("Loop type widths:", loops);
       return loops;
     }, "calculateLoopBounds");
     sequenceRenderer_default = {
@@ -267249,7 +267918,7 @@ var init_classDiagram_v2_L25IHNXF = __esm({
         return this.notes;
       }
       addRelation(classRelation) {
-        log15.debug("Adding relation: " + JSON.stringify(classRelation));
+        log18.debug("Adding relation: " + JSON.stringify(classRelation));
         const invalidTypes = [
           this.relationType.LOLLIPOP,
           this.relationType.AGGREGATION,
@@ -268028,8 +268697,8 @@ g.classGroup line {
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw13 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log15.info("REF0:");
-      log15.info("Drawing class diagram (v3)", id38);
+      log18.info("REF0:");
+      log18.info("Drawing class diagram (v3)", id38);
       const { securityLevel, state: conf4, layout: layout7 } = getConfig2();
       diag.db.setDiagramId(id38);
       const data4Layout = diag.db.getData();
@@ -269096,7 +269765,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
     }, "colorSlotFor");
     __name(stateDomId, "stateDomId");
     setupDoc = /* @__PURE__ */ __name((parentParsedItem, doc, diagramStates2, nodes5, edges3, altFlag, look, classes3) => {
-      log15.trace("items", doc);
+      log18.trace("items", doc);
       doc.forEach((item) => {
         switch (item.stmt) {
           case STMT_STATE:
@@ -269172,7 +269841,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
       const style3 = getStylesFromDbInfo(dbState);
       const config3 = getConfig2();
       const userStyled = classStr.trim() !== "" || style3.length > 0;
-      log15.info("dataFetcher parsedItem", parsedItem, dbState, style3);
+      log18.info("dataFetcher parsedItem", parsedItem, dbState, style3);
       if (itemId !== "root") {
         let shape = SHAPE_STATE;
         if (parsedItem.start === true) {
@@ -269220,7 +269889,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           }
         }
         if (!newNode.type && parsedItem.doc) {
-          log15.info("Setting cluster for XCX", itemId, getDir2(parsedItem));
+          log18.info("Setting cluster for XCX", itemId, getDir2(parsedItem));
           newNode.type = "group";
           newNode.isGroup = true;
           newNode.dir = getDir2(parsedItem);
@@ -269251,7 +269920,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           nodeData2.label = "";
         }
         if (parent4 && parent4.id !== "root") {
-          log15.trace("Setting node ", itemId, " to be child of its parent ", parent4.id);
+          log18.trace("Setting node ", itemId, " to be child of its parent ", parent4.id);
           nodeData2.parentId = parent4.id;
         }
         nodeData2.centerLabel = true;
@@ -269339,7 +270008,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
         }
       }
       if (parsedItem.doc) {
-        log15.trace("Adding nodes children ");
+        log18.trace("Adding nodes children ");
         setupDoc(parsedItem, parsedItem.doc, diagramStates2, nodes5, edges3, !altFlag, look, classes3);
       }
     }, "dataFetcher");
@@ -269365,8 +270034,8 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw14 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log15.info("REF0:");
-      log15.info("Drawing state diagram (v2)", id38);
+      log18.info("REF0:");
+      log18.info("Drawing state diagram (v2)", id38);
       const { securityLevel, state: conf4, layout: layout7 } = getConfig2();
       diag.db.extract(diag.db.getRootDocV2());
       const data4Layout = diag.db.getData();
@@ -269390,7 +270059,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           const stateId = typeof key === "string" ? key : typeof key?.id === "string" ? key.id : "";
           const stateNode = data4Layout.nodes.find((node2) => node2.id === stateId);
           if (!stateId) {
-            log15.warn("\u26A0\uFE0F Invalid or missing stateId from key:", JSON.stringify(key));
+            log18.warn("\u26A0\uFE0F Invalid or missing stateId from key:", JSON.stringify(key));
             return;
           }
           const allNodes = svg3.node()?.querySelectorAll("g.node, g.rough-node");
@@ -269402,12 +270071,12 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
             }
           });
           if (!matchedElem) {
-            log15.warn("\u26A0\uFE0F Could not find node matching text:", stateId);
+            log18.warn("\u26A0\uFE0F Could not find node matching text:", stateId);
             return;
           }
           const parent4 = matchedElem.parentNode;
           if (!parent4) {
-            log15.warn("\u26A0\uFE0F Node has no parent, cannot wrap:", stateId);
+            log18.warn("\u26A0\uFE0F Node has no parent, cannot wrap:", stateId);
             return;
           }
           const a3 = document.createElementNS("http://www.w3.org/2000/svg", "a");
@@ -269421,10 +270090,10 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           }
           parent4.replaceChild(a3, matchedElem);
           a3.appendChild(matchedElem);
-          log15.info("\u{1F517} Wrapped node in <a> tag for:", stateId, linkInfo.url);
+          log18.info("\u{1F517} Wrapped node in <a> tag for:", stateId, linkInfo.url);
         });
       } catch (err) {
-        log15.error("\u274C Error injecting clickable links:", err);
+        log18.error("\u274C Error injecting clickable links:", err);
       }
       utils_default2.insertTitle(
         svg3,
@@ -269568,7 +270237,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
         }
       }
       setRootDoc(o2) {
-        log15.info("Setting root doc", o2);
+        log18.info("Setting root doc", o2);
         this.rootDoc = o2;
         if (this.version === 1) {
           this.extract(o2);
@@ -269636,7 +270305,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
       addState(id38, type3 = DEFAULT_STATE_TYPE, doc = void 0, descr = void 0, note2 = void 0, classes3 = void 0, styles7 = void 0, textStyles = void 0) {
         const trimmedId = id38?.trim();
         if (!this.currentDocument.states.has(trimmedId)) {
-          log15.info("Adding state ", trimmedId, descr);
+          log18.info("Adding state ", trimmedId, descr);
           this.currentDocument.states.set(trimmedId, {
             stmt: STMT_STATE,
             id: trimmedId,
@@ -269661,7 +270330,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           }
         }
         if (descr) {
-          log15.info("Setting state description", trimmedId, descr);
+          log18.info("Setting state description", trimmedId, descr);
           const descriptions = Array.isArray(descr) ? descr : [descr];
           descriptions.forEach((des) => this.addDescription(trimmedId, des.trim()));
         }
@@ -269674,17 +270343,17 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           doc2.note.text = common_default.sanitizeText(doc2.note.text, getConfig2());
         }
         if (classes3) {
-          log15.info("Setting state classes", trimmedId, classes3);
+          log18.info("Setting state classes", trimmedId, classes3);
           const classesList = Array.isArray(classes3) ? classes3 : [classes3];
           classesList.forEach((cssClass) => this.setCssClass(trimmedId, cssClass.trim()));
         }
         if (styles7) {
-          log15.info("Setting state styles", trimmedId, styles7);
+          log18.info("Setting state styles", trimmedId, styles7);
           const stylesList = Array.isArray(styles7) ? styles7 : [styles7];
           stylesList.forEach((style3) => this.setStyle(trimmedId, style3.trim()));
         }
         if (textStyles) {
-          log15.info("Setting state styles", trimmedId, styles7);
+          log18.info("Setting state styles", trimmedId, styles7);
           const textStylesList = Array.isArray(textStyles) ? textStyles : [textStyles];
           textStylesList.forEach((textStyle) => this.setTextStyle(trimmedId, textStyle.trim()));
         }
@@ -269709,7 +270378,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
         return this.currentDocument.states;
       }
       logDocuments() {
-        log15.info("Documents = ", this.documents);
+        log18.info("Documents = ", this.documents);
       }
       getRelations() {
         return this.currentDocument.relations;
@@ -269719,7 +270388,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
        */
       addLink(stateId, url, tooltip) {
         this.links.set(stateId, { url, tooltip });
-        log15.warn("Adding link", stateId, url, tooltip);
+        log18.warn("Adding link", stateId, url, tooltip);
       }
       /**
        * Get all registered links.
@@ -272602,7 +273271,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
       const { look, theme, themeVariables } = conf4;
       const { useGradient, gradientStart, gradientStop } = themeVariables;
       const LEFT_MARGIN = conf4.timeline?.leftMargin ?? 50;
-      log15.debug("timeline", diagObj.db);
+      log18.debug("timeline", diagObj.db);
       const securityLevel = conf4.securityLevel;
       let sandboxElement;
       if (securityLevel === "sandbox") {
@@ -272613,10 +273282,10 @@ var init_timeline_definition_SEUHKTQE = __esm({
       svg3.append("g");
       const tasks22 = diagObj.db.getTasks();
       const title2 = diagObj.db.getCommonDb().getDiagramTitle();
-      log15.debug("task", tasks22);
+      log18.debug("task", tasks22);
       svgDraw_default4.initGraphics(svg3, id38);
       const sections22 = diagObj.db.getSections();
-      log15.debug("sections", sections22);
+      log18.debug("sections", sections22);
       let maxSectionHeight = 0;
       let maxTaskHeight = 0;
       let depthY = 0;
@@ -272636,12 +273305,12 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxSectionHeight
         };
         const sectionHeight = svgDraw_default4.getVirtualNodeHeight(svg3, sectionNode, conf4);
-        log15.debug("sectionHeight before draw", sectionHeight);
+        log18.debug("sectionHeight before draw", sectionHeight);
         maxSectionHeight = Math.max(maxSectionHeight, sectionHeight + 20);
       });
       let maxEventCount = 0;
       let maxEventLineLength = 0;
-      log15.debug("tasks.length", tasks22.length);
+      log18.debug("tasks.length", tasks22.length);
       for (const [i2, task] of tasks22.entries()) {
         const taskNode = {
           number: i2,
@@ -272652,7 +273321,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxTaskHeight
         };
         const taskHeight = svgDraw_default4.getVirtualNodeHeight(svg3, taskNode, conf4);
-        log15.debug("taskHeight before draw", taskHeight);
+        log18.debug("taskHeight before draw", taskHeight);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight + 20);
         maxEventCount = Math.max(maxEventCount, task.events.length);
         let maxEventLineLengthTemp = 0;
@@ -272672,8 +273341,8 @@ var init_timeline_definition_SEUHKTQE = __esm({
         }
         maxEventLineLength = Math.max(maxEventLineLength, maxEventLineLengthTemp);
       }
-      log15.debug("maxSectionHeight before draw", maxSectionHeight);
-      log15.debug("maxTaskHeight before draw", maxTaskHeight);
+      log18.debug("maxSectionHeight before draw", maxSectionHeight);
+      log18.debug("maxTaskHeight before draw", maxTaskHeight);
       if (sections22 && sections22.length > 0) {
         sections22.forEach((section) => {
           const tasksForSection = tasks22.filter((task) => task.section === section);
@@ -272685,10 +273354,10 @@ var init_timeline_definition_SEUHKTQE = __esm({
             padding: 20,
             maxHeight: maxSectionHeight
           };
-          log15.debug("sectionNode", sectionNode);
+          log18.debug("sectionNode", sectionNode);
           const sectionNodeWrapper = svg3.append("g");
           const node2 = svgDraw_default4.drawNode(sectionNodeWrapper, sectionNode, sectionNumber, conf4, id38);
-          log15.debug("sectionNode output", node2);
+          log18.debug("sectionNode output", node2);
           sectionNodeWrapper.attr("transform", `translate(${masterX}, ${sectionBeginY})`);
           masterY += maxSectionHeight + 50;
           if (tasksForSection.length > 0) {
@@ -272729,7 +273398,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
         );
       }
       const box = svg3.node().getBBox();
-      log15.debug("bounds", box);
+      log18.debug("bounds", box);
       if (title2) {
         svg3.append("text").text(title2).attr("x", look === "neo" ? box.x * 2 + LEFT_MARGIN : box.width / 2 - LEFT_MARGIN).attr("font-size", "4ex").attr("font-weight", "bold").attr("y", 20);
       }
@@ -272760,11 +273429,11 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: 20,
           maxHeight: maxTaskHeight
         };
-        log15.debug("taskNode", taskNode);
+        log18.debug("taskNode", taskNode);
         const taskWrapper = diagram210.append("g").attr("class", "taskWrapper");
         const node2 = svgDraw_default4.drawNode(taskWrapper, taskNode, sectionColor, conf4, diagramId3);
         const taskHeight = node2.height;
-        log15.debug("taskHeight after draw", taskHeight);
+        log18.debug("taskHeight after draw", taskHeight);
         taskWrapper.attr("transform", `translate(${masterX}, ${masterY})`);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight);
         if (task.events) {
@@ -272795,7 +273464,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: 20,
           maxHeight: 50
         };
-        log15.debug("eventNode", eventNode);
+        log18.debug("eventNode", eventNode);
         const eventWrapper = diagram210.append("g").attr("class", "eventWrapper");
         const node2 = svgDraw_default4.drawNode(eventWrapper, eventNode, sectionColor, conf4, diagramId3, true);
         const eventHeight = node2.height;
@@ -272825,15 +273494,15 @@ var init_timeline_definition_SEUHKTQE = __esm({
     draw22 = /* @__PURE__ */ __name(function(text5, id38, version3, diagObj) {
       const conf4 = getConfig2();
       const LEFT_MARGIN = conf4.timeline?.leftMargin ?? 50;
-      log15.debug("timeline", diagObj.db);
+      log18.debug("timeline", diagObj.db);
       const svg3 = selectSvgElement(id38);
       svg3.append("g");
       const tasks22 = diagObj.db.getTasks();
       const title2 = diagObj.db.getCommonDb().getDiagramTitle();
-      log15.debug("task", tasks22);
+      log18.debug("task", tasks22);
       svgDraw_default4.initGraphics(svg3);
       const sections22 = diagObj.db.getSections();
-      log15.debug("sections", sections22);
+      log18.debug("sections", sections22);
       let maxSectionHeight = 0;
       let maxTaskHeight = 0;
       const masterX = 50 + LEFT_MARGIN;
@@ -272857,11 +273526,11 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxSectionHeight
         };
         const sectionHeight = svgDraw_default4.getVirtualNodeHeight(svg3, sectionNode, conf4);
-        log15.debug("sectionHeight before draw", sectionHeight);
+        log18.debug("sectionHeight before draw", sectionHeight);
         maxSectionHeight = Math.max(maxSectionHeight, sectionHeight);
       });
       let maxEventStackHeight = 0;
-      log15.debug("tasks.length", tasks22.length);
+      log18.debug("tasks.length", tasks22.length);
       for (const [i2, task] of tasks22.entries()) {
         const taskNode = {
           number: i2,
@@ -272872,7 +273541,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxTaskHeight
         };
         const taskHeight = svgDraw_default4.getVirtualNodeHeight(svg3, taskNode, conf4);
-        log15.debug("taskHeight before draw", taskHeight);
+        log18.debug("taskHeight before draw", taskHeight);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight);
         let maxEventStackHeightTemp = 0;
         for (const event3 of task.events) {
@@ -272891,8 +273560,8 @@ var init_timeline_definition_SEUHKTQE = __esm({
         }
         maxEventStackHeight = Math.max(maxEventStackHeight, maxEventStackHeightTemp) + EVENT_VERTICAL_GAP;
       }
-      log15.debug("maxSectionHeight before draw", maxSectionHeight);
-      log15.debug("maxTaskHeight before draw", maxTaskHeight);
+      log18.debug("maxSectionHeight before draw", maxSectionHeight);
+      log18.debug("maxTaskHeight before draw", maxTaskHeight);
       const taskBlockHeight = Math.max(maxTaskHeight, maxEventStackHeight);
       const taskSpacing = taskBlockHeight + TASK_VERTICAL_GAP;
       if (hasSections) {
@@ -272906,10 +273575,10 @@ var init_timeline_definition_SEUHKTQE = __esm({
             padding: NODE_PADDING2,
             maxHeight: maxSectionHeight
           };
-          log15.debug("sectionNode", sectionNode);
+          log18.debug("sectionNode", sectionNode);
           const sectionNodeWrapper = svg3.append("g");
           const node2 = svgDraw_default4.drawNode(sectionNodeWrapper, sectionNode, sectionNumber, conf4);
-          log15.debug("sectionNode output", node2);
+          log18.debug("sectionNode output", node2);
           const sectionX = timelineX - leftWidth;
           sectionNodeWrapper.attr("transform", `translate(${sectionX}, ${masterY})`);
           const taskStartY = masterY + node2.height + SECTION_TASK_GAP;
@@ -272948,14 +273617,14 @@ var init_timeline_definition_SEUHKTQE = __esm({
       if (!box) {
         throw new Error("bbox not found");
       }
-      log15.debug("bounds", box);
+      log18.debug("bounds", box);
       if (title2) {
         svg3.append("text").text(title2).attr("x", box.width / 2 - LEFT_MARGIN).attr("font-size", "4ex").attr("font-weight", "bold").attr("y", 20);
         box = svg3.node()?.getBBox();
         if (!box) {
           throw new Error("bbox not found");
         }
-        log15.debug("bounds after title", box);
+        log18.debug("bounds after title", box);
       }
       const [fontSize] = parseFontSize(conf4.fontSize);
       const arrowTopOffset = (fontSize ?? 16) * 2;
@@ -272980,11 +273649,11 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: NODE_PADDING2,
           maxHeight: maxTaskHeight
         };
-        log15.debug("taskNode", taskNode);
+        log18.debug("taskNode", taskNode);
         const taskWrapper = diagram210.append("g").attr("class", "taskWrapper");
         const node2 = svgDraw_default4.drawNode(taskWrapper, taskNode, sectionColor, conf4);
         const taskHeight = node2.height;
-        log15.debug("taskHeight after draw", taskHeight);
+        log18.debug("taskHeight after draw", taskHeight);
         const taskX = timelineX - TASK_AXIS_GAP - node2.width;
         taskWrapper.attr("transform", `translate(${taskX}, ${masterY})`);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight);
@@ -273010,7 +273679,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: NODE_PADDING2,
           maxHeight: 0
         };
-        log15.debug("eventNode", eventNode);
+        log18.debug("eventNode", eventNode);
         const eventWrapper = diagram210.append("g").attr("class", "eventWrapper");
         const node2 = svgDraw_default4.drawNode(eventWrapper, eventNode, sectionColor, conf4);
         const eventHeight = node2.height;
@@ -273950,7 +274619,7 @@ var init_mindmap_definition_I2QAS2VK = __esm({
         return this.nodes.length > 0 ? this.nodes[0] : null;
       }
       addNode(level, id38, descr, type3) {
-        log15.info("addNode", level, id38, descr, type3);
+        log18.info("addNode", level, id38, descr, type3);
         let isRoot = false;
         if (this.nodes.length === 0) {
           this.baseLevel = level;
@@ -273995,7 +274664,7 @@ var init_mindmap_definition_I2QAS2VK = __esm({
         }
       }
       getType(startStr, endStr) {
-        log15.debug("In get type", startStr, endStr);
+        log18.debug("In get type", startStr, endStr);
         switch (startStr) {
           case "[":
             return this.nodeType.RECT;
@@ -274200,13 +274869,13 @@ var init_mindmap_definition_I2QAS2VK = __esm({
             config: finalConfig
           };
         }
-        log15.debug("getData: mindmapRoot", mindmapRoot, config3);
+        log18.debug("getData: mindmapRoot", mindmapRoot, config3);
         this.assignSections(mindmapRoot, void 0, 0, config3.mindmap?.colorBy === "depth");
         const processedNodes = [];
         const processedEdges = [];
         this.flattenNodes(mindmapRoot, processedNodes);
         this.generateEdges(mindmapRoot, processedEdges);
-        log15.debug(
+        log18.debug(
           `getData: processed ${processedNodes.length} nodes and ${processedEdges.length} edges`
         );
         const shapes3 = /* @__PURE__ */ new Map();
@@ -274241,11 +274910,11 @@ var init_mindmap_definition_I2QAS2VK = __esm({
       }
       // Expose logger to grammar
       getLogger() {
-        return log15;
+        return log18;
       }
     };
     draw17 = /* @__PURE__ */ __name(async (text5, id38, _version, diagObj) => {
-      log15.debug("Rendering mindmap diagram\n" + text5);
+      log18.debug("Rendering mindmap diagram\n" + text5);
       const db14 = diagObj.db;
       const data4Layout = db14.getData();
       const svg3 = getDiagramElement(id38, data4Layout.config.securityLevel);
@@ -275297,7 +275966,7 @@ var init_kanban_definition_BZKZHSQY = __esm({
       HEXAGON: 6
     };
     getType = /* @__PURE__ */ __name((startStr, endStr) => {
-      log15.debug("In get type", startStr, endStr);
+      log18.debug("In get type", startStr, endStr);
       switch (startStr) {
         case "[":
           return nodeType2.RECT;
@@ -275352,7 +276021,7 @@ var init_kanban_definition_BZKZHSQY = __esm({
           return "no-border";
       }
     }, "type2Str");
-    getLogger = /* @__PURE__ */ __name(() => log15, "getLogger");
+    getLogger = /* @__PURE__ */ __name(() => log18, "getLogger");
     getElementById2 = /* @__PURE__ */ __name((id38) => elements[id38], "getElementById");
     db4 = {
       clear: clear7,
@@ -275369,7 +276038,7 @@ var init_kanban_definition_BZKZHSQY = __esm({
     };
     kanbanDb_default = db4;
     draw18 = /* @__PURE__ */ __name(async (text5, id38, _version, diagObj) => {
-      log15.debug("Rendering kanban diagram\n" + text5);
+      log18.debug("Rendering kanban diagram\n" + text5);
       const db22 = diagObj.db;
       const data4Layout = db22.getData();
       const conf4 = getConfig2();
@@ -277032,7 +277701,7 @@ var init_diagram_DNEMPZML = __esm({
         end ??= start2 + (bits ?? 1) - 1;
         bits ??= end - start2 + 1;
         lastBit = end;
-        log15.debug(`Packet block ${start2} - ${lastBit} with label ${label}`);
+        log18.debug(`Packet block ${start2} - ${lastBit} with label ${label}`);
         while (word.length <= bitsPerRow + 1 && db14.getPacket().length < maxPacketSize) {
           const [block2, nextBlock] = getNextFittingBlock({ start: start2, end, bits, label }, row, bitsPerRow);
           word.push(block2);
@@ -277090,7 +277759,7 @@ var init_diagram_DNEMPZML = __esm({
             "parser.parser?.yy was not a PacketDB. This is due to a bug within Mermaid, please report this issue at https://github.com/mermaid-js/mermaid/issues."
           );
         }
-        log15.debug(ast);
+        log18.debug(ast);
         populate16(ast, db14);
       }, "parse")
     };
@@ -277341,7 +278010,7 @@ var init_diagram_L3MUGCDN = __esm({
         graticule: optionMap.graticule?.value ?? defaultOptions.graticule
       };
       if (data4.options.ticks > MAX_TICKS) {
-        log15.warn(
+        log18.warn(
           `Radar diagram ticks (${data4.options.ticks}) exceeds maximum allowed (${MAX_TICKS}). Using ${MAX_TICKS} instead.`
         );
         data4.options.ticks = MAX_TICKS;
@@ -277377,7 +278046,7 @@ var init_diagram_L3MUGCDN = __esm({
     parser22 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("radar", input);
-        log15.debug(ast);
+        log18.debug(ast);
         populate17(ast);
       }, "parse")
     };
@@ -277523,12 +278192,12 @@ __export(blockDiagram_APKKGZFW_exports, {
   diagram: () => diagram23
 });
 function typeStr2Type(typeStr) {
-  log15.debug("typeStr2Type", typeStr);
+  log18.debug("typeStr2Type", typeStr);
   switch (typeStr) {
     case "[]":
       return "square";
     case "()":
-      log15.debug("we have a round");
+      log18.debug("we have a round");
       return "round";
     case "(())":
       return "circle";
@@ -277561,7 +278230,7 @@ function typeStr2Type(typeStr) {
   }
 }
 function edgeTypeStr2Type(typeStr) {
-  log15.debug("typeStr2Type", typeStr);
+  log18.debug("typeStr2Type", typeStr);
   switch (typeStr) {
     case "==":
       return "thick";
@@ -277622,7 +278291,7 @@ function calculateBlockPosition(columns, position5) {
   return { px, py };
 }
 function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, padding = 8) {
-  log15.debug(
+  log18.debug(
     "setBlockSizes abc95 (start)",
     block2.id,
     block2?.size?.x,
@@ -277648,17 +278317,17 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
     const childSize = getMaxChildSize(block2);
     maxWidth2 = childSize.width;
     maxHeight = childSize.height;
-    log15.debug("setBlockSizes abc95 maxWidth of", block2.id, ":s children is ", maxWidth2, maxHeight);
+    log18.debug("setBlockSizes abc95 maxWidth of", block2.id, ":s children is ", maxWidth2, maxHeight);
     for (const child of block2.children) {
       if (child.size) {
-        log15.debug(
+        log18.debug(
           `abc95 Setting size of children of ${block2.id} id=${child.id} ${maxWidth2} ${maxHeight} ${JSON.stringify(child.size)}`
         );
         child.size.width = maxWidth2 * (child.widthInColumns ?? 1) + padding * ((child.widthInColumns ?? 1) - 1);
         child.size.height = maxHeight;
         child.size.x = 0;
         child.size.y = 0;
-        log15.debug(
+        log18.debug(
           `abc95 updating size of ${block2.id} children child:${child.id} maxWidth:${maxWidth2} maxHeight:${maxHeight}`
         );
       }
@@ -277679,16 +278348,16 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
     let width3 = xSize * (maxWidth2 + padding) + padding;
     let height2 = ySize * (maxHeight + padding) + padding;
     if (width3 < siblingWidth) {
-      log15.debug(
+      log18.debug(
         `Detected to small sibling: abc95 ${block2.id} siblingWidth ${siblingWidth} siblingHeight ${siblingHeight} width ${width3}`
       );
       width3 = siblingWidth;
       height2 = siblingHeight;
       const childWidth = (siblingWidth - xSize * padding - padding) / xSize;
       const childHeight = (siblingHeight - ySize * padding - padding) / ySize;
-      log15.debug("Size indata abc88", block2.id, "childWidth", childWidth, "maxWidth", maxWidth2);
-      log15.debug("Size indata abc88", block2.id, "childHeight", childHeight, "maxHeight", maxHeight);
-      log15.debug("Size indata abc88 xSize", xSize, "padding", padding);
+      log18.debug("Size indata abc88", block2.id, "childWidth", childWidth, "maxWidth", maxWidth2);
+      log18.debug("Size indata abc88", block2.id, "childHeight", childHeight, "maxHeight", maxHeight);
+      log18.debug("Size indata abc88 xSize", xSize, "padding", padding);
       for (const child of block2.children) {
         if (child.size) {
           child.size.width = childWidth;
@@ -277698,7 +278367,7 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
         }
       }
     }
-    log15.debug(
+    log18.debug(
       `abc95 (finale calc) ${block2.id} xSize ${xSize} ySize ${ySize} columns ${columns}${block2.children.length} width=${Math.max(width3, block2.size?.width || 0)}`
     );
     if (width3 < (block2?.size?.width || 0)) {
@@ -277706,7 +278375,7 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
       const num = columns > 0 ? Math.min(block2.children.length, columns) : block2.children.length;
       if (num > 0) {
         const childWidth = (width3 - num * padding - padding) / num;
-        log15.debug("abc95 (growing to fit) width", block2.id, width3, block2.size?.width, childWidth);
+        log18.debug("abc95 (growing to fit) width", block2.id, width3, block2.size?.width, childWidth);
         for (const child of block2.children) {
           if (child.size) {
             child.size.width = childWidth;
@@ -277721,7 +278390,7 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
       y: 0
     };
   }
-  log15.debug(
+  log18.debug(
     "setBlockSizes abc94 (done)",
     block2.id,
     block2?.size?.x,
@@ -277731,16 +278400,16 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
   );
 }
 function layoutBlocks(block2, db22, padding = 8) {
-  log15.debug(
+  log18.debug(
     `abc85 layout blocks (=>layoutBlocks) ${block2.id} x: ${block2?.size?.x} y: ${block2?.size?.y} width: ${block2?.size?.width}`
   );
   const columns = block2.columns ?? -1;
-  log15.debug("layoutBlocks columns abc95", block2.id, "=>", columns, block2);
+  log18.debug("layoutBlocks columns abc95", block2.id, "=>", columns, block2);
   if (block2.children && // find max width of children
   block2.children.length > 0) {
     const width3 = block2?.children[0]?.size?.width ?? 0;
     const widthOfChildren = block2.children.length * width3 + (block2.children.length - 1) * padding;
-    log15.debug("widthOfChildren 88", widthOfChildren, "posX");
+    log18.debug("widthOfChildren 88", widthOfChildren, "posX");
     const rowHeights = /* @__PURE__ */ new Map();
     {
       let colPos = 0;
@@ -277770,7 +278439,7 @@ function layoutBlocks(block2, db22, padding = 8) {
       }
     }
     let columnPos = 0;
-    log15.debug("abc91 block?.size?.x", block2.id, block2?.size?.x);
+    log18.debug("abc91 block?.size?.x", block2.id, block2?.size?.x);
     let startingPosX = block2?.size?.x ? block2?.size?.x + (-block2?.size?.width / 2 || 0) : -padding;
     let rowPos = 0;
     for (const child of block2.children) {
@@ -277783,22 +278452,22 @@ function layoutBlocks(block2, db22, padding = 8) {
       if (py != rowPos) {
         rowPos = py;
         startingPosX = block2?.size?.x ? block2?.size?.x + (-block2?.size?.width / 2 || 0) : -padding;
-        log15.debug("New row in layout for block", block2.id, " and child ", child.id, rowPos);
+        log18.debug("New row in layout for block", block2.id, " and child ", child.id, rowPos);
       }
-      log15.debug(
+      log18.debug(
         `abc89 layout blocks (child) id: ${child.id} Pos: ${columnPos} (px, py) ${px},${py} (${parent4?.size?.x},${parent4?.size?.y}) parent: ${parent4.id} width: ${width22}${padding}`
       );
       if (parent4.size) {
         const halfWidth = width22 / 2;
         child.size.x = startingPosX + padding + halfWidth;
-        log15.debug(
+        log18.debug(
           `abc91 layout blocks (calc) px, pyid:${child.id} startingPos=X${startingPosX} new startingPosX${child.size.x} ${halfWidth} padding=${padding} width=${width22} halfWidth=${halfWidth} => x:${child.size.x} y:${child.size.y} ${child.widthInColumns} (width * (child?.w || 1)) / 2 ${width22 * (child?.widthInColumns ?? 1) / 2}`
         );
         startingPosX = child.size.x + halfWidth;
         const rowYOffset = rowYOffsets.get(py) ?? 0;
         const rowHeight = rowHeights.get(py) ?? height2;
         child.size.y = parent4.size.y - parent4.size.height / 2 + rowYOffset + rowHeight / 2 + padding;
-        log15.debug(
+        log18.debug(
           `abc88 layout blocks (calc) px, pyid:${child.id}startingPosX${startingPosX}${padding}${halfWidth}=>x:${child.size.x}y:${child.size.y}${child.widthInColumns}(width * (child?.w || 1)) / 2${width22 * (child?.widthInColumns ?? 1) / 2}`
         );
       }
@@ -277810,10 +278479,10 @@ function layoutBlocks(block2, db22, padding = 8) {
         columnsFilled = Math.min(columnsFilled, columns - columnPos % columns);
       }
       columnPos += columnsFilled;
-      log15.debug("abc88 columnsPos", child, columnPos);
+      log18.debug("abc88 columnsPos", child, columnPos);
     }
   }
-  log15.debug(
+  log18.debug(
     `layout blocks (<==layoutBlocks) ${block2.id} x: ${block2?.size?.x} y: ${block2?.size?.y} width: ${block2?.size?.width}`
   );
 }
@@ -277848,7 +278517,7 @@ function layout5(db22) {
   const padding = getConfig2()?.block?.padding ?? 8;
   setBlockSizes(root4, db22, 0, 0, padding);
   layoutBlocks(root4, db22, padding);
-  log15.debug("getBlocks", JSON.stringify(root4, null, 2));
+  log18.debug("getBlocks", JSON.stringify(root4, null, 2));
   const { minX, minY, maxX, maxY } = findBounds(root4);
   const height2 = maxY - minY;
   const width3 = maxX - minX;
@@ -279205,7 +279874,7 @@ var init_blockDiagram_APKKGZFW = __esm({
       const column2 = columnSettingBlock?.columns ?? -1;
       for (const block2 of blockList) {
         if (typeof column2 === "number" && column2 > 0 && block2.type !== "column-setting" && typeof block2.widthInColumns === "number" && block2.widthInColumns > column2) {
-          log15.warn(
+          log18.warn(
             `Block ${block2.id} width ${block2.widthInColumns} exceeds configured column width ${column2}`
           );
         }
@@ -279276,7 +279945,7 @@ var init_blockDiagram_APKKGZFW = __esm({
     blocks = [];
     rootBlock = { id: "root", type: "composite", children: [], columns: -1 };
     clear211 = /* @__PURE__ */ __name(() => {
-      log15.debug("Clear called");
+      log18.debug("Clear called");
       clear();
       rootBlock = { id: "root", type: "composite", children: [], columns: -1 };
       blockDatabase = /* @__PURE__ */ new Map([["root", rootBlock]]);
@@ -279335,7 +280004,7 @@ var init_blockDiagram_APKKGZFW = __esm({
       diagramId2 = id38;
     }, "setDiagramId");
     getDiagramId = /* @__PURE__ */ __name(() => diagramId2, "getDiagramId");
-    getLogger2 = /* @__PURE__ */ __name(() => log15, "getLogger");
+    getLogger2 = /* @__PURE__ */ __name(() => log18, "getLogger");
     getClasses5 = /* @__PURE__ */ __name(function() {
       return classes2;
     }, "getClasses");
@@ -279527,7 +280196,7 @@ var init_blockDiagram_APKKGZFW = __esm({
       let maxHeight = 0;
       for (const child of block2.children) {
         const { width: width3, height: height2, x: x7, y: y8 } = child.size ?? { width: 0, height: 0, x: 0, y: 0 };
-        log15.debug(
+        log18.debug(
           "getMaxChildSize abc95 child:",
           child.id,
           "width:",
@@ -279596,7 +280265,7 @@ var init_blockDiagram_APKKGZFW = __esm({
         const width3 = bounds22.width + 10;
         const { useMaxWidth } = conf4;
         configureSvgSize(svg3, height2, width3, !!useMaxWidth);
-        log15.debug("Here Bounds", bounds4, bounds22);
+        log18.debug("Here Bounds", bounds4, bounds22);
         svg3.attr(
           "viewBox",
           `${bounds22.x - 5} ${bounds22.y - 5} ${bounds22.width + 10} ${bounds22.height + 10}`
@@ -279885,7 +280554,7 @@ var init_diagram_XPFHEONP = __esm({
         const { text: text5, lineMap } = preprocessBoxDrawing(input);
         try {
           const ast = await parse4("treeView", text5);
-          log15.debug(ast);
+          log18.debug(ast);
           populate18(ast);
         } catch (error3) {
           if (lineMap.size > 0 && error3 instanceof Error) {
@@ -280035,7 +280704,7 @@ var init_diagram_XPFHEONP = __esm({
       return { totalHeight, totalWidth };
     }, "drawTree");
     draw24 = /* @__PURE__ */ __name(async (text5, id38, _ver, diagObj) => {
-      log15.debug("Rendering treeView diagram\n" + text5);
+      log18.debug("Rendering treeView diagram\n" + text5);
       const db22 = diagObj.db;
       const root4 = db22.getRoot();
       const config3 = db22.getConfig();
@@ -288231,7 +288900,7 @@ function layoutArchitecture(services, junctions, groups, edges3, db14, { spatial
       throw err;
     }
     cy.ready((e3) => {
-      log15.info("Ready", e3);
+      log18.info("Ready", e3);
       resolve2(cy);
     });
   });
@@ -288705,7 +289374,7 @@ var init_architectureDiagram_YGSQEFNW = __esm({
       },
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("architecture", input);
-        log15.debug(ast);
+        log18.debug(ast);
         const db14 = parser25.parser?.yy;
         if (!(db14 instanceof ArchitectureDB)) {
           throw new Error(
@@ -289089,7 +289758,7 @@ function getState() {
     });
     let sourceFrames = void 0;
     if (hasSourceFrame(frame2)) {
-      log15.debug(`source frame`, frame2.sourceFrames);
+      log18.debug(`source frame`, frame2.sourceFrames);
       sourceFrames = ast.frames.filter((currentFrame) => {
         return frame2.sourceFrames.some((sf) => sf.$refText === currentFrame.name);
       });
@@ -289301,7 +289970,7 @@ function calculateTextProps(frame2, dataEntities, diagramProps2) {
     width: calculatedWidthFix,
     height: dimensions2.height
   };
-  log15.debug(`[${frame2.name}] ${frame2.entityIdentifier} text`, props);
+  log18.debug(`[${frame2.name}] ${frame2.entityIdentifier} text`, props);
   return props;
 }
 function decidePositionFrame(state5, _command) {
@@ -289496,7 +290165,7 @@ function decide(state5, command) {
     return [];
   }
   const events = fn3(state5, command);
-  log15.debug(`decided events`, events);
+  log18.debug(`decided events`, events);
   return events;
 }
 function evolve(state5, events) {
@@ -289507,7 +290176,7 @@ function evolve(state5, events) {
     }
     return fn3(previousState, event3);
   }, state5);
-  log15.debug(`evolve events`, { state: state5, newState: newState2, events });
+  log18.debug(`evolve events`, { state: state5, newState: newState2, events });
   return newState2;
 }
 function dispatch2(state5, command) {
@@ -289537,7 +290206,7 @@ function renderD3Relation(diagram210, diagramProps2, arrowheadId, themeVariables
     const targetX = relation.targetBox.x + relation.targetBox.dimension.width / 3;
     let sourceY;
     let targetY;
-    log15.debug(`rendering relation up=${upwards} for `, {
+    log18.debug(`rendering relation up=${upwards} for `, {
       sourceBox: relation.sourceBox,
       targetBox: relation.targetBox
     });
@@ -289577,7 +290246,7 @@ var init_diagram_MHCOC4E2 = __esm({
     PositionRelationKind = "position relation";
     RelationPositionedKind = "relation positioned";
     setOptions8 = /* @__PURE__ */ __name(function(_rawOptString) {
-      log15.debug("options str", _rawOptString);
+      log18.debug("options str", _rawOptString);
     }, "setOptions");
     getOptions3 = /* @__PURE__ */ __name(function() {
       return {};
@@ -289677,7 +290346,7 @@ var init_diagram_MHCOC4E2 = __esm({
     parser26 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("eventmodeling", input);
-        log15.debug(ast);
+        log18.debug(ast);
         db8.setAst(ast);
         populateCommonDb(ast, db8);
       }, "parse")
@@ -289701,7 +290370,7 @@ var init_diagram_MHCOC4E2 = __esm({
     __name(renderD3Relation, "renderD3Relation");
     __name(renderD3Swimlane, "renderD3Swimlane");
     draw26 = /* @__PURE__ */ __name(function(txt, id38, ver, diagObj) {
-      log15.debug("in eventmodeling renderer", txt + "\n", "id:", id38, ver);
+      log18.debug("in eventmodeling renderer", txt + "\n", "id:", id38, ver);
       if (!DEFAULT_EVENTMODELING_CONFIG2) {
         throw new Error("EventModeling config not found");
       }
@@ -293469,7 +294138,7 @@ var init_diagram_LA4NIPWU = __esm({
         try {
           const parseFunc = parse4;
           const ast = await parseFunc("treemap", text5);
-          log15.debug("Treemap AST:", ast);
+          log18.debug("Treemap AST:", ast);
           const db14 = parser29.parser?.yy;
           if (!(db14 instanceof TreeMapDB)) {
             throw new Error(
@@ -293478,7 +294147,7 @@ var init_diagram_LA4NIPWU = __esm({
           }
           populate19(ast, db14);
         } catch (error3) {
-          log15.error("Error parsing treemap:", error3);
+          log18.error("Error parsing treemap:", error3);
           throw error3;
         }
       }, "parse")
@@ -293520,7 +294189,7 @@ var init_diagram_LA4NIPWU = __esm({
           valueFormat = format2(formatStr);
         }
       } catch (error3) {
-        log15.error("Error creating format function:", error3);
+        log18.error("Error creating format function:", error3);
         valueFormat = format2(",");
       }
       const colorScale = ordinal().range([
@@ -304477,7 +305146,7 @@ var init_usecaseDiagram_AFA6YXN4 = __esm({
       svg3.style("--mermaid-usecase-actor-font-size", `${data6.actorFontSize}px`).style("--mermaid-usecase-actor-font-family", data6.actorFontFamily).style("--mermaid-usecase-actor-font-weight", data6.actorFontWeight).style("--mermaid-usecase-font-size", `${data6.usecaseFontSize}px`).style("--mermaid-usecase-font-family", data6.usecaseFontFamily).style("--mermaid-usecase-font-weight", data6.usecaseFontWeight);
     }, "applyUsecaseFonts");
     draw30 = /* @__PURE__ */ __name(async (_text, id38, _version, diag) => {
-      log15.info("Drawing usecase diagram (unified)", id38);
+      log18.info("Drawing usecase diagram (unified)", id38);
       const { layout: layout7 } = getConfig2();
       const usecaseDb = diag.db;
       const data4Layout = usecaseDb.getData();
@@ -305087,7 +305756,7 @@ var init_wardleyDiagram_S7YFUSEH = __esm({
       },
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("wardley", input);
-        log15.debug(ast);
+        log18.debug(ast);
         const db14 = parser31.parser?.yy;
         if (!db14 || typeof db14.addNode !== "function") {
           throw new Error(
@@ -305301,7 +305970,7 @@ var init_wardleyDiagram_S7YFUSEH = __esm({
       };
     }, "getConfigValues");
     draw31 = /* @__PURE__ */ __name((text5, id38, _version, diagObj) => {
-      log15.debug("Rendering Wardley map\n" + text5);
+      log18.debug("Rendering Wardley map\n" + text5);
       const configValues = getConfigValues();
       const theme = getTheme();
       const squareSize = configValues.nodeRadius * 1.6;
@@ -305948,7 +306617,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
       }
       data5.transitions = transitions.filter((t5) => {
         if (t5.from === t5.to) {
-          log15.warn(
+          log18.warn(
             `Cynefin: self-loop transition on domain "${t5.from}" is not meaningful and will be skipped.`
           );
           return false;
@@ -305992,7 +306661,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
     parser32 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("cynefin", input);
-        log15.debug(ast);
+        log18.debug(ast);
         populate20(ast);
       }, "parse")
     };
@@ -306037,7 +306706,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
       const accDescription3 = db22.getAccDescription();
       const config3 = db22.getConfig();
       const domainColors = getCynefinDomainColors();
-      log15.debug("Rendering Cynefin diagram");
+      log18.debug("Rendering Cynefin diagram");
       const width3 = config3.width;
       const height2 = config3.height;
       const padding = config3.padding;
@@ -306167,7 +306836,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
             return;
           }
           if (transition2.from === transition2.to) {
-            log15.warn(`Cynefin renderer: skipping self-loop on domain "${transition2.from}"`);
+            log18.warn(`Cynefin renderer: skipping self-loop on domain "${transition2.from}"`);
             return;
           }
           const x12 = fromLayout.cx;
@@ -306321,11 +306990,11 @@ var init_chunk_OY52VR5R = __esm({
       rules.length = 0;
       ruleMap.clear();
       clear();
-      log15.debug("[Railroad] Database cleared");
+      log18.debug("[Railroad] Database cleared");
     }, "clear");
     setTitle2 = /* @__PURE__ */ __name((text5) => {
       diagramTitle2 = sanitizeText23(text5);
-      log15.debug("[Railroad] Title set:", text5);
+      log18.debug("[Railroad] Title set:", text5);
     }, "setTitle");
     getTitle2 = /* @__PURE__ */ __name(() => {
       return diagramTitle2;
@@ -306337,9 +307006,9 @@ var init_chunk_OY52VR5R = __esm({
         definition: sanitizeAstNode(rule.definition),
         comment: rule.comment ? sanitizeText23(rule.comment) : void 0
       };
-      log15.debug("[Railroad] Adding rule:", sanitizedRule.name);
+      log18.debug("[Railroad] Adding rule:", sanitizedRule.name);
       if (ruleMap.has(sanitizedRule.name)) {
-        log15.warn(`[Railroad] Rule '${sanitizedRule.name}' is already defined. Overwriting.`);
+        log18.warn(`[Railroad] Rule '${sanitizedRule.name}' is already defined. Overwriting.`);
       }
       rules.push(sanitizedRule);
       ruleMap.set(sanitizedRule.name, sanitizedRule);
@@ -306352,14 +307021,14 @@ var init_chunk_OY52VR5R = __esm({
     }, "getRule");
     setAccTitle2 = /* @__PURE__ */ __name((text5) => {
       accTitle2 = sanitizeText23(text5).replace(/^\s+/g, "");
-      log15.debug("[Railroad] Accessibility title set:", text5);
+      log18.debug("[Railroad] Accessibility title set:", text5);
     }, "setAccTitle");
     getAccTitle2 = /* @__PURE__ */ __name(() => {
       return accTitle2;
     }, "getAccTitle");
     setAccDescription2 = /* @__PURE__ */ __name((text5) => {
       accDescription2 = sanitizeText23(text5).replace(/\n\s+/g, "\n");
-      log15.debug("[Railroad] Accessibility description set:", text5);
+      log18.debug("[Railroad] Accessibility description set:", text5);
     }, "setAccDescription");
     getAccDescription2 = /* @__PURE__ */ __name(() => {
       return accDescription2;
@@ -307115,25 +307784,25 @@ var init_chunk_OY52VR5R = __esm({
       svg3.attr("viewBox", `0 0 ${dimensions2.width} ${dimensions2.height}`);
     }, "configureRailroadSvgSize");
     draw33 = /* @__PURE__ */ __name((text5, id38, _version) => {
-      log15.debug("[Railroad] Rendering diagram\n" + text5);
+      log18.debug("[Railroad] Rendering diagram\n" + text5);
       try {
         const svg3 = selectSvgElement(id38);
         svg3.attr("class", "railroad-diagram");
         const railroadConfig = getConfig().railroad;
         const useMaxWidth = railroadConfig?.useMaxWidth ?? true;
         const rules2 = db12.getRules();
-        log15.debug(`[Railroad] Rendering ${rules2.length} rules`);
+        log18.debug(`[Railroad] Rendering ${rules2.length} rules`);
         if (rules2.length === 0) {
-          log15.warn("[Railroad] No rules to render");
+          log18.warn("[Railroad] No rules to render");
           configureRailroadSvgSize(svg3, { height: 100, width: 200 }, useMaxWidth);
           return;
         }
         const renderer22 = new RailroadRenderer(svg3, buildRailroadStyleOptions());
         const dimensions2 = renderer22.renderDiagram(rules2);
         configureRailroadSvgSize(svg3, dimensions2, useMaxWidth);
-        log15.debug("[Railroad] Render complete");
+        log18.debug("[Railroad] Render complete");
       } catch (error3) {
-        log15.error("[Railroad] Render error:", error3);
+        log18.error("[Railroad] Render error:", error3);
         throw error3;
       }
     }, "draw");
@@ -307222,15 +307891,15 @@ var init_railroadDiagram_MRQ6NCDL = __esm({
     parser33 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log15.debug("[Railroad Parser] Starting Langium parse");
+        log18.debug("[Railroad Parser] Starting Langium parse");
         const result = langiumParser.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log15.debug("[Railroad Parser] Parsed rules:", ast.rules.length);
+        log18.debug("[Railroad Parser] Parsed rules:", ast.rules.length);
         populateDb4(ast);
-        log15.debug("[Railroad Parser] Parse complete");
+        log18.debug("[Railroad Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -307372,15 +308041,15 @@ var init_ebnfDiagram_UZSYDL2S = __esm({
     parser34 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log15.debug("[EBNF Parser] Starting Langium parse");
+        log18.debug("[EBNF Parser] Starting Langium parse");
         const result = langiumParser2.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log15.debug("[EBNF Parser] Parsed rules:", ast.rules.length);
+        log18.debug("[EBNF Parser] Parsed rules:", ast.rules.length);
         populateDb5(ast);
-        log15.debug("[EBNF Parser] Parse complete");
+        log18.debug("[EBNF Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -307501,15 +308170,15 @@ var init_abnfDiagram_S7VZAUFO = __esm({
     parser35 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log15.debug("[ABNF Parser] Starting Langium parse");
+        log18.debug("[ABNF Parser] Starting Langium parse");
         const result = langiumParser3.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log15.debug("[ABNF Parser] Parsed rules:", ast.rules.length);
+        log18.debug("[ABNF Parser] Parsed rules:", ast.rules.length);
         populateDb6(ast);
-        log15.debug("[ABNF Parser] Parse complete");
+        log18.debug("[ABNF Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -307638,15 +308307,15 @@ var init_pegDiagram_FD4XPPHP = __esm({
     parser36 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log15.debug("[PEG Parser] Starting Langium parse");
+        log18.debug("[PEG Parser] Starting Langium parse");
         const result = langiumParser4.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log15.debug("[PEG Parser] Parsed rules:", ast.rules.length);
+        log18.debug("[PEG Parser] Parsed rules:", ast.rules.length);
         populateDb7(ast);
-        log15.debug("[PEG Parser] Parse complete");
+        log18.debug("[PEG Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -308078,7 +308747,7 @@ var init_mermaid_core = __esm({
       return lines;
     }, "wrapErrorMessage");
     draw34 = /* @__PURE__ */ __name((_text, id38, version3, diag) => {
-      log15.debug("rendering svg for syntax error\n");
+      log18.debug("rendering svg for syntax error\n");
       const svg3 = selectSvgElement(id38);
       const g3 = svg3.append("g");
       const messageLines = wrapErrorMessage(diag?.db.getErrorMessage?.() ?? "");
@@ -308504,7 +309173,7 @@ var init_mermaid_core = __esm({
       );
     }, "addDiagrams");
     loadRegisteredDiagrams = /* @__PURE__ */ __name(async () => {
-      log15.debug(`Loading registered diagrams`);
+      log18.debug(`Loading registered diagrams`);
       const results = await Promise.allSettled(
         Object.entries(detectors).map(async ([key, { detector: detector38, loader: loader38 }]) => {
           if (!loader38) {
@@ -308517,7 +309186,7 @@ var init_mermaid_core = __esm({
               const { diagram: diagram210, id: id38 } = await loader38();
               registerDiagram(id38, diagram210, detector38);
             } catch (err) {
-              log15.error(`Failed to load external diagram with key ${key}. Removing from detectors.`);
+              log18.error(`Failed to load external diagram with key ${key}. Removing from detectors.`);
               delete detectors[key];
               throw err;
             }
@@ -308526,9 +309195,9 @@ var init_mermaid_core = __esm({
       );
       const failed = results.filter((result) => result.status === "rejected");
       if (failed.length > 0) {
-        log15.error(`Failed to load ${failed.length} external diagrams`);
+        log18.error(`Failed to load ${failed.length} external diagrams`);
         for (const res of failed) {
-          log15.error(res);
+          log18.error(res);
         }
         throw new Error(`Failed to load ${failed.length} external diagrams`);
       }
@@ -308574,7 +309243,7 @@ var init_mermaid_core = __esm({
         if (db22.preserveCommentsWhenParsing && code.withComments) {
           const maxTextSize = config3.maxTextSize ?? defaultConfig_default.maxTextSize;
           if (code.withComments.length > maxTextSize) {
-            log15.warn(
+            log18.warn(
               `Comment-preserving source exceeds maxTextSize (${code.withComments.length} > ${maxTextSize}); parsing the comment-stripped text instead. Reported source positions will not account for comment lines.`
             );
           } else {
@@ -308764,7 +309433,7 @@ var init_mermaid_core = __esm({
                 // needed for Mermaid's animation feature
               ];
               if (!allowedAtRules.includes(element3.type)) {
-                log15.warn(`Removing unsupported at-rule ${element3.type} from CSS`);
+                log18.warn(`Removing unsupported at-rule ${element3.type} from CSS`);
                 element3.type = COMMENT;
               }
             }
@@ -308830,7 +309499,7 @@ var init_mermaid_core = __esm({
       let code = processed2.code;
       text5 = code.cleaned;
       const config3 = getConfig();
-      log15.debug(config3);
+      log18.debug(config3);
       if (text5.length > (config3?.maxTextSize ?? MAX_TEXTLENGTH)) {
         text5 = MAX_TEXTLENGTH_EXCEEDED_MSG;
         code = { raw: text5, cleaned: text5 };
@@ -308917,7 +309586,7 @@ var init_mermaid_core = __esm({
       const serializeSvg = /* @__PURE__ */ __name(() => {
         root4.select(`[id="${id38}"]`).selectAll("foreignobject > *").attr("xmlns", XMLNS_XHTML_STD);
         let code2 = root4.select(enclosingDivID_selector).node().innerHTML;
-        log15.debug("config.arrowMarkerAbsolute", config3.arrowMarkerAbsolute);
+        log18.debug("config.arrowMarkerAbsolute", config3.arrowMarkerAbsolute);
         code2 = cleanUpSvgCode(code2, isSandboxed, evaluate(config3.arrowMarkerAbsolute));
         if (isSandboxed) {
           const svgEl = root4.select(enclosingDivID_selector + " svg").node();
@@ -308983,7 +309652,7 @@ var init_mermaid_core = __esm({
     setLogLevel(getConfig().logLevel);
     reset(getConfig());
     handleError = /* @__PURE__ */ __name((error3, errors, parseError) => {
-      log15.warn(error3);
+      log18.warn(error3);
       if (isDetailedError(error3)) {
         if (parseError) {
           parseError(error3.str, error3.hash);
@@ -309010,13 +309679,13 @@ var init_mermaid_core = __esm({
         await runThrowsErrors(options2);
       } catch (e3) {
         if (isDetailedError(e3)) {
-          log15.error(e3.str);
+          log18.error(e3.str);
         }
         if (mermaid.parseError) {
           mermaid.parseError(e3);
         }
         if (!options2.suppressErrors) {
-          log15.error("Use the suppressErrors option to suppress these errors");
+          log18.error("Use the suppressErrors option to suppress these errors");
           throw e3;
         }
       }
@@ -309025,7 +309694,7 @@ var init_mermaid_core = __esm({
       querySelector: ".mermaid"
     }) {
       const conf4 = mermaidAPI.getConfig();
-      log15.debug(`${!postRenderCallback ? "No " : ""}Callback function found`);
+      log18.debug(`${!postRenderCallback ? "No " : ""}Callback function found`);
       let nodesToProcess;
       if (nodes5) {
         nodesToProcess = nodes5;
@@ -309034,16 +309703,16 @@ var init_mermaid_core = __esm({
       } else {
         throw new Error("Nodes and querySelector are both undefined");
       }
-      log15.debug(`Found ${nodesToProcess.length} diagrams`);
+      log18.debug(`Found ${nodesToProcess.length} diagrams`);
       if (conf4?.startOnLoad !== void 0) {
-        log15.debug("Start On Load: " + conf4?.startOnLoad);
+        log18.debug("Start On Load: " + conf4?.startOnLoad);
         mermaidAPI.updateSiteConfig({ startOnLoad: conf4?.startOnLoad });
       }
       const idGenerator = new utils_default2.InitIDGenerator(conf4.deterministicIds, conf4.deterministicIDSeed);
       let txt;
       const errors = [];
       for (const element3 of Array.from(nodesToProcess)) {
-        log15.info("Rendering diagram: " + element3.id);
+        log18.info("Rendering diagram: " + element3.id);
         if (element3.getAttribute("data-processed")) {
           continue;
         }
@@ -309053,7 +309722,7 @@ var init_mermaid_core = __esm({
         txt = dedent(utils_default2.entityDecode(txt)).trim().replace(/<br\s*\/?>/gi, "<br/>");
         const init22 = utils_default2.detectInit(txt);
         if (init22) {
-          log15.debug("Detected early reinit: ", init22);
+          log18.debug("Detected early reinit: ", init22);
         }
         try {
           const { svg: svg3, bindFunctions: bindFunctions2 } = await render23(id38, txt, element3);
@@ -309076,7 +309745,7 @@ var init_mermaid_core = __esm({
       mermaidAPI.initialize(config3);
     }, "initialize");
     init2 = /* @__PURE__ */ __name(async function(config3, nodes5, callback) {
-      log15.warn("mermaid.init is deprecated. Please use run instead.");
+      log18.warn("mermaid.init is deprecated. Please use run instead.");
       if (config3) {
         initialize22(config3);
       }
@@ -309105,7 +309774,7 @@ var init_mermaid_core = __esm({
       if (mermaid.startOnLoad) {
         const { startOnLoad } = mermaidAPI.getConfig();
         if (startOnLoad) {
-          mermaid.run().catch((err) => log15.error("Mermaid failed to initialize", err));
+          mermaid.run().catch((err) => log18.error("Mermaid failed to initialize", err));
         }
       }
     }, "contentLoaded");
@@ -309128,7 +309797,7 @@ var init_mermaid_core = __esm({
           try {
             await f2();
           } catch (e3) {
-            log15.error("Error executing queue", e3);
+            log18.error("Error executing queue", e3);
           }
         }
       }
@@ -309143,7 +309812,7 @@ var init_mermaid_core = __esm({
               resolve2(r3);
             },
             (e3) => {
-              log15.error("Error parsing", e3);
+              log18.error("Error parsing", e3);
               mermaid.parseError?.(e3);
               rej(e3);
               reject2(e3);
@@ -309163,7 +309832,7 @@ var init_mermaid_core = __esm({
               resolve2(r3);
             },
             (e3) => {
-              log15.error("Error parsing", e3);
+              log18.error("Error parsing", e3);
               mermaid.parseError?.(e3);
               rej(e3);
               reject2(e3);
@@ -310754,416 +311423,6 @@ var require_core = __commonJS({
   }
 });
 
-// src/shims/sessionExport.ts
-function messagesToMarkdown(messages, options2 = {}) {
-  const { title: title2, includeThinking = false, compact = false } = options2;
-  const lines = [];
-  if (title2) {
-    lines.push(`# ${title2}`, "");
-  }
-  lines.push(
-    compact ? "> \u672C\u6587\u4EF6\u7531 Polaris \u4ECE\u5386\u53F2\u4F1A\u8BDD\u751F\u6210\u7684\u7CBE\u7B80\u6458\u8981\uFF0C\u4EC5\u4FDD\u7559\u7528\u6237\u610F\u56FE\u4E0E\u52A9\u624B\u8981\u70B9\uFF08\u5DE5\u5177\u8F93\u51FA\u5DF2\u7701\u7565\uFF09\u3002" : "> \u672C\u6587\u4EF6\u7531 Polaris \u4ECE\u5386\u53F2\u4F1A\u8BDD\u5BFC\u51FA\uFF0C\u4F9B\u65B0\u4F1A\u8BDD\u5FEB\u901F\u4E86\u89E3\u6B64\u524D\u7684\u5BF9\u8BDD\u4E0E\u8FDB\u5C55\u3002",
-    "",
-    "---",
-    ""
-  );
-  for (const message of messages) {
-    if (message.type === "user") {
-      const content = typeof message.content === "string" ? message.content.trim() : "";
-      if (!content) continue;
-      lines.push("## \u{1F464} \u7528\u6237", "", content, "");
-    } else if (message.type === "assistant") {
-      const blockLines = renderBlocks(message.blocks ?? [], includeThinking, compact);
-      if (blockLines.length === 0) continue;
-      lines.push("## \u{1F916} \u52A9\u624B", "", ...blockLines);
-    } else if (message.type === "system") {
-      const content = typeof message.content === "string" ? message.content.trim() : "";
-      if (!content) continue;
-      lines.push("## \u2699\uFE0F \u7CFB\u7EDF", "", content, "");
-    }
-  }
-  return `${lines.join("\n").replace(/\n{3,}/g, "\n\n").trim()}
-`;
-}
-function renderBlocks(blocks2, includeThinking, compact) {
-  const out = [];
-  for (const block2 of blocks2) {
-    switch (block2.type) {
-      case "text": {
-        const raw = block2.content.trim();
-        if (!raw) break;
-        const text5 = compact && raw.length > COMPACT_TEXT_MAX ? `${raw.slice(0, COMPACT_TEXT_MAX)}\u2026` : raw;
-        out.push(text5, "");
-        break;
-      }
-      case "thinking": {
-        if (!includeThinking) break;
-        const text5 = block2.content.trim();
-        if (text5) out.push("<details><summary>\u601D\u8003\u8FC7\u7A0B</summary>", "", text5, "", "</details>", "");
-        break;
-      }
-      case "tool_call": {
-        const args = summarizeToolInput(block2.input);
-        out.push(`**\u{1F527} ${block2.name}**${args ? ` \u2014 \`${args}\`` : ""}`, "");
-        if (!compact && block2.output) {
-          const output2 = block2.output.length > TOOL_OUTPUT_MAX ? `${block2.output.slice(0, TOOL_OUTPUT_MAX)}
-\u2026\uFF08\u5DF2\u622A\u65AD ${block2.output.length - TOOL_OUTPUT_MAX} \u5B57\u7B26\uFF09` : block2.output;
-          out.push("```", output2, "```", "");
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  }
-  return out;
-}
-function summarizeToolInput(input) {
-  if (!input || typeof input !== "object") return "";
-  const priorityKeys = ["file_path", "path", "command", "pattern", "query", "url", "description", "prompt"];
-  for (const key of priorityKeys) {
-    const value3 = input[key];
-    if (typeof value3 === "string" && value3.trim()) {
-      return truncate3(value3.trim(), 120);
-    }
-  }
-  try {
-    return truncate3(JSON.stringify(input), 120);
-  } catch {
-    return "";
-  }
-}
-function truncate3(text5, max10) {
-  return text5.length > max10 ? `${text5.slice(0, max10)}\u2026` : text5;
-}
-var TOOL_OUTPUT_MAX, COMPACT_TEXT_MAX;
-var init_sessionExport = __esm({
-  "src/shims/sessionExport.ts"() {
-    TOOL_OUTPUT_MAX = 800;
-    COMPACT_TEXT_MAX = 200;
-  }
-});
-
-// src/host/services/conversationPackager/index.ts
-function resolveTransferMode(input) {
-  const sourceId = normalizeEngineId(input.sourceEngineId);
-  const targetId = normalizeEngineId(input.targetEngineId);
-  const sameEngine = sourceId === targetId;
-  if (sameEngine && ENGINE_FORK_CAPABILITY[targetId]) {
-    return "fork";
-  }
-  if (input.estimatedTokens < TOKEN_FULL_CAP) {
-    return "full-file";
-  }
-  if (targetId === "simple-ai" && input.estimatedTokens < TOKEN_MSG_HISTORY_CAP) {
-    return "message-history";
-  }
-  return "summary";
-}
-function estimateTokens2(messages) {
-  let chars = 0;
-  for (const m4 of messages) {
-    if (m4.type === "user" || m4.type === "system") {
-      if (typeof m4.content === "string") chars += m4.content.length;
-    } else if (m4.type === "assistant" && m4.blocks) {
-      for (const b12 of m4.blocks) {
-        if (b12.type === "text" && typeof b12.content === "string") {
-          chars += b12.content.length;
-        } else if (b12.type === "tool_call" && typeof b12.output === "string") {
-          chars += b12.output.length;
-        }
-      }
-    }
-  }
-  return Math.ceil(chars / 4);
-}
-function sanitizeFileName(name) {
-  const cleaned = name.replace(/[/\\:*?"<>|]/g, "_").trim();
-  return (cleaned || "session").slice(0, 60);
-}
-async function packToFile2(messages, title2, idSeed, workspacePath) {
-  const markdown2 = messagesToMarkdown(messages, { title: title2 });
-  const fileName = `${sanitizeFileName(title2)}-${idSeed.slice(0, 8)}.md`;
-  const relPath = `${HANDOFF_DIR}/${fileName}`;
-  const absPath = joinPath(workspacePath, relPath);
-  await invoke("create_file", { path: absPath, content: markdown2 });
-  log21.info("\u5BF9\u8BDD\u5DF2\u6253\u5305\u843D\u76D8", { absPath, messageCount: messages.length });
-  return {
-    fileRef: {
-      absPath,
-      relPath,
-      tokenEstimate: estimateTokens2(messages)
-    },
-    markdown: markdown2
-  };
-}
-async function packToSummary2(messages, title2, idSeed, workspacePath) {
-  const markdown2 = messagesToMarkdown(messages, { title: title2, compact: true });
-  const fileName = `${sanitizeFileName(title2)}-${idSeed.slice(0, 8)}-summary.md`;
-  const relPath = `${HANDOFF_DIR}/${fileName}`;
-  const absPath = joinPath(workspacePath, relPath);
-  await invoke("create_file", { path: absPath, content: markdown2 });
-  log21.info("\u5BF9\u8BDD\u6458\u8981\u5DF2\u6253\u5305\u843D\u76D8", { absPath, messageCount: messages.length });
-  return {
-    fileRef: {
-      absPath,
-      relPath,
-      // 摘要体积远小于原文，用实际 markdown 长度估算
-      tokenEstimate: Math.ceil(markdown2.length / 4)
-    },
-    markdown: markdown2
-  };
-}
-var log21, HANDOFF_DIR, ENGINE_FORK_CAPABILITY, TOKEN_FULL_CAP, TOKEN_MSG_HISTORY_CAP;
-var init_conversationPackager = __esm({
-  "src/host/services/conversationPackager/index.ts"() {
-    init_services();
-    init_path();
-    init_engineDisplay();
-    init_sessionExport();
-    init_logger();
-    log21 = createLogger("ConversationPackager");
-    HANDOFF_DIR = ".polaris-handoff";
-    ENGINE_FORK_CAPABILITY = {
-      "claude-code": true,
-      "simple-ai": false
-    };
-    TOKEN_FULL_CAP = 3e3;
-    TOKEN_MSG_HISTORY_CAP = 8e3;
-  }
-});
-
-// src/host/services/sessionHandoff.ts
-var sessionHandoff_exports = {};
-__export(sessionHandoff_exports, {
-  getHandoffEligibility: () => getHandoffEligibility2,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility2,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession2,
-  handoffSessionToNewSession: () => handoffSessionToNewSession2,
-  loadConversationMessages: () => loadConversationMessages2
-});
-function getHandoffEligibility2(sessionId) {
-  const manager = sessionStoreManager.getState();
-  const meta3 = manager.sessionMetadata.get(sessionId);
-  const store3 = manager.stores.get(sessionId)?.getState();
-  if (!meta3 || !store3) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
-  if (!meta3.workspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
-  if (!store3.conversationId && store3.messages.length === 0) {
-    return { enabled: false, reasonKey: "handoff.reasonEmpty" };
-  }
-  return { enabled: true };
-}
-async function handoffSessionToNewSession2(sessionId, targetEngineId) {
-  const manager = sessionStoreManager.getState();
-  const meta3 = manager.sessionMetadata.get(sessionId);
-  const store3 = manager.stores.get(sessionId)?.getState();
-  if (!meta3 || !store3) {
-    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoSession") };
-  }
-  if (!meta3.workspaceId) {
-    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
-  }
-  const sourceEngineId = normalizeEngineId(meta3.engineId);
-  const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
-  const conversationId = store3.conversationId ?? "";
-  const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === meta3.workspaceId);
-  if (!workspace?.path) {
-    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
-  }
-  try {
-    const fallbackMessages = [...store3.getPersistableMessages(), ...store3.archivedMessages ?? []];
-    const chatMessages = await loadConversationMessages2(sourceEngineId, conversationId, fallbackMessages);
-    if (chatMessages.length === 0) {
-      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
-    }
-    return await createHandoffSession({
-      messages: chatMessages,
-      sourceTitle: meta3.title,
-      sourceEngineId,
-      sourceConversationId: conversationId,
-      targetEngineId: targetEngine,
-      workspaceId: meta3.workspaceId,
-      workspacePath: workspace.path
-    });
-  } catch (e3) {
-    const err = e3 instanceof Error ? e3 : new Error(String(e3));
-    log24.error("\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sessionId });
-    return { ok: false, error: err.message };
-  }
-}
-function getHistoryHandoffEligibility2(item, fallbackWorkspaceId) {
-  if (!item.id) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
-  if (!item.projectPath && !fallbackWorkspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
-  return { enabled: true };
-}
-async function handoffHistorySessionToNewSession2(item, fallbackWorkspaceId, targetEngineId) {
-  try {
-    const workspaceId = await resolveHistoryWorkspaceId(item, fallbackWorkspaceId);
-    if (!workspaceId) {
-      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
-    }
-    const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
-    if (!workspace?.path) {
-      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
-    }
-    const chatMessages = await loadHistoryChatMessages(item);
-    if (chatMessages.length === 0) {
-      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
-    }
-    const sourceEngineId = normalizeEngineId(item.engineId);
-    const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
-    return await createHandoffSession({
-      messages: chatMessages,
-      sourceTitle: item.title,
-      sourceEngineId,
-      sourceConversationId: item.id,
-      targetEngineId: targetEngine,
-      workspaceId,
-      workspacePath: workspace.path
-    });
-  } catch (e3) {
-    const err = e3 instanceof Error ? e3 : new Error(String(e3));
-    log24.error("\u5386\u53F2\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sourceId: item.id });
-    return { ok: false, error: err.message };
-  }
-}
-async function createHandoffSession(params) {
-  const {
-    messages,
-    sourceTitle,
-    sourceEngineId,
-    sourceConversationId,
-    targetEngineId,
-    workspaceId,
-    workspacePath
-  } = params;
-  const estimatedTokens = estimateTokens2(messages);
-  let mode = resolveTransferMode({
-    sourceEngineId,
-    targetEngineId,
-    messageCount: messages.length,
-    estimatedTokens
-  });
-  if (mode === "fork" && !sourceConversationId) mode = "summary";
-  if (mode === "message-history") mode = "summary";
-  const manager = sessionStoreManager.getState();
-  const newTitle = i18n_default.t("chat:handoff.newSessionTitle", { title: sourceTitle });
-  if (mode === "fork") {
-    const newSessionId2 = manager.createSession({
-      type: "project",
-      workspaceId,
-      title: newTitle,
-      engineId: targetEngineId,
-      forkFromId: sourceConversationId
-    });
-    log24.info("\u7EED\u63A5\u65B0\u4F1A\u8BDD\u5DF2\u521B\u5EFA\uFF08fork\uFF09", { sourceConversationId, newSessionId: newSessionId2, targetEngineId });
-    return { ok: true, newSessionId: newSessionId2 };
-  }
-  const packer = mode === "full-file" ? packToFile2 : packToSummary2;
-  const { fileRef } = await packer(messages, sourceTitle, sourceConversationId, workspacePath);
-  log24.info("\u4F1A\u8BDD\u5DF2\u5BFC\u51FA", { mode, absPath: fileRef.absPath, messageCount: messages.length, targetEngineId });
-  const newSessionId = manager.createSession({
-    type: "project",
-    workspaceId,
-    title: newTitle,
-    engineId: targetEngineId
-  });
-  const newStore = manager.stores.get(newSessionId)?.getState();
-  if (newStore) {
-    const guide = i18n_default.t("chat:handoff.guidePrompt", { ref: `@${fileRef.relPath}` });
-    newStore.updateInputDraft({ text: guide, attachments: [] });
-  }
-  log24.info("\u7EED\u63A5\u65B0\u4F1A\u8BDD\u5DF2\u521B\u5EFA", { mode, newSessionId, targetEngineId });
-  return { ok: true, newSessionId };
-}
-async function loadConversationMessages2(engineId, conversationId, fallbackMessages) {
-  if (conversationId) {
-    try {
-      if (engineId === "claude-code") {
-        const raw = await aiHistoryDispatch({
-          action: "get_claude_history",
-          sessionId: conversationId
-        });
-        if (raw.length > 0) return withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId);
-      } else {
-        const msgs = await dialogStorageService.getConversationMessages(conversationId);
-        if (msgs.length > 0) {
-          return withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId);
-        }
-      }
-    } catch (e3) {
-      log24.warn("\u6309\u5F15\u64CE\u52A0\u8F7D\u6E90\u4F1A\u8BDD\u5931\u8D25\uFF0C\u56DE\u9000\u5185\u5B58\u6D88\u606F", { engineId, conversationId, error: String(e3) });
-    }
-  }
-  if (fallbackMessages.length > 0) {
-    log24.warn("\u4F7F\u7528\u5185\u5B58\u6D88\u606F\u4F5C\u4E3A\u7EED\u63A5\u6E90\uFF08\u53EF\u80FD\u5DF2\u88AB\u538B\u7F29\uFF0C\u5185\u5BB9\u53EF\u80FD\u4E0D\u5B8C\u6574\uFF09", { engineId, conversationId });
-    return withAssistantEngineId2(fallbackMessages, engineId);
-  }
-  return [];
-}
-async function loadHistoryChatMessages(item) {
-  const engineId = normalizeEngineId(item.engineId);
-  try {
-    if (engineId === "claude-code") {
-      const raw = await aiHistoryDispatch({
-        action: "get_claude_history",
-        sessionId: item.id,
-        projectPath: item.claudeProjectName
-      });
-      return raw.length > 0 ? withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId) : [];
-    }
-    const msgs = await dialogStorageService.getConversationMessages(item.id);
-    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId) : [];
-  } catch (e3) {
-    log24.warn("\u52A0\u8F7D\u5386\u53F2\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { sourceId: item.id, engineId, error: String(e3) });
-    return [];
-  }
-}
-function withAssistantEngineId2(messages, engineId) {
-  return messages.map((message) => {
-    if (message.type !== "assistant" || message.engineId) return message;
-    return { ...message, engineId };
-  });
-}
-async function resolveHistoryWorkspaceId(item, fallbackWorkspaceId) {
-  const projectPath = item.projectPath?.trim();
-  const workspaceState = useWorkspaceStore.getState();
-  if (projectPath) {
-    const normalizedProjectPath = normalizeWorkspacePath(projectPath);
-    let workspace = workspaceState.workspaces.find(
-      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
-    );
-    if (workspace) return workspace.id;
-    try {
-      await workspaceState.createWorkspace(getPathBasename(projectPath), projectPath, false);
-      workspace = useWorkspaceStore.getState().workspaces.find(
-        (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
-      );
-      if (workspace) return workspace.id;
-    } catch (error3) {
-      log24.warn("Failed to resolve handoff workspace", { error: String(error3), projectPath });
-    }
-  }
-  return fallbackWorkspaceId ?? void 0;
-}
-var log24;
-var init_sessionHandoff = __esm({
-  "src/host/services/sessionHandoff.ts"() {
-    init_i18n();
-    init_logger();
-    init_sessionStoreManager();
-    init_stores();
-    init_services();
-    init_claudeHistoryConvert();
-    init_services();
-    init_dedupMessages();
-    init_conversationPackager();
-    init_engineDisplay();
-    init_workspacePath();
-    log24 = createLogger("SessionHandoff");
-  }
-});
-
 // src/host/services/aiChatDispatch.ts
 var aiChatDispatch_exports = {};
 __export(aiChatDispatch_exports, {
@@ -311298,7 +311557,7 @@ function CompactHandoffModal({
   const sourceEngine = normalizeEngineId(engineId);
   const profiles = useModelProfileStore((s3) => s3.profiles);
   const sourceDefaults = useMemo19(() => {
-    const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId);
+    const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId);
     const sessionConfig = getSessionConfig();
     const activeProfileId = useModelProfileStore.getState().activeProfileId ?? void 0;
     const profileId = resolveEffectiveProfileId2(
@@ -317394,7 +317653,7 @@ init_lucide_react();
 init_logger();
 import { Component } from "react";
 import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
-var log10 = createLogger("ContentBlockErrorBoundary");
+var log13 = createLogger("ContentBlockErrorBoundary");
 var ContentBlockErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
@@ -317412,7 +317671,7 @@ var ContentBlockErrorBoundary = class extends Component {
   }
   componentDidCatch(error3, errorInfo) {
     const { blockType, blockId } = this.props;
-    log10.error("\u5185\u5BB9\u5757\u6E32\u67D3\u9519\u8BEF", error3, {
+    log13.error("\u5185\u5BB9\u5757\u6E32\u67D3\u9519\u8BEF", error3, {
       blockType,
       blockId,
       componentStack: errorInfo.componentStack
@@ -317472,7 +317731,7 @@ init_misc();
 init_stores();
 import { memo as memo4, useReducer, useCallback as useCallback6, useEffect as useEffect4, useMemo as useMemo2, useRef as useRef5 } from "react";
 import { Fragment as Fragment3, jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
-var log11 = createLogger("AskQuestionCard");
+var log14 = createLogger("AskQuestionCard");
 function reducer(state5, action) {
   switch (action.type) {
     case "TOGGLE_OPTION": {
@@ -317603,7 +317862,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
         declined: s3.declined
       }));
       dispatch3({ type: "BEGIN_SUBMIT" });
-      const store3 = sessionStoreManager2.getState().stores.get(block2.sessionId)?.getState();
+      const store3 = sessionStoreManager.getState().stores.get(block2.sessionId)?.getState();
       if (kind === "decline-all") {
         store3?.updateQuestionBlock(block2.id, {
           declined: true
@@ -317628,7 +317887,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
         store3?.updateQuestionBlock(block2.id, {
           status: "pending"
         });
-        log11.error(
+        log14.error(
           "\u63D0\u4EA4\u7B54\u6848\u5931\u8D25:",
           error3 instanceof Error ? error3 : new Error(String(error3))
         );
@@ -318001,7 +318260,7 @@ init_stores();
 init_misc();
 import { memo as memo5, useCallback as useCallback7, useRef as useRef6, useState as useState6 } from "react";
 import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
-var log12 = createLogger("FormCard");
+var log15 = createLogger("FormCard");
 var buildCardStyle = (style3) => {
   if (!style3) return {};
   const out = {};
@@ -318104,7 +318363,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
         private: privateSubmit
       });
     } catch (error3) {
-      log12.error(
+      log15.error(
         "\u8868\u5355\u63D0\u4EA4\u5931\u8D25:",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -318127,7 +318386,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
         formId: block2.id
       });
     } catch (error3) {
-      log12.error(
+      log15.error(
         "\u8868\u5355\u8DF3\u8FC7\u5931\u8D25:",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -318154,7 +318413,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
         res.name || ""
       );
     } catch (error3) {
-      log12.error(
+      log15.error(
         "\u4FDD\u5B58\u6A21\u677F\u5931\u8D25:",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -318502,7 +318761,7 @@ init_stores();
 init_misc();
 import { memo as memo6, useState as useState7, useCallback as useCallback8, useRef as useRef7, useEffect as useEffect5 } from "react";
 import { jsx as jsx7, jsxs as jsxs7 } from "react/jsx-runtime";
-var log13 = createLogger("PlanModeBlock");
+var log16 = createLogger("PlanModeBlock");
 var PLAN_STATUS_CONFIG = {
   drafting: {
     color: "text-violet-500",
@@ -318637,7 +318896,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
         await continueChat(approvalPrompt);
       }
     } catch (error3) {
-      log13.error("\u6279\u51C6\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log16.error("\u6279\u51C6\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
       useToastStore.getState().error(
         t5("plan.approveFailed", "\u6279\u51C6\u8BA1\u5212\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"),
         error3 instanceof Error ? error3.message : String(error3)
@@ -318663,7 +318922,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
       setRejectFeedback("");
       setShowFeedbackInput(false);
     } catch (error3) {
-      log13.error("\u62D2\u7EDD\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log16.error("\u62D2\u7EDD\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
       useToastStore.getState().error(
         t5("plan.rejectFailed", "\u62D2\u7EDD\u8BA1\u5212\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"),
         error3 instanceof Error ? error3.message : String(error3)
@@ -320211,7 +320470,7 @@ init_misc();
 init_services();
 import { memo as memo9, useState as useState10, useCallback as useCallback9, useRef as useRef8, useEffect as useEffect6, useMemo as useMemo4 } from "react";
 import { Fragment as Fragment4, jsx as jsx10, jsxs as jsxs10 } from "react/jsx-runtime";
-var log14 = createLogger("PermissionRequest");
+var log17 = createLogger("PermissionRequest");
 function getToolIcon(toolName) {
   const n2 = toolName.toLowerCase();
   if (n2 === "write" || n2 === "edit" || n2 === "multiedit") return FileText;
@@ -320333,7 +320592,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
   const containerRef = useRef8(null);
   const isPlanApproval = block2.denials.length === 0;
   const getStoreByConversationId = useCallback9((conversationId) => {
-    for (const store3 of sessionStoreManager2.getState().stores.values()) {
+    for (const store3 of sessionStoreManager.getState().stores.values()) {
       if (store3.getState().conversationId === conversationId) {
         return store3.getState() ?? null;
       }
@@ -320384,7 +320643,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
         }
       }
     } catch (error3) {
-      log14.error("\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log17.error("\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
     } finally {
       setIsProcessing(false);
     }
@@ -320402,7 +320661,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
       )];
       const store3 = getStoreByConversationId(block2.sessionId);
       if (!store3) {
-        log14.warn("\u672A\u627E\u5230\u5BF9\u5E94\u7684 store", { conversationId: block2.sessionId });
+        log17.warn("\u672A\u627E\u5230\u5BF9\u5E94\u7684 store", { conversationId: block2.sessionId });
         return;
       }
       await store3.continueChat(
@@ -320422,12 +320681,12 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
             const rules2 = [...new Set(approvedDenials.map(buildGlobalRule))];
             await addClaudePermissionRules(rules2, "allow");
           } catch (e3) {
-            log14.error("\u5199\u5165\u5168\u5C40\u6743\u9650\u89C4\u5219\u5931\u8D25:", e3 instanceof Error ? e3 : new Error(String(e3)));
+            log17.error("\u5199\u5165\u5168\u5C40\u6743\u9650\u89C4\u5219\u5931\u8D25:", e3 instanceof Error ? e3 : new Error(String(e3)));
           }
         }
       }
     } catch (error3) {
-      log14.error("\u63D0\u4EA4\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log17.error("\u63D0\u4EA4\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
       useToastStore.getState().error(
         t5("permission.submitFailed", "\u6743\u9650\u51B3\u7B56\u63D0\u4EA4\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"),
         error3 instanceof Error ? error3.message : String(error3)
@@ -320909,7 +321168,7 @@ function removeDiagramState(id38) {
 
 // src/host/Chat/common/DeferredMermaidDiagram.tsx
 import { Fragment as Fragment5, jsx as jsx11, jsxs as jsxs11 } from "react/jsx-runtime";
-var log17 = createLogger("DeferredMermaidDiagram");
+var log20 = createLogger("DeferredMermaidDiagram");
 var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
   code,
   id: id38,
@@ -320956,7 +321215,7 @@ var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
       setSvg(svg4);
       setRenderState("success");
     } catch (err) {
-      log17.error("Mermaid render error", err instanceof Error ? err : new Error(String(err)));
+      log20.error("Mermaid render error", err instanceof Error ? err : new Error(String(err)));
       setRenderState("error");
       setSvg("");
     }
@@ -321205,7 +321464,7 @@ var core_default = import_core4.default;
 
 // src/shims/lru-cache.ts
 init_logger();
-var log18 = createLogger("LRUCache");
+var log21 = createLogger("LRUCache");
 var LRUCache2 = class {
   constructor(config3) {
     this.capacity = config3?.maxSize ?? 100;
@@ -321224,7 +321483,7 @@ var LRUCache2 = class {
     }
     this.moveToHead(node2);
     if (this.verbose) {
-      log18.debug("Cache hit", { key: String(key) });
+      log21.debug("Cache hit", { key: String(key) });
     }
     return node2.value;
   }
@@ -321237,7 +321496,7 @@ var LRUCache2 = class {
       node2.value = value3;
       this.moveToHead(node2);
       if (this.verbose) {
-        log18.debug("Cache updated", { key: String(key) });
+        log21.debug("Cache updated", { key: String(key) });
       }
     } else {
       const newNode = {
@@ -321252,7 +321511,7 @@ var LRUCache2 = class {
         this.removeTail();
       }
       if (this.verbose) {
-        log18.debug("Cache added", { key: String(key), size: this.cache.size, capacity: this.capacity });
+        log21.debug("Cache added", { key: String(key), size: this.cache.size, capacity: this.capacity });
       }
     }
   }
@@ -321282,7 +321541,7 @@ var LRUCache2 = class {
     }
     this.cache.delete(key);
     if (this.verbose) {
-      log18.debug("Cache deleted", { key: String(key) });
+      log21.debug("Cache deleted", { key: String(key) });
     }
     return true;
   }
@@ -321294,7 +321553,7 @@ var LRUCache2 = class {
     this.head = null;
     this.tail = null;
     if (this.verbose) {
-      log18.debug("Cache cleared");
+      log21.debug("Cache cleared");
     }
   }
   /**
@@ -321396,7 +321655,7 @@ var LRUCache2 = class {
     this.tail = this.tail.prev;
     this.cache.delete(removedKey);
     if (this.verbose) {
-      log18.debug("Cache evicted", { key: String(removedKey) });
+      log21.debug("Cache evicted", { key: String(removedKey) });
     }
   }
 };
@@ -329359,7 +329618,7 @@ function useChatSessionId() {
 init_logger();
 init_services();
 import { jsx as jsx21, jsxs as jsxs20 } from "react/jsx-runtime";
-var log19 = createLogger("PluginCardHost");
+var log24 = createLogger("PluginCardHost");
 function LoadingFallback() {
   return /* @__PURE__ */ jsxs20("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-3", children: [
     /* @__PURE__ */ jsx21("div", { className: "h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" }),
@@ -329453,7 +329712,7 @@ function PluginCardHost({ block: block2, onSendToChat }) {
       setComponent(() => C5);
     } catch (e3) {
       const message = e3 instanceof Error ? e3.message : String(e3);
-      log19.warn("\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u56DE\u843D\u515C\u5E95\u6E32\u67D3", { toolName: block2.toolName, cardKey, error: message });
+      log24.warn("\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u56DE\u843D\u515C\u5E95\u6E32\u67D3", { toolName: block2.toolName, cardKey, error: message });
       setError(message);
     } finally {
       setLoading(false);
@@ -329966,7 +330225,7 @@ init_misc();
 init_logger();
 import { Component as Component3, Suspense as Suspense2, useCallback as useCallback16, useEffect as useEffect11, useState as useState20 } from "react";
 import { jsx as jsx25, jsxs as jsxs24 } from "react/jsx-runtime";
-var log20 = createLogger("BlockCardOverrideHost");
+var log25 = createLogger("BlockCardOverrideHost");
 function blockToCardProps(block2, entry) {
   const status = block2.type === "tool_call" ? block2.status === "completed" ? "ready" : block2.status === "failed" ? "failed" : "pending" : "ready";
   return {
@@ -329990,7 +330249,7 @@ var OverrideErrorBoundary = class extends Component3 {
     return { hasError: true };
   }
   componentDidCatch(error3, info2) {
-    log20.error("\u63D2\u4EF6\u8986\u76D6\u6E32\u67D3\u5D29\u6E83", error3, { componentStack: info2.componentStack });
+    log25.error("\u63D2\u4EF6\u8986\u76D6\u6E32\u67D3\u5D29\u6E83", error3, { componentStack: info2.componentStack });
     this.props.onError(error3);
   }
   render() {
@@ -330031,7 +330290,7 @@ function BlockCardOverrideHost({ block: block2, entry, cardKey }) {
       setComponent(() => C5);
     } catch (e3) {
       const message = e3 instanceof Error ? e3.message : String(e3);
-      log20.warn("\u63D2\u4EF6\u8986\u76D6\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u663E\u793A\u9519\u8BEF\u5361\u7247", {
+      log25.warn("\u63D2\u4EF6\u8986\u76D6\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u663E\u793A\u9519\u8BEF\u5361\u7247", {
         cardKey,
         pluginId: entry.pluginId,
         error: message
@@ -331282,7 +331541,7 @@ function isFailedProgress(msg) {
 function stripEmoji(msg) {
   return msg.replace(/^(?:✅|❌|🔧|⚠️|🗑️)\s*/u, "").trim() || msg;
 }
-function truncate2(s3, max10) {
+function truncate3(s3, max10) {
   if (!s3) return "";
   return s3.length > max10 ? s3.slice(0, max10) + "\u2026" : s3;
 }
@@ -331313,7 +331572,7 @@ function deriveUrgent(blocks2) {
         kind: "permission",
         id: pr2.id,
         sessionId: pr2.sessionId,
-        summary: toolDisplay ? `\u9700\u8981\u6388\u6743 \xB7 ${truncate2(toolDisplay, 24)}` : "\u9700\u8981\u6388\u6743",
+        summary: toolDisplay ? `\u9700\u8981\u6388\u6743 \xB7 ${truncate3(toolDisplay, 24)}` : "\u9700\u8981\u6388\u6743",
         detail: pendingDenials[0]?.reason || (pendingDenials.length > 0 ? "\u5DE5\u5177\u8C03\u7528\u7B49\u5F85\u6279\u51C6" : "\u7B49\u5F85\u6279\u51C6"),
         count: pendingDenials.length > 1 ? pendingDenials.length : void 0
       });
@@ -331381,12 +331640,12 @@ function deriveWorkflowDetail(output2, running, failed) {
   if (!output2) return "\u5DF2\u5B8C\u6210";
   const parsed = parseWorkflowResult(output2);
   if (parsed.kind === "generic" && parsed.data.summary) {
-    return truncate2(parsed.data.summary, 48);
+    return truncate3(parsed.data.summary, 48);
   }
   if (parsed.kind === "generic" && parsed.data.workflowProgress?.length) {
     const first4 = parsed.data.workflowProgress[0];
     const label = first4.label || first4.phaseTitle || first4.resultPreview;
-    if (label) return truncate2(label, 48);
+    if (label) return truncate3(label, 48);
   }
   return "\u5DF2\u5B8C\u6210";
 }
@@ -331397,14 +331656,14 @@ function flattenPlanTasks(pm) {
       for (const task of stage.tasks) {
         rows.push({
           id: task.taskId,
-          label: truncate2(task.description || stage.name, 36),
+          label: truncate3(task.description || stage.name, 36),
           status: taskRowStatus(task.status)
         });
       }
     } else {
       rows.push({
         id: stage.stageId,
-        label: truncate2(stage.name, 36),
+        label: truncate3(stage.name, 36),
         // failed 不在 TaskItemStatus，映射为 blocked（与失败视觉一致）
         status: taskRowStatus(stage.status === "failed" ? "blocked" : stage.status)
       });
@@ -331459,7 +331718,7 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
     if (!progressMessage) return { ...EMPTY_SUMMARY, isInterrupting, urgent, water, thinking, changeSummary };
     const terminal = isTerminalProgress(progressMessage);
     const failed = isFailedProgress(progressMessage);
-    const summary = truncate2(stripEmoji(progressMessage), 48);
+    const summary = truncate3(stripEmoji(progressMessage), 48);
     const card2 = {
       kind: "progress",
       running: !terminal,
@@ -331467,7 +331726,7 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
       // summary 已是去掉 emoji 的纯文案，detail 不再重复同一文本
       summary,
       detail: "",
-      slide: terminal ? null : { kind: "progress", label: "\u8FDB\u5EA6", value: truncate2(stripEmoji(progressMessage), 32) }
+      slide: terminal ? null : { kind: "progress", label: "\u8FDB\u5EA6", value: truncate3(stripEmoji(progressMessage), 32) }
     };
     return {
       ...EMPTY_SUMMARY,
@@ -331501,7 +331760,7 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
       const meta3 = `${completed2}/${total}${inProgress > 0 ? ` \xB7 ${inProgress} \u8FD0\u884C` : ""}${blocked > 0 ? ` \xB7 ${blocked} \u963B\u585E` : ""}`;
       const items = tb.items.map((it) => ({
         id: it.id,
-        label: truncate2(it.activeForm || it.subject, 36),
+        label: truncate3(it.activeForm || it.subject, 36),
         status: taskRowStatus(it.status)
       }));
       cards.push({
@@ -331510,14 +331769,14 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
         failed: blocked > 0 && inProgress === 0,
         summary: "\u4EFB\u52A1\u677F",
         meta: meta3,
-        detail: activeLabel ? truncate2(activeLabel, 28) : `${completed2}/${total} \u5DF2\u5B8C\u6210`,
+        detail: activeLabel ? truncate3(activeLabel, 28) : `${completed2}/${total} \u5DF2\u5B8C\u6210`,
         percent,
         items,
         slide: running ? {
           kind: "task",
           label: "\u4EFB\u52A1",
           // 进行中任务文案塞进轮播，岛上可滚动展示当前任务内容
-          value: activeLabel ? `${truncate2(activeLabel, 32)} \xB7 ${completed2}/${total}` : `${completed2}/${total}`,
+          value: activeLabel ? `${truncate3(activeLabel, 32)} \xB7 ${completed2}/${total}` : `${completed2}/${total}`,
           barPercent: percent
         } : null
       });
@@ -331540,12 +331799,12 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
       const activeRow = flattenPlanTasks(pm).find((r3) => r3.status === "active");
       const activeLabel = activeRow?.label;
       const meta3 = total > 0 ? `${completed2}/${total}${running ? " \xB7 \u6267\u884C\u4E2D" : ""}${failed ? " \xB7 \u5931\u8D25" : ""}` : running ? "\u6267\u884C\u4E2D" : failed ? "\u5931\u8D25" : "\u5DF2\u5B8C\u6210";
-      const detail = failed ? "\u8BA1\u5212\u6B65\u9AA4\u5931\u8D25" : running ? activeLabel ? truncate2(activeLabel, 28) : "\u8BA1\u5212\u6267\u884C\u4E2D" : `${completed2}/${total} \u5DF2\u5B8C\u6210`;
+      const detail = failed ? "\u8BA1\u5212\u6B65\u9AA4\u5931\u8D25" : running ? activeLabel ? truncate3(activeLabel, 28) : "\u8BA1\u5212\u6267\u884C\u4E2D" : `${completed2}/${total} \u5DF2\u5B8C\u6210`;
       cards.push({
         kind: "plan",
         running,
         failed,
-        summary: truncate2(pm.title || "\u6267\u884C\u8BA1\u5212", 24),
+        summary: truncate3(pm.title || "\u6267\u884C\u8BA1\u5212", 24),
         meta: meta3,
         detail,
         percent,
@@ -331553,7 +331812,7 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
         slide: running ? {
           kind: "plan",
           label: "\u8BA1\u5212",
-          value: activeLabel ? `${truncate2(activeLabel, 32)} \xB7 ${completed2}/${total}` : `${completed2}/${total}`,
+          value: activeLabel ? `${truncate3(activeLabel, 32)} \xB7 ${completed2}/${total}` : `${completed2}/${total}`,
           barPercent: percent
         } : null
       });
@@ -331572,7 +331831,7 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
       const toolTotal = ar2.toolCalls?.length || 0;
       const toolDone = ar2.toolCalls?.filter((t5) => t5.status === "completed").length || 0;
       const meta3 = failed ? "\u5931\u8D25" : done ? `\u5B8C\u6210 \xB7 ${ar2.duration ? formatDuration3(ar2.duration) : ""}` : ar2.duration ? formatDuration3(ar2.duration) : "\u8FD0\u884C\u4E2D";
-      const detail = failed ? truncate2(ar2.error || "\u8FD0\u884C\u51FA\u9519", 48) : ar2.progressMessage ? truncate2(ar2.progressMessage, 48) : toolTotal > 0 ? `${toolDone}/${toolTotal} \u5DE5\u5177\u5B8C\u6210` : ar2.agentType;
+      const detail = failed ? truncate3(ar2.error || "\u8FD0\u884C\u51FA\u9519", 48) : ar2.progressMessage ? truncate3(ar2.progressMessage, 48) : toolTotal > 0 ? `${toolDone}/${toolTotal} \u5DE5\u5177\u5B8C\u6210` : ar2.agentType;
       const percent = ar2.progressPercent != null ? ar2.progressPercent : toolTotal > 0 ? Math.round(toolDone / toolTotal * 100) : void 0;
       const agentLabel = ar2.progressMessage || ar2.agentType;
       const isDone = done || failed;
@@ -331580,12 +331839,12 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
         kind: "agent",
         running: running && !failed,
         failed,
-        summary: truncate2(agentLabel, 24),
+        summary: truncate3(agentLabel, 24),
         meta: meta3,
         detail,
         output: isDone ? ar2.output : void 0,
         percent,
-        slide: running && !failed ? { kind: "agent", label: truncate2(agentLabel, 20), value: meta3, barPercent: percent } : null
+        slide: running && !failed ? { kind: "agent", label: truncate3(agentLabel, 20), value: meta3, barPercent: percent } : null
       });
       if (running && !failed && ar2.startedAt) {
         const ts2 = new Date(ar2.startedAt).getTime();
@@ -331606,10 +331865,10 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
           kind: "tool",
           running: true,
           failed: false,
-          summary: info2 ? `${label} \xB7 ${truncate2(info2, 24)}` : label,
+          summary: info2 ? `${label} \xB7 ${truncate3(info2, 24)}` : label,
           meta: "\u8FD0\u884C\u4E2D",
           detail: detail2,
-          slide: { kind: "tool", label, value: truncate2(info2 || detail2, 32) }
+          slide: { kind: "tool", label, value: truncate3(info2 || detail2, 32) }
         });
         if (tc.startedAt) {
           const ts2 = new Date(tc.startedAt).getTime();
@@ -331625,7 +331884,7 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
       const done = tc.status === "completed";
       const meta3 = failed ? "\u5931\u8D25" : done ? "\u5B8C\u6210" : "\u8FD0\u884C\u4E2D";
       const wfLabel = deriveWorkflowLabel(tc.input);
-      const summary = wfLabel ? `Workflow \xB7 ${truncate2(wfLabel, 24)}` : "Workflow";
+      const summary = wfLabel ? `Workflow \xB7 ${truncate3(wfLabel, 24)}` : "Workflow";
       const detail = deriveWorkflowDetail(tc.output, running, failed);
       cards.push({
         kind: "workflow",
@@ -331653,9 +331912,9 @@ function deriveRuntimeSummary(blocks2, progressMessage, now4, isInterrupting = f
       kind: "progress",
       running: !terminal,
       failed,
-      summary: truncate2(stripEmoji(progressMessage), 48),
+      summary: truncate3(stripEmoji(progressMessage), 48),
       detail: "",
-      slide: terminal ? null : { kind: "progress", label: "\u8FDB\u5EA6", value: truncate2(stripEmoji(progressMessage), 32) }
+      slide: terminal ? null : { kind: "progress", label: "\u8FDB\u5EA6", value: truncate3(stripEmoji(progressMessage), 32) }
     });
   }
   const runningCards = cards.filter((c4) => c4.running && !c4.failed);
@@ -331710,7 +331969,7 @@ ${c4.output}` : c4.output;
 function useRuntimeSummary(sessionId) {
   const activeId = useActiveSessionId();
   const targetId = sessionId ?? activeId;
-  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
   const store3 = targetId ? stores.get(targetId) : null;
   const [tick, setTick] = useState25(0);
   const tickStartRef = useRef12(0);
@@ -331745,7 +332004,7 @@ function useRuntimeSummary(sessionId) {
     return nextWithSession;
   };
   const subscribe = (onChange) => {
-    if (!store3) return sessionStoreManager2.subscribe(onChange);
+    if (!store3) return sessionStoreManager.subscribe(onChange);
     return store3.subscribe(onChange);
   };
   const summary = useSyncExternalStore4(subscribe, getSnapshot, () => EMPTY_SUMMARY);
@@ -333044,7 +333303,7 @@ var SessionCell = memo27(function SessionCell2({
   }, [sessionId, isActive, switchSession]);
   const handleInterrupt = useCallback23((e3) => {
     e3.stopPropagation();
-    sessionStoreManager2.getState().interruptSession(sessionId);
+    sessionStoreManager.getState().interruptSession(sessionId);
   }, [sessionId]);
   const handleExpand = useCallback23((e3) => {
     e3.stopPropagation();
@@ -333307,7 +333566,7 @@ init_useActiveSession();
 init_eventRouter();
 init_services();
 init_logger();
-var log25 = createLogger("chat-desk:bootstrap");
+var log26 = createLogger("chat-desk:bootstrap");
 var bootstrapped = false;
 function ensureChatDomainBootstrapped() {
   if (bootstrapped) return;
@@ -333315,7 +333574,7 @@ function ensureChatDomainBootstrapped() {
   try {
     const core5 = getAppCore();
     if (!core5.stores.sessionStoreManager) {
-      core5.stores.sessionStoreManager = sessionStoreManager;
+      core5.stores.sessionStoreManager = sessionStoreManager2;
       core5.stores.useActiveSession = useActiveSession_exports;
       void Promise.all([
         Promise.resolve().then(() => (init_sessionRestore(), sessionRestore_exports)),
@@ -333337,15 +333596,15 @@ function ensureChatDomainBootstrapped() {
       });
     }
     void ensureEventRouterInitialized();
-    void sessionStoreManager.getState().initialize();
+    void sessionStoreManager2.getState().initialize();
     try {
       ;
       remoteSessionFollower.start?.();
     } catch (e3) {
-      log25.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
+      log26.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
     }
   } catch (e3) {
-    log25.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log26.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 
@@ -333799,7 +334058,7 @@ init_services();
 init_path();
 init_logger();
 init_services();
-var log26 = createLogger("ContextBlockRegistry");
+var log27 = createLogger("ContextBlockRegistry");
 var TCB_DIR = ".polaris-handoff";
 var kindRegistry = /* @__PURE__ */ new Map();
 function registerContextBlockKind(kind, spec) {
@@ -333855,7 +334114,7 @@ async function materializeContextBlocks(blocks2, workspacePath) {
         };
       }
     } catch (e3) {
-      log26.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
+      log27.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
     }
   }
   const body = formatContextBlocks(blocks2);
@@ -333873,7 +334132,7 @@ async function packContextBlocksAsReference(blocks2, workspacePath) {
   const relPath = `${TCB_DIR}/${fileName}`;
   const absPath = joinPath(workspacePath, relPath);
   await invoke("create_file", { path: absPath, content: markdown2 });
-  log26.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
+  log27.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
   return { hasContent: true, fileRef: { relPath, absPath } };
 }
 function formatContextBlock(block2) {
@@ -334610,7 +334869,7 @@ ${digest}` : digest };
     } else {
       useSessionConfig.getState().setAgent(agentCmd.slug ?? "");
       if (ctx.activeSessionId) {
-        sessionStoreManager2.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
+        sessionStoreManager.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
       }
       useToastStore.getState().info("/agent", agentCmd.slug ? i18n_default.t("chat:agentCmd.set", { defaultValue: "\u5F53\u524D\u4E13\u5BB6\u5DF2\u8BBE\u4E3A {{slug}}", slug: agentCmd.slug, interpolation: { escapeValue: false } }) : i18n_default.t("chat:agentCmd.cleared", "\u5DF2\u6E05\u9664\u5F53\u524D\u4E13\u5BB6"));
     }
@@ -334721,7 +334980,7 @@ init_misc();
 init_stores();
 init_types2();
 import { Fragment as Fragment17, jsx as jsx49, jsxs as jsxs43 } from "react/jsx-runtime";
-var log27 = createLogger("ChatInput");
+var log28 = createLogger("ChatInput");
 var OPTIMIZE_ENGINE_OPTIONS = [
   { id: "claude-code", label: "Claude", Icon: Bot },
   { id: "simple-ai", label: "Simple", Icon: Zap }
@@ -334863,7 +335122,7 @@ function ChatInput({
     };
   }, [activeSessionId, cancelPersistDraft]);
   useEffect22(() => {
-    log27.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
+    log28.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
       textLen: inputDraft.text?.length,
       attachLen: inputDraft.attachments?.length,
       blockLen: inputDraft.contextBlocks?.length ?? 0
@@ -334908,7 +335167,7 @@ function ChatInput({
       }));
       setConversationMatches(items);
     } catch (e3) {
-      log27.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
+      log28.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
       setConversationMatches([]);
     }
   }, []);
@@ -334942,7 +335201,7 @@ function ChatInput({
   const addAttachment = useCallback25(async (file, source) => {
     const validation = validateAttachment(file);
     if (!validation.valid) {
-      log27.warn("Attachment validation failed", { error: validation.error });
+      log28.warn("Attachment validation failed", { error: validation.error });
       useToastStore.getState().error(validation.error);
       return;
     }
@@ -334950,7 +335209,7 @@ function ChatInput({
     const newAttachments = [...attachments, attachment];
     const totalValidation = validateAttachments(newAttachments);
     if (!totalValidation.valid) {
-      log27.warn("Total attachment validation failed", { error: totalValidation.error });
+      log28.warn("Total attachment validation failed", { error: totalValidation.error });
       useToastStore.getState().error(totalValidation.error);
       return;
     }
@@ -335553,7 +335812,7 @@ function ChatInput({
           const replaced = beforeCursor.replace(/@对话(?:\s+\S*)?$/, `@${fileRef.relPath} `) + afterCursor;
           setLocalText(replaced);
           debouncedPersistDraft(replaced, attachments);
-          log27.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
+          log28.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
           setTimeout(() => {
             textarea.focus();
             const newCursorPos = replaced.length - afterCursor.length;
@@ -335561,7 +335820,7 @@ function ChatInput({
           }, 0);
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log27.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
+          log28.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
           useToastStore.getState().error(t5("handoff.failToast"), err.message);
         }
       })();
@@ -336505,20 +336764,20 @@ function SessionConfigSelector({
       ...config3,
       ...nextConfig
     });
-    const activeId = writeThroughToSession ? sessionStoreManager2.getState().activeSessionId : null;
+    const activeId = writeThroughToSession ? sessionStoreManager.getState().activeSessionId : null;
     if (activeId) {
       if (type3 === "profile") {
         if (value3 === "") {
-          sessionStoreManager2.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
-          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "official");
+          sessionStoreManager.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
+          sessionStoreManager.getState().updateSessionProfileMode(activeId, "official");
         } else {
-          sessionStoreManager2.getState().updateSessionModelProfile(activeId, value3);
-          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "profile");
+          sessionStoreManager.getState().updateSessionModelProfile(activeId, value3);
+          sessionStoreManager.getState().updateSessionProfileMode(activeId, "profile");
         }
       } else if (type3 === "model") {
-        sessionStoreManager2.getState().updateSessionModel(activeId, value3);
+        sessionStoreManager.getState().updateSessionModel(activeId, value3);
       } else if (type3 === "agent") {
-        sessionStoreManager2.getState().updateSessionAgent(activeId, value3 || null);
+        sessionStoreManager.getState().updateSessionAgent(activeId, value3 || null);
       }
     }
     setOpenDropdown(null);
@@ -337528,7 +337787,7 @@ var CompactHandoffButton = memo31(function CompactHandoffButton2() {
   const sessionMetadataList = useSessionMetadataList();
   const [open2, setOpen] = useState41(false);
   const meta3 = sessionMetadataList.find((s3) => s3.id === activeSessionId);
-  const eligibility = activeSessionId ? getHandoffEligibility(activeSessionId) : { enabled: false };
+  const eligibility = activeSessionId ? getHandoffEligibility2(activeSessionId) : { enabled: false };
   if (!activeSessionId || !meta3) return null;
   return /* @__PURE__ */ jsxs49(Fragment19, { children: [
     /* @__PURE__ */ jsx55(
@@ -338169,7 +338428,7 @@ function ChatDeskEntry(_props) {
     editAndResend(messageId, newContent);
     setEditMode(null);
   }, [editAndResend]);
-  const currentSession = activeSessionId ? sessionStoreManager2.getState().sessionMetadata.get(activeSessionId) : void 0;
+  const currentSession = activeSessionId ? sessionStoreManager.getState().sessionMetadata.get(activeSessionId) : void 0;
   const sessionMetadataList = useSessionMetadataList();
   const activeSessionIsFree = useMemo21(
     () => sessionMetadataList.some((s3) => s3.id === activeSessionId && s3.type === "free"),
