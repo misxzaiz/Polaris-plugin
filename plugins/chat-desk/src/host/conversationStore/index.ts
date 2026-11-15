@@ -11,7 +11,6 @@ export { createConversationStore } from './createConversationStore'
 export { handleAIEvent } from './eventHandler'
 export {
   sessionStoreManager,
-  createSessionManagerStore,
   useActiveConversationStore,
   useConversationStore,
   useSessionMetadataList,
@@ -20,8 +19,6 @@ export {
   RENDER_EVENT_TYPES,
 } from './sessionStoreManager'
 export {
-  useActiveSession,
-  useActiveSessionChat,
   useActiveSessionMessages,
   useActiveSessionStreaming,
   useActiveSessionError,

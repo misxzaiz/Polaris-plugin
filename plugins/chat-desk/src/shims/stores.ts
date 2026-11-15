@@ -1,7 +1,16 @@
 /**
  * stores shim —— host 树的 `@/stores`（barrel）与 `@/stores/xxxStore` 导入。
- * 全部转发宿主单例（appCore.stores）。zustand 的 useStore 直接复用宿主实例。
+ * 全部转发宿主单例（appCore.stores）。
+ *
+ * 订阅语义（多窗口网格不刷新根因修复，2026-11-15）：
+ * 宿主导出的 useViewStore 等本身就是 zustand create() 产出的订阅型 hook
+ * （内部 useSyncExternalStore）。此前的 useStoreHook 自造「裸读」包装——每次
+ * 渲染直接 getState()，宿主 store 更新不触发面板重渲染，导致 MultiSessionGrid
+ * 只显示首帧快照（新会话能对话但网格不出现）。这里直接转发宿主原 hook 实例，
+ * 并补挂 getState/subscribe/setState（宿主 hook 自带 getState/subscribe/
+ * setState，assign 仅兜底桥上缺成员的形态）。
  */
+import { useSyncExternalStore } from 'react'
 import { coreStore } from '../core'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -11,8 +20,19 @@ function store(name: string): AnyStore {
   return coreStore<AnyStore>(name)
 }
 
-/** useXxxStore 形态：可直接调用（selector）也可 .getState() */
+/** useXxxStore 形态：优先转发宿主原 zustand hook（订阅型）；桥上缺原 hook 时回退裸读 */
 function useStoreHook(name: string) {
+  const host = coreStore(name) as
+    | (((selector?: (s: any) => any) => any) & Partial<AnyStore>)
+    | undefined
+  if (typeof host === 'function') {
+    const hook = ((selector?: (s: any) => any): any => host(selector)) as any
+    hook.getState = host.getState ?? (() => store(name).getState())
+    hook.subscribe = host.subscribe ?? ((cb: () => void) => store(name).subscribe(cb))
+    hook.setState = host.setState ?? ((p: any) => store(name).setState(p))
+    return hook
+  }
+  // 兜底：宿主桥未暴露原 hook（不应发生）——保持旧裸读形态
   const s = store(name)
   const hook = (selector?: (state: any) => any): any =>
     selector ? selector(s.getState()) : s.getState()
@@ -75,12 +95,28 @@ const hostActive: any = new Proxy({}, {
 })
 export function useActiveSessionId(): any {
   const sm: any = coreStore<any>('sessionStoreManager')
-  return sm.getState().activeSessionId
+  return useSyncExternalStore(
+    (cb: () => void) => sm.subscribe(cb),
+    () => sm.getState().activeSessionId,
+    () => sm.getState().activeSessionId,
+  )
 }
+// 宿主版缓存数组语义：Map 引用不变时复用上次数组（防无限渲染）
+let cachedMetadataMap: any = null
+let cachedMetadataArray: any[] | null = null
 export function useSessionMetadataList(): any {
   const sm: any = coreStore<any>('sessionStoreManager')
-  const m = sm.getState().sessionMetadata
-  return m ? [...m.values()] : []
+  return useSyncExternalStore(
+    (cb: () => void) => sm.subscribe(cb),
+    () => {
+      const m = sm.getState().sessionMetadata
+      if (m === cachedMetadataMap && cachedMetadataArray !== null) return cachedMetadataArray
+      cachedMetadataMap = m
+      cachedMetadataArray = m ? Array.from(m.values()) : []
+      return cachedMetadataArray
+    },
+    () => [],
+  )
 }
 export const useActiveSessionActions: any = (...args: unknown[]) => (hostActive.useActiveSessionActions as any)(...args)
 export const useActiveSessionMessages: any = (...args: unknown[]) => (hostActive.useActiveSessionMessages as any)(...args)
@@ -131,6 +167,17 @@ export function useSessionManagerActions(): any {
     renameSession: (id: string, title: string) => st.updateSessionTitle(id, title),
   }
 }
+// SessionCell 等按会话订阅元数据（标题/状态/工作区联动刷新）
+export function useSessionMetadata(sessionId: string | null): any {
+  const sm: any = coreStore<any>('sessionStoreManager')
+  return useSyncExternalStore(
+    (cb: () => void) => sm.subscribe(cb),
+    () => (sessionId ? sm.getState().sessionMetadata.get(sessionId) ?? null : null),
+    () => null,
+  )
+}
+
+export { coreStore }
 
 // ── 会话域工具函数（宿主 conversationStoreUtils / modelProfileStore 同源转发）──
 export function resolveEffectiveProfileId(...args: unknown[]): any {

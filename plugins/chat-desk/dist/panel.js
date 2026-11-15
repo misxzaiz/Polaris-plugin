@@ -2003,6 +2003,7 @@ var init_lucide_react = __esm({
 var stores_exports = {};
 __export(stores_exports, {
   conversationStoreUtils: () => conversationStoreUtils,
+  coreStore: () => coreStore,
   findStoreByConversationId: () => findStoreByConversationId,
   getSessionConfig: () => getSessionConfig,
   resolveEffectiveProfileId: () => resolveEffectiveProfileId,
@@ -2042,6 +2043,7 @@ __export(stores_exports, {
   useSessionHasPendingCards: () => useSessionHasPendingCards,
   useSessionHasPendingQuestion: () => useSessionHasPendingQuestion,
   useSessionManagerActions: () => useSessionManagerActions,
+  useSessionMetadata: () => useSessionMetadata,
   useSessionMetadataList: () => useSessionMetadataList,
   useSessionState: () => useSessionState,
   useSessionStreaming: () => useSessionStreaming,
@@ -2053,10 +2055,19 @@ __export(stores_exports, {
   useViewStore: () => useViewStore,
   useWorkspaceStore: () => useWorkspaceStore
 });
+import { useSyncExternalStore } from "react";
 function store(name) {
   return coreStore(name);
 }
 function useStoreHook(name) {
+  const host = coreStore(name);
+  if (typeof host === "function") {
+    const hook3 = (selector2) => host(selector2);
+    hook3.getState = host.getState ?? (() => store(name).getState());
+    hook3.subscribe = host.subscribe ?? ((cb) => store(name).subscribe(cb));
+    hook3.setState = host.setState ?? ((p3) => store(name).setState(p3));
+    return hook3;
+  }
   const s3 = store(name);
   const hook2 = (selector2) => selector2 ? selector2(s3.getState()) : s3.getState();
   hook2.getState = () => s3.getState();
@@ -2073,12 +2084,25 @@ function selectSlotFill(slots, slotId) {
 }
 function useActiveSessionId() {
   const sm = coreStore("sessionStoreManager");
-  return sm.getState().activeSessionId;
+  return useSyncExternalStore(
+    (cb) => sm.subscribe(cb),
+    () => sm.getState().activeSessionId,
+    () => sm.getState().activeSessionId
+  );
 }
 function useSessionMetadataList() {
   const sm = coreStore("sessionStoreManager");
-  const m4 = sm.getState().sessionMetadata;
-  return m4 ? [...m4.values()] : [];
+  return useSyncExternalStore(
+    (cb) => sm.subscribe(cb),
+    () => {
+      const m4 = sm.getState().sessionMetadata;
+      if (m4 === cachedMetadataMap && cachedMetadataArray !== null) return cachedMetadataArray;
+      cachedMetadataMap = m4;
+      cachedMetadataArray = m4 ? Array.from(m4.values()) : [];
+      return cachedMetadataArray;
+    },
+    () => []
+  );
 }
 function useSessionManagerActions() {
   const sm = coreStore("sessionStoreManager");
@@ -2090,6 +2114,14 @@ function useSessionManagerActions() {
     createSessionFromHistory: st3.createSessionFromHistory,
     renameSession: (id38, title2) => st3.updateSessionTitle(id38, title2)
   };
+}
+function useSessionMetadata(sessionId) {
+  const sm = coreStore("sessionStoreManager");
+  return useSyncExternalStore(
+    (cb) => sm.subscribe(cb),
+    () => sessionId ? sm.getState().sessionMetadata.get(sessionId) ?? null : null,
+    () => null
+  );
 }
 function resolveEffectiveProfileId(...args) {
   const u5 = coreStore("conversationStoreUtils").resolveEffectiveProfileId;
@@ -2106,7 +2138,7 @@ function findStoreByConversationId(...args) {
   if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
   return null;
 }
-var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, useActiveSessionActions, useActiveSessionMessages, useActiveSessionStreaming, useActiveSessionError, useActiveSessionConversationId, useActiveSessionWorkspace, useActiveSessionInputDraft, useActiveSessionPendingQueue, useActiveSessionPendingBriefing, useActiveSessionPromptOptimize, useActiveSessionPromptSuggestion, useActiveSessionStreamRate, useActiveSessionUsage, useActiveSessionKernelStreaming, useSessionState, useSessionStreaming, useHasActivePlan, useHasPendingQuestion, useSessionHasPendingQuestion, useSessionHasPendingCards, conversationStoreUtils;
+var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, cachedMetadataMap, cachedMetadataArray, useActiveSessionActions, useActiveSessionMessages, useActiveSessionStreaming, useActiveSessionError, useActiveSessionConversationId, useActiveSessionWorkspace, useActiveSessionInputDraft, useActiveSessionPendingQueue, useActiveSessionPendingBriefing, useActiveSessionPromptOptimize, useActiveSessionPromptSuggestion, useActiveSessionStreamRate, useActiveSessionUsage, useActiveSessionKernelStreaming, useSessionState, useSessionStreaming, useHasActivePlan, useHasPendingQuestion, useSessionHasPendingQuestion, useSessionHasPendingCards, conversationStoreUtils;
 var init_stores = __esm({
   "src/shims/stores.ts"() {
     init_core();
@@ -2149,6 +2181,8 @@ var init_stores = __esm({
         return void 0;
       }
     });
+    cachedMetadataMap = null;
+    cachedMetadataArray = null;
     useActiveSessionActions = (...args) => hostActive.useActiveSessionActions(...args);
     useActiveSessionMessages = (...args) => hostActive.useActiveSessionMessages(...args);
     useActiveSessionStreaming = (...args) => hostActive.useActiveSessionStreaming(...args);
@@ -323377,7 +323411,7 @@ init_lucide_react();
 import { useState as useState26, useEffect as useEffect15, useRef as useRef12, useCallback as useCallback18 } from "react";
 
 // src/host/Chat/dynamic-island/useRuntimeSummary.ts
-import { useState as useState24, useEffect as useEffect14, useRef as useRef11, useSyncExternalStore } from "react";
+import { useState as useState24, useEffect as useEffect14, useRef as useRef11, useSyncExternalStore as useSyncExternalStore2 } from "react";
 
 // node_modules/zustand/esm/react.mjs
 import React2 from "react";
@@ -324053,7 +324087,7 @@ function useRuntimeSummary(sessionId) {
     if (!store3) return sessionStoreManager.subscribe(onChange);
     return store3.subscribe(onChange);
   };
-  const summary = useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_SUMMARY);
+  const summary = useSyncExternalStore2(subscribe, getSnapshot, () => EMPTY_SUMMARY);
   const storeIsStreaming = store3?.getState().isStreaming ?? false;
   const tickActive = summary.hasRunning || summary.isInterrupting || storeIsStreaming;
   useEffect14(() => {
