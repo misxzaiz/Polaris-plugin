@@ -8,6 +8,11 @@
  */
 import { useCallback, useMemo, useState } from 'react';
 import { MultiSessionGrid } from './host/Chat/session/MultiSessionGrid';
+import { ensureChatDomainBootstrapped } from './bootstrap';
+
+// 会话域自持引导（P6）：模块加载即执行——eventRouter 订阅、manager 初始化、
+// 反向桥注册。幂等，失败不阻塞面板。
+ensureChatDomainBootstrapped();
 import { ChatInput } from './host/Chat/input/ChatInput';
 import { ChatStatusBar } from './host/Chat/common/ChatStatusBar';
 import { ErrorBanner } from './host/Chat/common/ErrorBanner';

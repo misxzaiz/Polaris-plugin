@@ -43,7 +43,11 @@ export const dialogStorageService: any = lazyObj('dialogStorageService')
 export const maybeAutoMigrateOpfs: AnyFn = (...args) => (coreService<any>('maybeAutoMigrateOpfs'))(...args)
 
 // ── eventRouter / eventBus ──
-export const getEventRouter: AnyFn = (...args) => (coreService<any>('getEventRouter'))(...args)
+// P6：eventRouter 实现随域迁入插件（host/services/eventRouter），不再经宿主桥。
+// 静态 import 自实现模块（无环：eventRouter → manager → shims/stores → core，
+// shims/services 不被那条链引用）。
+import { getEventRouter as _localGetEventRouter } from '../host/services/eventRouter'
+export const getEventRouter: AnyFn = (...args) => (_localGetEventRouter as AnyFn)(...args)
 export const eventBus: any = lazyObj('eventBus')
 
 // ── 跨端/静默服务 ──
@@ -80,11 +84,12 @@ export const loadConversationMessages: AnyFn = (...args) => (coreService<Record<
 export const requestCompactHandoff: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('contextCompactHandoff').requestCompactHandoff)(...args)
 export const cancelCompactHandoff: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('contextCompactHandoff').cancelCompactHandoff)(...args)
 
-export const runPromptOptimize: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptOptimizeService').runPromptOptimize)(...args)
-export const cancelPromptOptimize: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptOptimizeService').cancelPromptOptimize)(...args)
-export const readStoredOptimizeConfig: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptOptimizeService').readStoredOptimizeConfig)(...args)
-export const storeOptimizeConfig: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptOptimizeService').storeOptimizeConfig)(...args)
-export const usePromptOptimizePreview: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptOptimizeService').usePromptOptimizePreview)(...args)
+import * as _localPromptOptimize from '../host/services/promptOptimizeService'
+export const runPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).runPromptOptimize)(...args)
+export const cancelPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).cancelPromptOptimize)(...args)
+export const readStoredOptimizeConfig: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).readStoredOptimizeConfig)(...args)
+export const storeOptimizeConfig: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).storeOptimizeConfig)(...args)
+export const usePromptOptimizePreview: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).usePromptOptimizePreview)(...args)
 
 export const promptHistoryKey: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptHistoryService').promptHistoryKey)(...args)
 export const readPromptHistoryEntries: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptHistoryService').readPromptHistoryEntries)(...args)
