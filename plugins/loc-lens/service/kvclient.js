@@ -30,6 +30,9 @@ function md5(s) {
 
 function configCandidates(appConfigDir) {
   const cands = [];
+  // 宿主注入的 appConfigDir 最优先（本进程就属于这个数据根，多实例/多数据根
+  // 场景下 anchor.json 可能指向另一个根，导致 kv 写错实例——实测踩坑）。
+  if (appConfigDir) cands.push(path.join(appConfigDir, 'config.json'));
   for (const anchor of [
     process.env.APPDATA ? path.join(process.env.APPDATA, 'Polaris', 'anchor.json') : '',
     path.join(os.homedir(), '.config', 'Polaris', 'anchor.json'),
@@ -42,7 +45,6 @@ function configCandidates(appConfigDir) {
       }
     } catch (_) { /* 跳过不可读候选 */ }
   }
-  if (appConfigDir) cands.push(path.join(appConfigDir, 'config.json'));
   if (process.env.APPDATA) cands.push(path.join(process.env.APPDATA, 'Polaris', 'config.json'));
   cands.push(path.join(os.homedir(), '.config', 'Polaris', 'config.json'));
   cands.push(path.join(os.homedir(), '.polaris', 'config.json'));
