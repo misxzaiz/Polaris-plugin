@@ -1999,217 +1999,1950 @@ var init_lucide_react = __esm({
   }
 });
 
-// src/shims/stores.ts
-var stores_exports = {};
-__export(stores_exports, {
-  conversationStoreUtils: () => conversationStoreUtils,
-  coreStore: () => coreStore,
-  findStoreByConversationId: () => findStoreByConversationId,
-  getSessionConfig: () => getSessionConfig,
-  resolveEffectiveProfileId: () => resolveEffectiveProfileId,
-  resolveSessionEngine: () => resolveSessionEngine,
-  selectSlotFill: () => selectSlotFill,
-  sessionStoreManager: () => sessionStoreManager,
-  useActiveSessionActions: () => useActiveSessionActions,
-  useActiveSessionConversationId: () => useActiveSessionConversationId,
-  useActiveSessionError: () => useActiveSessionError,
-  useActiveSessionId: () => useActiveSessionId,
-  useActiveSessionInputDraft: () => useActiveSessionInputDraft,
-  useActiveSessionKernelStreaming: () => useActiveSessionKernelStreaming,
-  useActiveSessionMessages: () => useActiveSessionMessages,
-  useActiveSessionPendingBriefing: () => useActiveSessionPendingBriefing,
-  useActiveSessionPendingQueue: () => useActiveSessionPendingQueue,
-  useActiveSessionPromptOptimize: () => useActiveSessionPromptOptimize,
-  useActiveSessionPromptSuggestion: () => useActiveSessionPromptSuggestion,
-  useActiveSessionStreamRate: () => useActiveSessionStreamRate,
-  useActiveSessionStreaming: () => useActiveSessionStreaming,
-  useActiveSessionUsage: () => useActiveSessionUsage,
-  useActiveSessionWorkspace: () => useActiveSessionWorkspace,
-  useAgentStore: () => useAgentStore,
-  useCapCatalogStore: () => useCapCatalogStore,
-  useCliInfoStore: () => useCliInfoStore,
-  useCompactHandoffStore: () => useCompactHandoffStore,
-  useConfigStore: () => useConfigStore,
-  useDispatchStore: () => useDispatchStore,
-  useEngineMetadataStore: () => useEngineMetadataStore,
-  useFileEditorStore: () => useFileEditorStore,
-  useHasActivePlan: () => useHasActivePlan,
-  useHasPendingQuestion: () => useHasPendingQuestion,
-  useInputUIStore: () => useInputUIStore,
-  useModelProfileStore: () => useModelProfileStore,
-  useOverlayStore: () => useOverlayStore,
-  usePluginStore: () => usePluginStore,
-  useSessionConfig: () => useSessionConfig,
-  useSessionHasPendingCards: () => useSessionHasPendingCards,
-  useSessionHasPendingQuestion: () => useSessionHasPendingQuestion,
-  useSessionManagerActions: () => useSessionManagerActions,
-  useSessionMetadata: () => useSessionMetadata,
-  useSessionMetadataList: () => useSessionMetadataList,
-  useSessionState: () => useSessionState,
-  useSessionStreaming: () => useSessionStreaming,
-  useSkillStore: () => useSkillStore,
-  useSnippetStore: () => useSnippetStore,
-  useThemeStore: () => useThemeStore,
-  useToastStore: () => useToastStore,
-  useUiSlotStore: () => useUiSlotStore,
-  useViewStore: () => useViewStore,
-  useWorkspaceStore: () => useWorkspaceStore
-});
-import { useSyncExternalStore } from "react";
-function store(name) {
-  return coreStore(name);
-}
-function useStoreHook(name) {
-  const host = coreStore(name);
-  if (typeof host === "function") {
-    const hook3 = (selector2) => host(selector2);
-    hook3.getState = host.getState ?? (() => store(name).getState());
-    hook3.subscribe = host.subscribe ?? ((cb) => store(name).subscribe(cb));
-    hook3.setState = host.setState ?? ((p3) => store(name).setState(p3));
-    return hook3;
+// src/shims/uuid.ts
+function generateUUID() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
   }
-  const s3 = store(name);
-  const hook2 = (selector2) => selector2 ? selector2(s3.getState()) : s3.getState();
-  hook2.getState = () => s3.getState();
-  hook2.subscribe = (cb) => s3.subscribe(cb);
-  hook2.setState = (p3) => s3.setState(p3);
-  return hook2;
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = bytes[6] & 15 | 64;
+    bytes[8] = bytes[8] & 63 | 128;
+    const hex2 = Array.from(bytes, (b12) => b12.toString(16).padStart(2, "0")).join("");
+    return [
+      hex2.slice(0, 8),
+      hex2.slice(8, 12),
+      hex2.slice(12, 16),
+      hex2.slice(16, 20),
+      hex2.slice(20, 32)
+    ].join("-");
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c4) => {
+    const r3 = Math.random() * 16 | 0;
+    const v5 = c4 === "x" ? r3 : r3 & 3 | 8;
+    return v5.toString(16);
+  });
 }
-function getSessionConfig() {
-  return useSessionConfig.getState().config;
-}
-function selectSlotFill(slots, slotId) {
-  if (!slots) return null;
-  return slots[slotId] ?? null;
-}
-function useActiveSessionId() {
-  const sm = coreStore("sessionStoreManager");
-  return useSyncExternalStore(
-    (cb) => sm.subscribe(cb),
-    () => sm.getState().activeSessionId,
-    () => sm.getState().activeSessionId
+var init_uuid = __esm({
+  "src/shims/uuid.ts"() {
+  }
+});
+
+// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/vanilla.mjs
+var createStoreImpl, createStore;
+var init_vanilla = __esm({
+  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/vanilla.mjs"() {
+    createStoreImpl = (createState) => {
+      let state5;
+      const listeners = /* @__PURE__ */ new Set();
+      const setState = (partial, replace2) => {
+        const nextState = typeof partial === "function" ? partial(state5) : partial;
+        if (!Object.is(nextState, state5)) {
+          const previousState = state5;
+          state5 = (replace2 != null ? replace2 : typeof nextState !== "object" || nextState === null) ? nextState : Object.assign({}, state5, nextState);
+          listeners.forEach((listener) => listener(state5, previousState));
+        }
+      };
+      const getState2 = () => state5;
+      const getInitialState = () => initialState;
+      const subscribe = (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      };
+      const api2 = { setState, getState: getState2, getInitialState, subscribe };
+      const initialState = state5 = createState(setState, getState2, api2);
+      return api2;
+    };
+    createStore = (createState) => createState ? createStoreImpl(createState) : createStoreImpl;
+  }
+});
+
+// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/react.mjs
+import React from "react";
+function useStore(api2, selector2 = identity) {
+  const slice8 = React.useSyncExternalStore(
+    api2.subscribe,
+    React.useCallback(() => selector2(api2.getState()), [api2, selector2]),
+    () => selector2(api2.getInitialState())
   );
+  React.useDebugValue(slice8);
+  return slice8;
 }
-function useSessionMetadataList() {
-  const sm = coreStore("sessionStoreManager");
-  return useSyncExternalStore(
-    (cb) => sm.subscribe(cb),
-    () => {
-      const m4 = sm.getState().sessionMetadata;
-      if (m4 === cachedMetadataMap && cachedMetadataArray !== null) return cachedMetadataArray;
-      cachedMetadataMap = m4;
-      cachedMetadataArray = m4 ? Array.from(m4.values()) : [];
-      return cachedMetadataArray;
+var identity, createImpl, create;
+var init_react = __esm({
+  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/react.mjs"() {
+    init_vanilla();
+    identity = (arg) => arg;
+    createImpl = (createState) => {
+      const api2 = createStore(createState);
+      const useBoundStore = (selector2) => useStore(api2, selector2);
+      Object.assign(useBoundStore, api2);
+      return useBoundStore;
+    };
+    create = (createState) => createState ? createImpl(createState) : createImpl;
+  }
+});
+
+// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/index.mjs
+var init_esm = __esm({
+  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/index.mjs"() {
+    init_vanilla();
+    init_react();
+  }
+});
+
+// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/middleware.mjs
+function createJSONStorage(getStorage, options2) {
+  let storage;
+  try {
+    storage = getStorage();
+  } catch (e3) {
+    return;
+  }
+  const persistStorage = {
+    getItem: (name) => {
+      var _a;
+      const parse6 = (str22) => {
+        if (str22 === null) {
+          return null;
+        }
+        return JSON.parse(str22, options2 == null ? void 0 : options2.reviver);
+      };
+      const str2 = (_a = storage.getItem(name)) != null ? _a : null;
+      if (isPromiseLike(str2)) {
+        return str2.then(parse6);
+      }
+      return parse6(str2);
     },
-    () => []
-  );
-}
-function useSessionManagerActions() {
-  const sm = coreStore("sessionStoreManager");
-  const st3 = sm.getState();
-  return {
-    switchSession: (id38) => st3.switchSession(id38),
-    closeSession: (id38) => st3.deleteSession(id38),
-    createSession: st3.createSession,
-    createSessionFromHistory: st3.createSessionFromHistory,
-    renameSession: (id38, title2) => st3.updateSessionTitle(id38, title2)
+    setItem: (name, newValue) => storage.setItem(name, JSON.stringify(newValue, options2 == null ? void 0 : options2.replacer)),
+    removeItem: (name) => storage.removeItem(name)
   };
+  return persistStorage;
 }
-function useSessionMetadata(sessionId) {
-  const sm = coreStore("sessionStoreManager");
-  return useSyncExternalStore(
-    (cb) => sm.subscribe(cb),
-    () => sessionId ? sm.getState().sessionMetadata.get(sessionId) ?? null : null,
-    () => null
-  );
+var subscribeWithSelectorImpl, subscribeWithSelector, isPromiseLike, toSyncThenable, toThenable, persistImpl, persist;
+var init_middleware = __esm({
+  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/middleware.mjs"() {
+    subscribeWithSelectorImpl = (fn3) => (set5, get6, api2) => {
+      const origSubscribe = api2.subscribe;
+      api2.subscribe = (selector2, optListener, options2) => {
+        let listener = selector2;
+        if (optListener) {
+          const equalityFn = (options2 == null ? void 0 : options2.equalityFn) || Object.is;
+          let currentSlice = selector2(api2.getState());
+          listener = (state5) => {
+            const nextSlice = selector2(state5);
+            if (!equalityFn(currentSlice, nextSlice)) {
+              const previousSlice = currentSlice;
+              optListener(currentSlice = nextSlice, previousSlice);
+            }
+          };
+          if (options2 == null ? void 0 : options2.fireImmediately) {
+            optListener(currentSlice, currentSlice);
+          }
+        }
+        return origSubscribe(listener);
+      };
+      const initialState = fn3(set5, get6, api2);
+      return initialState;
+    };
+    subscribeWithSelector = subscribeWithSelectorImpl;
+    isPromiseLike = (value3) => typeof (value3 == null ? void 0 : value3.then) === "function";
+    toSyncThenable = (value3) => ({
+      then(onFulfilled) {
+        return onFulfilled ? toThenable(onFulfilled)(value3) : this;
+      }
+    });
+    toThenable = (fn3) => (input) => {
+      try {
+        const result = fn3(input);
+        return isPromiseLike(result) ? result : toSyncThenable(result);
+      } catch (error3) {
+        return {
+          then(_onFulfilled, onRejected) {
+            return onRejected ? toThenable(onRejected)(error3) : this;
+          }
+        };
+      }
+    };
+    persistImpl = (config3, baseOptions) => (set5, get6, api2) => {
+      let options2 = {
+        storage: createJSONStorage(() => window.localStorage),
+        partialize: (state5) => state5,
+        version: 0,
+        merge: (persistedState, currentState) => ({
+          ...currentState,
+          ...persistedState
+        }),
+        ...baseOptions
+      };
+      let hasHydrated = false;
+      let hydrationVersion = 0;
+      const hydrationListeners = /* @__PURE__ */ new Set();
+      const finishHydrationListeners = /* @__PURE__ */ new Set();
+      let storage = options2.storage;
+      if (!storage) {
+        return config3(
+          (...args) => {
+            console.warn(
+              `[zustand persist middleware] Unable to update item '${options2.name}', the given storage is currently unavailable.`
+            );
+            set5(...args);
+          },
+          get6,
+          api2
+        );
+      }
+      const setItem = () => {
+        const state5 = options2.partialize({ ...get6() });
+        return storage.setItem(options2.name, {
+          state: state5,
+          version: options2.version
+        });
+      };
+      const savedSetState = api2.setState;
+      api2.setState = (...args) => {
+        savedSetState(...args);
+        return setItem();
+      };
+      const configResult = config3(
+        (...args) => {
+          set5(...args);
+          return setItem();
+        },
+        get6,
+        api2
+      );
+      api2.getInitialState = () => configResult;
+      let stateFromStorage;
+      const hydrate = () => {
+        var _a, _b;
+        if (!storage) return;
+        const currentVersion = ++hydrationVersion;
+        hasHydrated = false;
+        hydrationListeners.forEach((cb) => {
+          var _a2;
+          return cb((_a2 = get6()) != null ? _a2 : configResult);
+        });
+        const postRehydrationCallback = ((_b = options2.onRehydrateStorage) == null ? void 0 : _b.call(options2, (_a = get6()) != null ? _a : configResult)) || void 0;
+        return toThenable(storage.getItem.bind(storage))(options2.name).then((deserializedStorageValue) => {
+          if (deserializedStorageValue) {
+            if (typeof deserializedStorageValue.version === "number" && deserializedStorageValue.version !== options2.version) {
+              if (options2.migrate) {
+                const migration = options2.migrate(
+                  deserializedStorageValue.state,
+                  deserializedStorageValue.version
+                );
+                if (isPromiseLike(migration)) {
+                  return migration.then((result) => [true, result]);
+                }
+                return [true, migration];
+              }
+              console.error(
+                `State loaded from storage couldn't be migrated since no migrate function was provided`
+              );
+            } else {
+              return [false, deserializedStorageValue.state];
+            }
+          }
+          return [false, void 0];
+        }).then((migrationResult) => {
+          var _a2;
+          if (currentVersion !== hydrationVersion) {
+            return;
+          }
+          const [migrated, migratedState] = migrationResult;
+          stateFromStorage = options2.merge(
+            migratedState,
+            (_a2 = get6()) != null ? _a2 : configResult
+          );
+          set5(stateFromStorage, true);
+          if (migrated) {
+            return setItem();
+          }
+        }).then(() => {
+          if (currentVersion !== hydrationVersion) {
+            return;
+          }
+          postRehydrationCallback == null ? void 0 : postRehydrationCallback(get6(), void 0);
+          stateFromStorage = get6();
+          hasHydrated = true;
+          finishHydrationListeners.forEach((cb) => cb(stateFromStorage));
+        }).then(
+          () => void 0,
+          (e3) => {
+            if (currentVersion !== hydrationVersion) {
+              return;
+            }
+            postRehydrationCallback == null ? void 0 : postRehydrationCallback(void 0, e3);
+          }
+        );
+      };
+      api2.persist = {
+        setOptions: (newOptions) => {
+          options2 = {
+            ...options2,
+            ...newOptions
+          };
+          if (newOptions.storage) {
+            storage = newOptions.storage;
+          }
+        },
+        clearStorage: () => {
+          ++hydrationVersion;
+          storage == null ? void 0 : storage.removeItem(options2.name);
+        },
+        getOptions: () => options2,
+        rehydrate: () => {
+          try {
+            return Promise.resolve(hydrate());
+          } catch (error3) {
+            return Promise.reject(error3);
+          }
+        },
+        hasHydrated: () => hasHydrated,
+        onHydrate: (cb) => {
+          hydrationListeners.add(cb);
+          return () => {
+            hydrationListeners.delete(cb);
+          };
+        },
+        onFinishHydration: (cb) => {
+          finishHydrationListeners.add(cb);
+          return () => {
+            finishHydrationListeners.delete(cb);
+          };
+        }
+      };
+      if (!options2.skipHydration) {
+        hydrate();
+      }
+      return stateFromStorage || configResult;
+    };
+    persist = persistImpl;
+  }
+});
+
+// src/shims/logger.ts
+function createLogger(module2, options2) {
+  const cacheKey = module2;
+  if (loggerCache.has(cacheKey) && !options2) {
+    return loggerCache.get(cacheKey) ?? new ModuleLogger({ module: module2 });
+  }
+  const logger2 = new ModuleLogger({
+    module: module2,
+    level: options2?.level ?? globalLevel,
+    transports: options2?.transports ?? globalTransports,
+    context: { ...globalContext, ...options2?.context }
+  });
+  if (!options2) {
+    loggerCache.set(cacheKey, logger2);
+  }
+  return logger2;
 }
-function resolveEffectiveProfileId(...args) {
-  const u5 = coreStore("conversationStoreUtils").resolveEffectiveProfileId;
-  return u5(...args);
-}
-function resolveSessionEngine(...args) {
-  const u5 = coreStore("conversationStoreUtils").resolveSessionEngine;
-  return u5(...args);
-}
-function findStoreByConversationId(...args) {
-  const sm = coreStore("sessionStoreManager");
-  if (typeof sm.findStoreByConversationId === "function") return sm.findStoreByConversationId(...args);
-  const ua = coreStore("useActiveSession");
-  if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
+var LogLevelNames, LogLevelColors, ResetColor, ConsoleTransport, JsonTransport, ModuleLogger, globalLevel, globalTransports, globalContext, loggerCache;
+var init_logger = __esm({
+  "src/shims/logger.ts"() {
+    LogLevelNames = {
+      [0 /* Trace */]: "trace",
+      [1 /* Debug */]: "debug",
+      [2 /* Info */]: "info",
+      [3 /* Warn */]: "warn",
+      [4 /* Error */]: "error",
+      [5 /* Fatal */]: "fatal"
+    };
+    LogLevelColors = {
+      [0 /* Trace */]: "\x1B[90m",
+      // 灰色
+      [1 /* Debug */]: "\x1B[36m",
+      // 青色
+      [2 /* Info */]: "\x1B[32m",
+      // 绿色
+      [3 /* Warn */]: "\x1B[33m",
+      // 黄色
+      [4 /* Error */]: "\x1B[31m",
+      // 红色
+      [5 /* Fatal */]: "\x1B[35m"
+      // 紫色
+    };
+    ResetColor = "\x1B[0m";
+    ConsoleTransport = class {
+      constructor(level) {
+        this.name = "console";
+        this.level = 2 /* Info */;
+        this.level = level ?? 2 /* Info */;
+      }
+      setLevel(level) {
+        this.level = level;
+      }
+      log(entry) {
+        if (entry.level < this.level) return;
+        const color2 = LogLevelColors[entry.level];
+        const levelName = LogLevelNames[entry.level].toUpperCase().padEnd(5);
+        const timestamp2 = entry.timestamp.split("T")[1]?.slice(0, 12) || entry.timestamp;
+        const moduleTag = `[${entry.module}]`;
+        const prefix = `${color2}${levelName}${ResetColor} ${timestamp2} ${moduleTag}`;
+        const method = this.getConsoleMethod(entry.level);
+        if (entry.error) {
+          method(prefix, entry.message, entry.context ?? "", "\n  Error:", entry.error.name, entry.error.message);
+          if (entry.error.stack) {
+            method("  Stack:", entry.error.stack);
+          }
+        } else if (entry.context && Object.keys(entry.context).length > 0) {
+          method(prefix, entry.message, entry.context);
+        } else {
+          method(prefix, entry.message);
+        }
+      }
+      getConsoleMethod(level) {
+        switch (level) {
+          case 5 /* Fatal */:
+          case 4 /* Error */:
+            return console.error.bind(console);
+          case 3 /* Warn */:
+            return console.warn.bind(console);
+          case 2 /* Info */:
+            return console.info.bind(console);
+          default:
+            return console.log.bind(console);
+        }
+      }
+    };
+    JsonTransport = class {
+      constructor(level) {
+        this.name = "json";
+        this.level = 2 /* Info */;
+        this.level = level ?? 2 /* Info */;
+      }
+      setLevel(level) {
+        this.level = level;
+      }
+      log(entry) {
+        if (entry.level < this.level) return;
+        console.log(JSON.stringify(entry));
+      }
+    };
+    ModuleLogger = class _ModuleLogger {
+      constructor(config3) {
+        this.config = {
+          level: 2 /* Info */,
+          transports: [new ConsoleTransport()],
+          ...config3
+        };
+        this.transports = this.config.transports ?? [];
+      }
+      /**
+       * 获取当前日志级别
+       */
+      getLevel() {
+        return this.config.level ?? 2 /* Info */;
+      }
+      /**
+       * 设置日志级别
+       */
+      setLevel(level) {
+        this.config.level = level;
+        this.transports.forEach((t5) => t5.setLevel?.(level));
+      }
+      /**
+       * 设置全局上下文
+       */
+      setContext(context) {
+        this.config.context = { ...this.config.context, ...context };
+      }
+      /**
+       * 清除上下文
+       */
+      clearContext() {
+        this.config.context = void 0;
+      }
+      /**
+       * 创建子日志器
+       */
+      child(subModule) {
+        return new _ModuleLogger({
+          ...this.config,
+          module: `${this.config.module}:${subModule}`
+        });
+      }
+      // ===== 日志方法 =====
+      trace(message, context) {
+        this.log(0 /* Trace */, message, void 0, context);
+      }
+      debug(message, context) {
+        this.log(1 /* Debug */, message, void 0, context);
+      }
+      info(message, context) {
+        this.log(2 /* Info */, message, void 0, context);
+      }
+      warn(message, context) {
+        this.log(3 /* Warn */, message, void 0, context);
+      }
+      error(message, error3, context) {
+        this.log(4 /* Error */, message, error3, context);
+      }
+      fatal(message, error3, context) {
+        this.log(5 /* Fatal */, message, error3, context);
+      }
+      /**
+       * 记录性能计时
+       */
+      time(label) {
+        const start2 = performance.now();
+        return () => {
+          const duration = performance.now() - start2;
+          this.debug(`${label} completed`, { duration: `${duration.toFixed(2)}ms` });
+        };
+      }
+      /**
+       * 记录进入函数
+       */
+      enter(fn3, args) {
+        this.trace(`\u2192 ${fn3}`, args);
+      }
+      /**
+       * 记录退出函数
+       */
+      exit(fn3, result) {
+        this.trace(`\u2190 ${fn3}`, result !== void 0 ? { result } : void 0);
+      }
+      // ===== 私有方法 =====
+      log(level, message, error3, context) {
+        if (level < (this.config.level ?? 2 /* Info */)) {
+          return;
+        }
+        const entry = {
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          level,
+          levelName: LogLevelNames[level],
+          module: this.config.module,
+          message,
+          context: { ...this.config.context, ...context },
+          error: error3 ? {
+            name: error3.name,
+            message: error3.message,
+            stack: error3.stack
+          } : void 0,
+          sessionId: this.config.context?.sessionId,
+          requestId: this.config.context?.requestId
+        };
+        for (const transport of this.transports) {
+          try {
+            transport.log(entry);
+          } catch (e3) {
+            console.error("[Logger] Transport error:", e3);
+          }
+        }
+      }
+    };
+    globalLevel = typeof import.meta !== "undefined" && import.meta.env?.DEV ? 1 /* Debug */ : 2 /* Info */;
+    globalTransports = [];
+    globalContext = {};
+    loggerCache = /* @__PURE__ */ new Map();
+    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
+      globalTransports = [new ConsoleTransport(1 /* Debug */)];
+    } else {
+      globalTransports = [new JsonTransport(2 /* Info */)];
+    }
+  }
+});
+
+// src/host/services/eventRouter.ts
+function extractFrontendSessionId(contextId) {
+  if (contextId.startsWith("session-")) {
+    return contextId.substring("session-".length);
+  }
   return null;
 }
-var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, cachedMetadataMap, cachedMetadataArray, useActiveSessionActions, useActiveSessionMessages, useActiveSessionStreaming, useActiveSessionError, useActiveSessionConversationId, useActiveSessionWorkspace, useActiveSessionInputDraft, useActiveSessionPendingQueue, useActiveSessionPendingBriefing, useActiveSessionPromptOptimize, useActiveSessionPromptSuggestion, useActiveSessionStreamRate, useActiveSessionUsage, useActiveSessionKernelStreaming, useSessionState, useSessionStreaming, useHasActivePlan, useHasPendingQuestion, useSessionHasPendingQuestion, useSessionHasPendingCards, conversationStoreUtils;
-var init_stores = __esm({
-  "src/shims/stores.ts"() {
-    init_core();
-    useConfigStore = useStoreHook("useConfigStore");
-    useWorkspaceStore = useStoreHook("useWorkspaceStore");
-    useViewStore = useStoreHook("useViewStore");
-    useToastStore = useStoreHook("useToastStore");
-    useInputUIStore = useStoreHook("useInputUIStore");
-    useUiSlotStore = useStoreHook("useUiSlotStore");
-    useThemeStore = useStoreHook("useThemeStore");
-    useModelProfileStore = useStoreHook("useModelProfileStore");
-    useSessionConfig = useStoreHook("useSessionConfig");
-    useEngineMetadataStore = useStoreHook("useEngineMetadataStore");
-    useCliInfoStore = useStoreHook("useCliInfoStore");
-    useAgentStore = useStoreHook("useAgentStore");
-    useCapCatalogStore = useStoreHook("useCapCatalogStore");
-    usePluginStore = useStoreHook("usePluginStore");
-    useOverlayStore = useStoreHook("useOverlayStore");
-    useSnippetStore = useStoreHook("useSnippetStore");
-    useSkillStore = useStoreHook("useSkillStore");
-    useFileEditorStore = useStoreHook("useFileEditorStore");
-    useCompactHandoffStore = useStoreHook("useCompactHandoffStore");
-    useDispatchStore = useStoreHook("useDispatchStore");
-    sessionStoreManager = new Proxy({}, {
-      get(_t, prop) {
-        const fromBridge = coreStore("sessionStoreManager");
-        if (fromBridge) return fromBridge[prop];
-        return void 0;
+function getEventRouter() {
+  if (routerInstance && routerInstance.isDestroyed()) {
+    log.info("\u68C0\u6D4B\u5230\u5DF2\u9500\u6BC1\u5B9E\u4F8B\uFF0C\u521B\u5EFA\u65B0\u5B9E\u4F8B");
+    routerInstance = new EventRouter();
+  } else if (!routerInstance) {
+    routerInstance = new EventRouter();
+  }
+  return routerInstance;
+}
+async function ensureEventRouterInitialized() {
+  const router = getEventRouter();
+  await router.initialize();
+  return router;
+}
+var log, EventRouter, routerInstance;
+var init_eventRouter = __esm({
+  "src/host/services/eventRouter.ts"() {
+    init_services();
+    init_logger();
+    init_sessionStoreManager();
+    log = createLogger("EventRouter");
+    EventRouter = class {
+      constructor() {
+        this.handlers = /* @__PURE__ */ new Map();
+        this.unlisten = null;
+        this.initialized = false;
+        this.initPromise = null;
+        this.destroyed = false;
+      }
+      async initialize() {
+        if (this.initialized) return;
+        if (this.initPromise) return this.initPromise;
+        this.initPromise = this.doInitialize();
+        return this.initPromise;
+      }
+      async doInitialize() {
+        this.unlisten = await listen("chat-event", (rawPayload) => {
+          try {
+            let rawData;
+            if (typeof rawPayload === "string") {
+              try {
+                rawData = JSON.parse(rawPayload);
+              } catch {
+                rawData = rawPayload;
+              }
+            } else {
+              rawData = rawPayload;
+            }
+            let contextId = "main";
+            let payload = rawData;
+            let turnId;
+            if (rawData && typeof rawData === "object" && "contextId" in rawData && "payload" in rawData) {
+              const envelope = rawData;
+              contextId = envelope.contextId;
+              payload = envelope.payload;
+              turnId = envelope.turnId;
+            }
+            const frontendSessionId = extractFrontendSessionId(contextId);
+            if (frontendSessionId) {
+              this.dispatchToSession(frontendSessionId, payload, turnId);
+              return;
+            }
+            if (contextId.startsWith("scheduler-") || contextId.startsWith("dispatch-")) {
+              this.dispatch({ contextId, payload });
+              return;
+            }
+            if (RENDER_EVENT_TYPES.has(payload?.type ?? "")) {
+              try {
+                sessionStoreManager.getState().dispatchEvent(payload);
+              } catch (e3) {
+                log.error("\u5206\u53D1\u65E0\u4FE1\u5C01\u6E32\u67D3\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+              }
+              return;
+            }
+            this.dispatch({ contextId, payload });
+          } catch (e3) {
+            log.error("Failed to parse event", e3 instanceof Error ? e3 : new Error(String(e3)));
+          }
+        });
+        this.initialized = true;
+      }
+      /**
+       * 将事件分发到指定的会话 Store
+       *
+       * @param frontendSessionId 前端 sessionId（用于路由到正确的 store）
+       * @param event AI 事件（包含后端 sessionId，用于 API 调用）
+       * @param turnId 事件信封的轮次标识（后端每请求生成；注入 `_turnId` 供
+       *   sessionStoreManager 做终态事件的代际过滤——旧轮迟到的 session_end
+       *   不再误杀新轮流式态，见 spec F1）
+       */
+      dispatchToSession(frontendSessionId, event3, turnId) {
+        try {
+          const eventWithRouteId = {
+            ...event3,
+            _routeSessionId: frontendSessionId,
+            ...turnId ? { _turnId: turnId } : {}
+          };
+          sessionStoreManager.getState().dispatchEvent(eventWithRouteId);
+        } catch (e3) {
+          log.error("\u5206\u53D1\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3, { frontendSessionId });
+        }
+      }
+      register(contextId, handler2) {
+        const existingHandlers = this.handlers.get(contextId);
+        if (existingHandlers) {
+          if (existingHandlers.size > 0) {
+            log.info("contextId \u5DF2\u5B58\u5728 handler\uFF0C\u6E05\u9664\u65E7 handler", { contextId });
+            existingHandlers.clear();
+          }
+        } else {
+          this.handlers.set(contextId, /* @__PURE__ */ new Set());
+        }
+        const handlers = this.handlers.get(contextId);
+        if (handlers) {
+          handlers.add(handler2);
+          log.info("\u6CE8\u518C handler", { contextId });
+        }
+        return () => {
+          this.handlers.get(contextId)?.delete(handler2);
+        };
+      }
+      dispatch(event3) {
+        const handlers = this.handlers.get(event3.contextId);
+        if (handlers) {
+          log.debug("dispatch \u5230 handlers", { contextId: event3.contextId, count: handlers.size });
+          handlers.forEach((handler2) => {
+            try {
+              handler2(event3.payload);
+            } catch (e3) {
+              log.error(`Handler error`, e3, { contextId: event3.contextId });
+            }
+          });
+        } else {
+          log.debug("\u6CA1\u6709\u627E\u5230 handler", { contextId: event3.contextId });
+        }
+        const wildcardHandlers = this.handlers.get("*");
+        if (wildcardHandlers) {
+          wildcardHandlers.forEach((handler2) => {
+            try {
+              handler2(event3);
+            } catch (e3) {
+              log.error("Wildcard handler error", e3);
+            }
+          });
+        }
+      }
+      destroy() {
+        if (this.unlisten) {
+          this.unlisten();
+          this.unlisten = null;
+        }
+        this.handlers.clear();
+        this.initialized = false;
+        this.initPromise = null;
+        this.destroyed = true;
+      }
+      isInitialized() {
+        return this.initialized;
+      }
+      isDestroyed() {
+        return this.destroyed;
+      }
+    };
+    routerInstance = null;
+  }
+});
+
+// src/shims/workspacePath.ts
+function getPathBasename(pathStr) {
+  const normalized = pathStr.replace(/\\/g, "/");
+  const parts = normalized.split("/").filter(Boolean);
+  return parts[parts.length - 1] || pathStr;
+}
+function normalizeWorkspacePath(pathStr) {
+  const normalized = pathStr.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  const isWindowsPath = pathStr.includes("\\") || /^[a-zA-Z]:\//.test(normalized);
+  return isWindowsPath ? normalized.toLowerCase() : normalized;
+}
+var init_workspacePath = __esm({
+  "src/shims/workspacePath.ts"() {
+  }
+});
+
+// src/host/stores/historyPrefsStore.ts
+var clamp, HISTORY_PREFS_LIMITS, useHistoryPrefsStore;
+var init_historyPrefsStore = __esm({
+  "src/host/stores/historyPrefsStore.ts"() {
+    init_esm();
+    init_middleware();
+    clamp = (n2, min10, max10) => Number.isFinite(n2) ? Math.min(max10, Math.max(min10, Math.round(n2))) : min10;
+    HISTORY_PREFS_LIMITS = {
+      listPageSize: { min: 10, max: 100, default: 20 },
+      restorePageSize: { min: 20, max: 500, default: 50 },
+      recentCards: { min: 0, max: 10, default: 5 }
+    };
+    useHistoryPrefsStore = create()(
+      persist(
+        (set5) => ({
+          listPageSize: HISTORY_PREFS_LIMITS.listPageSize.default,
+          restorePageSize: HISTORY_PREFS_LIMITS.restorePageSize.default,
+          recentCards: HISTORY_PREFS_LIMITS.recentCards.default,
+          setListPageSize: (n2) => set5({
+            listPageSize: clamp(
+              n2,
+              HISTORY_PREFS_LIMITS.listPageSize.min,
+              HISTORY_PREFS_LIMITS.listPageSize.max
+            )
+          }),
+          setRestorePageSize: (n2) => set5({
+            restorePageSize: clamp(
+              n2,
+              HISTORY_PREFS_LIMITS.restorePageSize.min,
+              HISTORY_PREFS_LIMITS.restorePageSize.max
+            )
+          }),
+          setRecentCards: (n2) => set5({
+            recentCards: clamp(
+              n2,
+              HISTORY_PREFS_LIMITS.recentCards.min,
+              HISTORY_PREFS_LIMITS.recentCards.max
+            )
+          })
+        }),
+        { name: "polaris-history-prefs" }
+      )
+    );
+  }
+});
+
+// src/host/utils/dedupMessages.ts
+function dedupeMessagesById(messages) {
+  const byId = /* @__PURE__ */ new Map();
+  for (const m4 of messages) {
+    byId.set(m4.id, m4);
+  }
+  return [...byId.values()];
+}
+function normalizeRecoveredMessages(messages) {
+  return messages.map((m4) => {
+    if (m4.type !== "assistant") return m4;
+    if (m4.isStreaming !== true) return m4;
+    const now4 = Date.now();
+    const timestamp2 = m4.timestamp || new Date(now4).toISOString();
+    return {
+      ...m4,
+      timestamp: timestamp2,
+      isStreaming: false,
+      interrupted: true
+    };
+  });
+}
+var init_dedupMessages = __esm({
+  "src/host/utils/dedupMessages.ts"() {
+  }
+});
+
+// src/host/services/claudeHistoryConvert.ts
+function convertClaudeHistoryToChatMessages(messages) {
+  const chatMessages = [];
+  const toolResultMap = buildToolResultMap(messages);
+  let accumulatedBlocks = [];
+  let accumulatedTimestamp = "";
+  let hasAssistant = false;
+  for (const msg of messages) {
+    const timestamp2 = msg.timestamp || (/* @__PURE__ */ new Date()).toISOString();
+    if (msg.role === "user") {
+      if (isToolResultMessage(msg)) continue;
+      if (hasAssistant) {
+        chatMessages.push({
+          id: generateUUID(),
+          type: "assistant",
+          blocks: aggregateTaskBlocks(accumulatedBlocks),
+          timestamp: accumulatedTimestamp,
+          isStreaming: false
+        });
+        accumulatedBlocks = [];
+        hasAssistant = false;
+      }
+      chatMessages.push({
+        id: generateUUID(),
+        type: "user",
+        content: extractUserContent(msg.content),
+        timestamp: timestamp2
+      });
+    } else if (msg.role === "assistant") {
+      accumulatedBlocks.push(...parseAssistantBlocks(msg.content, toolResultMap));
+      if (!hasAssistant) {
+        accumulatedTimestamp = timestamp2;
+        hasAssistant = true;
+      }
+    } else {
+      if (hasAssistant) {
+        chatMessages.push({
+          id: generateUUID(),
+          type: "assistant",
+          blocks: aggregateTaskBlocks(accumulatedBlocks),
+          timestamp: accumulatedTimestamp,
+          isStreaming: false
+        });
+        accumulatedBlocks = [];
+        hasAssistant = false;
+      }
+      chatMessages.push({
+        id: generateUUID(),
+        type: "system",
+        content: String(msg.content || ""),
+        timestamp: timestamp2
+      });
+    }
+  }
+  if (hasAssistant) {
+    chatMessages.push({
+      id: generateUUID(),
+      type: "assistant",
+      blocks: aggregateTaskBlocks(accumulatedBlocks),
+      timestamp: accumulatedTimestamp,
+      isStreaming: false
+    });
+  }
+  return chatMessages;
+}
+function buildToolResultMap(messages) {
+  const toolResultMap = /* @__PURE__ */ new Map();
+  for (const msg of messages) {
+    if (msg.role !== "user" || !Array.isArray(msg.content)) continue;
+    for (const item of msg.content) {
+      if (item && typeof item === "object" && "type" in item && item.type === "tool_result") {
+        const id38 = String(item.tool_use_id || "");
+        if (id38) {
+          const raw = item.content;
+          const resultContent = typeof raw === "string" ? raw : JSON.stringify(raw, null, 2);
+          toolResultMap.set(id38, resultContent);
+        }
+      }
+    }
+  }
+  return toolResultMap;
+}
+function isToolResultMessage(msg) {
+  if (msg.role !== "user") return false;
+  const content = msg.content;
+  if (typeof content === "string") return false;
+  if (Array.isArray(content)) {
+    let hasToolResult = false;
+    let hasText = false;
+    for (const item of content) {
+      if (item && typeof item === "object" && "type" in item) {
+        if (item.type === "tool_result") hasToolResult = true;
+        else if (item.type === "text") hasText = true;
+      }
+    }
+    return hasToolResult && !hasText;
+  }
+  return false;
+}
+function parseAssistantBlocks(content, toolResultMap) {
+  const blocks2 = [];
+  if (typeof content === "string") {
+    blocks2.push({ type: "text", content });
+    return blocks2;
+  }
+  if (Array.isArray(content)) {
+    for (const item of content) {
+      if (!item || typeof item !== "object") continue;
+      if ("type" in item) {
+        if (item.type === "text" && "text" in item) {
+          blocks2.push({ type: "text", content: String(item.text) });
+        } else if (item.type === "thinking" && "thinking" in item) {
+          const thinkingContent = String(item.thinking);
+          if (thinkingContent.trim()) {
+            blocks2.push({ type: "thinking", content: thinkingContent, collapsed: true });
+          }
+        } else if (item.type === "tool_use") {
+          const block2 = {
+            type: "tool_call",
+            id: String(item.id || generateUUID()),
+            name: String(item.name || "unknown"),
+            input: item.input || {},
+            status: "completed",
+            startedAt: (/* @__PURE__ */ new Date()).toISOString()
+          };
+          if (toolResultMap) {
+            const resultContent = toolResultMap.get(block2.id);
+            if (resultContent !== void 0) block2.output = resultContent;
+          }
+          blocks2.push(block2);
+        }
+      }
+    }
+  }
+  if (blocks2.length === 0) blocks2.push({ type: "text", content: "" });
+  return blocks2;
+}
+function extractUserContent(content) {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    const texts = [];
+    for (const item of content) {
+      if (item && typeof item === "object" && "type" in item && item.type === "text" && "text" in item) {
+        texts.push(String(item.text));
+      }
+    }
+    return texts.join("");
+  }
+  return "";
+}
+function aggregateTaskBlocks(blocks2) {
+  const taskIndices = [];
+  let hasTask = false;
+  for (let i2 = 0; i2 < blocks2.length; i2++) {
+    const b12 = blocks2[i2];
+    if (b12.type === "tool_call" && TASK_TOOLS.has(b12.name.toLowerCase())) {
+      taskIndices.push(i2);
+      hasTask = true;
+    }
+  }
+  if (!hasTask) return blocks2;
+  const itemMap = /* @__PURE__ */ new Map();
+  let listSnapshot = null;
+  let boardId = "taskboard-history";
+  for (const idx of taskIndices) {
+    const block2 = blocks2[idx];
+    const lower2 = block2.name.toLowerCase();
+    const input = block2.input || {};
+    if (lower2 === "taskcreate") {
+      boardId = block2.id;
+      const id38 = extractTaskIdFromOutput(block2.output) || generateUUID();
+      const item = {
+        id: id38,
+        subject: input.subject || input.activeForm || id38,
+        activeForm: input.activeForm,
+        status: "pending",
+        description: input.description
+      };
+      itemMap.set(id38, item);
+    } else if (lower2 === "taskupdate") {
+      const id38 = input.taskId || input.task_id;
+      if (id38 && input.status === "deleted") {
+        itemMap.delete(id38);
+        continue;
+      }
+      if (id38) {
+        const existing = itemMap.get(id38);
+        const patch = {};
+        if (input.status) patch.status = input.status;
+        if (input.subject) patch.subject = input.subject;
+        if (input.activeForm) patch.activeForm = input.activeForm;
+        if (existing) {
+          itemMap.set(id38, { ...existing, ...patch, updateCount: (existing.updateCount ?? 0) + 1 });
+        } else {
+          itemMap.set(id38, {
+            id: id38,
+            subject: patch.subject || patch.activeForm || id38,
+            status: patch.status || "pending",
+            ...patch,
+            updateCount: 0
+          });
+        }
+      }
+    } else if (lower2 === "tasklist") {
+      const snapshot = parseTaskListOutput(block2.output);
+      if (snapshot) listSnapshot = snapshot;
+    }
+    if (lower2 === "taskstop") {
+      const id38 = input.taskId || input.task_id;
+      if (id38 && itemMap.has(id38)) {
+        const it = itemMap.get(id38);
+        itemMap.set(id38, { ...it, status: "stopped" });
+      }
+    }
+  }
+  if (listSnapshot) {
+    for (const snap of listSnapshot) {
+      if (!itemMap.has(snap.id)) itemMap.set(snap.id, { ...snap, updateCount: 0 });
+    }
+  }
+  const items = [...itemMap.values()];
+  const completed2 = items.filter((i2) => i2.status === "completed").length;
+  const inProgress = items.filter((i2) => i2.status === "in_progress").length;
+  const blocked = items.filter((i2) => i2.status === "blocked").length;
+  const board = {
+    type: "task_board",
+    id: boardId,
+    items,
+    completed: completed2,
+    inProgress,
+    blocked,
+    total: items.length,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const result = [];
+  let boardInserted = false;
+  const taskIdxSet = new Set(taskIndices);
+  for (let i2 = 0; i2 < blocks2.length; i2++) {
+    if (taskIdxSet.has(i2)) {
+      if (!boardInserted) {
+        result.push(board);
+        boardInserted = true;
+      }
+    } else {
+      result.push(blocks2[i2]);
+    }
+  }
+  if (!boardInserted) result.push(board);
+  return result;
+}
+function extractTaskIdFromOutput(output2) {
+  if (!output2) return null;
+  const m4 = output2.match(/#\s*(\d+)/);
+  return m4 ? m4[1] : null;
+}
+function parseTaskListOutput(output2) {
+  if (!output2) return null;
+  const items = [];
+  for (const line3 of output2.split("\n")) {
+    const m4 = line3.match(/^\s*#\s*(\d+)\s*\[([A-Za-z_]+)\]\s*(.*)$/);
+    if (!m4) continue;
+    const raw = m4[2];
+    let status = "pending";
+    if (raw === "completed" || raw === "in_progress" || raw === "blocked" || raw === "stopped") {
+      status = raw;
+    } else if (raw === "deleted") {
+      continue;
+    }
+    const subject = m4[3].trim();
+    if (!subject) continue;
+    items.push({ id: m4[1], subject, status });
+  }
+  return items.length > 0 ? items : null;
+}
+var TASK_TOOLS;
+var init_claudeHistoryConvert = __esm({
+  "src/host/services/claudeHistoryConvert.ts"() {
+    init_uuid();
+    TASK_TOOLS = /* @__PURE__ */ new Set(["taskcreate", "taskupdate", "tasklist", "taskget"]);
+  }
+});
+
+// src/shims/engineDisplay.ts
+function normalizeEngineId(engineId) {
+  if (!engineId) return "claude-code";
+  const metadatas = useEngineMetadataStore.getState().metadatas;
+  if (metadatas.length === 0) {
+    const fallback = ["claude-code", "simple-ai"];
+    return fallback.includes(engineId) ? engineId : "claude-code";
+  }
+  return metadatas.some((m4) => m4.id === engineId) ? engineId : "claude-code";
+}
+function getEngineDisplayName(engineId) {
+  const id38 = normalizeEngineId(engineId);
+  return useEngineMetadataStore.getState().getEngineDisplayName(id38);
+}
+function getEngineFullName(engineId) {
+  const id38 = normalizeEngineId(engineId);
+  return useEngineMetadataStore.getState().getEngineFullName(id38);
+}
+var init_engineDisplay = __esm({
+  "src/shims/engineDisplay.ts"() {
+    init_stores();
+  }
+});
+
+// src/host/session-v2/core/v2-session-event-log.ts
+var v2_session_event_log_exports = {};
+__export(v2_session_event_log_exports, {
+  V2SessionEventLog: () => V2SessionEventLog,
+  V2StateArbiter: () => V2StateArbiter
+});
+var CMD, V2SessionEventLog, V2StateArbiter;
+var init_v2_session_event_log = __esm({
+  "src/host/session-v2/core/v2-session-event-log.ts"() {
+    init_services();
+    CMD = {
+      append: "session_event_append",
+      read: "session_event_read",
+      readAfterSeq: "session_event_read_after_seq",
+      currentSeq: "session_event_current_seq",
+      deleteByConversation: "session_event_delete_by_conversation",
+      getStatus: "session_get_status",
+      requestStart: "session_request_start",
+      requestInterrupt: "session_request_interrupt",
+      // 注册表（Session Registry）
+      register: "session_register",
+      get: "session_get",
+      list: "session_list",
+      updateMetadata: "session_update_metadata",
+      appendMessageId: "session_append_message",
+      delete: "session_delete"
+    };
+    V2SessionEventLog = class {
+      constructor() {
+        /** 本地缓存的最大 seq（仅本进程内 append/read 更新；跨设备权威值走后端） */
+        this.localMaxSeq = 0;
+      }
+      async append(event3) {
+        const ok = await invoke(CMD.append, { ...event3 });
+        if (ok && event3.seq > this.localMaxSeq) this.localMaxSeq = event3.seq;
+        return ok;
+      }
+      async read(conversationId) {
+        const events = await invoke(CMD.read, { conversationId });
+        for (const e3 of events) {
+          if (e3.seq > this.localMaxSeq) this.localMaxSeq = e3.seq;
+        }
+        return events;
+      }
+      async readAfterSeq(seq2) {
+        const events = await invoke(CMD.readAfterSeq, { seq: seq2 });
+        for (const e3 of events) {
+          if (e3.seq > this.localMaxSeq) this.localMaxSeq = e3.seq;
+        }
+        return events;
+      }
+      currentSeq() {
+        return this.localMaxSeq;
+      }
+      async deleteByConversation(conversationId) {
+        await invoke(CMD.deleteByConversation, { conversationId });
+      }
+    };
+    V2StateArbiter = class {
+      async getStatus(conversationId) {
+        const status = await invoke(CMD.getStatus, { conversationId });
+        return {
+          conversationId: status.conversationId,
+          running: status.running,
+          lastEventSeq: status.lastEventSeq,
+          error: status.error,
+          startedAt: status.startedAt,
+          endedAt: status.endedAt,
+          startedByDevice: status.startedByDevice
+        };
+      }
+      async requestStart(conversationId, deviceId) {
+        return invoke(CMD.requestStart, { conversationId, deviceId });
+      }
+      async requestInterrupt(conversationId, deviceId) {
+        return invoke(CMD.requestInterrupt, {
+          conversationId,
+          deviceId
+        });
+      }
+    };
+  }
+});
+
+// src/host/session-v2/kernel/v2-kernel.ts
+var v2_kernel_exports = {};
+__export(v2_kernel_exports, {
+  V2SessionKernel: () => V2SessionKernel,
+  V2_POLL_INTERVAL_MS: () => V2_POLL_INTERVAL_MS,
+  createV2SessionKernel: () => createV2SessionKernel
+});
+async function createV2SessionKernel(deps) {
+  const { sessionStoreManager: sessionStoreManager3 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
+  const { restoreFromHistory: restoreFromHistory3 } = await Promise.resolve().then(() => (init_services(), services_exports));
+  const { V2StateArbiter: V2StateArbiter2 } = await Promise.resolve().then(() => (init_v2_session_event_log(), v2_session_event_log_exports));
+  const { aiChatDispatchStream: aiChatDispatchStream3 } = await Promise.resolve().then(() => (init_services(), services_exports));
+  const { dialogStorageService: dialogStorageService2 } = await Promise.resolve().then(() => (init_services(), services_exports));
+  const { invoke: invoke2 } = await Promise.resolve().then(() => (init_services(), services_exports));
+  return new V2SessionKernel({
+    sessionStoreManager: deps?.sessionStoreManager ?? sessionStoreManager3,
+    // P0（plans/session-history-plugin-prd.md）：恢复核心抽至 sessionRestore
+    // （宿主保留，历史面板 UI 外移后仍可用）；historyService.restoreFromHistory
+    // 保持向后兼容委托（v2-kernel 消费面切到 sessionRestore）。
+    historyService: deps?.historyService ?? {
+      restoreFromHistory: (...args) => restoreFromHistory3(...args).then((id38) => id38 !== null)
+    },
+    eventDispatcher: deps?.eventDispatcher ?? sessionStoreManager3.getState(),
+    stateArbiter: deps?.stateArbiter ?? new V2StateArbiter2(),
+    streamDispatch: deps?.streamDispatch ?? ((payload) => aiChatDispatchStream3(payload)),
+    // 批 5（审计 2.10 修正）：快照源从 JSONL 改为后端消息库（SQLite 权威，
+    // 含 turn_persist 落库的卡片块/错误文本/墓碑过滤）——resyncSession 真正
+    // 「与后端消息库对账」，不再名不副实。JSONL 作为读失败的兜底降级。
+    snapshotSource: deps?.snapshotSource ?? {
+      getSnapshot: async (conversationId) => {
+        try {
+          const entries2 = await invoke2(
+            "message_read",
+            { conversationId, afterTimestamp: null, limit: null }
+          );
+          return entries2.map((e3) => e3.content);
+        } catch {
+          return dialogStorageService2.getConversationMessages(conversationId);
+        }
+      }
+    }
+  });
+}
+var V2SessionKernel, V2_POLL_INTERVAL_MS;
+var init_v2_kernel = __esm({
+  "src/host/session-v2/kernel/v2-kernel.ts"() {
+    V2SessionKernel = class {
+      constructor(deps) {
+        this.deps = deps;
+      }
+      // ==========================================================================
+      // 能力 1：消息发送（委托 store.sendMessage）
+      // ==========================================================================
+      async sendMessage(input) {
+        const store3 = this.getStoreState(input.sessionId);
+        if (!store3) {
+          return { ok: false, reason: `\u4F1A\u8BDD\u4E0D\u5B58\u5728: ${input.sessionId}`, retryable: false };
+        }
+        try {
+          const sent = await store3.sendMessage(
+            input.content,
+            input.workspaceDir,
+            input.attachments,
+            input.sendOptions
+          );
+          return { ok: sent !== false, conversationId: store3.conversationId ?? void 0 };
+        } catch (e3) {
+          const msg = e3 instanceof Error ? e3.message : String(e3);
+          return { ok: false, reason: msg, retryable: true };
+        }
+      }
+      async continueChat(sessionId, prompt, opts) {
+        const store3 = this.getStoreState(sessionId);
+        if (!store3) return;
+        const message = opts?.extraContext ? `${prompt}
+
+${opts.extraContext}` : prompt;
+        await store3.continueChat(message, opts?.allowedTools);
+      }
+      async interrupt(sessionId) {
+        await this.deps.sessionStoreManager.getState().interruptSession(sessionId);
+      }
+      async regenerate(sessionId, assistantMessageId) {
+        const store3 = this.getStoreState(sessionId);
+        if (!store3) return;
+        await store3.regenerateResponse(assistantMessageId);
+      }
+      async editAndResend(sessionId, userMessageId, newContent) {
+        const store3 = this.getStoreState(sessionId);
+        if (!store3) return;
+        await store3.editAndResend(userMessageId, newContent);
+      }
+      // ==========================================================================
+      // 能力 2：会话生命周期（委托 sessionStoreManager）
+      // ==========================================================================
+      async createSession(opts) {
+        const sessionId = this.deps.sessionStoreManager.getState().createSession({
+          id: opts.id,
+          type: opts.type,
+          workspaceId: opts.workspaceId,
+          contextWorkspaceIds: opts.contextWorkspaceIds,
+          title: opts.title,
+          engineId: opts.engineId,
+          silentMode: opts.silentMode,
+          kind: opts.kind,
+          commitWorkspaceId: opts.commitWorkspaceId,
+          forkFromId: opts.forkFromId
+        });
+        const store3 = this.getStoreState(sessionId);
+        return { sessionId, conversationId: store3?.conversationId ?? null };
+      }
+      async deleteSession(sessionId) {
+        this.deps.sessionStoreManager.getState().deleteSession(sessionId);
+      }
+      switchSession(sessionId) {
+        this.deps.sessionStoreManager.getState().switchSession(sessionId);
+      }
+      getActiveSessionId() {
+        return this.deps.sessionStoreManager.getState().getActiveSessionId();
+      }
+      // ==========================================================================
+      // 能力 3：状态查询（后端权威，不读本地 isStreaming）
+      // ==========================================================================
+      async getSessionState(sessionId) {
+        const store3 = this.getStoreState(sessionId);
+        const conversationId = store3?.conversationId ?? null;
+        if (!store3) {
+          return this.noneState(sessionId);
+        }
+        if (conversationId) {
+          try {
+            const status = await this.deps.stateArbiter.getStatus(conversationId);
+            return {
+              sessionId,
+              state: this.statusToRuntime(status),
+              isStreaming: status.running,
+              lastEventSeq: status.lastEventSeq,
+              error: status.error ?? store3.error,
+              startedAt: status.startedAt,
+              endedAt: status.endedAt,
+              startedByDevice: status.startedByDevice
+            };
+          } catch {
+            return this.localFallbackState(sessionId, store3);
+          }
+        }
+        return this.localFallbackState(sessionId, store3);
+      }
+      async getSessionSnapshot(sessionId) {
+        const store3 = this.getStoreState(sessionId);
+        if (!store3) {
+          throw new Error(`\u4F1A\u8BDD\u4E0D\u5B58\u5728: ${sessionId}`);
+        }
+        const meta3 = this.deps.sessionStoreManager.getState().sessionMetadata.get(sessionId);
+        const conversationId = store3.conversationId;
+        const state5 = conversationId ? this.statusToRuntime(await this.safeStatus(conversationId)) : this.localRuntime(store3);
+        return {
+          sessionId,
+          conversationId: conversationId ?? "",
+          metadata: {
+            title: meta3?.title ?? "",
+            engineId: meta3?.engineId ?? "",
+            workspaceId: meta3?.workspaceId ?? null,
+            type: meta3?.type ?? "free",
+            silentMode: meta3?.silentMode ?? false,
+            createdAt: meta3?.createdAt ? new Date(meta3.createdAt).getTime() : 0,
+            updatedAt: meta3?.updatedAt ? new Date(meta3.updatedAt).getTime() : 0
+          },
+          messages: store3.messages,
+          state: state5,
+          lastEventSeq: conversationId ? (await this.safeStatus(conversationId)).lastEventSeq : store3.messages.length
+        };
+      }
+      async getMessages(sessionId) {
+        const store3 = this.getStoreState(sessionId);
+        return store3 ? store3.messages : [];
+      }
+      /** 后端状态订阅：getSessionState 后端权威 + store/manager 双通道事件驱动轮询 */
+      subscribe(sessionId, handler2) {
+        const store3 = this.getStoreInstance(sessionId);
+        const manager = this.deps.sessionStoreManager;
+        if (!store3) return () => {
+        };
+        let prev2 = null;
+        let polling = false;
+        let disposed = false;
+        let timer4 = null;
+        const push3 = async () => {
+          if (disposed) return;
+          try {
+            const next3 = await this.getSessionState(sessionId);
+            if (disposed) return;
+            if (prev2 && this.sameState(prev2, next3)) return;
+            const before = prev2;
+            prev2 = next3;
+            handler2(next3, before ?? next3);
+          } catch {
+          }
+        };
+        const stopPolling = () => {
+          if (timer4) {
+            clearInterval(timer4);
+            timer4 = null;
+          }
+          polling = false;
+        };
+        const schedulePolling = () => {
+          if (disposed) return;
+          const last3 = prev2;
+          if (last3?.state === "running") {
+            if (!polling) {
+              polling = true;
+              timer4 = setInterval(() => void push3(), V2_POLL_INTERVAL_MS);
+            }
+          } else if (polling) {
+            stopPolling();
+          }
+        };
+        void push3().then(schedulePolling);
+        const unsubStore = store3.subscribe(() => {
+          void push3().then(schedulePolling);
+        });
+        const unsubManager = manager.subscribe(() => {
+          void push3().then(schedulePolling);
+        });
+        return () => {
+          disposed = true;
+          stopPolling();
+          unsubStore();
+          unsubManager();
+        };
+      }
+      // ==========================================================================
+      // 能力 4：事件处理（统一入口，委托 dispatchEvent 按 sessionId 路由）
+      // ==========================================================================
+      handleEvent(event3) {
+        const aiEvent = this.toAIEvent(event3);
+        if (!aiEvent) return;
+        this.deps.eventDispatcher.dispatchEvent(aiEvent);
+      }
+      // ==========================================================================
+      // 能力 5：恢复与同步（委托 historyService + 快照合并）
+      // ==========================================================================
+      async restoreFromHistory(historyId) {
+        const ok = await this.deps.historyService.restoreFromHistory(historyId);
+        if (!ok) throw new Error(`\u5386\u53F2\u6062\u590D\u5931\u8D25: ${historyId}`);
+        const activeId = this.deps.sessionStoreManager.getState().getActiveSessionId();
+        if (!activeId) throw new Error("\u5386\u53F2\u6062\u590D\u6210\u529F\u4F46\u65E0\u6D3B\u8DC3\u4F1A\u8BDD");
+        return activeId;
+      }
+      async resyncSession(sessionId) {
+        const store3 = this.getStoreState(sessionId);
+        if (!store3) return;
+        const conversationId = store3.conversationId;
+        if (!conversationId) return;
+        if (!this.deps.snapshotSource) return;
+        const snapshot = await this.deps.snapshotSource.getSnapshot(conversationId);
+        if (!snapshot || snapshot.length === 0) return;
+        const inMemoryIds = new Set(store3.messages.map((m4) => m4.id));
+        const fresh = snapshot.filter((m4) => !inMemoryIds.has(m4.id));
+        if (fresh.length === 0) return;
+        for (const m4 of fresh) store3.addMessage(m4);
+      }
+      // ==========================================================================
+      // 内部辅助
+      // ==========================================================================
+      getStoreInstance(sessionId) {
+        return this.deps.sessionStoreManager.getState().stores.get(sessionId);
+      }
+      getStoreState(sessionId) {
+        return this.getStoreInstance(sessionId)?.getState();
+      }
+      /** 后端 SessionStatus → SessionRuntimeState */
+      statusToRuntime(status) {
+        if (status.running) return "running";
+        if (status.error) return "error";
+        return "idle";
+      }
+      /** 本地兜底运行态（无 conversationId / 后端查询失败时使用） */
+      localRuntime(store3) {
+        if (store3.isStreaming) return "running";
+        if (store3.error) return "error";
+        return "idle";
+      }
+      /** 会话不存在时的 none 状态 */
+      noneState(sessionId) {
+        return {
+          sessionId,
+          state: "none",
+          isStreaming: false,
+          lastEventSeq: 0,
+          error: null,
+          startedAt: null,
+          endedAt: null,
+          startedByDevice: null
+        };
+      }
+      /** 本地兜底状态（不抛错，供消费方降级） */
+      localFallbackState(sessionId, store3) {
+        return {
+          sessionId,
+          state: this.localRuntime(store3),
+          isStreaming: store3.isStreaming,
+          lastEventSeq: store3.messages.length,
+          error: store3.error,
+          startedAt: null,
+          endedAt: null,
+          startedByDevice: null
+        };
+      }
+      async safeStatus(conversationId) {
+        try {
+          return await this.deps.stateArbiter.getStatus(conversationId);
+        } catch {
+          return { conversationId, running: false, lastEventSeq: 0, error: null, startedAt: null, endedAt: null, startedByDevice: null };
+        }
+      }
+      /** 状态比较：isStreaming / error / state 变化才通知 */
+      sameState(a3, b12) {
+        return a3.isStreaming === b12.isStreaming && a3.error === b12.error && a3.state === b12.state;
+      }
+      /** KernelEvent → AIEvent 映射（对齐 ai-runtime 的会话域事件） */
+      toAIEvent(event3) {
+        switch (event3.type) {
+          case "session_start":
+            return { type: "session_start", sessionId: event3.sessionId, engineId: event3.engineId };
+          case "session_end":
+            return {
+              type: "session_end",
+              sessionId: event3.sessionId,
+              reason: event3.reason
+            };
+          case "user_message":
+            return {
+              type: "user_message",
+              sessionId: event3.sessionId,
+              content: event3.content,
+              clientMessageId: event3.clientMessageId
+            };
+          case "assistant_message":
+            return {
+              type: "assistant_message",
+              sessionId: event3.sessionId,
+              content: event3.content,
+              isDelta: true
+              // Kernel 层的 assistant_message 为增量流式事件（Legacy 由 eventHandler 逐块构建）
+            };
+          case "error":
+            return { type: "error", sessionId: event3.sessionId, error: event3.errorMessage };
+          default:
+            return null;
+        }
+      }
+    };
+    V2_POLL_INTERVAL_MS = 1e3;
+  }
+});
+
+// src/host/session-v2/kernel/registry.ts
+var registry_exports = {};
+__export(registry_exports, {
+  getKernel: () => getKernel,
+  resetKernel: () => resetKernel
+});
+function getKernel() {
+  if (!kernelPromise) {
+    kernelPromise = createKernel();
+  }
+  return kernelPromise;
+}
+async function createKernel() {
+  const { createV2SessionKernel: createV2SessionKernel2 } = await Promise.resolve().then(() => (init_v2_kernel(), v2_kernel_exports));
+  return createV2SessionKernel2();
+}
+async function resetKernel(deps) {
+  kernelPromise = null;
+  if (deps) {
+    kernelPromise = createKernelWithDeps(deps);
+  }
+}
+async function createKernelWithDeps(deps) {
+  const { createV2SessionKernel: createV2SessionKernel2 } = await Promise.resolve().then(() => (init_v2_kernel(), v2_kernel_exports));
+  return createV2SessionKernel2(deps);
+}
+var kernelPromise;
+var init_registry = __esm({
+  "src/host/session-v2/kernel/registry.ts"() {
+    kernelPromise = null;
+  }
+});
+
+// src/host/services/sessionRestore.ts
+var sessionRestore_exports = {};
+__export(sessionRestore_exports, {
+  ensureWorkspace: () => ensureWorkspace,
+  forkSession: () => forkSession,
+  loadMessagesForItem: () => loadMessagesForItem,
+  restoreFromHistory: () => restoreFromHistory
+});
+async function mergeBackendMessages(conversationId, archived) {
+  const backend = await loadBackendMessages(conversationId);
+  if (backend.length === 0) return archived;
+  const knownIds = new Set(archived.map((m4) => m4.id));
+  const knownFps = new Set(
+    archived.filter((m4) => m4.type === "assistant").map((m4) => assistantTextFp(m4)).filter(Boolean)
+  );
+  const extra = backend.filter((m4) => {
+    if (knownIds.has(m4.id)) return false;
+    if (m4.type === "assistant") {
+      const fp = assistantTextFp(m4);
+      if (fp && knownFps.has(fp)) return false;
+    }
+    return true;
+  });
+  if (extra.length === 0) return archived;
+  return normalizeRecoveredMessages([...archived, ...extra]);
+}
+function assistantTextFp(msg) {
+  if (msg.type !== "assistant" || !Array.isArray(msg.blocks)) return "";
+  let s3 = "";
+  for (const b12 of msg.blocks) {
+    if (b12 && typeof b12 === "object" && b12.type === "text") {
+      const c4 = b12.content;
+      if (typeof c4 === "string") s3 += c4;
+    }
+  }
+  return s3.trim();
+}
+function withAssistantEngineId(messages, engineId) {
+  return messages.map((message) => {
+    if (message.type !== "assistant" || message.engineId) return message;
+    return { ...message, engineId };
+  });
+}
+async function ensureWorkspace(projectPath) {
+  if (!projectPath) return void 0;
+  const normalizedProjectPath = normalizeWorkspacePath(projectPath);
+  const workspaces = useWorkspaceStore.getState().workspaces;
+  const existing = workspaces.find(
+    (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+  );
+  if (existing) return existing.id;
+  try {
+    const workspaceName = getPathBasename(projectPath);
+    await useWorkspaceStore.getState().createWorkspace(workspaceName, projectPath, false);
+    const created = useWorkspaceStore.getState().workspaces.find(
+      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+    );
+    return created?.id;
+  } catch (e3) {
+    log2.warn("\u521B\u5EFA\u5DE5\u4F5C\u533A\u5931\u8D25\uFF0C\u5C06\u521B\u5EFA\u81EA\u7531\u4F1A\u8BDD", { error: String(e3), projectPath });
+    return void 0;
+  }
+}
+async function loadMessagesForItem(sessionId, engineId, _projectPath, claudeProjectName, titleHint) {
+  try {
+    const restorePageSize = useHistoryPrefsStore.getState().restorePageSize;
+    const page = await dialogStorageService.getConversationPage(
+      sessionId,
+      null,
+      restorePageSize
+    );
+    if (page && page.messages.length > 0) {
+      return {
+        messages: await mergeBackendMessages(
+          sessionId,
+          normalizeRecoveredMessages(dedupeMessagesById(page.messages))
+        ),
+        title: page.meta.title,
+        engineId: normalizeEngineId(engineId || page.meta.engineId),
+        externalSessionId: sessionId,
+        workspacePath: page.meta.workspacePath,
+        source: "self",
+        paging: page.hasMore && page.earliestSeq != null ? { earliestSeq: page.earliestSeq, hasMore: true, sourceId: sessionId } : null
+      };
+    }
+  } catch (e3) {
+    log2.warn("\u81EA\u6709\u5B58\u50A8\u6062\u590D\u5931\u8D25\uFF0C\u964D\u7EA7", { error: e3 instanceof Error ? e3.message : String(e3) });
+  }
+  try {
+    const backendMessages = await mergeBackendMessages(sessionId, []);
+    if (backendMessages.length > 0) {
+      return {
+        messages: backendMessages,
+        title: "",
+        engineId: normalizeEngineId(engineId),
+        externalSessionId: sessionId,
+        workspacePath: null,
+        source: "self",
+        paging: null
+      };
+    }
+  } catch (e3) {
+    log2.warn("\u540E\u7AEF\u6D88\u606F\u5E93\u515C\u5E95\u8BFB\u53D6\u5931\u8D25", { error: e3 instanceof Error ? e3.message : String(e3) });
+  }
+  if (!engineId || engineId === "claude-code") {
+    try {
+      const nativeMessages = await aiHistoryDispatch({
+        action: "get_claude_history",
+        sessionId,
+        projectPath: claudeProjectName
+      });
+      if (nativeMessages.length > 0) {
+        return {
+          messages: withAssistantEngineId(
+            convertClaudeHistoryToChatMessages(nativeMessages),
+            "claude-code"
+          ),
+          title: titleHint || "\u6062\u590D\u7684\u4F1A\u8BDD",
+          engineId: "claude-code",
+          externalSessionId: sessionId,
+          workspacePath: null,
+          source: "claude-code-native",
+          paging: null
+        };
+      }
+    } catch (e3) {
+      log2.warn("Claude \u539F\u751F\u5386\u53F2\u8BFB\u53D6\u5931\u8D25\uFF08\u8DF3\u8FC7\u8BE5\u6570\u636E\u6E90\uFF09", { sessionId, error: String(e3) });
+    }
+  }
+  if (engineId && !["claude-code", "simple-ai"].includes(engineId)) {
+    try {
+      const result = await aiHistoryDispatch({
+        action: "get_session_history",
+        sessionId,
+        engineId,
+        page: 1,
+        pageSize: 1e4
+      });
+      if (result.items && result.items.length > 0) {
+        const messages = result.items.filter((m4) => m4.role === "user" || m4.role === "assistant").map((m4, idx) => {
+          const id38 = m4.messageId || `${m4.role}-${idx}`;
+          const timestamp2 = m4.timestamp || (/* @__PURE__ */ new Date()).toISOString();
+          if (m4.role === "assistant") {
+            return {
+              id: id38,
+              type: "assistant",
+              content: m4.content,
+              timestamp: timestamp2,
+              blocks: [{ type: "text", content: m4.content }]
+            };
+          }
+          return {
+            id: id38,
+            type: "user",
+            content: m4.content,
+            timestamp: timestamp2
+          };
+        });
+        return {
+          messages: withAssistantEngineId(messages, normalizeEngineId(engineId)),
+          title: titleHint || "\u6062\u590D\u7684\u4F1A\u8BDD",
+          engineId: normalizeEngineId(engineId),
+          externalSessionId: sessionId,
+          workspacePath: null,
+          source: "plugin-native",
+          paging: null
+        };
+      }
+    } catch (e3) {
+      log2.warn("\u63D2\u4EF6\u5F15\u64CE\u4F1A\u8BDD\u6062\u590D\u5931\u8D25", { engineId, error: e3 instanceof Error ? e3.message : String(e3) });
+    }
+  }
+  return {
+    messages: [],
+    title: titleHint || "\u6062\u590D\u7684\u4F1A\u8BDD",
+    engineId: normalizeEngineId(engineId),
+    externalSessionId: sessionId,
+    workspacePath: null,
+    source: "self",
+    paging: null
+  };
+}
+async function restoreFromHistory(sessionId, engineId, projectPath, claudeProjectName, titleHint) {
+  try {
+    const loaded = await loadMessagesForItem(sessionId, engineId, projectPath, claudeProjectName, titleHint);
+    if (loaded.messages.length === 0) {
+      log2.warn("\u65E0\u6CD5\u4ECE\u5386\u53F2\u52A0\u8F7D\u6D88\u606F", { sessionId, engineId });
+      return null;
+    }
+    const effectiveProjectPath = projectPath || loaded.workspacePath || void 0;
+    const workspaceId = await ensureWorkspace(effectiveProjectPath);
+    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
+      loaded.messages,
+      loaded.externalSessionId || sessionId,
+      { title: loaded.title, workspaceId, engineId: loaded.engineId, paging: loaded.paging }
+    );
+    if (loaded.externalSessionId || sessionId) {
+      try {
+        const { getKernel: getKernel2 } = await Promise.resolve().then(() => (init_registry(), registry_exports));
+        const kernel = await getKernel2();
+        await kernel.resyncSession(newSessionId);
+        log2.info("\u6062\u590D\u540E kernel \u5BF9\u8D26\u5B8C\u6210", { newSessionId });
+      } catch (e3) {
+        log2.warn("\u6062\u590D\u540E kernel \u5BF9\u8D26\u5931\u8D25\uFF08\u4E0D\u963B\u65AD\u6062\u590D\uFF09", { error: String(e3) });
+      }
+    }
+    log2.info("\u4ECE\u5386\u53F2\u6062\u590D\u6210\u529F", {
+      sessionId: newSessionId,
+      source: loaded.source,
+      title: loaded.title,
+      messageCount: loaded.messages.length,
+      paged: !!loaded.paging
+    });
+    useViewStore.getState().addToMultiView(newSessionId);
+    return newSessionId;
+  } catch (e3) {
+    log2.error("\u4ECE\u5386\u53F2\u6062\u590D\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    return null;
+  }
+}
+async function forkSession(sessionId, engineId, projectPath, claudeProjectName, branchName) {
+  try {
+    const record = await dialogStorageService.getConversation(sessionId);
+    let messages = record && record.messages.length > 0 ? record.messages : [];
+    if (messages.length === 0) {
+      const loaded = await loadMessagesForItem(sessionId, engineId, projectPath, claudeProjectName);
+      messages = loaded.messages;
+    }
+    if (messages.length === 0) {
+      log2.warn("Fork \u5931\u8D25\uFF1A\u65E0\u6CD5\u52A0\u8F7D\u4F1A\u8BDD\u6D88\u606F", { sessionId });
+      return null;
+    }
+    const title2 = branchName || `Fork: \u4F1A\u8BDD ${sessionId.slice(0, 8)}`;
+    const workspaceId = await ensureWorkspace(projectPath);
+    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
+      messages,
+      null,
+      // 不传 conversationId，确保发消息走 start_chat
+      {
+        title: title2,
+        workspaceId,
+        forkFromId: engineId === "claude-code" ? sessionId : void 0,
+        engineId
+      }
+    );
+    log2.info("Fork created", { newSessionId, sourceId: sessionId, branchName });
+    useViewStore.getState().addToMultiView(newSessionId);
+    return newSessionId;
+  } catch (e3) {
+    log2.error("Fork failed", e3 instanceof Error ? e3 : new Error(String(e3)));
+    return null;
+  }
+}
+var log2;
+var init_sessionRestore = __esm({
+  "src/host/services/sessionRestore.ts"() {
+    init_logger();
+    init_sessionStoreManager();
+    init_stores();
+    init_stores();
+    init_workspacePath();
+    init_historyPrefsStore();
+    init_dedupMessages();
+    init_services();
+    init_services();
+    init_services();
+    init_claudeHistoryConvert();
+    init_engineDisplay();
+    log2 = createLogger("SessionRestore");
+  }
+});
+
+// src/host/session-v2/hooks/useKernelSessionState.ts
+import { useEffect, useState } from "react";
+function getKernelSessionStateSnapshot(sessionId) {
+  return { ...EMPTY_STATE, sessionId };
+}
+function subscribeKernelSessionState(sessionId, onChange) {
+  let disposed = false;
+  let unsubKernel = null;
+  const emit4 = (state5) => {
+    if (!disposed) onChange(state5);
+  };
+  void getKernel().then((kernel) => {
+    if (disposed) return;
+    unsubKernel = kernel.subscribe(sessionId, (next3) => {
+      emit4({
+        sessionId,
+        state: next3.state,
+        isStreaming: next3.state === "running",
+        error: next3.error
+      });
+    });
+  });
+  return () => {
+    disposed = true;
+    unsubKernel?.();
+  };
+}
+function useKernelSessionState(sessionId) {
+  const [state5, setState] = useState(() => getKernelSessionStateSnapshot(sessionId));
+  useEffect(() => {
+    if (!sessionId) {
+      setState(getKernelSessionStateSnapshot(null));
+      return;
+    }
+    const localStore = sessionStoreManager2.getState().stores.get(sessionId);
+    const localStreaming = localStore?.getState().isStreaming ?? false;
+    const localError = localStore?.getState().error ?? null;
+    setState({
+      sessionId,
+      state: localStreaming ? "running" : localError ? "error" : "idle",
+      isStreaming: localStreaming,
+      error: localError
+    });
+    let disposed = false;
+    void getKernel().then(async (kernel) => {
+      if (disposed) return;
+      try {
+        const s3 = await kernel.getSessionState(sessionId);
+        if (disposed) return;
+        setState({
+          sessionId,
+          state: s3.state,
+          isStreaming: s3.state === "running",
+          error: s3.error
+        });
+      } catch {
+        if (disposed) return;
       }
     });
-    hostActive = new Proxy({}, {
-      get: (_t, p3) => {
-        const ua = coreStore("useActiveSession");
-        const v5 = ua[p3];
-        if (typeof v5 === "function") return v5;
-        const sm = coreStore("sessionStoreManager");
-        if (p3 === "useActiveSessionId") return () => sm.getState().activeSessionId;
-        if (p3 === "useSessionMetadataList") return () => {
-          const m4 = sm.getState().sessionMetadata;
-          return m4 ? [...m4.values()] : [];
-        };
-        if (p3 === "useSessionManagerActions2") return () => {
-          const st3 = sm.getState();
-          return { switchSession: (id38) => st3.switchSession(id38), closeSession: (id38) => st3.deleteSession(id38), createSession: st3.createSession, createSessionFromHistory: st3.createSessionFromHistory, renameSession: (id38, title2) => st3.updateSessionTitle(id38, title2) };
-        };
-        return void 0;
-      }
-    });
-    cachedMetadataMap = null;
-    cachedMetadataArray = null;
-    useActiveSessionActions = (...args) => hostActive.useActiveSessionActions(...args);
-    useActiveSessionMessages = (...args) => hostActive.useActiveSessionMessages(...args);
-    useActiveSessionStreaming = (...args) => hostActive.useActiveSessionStreaming(...args);
-    useActiveSessionError = (...args) => hostActive.useActiveSessionError(...args);
-    useActiveSessionConversationId = (...args) => hostActive.useActiveSessionConversationId(...args);
-    useActiveSessionWorkspace = (...args) => hostActive.useActiveSessionWorkspace(...args);
-    useActiveSessionInputDraft = (...args) => hostActive.useActiveSessionInputDraft(...args);
-    useActiveSessionPendingQueue = (...args) => hostActive.useActiveSessionPendingQueue(...args);
-    useActiveSessionPendingBriefing = (...args) => hostActive.useActiveSessionPendingBriefing(...args);
-    useActiveSessionPromptOptimize = (...args) => hostActive.useActiveSessionPromptOptimize(...args);
-    useActiveSessionPromptSuggestion = (...args) => hostActive.useActiveSessionPromptSuggestion(...args);
-    useActiveSessionStreamRate = (...args) => hostActive.useActiveSessionStreamRate(...args);
-    useActiveSessionUsage = (...args) => hostActive.useActiveSessionUsage(...args);
-    useActiveSessionKernelStreaming = (...args) => hostActive.useActiveSessionKernelStreaming(...args);
-    useSessionState = (...args) => hostActive.useSessionState(...args);
-    useSessionStreaming = (...args) => hostActive.useSessionStreaming(...args);
-    useHasActivePlan = (...args) => hostActive.useHasActivePlan(...args);
-    useHasPendingQuestion = (...args) => hostActive.useHasPendingQuestion(...args);
-    useSessionHasPendingQuestion = (...args) => hostActive.useSessionHasPendingQuestion(...args);
-    useSessionHasPendingCards = (...args) => hostActive.useSessionHasPendingCards(...args);
-    conversationStoreUtils = new Proxy({}, { get: (_t, p3) => coreStore("conversationStoreUtils")[p3] });
+    return () => {
+      disposed = true;
+    };
+  }, [sessionId]);
+  useEffect(() => {
+    if (!sessionId) return;
+    return subscribeKernelSessionState(sessionId, (next3) => setState(next3));
+  }, [sessionId]);
+  return state5;
+}
+var EMPTY_STATE;
+var init_useKernelSessionState = __esm({
+  "src/host/session-v2/hooks/useKernelSessionState.ts"() {
+    init_registry();
+    init_stores();
+    EMPTY_STATE = {
+      sessionId: null,
+      state: "none",
+      isStreaming: false,
+      error: null
+    };
   }
 });
 
@@ -3044,6 +4777,891 @@ var init_types2 = __esm({
   }
 });
 
+// src/host/services/assistantTextUtils.ts
+function extractAssistantText(message) {
+  if (!message) return "";
+  if (message.content) return message.content;
+  return message.blocks.filter(isTextBlock).map((b12) => b12.content).join("");
+}
+function pickLatestAssistantText(state5) {
+  if (state5.currentMessage) {
+    const text5 = extractAssistantText({
+      id: state5.currentMessage.id,
+      type: "assistant",
+      engineId: state5.currentMessage.engineId,
+      blocks: state5.currentMessage.blocks,
+      isStreaming: true,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    if (text5) return text5;
+  }
+  for (let i2 = state5.messages.length - 1; i2 >= 0; i2--) {
+    const msg = state5.messages[i2];
+    if (msg.type === "assistant") {
+      const text5 = extractAssistantText(msg);
+      if (text5) return text5;
+    }
+  }
+  return "";
+}
+var init_assistantTextUtils = __esm({
+  "src/host/services/assistantTextUtils.ts"() {
+    init_types2();
+  }
+});
+
+// src/host/services/promptOptimizeService.ts
+import { useCallback, useRef } from "react";
+import { useSyncExternalStore } from "react";
+function readStoredOptimizeConfig(defaultEngine) {
+  const fallback = { engineId: defaultEngine, mode: "quick" };
+  try {
+    const raw = localStorage.getItem(OPTIMIZE_CONFIG_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return {
+      engineId: parsed.engineId ? normalizeEngineId(parsed.engineId) : defaultEngine,
+      mode: parsed.mode === "deep" ? "deep" : "quick",
+      modelProfileId: parsed.modelProfileId || void 0,
+      model: parsed.model || void 0,
+      direction: normalizeDirection(parsed.direction),
+      customDirectionText: typeof parsed.customDirectionText === "string" ? parsed.customDirectionText : void 0,
+      iterations: normalizeIterations(parsed.iterations)
+    };
+  } catch {
+    return fallback;
+  }
+}
+function normalizeDirection(d3) {
+  if (d3 === "structured" || d3 === "convergent" || d3 === "divergent" || d3 === "elaborate" || d3 === "custom") {
+    return d3;
+  }
+  return void 0;
+}
+function normalizeIterations(n2) {
+  if (typeof n2 !== "number" || !Number.isFinite(n2)) return void 0;
+  const i2 = Math.floor(n2);
+  if (i2 < 1 || i2 > MAX_ITERATIONS) return void 0;
+  return i2;
+}
+function storeOptimizeConfig(config3) {
+  try {
+    localStorage.setItem(OPTIMIZE_CONFIG_STORAGE_KEY, JSON.stringify(config3));
+  } catch {
+  }
+}
+function buildRecentContext(state5) {
+  const messages = state5.getPersistableMessages?.() ?? state5.messages ?? [];
+  if (messages.length === 0) return "";
+  const recent = messages.slice(-RECENT_CONTEXT_TURNS);
+  const lines = [];
+  for (const msg of recent) {
+    if (msg.type !== "user" && msg.type !== "assistant") continue;
+    const text5 = extractAssistantText(msg).trim();
+    if (!text5) continue;
+    const role = msg.type === "user" ? "User" : "Assistant";
+    const clipped = text5.length > RECENT_CONTEXT_PER_MSG ? `${text5.slice(0, RECENT_CONTEXT_PER_MSG)}\u2026` : text5;
+    lines.push(`${role}: ${clipped}`);
+  }
+  return lines.join("\n");
+}
+function buildSystemPrompt(basePrompt, direction2, customDirectionText) {
+  if (direction2 === "custom") {
+    const trimmed = (customDirectionText ?? "").trim();
+    const clipped = trimmed.length > CUSTOM_DIRECTION_MAX ? `${trimmed.slice(0, CUSTOM_DIRECTION_MAX)}\u2026` : trimmed;
+    return `${basePrompt}
+
+\u4F18\u5316\u65B9\u5411\uFF08\u7528\u6237\u6307\u5B9A\uFF09\uFF1A${clipped}\u3002\u5728\u4E0D\u8FDD\u80CC\u4E0A\u8FF0\u57FA\u7840\u7EA6\u675F\u7684\u524D\u63D0\u4E0B\uFF0C\u6309\u6B64\u65B9\u5411\u6DA6\u8272\u3002`;
+  }
+  return `${basePrompt}${DIRECTION_INSTRUCTIONS[direction2] ?? ""}`;
+}
+function executeSingleRound(opts) {
+  return new Promise((resolve2) => {
+    const {
+      srcStore,
+      workspaceId,
+      workspacePath,
+      engineId,
+      modelProfileId,
+      model,
+      mode,
+      direction: direction2,
+      customDirectionText,
+      iteration,
+      totalIterations,
+      sourceText,
+      abortSignal
+    } = opts;
+    const isDeep = mode === "deep";
+    const manager = sessionStoreManager2.getState();
+    const settle = (r3) => {
+      if (abortSignal.aborted) {
+        resolve2({ ok: false, error: null });
+        return;
+      }
+      resolve2(r3);
+    };
+    const optimizeSessionId = manager.createSession({
+      type: workspaceId ? "project" : "free",
+      workspaceId,
+      contextWorkspaceIds: workspaceId ? [workspaceId] : [],
+      workspaceLocked: Boolean(workspaceId),
+      engineId,
+      modelProfileId: modelProfileId || void 0,
+      model: model || void 0,
+      title: i18n_default.t("chat:promptOptimize.sessionTitle", "\u63D0\u793A\u8BCD\u4F18\u5316"),
+      silentMode: true,
+      kind: "prompt-optimize"
+    });
+    const optStore = sessionStoreManager2.getState().stores.get(optimizeSessionId);
+    if (!optStore) {
+      settle({ ok: false, error: i18n_default.t("chat:promptOptimize.errorCreateSession", "\u4F18\u5316\u4F1A\u8BDD\u521B\u5EFA\u5931\u8D25") });
+      return;
+    }
+    srcStore.getState().beginPromptOptimize(sourceText, {
+      engineId,
+      model,
+      mode,
+      direction: direction2,
+      customDirection: direction2 === "custom" ? customDirectionText : void 0,
+      iteration,
+      totalIterations,
+      optimizeSessionId
+    });
+    let finished = false;
+    const cleanupFns = [];
+    const cleanup2 = () => {
+      cleanupFns.forEach((fn3) => {
+        try {
+          fn3();
+        } catch {
+        }
+      });
+      cleanupFns.length = 0;
+    };
+    const finish = (r3) => {
+      if (finished) return;
+      finished = true;
+      cleanup2();
+      settle(r3);
+    };
+    let sawStreaming = false;
+    const unsubscribe = subscribeKernelSessionState(optimizeSessionId, (state5) => {
+      if (finished) return;
+      if (state5.state === "running") {
+        sawStreaming = true;
+        return;
+      }
+      if (state5.state === "idle" || state5.state === "error") {
+        if (sawStreaming) {
+          const text5 = pickLatestAssistantText(optStore.getState());
+          if (state5.error && !text5.trim()) {
+            finish({ ok: false, error: state5.error });
+          } else {
+            finish({ ok: true, text: text5 });
+          }
+        } else if (state5.error) {
+          finish({ ok: false, error: state5.error });
+        }
+      }
+    });
+    cleanupFns.push(unsubscribe);
+    const timer4 = setTimeout(() => {
+      void optStore.getState().interrupt().catch(() => void 0);
+      finish({ ok: false, error: i18n_default.t("chat:promptOptimize.errorTimeout", "\u4F18\u5316\u8D85\u65F6\uFF0C\u8BF7\u91CD\u8BD5") });
+    }, isDeep ? DEEP_TIMEOUT_MS : QUICK_TIMEOUT_MS);
+    cleanupFns.push(() => clearTimeout(timer4));
+    const recentContext = isDeep ? buildRecentContext(srcStore.getState()) : "";
+    const instructionPrefix = isDeep ? i18n_default.t(
+      "chat:promptOptimize.deepInstructionPrefix",
+      "\u8BF7\u7ED3\u5408\u9879\u76EE\u4E0A\u4E0B\u6587\u4F18\u5316\u4EE5\u4E0B\u63D0\u793A\u8BCD\uFF08\u4EC5\u91CD\u5199\uFF0C\u4E0D\u65B0\u589E\u9700\u6C42\uFF0C\u4E0D\u8981\u6267\u884C\u6216\u56DE\u7B54\u5B83\uFF09\u3002\u4F60\u53EF\u4EE5\u7528 Read/Grep/Glob \u9605\u8BFB\u9879\u76EE\u7EA6\u5B9A\u6587\u4EF6\u4E0E\u8349\u7A3F\u63D0\u5230\u7684\u6587\u4EF6\u3002\u53EA\u8F93\u51FA\u4F18\u5316\u540E\u7684\u63D0\u793A\u8BCD\u672C\u8EAB\uFF1A"
+    ) : i18n_default.t(
+      "chat:promptOptimize.instructionPrefix",
+      "\u8BF7\u4F18\u5316\u4EE5\u4E0B\u63D0\u793A\u8BCD\uFF08\u4EC5\u91CD\u5199\uFF0C\u4E0D\u8981\u6267\u884C\u6216\u56DE\u7B54\u5B83\uFF09\uFF0C\u53EA\u8F93\u51FA\u4F18\u5316\u540E\u7684\u63D0\u793A\u8BCD\u672C\u8EAB\uFF1A"
+    );
+    const roundPrefix = totalIterations > 1 ? i18n_default.t("chat:promptOptimize.roundPrefix", {
+      defaultValue: "\uFF08\u7B2C {{cur}}/{{total}} \u8F6E\uFF0C\u4EE5\u4E0A\u4E00\u8F6E\u4F18\u5316\u7ED3\u679C\u4E3A\u57FA\u7840\u7EE7\u7EED\u6309\u65E2\u5B9A\u65B9\u5411\u6DA6\u8272\uFF0C\u4E0D\u8981\u56DE\u9000\u5DF2\u6709\u6539\u8FDB\uFF0C\u4E0D\u8981\u6267\u884C/\u56DE\u7B54\u63D0\u793A\u8BCD\u672C\u8EAB\uFF09",
+      cur: iteration,
+      total: totalIterations
+    }) : "";
+    const userMessage = (roundPrefix ? `${roundPrefix}
+` : "") + instructionPrefix + (recentContext ? `
+
+<recent_context>
+${recentContext}
+</recent_context>` : "") + `
+
+<original_prompt>
+${sourceText}
+</original_prompt>`;
+    const baseSystemPrompt = isDeep ? PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT : PROMPT_OPTIMIZE_SYSTEM_PROMPT;
+    const systemPrompt = buildSystemPrompt(baseSystemPrompt, direction2, customDirectionText);
+    const sendOptions = isDeep ? {
+      oneTimeSystemPrompt: systemPrompt,
+      allowedTools: DEEP_ALLOWED_TOOLS,
+      // 静默会话不可见，任何交互式权限等待都会永久挂起 —— 强制 bypass
+      runtimeOverride: { permissionMode: "bypassPermissions" }
+    } : { oneTimeSystemPrompt: systemPrompt };
+    void (async () => {
+      try {
+        await optStore.getState().sendMessage(userMessage, workspacePath, void 0, sendOptions);
+      } catch (e3) {
+        finish({ ok: false, error: String(e3) });
+      }
+    })();
+  });
+}
+async function runPromptOptimize(options2) {
+  const {
+    sourceSessionId,
+    workspaceId,
+    workspacePath,
+    engineId,
+    modelProfileId,
+    model,
+    sourceText,
+    direction: direction2,
+    customDirectionText
+  } = options2;
+  const mode = options2.mode === "deep" ? "deep" : "quick";
+  const dir2 = direction2 ?? "structured";
+  const iterations2 = Math.max(1, Math.min(MAX_ITERATIONS, options2.iterations ?? 1));
+  const manager = sessionStoreManager2.getState();
+  const srcStore = manager.stores.get(sourceSessionId);
+  if (!srcStore) {
+    log3.warn("\u6E90\u4F1A\u8BDD\u4E0D\u5B58\u5728\uFF0C\u5FFD\u7565\u4F18\u5316\u8BF7\u6C42", { sourceSessionId });
+    return;
+  }
+  activeRuns.get(sourceSessionId)?.();
+  const abort = { aborted: false };
+  activeRuns.set(sourceSessionId, () => {
+    abort.aborted = true;
+  });
+  log3.info("\u5F00\u59CB\u63D0\u793A\u8BCD\u4F18\u5316", {
+    sourceSessionId,
+    engineId,
+    mode,
+    direction: dir2,
+    iterations: iterations2,
+    sourceLength: sourceText.length
+  });
+  let currentText = sourceText;
+  for (let i2 = 1; i2 <= iterations2; i2++) {
+    if (abort.aborted) {
+      log3.info("\u8FED\u4EE3\u88AB\u53D6\u6D88\uFF0C\u505C\u6B62\u540E\u7EED\u8F6E", { sourceSessionId, atIteration: i2 });
+      break;
+    }
+    const isLast = i2 === iterations2;
+    const result = await executeSingleRound({
+      srcStore,
+      sourceSessionId,
+      workspaceId,
+      workspacePath,
+      engineId,
+      modelProfileId,
+      model,
+      mode,
+      direction: dir2,
+      customDirectionText,
+      iteration: i2,
+      totalIterations: iterations2,
+      sourceText: currentText,
+      abortSignal: abort
+    });
+    if (abort.aborted) break;
+    const src = srcStore.getState();
+    if (result.ok) {
+      if (isLast) {
+        src.completePromptOptimize(result.text);
+        log3.info("\u63D0\u793A\u8BCD\u4F18\u5316\u5B8C\u6210", { sourceSessionId, resultLength: result.text.length, iteration: i2 });
+      } else {
+        src.continuePromptOptimize(result.text);
+        log3.info("\u8FED\u4EE3\u8F6E\u5B8C\u6210", { sourceSessionId, iteration: i2, of: iterations2, resultLength: result.text.length });
+      }
+    } else {
+      const failReason = "error" in result ? result.error ?? "" : "";
+      src.failPromptOptimize(failReason);
+      log3.warn("\u63D0\u793A\u8BCD\u4F18\u5316\u5931\u8D25", { sourceSessionId, atIteration: i2, error: failReason });
+      break;
+    }
+    if (isLast) break;
+    if (abort.aborted) break;
+    const po2 = srcStore.getState().promptOptimize;
+    if (po2.status !== "idle" || po2.error) {
+      break;
+    }
+    const lastVersion = po2.history[po2.cursor];
+    if (!lastVersion || !lastVersion.text.trim()) break;
+    currentText = lastVersion.text;
+  }
+  if (!abort.aborted) {
+    activeRuns.delete(sourceSessionId);
+  }
+}
+function cancelPromptOptimize(sourceSessionId) {
+  const manager = sessionStoreManager2.getState();
+  const srcStore = manager.stores.get(sourceSessionId);
+  const po2 = srcStore?.getState().promptOptimize;
+  activeRuns.get(sourceSessionId)?.();
+  if (po2?.optimizeSessionId) {
+    const optStore = manager.stores.get(po2.optimizeSessionId);
+    void optStore?.getState().interrupt().catch(() => void 0);
+  }
+  srcStore?.getState().failPromptOptimize(null);
+  log3.info("\u53D6\u6D88\u63D0\u793A\u8BCD\u4F18\u5316", { sourceSessionId });
+}
+function usePromptOptimizePreview(optimizeSessionId) {
+  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
+  const store3 = optimizeSessionId ? stores.get(optimizeSessionId) ?? null : null;
+  const cachedRef = useRef(EMPTY_PREVIEW);
+  const getSnapshot = useCallback(() => {
+    if (!store3) return EMPTY_PREVIEW;
+    const state5 = store3.getState();
+    const next3 = { text: pickLatestAssistantText(state5), isStreaming: state5.isStreaming };
+    if (cachedRef.current.text === next3.text && cachedRef.current.isStreaming === next3.isStreaming) {
+      return cachedRef.current;
+    }
+    cachedRef.current = next3;
+    return next3;
+  }, [store3]);
+  const subscribe = useCallback(
+    (onChange) => {
+      if (!store3) {
+        return sessionStoreManager2.subscribe(onChange);
+      }
+      return store3.subscribe(onChange);
+    },
+    [store3]
+  );
+  return useSyncExternalStore(subscribe, getSnapshot, () => EMPTY_PREVIEW);
+}
+var log3, OPTIMIZE_CONFIG_STORAGE_KEY, QUICK_TIMEOUT_MS, DEEP_TIMEOUT_MS, MAX_ITERATIONS, PROMPT_OPTIMIZE_SYSTEM_PROMPT, PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT, DEEP_ALLOWED_TOOLS, DIRECTION_INSTRUCTIONS, CUSTOM_DIRECTION_MAX, activeRuns, RECENT_CONTEXT_TURNS, RECENT_CONTEXT_PER_MSG, EMPTY_PREVIEW;
+var init_promptOptimizeService = __esm({
+  "src/host/services/promptOptimizeService.ts"() {
+    init_esm();
+    init_i18n();
+    init_stores();
+    init_useKernelSessionState();
+    init_assistantTextUtils();
+    init_engineDisplay();
+    init_logger();
+    log3 = createLogger("PromptOptimize");
+    OPTIMIZE_CONFIG_STORAGE_KEY = "polaris.promptOptimize.config";
+    QUICK_TIMEOUT_MS = 18e4;
+    DEEP_TIMEOUT_MS = 33e4;
+    MAX_ITERATIONS = 5;
+    PROMPT_OPTIMIZE_SYSTEM_PROMPT = `You are a prompt optimization assistant. The user gives you a draft prompt they intend to send to an AI coding assistant. Rewrite it to be clearer, more specific, and better structured, while strictly preserving:
+1. The user's original intent and scope \u2014 never add requirements or drop existing ones
+2. The original language (Chinese stays Chinese, English stays English)
+3. All special tokens verbatim: @/path references, @workspace, /slash-commands, code fences, file paths, URLs
+Structure the result (context / task / constraints / expected output) only when it genuinely helps; keep short prompts short.
+Do NOT answer or execute the prompt itself. Do NOT use any tools.
+Output ONLY the optimized prompt text \u2014 no explanations, no code fences, no preamble.`;
+    PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT = `You are a prompt optimization assistant with read-only access to the user's current project and conversation.
+
+The user gives you a draft prompt they intend to send to an AI coding assistant. Your job is to rewrite it to be clearer, more specific, and better grounded in the ACTUAL project context.
+
+You MAY use Read / Grep / Glob to inspect:
+- The project's convention files (CLAUDE.md, AGENTS.md, README) to match its terminology and constraints
+- Files, symbols, or paths the draft explicitly references, to make vague mentions concrete
+- The recent conversation context provided, to align the prompt with what the user is currently doing
+
+Strict rules:
+1. Preserve the user's original intent and scope \u2014 NEVER add requirements the user did not state, even if the project context suggests them. Context is for making the wording precise, NOT for inventing new tasks.
+2. Preserve the original language (Chinese stays Chinese, English stays English).
+3. Preserve all special tokens verbatim: @/path references, @workspace, /slash-commands, code fences, file paths, URLs.
+4. Do NOT modify any files. Do NOT execute or answer the draft prompt itself. Only reading is allowed.
+5. After reading, output ONLY the optimized prompt text \u2014 no explanation of what you read, no tool-call summary, no preamble, no code fences.`;
+    DEEP_ALLOWED_TOOLS = ["Read", "Grep", "Glob"];
+    DIRECTION_INSTRUCTIONS = {
+      structured: "",
+      convergent: "\n\n\u4F18\u5316\u65B9\u5411\uFF1A\u7CBE\u70BC\u3002\u538B\u7F29\u5197\u4F59\u8868\u8FF0\u4E0E\u91CD\u590D\u4FE1\u606F\uFF0C\u4FDD\u7559\u5168\u90E8\u539F\u59CB\u610F\u56FE\u4E0E\u7279\u6B8A\u6807\u8BB0\uFF0C\u4F7F\u63D0\u793A\u8BCD\u66F4\u77ED\u66F4\u51C6\u3002\u4E0D\u8981\u65B0\u589E\u9700\u6C42\u3002",
+      divergent: "\n\n\u4F18\u5316\u65B9\u5411\uFF1A\u53D1\u6563\u3002\u5728\u4E25\u683C\u4FDD\u7559\u539F\u610F\u56FE\u4E0E\u8303\u56F4\u5185\uFF0C\u8865\u5145 2~3 \u4E2A\u4E92\u8865\u7684\u89D2\u5EA6/\u53EF\u80FD\u89E3\u6CD5/\u8FB9\u754C\u573A\u666F\u4F9B\u4E0B\u6E38 AI \u9009\u62E9\uFF0C\u4F46\u4E0D\u8981\u6539\u53D8\u7528\u6237\u8981\u89E3\u51B3\u7684\u6838\u5FC3\u95EE\u9898\u3002",
+      elaborate: "\n\n\u4F18\u5316\u65B9\u5411\uFF1A\u6269\u5199\u3002\u8865\u5168\u7F3A\u5931\u7684\u4E0A\u4E0B\u6587\u3001\u9690\u542B\u5047\u8BBE\u3001\u9A8C\u6536\u6807\u51C6\u4E0E\u9884\u671F\u8F93\u51FA\u5F62\u6001\uFF0C\u4F7F\u4E0B\u6E38 AI \u65E0\u6B67\u4E49\u6267\u884C\uFF1B\u4E0D\u65B0\u589E\u7528\u6237\u672A\u8868\u8FBE\u7684\u9700\u6C42\u3002"
+    };
+    CUSTOM_DIRECTION_MAX = 200;
+    activeRuns = /* @__PURE__ */ new Map();
+    RECENT_CONTEXT_TURNS = 6;
+    RECENT_CONTEXT_PER_MSG = 200;
+    EMPTY_PREVIEW = { text: "", isStreaming: false };
+  }
+});
+
+// src/shims/services.ts
+var services_exports = {};
+__export(services_exports, {
+  CLI_BLOCKED_COMMANDS: () => CLI_BLOCKED_COMMANDS,
+  CLI_KNOWN_HIDDEN_COMMANDS: () => CLI_KNOWN_HIDDEN_COMMANDS,
+  CLI_SUGGESTED_COMMANDS: () => CLI_SUGGESTED_COMMANDS,
+  NEXUS_SCENARIOS: () => NEXUS_SCENARIOS,
+  addClaudePermissionRules: () => addClaudePermissionRules,
+  aiChatDispatch: () => aiChatDispatch,
+  aiChatDispatchStream: () => aiChatDispatchStream,
+  aiHistoryDispatch: () => aiHistoryDispatch,
+  answerQuestion: () => answerQuestion,
+  approvePlan: () => approvePlan,
+  buildCapDetailBlock: () => buildCapDetailBlock,
+  buildCapDigestBlock: () => buildCapDigestBlock,
+  buildCapReferenceBlock: () => buildCapReferenceBlock,
+  cancelCompactHandoff: () => cancelCompactHandoff,
+  cancelPromptOptimize: () => cancelPromptOptimize2,
+  clearAnsweredQuestions: () => clearAnsweredQuestions,
+  clearProcessedPlans: () => clearProcessedPlans,
+  consumeCapUiDispatch: () => consumeCapUiDispatch,
+  currentMode: () => currentMode,
+  detectClientDescriptor: () => detectClientDescriptor,
+  dialogStorageService: () => dialogStorageService,
+  dispatchCapUiAction: () => dispatchCapUiAction,
+  dispatchFromUser: () => dispatchFromUser,
+  dropTracker: () => dropTracker,
+  emit: () => emit,
+  ensureWorkspace: () => ensureWorkspace2,
+  estimateTokens: () => estimateTokens,
+  eventBus: () => eventBus,
+  forkSession: () => forkSession2,
+  getClaudeSettingsPath: () => getClaudeSettingsPath,
+  getCliCommandSuggestions: () => getCliCommandSuggestions,
+  getDefaultCompactInstruction: () => getDefaultCompactInstruction,
+  getEventRouter: () => getEventRouter2,
+  getHandoffEligibility: () => getHandoffEligibility,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  getPendingPlans: () => getPendingPlans,
+  getPendingQuestions: () => getPendingQuestions,
+  getTracker: () => getTracker,
+  getUserSystemPrompt: () => getUserSystemPrompt,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
+  handoffSessionToNewSession: () => handoffSessionToNewSession,
+  initDispatchTaskListener: () => initDispatchTaskListener,
+  invoke: () => invoke,
+  isListableRemote: () => isListableRemote,
+  listen: () => listen,
+  loadBackendMessages: () => loadBackendMessages,
+  loadConversationMessages: () => loadConversationMessages,
+  loadMessagesForItem: () => loadMessagesForItem2,
+  manualRefreshActiveSession: () => manualRefreshActiveSession,
+  matchBlockedCliCommand: () => matchBlockedCliCommand,
+  matchCaps: () => matchCaps,
+  maybeAutoMigrateOpfs: () => maybeAutoMigrateOpfs,
+  openExternal: () => openExternal,
+  openExternalLink: () => openExternalLink,
+  packForReference: () => packForReference,
+  packToFile: () => packToFile,
+  packToSummary: () => packToSummary,
+  parseAgentSlashCommand: () => parseAgentSlashCommand,
+  parseAssaultSlashCommand: () => parseAssaultSlashCommand,
+  parseCapSlashCommand: () => parseCapSlashCommand,
+  parseDispatchSlashCommand: () => parseDispatchSlashCommand,
+  parseNexusSlashCommand: () => parseNexusSlashCommand,
+  parseWorkspaceReferences: () => parseWorkspaceReferences,
+  persistNewSessionPrefs: () => persistNewSessionPrefs,
+  persistPromptHistoryEntries: () => persistPromptHistoryEntries,
+  promptHistoryKey: () => promptHistoryKey,
+  readClaudeSettings: () => readClaudeSettings,
+  readNewSessionPrefs: () => readNewSessionPrefs,
+  readPromptHistoryEntries: () => readPromptHistoryEntries,
+  readStoredOptimizeConfig: () => readStoredOptimizeConfig2,
+  registerExternalLinkGlobalHandler: () => registerExternalLinkGlobalHandler,
+  registerPendingPlan: () => registerPendingPlan,
+  registerPendingQuestion: () => registerPendingQuestion,
+  rejectPlan: () => rejectPlan,
+  remoteSessionFollower: () => remoteSessionFollower,
+  requestCompactHandoff: () => requestCompactHandoff,
+  resetTracker: () => resetTracker,
+  resolveTemplateVariables: () => resolveTemplateVariables,
+  respondPluginCard: () => respondPluginCard,
+  restoreFromHistory: () => restoreFromHistory2,
+  resyncAfterResumeGap: () => resyncAfterResumeGap,
+  rewriteDispatchPromptWithAgent: () => rewriteDispatchPromptWithAgent,
+  runPromptOptimize: () => runPromptOptimize2,
+  saveChatToFile: () => saveChatToFile,
+  saveMarkdownImage: () => saveMarkdownImage,
+  searchFiles: () => searchFiles,
+  sendInput: () => sendInput,
+  storeOptimizeConfig: () => storeOptimizeConfig2,
+  usePromptOptimizePreview: () => usePromptOptimizePreview2,
+  writeClaudeSettings: () => writeClaudeSettings
+});
+function lazyObj(name) {
+  return new Proxy({}, {
+    get: (_t, prop) => coreService(name)[prop]
+  });
+}
+function invoke(cmd, args) {
+  return coreService("transport").invoke(cmd, args);
+}
+function listen(event3, handler2) {
+  return coreService("transport").listen(event3, handler2);
+}
+function aiChatDispatch(payload) {
+  return coreService("aiChatDispatch").aiChatDispatch(payload);
+}
+function isListableRemote(s3) {
+  return s3.status !== "ended" || !s3.endedAt;
+}
+var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility, handoffSessionToNewSession, getHistoryHandoffEligibility, handoffHistorySessionToNewSession, loadConversationMessages, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile, packToSummary, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction, openExternalLink;
+var init_services = __esm({
+  "src/shims/services.ts"() {
+    init_core();
+    init_eventRouter();
+    init_sessionRestore();
+    init_promptOptimizeService();
+    emit = (...args) => coreService("transport").emit(...args);
+    currentMode = coreService("transport").currentMode;
+    aiChatDispatchStream = (...args) => coreService("aiChatDispatch").aiChatDispatchStream(...args);
+    dialogStorageService = lazyObj("dialogStorageService");
+    maybeAutoMigrateOpfs = (...args) => coreService("maybeAutoMigrateOpfs")(...args);
+    getEventRouter2 = (...args) => getEventRouter(...args);
+    eventBus = lazyObj("eventBus");
+    remoteSessionFollower = lazyObj("remoteSessionFollower");
+    resyncAfterResumeGap = (...args) => coreService("webReconnectResync").resyncAfterResumeGap(...args);
+    manualRefreshActiveSession = (...args) => coreService("webReconnectResync").manualRefreshActiveSession(...args);
+    registerPendingQuestion = (...args) => coreService("chatService").registerPendingQuestion(...args);
+    answerQuestion = (...args) => coreService("chatService").answerQuestion(...args);
+    respondPluginCard = (...args) => coreService("chatService").respondPluginCard(...args);
+    getPendingQuestions = (...args) => coreService("chatService").getPendingQuestions(...args);
+    clearAnsweredQuestions = (...args) => coreService("chatService").clearAnsweredQuestions(...args);
+    registerPendingPlan = (...args) => coreService("chatService").registerPendingPlan(...args);
+    approvePlan = (...args) => coreService("chatService").approvePlan(...args);
+    rejectPlan = (...args) => coreService("chatService").rejectPlan(...args);
+    getPendingPlans = (...args) => coreService("chatService").getPendingPlans(...args);
+    clearProcessedPlans = (...args) => coreService("chatService").clearProcessedPlans(...args);
+    sendInput = (...args) => coreService("chatService").sendInput(...args);
+    saveChatToFile = (...args) => coreService("chatService").saveChatToFile(...args);
+    restoreFromHistory2 = (...args) => restoreFromHistory(...args);
+    forkSession2 = (...args) => forkSession(...args);
+    ensureWorkspace2 = (...args) => ensureWorkspace(...args);
+    loadMessagesForItem2 = (...args) => loadMessagesForItem(...args);
+    loadBackendMessages = (...args) => coreService("sessionArchive").loadBackendMessages(...args);
+    aiHistoryDispatch = (...args) => coreService("aiHistoryDispatch").aiHistoryDispatch(...args);
+    getHandoffEligibility = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
+    handoffSessionToNewSession = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
+    getHistoryHandoffEligibility = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
+    handoffHistorySessionToNewSession = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
+    loadConversationMessages = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
+    requestCompactHandoff = (...args) => coreService("contextCompactHandoff").requestCompactHandoff(...args);
+    cancelCompactHandoff = (...args) => coreService("contextCompactHandoff").cancelCompactHandoff(...args);
+    runPromptOptimize2 = (...args) => runPromptOptimize(...args);
+    cancelPromptOptimize2 = (...args) => cancelPromptOptimize(...args);
+    readStoredOptimizeConfig2 = (...args) => readStoredOptimizeConfig(...args);
+    storeOptimizeConfig2 = (...args) => storeOptimizeConfig(...args);
+    usePromptOptimizePreview2 = (...args) => usePromptOptimizePreview(...args);
+    promptHistoryKey = (...args) => coreService("promptHistoryService").promptHistoryKey(...args);
+    readPromptHistoryEntries = (...args) => coreService("promptHistoryService").readPromptHistoryEntries(...args);
+    persistPromptHistoryEntries = (...args) => coreService("promptHistoryService").persistPromptHistoryEntries(...args);
+    parseDispatchSlashCommand = (...args) => coreService("dispatchTaskService").parseDispatchSlashCommand(...args);
+    dispatchFromUser = (...args) => coreService("dispatchTaskService").dispatchFromUser(...args);
+    initDispatchTaskListener = (...args) => coreService("dispatchTaskService").initDispatchTaskListener(...args);
+    getTracker = (...args) => coreService("streamRateTracker").getTracker(...args);
+    resetTracker = (...args) => coreService("streamRateTracker").resetTracker(...args);
+    dropTracker = (...args) => coreService("streamRateTracker").dropTracker(...args);
+    estimateTokens = (...args) => coreService("streamRateTracker").estimateTokens(...args);
+    consumeCapUiDispatch = (...args) => coreService("uiDispatchService").consumeCapUiDispatch(...args);
+    dispatchCapUiAction = (...args) => coreService("uiDispatchService").dispatchCapUiAction(...args);
+    parseCapSlashCommand = (...args) => coreService("capSlashCommand").parseCapSlashCommand(...args);
+    matchCaps = (...args) => coreService("capSlashCommand").matchCaps(...args);
+    buildCapDigestBlock = (...args) => coreService("capSlashCommand").buildCapDigestBlock(...args);
+    buildCapDetailBlock = (...args) => coreService("capSlashCommand").buildCapDetailBlock(...args);
+    buildCapReferenceBlock = (...args) => coreService("capSlashCommand").buildCapReferenceBlock(...args);
+    getCliCommandSuggestions = (...args) => coreService("cliSlashCommands").getCliCommandSuggestions(...args);
+    matchBlockedCliCommand = (...args) => coreService("cliSlashCommands").matchBlockedCliCommand(...args);
+    parseAssaultSlashCommand = (...args) => coreService("cliSlashCommands").parseAssaultSlashCommand(...args);
+    CLI_SUGGESTED_COMMANDS = coreService("cliSlashCommands").CLI_SUGGESTED_COMMANDS;
+    CLI_KNOWN_HIDDEN_COMMANDS = coreService("cliSlashCommands").CLI_KNOWN_HIDDEN_COMMANDS;
+    CLI_BLOCKED_COMMANDS = coreService("cliSlashCommands").CLI_BLOCKED_COMMANDS;
+    parseNexusSlashCommand = (...args) => coreService("agentSlashCommand").parseNexusSlashCommand(...args);
+    parseAgentSlashCommand = (...args) => coreService("agentSlashCommand").parseAgentSlashCommand(...args);
+    rewriteDispatchPromptWithAgent = (...args) => coreService("agentSlashCommand").rewriteDispatchPromptWithAgent(...args);
+    NEXUS_SCENARIOS = coreService("agentSlashCommand").NEXUS_SCENARIOS;
+    packForReference = (...args) => coreService("conversationPackager").packForReference(...args);
+    packToFile = (...args) => coreService("conversationPackager").packToFile(...args);
+    packToSummary = (...args) => coreService("conversationPackager").packToSummary(...args);
+    readNewSessionPrefs = (...args) => coreService("newSessionPrefsService").readNewSessionPrefs(...args);
+    persistNewSessionPrefs = (...args) => coreService("newSessionPrefsService").persistNewSessionPrefs(...args);
+    searchFiles = (...args) => coreService("fileSearch").searchFiles(...args);
+    addClaudePermissionRules = (...args) => coreService("claudeSettingsService").addClaudePermissionRules(...args);
+    readClaudeSettings = (...args) => coreService("claudeSettingsService").readClaudeSettings(...args);
+    writeClaudeSettings = (...args) => coreService("claudeSettingsService").writeClaudeSettings(...args);
+    getClaudeSettingsPath = (...args) => coreService("claudeSettingsService").getClaudeSettingsPath(...args);
+    saveMarkdownImage = (...args) => coreService("imageSaveService").saveMarkdownImage(...args);
+    registerExternalLinkGlobalHandler = (...args) => coreService("linkExternal").registerExternalLinkGlobalHandler(...args);
+    openExternal = (...args) => coreService("linkExternal").openExternal(...args);
+    getUserSystemPrompt = (...args) => coreService("workspaceReference").getUserSystemPrompt(...args);
+    parseWorkspaceReferences = (...args) => coreService("workspaceReference").parseWorkspaceReferences(...args);
+    resolveTemplateVariables = (...args) => coreService("workspaceReference").resolveTemplateVariables(...args);
+    detectClientDescriptor = (...args) => coreService("detector").detectClientDescriptor(...args);
+    getDefaultCompactInstruction = (...args) => coreService("contextCompactHandoff").getDefaultCompactInstruction(...args);
+    openExternalLink = (...args) => coreService("linkExternal").openExternal(...args);
+  }
+});
+
+// src/shims/diffExtractor.ts
+function isEditTool(toolName) {
+  const normalized = toolName.toLowerCase();
+  return normalized === "str_replace_editor" || normalized === "edit" || normalized === "edit_file" || normalized.includes("str_replace");
+}
+function isWriteTool(toolName) {
+  const normalized = toolName.toLowerCase();
+  return normalized === "write_file" || normalized === "create_file" || normalized === "write" || normalized === "create";
+}
+function extractEditDiff(block2) {
+  if (!isEditTool(block2.name)) {
+    return null;
+  }
+  const input = block2.input;
+  const filePath = input.file_path || input.path || input.filePath;
+  let oldContent = input.old_string || input.old_str || input.oldContent;
+  let newContent = input.new_string || input.new_str || input.newContent;
+  let edits;
+  if (Array.isArray(input.edits) && input.edits.length > 0) {
+    edits = input.edits;
+    if (!oldContent || !newContent) {
+      const first4 = edits[0];
+      oldContent = first4.oldText;
+      newContent = first4.newText;
+    }
+  }
+  const lineNumberForm = typeof input.start_line === "number" && typeof input.end_line === "number" && typeof input.replacement_text === "string";
+  let firstChangedLine;
+  if (lineNumberForm && !oldContent && !newContent) {
+    newContent = input.replacement_text;
+    if (typeof input.start_line === "number" && input.start_line > 0) {
+      firstChangedLine = input.start_line;
+    }
+  }
+  if (!filePath || typeof newContent !== "string") {
+    return null;
+  }
+  if (!lineNumberForm && typeof oldContent !== "string") {
+    return null;
+  }
+  let diffString;
+  let patchString;
+  if (block2.output) {
+    try {
+      const parsed = JSON.parse(block2.output);
+      if (parsed && typeof parsed === "object") {
+        diffString = parsed.diff ?? parsed.details?.diff;
+        patchString = parsed.patch ?? parsed.details?.patch;
+        firstChangedLine = parsed.firstChangedLine ?? parsed.details?.firstChangedLine ?? firstChangedLine;
+      }
+    } catch {
+    }
+  }
+  return {
+    oldContent,
+    newContent,
+    filePath,
+    edits,
+    diffString,
+    patchString,
+    firstChangedLine
+  };
+}
+function extractWriteInfo(block2) {
+  if (!isWriteTool(block2.name)) {
+    return null;
+  }
+  const input = block2.input;
+  const filePath = input.file_path || input.path || input.filePath;
+  const newContent = input.content || input.newContent;
+  if (!filePath || typeof newContent !== "string") {
+    return null;
+  }
+  return {
+    filePath,
+    newContent
+  };
+}
+var init_diffExtractor = __esm({
+  "src/shims/diffExtractor.ts"() {
+  }
+});
+
+// src/shims/patchParser.ts
+function parseChunkLines(lines) {
+  const result = [];
+  for (const line3 of lines) {
+    if (line3.startsWith("+")) {
+      result.push({ type: "+", text: line3.slice(1) });
+    } else if (line3.startsWith("-")) {
+      result.push({ type: "-", text: line3.slice(1) });
+    } else {
+      const text5 = line3.startsWith(" ") ? line3.slice(1) : line3;
+      result.push({ type: " ", text: text5 });
+    }
+  }
+  return { lines: result };
+}
+function countChunkLines(chunk) {
+  let added = 0;
+  let removed = 0;
+  for (const line3 of chunk.lines) {
+    if (line3.type === "+") added++;
+    if (line3.type === "-") removed++;
+  }
+  return { added, removed };
+}
+function rebuildOldContent(chunks) {
+  const parts = [];
+  for (const chunk of chunks) {
+    for (const line3 of chunk.lines) {
+      if (line3.type === "+" || line3.type === " ") {
+        continue;
+      }
+    }
+    for (const line3 of chunk.lines) {
+      if (line3.type === "-") {
+        parts.push(line3.text);
+      } else if (line3.type === " ") {
+        parts.push(line3.text);
+      }
+    }
+  }
+  return parts.join("\n");
+}
+function rebuildNewContent(chunks) {
+  const parts = [];
+  for (const chunk of chunks) {
+    for (const line3 of chunk.lines) {
+      if (line3.type === "+") {
+        parts.push(line3.text);
+      } else if (line3.type === " ") {
+        parts.push(line3.text);
+      }
+    }
+  }
+  return parts.join("\n");
+}
+function parseApplyPatch(patchText) {
+  if (!patchText || typeof patchText !== "string") {
+    return null;
+  }
+  const lines = patchText.split("\n");
+  const beginIdx = lines.findIndex((l4) => l4.trim() === "*** Begin Patch");
+  if (beginIdx === -1) return null;
+  const files = [];
+  let i2 = beginIdx + 1;
+  while (i2 < lines.length) {
+    const line3 = lines[i2];
+    const trimmed = line3.trim();
+    if (trimmed === "*** End Patch") {
+      break;
+    }
+    const addMatch = trimmed.match(/^\*\*\* Add File:\s*(.+)$/);
+    if (addMatch) {
+      const filePath = addMatch[1].trim();
+      i2++;
+      const newLines = [];
+      while (i2 < lines.length && !isFileMarker(lines[i2])) {
+        const l4 = lines[i2];
+        if (l4.startsWith("+")) {
+          newLines.push(l4.slice(1));
+        } else {
+          newLines.push(l4);
+        }
+        i2++;
+      }
+      files.push({
+        type: "add",
+        filePath,
+        chunkCount: 1,
+        addedLines: newLines.length,
+        removedLines: 0,
+        oldContent: "",
+        newContent: newLines.join("\n")
+      });
+      continue;
+    }
+    const deleteMatch = trimmed.match(/^\*\*\* Delete File:\s*(.+)$/);
+    if (deleteMatch) {
+      const filePath = deleteMatch[1].trim();
+      files.push({
+        type: "delete",
+        filePath,
+        chunkCount: 0,
+        addedLines: 0,
+        removedLines: 0,
+        oldContent: "",
+        newContent: ""
+      });
+      i2++;
+      continue;
+    }
+    const updateMatch = trimmed.match(/^\*\*\* Update File:\s*(.+)$/);
+    if (updateMatch) {
+      const filePath = updateMatch[1].trim();
+      i2++;
+      let movePath = void 0;
+      if (i2 < lines.length) {
+        const moveToMatch = lines[i2].trim().match(/^\*\*\* Move to:\s*(.+)$/);
+        if (moveToMatch) {
+          movePath = moveToMatch[1].trim();
+          i2++;
+        }
+      }
+      const chunks = [];
+      let currentChunkLines = [];
+      while (i2 < lines.length && !isFileMarker(lines[i2])) {
+        const l4 = lines[i2];
+        if (l4.startsWith("@@")) {
+          if (currentChunkLines.length > 0) {
+            chunks.push(parseChunkLines(currentChunkLines));
+          }
+          currentChunkLines = [];
+          i2++;
+          continue;
+        }
+        if (l4.trim() === "*** End of File") {
+          i2++;
+          continue;
+        }
+        currentChunkLines.push(l4);
+        i2++;
+      }
+      if (currentChunkLines.length > 0) {
+        chunks.push(parseChunkLines(currentChunkLines));
+      }
+      let totalAdded2 = 0;
+      let totalRemoved2 = 0;
+      for (const chunk of chunks) {
+        const { added, removed } = countChunkLines(chunk);
+        totalAdded2 += added;
+        totalRemoved2 += removed;
+      }
+      const fileChange = {
+        type: "update",
+        filePath,
+        movePath: movePath || void 0,
+        chunkCount: chunks.length,
+        addedLines: totalAdded2,
+        removedLines: totalRemoved2,
+        oldContent: rebuildOldContent(chunks),
+        newContent: rebuildNewContent(chunks)
+      };
+      files.push(fileChange);
+      continue;
+    }
+    i2++;
+  }
+  if (files.length === 0) return null;
+  const totalAdded = files.reduce((sum2, f2) => sum2 + f2.addedLines, 0);
+  const totalRemoved = files.reduce((sum2, f2) => sum2 + f2.removedLines, 0);
+  return {
+    files,
+    totalFiles: files.length,
+    totalAdded,
+    totalRemoved
+  };
+}
+function isFileMarker(line3) {
+  const t5 = line3.trim();
+  return t5.startsWith("*** Add File:") || t5.startsWith("*** Delete File:") || t5.startsWith("*** Update File:") || t5 === "*** End Patch";
+}
+var init_patchParser = __esm({
+  "src/shims/patchParser.ts"() {
+  }
+});
+
 // src/shims/misc.ts
 function core() {
   return globalThis.__POLARIS_APP_CORE__;
@@ -3103,6 +5721,5398 @@ var init_misc = __esm({
     IconSend = core().components.Icons.IconSend;
     IconStop = core().components.Icons.IconStop;
     IconPaperclip = core().components.Icons.IconPaperclip;
+  }
+});
+
+// src/host/conversationStore/eventHandler.ts
+function pushStreamDelta(state5, set5, at2, text5) {
+  if (!at2 || !text5) return;
+  const tracker = getTracker(state5.sessionId);
+  if (tracker.recordDelta(at2, text5)) {
+    set5({ streamRate: tracker.snapshot(at2) });
+  }
+}
+function pushProviderUsage(state5, set5, outputTokens) {
+  const tracker = getTracker(state5.sessionId);
+  if (!outputTokens || outputTokens <= 0 || tracker.isEmpty()) return;
+  if (tracker.markProviderUsage(outputTokens)) {
+    set5({ streamRate: tracker.snapshot() });
+  }
+}
+function fallbackRunningToolId(currentMessage) {
+  if (!currentMessage?.blocks) return "";
+  for (let i2 = currentMessage.blocks.length - 1; i2 >= 0; i2--) {
+    const b12 = currentMessage.blocks[i2];
+    if (b12.type === "tool_call" && b12.status === "running") return b12.id;
+  }
+  return "";
+}
+function isTaskBoardTool(toolName) {
+  const n2 = toolName.toLowerCase();
+  return n2 === "taskcreate" || n2 === "taskupdate" || n2 === "tasklist" || n2 === "taskget";
+}
+function isInteractiveTool(toolName) {
+  const n2 = toolName.toLowerCase();
+  return n2.includes("ask_user_question") || n2.includes("askuserquestion") || n2 === "form" || n2.includes("__form");
+}
+function isBusDispatchTool(toolName) {
+  const n2 = toolName.toLowerCase();
+  return n2.endsWith("bus_dispatch");
+}
+function parseTaskCreateItem(args) {
+  const subject = args.subject;
+  if (!subject) return null;
+  return {
+    subject,
+    activeForm: args.activeForm,
+    description: args.description
+  };
+}
+function extractTaskIdFromOutput2(output2) {
+  const m4 = output2.match(/#\s*(\d+)/);
+  return m4 ? m4[1] : null;
+}
+function parseTaskListOutput2(output2) {
+  if (!output2) return null;
+  const items = [];
+  for (const line3 of output2.split("\n")) {
+    const m4 = line3.match(/^\s*#\s*(\d+)\s*\[([A-Za-z_]+)\]\s*(.*)$/);
+    if (!m4) continue;
+    const rawStatus = m4[2];
+    let status = "pending";
+    if (rawStatus === "completed" || rawStatus === "in_progress" || rawStatus === "blocked" || rawStatus === "stopped") {
+      status = rawStatus;
+    } else if (rawStatus === "deleted") {
+      continue;
+    }
+    const subject = m4[3].trim();
+    if (!subject) continue;
+    items.push({ id: m4[1], subject, status });
+  }
+  return items.length > 0 ? items : null;
+}
+function mergeActualModels(list, model) {
+  if (!model) return list;
+  if (list?.includes(model)) return list;
+  return [...list ?? [], model];
+}
+function computeCacheHitRate(input, cacheRead) {
+  const denom = input + cacheRead;
+  return denom > 0 ? cacheRead / denom : 0;
+}
+function isCodeModeCarrierInput(blockInput) {
+  if (!blockInput || typeof blockInput !== "object") return false;
+  const code = blockInput.code;
+  return typeof code === "string" && CODE_MODE_CODE_RE.test(code);
+}
+function isArtifactLike(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
+  const o2 = obj;
+  return o2.artifactType === "polaris.interactive" || typeof o2.html === "string" && typeof o2.previewId === "string";
+}
+function unwrapCodeModeArtifact(parsed) {
+  if (!parsed || typeof parsed !== "object") return parsed;
+  if (isArtifactLike(parsed)) return parsed;
+  const members = [];
+  if (Array.isArray(parsed)) members.push(...parsed);
+  else {
+    for (const v5 of Object.values(parsed)) {
+      if (Array.isArray(v5)) members.push(...v5);
+      else members.push(v5);
+    }
+  }
+  for (const m4 of members) {
+    if (isArtifactLike(m4)) return m4;
+    if (m4 && typeof m4 === "object" && !Array.isArray(m4)) {
+      const value3 = m4.value;
+      if (isArtifactLike(value3)) return value3;
+    }
+  }
+  return parsed;
+}
+function parseCardData(result, blockInput) {
+  let parsed = result;
+  if (result && typeof result === "object") {
+    const obj = result;
+    if (obj.structuredContent !== void 0) {
+      return obj.structuredContent;
+    }
+    parsed = result;
+  } else if (typeof result === "string") {
+    const fenced = result.match(/```json\s*([\s\S]*?)```/i);
+    if (fenced?.[1]) {
+      try {
+        parsed = JSON.parse(fenced[1].trim());
+      } catch {
+      }
+    }
+    if (parsed === result) {
+      try {
+        parsed = JSON.parse(result.trim());
+      } catch {
+        parsed = result;
+      }
+    }
+  }
+  if (isCodeModeCarrierInput(blockInput)) {
+    return unwrapCodeModeArtifact(parsed);
+  }
+  return parsed;
+}
+function handleAIEvent(event3, set5, get6) {
+  const state5 = get6();
+  switch (event3.type) {
+    case "session_start":
+      resetTracker(state5.sessionId, event3.receivedAtMs);
+      {
+        const isSilentStart = (() => {
+          try {
+            return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
+          } catch {
+            return void 0;
+          }
+        })();
+        set5({
+          conversationId: event3.sessionId,
+          isStreaming: true,
+          error: null,
+          promptSuggestion: null,
+          streamRate: null,
+          runStartAtMs: isSilentStart ? null : event3.receivedAtMs ?? Date.now()
+        });
+      }
+      if (event3.engineId && state5.sessionId) {
+        const managerState = sessionStoreManager.getState();
+        const currentMeta = managerState.sessionMetadata.get(state5.sessionId);
+        if (currentMeta && currentMeta.engineId !== event3.engineId) {
+          const newMeta = { ...currentMeta, engineId: event3.engineId };
+          const newMetadata = new Map(managerState.sessionMetadata);
+          newMetadata.set(state5.sessionId, newMeta);
+          sessionStoreManager.setState({ sessionMetadata: newMetadata });
+          log4.info("\u4F1A\u8BDD\u5F15\u64CE\u5DF2\u66F4\u65B0", { sessionId: state5.sessionId, engineId: event3.engineId });
+        }
+      }
+      log4.info("Session started", { sessionId: event3.sessionId });
+      break;
+    case "session_end": {
+      const rateTracker = getTracker(state5.sessionId);
+      rateTracker.markEnd(event3.receivedAtMs);
+      const finalRate = rateTracker.isEmpty() ? null : rateTracker.snapshot(event3.receivedAtMs);
+      const runStart = get6().runStartAtMs;
+      if (runStart != null) {
+        const endAt = event3.receivedAtMs ?? Date.now();
+        const delta = endAt >= runStart ? endAt - runStart : 0;
+        set5({
+          sessionElapsedMs: get6().sessionElapsedMs + delta,
+          runStartAtMs: null,
+          lastTurnMs: delta
+        });
+      }
+      state5.finishMessage();
+      set5({
+        isStreaming: false,
+        progressMessage: null,
+        streamRate: finalRate
+      });
+      const sessionMeta = (() => {
+        try {
+          return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
+        } catch {
+          return void 0;
+        }
+      })();
+      if (!sessionMeta?.silentMode) {
+        saveDialog(get6, set5);
+      }
+      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+        if (!sessionMeta?.silentMode) {
+          void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("notify_session_complete", {})).catch(() => {
+          });
+        }
+      }
+      if (event3.reason === "error" && !get6().error) {
+        if (get6().isInterrupting) {
+          log4.info("Session end after user interrupt, suppressed error display");
+        } else {
+          set5({ error: "errors:appError.ai" });
+        }
+      }
+      if (get6().isInterrupting) {
+        set5({ isInterrupting: false });
+      }
+      if (typeof get6().dispatchNextPending === "function") {
+        void get6().dispatchNextPending();
+      }
+      log4.info("Session ended", {
+        sessionId: state5.sessionId,
+        reason: event3.reason,
+        isStreaming: false
+      });
+      break;
+    }
+    case "token":
+      pushStreamDelta(state5, set5, event3.receivedAtMs, event3.value);
+      state5.appendTextBlock(event3.value);
+      break;
+    case "thinking":
+      pushStreamDelta(state5, set5, event3.receivedAtMs, event3.content);
+      state5.appendThinkingBlock(event3.content);
+      break;
+    case "assistant_message":
+      if (event3.isDelta) pushStreamDelta(state5, set5, event3.receivedAtMs, event3.content);
+      if (!event3.isDelta) {
+        const cur = state5.currentMessage;
+        if (cur) {
+          const hasText = cur.blocks.some((b12) => b12.type === "text" && (b12.content || "").length > 0);
+          if (hasText) {
+            log4?.debug?.("[eventHandler] assistant_message(isDelta=false) \u8DF3\u8FC7\uFF1A\u5DF2\u6709\u6D41\u5F0F\u6587\u672C\uFF0C\u5B8C\u6574\u5E27\u56DE\u653E");
+            break;
+          }
+        }
+      }
+      state5.appendTextBlock(event3.content);
+      break;
+    case "tool_call_start": {
+      const toolName = event3.tool;
+      const callId = event3.callId || generateUUID();
+      if (isBusDispatchTool(toolName)) {
+        const { consumed, message } = consumeCapUiDispatch(event3.args);
+        if (consumed) {
+          log4.info("cap.ui consumed", { tool: toolName, message });
+        }
+      }
+      if (isInteractiveTool(toolName)) {
+        break;
+      }
+      if (isTaskBoardTool(toolName) && event3.args) {
+        const boardId = state5.ensureTaskBoard(callId);
+        const lower2 = toolName.toLowerCase();
+        if (lower2 === "taskcreate") {
+          const item = parseTaskCreateItem(event3.args);
+          if (item) state5.queueTaskCreate(boardId, item);
+        } else if (lower2 === "taskupdate") {
+          const taskId = event3.args.taskId || event3.args.task_id;
+          const status = event3.args.status;
+          if (taskId) {
+            state5.patchTaskBoardItem(boardId, String(taskId), {
+              ...status ? { status } : {},
+              ...event3.args.subject ? { subject: String(event3.args.subject) } : {},
+              ...event3.args.activeForm ? { activeForm: String(event3.args.activeForm) } : {}
+            });
+          }
+        }
+        break;
+      }
+      state5.appendToolCallBlock(callId, toolName, event3.args);
+      break;
+    }
+    case "tool_call_end": {
+      const callId = event3.callId ? String(event3.callId) : fallbackRunningToolId(state5.currentMessage);
+      if (isInteractiveTool(event3.tool)) {
+        break;
+      }
+      const output2 = typeof event3.result === "string" ? event3.result : event3.result ? JSON.stringify(event3.result, null, 2) : void 0;
+      if (isTaskBoardTool(event3.tool)) {
+        const { activeTaskBoardId } = get6();
+        const lower2 = event3.tool.toLowerCase();
+        if (activeTaskBoardId && output2) {
+          if (lower2 === "tasklist") {
+            const snapshot = parseTaskListOutput2(output2);
+            if (snapshot) state5.syncTaskBoardFromList(activeTaskBoardId, snapshot);
+          } else if (lower2 === "taskcreate") {
+            const taskId = extractTaskIdFromOutput2(output2);
+            state5.flushTaskCreate(activeTaskBoardId, taskId);
+          }
+        }
+        break;
+      }
+      state5.updateToolCallBlock(
+        callId,
+        event3.success ? "completed" : "failed",
+        output2
+      );
+      if (event3.taskId) {
+        state5.updateToolCallTaskId(callId, String(event3.taskId));
+      }
+      if (event3.success) {
+        const { currentMessage: cardMsg, toolBlockMap: cardMap } = get6();
+        const cardBlockIdx = cardMsg ? cardMap.get(callId) : void 0;
+        const cardBlockInput = cardBlockIdx !== void 0 && cardMsg ? cardMsg.blocks[cardBlockIdx]?.input : void 0;
+        const resolved = chatCardRegistry.resolveWithKey(event3.tool, cardBlockInput);
+        if (resolved && resolved.entry.mode === "result") {
+          const cardBlock = {
+            type: "plugin_card",
+            id: callId,
+            pluginId: resolved.entry.pluginId,
+            cardId: resolved.entry.cardId,
+            toolName: event3.tool,
+            // Code Mode 载体（execute）解析后的真实注册表 key —— 宿主 load/match 依赖
+            cardKey: resolved.key,
+            mode: "result",
+            status: "ready",
+            // v2 交互组件：表单契约登记（component_register）需要归属会话
+            sessionId: get6().sessionId,
+            data: parseCardData(event3.result, cardBlockInput),
+            createdAt: (/* @__PURE__ */ new Date()).toISOString()
+          };
+          state5.appendPluginCardBlock(cardBlock);
+        }
+      }
+      const { currentMessage, toolBlockMap } = get6();
+      const blockIdx = currentMessage ? toolBlockMap.get(callId) : void 0;
+      if (blockIdx !== void 0 && currentMessage) {
+        const block2 = currentMessage.blocks[blockIdx];
+        if (block2?.type === "tool_call" && isEditTool(block2.name)) {
+          const diff2 = extractEditDiff(block2);
+          if (diff2) {
+            state5.updateToolCallBlockDiff(callId, diff2);
+          }
+        }
+        if (block2?.type === "tool_call" && block2.name === "apply_patch") {
+          const patchInput = block2.input?.input;
+          if (patchInput) {
+            const parsed = parseApplyPatch(patchInput);
+            if (parsed && parsed.files.length > 0) {
+              state5.updateToolCallBlockPatch(callId, parsed.files);
+            }
+          }
+        }
+      }
+      break;
+    }
+    case "progress": {
+      const msg = event3.message || null;
+      const isTerminal = msg && (msg.startsWith("\u2705") || msg.startsWith("\u274C"));
+      if (isTerminal) {
+        const prev2 = get6().progressMessage;
+        if (prev2 && prev2.startsWith("\u{1F527}")) {
+          const prevName = prev2.replace(/^🔧\s*/, "").trim();
+          const termName = msg.replace(/^[✅❌]\s*/, "").trim();
+          if (prevName === termName || termName.startsWith(prevName)) {
+            set5({ progressMessage: null });
+          }
+        }
+        break;
+      }
+      set5({ progressMessage: msg });
+      break;
+    }
+    case "error":
+      if (get6().isInterrupting) {
+        break;
+      }
+      set5({
+        error: event3.error,
+        isStreaming: false,
+        // 批 4b（审计 4.10）：error 收尾同样清 progressMessage——若后续
+        // session_end 丢失，灵动岛不再残留「🔧 XX」转圈
+        progressMessage: null
+      });
+      break;
+    case "result":
+      break;
+    case "user_message": {
+      const content = event3.content;
+      if (!content) break;
+      const clientId = event3.clientMessageId;
+      const existing = state5.messages;
+      const isLocalEcho = clientId ? existing.some((m4) => m4.id === clientId) : state5.isStreaming && [...existing].reverse().find((m4) => m4.type === "user")?.content === content;
+      if (isLocalEcho) {
+        break;
+      }
+      state5.addMessage({
+        id: clientId || generateUUID(),
+        type: "user",
+        content,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString()
+      });
+      break;
+    }
+    case "plan_start":
+      state5.appendPlanModeBlock(
+        event3.planId,
+        event3.sessionId,
+        void 0,
+        // title from plan_content event
+        void 0
+        // description from plan_content event
+      );
+      break;
+    case "plan_content":
+      state5.updatePlanModeBlock(
+        event3.planId,
+        {
+          title: event3.title,
+          description: event3.description,
+          stages: event3.stages,
+          status: event3.status
+        }
+      );
+      break;
+    case "plan_stage_update":
+      state5.updatePlanStageStatus(
+        event3.planId,
+        event3.stageId,
+        event3.status,
+        event3.tasks
+      );
+      break;
+    case "plan_approval_request":
+      state5.appendPermissionRequestBlock(
+        event3.planId,
+        event3.sessionId,
+        []
+        // approval denials
+      );
+      break;
+    case "plan_approval_result":
+      state5.updatePermissionRequestBlock(
+        event3.planId,
+        event3.approved ? "approved" : "denied"
+      );
+      break;
+    case "plan_end":
+      state5.setActivePlan(null);
+      break;
+    case "agent_run_start":
+      state5.appendAgentRunBlock(
+        event3.taskId,
+        event3.agentType,
+        event3.capabilities
+      );
+      break;
+    case "agent_run_end":
+      state5.updateAgentRunBlock(event3.taskId, {
+        status: event3.success ? "success" : "error",
+        output: event3.result,
+        completedAt: (/* @__PURE__ */ new Date()).toISOString()
+      });
+      state5.setActiveTask(null);
+      break;
+    case "permission_request":
+      state5.appendPermissionRequestBlock(
+        `perm-${Date.now()}`,
+        // generate a unique request ID
+        event3.sessionId,
+        event3.denials
+      );
+      break;
+    case "hook": {
+      if (event3.phase === "completed" && event3.outcome && event3.outcome !== "success") {
+        set5({ progressMessage: `\u{1FA9D} ${event3.hookEvent || event3.hookName}: ${event3.outcome}` });
+      } else {
+        log4.debug("Hook event", {
+          hookName: event3.hookName,
+          phase: event3.phase,
+          outcome: event3.outcome
+        });
+      }
+      break;
+    }
+    case "prompt_suggestion":
+      set5({ promptSuggestion: event3.suggestion?.trim() ? event3.suggestion : null });
+      break;
+    case "cli_init":
+      useCliInfoStore.getState().updateFromInit({
+        sessionId: event3.sessionId,
+        tools: event3.tools,
+        mcpServers: event3.mcpServers,
+        agents: event3.agents,
+        skills: event3.skills,
+        model: event3.model ?? void 0,
+        claudeCodeVersion: event3.claudeCodeVersion ?? void 0,
+        slashCommands: event3.slashCommands
+      });
+      if (state5.usageStats) {
+        set5({
+          usageStats: {
+            ...state5.usageStats,
+            turnSnapshotSeen: false,
+            runContribution: null
+          }
+        });
+      }
+      break;
+    case "context_compacted":
+      state5.appendContextCompactBlock(event3.trigger, event3.preTokens, event3.postTokens);
+      set5({ progressMessage: null });
+      break;
+    case "usage": {
+      const prev2 = state5.usageStats;
+      pushProviderUsage(state5, set5, event3.outputTokens);
+      if (event3.scope === "turn") {
+        set5({
+          usageStats: {
+            ...prev2 ?? { output: 0, totalOutput: 0 },
+            input: event3.inputTokens,
+            cacheCreation: event3.cacheCreationInputTokens ?? 0,
+            cacheRead: event3.cacheReadInputTokens ?? 0,
+            contextWindow: event3.contextWindow ?? prev2?.contextWindow,
+            actualModel: event3.actualModel ?? prev2?.actualModel,
+            actualModels: mergeActualModels(prev2?.actualModels, event3.actualModel),
+            contextSource: "turn",
+            turnSnapshotSeen: true
+          }
+        });
+      } else {
+        const snap = prev2?.turnSnapshotSeen ? prev2 : null;
+        const runCost = event3.totalCostUsd ?? Object.values(event3.modelUsage ?? {}).reduce((s3, m4) => s3 + (m4.costUsd ?? 0), 0);
+        const prevTotals = prev2?.sessionTotals;
+        const rc = event3.scope === "cumulative" ? prev2?.runContribution : null;
+        const contribution = {
+          input: event3.inputTokens,
+          cacheCreation: event3.cacheCreationInputTokens ?? 0,
+          cacheRead: event3.cacheReadInputTokens ?? 0,
+          output: event3.outputTokens,
+          costUsd: runCost
+        };
+        set5({
+          usageStats: {
+            input: snap ? snap.input : event3.inputTokens,
+            cacheCreation: snap ? snap.cacheCreation : event3.cacheCreationInputTokens ?? 0,
+            cacheRead: snap ? snap.cacheRead : event3.cacheReadInputTokens ?? 0,
+            output: event3.outputTokens,
+            reasoning: event3.reasoningOutputTokens,
+            contextWindow: event3.contextWindow ?? prev2?.contextWindow,
+            totalOutput: (prev2?.totalOutput ?? 0) - (rc?.output ?? 0) + event3.outputTokens,
+            modelUsage: event3.modelUsage,
+            rawPayload: event3.rawPayload,
+            actualModel: event3.actualModel ?? prev2?.actualModel,
+            actualModels: mergeActualModels(prev2?.actualModels, event3.actualModel),
+            sessionTotals: {
+              input: (prevTotals?.input ?? 0) - (rc?.input ?? 0) + contribution.input,
+              cacheCreation: (prevTotals?.cacheCreation ?? 0) - (rc?.cacheCreation ?? 0) + contribution.cacheCreation,
+              cacheRead: (prevTotals?.cacheRead ?? 0) - (rc?.cacheRead ?? 0) + contribution.cacheRead,
+              output: (prevTotals?.output ?? 0) - (rc?.output ?? 0) + contribution.output,
+              costUsd: (prevTotals?.costUsd ?? 0) - (rc?.costUsd ?? 0) + contribution.costUsd,
+              runs: (prevTotals?.runs ?? 0) + (rc ? 0 : 1),
+              // 成本口径 B：cacheRead / (input + cacheRead)，跨域统一
+              cacheHitRate: computeCacheHitRate(
+                (prevTotals?.input ?? 0) - (rc?.input ?? 0) + contribution.input,
+                (prevTotals?.cacheRead ?? 0) - (rc?.cacheRead ?? 0) + contribution.cacheRead
+              )
+            },
+            contextSource: snap ? snap.contextSource : "cumulative",
+            turnSnapshotSeen: prev2?.turnSnapshotSeen ?? false,
+            runContribution: event3.scope === "cumulative" ? contribution : null
+          }
+        });
+      }
+      break;
+    }
+    // permission_result is handled via plan_approval_result
+    // there is no separate permission_result event type
+    case "question": {
+      const questions = event3.questions && event3.questions.length > 0 ? event3.questions.map((q5) => ({
+        question: q5.question,
+        header: q5.header,
+        multiSelect: q5.multiSelect,
+        options: q5.options,
+        allowCustomInput: q5.allowCustomInput
+      })) : [{
+        question: event3.header,
+        header: event3.categoryLabel || "",
+        multiSelect: event3.multiSelect,
+        options: event3.options,
+        allowCustomInput: event3.allowCustomInput
+      }];
+      state5.appendQuestionBlock(event3.questionId, event3.sessionId, questions);
+      break;
+    }
+    case "question_answered": {
+      if (event3.declined) {
+        state5.updateQuestionBlock(event3.questionId, {
+          declined: true
+        });
+      } else if (event3.answers && event3.answers.length > 0) {
+        state5.updateQuestionBlock(event3.questionId, {
+          answers: event3.answers,
+          declined: false
+        });
+      } else {
+        state5.updateQuestionBlock(event3.questionId, {
+          answers: [{
+            selected: event3.selected || [],
+            customInput: event3.customInput
+          }],
+          declined: false
+        });
+      }
+      break;
+    }
+    case "plugin_card": {
+      const block2 = {
+        type: "plugin_card",
+        id: event3.interactionId,
+        pluginId: event3.pluginId,
+        cardId: event3.cardId,
+        toolName: event3.toolName,
+        mode: "interaction",
+        status: "pending",
+        data: event3.payload,
+        sessionId: event3.sessionId,
+        createdAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      state5.appendPluginCardBlock(block2);
+      break;
+    }
+    case "plugin_card_answered":
+      state5.updatePluginCardBlock(event3.interactionId, {
+        status: event3.declined ? "declined" : "answered",
+        response: event3.result
+      });
+      break;
+    case "form": {
+      state5.appendFormBlock({
+        type: "form",
+        id: event3.formId,
+        sessionId: event3.sessionId,
+        title: event3.title,
+        read: event3.read ?? "full",
+        target: event3.target,
+        action: event3.action,
+        mode: event3.mode ?? "dispatch",
+        style: event3.style,
+        template: event3.template,
+        fields: (event3.fields ?? []).map((f2) => ({
+          name: f2.name,
+          type: f2.type ?? "string",
+          label: f2.label,
+          placeholder: f2.placeholder,
+          options: f2.options,
+          required: f2.required,
+          default: f2.default,
+          secret: f2.secret,
+          hidden: f2.hidden,
+          help: f2.help,
+          col: f2.col
+        })),
+        status: "pending",
+        createdAt: (/* @__PURE__ */ new Date()).toISOString()
+      });
+      break;
+    }
+    case "form-answered":
+      state5.updateFormBlock(event3.formId, {
+        status: "submitted",
+        ok: event3.ok,
+        receipt: event3.receipt
+      });
+      break;
+    case "form-skipped": {
+      const reasonText = event3.reason === "timeout" ? "\u8868\u5355\u7B49\u5F85\u8D85\u65F6\uFF0C\u5DF2\u81EA\u52A8\u8DF3\u8FC7" : "\u7528\u6237\u5DF2\u8DF3\u8FC7\u8BE5\u8868\u5355";
+      state5.updateFormBlock(event3.formId, {
+        status: "skipped",
+        ok: false,
+        receipt: reasonText
+      });
+      break;
+    }
+    // Task 事件 - 由 TaskStore 处理，不在 ConversationStore 范围内
+    case "task_metadata":
+    case "task_progress":
+    case "task_completed":
+    case "task_canceled":
+      break;
+    case "tool_call_update": {
+      const callId = event3.callId || "";
+      if (callId) {
+        state5.updateToolCallBlock(callId, "running", event3.output);
+      }
+      break;
+    }
+    default: {
+      const _exhaustive = event3;
+      log4.warn("Unhandled event type", { type: _exhaustive.type });
+    }
+  }
+}
+function buildDialogMetaInput(state5, messages) {
+  const metadata = sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
+  const engineId = normalizeEngineId(metadata?.engineId);
+  const firstUserMessage = messages.find((m4) => m4.type === "user");
+  let title2 = metadata?.title || "\u65B0\u4F1A\u8BDD";
+  if (firstUserMessage && "content" in firstUserMessage && firstUserMessage.content) {
+    title2 = firstUserMessage.content.slice(0, 50);
+  }
+  let workspacePath = null;
+  if (metadata?.workspaceId) {
+    const ws = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === metadata.workspaceId);
+    workspacePath = ws?.path ?? null;
+  }
+  const totals = state5.usageStats?.sessionTotals;
+  let tokenUsage;
+  if (totals && totals.runs > 0) {
+    const modelUsage = state5.usageStats?.modelUsage;
+    let modelBreakdown;
+    if (modelUsage && Object.keys(modelUsage).length > 0 && totals.runs <= 1) {
+      modelBreakdown = {};
+      for (const [model, m4] of Object.entries(modelUsage)) {
+        modelBreakdown[model] = {
+          input: m4.inputTokens,
+          output: m4.outputTokens,
+          cacheCreation: m4.cacheCreationInputTokens ?? 0,
+          cacheRead: m4.cacheReadInputTokens ?? 0,
+          costUsd: m4.costUsd ?? 0
+        };
+      }
+    }
+    tokenUsage = {
+      input: totals.input,
+      output: totals.output,
+      cacheCreation: totals.cacheCreation,
+      cacheRead: totals.cacheRead,
+      costUsd: totals.costUsd,
+      cacheHitRate: totals.cacheHitRate,
+      modelBreakdown
+    };
+  }
+  return { engineId, title: title2, workspaceId: metadata?.workspaceId ?? null, workspacePath, tokenUsage };
+}
+async function saveDialog(get6, set5) {
+  try {
+    const state5 = get6();
+    const { conversationId } = state5;
+    if (!conversationId) return;
+    const messages = state5.getPersistableMessages();
+    if (messages.length === 0) return;
+    const metaInput = buildDialogMetaInput(state5, messages);
+    const paging = state5.historyPaging;
+    const baseSeq = paging?.earliestSeq ?? 0;
+    const { prefixCount } = await dialogStorageService.saveConversation({
+      externalId: conversationId,
+      ...metaInput,
+      messages,
+      baseSeq,
+      prefixSourceExternalId: paging?.sourceId
+    });
+    const cur = get6();
+    if (cur.conversationId === conversationId) {
+      set5({
+        // 水位 = 本次实际落盘的条数（保存期间新到的消息留给下次 flush）
+        persistedSeq: Math.min(messages.length, cur.messages.length),
+        persistedConversationId: conversationId,
+        historyPaging: prefixCount > 0 ? { earliestSeq: prefixCount, hasMore: true, sourceId: conversationId } : null
+      });
+    }
+    log4.info("\u4F1A\u8BDD\u5DF2\u4FDD\u5B58\u5230 JSONL", { conversationId, messageCount: messages.length });
+  } catch (e3) {
+    log4.error("\u4FDD\u5B58\u4F1A\u8BDD\u5230 JSONL \u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+  }
+}
+var log4, CODE_MODE_CODE_RE;
+var init_eventHandler = __esm({
+  "src/host/conversationStore/eventHandler.ts"() {
+    init_uuid();
+    init_logger();
+    init_diffExtractor();
+    init_patchParser();
+    init_misc();
+    init_sessionStoreManager();
+    init_engineDisplay();
+    init_stores();
+    init_stores();
+    init_services();
+    init_services();
+    init_services();
+    log4 = createLogger("EventHandler");
+    CODE_MODE_CODE_RE = /\btools\[\s*["'][^"']+["']\s*\]\s*\./;
+  }
+});
+
+// src/shims/messageCompactor.ts
+function isCompacted(message) {
+  return COMPACT_MARKER in message;
+}
+function truncate(str2, maxLen) {
+  if (maxLen === 0) return "";
+  if (str2.length <= maxLen) return str2;
+  return str2.slice(0, maxLen) + `... [compacted, original ${str2.length} chars]`;
+}
+var VISIBLE_BUFFER, MAX_SNAPSHOTS, TRUNCATE, COMPACT_MARKER, MessageCompactor;
+var init_messageCompactor = __esm({
+  "src/shims/messageCompactor.ts"() {
+    VISIBLE_BUFFER = 5;
+    MAX_SNAPSHOTS = 20;
+    TRUNCATE = {
+      /** ToolCallBlock: 截取 output 的长度 */
+      toolOutput: 0,
+      /** ThinkingBlock: 截取 content 的长度 */
+      thinkingContent: 100,
+      /** TextBlock: 截取 content 的长度 */
+      textContent: 500,
+      /** UserChatMessage: 截取 content 的长度 */
+      userContent: 200
+    };
+    COMPACT_MARKER = "__compacted__";
+    MessageCompactor = class {
+      /** 消息快照存储：messageId -> 原始完整消息 */
+      snapshots = /* @__PURE__ */ new Map();
+      /** 快照 LRU 顺序 */
+      snapshotOrder = [];
+      /**
+       * 根据可见范围计算需要压缩和恢复的消息索引
+       * @param totalCount 消息总数
+       * @param visibleStart 可见区域起始索引
+       * @param visibleEnd 可见区域结束索引（含）
+       * @returns { toCompact, toHydrate }
+       */
+      computeRangeActions(totalCount, visibleStart, visibleEnd) {
+        const toCompact = [];
+        const toHydrate = [];
+        const safeStart = Math.max(0, visibleStart - VISIBLE_BUFFER);
+        const safeEnd = Math.min(totalCount - 1, visibleEnd + VISIBLE_BUFFER);
+        for (let i2 = 0; i2 < totalCount; i2++) {
+          if (i2 >= safeStart && i2 <= safeEnd) {
+            toHydrate.push(i2);
+          } else {
+            toCompact.push(i2);
+          }
+        }
+        return { toCompact, toHydrate };
+      }
+      /**
+       * 压缩单条消息
+       * - 先保存快照（用于快速恢复）
+       * - 返回压缩后的消息
+       * - 如果已经是压缩消息或流式消息，直接返回原消息
+       */
+      compactMessage(message) {
+        if (isCompacted(message)) {
+          return message;
+        }
+        if ("isStreaming" in message && message.isStreaming) {
+          return message;
+        }
+        switch (message.type) {
+          case "assistant":
+            this.saveSnapshot(message);
+            return this.compactAssistantMessage(message);
+          case "user":
+            this.saveSnapshot(message);
+            return this.compactUserMessage(message);
+          // system / tool / tool_group 顶层消息暂不压缩，且不占用快照额度
+          default:
+            return message;
+        }
+      }
+      /**
+       * 恢复单条消息
+       * - 优先从快照 Map 恢复
+       * - 如果快照不存在，返回原消息（调用方可以降级到 localStorage）
+       */
+      hydrateMessage(message) {
+        if (!isCompacted(message)) {
+          return message;
+        }
+        const snapshot = this.snapshots.get(message.id);
+        if (snapshot) {
+          this.touchSnapshotOrder(message.id);
+          return snapshot;
+        }
+        return message;
+      }
+      /**
+       * 从外部数据恢复消息（用于 localStorage 降级恢复）
+       * 恢复后同时保存到快照 Map
+       */
+      hydrateFromExternal(_messageId, fullMessage) {
+        this.saveSnapshot(fullMessage);
+        return fullMessage;
+      }
+      /**
+       * 获取快照
+       */
+      getSnapshot(messageId) {
+        return this.snapshots.get(messageId);
+      }
+      /**
+       * 清除所有快照
+       */
+      clearSnapshots() {
+        this.snapshots.clear();
+        this.snapshotOrder = [];
+      }
+      /**
+       * 获取当前快照数量
+       */
+      get snapshotCount() {
+        return this.snapshots.size;
+      }
+      // ========================================================================
+      // 私有方法
+      // ========================================================================
+      /**
+       * 保存消息快照（LRU 淘汰）
+       */
+      saveSnapshot(message) {
+        const id38 = message.id;
+        if (this.snapshots.has(id38)) {
+          this.snapshots.set(id38, message);
+          this.touchSnapshotOrder(id38);
+          return;
+        }
+        if (this.snapshots.size >= MAX_SNAPSHOTS) {
+          const oldestId = this.snapshotOrder.shift();
+          if (oldestId) {
+            this.snapshots.delete(oldestId);
+          }
+        }
+        this.snapshots.set(id38, message);
+        this.snapshotOrder.push(id38);
+      }
+      /**
+       * 更新 LRU 顺序
+       */
+      touchSnapshotOrder(id38) {
+        const idx = this.snapshotOrder.indexOf(id38);
+        if (idx !== -1) {
+          this.snapshotOrder.splice(idx, 1);
+          this.snapshotOrder.push(id38);
+        }
+      }
+      /**
+       * 压缩 Assistant 消息
+       * - 遍历 blocks，按类型执行压缩策略
+       */
+      compactAssistantMessage(message) {
+        const compactedBlocks = message.blocks.map((block2) => this.compactBlock(block2));
+        return {
+          ...message,
+          blocks: compactedBlocks,
+          [COMPACT_MARKER]: true
+        };
+      }
+      /**
+       * 压缩 User 消息
+       */
+      compactUserMessage(message) {
+        return {
+          ...message,
+          content: truncate(message.content, TRUNCATE.userContent),
+          attachments: message.attachments?.map((a3) => ({
+            id: a3.id,
+            type: a3.type,
+            fileName: a3.fileName,
+            fileSize: a3.fileSize,
+            mimeType: a3.mimeType
+          })),
+          [COMPACT_MARKER]: true
+        };
+      }
+      /**
+       * 压缩单个 ContentBlock
+       */
+      compactBlock(block2) {
+        switch (block2.type) {
+          case "tool_call":
+            return this.compactToolCallBlock(block2);
+          case "thinking":
+            return this.compactThinkingBlock(block2);
+          case "text":
+            return this.compactTextBlock(block2);
+          case "tool_group":
+            return this.compactToolGroupBlock(block2);
+          // question / plan_mode / agent_run / permission_request / plugin_card 不压缩
+          default:
+            return block2;
+        }
+      }
+      /**
+       * 压缩 ToolCallBlock — 最大的内存消耗者
+       * 清除 output/diffData.fullOldContent，保留 name/status/error/summary
+       */
+      compactToolCallBlock(block2) {
+        const compacted = {
+          ...block2,
+          output: void 0,
+          input: {}
+        };
+        if (block2.diffData) {
+          compacted.diffData = {
+            oldContent: "",
+            newContent: "",
+            filePath: block2.diffData.filePath
+          };
+        }
+        return compacted;
+      }
+      /**
+       * 压缩 ThinkingBlock — 截取前 100 字
+       */
+      compactThinkingBlock(block2) {
+        return {
+          ...block2,
+          content: truncate(block2.content, TRUNCATE.thinkingContent),
+          collapsed: true
+        };
+      }
+      /**
+       * 压缩 TextBlock — 截取前 500 字
+       */
+      compactTextBlock(block2) {
+        return {
+          ...block2,
+          content: truncate(block2.content, TRUNCATE.textContent)
+        };
+      }
+      /**
+       * 压缩 ToolGroupBlock — 清除各工具的 output/input
+       */
+      compactToolGroupBlock(block2) {
+        return {
+          ...block2,
+          tools: block2.tools.map((tool) => ({
+            ...tool,
+            output: void 0,
+            input: void 0
+          }))
+        };
+      }
+    };
+  }
+});
+
+// src/host/conversationStore/conversationStoreUtils.ts
+function resolveSessionEngine(sessionId, configEngineId) {
+  const metadataEngineId = sessionStoreManager.getState().sessionMetadata.get(sessionId)?.engineId;
+  return normalizeEngineId(metadataEngineId || configEngineId);
+}
+function resolveRuntimeConfigForEngine(sessionConfig, engineId) {
+  const model = sessionConfig.model || void 0;
+  const meta3 = useEngineMetadataStore.getState().getEngine(engineId);
+  const declaredSelectors = meta3?.sessionConfig?.selectors;
+  const caps = meta3?.capabilities;
+  const agentSupported = declaredSelectors ? declaredSelectors.includes("agent") : engineId === "claude-code" || engineId === "simple-ai" || (caps?.tools ?? false);
+  const effortSupported = declaredSelectors ? declaredSelectors.includes("effort") : engineId === "claude-code" || engineId === "simple-ai";
+  return {
+    // agent persona 透传：
+    // - claude-code：经 --agent 透传 CLI（注：当前 corpus 未暴露给 CLI，U2-4 待补）
+    // - simple-ai：经 SessionOptions.agent 注入 corpus persona（见 simple_ai/mod.rs start_session）
+    // - 插件引擎：引擎声明 selectors 含 agent 即透传（如 codebuddy --agent）
+    agent: agentSupported ? sessionConfig.agent || void 0 : void 0,
+    model,
+    // effort 透传：
+    // - claude-code：经 --effort 传给 CLI
+    // - simple-ai：经 SessionOptions.effort 注入请求体（OpenAIChat → reasoning_effort /
+    //   Anthropic → thinking.budget_tokens / Responses → reasoning.effort，见 simple_ai_protocol.rs）
+    // - 插件引擎：引擎声明 selectors 含 effort 即透传（如 codebuddy --effort）
+    effort: effortSupported ? sessionConfig.effort || void 0 : void 0,
+    permissionMode: sessionConfig.permissionMode || void 0
+  };
+}
+function getDisabledPluginMcpServers() {
+  const list = listPluginMcpServerStatuses(usePluginStore.getState().pluginStates).filter((server) => !server.enabled).map((server) => server.id);
+  if (!useConfigStore.getState().config?.uiControlEnabled) {
+    list.push("polaris-bus");
+  }
+  return list;
+}
+function resolveEffectiveProfileId(sessionMetaProfileId, sessionConfigProfileId, globalActiveProfileId) {
+  if (sessionMetaProfileId !== void 0) {
+    return sessionMetaProfileId === OFFICIAL_API_PROFILE || sessionMetaProfileId === "" ? void 0 : sessionMetaProfileId;
+  }
+  const fallback = sessionConfigProfileId || globalActiveProfileId;
+  return fallback && fallback !== OFFICIAL_API_PROFILE ? fallback : void 0;
+}
+function resolveEffectiveProfileMode(sessionMetaProfileMode, sessionConfigProfileMode) {
+  if (sessionMetaProfileMode !== void 0) {
+    return sessionMetaProfileMode;
+  }
+  if (sessionConfigProfileMode !== void 0 && sessionConfigProfileMode !== "profile") {
+    return sessionConfigProfileMode;
+  }
+  return sessionConfigProfileMode;
+}
+function isProfileModeWithoutProfile(mode) {
+  return mode === "official";
+}
+function resolveChatError(e3, context) {
+  const raw = typeof e3 === "string" ? e3 : e3 instanceof Error ? e3.message : "";
+  if (raw.startsWith("errors:")) {
+    return raw;
+  }
+  return toAppError(e3, { source: "ai" /* AI */, context }).getUserMessage();
+}
+function generateTitleFromMessage(content) {
+  const cleanContent = content.replace(/\n/g, " ").trim();
+  const maxTitleLength = 16;
+  if (cleanContent.length <= maxTitleLength) {
+    return cleanContent;
+  }
+  return cleanContent.slice(0, maxTitleLength) + "...";
+}
+function buildWorkspacePrompts(getWorkspace, getContextWorkspaceIds, getAllWorkspaces) {
+  const currentWorkspace = getWorkspace();
+  const contextWorkspaceIds = getContextWorkspaceIds();
+  const allWorkspaces = getAllWorkspaces();
+  const contextWorkspaces = allWorkspaces.filter((w5) => contextWorkspaceIds.includes(w5.id));
+  let workspacePrompt = "";
+  if (currentWorkspace) {
+    workspacePrompt = i18n_default.t("systemPrompt:workingIn", { name: currentWorkspace.name }) + "\n" + i18n_default.t("systemPrompt:projectPath", { path: currentWorkspace.path }) + "\n" + i18n_default.t("systemPrompt:fileRefSyntax");
+  }
+  let userPrompt = null;
+  if (currentWorkspace) {
+    userPrompt = getUserSystemPrompt(currentWorkspace, contextWorkspaces);
+  }
+  return { workspacePrompt, userPrompt, contextWorkspaces, allWorkspaces };
+}
+function normalizeForInvoke(text5) {
+  return text5.replace(/\r\n/g, "\\n").replace(/\r/g, "\\n").replace(/\n/g, "\\n").trim();
+}
+var init_conversationStoreUtils = __esm({
+  "src/host/conversationStore/conversationStoreUtils.ts"() {
+    init_sessionStoreManager();
+    init_engineDisplay();
+    init_stores();
+    init_misc();
+    init_stores();
+    init_stores();
+    init_services();
+    init_types2();
+    init_types2();
+    init_i18n();
+  }
+});
+
+// src/host/conversationStore/dedupMessages.ts
+function dedupeMessagesById2(messages) {
+  const byId = /* @__PURE__ */ new Map();
+  for (const m4 of messages) {
+    byId.set(m4.id, m4);
+  }
+  return [...byId.values()];
+}
+function normalizeRecoveredMessages2(messages) {
+  return messages.map((m4) => {
+    if (m4.type !== "assistant") return m4;
+    if (m4.isStreaming !== true) return m4;
+    const now4 = Date.now();
+    const timestamp2 = m4.timestamp || new Date(now4).toISOString();
+    return {
+      ...m4,
+      timestamp: timestamp2,
+      isStreaming: false,
+      interrupted: true
+    };
+  });
+}
+var init_dedupMessages2 = __esm({
+  "src/host/conversationStore/dedupMessages.ts"() {
+  }
+});
+
+// src/host/conversationStore/createConversationStore.ts
+function formatPendingDispatchReports(sessionId) {
+  try {
+    const dispatchStore = useDispatchStore.getState();
+    if (!dispatchStore.hasReports(sessionId)) return "";
+    if (!isDispatchReportInjectionEnabled()) return "";
+    const reports = dispatchStore.takeReports(sessionId);
+    if (reports.length === 0) return "";
+    const lines = reports.map((r3) => {
+      const status = r3.status === "completed" ? i18n_default.t("chat:dispatch.reportDone", "\u5DF2\u5B8C\u6210") : i18n_default.t("chat:dispatch.reportFailed", "\u5931\u8D25");
+      const summary = r3.summary?.trim() ? `
+${r3.summary.trim()}` : "";
+      return `- \u300C${r3.title}\u300D${status}${summary}`;
+    });
+    return i18n_default.t("chat:dispatch.reportPreamble", {
+      defaultValue: "\u4F60\u5148\u524D\u6D3E\u53D1\u7684\u540E\u53F0\u4EFB\u52A1\u5DF2\u6709\u7ED3\u679C\uFF0C\u8BF7\u7ED3\u5408\u4EE5\u4E0B\u62A5\u544A\u7EE7\u7EED\u5F53\u524D\u5DE5\u4F5C\uFF1A\n{{reports}}",
+      reports: lines.join("\n"),
+      interpolation: { escapeValue: false }
+    });
+  } catch (e3) {
+    log5.warn("\u6D3E\u53D1\u62A5\u544A\u6CE8\u5165\u5931\u8D25", { error: String(e3) });
+    return "";
+  }
+}
+function isDispatchReportInjectionEnabled() {
+  try {
+    const config3 = useConfigStore.getState().config;
+    return config3?.dispatch?.autoInjectReports !== false;
+  } catch {
+    return true;
+  }
+}
+function recomputeTaskBoard(block2, items) {
+  const completed2 = items.filter((i2) => i2.status === "completed").length;
+  const inProgress = items.filter((i2) => i2.status === "in_progress").length;
+  const blocked = items.filter((i2) => i2.status === "blocked").length;
+  return {
+    ...block2,
+    items,
+    completed: completed2,
+    inProgress,
+    blocked,
+    total: items.length,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function waitFor(cond, timeoutMs) {
+  return new Promise((resolve2) => {
+    const start2 = Date.now();
+    const tick = () => {
+      if (cond() || Date.now() - start2 > timeoutMs) resolve2();
+      else setTimeout(tick, 100);
+    };
+    tick();
+  });
+}
+function createInitialState(sessionId) {
+  return {
+    // 消息状态
+    messages: [],
+    archivedMessages: [],
+    currentMessage: null,
+    // 流式构建映射
+    toolBlockMap: /* @__PURE__ */ new Map(),
+    questionBlockMap: /* @__PURE__ */ new Map(),
+    formBlockMap: /* @__PURE__ */ new Map(),
+    planBlockMap: /* @__PURE__ */ new Map(),
+    activePlanId: null,
+    agentRunBlockMap: /* @__PURE__ */ new Map(),
+    activeTaskId: null,
+    // TaskBoard: boardId → blocks 索引，run 级单板
+    taskBoardBlockMap: /* @__PURE__ */ new Map(),
+    activeTaskBoardId: null,
+    pendingTaskCreates: [],
+    permissionRequestBlockMap: /* @__PURE__ */ new Map(),
+    activePermissionRequestId: null,
+    pluginCardBlockMap: /* @__PURE__ */ new Map(),
+    sessionAllowedTools: [],
+    streamingUpdateCounter: 0,
+    // 会话状态
+    conversationId: null,
+    currentConversationSeed: null,
+    isStreaming: false,
+    isInterrupting: false,
+    turnEpoch: 0,
+    activeTurnId: null,
+    error: null,
+    progressMessage: null,
+    promptSuggestion: null,
+    usageStats: null,
+    streamRate: null,
+    // 会话运行累计时长（纯运行时，不落库）：初始为 0，无活动轮
+    sessionElapsedMs: 0,
+    runStartAtMs: null,
+    // 最近完成一轮时长：初始 0（从未对话）；session_end / settle 时写入
+    lastTurnMs: 0,
+    // 输入草稿
+    inputDraft: {
+      text: "",
+      attachments: [],
+      contextBlocks: []
+    },
+    // 待发送简报（压缩交接产物）
+    pendingBriefing: null,
+    // 待发送队列（流式预输入 / 多行拆分入队）
+    pendingQueue: [],
+    queueDispatching: false,
+    // 提示词优化（版本栈内存态，不持久化）
+    promptOptimize: {
+      status: "idle",
+      history: [],
+      cursor: -1,
+      sourceSnapshot: null,
+      pendingResult: null,
+      pendingMeta: null,
+      optimizeSessionId: null,
+      error: null
+    },
+    // 工作区关联
+    workspaceId: null,
+    // 可见区域追踪
+    visibleRange: null,
+    // 增量落盘水位（WAL 崩溃保护）
+    persistedSeq: 0,
+    persistedConversationId: null,
+    // 历史分页（尾部优先恢复）
+    historyPaging: null,
+    // 元数据
+    sessionId
+  };
+}
+function hasBlockAnywhere(state5, type3, id38) {
+  if (state5.currentMessage?.blocks.some((b12) => b12.type === type3 && "id" in b12 && b12.id === id38)) {
+    return true;
+  }
+  return state5.messages.some(
+    (m4) => m4.type === "assistant" && m4.blocks?.some((b12) => b12.type === type3 && "id" in b12 && b12.id === id38)
+  );
+}
+function updateBlockAcrossSession(get6, set5, match3, patch) {
+  const { currentMessage, messages } = get6();
+  if (currentMessage) {
+    const idx = currentMessage.blocks.findIndex(match3);
+    if (idx >= 0) {
+      const blocks2 = [...currentMessage.blocks];
+      blocks2[idx] = patch(blocks2[idx]);
+      set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      return true;
+    }
+  }
+  let touched = false;
+  const newMessages = messages.map((msg) => {
+    if (msg.type !== "assistant" || !msg.blocks) return msg;
+    const idx = msg.blocks.findIndex(match3);
+    if (idx < 0) return msg;
+    touched = true;
+    const blocks2 = [...msg.blocks];
+    blocks2[idx] = patch(blocks2[idx]);
+    return { ...msg, blocks: blocks2 };
+  });
+  if (touched) set5({ messages: newMessages });
+  return touched;
+}
+function createConversationStore(sessionId, deps) {
+  const initialState = createInitialState(sessionId);
+  const getCurrentEngineId = () => {
+    return resolveSessionEngine(sessionId, deps.getConfig()?.defaultEngine);
+  };
+  const createCurrentAssistantMessage = (blocks2) => {
+    const id38 = _pendingAssistantMessageId ?? generateUUID();
+    _pendingAssistantMessageId = null;
+    return {
+      id: id38,
+      engineId: getCurrentEngineId(),
+      blocks: blocks2,
+      isStreaming: true
+    };
+  };
+  let _textBuffer = "";
+  let _paragraphTimer = null;
+  let _thinkingBuffer = "";
+  let _pendingAssistantMessageId = null;
+  let _lastCompactionRange = null;
+  let _loadingOlderPage = false;
+  const STREAM_FLUSH_INTERVAL = 50;
+  const compactor = new MessageCompactor();
+  const foldThinkingBlocks = (blocks2) => {
+    let touched = false;
+    const next3 = blocks2.map((b12) => {
+      if (b12.type === "thinking" && !b12.collapsed) {
+        touched = true;
+        return { ...b12, collapsed: true };
+      }
+      return b12;
+    });
+    return touched ? next3 : blocks2;
+  };
+  const store3 = create()(
+    subscribeWithSelector((set5, get6) => ({
+      ...initialState,
+      // ===== 消息操作 =====
+      addMessage: (message) => {
+        set5((state5) => {
+          const newMessages = [...state5.messages, message];
+          return { messages: newMessages };
+        });
+      },
+      deleteMessage: (messageId) => {
+        set5((state5) => {
+          const newMessages = state5.messages.filter((m4) => m4.id !== messageId);
+          return { messages: newMessages };
+        });
+      },
+      editMessage: (messageId, newContent) => {
+        set5((state5) => {
+          const newMessages = state5.messages.map(
+            (m4) => m4.id === messageId && m4.type === "user" ? { ...m4, content: newContent } : m4
+          );
+          return { messages: newMessages };
+        });
+      },
+      clearMessages: () => {
+        set5({
+          messages: [],
+          archivedMessages: [],
+          currentMessage: null,
+          toolBlockMap: /* @__PURE__ */ new Map(),
+          questionBlockMap: /* @__PURE__ */ new Map(),
+          formBlockMap: /* @__PURE__ */ new Map(),
+          planBlockMap: /* @__PURE__ */ new Map(),
+          activePlanId: null,
+          agentRunBlockMap: /* @__PURE__ */ new Map(),
+          activeTaskId: null,
+          taskBoardBlockMap: /* @__PURE__ */ new Map(),
+          activeTaskBoardId: null,
+          pendingTaskCreates: [],
+          permissionRequestBlockMap: /* @__PURE__ */ new Map(),
+          activePermissionRequestId: null,
+          pluginCardBlockMap: /* @__PURE__ */ new Map(),
+          // 清空会话消息时同步清空待发送队列（语义一致：都视为会话内容重置）
+          pendingQueue: []
+        });
+      },
+      finishMessage: () => {
+        if (_thinkingBuffer) get6()._flushThinkingBuffer();
+        if (_textBuffer) get6()._flushTextBuffer();
+        if (_paragraphTimer) {
+          clearTimeout(_paragraphTimer);
+          _paragraphTimer = null;
+        }
+        _pendingAssistantMessageId = null;
+        const { currentMessage, messages } = get6();
+        if (currentMessage) {
+          const completedMessage = {
+            id: currentMessage.id,
+            type: "assistant",
+            engineId: currentMessage.engineId,
+            blocks: foldThinkingBlocks(currentMessage.blocks),
+            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+            isStreaming: false
+          };
+          const existingIdx = messages.findIndex((m4) => m4.id === completedMessage.id);
+          if (existingIdx >= 0 && messages[existingIdx].type === "assistant") {
+            const prev2 = messages[existingIdx];
+            const merged = {
+              ...completedMessage,
+              blocks: foldThinkingBlocks([...prev2.blocks, ...completedMessage.blocks])
+            };
+            const next3 = [...messages];
+            next3[existingIdx] = merged;
+            set5({ messages: next3, currentMessage: null });
+            return merged;
+          }
+          set5({
+            messages: [...messages, completedMessage],
+            currentMessage: null
+          });
+          return completedMessage;
+        }
+        return null;
+      },
+      // ===== 输入草稿 =====
+      updateInputDraft: (draft) => {
+        set5({ inputDraft: draft });
+      },
+      clearInputDraft: () => {
+        set5({
+          inputDraft: {
+            text: "",
+            attachments: [],
+            contextBlocks: []
+          }
+        });
+      },
+      // ===== 临时上下文块（TCB） =====
+      addContextBlock: (block2) => {
+        log5.info("[TCB] addContextBlock \u88AB\u8C03\u7528", {
+          id: block2?.id,
+          kind: block2?.kind,
+          title: block2?.title,
+          hasSession: !!get6().sessionId,
+          curBlocks: (block2 ? block2.id : "") ? (get6().inputDraft.contextBlocks ?? []).length : -1
+        });
+        if (!block2 || !block2.id || !block2.kind || !block2.title) return false;
+        const cur = get6().inputDraft;
+        const blocks2 = cur.contextBlocks ?? [];
+        const dupIdx = block2.source && block2.dedupeKey ? blocks2.findIndex(
+          (b12) => b12.source === block2.source && b12.dedupeKey === block2.dedupeKey
+        ) : -1;
+        if (dupIdx >= 0) {
+          const next3 = [...blocks2];
+          next3[dupIdx] = block2;
+          set5({ inputDraft: { ...cur, contextBlocks: next3 } });
+          return false;
+        }
+        set5({ inputDraft: { ...cur, contextBlocks: [...blocks2, block2] } });
+        return true;
+      },
+      removeContextBlock: (blockId) => {
+        const cur = get6().inputDraft;
+        const blocks2 = (cur.contextBlocks ?? []).filter((b12) => b12.id !== blockId);
+        if (blocks2.length === (cur.contextBlocks ?? []).length) return;
+        set5({ inputDraft: { ...cur, contextBlocks: blocks2 } });
+      },
+      clearContextBlocks: () => {
+        const cur = get6().inputDraft;
+        if ((cur.contextBlocks ?? []).length === 0) return;
+        set5({ inputDraft: { ...cur, contextBlocks: [] } });
+      },
+      updateContextBlockNote: (blockId, note2) => {
+        const cur = get6().inputDraft;
+        const blocks2 = cur.contextBlocks ?? [];
+        const idx = blocks2.findIndex((b12) => b12.id === blockId);
+        if (idx < 0) return;
+        const next3 = [...blocks2];
+        next3[idx] = { ...next3[idx], userNote: note2 };
+        set5({ inputDraft: { ...cur, contextBlocks: next3 } });
+      },
+      setPendingBriefing: (briefing) => {
+        set5({ pendingBriefing: briefing && briefing.trim() ? briefing : null });
+      },
+      // ===== 提示词优化（版本栈） =====
+      beginPromptOptimize: (sourceText, meta3) => {
+        const po2 = get6().promptOptimize;
+        if (po2.status === "running") return;
+        let history = po2.history;
+        let cursor = po2.cursor;
+        if (history.length === 0) {
+          history = [{ text: sourceText, origin: "original", createdAt: Date.now() }];
+          cursor = 0;
+        } else {
+          history = history.slice(0, cursor + 1);
+          if (history[cursor].text !== sourceText) {
+            history = [...history, { text: sourceText, origin: "edited", createdAt: Date.now() }];
+            cursor = history.length - 1;
+          }
+        }
+        set5({
+          promptOptimize: {
+            status: "running",
+            history,
+            cursor,
+            sourceSnapshot: sourceText,
+            pendingResult: null,
+            pendingMeta: {
+              engineId: meta3.engineId,
+              model: meta3.model,
+              mode: meta3.mode,
+              direction: meta3.direction,
+              customDirection: meta3.customDirection,
+              iteration: meta3.iteration,
+              totalIterations: meta3.totalIterations
+            },
+            optimizeSessionId: meta3.optimizeSessionId,
+            error: null
+          }
+        });
+      },
+      completePromptOptimize: (resultText) => {
+        const state5 = get6();
+        const po2 = state5.promptOptimize;
+        if (po2.status !== "running") return;
+        const text5 = resultText.trim();
+        if (!text5) {
+          set5({
+            promptOptimize: {
+              ...po2,
+              status: "idle",
+              sourceSnapshot: null,
+              pendingMeta: null,
+              optimizeSessionId: null,
+              // i18n 未初始化（测试环境等）时兜底，保证错误提示非空
+              error: i18n_default.t("chat:promptOptimize.errorEmpty", "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5") || "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5"
+            }
+          });
+          return;
+        }
+        if ((po2.sourceSnapshot ?? "") !== state5.inputDraft.text) {
+          set5({ promptOptimize: { ...po2, status: "ready", pendingResult: text5 } });
+          return;
+        }
+        const history = [
+          ...po2.history,
+          {
+            text: text5,
+            origin: "optimized",
+            engineId: po2.pendingMeta?.engineId,
+            model: po2.pendingMeta?.model,
+            mode: po2.pendingMeta?.mode,
+            direction: po2.pendingMeta?.direction,
+            customDirection: po2.pendingMeta?.customDirection,
+            iteration: po2.pendingMeta?.iteration,
+            totalIterations: po2.pendingMeta?.totalIterations,
+            createdAt: Date.now()
+          }
+        ];
+        set5({
+          promptOptimize: {
+            status: "idle",
+            history,
+            cursor: history.length - 1,
+            sourceSnapshot: null,
+            pendingResult: null,
+            pendingMeta: null,
+            optimizeSessionId: null,
+            error: null
+          },
+          inputDraft: { text: text5, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
+        });
+      },
+      continuePromptOptimize: (resultText) => {
+        const state5 = get6();
+        const po2 = state5.promptOptimize;
+        if (po2.status !== "running") return;
+        const text5 = resultText.trim();
+        if (!text5) {
+          set5({
+            promptOptimize: {
+              ...po2,
+              status: "idle",
+              sourceSnapshot: null,
+              pendingMeta: null,
+              optimizeSessionId: null,
+              error: i18n_default.t("chat:promptOptimize.errorEmpty", "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5") || "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5"
+            }
+          });
+          return;
+        }
+        const history = [
+          ...po2.history,
+          {
+            text: text5,
+            origin: "optimized",
+            engineId: po2.pendingMeta?.engineId,
+            model: po2.pendingMeta?.model,
+            mode: po2.pendingMeta?.mode,
+            direction: po2.pendingMeta?.direction,
+            customDirection: po2.pendingMeta?.customDirection,
+            iteration: po2.pendingMeta?.iteration,
+            totalIterations: po2.pendingMeta?.totalIterations,
+            createdAt: Date.now()
+          }
+        ];
+        set5({
+          promptOptimize: {
+            status: "idle",
+            history,
+            cursor: history.length - 1,
+            sourceSnapshot: null,
+            pendingResult: null,
+            pendingMeta: null,
+            optimizeSessionId: null,
+            error: null
+          },
+          inputDraft: { text: text5, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
+        });
+      },
+      applyPendingPromptOptimize: () => {
+        const state5 = get6();
+        const po2 = state5.promptOptimize;
+        if (po2.status !== "ready" || !po2.pendingResult) return;
+        const currentInput = state5.inputDraft.text;
+        let history = po2.history.slice(0, po2.cursor + 1);
+        if (history.length > 0 && history[history.length - 1].text !== currentInput && currentInput.trim()) {
+          history = [...history, { text: currentInput, origin: "edited", createdAt: Date.now() }];
+        }
+        const next3 = [
+          ...history,
+          {
+            text: po2.pendingResult,
+            origin: "optimized",
+            engineId: po2.pendingMeta?.engineId,
+            model: po2.pendingMeta?.model,
+            mode: po2.pendingMeta?.mode,
+            direction: po2.pendingMeta?.direction,
+            customDirection: po2.pendingMeta?.customDirection,
+            iteration: po2.pendingMeta?.iteration,
+            totalIterations: po2.pendingMeta?.totalIterations,
+            createdAt: Date.now()
+          }
+        ];
+        set5({
+          promptOptimize: {
+            status: "idle",
+            history: next3,
+            cursor: next3.length - 1,
+            sourceSnapshot: null,
+            pendingResult: null,
+            pendingMeta: null,
+            optimizeSessionId: null,
+            error: null
+          },
+          inputDraft: { text: po2.pendingResult, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
+        });
+      },
+      failPromptOptimize: (error3) => {
+        const po2 = get6().promptOptimize;
+        set5({
+          promptOptimize: {
+            ...po2,
+            status: "idle",
+            sourceSnapshot: null,
+            pendingResult: null,
+            pendingMeta: null,
+            optimizeSessionId: null,
+            error: error3
+          }
+        });
+      },
+      undoPromptOptimize: () => {
+        const state5 = get6();
+        const po2 = state5.promptOptimize;
+        if (po2.status !== "idle" || po2.history.length === 0 || po2.cursor < 0) return;
+        let history = po2.history;
+        let cursor = po2.cursor;
+        if (state5.inputDraft.text !== history[cursor].text) {
+          history = [...history.slice(0, cursor + 1), { text: state5.inputDraft.text, origin: "edited", createdAt: Date.now() }];
+          cursor = history.length - 1;
+        }
+        if (cursor <= 0) return;
+        cursor -= 1;
+        set5({
+          promptOptimize: { ...po2, history, cursor },
+          inputDraft: { text: history[cursor].text, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
+        });
+      },
+      redoPromptOptimize: () => {
+        const state5 = get6();
+        const po2 = state5.promptOptimize;
+        if (po2.status !== "idle" || po2.cursor >= po2.history.length - 1) return;
+        if (state5.inputDraft.text !== po2.history[po2.cursor].text) return;
+        const cursor = po2.cursor + 1;
+        set5({
+          promptOptimize: { ...po2, cursor },
+          inputDraft: { text: po2.history[cursor].text, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
+        });
+      },
+      resetPromptOptimize: () => {
+        set5({
+          promptOptimize: {
+            status: "idle",
+            history: [],
+            cursor: -1,
+            sourceSnapshot: null,
+            pendingResult: null,
+            pendingMeta: null,
+            optimizeSessionId: null,
+            error: null
+          }
+        });
+      },
+      // ===== 流式构建 =====
+      // 段落级缓冲策略：
+      // 1. 首次创建消息时立即 flush（保证首 token 响应速度）
+      // 2. 后续更新等待 \n\n（段落结束）才 flush
+      // 3. 超时保护：200ms 内没有段落结束也 flush
+      // 效果：渲染更像"事件级"，一个段落一次渲染，减少视觉跳动
+      appendTextBlock: (content) => {
+        if (_thinkingBuffer) get6()._flushThinkingBuffer();
+        const preState = get6();
+        if (preState.currentMessage) {
+          const hasUncollapsed = preState.currentMessage.blocks.some((b12) => b12.type === "thinking" && !b12.collapsed);
+          if (hasUncollapsed) {
+            const folded = foldThinkingBlocks(preState.currentMessage.blocks);
+            if (folded !== preState.currentMessage.blocks) {
+              set5({
+                currentMessage: { ...preState.currentMessage, blocks: folded },
+                streamingUpdateCounter: preState.streamingUpdateCounter + 1
+              });
+            }
+          }
+        }
+        _textBuffer += content;
+        const state5 = get6();
+        if (!state5.currentMessage) {
+          if (!state5.isStreaming) {
+            const bufferContent = _textBuffer;
+            _textBuffer = "";
+            if (bufferContent) {
+              const { messages } = get6();
+              const lastIdx = messages.length - 1;
+              if (lastIdx >= 0 && messages[lastIdx].type === "assistant") {
+                const lastMsg = messages[lastIdx];
+                const blocks2 = [...lastMsg.blocks];
+                const lastBlock = blocks2[blocks2.length - 1];
+                if (lastBlock?.type === "text") {
+                  blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferContent };
+                } else {
+                  blocks2.push({ type: "text", content: bufferContent });
+                }
+                const newMessages = [...messages];
+                newMessages[lastIdx] = { ...lastMsg, blocks: blocks2 };
+                set5({ messages: newMessages });
+              }
+            }
+            return;
+          }
+          get6()._flushTextBuffer();
+          return;
+        }
+        if (_textBuffer.includes("\n\n")) {
+          if (_paragraphTimer) {
+            clearTimeout(_paragraphTimer);
+            _paragraphTimer = null;
+          }
+          get6()._flushTextBuffer();
+        } else if (!_paragraphTimer) {
+          _paragraphTimer = setTimeout(() => {
+            _paragraphTimer = null;
+            get6()._flushThinkingBuffer();
+            get6()._flushTextBuffer();
+          }, STREAM_FLUSH_INTERVAL);
+        }
+      },
+      /** 内部方法：将缓冲区文本 flush 到 Zustand store */
+      _flushTextBuffer: () => {
+        if (_paragraphTimer) {
+          clearTimeout(_paragraphTimer);
+          _paragraphTimer = null;
+        }
+        const bufferToFlush = _textBuffer;
+        _textBuffer = "";
+        const state5 = get6();
+        if (!bufferToFlush && state5.currentMessage) return;
+        if (!state5.currentMessage) {
+          if (bufferToFlush) {
+            if (!state5.isStreaming) {
+              const { messages } = get6();
+              const lastIdx = messages.length - 1;
+              if (lastIdx >= 0 && messages[lastIdx].type === "assistant") {
+                const lastMsg = messages[lastIdx];
+                const blocks2 = [...lastMsg.blocks];
+                const lastBlock = blocks2[blocks2.length - 1];
+                if (lastBlock?.type === "text") {
+                  blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
+                } else {
+                  blocks2.push({ type: "text", content: bufferToFlush });
+                }
+                const newMessages = [...messages];
+                newMessages[lastIdx] = { ...lastMsg, blocks: blocks2 };
+                set5({ messages: newMessages });
+              }
+            } else {
+              set5({
+                currentMessage: createCurrentAssistantMessage([{ type: "text", content: bufferToFlush }]),
+                streamingUpdateCounter: state5.streamingUpdateCounter + 1
+              });
+            }
+          }
+        } else {
+          let blocks2 = [...state5.currentMessage.blocks];
+          const lastBlock = blocks2[blocks2.length - 1];
+          if (lastBlock?.type === "text") {
+            blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
+          } else if (bufferToFlush) {
+            blocks2 = foldThinkingBlocks(blocks2);
+            blocks2.push({ type: "text", content: bufferToFlush });
+          }
+          set5({
+            currentMessage: { ...state5.currentMessage, blocks: blocks2 },
+            streamingUpdateCounter: state5.streamingUpdateCounter + 1
+          });
+        }
+      },
+      /**
+       * 内部方法：将缓冲区 thinking 内容一次性 flush 到 Zustand store。
+       * 与 _flushTextBuffer 严格对称（C2 spec §二）：原 appendThinkingBlock 的块操纵
+       * 逻辑（fold/merge/create currentMessage）整体迁入此处，仅把入参从每 delta
+       * content 改为 flush 时一次性 buffer 内容；streamingUpdateCounter 仍由 flush
+       * 触发 +1，delta 期间不再逐条自增。
+       * 注意：不清 _paragraphTimer——定时器为 thinking/text 共享，清空是
+       * _flushTextBuffer 的职责（thinking 落块后同窗 text 仍可能待落块）。
+       */
+      _flushThinkingBuffer: () => {
+        const bufferToFlush = _thinkingBuffer;
+        _thinkingBuffer = "";
+        if (!bufferToFlush) return;
+        const state5 = get6();
+        if (!state5.currentMessage) {
+          if (!state5.isStreaming) {
+            const { messages } = get6();
+            const lastIdx = messages.length - 1;
+            if (lastIdx >= 0 && messages[lastIdx].type === "assistant") {
+              const lastMsg = messages[lastIdx];
+              const blocks2 = [...lastMsg.blocks];
+              const lastBlock = blocks2[blocks2.length - 1];
+              if (lastBlock?.type === "thinking") {
+                blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
+              } else {
+                blocks2.push({ type: "thinking", content: bufferToFlush, collapsed: true });
+              }
+              const newMessages = [...messages];
+              newMessages[lastIdx] = { ...lastMsg, blocks: blocks2 };
+              set5({ messages: newMessages });
+            }
+          } else {
+            set5({
+              currentMessage: createCurrentAssistantMessage([{ type: "thinking", content: bufferToFlush }]),
+              streamingUpdateCounter: state5.streamingUpdateCounter + 1
+            });
+          }
+        } else {
+          const blocks2 = (() => {
+            const lastBlock = state5.currentMessage.blocks[state5.currentMessage.blocks.length - 1];
+            if (lastBlock?.type === "thinking") {
+              const merged = [...state5.currentMessage.blocks];
+              merged[merged.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
+              return merged;
+            }
+            return [...foldThinkingBlocks(state5.currentMessage.blocks), { type: "thinking", content: bufferToFlush }];
+          })();
+          set5({
+            currentMessage: { ...state5.currentMessage, blocks: blocks2 },
+            streamingUpdateCounter: state5.streamingUpdateCounter + 1
+          });
+        }
+      },
+      appendThinkingBlock: (content) => {
+        if (_textBuffer) get6()._flushTextBuffer();
+        _thinkingBuffer += content;
+        const state5 = get6();
+        if (!state5.currentMessage) {
+          get6()._flushThinkingBuffer();
+          return;
+        }
+        if (!_paragraphTimer) {
+          _paragraphTimer = setTimeout(() => {
+            _paragraphTimer = null;
+            get6()._flushThinkingBuffer();
+            get6()._flushTextBuffer();
+          }, STREAM_FLUSH_INTERVAL);
+        }
+      },
+      appendToolCallBlock: (toolId, toolName, input) => {
+        if (_thinkingBuffer) get6()._flushThinkingBuffer();
+        if (_textBuffer) get6()._flushTextBuffer();
+        const { currentMessage, toolBlockMap, streamingUpdateCounter } = get6();
+        const existingIdx = toolBlockMap.get(toolId);
+        if (existingIdx !== void 0 && currentMessage) {
+          const existing = currentMessage.blocks[existingIdx];
+          if (existing?.type === "tool_call") {
+            const hasInput = existing.input && Object.keys(existing.input).length > 0;
+            if (!hasInput && input && Object.keys(input).length > 0) {
+              const blocks2 = [...currentMessage.blocks];
+              blocks2[existingIdx] = { ...existing, input };
+              set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+            }
+          }
+          return;
+        }
+        if (existingIdx !== void 0 && !currentMessage) {
+          return;
+        }
+        if (hasBlockAnywhere(get6(), "tool_call", toolId)) {
+          return;
+        }
+        const block2 = {
+          type: "tool_call",
+          id: toolId,
+          name: toolName,
+          input,
+          status: "running",
+          startedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        const newMap = new Map(toolBlockMap);
+        if (!currentMessage) {
+          newMap.set(toolId, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            toolBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...foldThinkingBlocks(currentMessage.blocks), block2];
+          newMap.set(toolId, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            toolBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updateToolCallBlock: (toolId, status, output2, error3) => {
+        const { currentMessage, toolBlockMap } = get6();
+        const completedAt = status === "completed" || status === "failed" ? (/* @__PURE__ */ new Date()).toISOString() : void 0;
+        const patch = (b12) => {
+          if (b12.type !== "tool_call") return b12;
+          return {
+            ...b12,
+            status,
+            output: output2 ?? b12.output,
+            error: error3 ?? b12.error,
+            completedAt: completedAt ?? b12.completedAt
+          };
+        };
+        if (currentMessage) {
+          const idx = toolBlockMap.get(toolId);
+          if (idx === void 0) {
+            updateBlockAcrossSession(
+              get6,
+              set5,
+              (b12) => b12.type === "tool_call" && b12.id === toolId,
+              patch
+            );
+            return;
+          }
+          const blocks2 = [...currentMessage.blocks];
+          const block2 = blocks2[idx];
+          if (block2?.type !== "tool_call") return;
+          blocks2[idx] = patch(block2);
+          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+          return;
+        }
+        updateBlockAcrossSession(
+          get6,
+          set5,
+          (b12) => b12.type === "tool_call" && b12.id === toolId,
+          patch
+        );
+      },
+      updateToolCallTaskId: (toolId, taskId) => {
+        const apply5 = () => updateBlockAcrossSession(
+          get6,
+          set5,
+          (b12) => b12.type === "tool_call" && b12.id === toolId && !("taskId" in b12 && b12.taskId),
+          (b12) => b12.type === "tool_call" && !b12.taskId ? { ...b12, taskId } : b12
+        );
+        const { currentMessage, toolBlockMap } = get6();
+        if (!currentMessage) {
+          apply5();
+          return;
+        }
+        const idx = toolBlockMap.get(toolId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "tool_call") return;
+        if (block2.taskId) return;
+        blocks2[idx] = { ...block2, taskId };
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      updateToolCallBlockDiff: (toolId, diffData) => {
+        const { currentMessage, toolBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = toolBlockMap.get(toolId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        if (blocks2[idx]?.type === "tool_call") {
+          blocks2[idx] = { ...blocks2[idx], diffData };
+          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+        }
+      },
+      updateToolCallBlockPatch: (toolId, patchData) => {
+        const { currentMessage, toolBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = toolBlockMap.get(toolId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        if (blocks2[idx]?.type === "tool_call") {
+          blocks2[idx] = { ...blocks2[idx], patchData };
+          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+        }
+      },
+      updateCurrentAssistantMessage: (blocks2) => {
+        const { currentMessage } = get6();
+        if (currentMessage) {
+          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+        }
+      },
+      // ===== 问题块 =====
+      appendQuestionBlock: (questionId, sessionId2, questions) => {
+        const { currentMessage, messages, questionBlockMap, streamingUpdateCounter } = get6();
+        const alreadyExists = !!currentMessage?.blocks.some(
+          (b12) => b12.type === "question" && b12.id === questionId
+        ) || messages.some(
+          (m4) => m4.type === "assistant" && m4.blocks?.some(
+            (b12) => b12.type === "question" && b12.id === questionId
+          )
+        );
+        if (alreadyExists) {
+          return;
+        }
+        const first4 = questions[0];
+        const block2 = {
+          type: "question",
+          id: questionId,
+          sessionId: sessionId2,
+          questions,
+          status: "pending",
+          // 兼容字段
+          header: first4?.question || first4?.header,
+          options: first4?.options,
+          multiSelect: first4?.multiSelect,
+          allowCustomInput: first4?.allowCustomInput,
+          categoryLabel: first4 && first4.question && first4.header ? first4.header : void 0
+        };
+        const newMap = new Map(questionBlockMap);
+        if (!currentMessage) {
+          newMap.set(questionId, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            questionBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(questionId, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            questionBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updateQuestionBlock: (questionId, payload) => {
+        const { currentMessage, messages, questionBlockMap } = get6();
+        if (!currentMessage && messages.length === 0) return;
+        const applyToBlocks = (blocks2) => {
+          const next3 = blocks2.map((b12) => {
+            if (b12.type === "question" && b12.id === questionId) {
+              const existing = b12;
+              const first4 = payload.answers?.[0];
+              return {
+                ...existing,
+                // 只有 payload 显式传入时才覆盖，避免回滚时把既有 answers 抹成 undefined
+                answers: payload.answers ?? existing.answers,
+                declined: payload.declined ?? existing.declined,
+                status: payload.status ?? "answered",
+                // 兼容字段：首题摘要
+                answer: first4 ? {
+                  selected: first4.selected,
+                  customInput: first4.customInput
+                } : existing.answer
+              };
+            }
+            return b12;
+          });
+          const changed = next3.some((b12, i2) => b12 !== blocks2[i2]);
+          return { next: next3, changed };
+        };
+        if (currentMessage) {
+          const idx = questionBlockMap.get(questionId);
+          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "question" && currentMessage.blocks[idx]?.id === questionId) {
+            const blocks2 = [...currentMessage.blocks];
+            blocks2[idx] = applyToBlocks(blocks2).next[idx];
+            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+            return;
+          }
+          const { next: next3, changed } = applyToBlocks(currentMessage.blocks);
+          if (changed) {
+            set5({ currentMessage: { ...currentMessage, blocks: next3 } });
+            return;
+          }
+        }
+        let touched = false;
+        const newMessages = messages.map((msg) => {
+          if (msg.type !== "assistant" || !msg.blocks) return msg;
+          const { next: next3, changed } = applyToBlocks(msg.blocks);
+          if (!changed) return msg;
+          touched = true;
+          return { ...msg, blocks: next3 };
+        });
+        if (touched) {
+          set5({ messages: newMessages });
+        }
+      },
+      // ===== Form（表单工具） =====
+      appendFormBlock: (block2) => {
+        if (_thinkingBuffer) get6()._flushThinkingBuffer();
+        if (_textBuffer) get6()._flushTextBuffer();
+        const { currentMessage, formBlockMap, streamingUpdateCounter } = get6();
+        const newMap = new Map(formBlockMap);
+        if (hasBlockAnywhere(get6(), "form", block2.id)) {
+          return;
+        }
+        if (!currentMessage) {
+          newMap.set(block2.id, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            formBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(block2.id, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            formBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updateFormBlock: (formId, updates) => {
+        const { currentMessage, messages, formBlockMap } = get6();
+        if (!currentMessage && messages.length === 0) return;
+        const applyToBlocks = (blocks2) => {
+          const next3 = blocks2.map((b12) => {
+            if (b12.type === "form" && b12.id === formId) {
+              return { ...b12, ...updates };
+            }
+            return b12;
+          });
+          const changed = next3.some((b12, i2) => b12 !== blocks2[i2]);
+          return { next: next3, changed };
+        };
+        if (currentMessage) {
+          const idx = formBlockMap.get(formId);
+          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "form" && currentMessage.blocks[idx]?.id === formId) {
+            const blocks2 = [...currentMessage.blocks];
+            const existing = blocks2[idx];
+            blocks2[idx] = { ...existing, ...updates };
+            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+            return;
+          }
+          const { next: next3, changed } = applyToBlocks(currentMessage.blocks);
+          if (changed) {
+            set5({ currentMessage: { ...currentMessage, blocks: next3 } });
+            return;
+          }
+        }
+        let touched = false;
+        const newMessages = messages.map((msg) => {
+          if (msg.type !== "assistant" || !msg.blocks) return msg;
+          const { next: next3, changed } = applyToBlocks(msg.blocks);
+          if (!changed) return msg;
+          touched = true;
+          return { ...msg, blocks: next3 };
+        });
+        if (touched) {
+          set5({ messages: newMessages });
+        }
+      },
+      // ===== PluginCard =====
+      appendPluginCardBlock: (block2) => {
+        if (_thinkingBuffer) get6()._flushThinkingBuffer();
+        if (_textBuffer) get6()._flushTextBuffer();
+        const { currentMessage, pluginCardBlockMap, streamingUpdateCounter } = get6();
+        const newMap = new Map(pluginCardBlockMap);
+        if (hasBlockAnywhere(get6(), "plugin_card", block2.id)) {
+          return;
+        }
+        if (!currentMessage) {
+          newMap.set(block2.id, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            pluginCardBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(block2.id, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            pluginCardBlockMap: newMap,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updatePluginCardBlock: (id38, updates) => {
+        const { currentMessage, pluginCardBlockMap } = get6();
+        const patch = (b12) => b12.type === "plugin_card" ? { ...b12, ...updates } : b12;
+        if (currentMessage) {
+          const idx = pluginCardBlockMap.get(id38);
+          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "plugin_card") {
+            const blocks2 = [...currentMessage.blocks];
+            blocks2[idx] = patch(blocks2[idx]);
+            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+            return;
+          }
+        }
+        updateBlockAcrossSession(
+          get6,
+          set5,
+          (b12) => b12.type === "plugin_card" && b12.id === id38,
+          patch
+        );
+      },
+      appendContextCompactBlock: (trigger, preTokens, postTokens) => {
+        if (_thinkingBuffer) get6()._flushThinkingBuffer();
+        if (_textBuffer) get6()._flushTextBuffer();
+        const block2 = {
+          type: "context_compact",
+          id: generateUUID(),
+          trigger,
+          preTokens,
+          postTokens,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        const { currentMessage, streamingUpdateCounter } = get6();
+        if (!currentMessage) {
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          set5({
+            currentMessage: { ...currentMessage, blocks: [...currentMessage.blocks, block2] },
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      // ===== PlanMode =====
+      appendPlanModeBlock: (planId, sessionId2, title2, description, stages) => {
+        const { currentMessage, planBlockMap, streamingUpdateCounter } = get6();
+        const block2 = {
+          type: "plan_mode",
+          id: planId,
+          sessionId: sessionId2,
+          title: title2 ?? "\u6267\u884C\u8BA1\u5212",
+          description,
+          stages: stages ?? [],
+          status: "drafting"
+        };
+        const newMap = new Map(planBlockMap);
+        if (!currentMessage) {
+          newMap.set(planId, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            planBlockMap: newMap,
+            activePlanId: planId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(planId, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            planBlockMap: newMap,
+            activePlanId: planId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updatePlanModeBlock: (planId, updates) => {
+        const { currentMessage, planBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = planBlockMap.get(planId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        if (blocks2[idx]?.type === "plan_mode") {
+          blocks2[idx] = { ...blocks2[idx], ...updates };
+          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+        }
+      },
+      updatePlanStageStatus: (planId, stageId, status, tasks4) => {
+        const { currentMessage, planBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = planBlockMap.get(planId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "plan_mode") return;
+        const stages = block2.stages?.map((s3) => s3.stageId === stageId ? { ...s3, status, tasks: tasks4 ?? s3.tasks } : s3);
+        blocks2[idx] = { ...block2, stages };
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      setActivePlan: (planId) => set5({ activePlanId: planId }),
+      // ===== AgentRun =====
+      appendAgentRunBlock: (taskId, agentType, capabilities) => {
+        const { currentMessage, agentRunBlockMap, streamingUpdateCounter } = get6();
+        if (agentRunBlockMap.has(taskId)) {
+          return;
+        }
+        const block2 = {
+          type: "agent_run",
+          id: taskId,
+          agentType,
+          capabilities: capabilities ?? [],
+          status: "running",
+          toolCalls: [],
+          startedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        const newMap = new Map(agentRunBlockMap);
+        if (!currentMessage) {
+          newMap.set(taskId, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            agentRunBlockMap: newMap,
+            activeTaskId: taskId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(taskId, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            agentRunBlockMap: newMap,
+            activeTaskId: taskId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updateAgentRunBlock: (taskId, updates) => {
+        const { currentMessage, agentRunBlockMap } = get6();
+        const patch = (b12) => b12.type === "agent_run" ? { ...b12, ...updates } : b12;
+        if (currentMessage) {
+          const idx = agentRunBlockMap.get(taskId);
+          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "agent_run") {
+            const blocks2 = [...currentMessage.blocks];
+            blocks2[idx] = patch(blocks2[idx]);
+            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+            return;
+          }
+        }
+        updateBlockAcrossSession(
+          get6,
+          set5,
+          (b12) => b12.type === "agent_run" && b12.id === taskId,
+          patch
+        );
+      },
+      appendAgentToolCall: (taskId, toolId, toolName) => {
+        const { currentMessage, agentRunBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = agentRunBlockMap.get(taskId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "agent_run") return;
+        blocks2[idx] = {
+          ...block2,
+          toolCalls: [...block2.toolCalls ?? [], { id: toolId, name: toolName, status: "running" }]
+        };
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      updateAgentToolCallStatus: (taskId, toolId, status, summary) => {
+        const { currentMessage, agentRunBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = agentRunBlockMap.get(taskId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "agent_run") return;
+        blocks2[idx] = {
+          ...block2,
+          toolCalls: block2.toolCalls?.map(
+            (tc) => tc.id === toolId ? { ...tc, status, summary } : tc
+          )
+        };
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      setActiveTask: (taskId) => set5({ activeTaskId: taskId }),
+      // ===== TaskBoard（TaskCreate/Update/List 聚合，run 级单板幂等合并） =====
+      ensureTaskBoard: (callId) => {
+        const { currentMessage, taskBoardBlockMap, activeTaskBoardId, streamingUpdateCounter } = get6();
+        if (activeTaskBoardId && taskBoardBlockMap.has(activeTaskBoardId)) {
+          return activeTaskBoardId;
+        }
+        const boardId = callId;
+        const block2 = {
+          type: "task_board",
+          id: boardId,
+          items: [],
+          completed: 0,
+          inProgress: 0,
+          blocked: 0,
+          total: 0,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        const newMap = new Map(taskBoardBlockMap);
+        if (!currentMessage) {
+          newMap.set(boardId, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            taskBoardBlockMap: newMap,
+            activeTaskBoardId: boardId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(boardId, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            taskBoardBlockMap: newMap,
+            activeTaskBoardId: boardId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+        return boardId;
+      },
+      upsertTaskBoardItem: (boardId, item) => {
+        const { currentMessage, taskBoardBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = taskBoardBlockMap.get(boardId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "task_board") return;
+        const items = [...block2.items];
+        const existingIdx = items.findIndex((it) => it.id === item.id);
+        if (existingIdx >= 0) {
+          const prev2 = items[existingIdx];
+          items[existingIdx] = {
+            ...prev2,
+            ...item,
+            updateCount: (prev2.updateCount ?? 0) + 1,
+            description: item.description ?? prev2.description
+          };
+        } else {
+          items.push({ ...item, updateCount: 0 });
+        }
+        blocks2[idx] = recomputeTaskBoard(block2, items);
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      patchTaskBoardItem: (boardId, taskId, patch) => {
+        const { currentMessage, taskBoardBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = taskBoardBlockMap.get(boardId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "task_board") return;
+        const items = [...block2.items];
+        const existingIdx = items.findIndex((it) => it.id === taskId);
+        if (existingIdx >= 0) {
+          const prev2 = items[existingIdx];
+          items[existingIdx] = {
+            ...prev2,
+            ...patch,
+            updateCount: (prev2.updateCount ?? 0) + 1
+          };
+        } else {
+          items.push({
+            id: taskId,
+            subject: patch.subject ?? patch.activeForm ?? taskId,
+            status: patch.status ?? "pending",
+            ...patch,
+            updateCount: 0
+          });
+        }
+        blocks2[idx] = recomputeTaskBoard(block2, items);
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      syncTaskBoardFromList: (boardId, snapshotItems) => {
+        const { currentMessage, taskBoardBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = taskBoardBlockMap.get(boardId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        const block2 = blocks2[idx];
+        if (block2?.type !== "task_board") return;
+        const items = [...block2.items];
+        for (const snap of snapshotItems) {
+          const existingIdx = items.findIndex((it) => it.id === snap.id);
+          if (existingIdx >= 0) {
+            items[existingIdx] = { ...items[existingIdx], ...snap };
+          } else {
+            items.push({ ...snap, updateCount: 0 });
+          }
+        }
+        blocks2[idx] = recomputeTaskBoard(block2, items);
+        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
+      },
+      queueTaskCreate: (boardId, entry) => {
+        const { pendingTaskCreates } = get6();
+        set5({ pendingTaskCreates: [...pendingTaskCreates, { boardId, entry }] });
+      },
+      flushTaskCreate: (boardId, taskId) => {
+        const { pendingTaskCreates } = get6();
+        if (!pendingTaskCreates.length) return;
+        const idx = pendingTaskCreates.findIndex((e3) => e3.boardId === boardId);
+        if (idx < 0) return;
+        const entry = pendingTaskCreates[idx];
+        set5({ pendingTaskCreates: pendingTaskCreates.filter((_5, i2) => i2 !== idx) });
+        const item = {
+          id: taskId || generateUUID(),
+          subject: entry.entry.subject,
+          activeForm: entry.entry.activeForm,
+          description: entry.entry.description,
+          status: "pending"
+        };
+        get6().upsertTaskBoardItem(boardId, item);
+      },
+      // ===== PermissionRequest =====
+      appendPermissionRequestBlock: (requestId, sessionId2, denials) => {
+        const { currentMessage, permissionRequestBlockMap, streamingUpdateCounter } = get6();
+        const normalizedDenials = denials.map((d3) => {
+          const raw = d3;
+          return {
+            toolName: d3.toolName,
+            reason: d3.reason,
+            toolInput: d3.toolInput ?? raw.tool_input,
+            toolUseId: d3.toolUseId ?? raw.tool_use_id,
+            status: "pending",
+            extra: d3.extra
+          };
+        });
+        const block2 = {
+          type: "permission_request",
+          id: requestId,
+          sessionId: sessionId2,
+          denials: normalizedDenials,
+          status: "pending"
+        };
+        const newMap = new Map(permissionRequestBlockMap);
+        if (!currentMessage) {
+          newMap.set(requestId, 0);
+          set5({
+            currentMessage: createCurrentAssistantMessage([block2]),
+            permissionRequestBlockMap: newMap,
+            activePermissionRequestId: requestId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        } else {
+          const blocks2 = [...currentMessage.blocks, block2];
+          newMap.set(requestId, blocks2.length - 1);
+          set5({
+            currentMessage: { ...currentMessage, blocks: blocks2 },
+            permissionRequestBlockMap: newMap,
+            activePermissionRequestId: requestId,
+            streamingUpdateCounter: streamingUpdateCounter + 1
+          });
+        }
+      },
+      updatePermissionRequestBlock: (requestId, status, decision) => {
+        const { currentMessage, permissionRequestBlockMap } = get6();
+        if (!currentMessage) return;
+        const idx = permissionRequestBlockMap.get(requestId);
+        if (idx === void 0) return;
+        const blocks2 = [...currentMessage.blocks];
+        if (blocks2[idx]?.type === "permission_request") {
+          blocks2[idx] = { ...blocks2[idx], status, decision };
+          set5({ currentMessage: { ...currentMessage, blocks: blocks2 }, activePermissionRequestId: status === "pending" ? requestId : null });
+        }
+      },
+      setActivePermissionRequest: (requestId) => set5({ activePermissionRequestId: requestId }),
+      resolvePermissionRequest: (requestId, perItem) => {
+        const applyToBlocks = (blocks2) => {
+          let changed = false;
+          const next3 = blocks2.map((b12) => {
+            if (b12.type === "permission_request" && b12.id === requestId && b12.status === "pending") {
+              changed = true;
+              const denials = b12.denials.map((d3, i2) => {
+                const dec = perItem[i2];
+                return dec ? { ...d3, status: dec.status, scope: dec.scope } : d3;
+              });
+              const anyApproved = denials.some((d3) => d3.status === "approved");
+              return {
+                ...b12,
+                denials,
+                status: anyApproved ? "approved" : "denied",
+                decision: { approved: anyApproved, timestamp: (/* @__PURE__ */ new Date()).toISOString() }
+              };
+            }
+            return b12;
+          });
+          return changed ? next3 : null;
+        };
+        const { currentMessage, messages } = get6();
+        const nextCurrent = currentMessage ? applyToBlocks(currentMessage.blocks) : null;
+        let messagesChanged = false;
+        const nextMessages = messages.map((m4) => {
+          if (m4.type === "assistant" && m4.blocks) {
+            const nb = applyToBlocks(m4.blocks);
+            if (nb) {
+              messagesChanged = true;
+              return { ...m4, blocks: nb };
+            }
+          }
+          return m4;
+        });
+        if (nextCurrent || messagesChanged) {
+          set5({
+            ...nextCurrent && currentMessage ? { currentMessage: { ...currentMessage, blocks: nextCurrent } } : {},
+            ...messagesChanged ? { messages: nextMessages } : {},
+            activePermissionRequestId: null
+          });
+        }
+      },
+      expireStalePermissionRequests: () => {
+        const expireInBlocks = (blocks2) => {
+          let changed = false;
+          const next3 = blocks2.map((b12) => {
+            if (b12.type === "permission_request" && b12.status === "pending" && b12.denials.length > 0) {
+              changed = true;
+              return { ...b12, status: "expired" };
+            }
+            return b12;
+          });
+          return changed ? next3 : null;
+        };
+        const { currentMessage, messages } = get6();
+        const nextCurrent = currentMessage ? expireInBlocks(currentMessage.blocks) : null;
+        let messagesChanged = false;
+        const nextMessages = messages.map((m4) => {
+          if (m4.type === "assistant" && m4.blocks) {
+            const nb = expireInBlocks(m4.blocks);
+            if (nb) {
+              messagesChanged = true;
+              return { ...m4, blocks: nb };
+            }
+          }
+          return m4;
+        });
+        if (nextCurrent || messagesChanged) {
+          set5({
+            ...nextCurrent && currentMessage ? { currentMessage: { ...currentMessage, blocks: nextCurrent } } : {},
+            ...messagesChanged ? { messages: nextMessages } : {},
+            ...get6().activePermissionRequestId ? { activePermissionRequestId: null } : {}
+          });
+        }
+      },
+      addSessionAllowedTools: (tools) => {
+        if (!tools || tools.length === 0) return;
+        const cur = get6().sessionAllowedTools;
+        const merged = [.../* @__PURE__ */ new Set([...cur, ...tools])];
+        if (merged.length !== cur.length) set5({ sessionAllowedTools: merged });
+      },
+      // ===== 会话控制 =====
+      setConversationId: (id38) => set5({ conversationId: id38 }),
+      setStreaming: (streaming) => set5({ isStreaming: streaming }),
+      setError: (error3) => set5({ error: error3 }),
+      setProgressMessage: (message) => set5({ progressMessage: message }),
+      setPromptSuggestion: (suggestion) => set5({ promptSuggestion: suggestion }),
+      // ===== 历史恢复 =====
+      setMessagesFromHistory: (messages, conversationId, paging) => {
+        compactor.clearSnapshots();
+        _lastCompactionRange = null;
+        const baseMessages = normalizeRecoveredMessages2(messages);
+        const processedMessages = baseMessages.map((msg) => {
+          if (msg.type !== "assistant" || !msg.blocks) return msg;
+          let modified = false;
+          const blocks2 = msg.blocks.map((block2) => {
+            if (block2.type === "tool_call" && block2.status === "completed" && !block2.diffData && isEditTool(block2.name)) {
+              const diff2 = extractEditDiff(block2);
+              if (diff2) {
+                modified = true;
+                return { ...block2, diffData: diff2 };
+              }
+            }
+            if (block2.type === "permission_request" && block2.status === "pending" && block2.denials.length > 0) {
+              modified = true;
+              return { ...block2, status: "expired" };
+            }
+            if (block2.type === "plugin_card" && block2.mode === "interaction" && block2.status === "pending") {
+              modified = true;
+              return { ...block2, status: "declined" };
+            }
+            if (block2.type === "form" && block2.status === "pending") {
+              modified = true;
+              return {
+                ...block2,
+                status: "skipped",
+                ok: false,
+                receipt: "\u8868\u5355\u5DF2\u5931\u6548\uFF08\u4F1A\u8BDD\u4E2D\u65AD\u6216\u8D85\u65F6\uFF09\uFF0C\u8BF7\u8BA9 AI \u91CD\u65B0\u53D1\u8D77"
+              };
+            }
+            return block2;
+          });
+          return modified ? { ...msg, blocks: blocks2 } : msg;
+        });
+        set5({
+          messages: processedMessages,
+          archivedMessages: [],
+          conversationId,
+          isStreaming: false,
+          error: null,
+          currentMessage: null,
+          progressMessage: null,
+          visibleRange: null,
+          // 加载新会话历史时重置用量水位，避免沿用上一会话的数字
+          usageStats: null,
+          streamRate: null,
+          // 恢复的消息本就来自磁盘 → 水位直接对齐，避免下轮 session_start 全量重刷；
+          // Fork（conversationId=null）水位归零，首轮 session_start 把完整历史写入新文件
+          persistedSeq: conversationId ? processedMessages.length : 0,
+          persistedConversationId: conversationId,
+          // 尾部优先恢复：记录向上翻页游标（无分页信息 = 已全量在内存）
+          historyPaging: paging ?? null,
+          // 历史恢复 = 会话内容重置，清空待发送队列（避免上一会话残留）
+          pendingQueue: []
+        });
+      },
+      /**
+       * 流式接续（跨端加入/断线恢复）：把快照末条 assistant 接续为 currentMessage，
+       * 后续实时 token 走正常流式追加。见 types.ts 方法注释（不接续会卡死页面）。
+       */
+      resumeStreamingFromLastAssistant: () => {
+        const { messages } = get6();
+        const last3 = messages[messages.length - 1];
+        if (last3 && last3.type === "assistant") {
+          const newMap = /* @__PURE__ */ new Map();
+          (last3.blocks ?? []).forEach((b12, idx) => {
+            if (b12.type === "tool_call") newMap.set(b12.id, idx);
+          });
+          set5({
+            messages: messages.slice(0, -1),
+            currentMessage: { ...last3, isStreaming: true },
+            toolBlockMap: newMap,
+            isStreaming: true
+          });
+        } else {
+          set5({ isStreaming: true });
+        }
+      },
+      // ===== 事件处理 =====
+      handleAIEvent: (event3) => handleAIEvent(event3, set5, get6),
+      // 轮次代际观测（spec F1）：见 types.ts observeTurnEvent 注释。
+      // 由 sessionStoreManager 在事件入口调用，返回 false 时整事件丢弃——
+      // 修复「旧轮迟到的 session_end/error 落在新轮流式期间，误杀新一轮」。
+      observeTurnEvent: (turnId, eventType) => {
+        const isTerminal = eventType === "session_end" || eventType === "error";
+        const current = get6().activeTurnId;
+        if (!isTerminal) {
+          if (current !== turnId) {
+            set5({
+              activeTurnId: turnId,
+              ...get6().isStreaming ? {} : { isStreaming: true }
+            });
+          }
+          return true;
+        }
+        return current === null || current === turnId;
+      },
+      // ===== 主动操作 =====
+      // ===== 待发送队列（流式预输入 / 多行拆分入队） =====
+      // 纯前端内存态、绑定会话生命周期。AI 流式回复期间用户提交的消息入队，
+      // session_end 后由 dispatchNextPending 自动逐条发送；不落盘、不进入 messages 流。
+      enqueuePending: (message) => {
+        set5((state5) => ({ pendingQueue: [...state5.pendingQueue, message] }));
+      },
+      removePending: (id38) => {
+        set5((state5) => ({ pendingQueue: state5.pendingQueue.filter((m4) => m4.id !== id38) }));
+      },
+      clearPendingQueue: () => {
+        set5({ pendingQueue: [] });
+      },
+      dispatchNextPending: async () => {
+        const st3 = get6();
+        if (st3.isStreaming || st3.queueDispatching || st3.pendingQueue.length === 0) return;
+        const [next3, ...rest] = st3.pendingQueue;
+        set5({
+          pendingQueue: rest,
+          queueDispatching: true
+        });
+        let accepted = false;
+        try {
+          accepted = await get6().sendMessage(next3.text, void 0, next3.attachments);
+        } finally {
+          set5({ queueDispatching: false });
+        }
+        if (!accepted) {
+          set5((state5) => ({
+            pendingQueue: [{ ...next3, status: "queued" }, ...state5.pendingQueue]
+          }));
+          try {
+            const { useToastStore: useToastStore2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
+            useToastStore2.getState().error(
+              i18n_default.t("chat:input.sendFailedQueued", "\u53D1\u9001\u5931\u8D25\uFF0C\u5DF2\u4FDD\u7559\u5728\u5F85\u53D1\u961F\u5217\uFF0C\u53EF\u70B9\u51FB\u300C\u7ACB\u5373\u53D1\u9001\u300D\u91CD\u8BD5")
+            );
+          } catch (toastErr) {
+            log5.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
+          }
+          return;
+        }
+        const after = get6();
+        if (after.pendingQueue.length > 0 && !after.isStreaming) {
+          void get6().dispatchNextPending();
+        }
+      },
+      // 立即发送队列中的指定条目（PendingQueueCard 点击「立即发送」）。
+      // 从队列取出该条；若正在流式则先中断并等待本轮收尾（session_end / 5s 兜底），
+      // 再走 sendMessage 开启新一轮。与自动派发（dispatchNextPending）互补，可随时提前发。
+      sendPendingNow: async (id38) => {
+        const st3 = get6();
+        const target = st3.pendingQueue.find((m4) => m4.id === id38);
+        if (!target || st3.queueDispatching) return;
+        set5({ queueDispatching: true });
+        try {
+          const originConversationId = st3.conversationId;
+          if (st3.isStreaming) {
+            await Promise.race([
+              get6().interrupt().catch(() => void 0),
+              new Promise((r3) => setTimeout(r3, 16e3))
+            ]);
+            await waitFor(() => !get6().isStreaming, 2e3);
+            if (get6().isStreaming) {
+              set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
+              get6().finishMessage();
+            }
+          }
+          const after = get6();
+          if (after.conversationId !== originConversationId) {
+            const stillQueued = after.pendingQueue.some((m4) => m4.id === id38);
+            if (stillQueued) {
+              set5((state5) => ({
+                pendingQueue: [{ ...target, status: "queued" }, ...state5.pendingQueue]
+              }));
+            }
+            return;
+          }
+          set5({ pendingQueue: after.pendingQueue.filter((m4) => m4.id !== id38) });
+          await get6().sendMessage(target.text, void 0, target.attachments);
+        } finally {
+          set5({ queueDispatching: false });
+        }
+      },
+      // 撤回队列项到输入框草稿（PendingQueueCard 点击「编辑」）。
+      // 语义（对齐 ZCode handleEditQueueItem）：
+      //   ① 草稿冲突守卫：输入框已有内容/busy → 拒绝（避免覆盖用户正在写的消息）；
+      //   ② 从队列移除该条（纯前端队列删除即成功，无后端 ACK 等待）；
+      //   ③ 恢复原文到 inputDraft —— ChatInput 的 inputDraft effect 自动同步到输入框，
+      //      再触发 'chat:focus-input' 事件聚焦。
+      editPending: (id38) => {
+        const st3 = get6();
+        const target = st3.pendingQueue.find((m4) => m4.id === id38);
+        if (!target) return;
+        if (target.status === "sending") return;
+        const draft = st3.inputDraft;
+        if ((draft.text?.trim() ?? "") || (draft.attachments?.length ?? 0) > 0) {
+          try {
+            void Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore2 }) => {
+              useToastStore2.getState().error(
+                i18n_default.t("chat:input.editPendingDraftConflict", "\u8F93\u5165\u6846\u5DF2\u6709\u5185\u5BB9\uFF0C\u8BF7\u5148\u6E05\u7A7A\u6216\u53D1\u9001\u540E\u518D\u64A4\u56DE\u961F\u5217\u6D88\u606F")
+              );
+            });
+          } catch (toastErr) {
+            log5.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
+          }
+          return;
+        }
+        set5((state5) => ({
+          pendingQueue: state5.pendingQueue.filter((m4) => m4.id !== id38),
+          inputDraft: {
+            text: target.text,
+            attachments: target.attachments ?? [],
+            contextBlocks: []
+          }
+        }));
+        try {
+          eventBus.emit("chat:focus-input", void 0);
+        } catch {
+        }
+      },
+      sendMessage: async (content, workspaceDir, attachments, sendOptions) => {
+        const { conversationId, sessionId: sessionId2, messages } = get6();
+        const config3 = deps.getConfig();
+        const engine = resolveSessionEngine(sessionId2, config3?.defaultEngine);
+        get6().expireStalePermissionRequests();
+        if (get6().currentMessage) {
+          get6().finishMessage();
+        }
+        const currentWorkspace = deps.getWorkspace();
+        const actualWorkspaceDir = workspaceDir || currentWorkspace?.path;
+        const { workspacePrompt, userPrompt, contextWorkspaces, allWorkspaces } = buildWorkspacePrompts(deps.getWorkspace, deps.getContextWorkspaceIds, deps.getAllWorkspaces);
+        const { processedMessage } = parseWorkspaceReferences(
+          content,
+          allWorkspaces,
+          contextWorkspaces,
+          currentWorkspace?.id || null
+        );
+        log5.info("sendMessage debug", {
+          sessionId: sessionId2,
+          conversationId,
+          providedWorkspaceDir: workspaceDir,
+          actualWorkspaceDir,
+          currentWorkspace: currentWorkspace ? { id: currentWorkspace.id, name: currentWorkspace.name, path: currentWorkspace.path } : null,
+          workspacePromptLength: workspacePrompt.length,
+          userPromptLength: userPrompt?.length ?? 0
+        });
+        const userMessage = {
+          id: generateUUID(),
+          type: "user",
+          content,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+          attachments: attachments?.map((a3) => ({
+            id: a3.id,
+            type: a3.type,
+            fileName: a3.fileName,
+            fileSize: a3.fileSize,
+            mimeType: a3.mimeType
+          }))
+        };
+        const assistantMessageId = generateUUID();
+        _pendingAssistantMessageId = assistantMessageId;
+        get6().addMessage(userMessage);
+        if (messages.length === 0) {
+          const placeholder = generateTitleFromMessage(content);
+          sessionStoreManager.getState().updateSessionTitle(sessionId2, placeholder);
+        }
+        get6().clearInputDraft();
+        set5({
+          isStreaming: true,
+          error: null,
+          currentMessage: null,
+          toolBlockMap: /* @__PURE__ */ new Map(),
+          taskBoardBlockMap: /* @__PURE__ */ new Map(),
+          activeTaskBoardId: null,
+          pendingTaskCreates: [],
+          // 乐观计时起点（spec：续聊兜底）。SimpleAI 等引擎续聊不发 session_start
+          // 事件，若等它来录起点，后续轮次将永远不计时；此处以发送时刻乐观起算，
+          // 真实 session_start 到达后由其 receivedAtMs 覆盖（同一轮，不双计）。
+          // 静默会话（标题生成/压缩交接触发的 sendMessage）不计入用户可见时长，
+          // 与 eventHandler session_start/session_end 的 silentMode 守卫保持一致。
+          runStartAtMs: (() => {
+            try {
+              const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
+              return meta3?.silentMode ? null : Date.now();
+            } catch {
+              return Date.now();
+            }
+          })(),
+          // 批 4b（审计 4.1）：轮次代际 +1——interrupt 兜底定时器等跨轮回调
+          // 据此识别旧轮次，不再误杀新一轮流式
+          turnEpoch: get6().turnEpoch + 1
+        });
+        try {
+          const router = deps.getEventRouter();
+          await router.initialize();
+          const attachmentsForBackend = attachments?.map((a3) => ({
+            type: a3.type,
+            fileName: a3.fileName,
+            mimeType: a3.mimeType,
+            content: a3.content,
+            textContent: a3.textContent
+          }));
+          const sessionConfig = getSessionConfig();
+          const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, engine);
+          const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
+          const modelProfileId = resolveEffectiveProfileId(
+            sessionMeta?.modelProfileId,
+            sessionConfig.modelProfileId,
+            getActiveModelProfile()?.id
+          );
+          const profileMode = resolveEffectiveProfileMode(
+            sessionMeta?.profileMode,
+            sessionConfig.profileMode
+          );
+          const effectiveProfileId = isProfileModeWithoutProfile(profileMode) ? void 0 : modelProfileId;
+          const effectiveProfile = getModelProfileById(effectiveProfileId);
+          const resolvedModel = normalizeModelForProfile(
+            sessionMeta?.model ?? runtimeConfig.model,
+            effectiveProfile
+          );
+          const disabledMcpServers = getDisabledPluginMcpServers();
+          const pendingBriefing = get6().pendingBriefing;
+          const dispatchReportText = formatPendingDispatchReports(sessionId2);
+          const oneTimeParts = [
+            pendingBriefing ? i18n_default.t("chat:compactHandoff.contextPreamble", { briefing: pendingBriefing }) : "",
+            dispatchReportText,
+            sendOptions?.oneTimeSystemPrompt ?? ""
+          ].filter(Boolean);
+          const appendPrompt = oneTimeParts.length > 0 ? `${workspacePrompt}
+
+${oneTimeParts.join("\n\n")}` : workspacePrompt;
+          if (pendingBriefing) {
+            set5({ pendingBriefing: null });
+          }
+          const clientDescriptor = detectClientDescriptor();
+          const chatOptions = {
+            appendSystemPrompt: normalizeForInvoke(appendPrompt),
+            systemPrompt: userPrompt ? normalizeForInvoke(userPrompt) : null,
+            workDir: actualWorkspaceDir,
+            contextId: deps.contextId,
+            engineId: engine,
+            enableMcpTools: true,
+            disabledMcpServers,
+            attachments: attachmentsForBackend,
+            additionalDirs: contextWorkspaces.map((w5) => w5.path).filter(Boolean),
+            agent: sendOptions?.runtimeOverride?.agent ?? sessionMeta?.agent ?? runtimeConfig.agent,
+            model: resolvedModel,
+            effort: sendOptions?.runtimeOverride?.effort ?? sessionMeta?.effort ?? runtimeConfig.effort,
+            permissionMode: sendOptions?.runtimeOverride?.permissionMode ?? sessionMeta?.permissionMode ?? runtimeConfig.permissionMode,
+            allowedTools: sendOptions?.allowedTools && sendOptions.allowedTools.length > 0 ? sendOptions.allowedTools : void 0,
+            modelProfileId: effectiveProfileId,
+            profileMode,
+            clientMessageId: userMessage.id,
+            assistantMessageId,
+            clientType: clientDescriptor.clientType,
+            clientPlatform: clientDescriptor.clientPlatform,
+            deviceId: clientDescriptor.deviceId || void 0
+          };
+          if (conversationId) {
+            await aiChatDispatchStream({
+              action: "continue",
+              sessionId: conversationId,
+              message: normalizeForInvoke(processedMessage),
+              options: chatOptions
+            });
+          } else {
+            const sessionMeta2 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
+            const forkSessionId = sessionMeta2?.forkFromId;
+            const newSessionId = await aiChatDispatch({
+              action: "start",
+              message: normalizeForInvoke(processedMessage),
+              options: {
+                ...chatOptions,
+                forkSessionId: forkSessionId || void 0
+              }
+            });
+            set5({ conversationId: newSessionId });
+          }
+          try {
+            const mgrState = sessionStoreManager.getState();
+            const meta3 = mgrState.sessionMetadata.get(sessionId2);
+            if (meta3 && meta3.status !== "running" && meta3.status !== "background-running") {
+              const newMetadata = new Map(mgrState.sessionMetadata);
+              newMetadata.set(sessionId2, {
+                ...meta3,
+                status: "running",
+                updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+              });
+              sessionStoreManager.setState({ sessionMetadata: newMetadata });
+            }
+          } catch {
+          }
+          return true;
+        } catch (e3) {
+          const err = e3 instanceof Error ? e3 : new Error(String(e3));
+          log5.error("sendMessage failed", err, { sessionId: sessionId2, conversationId, workspaceDir: actualWorkspaceDir });
+          const draftNow = get6().inputDraft;
+          const draftEmpty = !draftNow?.text && (!draftNow?.attachments || draftNow.attachments.length === 0);
+          set5({
+            error: resolveChatError(e3, { sessionId: sessionId2, workspaceDir: actualWorkspaceDir }),
+            isStreaming: false,
+            currentMessage: null,
+            progressMessage: null,
+            // 乐观计时起点对本轮失效：发送失败无真实轮次，清空避免残留起点
+            // 被未来迟到的 session_end 误结算（否则误累加一大段墙面时间）
+            runStartAtMs: null,
+            // 回滚本轮乐观追加的用户消息（未进引擎上下文，不该留在历史）
+            messages: get6().messages.filter((m4) => m4.id !== userMessage.id)
+          });
+          if (draftEmpty) {
+            get6().updateInputDraft({
+              text: content,
+              attachments: attachments ?? [],
+              contextBlocks: []
+            });
+          }
+          return false;
+        }
+      },
+      settleSessionElapsedMs: () => {
+        const runStart = get6().runStartAtMs;
+        if (runStart == null) return;
+        const delta = Math.max(0, Date.now() - runStart);
+        set5((s3) => ({
+          sessionElapsedMs: s3.sessionElapsedMs + delta,
+          runStartAtMs: null,
+          // 记录最近完成一轮时长：会话结束后折叠态继续显示「刚才那轮」而非回 0
+          lastTurnMs: delta
+        }));
+      },
+      interrupt: async () => {
+        const { conversationId, isStreaming } = get6();
+        if (!conversationId || !isStreaming) return;
+        const config3 = deps.getConfig();
+        const engine = resolveSessionEngine(get6().sessionId, config3?.defaultEngine);
+        log5.info("Attempting to interrupt session", { conversationId, engine, isStreaming });
+        set5({ isInterrupting: true });
+        try {
+          const interruptInvoke = aiChatDispatch({
+            action: "interrupt",
+            sessionId: conversationId,
+            engineId: engine
+          });
+          const invokeTimeout = new Promise(
+            (_5, reject2) => setTimeout(() => reject2(new Error("interrupt invoke \u8D85\u65F6\uFF08\u540E\u7AEF\u65E0\u54CD\u5E94\uFF09")), 8e3)
+          );
+          await Promise.race([interruptInvoke, invokeTimeout]);
+          log5.info("Session interrupted, waiting for backend session_end to finalize", {
+            conversationId
+          });
+          await waitFor(() => !get6().isStreaming, 8e3);
+          const epochAtInterrupt = get6().turnEpoch;
+          setTimeout(() => {
+            const st3 = get6();
+            if (st3.conversationId !== conversationId) return;
+            if (st3.turnEpoch !== epochAtInterrupt) return;
+            if (st3.isStreaming || st3.isInterrupting) {
+              log5.warn("Interrupt timeout fallback: backend session_end not received, force-finishing streaming", {
+                conversationId,
+                isStreaming: st3.isStreaming,
+                isInterrupting: st3.isInterrupting,
+                hasCurrentMessage: !!st3.currentMessage
+              });
+              get6().settleSessionElapsedMs();
+              set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
+              get6().finishMessage();
+              void get6().dispatchNextPending();
+            }
+          }, 5e3);
+        } catch (e3) {
+          const err = e3 instanceof Error ? e3 : new Error(String(e3));
+          log5.error("Interrupt failed", err, { conversationId, engine });
+          get6().settleSessionElapsedMs();
+          set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
+          get6().finishMessage();
+          void get6().dispatchNextPending();
+          try {
+            const { useToastStore: useToastStore2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
+            useToastStore2.getState().error(
+              i18n_default.t("chat:error.interruptFailed"),
+              i18n_default.t("chat:error.interruptFailedHint")
+            );
+          } catch (toastErr) {
+            log5.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
+          }
+        }
+      },
+      continueChat: async (prompt = "", allowedTools) => {
+        const { conversationId } = get6();
+        if (!conversationId) {
+          set5({ error: "\u6CA1\u6709\u6D3B\u52A8\u4F1A\u8BDD", isStreaming: false });
+          return;
+        }
+        const router = deps.getEventRouter();
+        await router.initialize();
+        const currentWorkspace = deps.getWorkspace();
+        const actualWorkspaceDir = currentWorkspace?.path;
+        const config3 = deps.getConfig();
+        const currentEngine = resolveSessionEngine(get6().sessionId, config3?.defaultEngine);
+        const { workspacePrompt, userPrompt, contextWorkspaces } = buildWorkspacePrompts(deps.getWorkspace, deps.getContextWorkspaceIds, deps.getAllWorkspaces);
+        log5.info("continueChat debug", {
+          conversationId,
+          actualWorkspaceDir,
+          currentWorkspace: currentWorkspace ? { id: currentWorkspace.id, name: currentWorkspace.name, path: currentWorkspace.path } : null,
+          workspacePromptLength: workspacePrompt.length,
+          userPromptLength: userPrompt?.length ?? 0
+        });
+        set5({ isStreaming: true, error: null });
+        const sessionConfig = getSessionConfig();
+        const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, currentEngine);
+        const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
+        const modelProfileId = resolveEffectiveProfileId(
+          sessionMeta?.modelProfileId,
+          sessionConfig.modelProfileId,
+          getActiveModelProfile()?.id
+        );
+        const profileMode = resolveEffectiveProfileMode(
+          sessionMeta?.profileMode,
+          sessionConfig.profileMode
+        );
+        const effectiveProfileId = isProfileModeWithoutProfile(profileMode) ? void 0 : modelProfileId;
+        const effectiveProfile = getModelProfileById(effectiveProfileId);
+        const resolvedModel = normalizeModelForProfile(
+          sessionMeta?.model ?? runtimeConfig.model,
+          effectiveProfile
+        );
+        const disabledMcpServers = getDisabledPluginMcpServers();
+        const clientDescriptor = detectClientDescriptor();
+        try {
+          await aiChatDispatchStream({
+            sessionId: conversationId,
+            message: normalizeForInvoke(prompt),
+            options: {
+              appendSystemPrompt: normalizeForInvoke(workspacePrompt),
+              systemPrompt: userPrompt ? normalizeForInvoke(userPrompt) : null,
+              workDir: actualWorkspaceDir,
+              contextId: deps.contextId,
+              engineId: currentEngine,
+              enableMcpTools: true,
+              disabledMcpServers,
+              additionalDirs: contextWorkspaces.map((w5) => w5.path).filter(Boolean),
+              agent: sessionMeta?.agent ?? runtimeConfig.agent,
+              model: resolvedModel,
+              effort: sessionMeta?.effort ?? runtimeConfig.effort,
+              permissionMode: sessionMeta?.permissionMode ?? runtimeConfig.permissionMode,
+              // 并入会话级放行集合：scope=session/global 授权过的工具在本会话续聊中持续放行（每次新进程 --resume 自动携带）。
+              // 普通续聊（无显式 allowedTools）同样并入，这是期望行为——会话内放行应跨轮持续生效。
+              allowedTools: (() => {
+                const merged = [.../* @__PURE__ */ new Set([...allowedTools ?? [], ...get6().sessionAllowedTools])];
+                return merged.length > 0 ? merged : void 0;
+              })(),
+              modelProfileId: effectiveProfileId,
+              profileMode,
+              clientType: clientDescriptor.clientType,
+              clientPlatform: clientDescriptor.clientPlatform,
+              deviceId: clientDescriptor.deviceId || void 0
+            }
+          });
+        } catch (e3) {
+          const err = e3 instanceof Error ? e3 : new Error(String(e3));
+          log5.error("continueChat failed", err, { conversationId, workspaceDir: actualWorkspaceDir });
+          set5({
+            error: resolveChatError(e3, { conversationId, workspaceDir: actualWorkspaceDir }),
+            isStreaming: false,
+            currentMessage: null,
+            progressMessage: null
+          });
+        }
+      },
+      regenerateResponse: async (assistantMessageId) => {
+        const { messages, isStreaming } = get6();
+        if (isStreaming) {
+          log5.warn("regenerateResponse: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
+          return;
+        }
+        const messageIndex = messages.findIndex((m4) => m4.id === assistantMessageId);
+        if (messageIndex === -1) {
+          log5.warn("regenerateResponse: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { assistantMessageId });
+          return;
+        }
+        let userMessageIndex = -1;
+        for (let i2 = messageIndex - 1; i2 >= 0; i2--) {
+          if (messages[i2].type === "user") {
+            userMessageIndex = i2;
+            break;
+          }
+        }
+        if (userMessageIndex === -1) {
+          log5.warn("regenerateResponse: \u672A\u627E\u5230\u5BF9\u5E94\u7684\u7528\u6237\u6D88\u606F");
+          return;
+        }
+        const userMessage = messages[userMessageIndex];
+        const userContent = userMessage.type === "user" ? userMessage.content : "";
+        const newMessages = messages.slice(0, userMessageIndex);
+        const removedFromTs = messages[userMessageIndex]?.timestamp;
+        const convId = get6().conversationId;
+        if (removedFromTs && convId) {
+          void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_tombstone_after", {
+            conversationId: convId,
+            afterTs: Date.parse(removedFromTs) || 0
+          })).catch(() => void 0);
+        }
+        set5({
+          messages: newMessages,
+          currentMessage: null,
+          isStreaming: false,
+          error: null
+        });
+        log5.info("regenerateResponse: \u91CD\u65B0\u751F\u6210\u54CD\u5E94", {
+          userMessageId: userMessage.id,
+          removedCount: messages.length - userMessageIndex
+        });
+        const workspace = deps.getWorkspace();
+        const workspaceDir = workspace?.path || void 0;
+        const { sendMessage } = get6();
+        const sent = await sendMessage(userContent, workspaceDir);
+        if (sent === false) {
+          log5.warn("regenerateResponse: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
+            removedCount: messages.length - userMessageIndex
+          });
+          set5({ messages, currentMessage: null });
+          const restoredConvId = get6().conversationId;
+          if (removedFromTs && restoredConvId) {
+            void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_revise_undelete", {
+              conversationId: restoredConvId,
+              afterTs: Date.parse(removedFromTs) || 0
+            })).catch(() => void 0);
+          }
+        }
+      },
+      editAndResend: async (userMessageId, newContent) => {
+        const { messages, isStreaming } = get6();
+        if (isStreaming) {
+          log5.warn("editAndResend: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
+          return;
+        }
+        const messageIndex = messages.findIndex((m4) => m4.id === userMessageId);
+        if (messageIndex === -1) {
+          log5.warn("editAndResend: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { userMessageId });
+          return;
+        }
+        const targetMessage = messages[messageIndex];
+        if (targetMessage.type !== "user") {
+          log5.warn("editAndResend: \u76EE\u6807\u6D88\u606F\u4E0D\u662F\u7528\u6237\u6D88\u606F");
+          return;
+        }
+        const newMessages = messages.slice(0, messageIndex);
+        {
+          const convId = get6().conversationId;
+          if (convId) {
+            void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_tombstone_after", {
+              conversationId: convId,
+              afterTs: Date.parse(targetMessage.timestamp) || 0
+            })).catch(() => void 0);
+          }
+        }
+        set5({
+          messages: newMessages,
+          currentMessage: null,
+          isStreaming: false,
+          error: null
+        });
+        log5.info("editAndResend: \u7F16\u8F91\u5E76\u91CD\u53D1\u6D88\u606F", {
+          originalMessageId: userMessageId,
+          removedCount: messages.length - messageIndex
+        });
+        const workspace = deps.getWorkspace();
+        const workspaceDir = workspace?.path || void 0;
+        const { sendMessage } = get6();
+        const sent = await sendMessage(newContent, workspaceDir);
+        if (sent === false) {
+          log5.warn("editAndResend: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
+            removedCount: messages.length - messageIndex
+          });
+          set5({ messages, currentMessage: null });
+          const restoredConvId = get6().conversationId;
+          if (restoredConvId) {
+            void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_revise_undelete", {
+              conversationId: restoredConvId,
+              afterTs: Date.parse(targetMessage.timestamp) || 0
+            })).catch(() => void 0);
+          }
+        }
+      },
+      loadMoreArchivedMessages: (count2 = 20) => {
+        const { archivedMessages, messages, historyPaging, conversationId } = get6();
+        if (archivedMessages.length > 0) {
+          const loadCount = Math.min(count2, archivedMessages.length);
+          const toLoad = archivedMessages.slice(-loadCount);
+          const remaining = archivedMessages.slice(0, -loadCount);
+          set5({
+            messages: [...toLoad, ...messages],
+            archivedMessages: remaining
+          });
+          return;
+        }
+        if (!historyPaging || !historyPaging.hasMore || _loadingOlderPage) return;
+        _loadingOlderPage = true;
+        const { earliestSeq, sourceId } = historyPaging;
+        const persistedSeqAtCall = get6().persistedSeq;
+        void dialogStorageService.getConversationPage(sourceId, earliestSeq, count2).then((page) => {
+          const cur = get6();
+          if (cur.conversationId !== conversationId || cur.historyPaging?.earliestSeq !== earliestSeq || cur.persistedSeq !== persistedSeqAtCall) {
+            return;
+          }
+          if (!page || page.messages.length === 0) {
+            set5({ historyPaging: { ...historyPaging, hasMore: false } });
+            return;
+          }
+          const inMemory = new Set(cur.messages.map((m4) => m4.id));
+          const deduped = dedupeMessagesById2(page.messages);
+          const normalized = normalizeRecoveredMessages2(deduped);
+          const fresh = normalized.filter((m4) => !inMemory.has(m4.id));
+          set5({
+            messages: fresh.length > 0 ? [...fresh, ...cur.messages] : cur.messages,
+            // 前缀增长 → 已落盘计数同步增长（这些消息本就来自磁盘）
+            persistedSeq: cur.persistedSeq + fresh.length,
+            historyPaging: {
+              earliestSeq: page.earliestSeq ?? earliestSeq,
+              hasMore: page.hasMore,
+              sourceId
+            }
+          });
+        }).finally(() => {
+          _loadingOlderPage = false;
+        });
+      },
+      // ===== 消息压缩 =====
+      onVisibleRangeChange: (start2, end) => {
+        if (start2 < 0 || end < 0 || start2 > end) return;
+        const { messages, conversationId } = get6();
+        if (messages.length === 0) return;
+        set5({ visibleRange: { start: start2, end } });
+        if (_lastCompactionRange) {
+          const overlapStart = Math.max(start2, _lastCompactionRange.start);
+          const overlapEnd = Math.min(end, _lastCompactionRange.end);
+          const overlapSize = Math.max(0, overlapEnd - overlapStart + 1);
+          const currentSize = end - start2 + 1;
+          if (currentSize > 0 && overlapSize / currentSize > 0.8) {
+            return;
+          }
+        }
+        _lastCompactionRange = { start: start2, end };
+        const { toCompact, toHydrate } = compactor.computeRangeActions(messages.length, start2, end);
+        const newMessages = [...messages];
+        let changed = false;
+        let needDiskLoad = false;
+        for (const idx of toHydrate) {
+          if (idx < 0 || idx >= newMessages.length) continue;
+          const msg = newMessages[idx];
+          if (isCompacted(msg)) {
+            let hydrated = compactor.hydrateMessage(msg);
+            if (hydrated === msg && conversationId) {
+              const fromDisk = dialogStorageService.getCachedFullMessage(conversationId, msg.id);
+              if (fromDisk) {
+                hydrated = compactor.hydrateFromExternal(msg.id, fromDisk);
+              } else if (!dialogStorageService.hasMessageMapCache(conversationId)) {
+                needDiskLoad = true;
+              }
+            }
+            if (hydrated !== msg) {
+              newMessages[idx] = hydrated;
+              changed = true;
+            }
+          }
+        }
+        if (needDiskLoad && conversationId) {
+          void dialogStorageService.loadMessageMap(conversationId).then((map6) => {
+            if (!map6 || map6.size === 0) return;
+            const s3 = get6();
+            if (s3.conversationId !== conversationId || !s3.visibleRange) return;
+            const { toHydrate: hydrateIdx } = compactor.computeRangeActions(
+              s3.messages.length,
+              s3.visibleRange.start,
+              s3.visibleRange.end
+            );
+            const patched = [...s3.messages];
+            let dirty = false;
+            for (const idx of hydrateIdx) {
+              if (idx < 0 || idx >= patched.length) continue;
+              const m4 = patched[idx];
+              if (m4 && isCompacted(m4)) {
+                const full = map6.get(m4.id);
+                if (full) {
+                  patched[idx] = compactor.hydrateFromExternal(m4.id, full);
+                  dirty = true;
+                }
+              }
+            }
+            if (dirty) set5({ messages: patched });
+          });
+        }
+        for (const idx of toCompact) {
+          if (idx < 0 || idx >= newMessages.length) continue;
+          const msg = newMessages[idx];
+          if (!isCompacted(msg)) {
+            const compacted = compactor.compactMessage(msg);
+            if (compacted !== msg) {
+              newMessages[idx] = compacted;
+              changed = true;
+            }
+          }
+        }
+        if (changed) {
+          set5({ messages: newMessages });
+        }
+      },
+      // ===== 持久化前恢复 =====
+      getPersistableMessages: () => {
+        const { messages, conversationId } = get6();
+        let newMessages = null;
+        for (let i2 = 0; i2 < messages.length; i2++) {
+          const msg = messages[i2];
+          if (!isCompacted(msg)) continue;
+          if (!newMessages) newMessages = [...messages];
+          const snapshot = compactor.getSnapshot(msg.id);
+          let hydrated = snapshot ?? null;
+          if (!hydrated && conversationId) {
+            hydrated = dialogStorageService.getCachedFullMessage(conversationId, msg.id);
+          }
+          if (hydrated && hydrated !== msg) {
+            newMessages[i2] = hydrated;
+          }
+        }
+        return newMessages ?? messages;
+      },
+      // ===== 资源清理 =====
+      dispose: () => {
+        if (_paragraphTimer) {
+          clearTimeout(_paragraphTimer);
+          _paragraphTimer = null;
+        }
+        _textBuffer = "";
+        _thinkingBuffer = "";
+        compactor.clearSnapshots();
+        const state5 = get6();
+        set5(createInitialState(state5.sessionId));
+      }
+    }))
+  );
+  return store3;
+}
+var log5;
+var init_createConversationStore = __esm({
+  "src/host/conversationStore/createConversationStore.ts"() {
+    init_uuid();
+    init_esm();
+    init_middleware();
+    init_services();
+    init_services();
+    init_eventHandler();
+    init_sessionStoreManager();
+    init_services();
+    init_i18n();
+    init_messageCompactor();
+    init_diffExtractor();
+    init_stores();
+    init_misc();
+    init_types2();
+    init_logger();
+    init_conversationStoreUtils();
+    init_services();
+    init_services();
+    init_dedupMessages2();
+    init_stores();
+    init_stores();
+    log5 = createLogger("ConversationStore");
+  }
+});
+
+// src/host/ai-runtime/engine.ts
+var init_engine = __esm({
+  "src/host/ai-runtime/engine.ts"() {
+  }
+});
+
+// src/host/ai-runtime/session.ts
+var init_session = __esm({
+  "src/host/ai-runtime/session.ts"() {
+  }
+});
+
+// src/host/ai-runtime/task.ts
+var init_task = __esm({
+  "src/host/ai-runtime/task.ts"() {
+    init_uuid();
+  }
+});
+
+// src/host/ai-runtime/event.ts
+var init_event = __esm({
+  "src/host/ai-runtime/event.ts"() {
+  }
+});
+
+// src/host/ai-runtime/event-bus.ts
+function getEventBus(config3) {
+  return EventBus.getInstance(config3);
+}
+var log6, NamespacedEventBus, EventBus, EventChannel;
+var init_event_bus = __esm({
+  "src/host/ai-runtime/event-bus.ts"() {
+    init_logger();
+    log6 = createLogger("EventBus");
+    NamespacedEventBus = class {
+      constructor(config3 = {}) {
+        this.listeners = /* @__PURE__ */ new Map();
+        this.config = {
+          maxHistory: config3.maxHistory ?? 20,
+          debug: config3.debug ?? false
+        };
+      }
+      /**
+       * 订阅事件
+       * @param eventType 事件类型（如 'token', 'tool_call_start'）
+       * @param listener 监听器函数
+       * @param options 监听器配置
+       * @returns 取消订阅的函数
+       */
+      on(eventType, listener, options2 = {}) {
+        const id38 = `listener-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        const wrapper = {
+          id: id38,
+          listener,
+          options: {
+            once: options2.once ?? false,
+            priority: options2.priority ?? 0,
+            namespace: options2.namespace ?? "default"
+          },
+          registeredAt: Date.now()
+        };
+        let typeListeners = this.listeners.get(eventType);
+        if (!typeListeners) {
+          typeListeners = [];
+          this.listeners.set(eventType, typeListeners);
+        }
+        const insertIndex = typeListeners.findIndex(
+          (w5) => w5.options.priority < wrapper.options.priority
+        );
+        if (insertIndex === -1) {
+          typeListeners.push(wrapper);
+        } else {
+          typeListeners.splice(insertIndex, 0, wrapper);
+        }
+        this.log(`[EventBus] Subscribed to "${eventType}" (id: ${id38}, namespace: ${wrapper.options.namespace})`);
+        return () => this.off(eventType, id38);
+      }
+      /**
+       * 订阅事件（只监听一次）
+       */
+      once(eventType, listener, options2 = {}) {
+        return this.on(eventType, listener, { ...options2, once: true });
+      }
+      /**
+       * 取消订阅
+       */
+      off(eventType, listenerId) {
+        const typeListeners = this.listeners.get(eventType);
+        if (!typeListeners) return;
+        const index2 = typeListeners.findIndex((w5) => w5.id === listenerId);
+        if (index2 !== -1) {
+          typeListeners.splice(index2, 1);
+          this.log(`[EventBus] Unsubscribed from "${eventType}" (id: ${listenerId})`);
+        }
+        if (typeListeners.length === 0) {
+          this.listeners.delete(eventType);
+        }
+      }
+      /**
+       * 取消某个命名空间的所有订阅
+       */
+      offNamespace(namespace2) {
+        for (const [eventType, typeListeners] of this.listeners.entries()) {
+          const toRemove = typeListeners.filter((w5) => w5.options.namespace === namespace2);
+          toRemove.forEach((w5) => this.off(eventType, w5.id));
+        }
+      }
+      /**
+       * 发布事件
+       */
+      emit(eventType, data6) {
+        const typeListeners = this.listeners.get(eventType);
+        if (!typeListeners || typeListeners.length === 0) {
+          this.log(`No listeners`, { eventType });
+          return;
+        }
+        this.log(`Emitting`, { eventType, listenerCount: typeListeners.length });
+        const listeners = [...typeListeners];
+        const toRemove = [];
+        for (const wrapper of listeners) {
+          try {
+            wrapper.listener(data6);
+            if (wrapper.options.once) {
+              toRemove.push(wrapper.id);
+            }
+          } catch (error3) {
+            log6.error(`Listener error`, error3, { eventType });
+          }
+        }
+        toRemove.forEach((id38) => this.off(eventType, id38));
+      }
+      /**
+       * 获取某个事件类型的监听器数量
+       */
+      listenerCount(eventType) {
+        const typeListeners = this.listeners.get(eventType);
+        return typeListeners?.length ?? 0;
+      }
+      /**
+       * 获取所有事件类型
+       */
+      eventTypes() {
+        return Array.from(this.listeners.keys());
+      }
+      /**
+       * 清空所有监听器
+       */
+      clear() {
+        this.listeners.clear();
+        if (this.config.debug) {
+          log6.debug("Cleared all listeners");
+        }
+      }
+      /**
+       * 清空某个命名空间的所有监听器
+       */
+      clearNamespace(namespace2) {
+        this.offNamespace(namespace2);
+      }
+      /**
+       * 日志输出
+       */
+      log(message, context) {
+        if (this.config.debug) {
+          log6.debug(message, context);
+        }
+      }
+    };
+    EventBus = class _EventBus {
+      constructor(config3 = {}) {
+        this.history = [];
+        this.config = {
+          maxHistory: config3.maxHistory ?? 20,
+          debug: config3.debug ?? false
+        };
+        this.bus = new NamespacedEventBus(config3);
+      }
+      static {
+        this.instance = null;
+      }
+      /**
+       * 获取全局事件总线实例
+       */
+      static getInstance(config3) {
+        if (!_EventBus.instance) {
+          _EventBus.instance = new _EventBus(config3);
+        }
+        return _EventBus.instance;
+      }
+      /**
+       * 重置实例（主要用于测试）
+       */
+      static reset() {
+        _EventBus.instance = null;
+      }
+      /**
+       * 订阅 AIEvent（按事件类型）
+       */
+      on(eventType, listener, options2) {
+        return this.bus.on(eventType, listener, options2);
+      }
+      /**
+       * 订阅所有 AIEvent
+       */
+      onAny(listener, options2) {
+        return this.bus.on("*", listener, options2);
+      }
+      /**
+       * 订阅事件（只监听一次）
+       */
+      once(eventType, listener, options2) {
+        return this.bus.once(eventType, listener, options2);
+      }
+      /**
+       * 取消订阅
+       */
+      off(eventType, listenerId) {
+        this.bus.off(eventType, listenerId);
+      }
+      /**
+       * 发布 AIEvent
+       */
+      emit(event3) {
+        this.addToHistory(event3);
+        this.bus.emit(event3.type, event3);
+        this.bus.emit("*", event3);
+      }
+      /**
+       * 批量发布事件
+       */
+      emitBatch(events) {
+        for (const event3 of events) {
+          this.emit(event3);
+        }
+      }
+      /**
+       * 添加事件到历史记录
+       */
+      addToHistory(event3) {
+        this.history.push(event3);
+        if (this.history.length > this.config.maxHistory) {
+          this.history.shift();
+        }
+      }
+      /**
+       * 获取历史记录
+       */
+      getHistory(filter8) {
+        if (filter8) {
+          return this.history.filter(filter8);
+        }
+        return [...this.history];
+      }
+      /**
+       * 按类型获取历史记录
+       */
+      getHistoryByType(eventType) {
+        return this.history.filter((e3) => e3.type === eventType);
+      }
+      /**
+       * 清空历史记录
+       */
+      clearHistory() {
+        this.history = [];
+      }
+      /**
+       * 获取监听器数量
+       */
+      listenerCount(eventType) {
+        return this.bus.listenerCount(eventType);
+      }
+      /**
+       * 获取所有事件类型
+       */
+      eventTypes() {
+        return this.bus.eventTypes();
+      }
+      /**
+       * 清空所有监听器
+       */
+      clear() {
+        this.bus.clear();
+        this.clearHistory();
+      }
+      /**
+       * 清空某个命名空间的所有监听器
+       */
+      clearNamespace(namespace2) {
+        this.bus.clearNamespace(namespace2);
+      }
+      /**
+       * 创建命名空间隔离的事件通道
+       */
+      createChannel(namespace2) {
+        return new EventChannel(namespace2, this);
+      }
+    };
+    EventChannel = class {
+      constructor(namespace2, eventBus2) {
+        this.namespace = namespace2;
+        this.eventBus = eventBus2;
+      }
+      /**
+       * 订阅事件（自动附加命名空间）
+       */
+      on(eventType, listener, options2) {
+        return this.eventBus.on(eventType, listener, {
+          ...options2,
+          namespace: this.namespace
+        });
+      }
+      /**
+       * 发布事件（通道本身不发布，只是命名空间标记）
+       */
+      emit(event3) {
+        const enhancedEvent = {
+          ...event3,
+          _namespace: this.namespace
+        };
+        this.eventBus.emit(enhancedEvent);
+      }
+      /**
+       * 清空该命名空间的所有监听器
+       */
+      clear() {
+        this.eventBus.clearNamespace(this.namespace);
+      }
+      /**
+       * 获取命名空间
+       */
+      getNamespace() {
+        return this.namespace;
+      }
+    };
+  }
+});
+
+// src/host/ai-runtime/engine-registry.ts
+var log7;
+var init_engine_registry = __esm({
+  "src/host/ai-runtime/engine-registry.ts"() {
+    init_event_bus();
+    init_logger();
+    log7 = createLogger("AIEngineRegistry");
+  }
+});
+
+// src/host/ai-runtime/tool-registry.ts
+var log8, ToolRegistryImpl, globalToolRegistry;
+var init_tool_registry = __esm({
+  "src/host/ai-runtime/tool-registry.ts"() {
+    init_logger();
+    log8 = createLogger("ToolRegistry");
+    ToolRegistryImpl = class {
+      constructor() {
+        this.tools = /* @__PURE__ */ new Map();
+      }
+      register(tool) {
+        if (this.tools.has(tool.name)) {
+          log8.warn("Tool already registered, overwriting", { toolName: tool.name });
+        }
+        this.tools.set(tool.name, tool);
+        log8.info("Registered tool", { toolName: tool.name });
+      }
+      registerBatch(tools) {
+        for (const tool of tools) {
+          this.register(tool);
+        }
+      }
+      get(name) {
+        return this.tools.get(name);
+      }
+      has(name) {
+        return this.tools.has(name);
+      }
+      listNames() {
+        return Array.from(this.tools.keys());
+      }
+      listAll() {
+        return Array.from(this.tools.values());
+      }
+      async execute(name, input) {
+        const tool = this.tools.get(name);
+        if (!tool) {
+          return {
+            success: false,
+            error: `Tool "${name}" not found`,
+            requiresConfirmation: false
+          };
+        }
+        try {
+          log8.info("Executing tool", { toolName: name, input });
+          const result = await tool.execute(input);
+          log8.info("Tool completed", { toolName: name, success: result.success });
+          return result;
+        } catch (error3) {
+          log8.error(`Tool failed: ${name}`, error3 instanceof Error ? error3 : new Error(String(error3)));
+          return {
+            success: false,
+            error: error3 instanceof Error ? error3.message : String(error3),
+            requiresConfirmation: false
+          };
+        }
+      }
+      generateSystemPrompt() {
+        if (this.tools.size === 0) {
+          return "";
+        }
+        const sections6 = [
+          "# Available Tools",
+          "",
+          "You can use the following tools to help the user manage tasks:",
+          ""
+        ];
+        for (const tool of this.tools.values()) {
+          sections6.push(`## ${tool.name}`);
+          sections6.push(tool.description);
+          if (tool.inputSchema?.properties) {
+            sections6.push("Parameters:");
+            for (const [paramName, paramSchema] of Object.entries(tool.inputSchema.properties)) {
+              const schema2 = paramSchema;
+              const required2 = tool.inputSchema.required?.includes(paramName);
+              const requiredText = required2 ? " (required)" : " (optional)";
+              sections6.push(
+                `- \`${paramName}\`${requiredText}: ${schema2.description || schema2.type}`
+              );
+              if (schema2.enum && Array.isArray(schema2.enum)) {
+                sections6.push(`  - Options: ${schema2.enum.join(", ")}`);
+              }
+              if (schema2.default !== void 0) {
+                sections6.push(`  - Default: ${schema2.default}`);
+              }
+            }
+          }
+          sections6.push("");
+        }
+        sections6.push("## Tool Usage Guidelines");
+        sections6.push("");
+        sections6.push("- Always check if a tool is required before calling it");
+        sections6.push("- Use tools proactively when you detect user intent to manage todos");
+        sections6.push("- When a tool requires confirmation, ask the user first");
+        sections6.push("- Provide clear feedback about what actions you took");
+        sections6.push("");
+        return sections6.join("\n");
+      }
+      unregister(name) {
+        this.tools.delete(name);
+        log8.debug(`Unregistered tool: ${name}`);
+      }
+      clear() {
+        this.tools.clear();
+        log8.debug("Cleared all tools");
+      }
+    };
+    globalToolRegistry = new ToolRegistryImpl();
+  }
+});
+
+// src/host/ai-runtime/base/base-session.ts
+var init_base_session = __esm({
+  "src/host/ai-runtime/base/base-session.ts"() {
+    init_session();
+  }
+});
+
+// src/host/ai-runtime/base/index.ts
+var init_base = __esm({
+  "src/host/ai-runtime/base/index.ts"() {
+    init_base_session();
+  }
+});
+
+// src/host/ai-runtime/config-validator.ts
+var init_config_validator = __esm({
+  "src/host/ai-runtime/config-validator.ts"() {
+  }
+});
+
+// src/host/ai-runtime/index.ts
+var init_ai_runtime = __esm({
+  "src/host/ai-runtime/index.ts"() {
+    init_engine();
+    init_session();
+    init_task();
+    init_event();
+    init_event_bus();
+    init_engine_registry();
+    init_tool_registry();
+    init_base();
+    init_task();
+    init_event();
+    init_session();
+    init_engine();
+    init_engine_registry();
+    init_event_bus();
+    init_tool_registry();
+    init_config_validator();
+  }
+});
+
+// src/host/conversationStore/sessionStoreManager.ts
+function createSessionManagerStore() {
+  return createStore((set5, get6) => ({
+    // ===== 状态 =====
+    stores: /* @__PURE__ */ new Map(),
+    activeSessionId: null,
+    sessionMetadata: /* @__PURE__ */ new Map(),
+    backgroundSessionIds: [],
+    completedNotifications: [],
+    isInitialized: false,
+    // ===== 会话生命周期 =====
+    createSession: (options2) => {
+      const sessionId = options2.id || generateUUID();
+      const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
+      log9.info("createSession \u8C03\u7528", { sessionId, optionsWorkspaceId: options2.workspaceId, optionsType: options2.type, optionsTitle: options2.title, engineId: options2.engineId });
+      if (get6().stores.has(sessionId)) {
+        log9.info("\u4F1A\u8BDD\u5DF2\u5B58\u5728", { sessionId });
+        return sessionId;
+      }
+      const configEngineId = useConfigStore.getState().config?.defaultEngine;
+      const metadata = {
+        id: sessionId,
+        title: options2.title || `\u65B0\u5BF9\u8BDD ${get6().stores.size + 1}`,
+        type: options2.type,
+        engineId: normalizeEngineId(options2.engineId || configEngineId),
+        workspaceId: options2.workspaceId || null,
+        contextWorkspaceIds: options2.contextWorkspaceIds || [],
+        workspaceLocked: options2.workspaceLocked ?? !!options2.workspaceId,
+        status: "idle",
+        silentMode: options2.silentMode || false,
+        // 设置静默模式
+        createdAt: timestamp2,
+        updatedAt: timestamp2,
+        forkFromId: options2.forkFromId,
+        modelProfileId: options2.modelProfileId,
+        model: options2.model,
+        profileMode: options2.profileMode,
+        agent: options2.agent,
+        effort: options2.effort,
+        permissionMode: options2.permissionMode,
+        kind: options2.kind,
+        commitWorkspaceId: options2.commitWorkspaceId
+      };
+      log9.info("\u521B\u5EFA\u4F1A\u8BDD\u5143\u6570\u636E", { sessionId, metadataWorkspaceId: metadata.workspaceId, metadataType: metadata.type, engineId: metadata.engineId });
+      const contextId = `session-${sessionId}`;
+      const deps = {
+        getConfig: () => {
+          const state5 = useConfigStore.getState();
+          return state5.config;
+        },
+        getWorkspace: () => {
+          const workspaceState = useWorkspaceStore.getState();
+          const managerState = get6();
+          const metadata2 = managerState.sessionMetadata.get(sessionId);
+          const targetWorkspaceId = metadata2?.workspaceId || options2.workspaceId;
+          if (targetWorkspaceId) {
+            const workspace = workspaceState.workspaces.find((w5) => w5.id === targetWorkspaceId);
+            if (workspace) {
+              return workspace;
+            }
+          }
+          if (metadata2?.type === "free") {
+            return null;
+          }
+          return workspaceState.getCurrentWorkspace();
+        },
+        getContextWorkspaceIds: () => {
+          const managerState = get6();
+          const metadata2 = managerState.sessionMetadata.get(sessionId);
+          return metadata2?.contextWorkspaceIds || [];
+        },
+        getAllWorkspaces: () => {
+          return useWorkspaceStore.getState().workspaces;
+        },
+        getEventRouter: () => getEventRouter(),
+        contextId
+      };
+      const conversationStore = createConversationStore(sessionId, deps);
+      set5((state5) => {
+        const newStores = new Map(state5.stores);
+        newStores.set(sessionId, conversationStore);
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, metadata);
+        return {
+          stores: newStores,
+          sessionMetadata: newMetadata,
+          // 静默会话不自动激活
+          activeSessionId: options2.silentMode ? state5.activeSessionId : sessionId
+        };
+      });
+      conversationStore.setState({ workspaceId: metadata.workspaceId });
+      log9.info("\u521B\u5EFA\u4F1A\u8BDD", { sessionId });
+      if (!options2.silentMode) {
+        useViewStore.getState().addToMultiView(sessionId);
+      }
+      return sessionId;
+    },
+    createSessionFromHistory: (messages, conversationId, metadata) => {
+      const sessionId = get6().createSession({
+        type: metadata?.workspaceId ? "project" : "free",
+        workspaceId: metadata?.workspaceId,
+        title: metadata?.title || `\u5386\u53F2\u4F1A\u8BDD ${get6().stores.size + 1}`,
+        forkFromId: metadata?.forkFromId,
+        engineId: metadata?.engineId
+      });
+      const store3 = get6().stores.get(sessionId);
+      if (store3) {
+        store3.getState().setMessagesFromHistory(messages, conversationId, metadata?.paging);
+        log9.info("\u4ECE\u5386\u53F2\u521B\u5EFA\u4F1A\u8BDD", { sessionId, messageCount: messages.length, conversationId, forkFromId: metadata?.forkFromId });
+      }
+      return sessionId;
+    },
+    deleteSession: (sessionId) => {
+      const state5 = get6();
+      const store3 = state5.stores.get(sessionId);
+      if (!store3) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      const conversationId = store3.getState().conversationId;
+      if (conversationId) {
+        void (async () => {
+          try {
+            const { dialogStorageService: dialogStorageService2 } = await Promise.resolve().then(() => (init_services(), services_exports));
+            await dialogStorageService2.deleteConversation(conversationId);
+          } catch (e3) {
+            log9.warn("\u5220\u9664\u4F1A\u8BDD JSONL \u5931\u8D25", { conversationId, error: String(e3) });
+          }
+          try {
+            const { invoke: invoke2 } = await Promise.resolve().then(() => (init_services(), services_exports));
+            await invoke2("message_delete_by_conversation", { conversationId });
+          } catch (e3) {
+            log9.warn("\u5220\u9664\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+          }
+        })();
+      }
+      store3.getState().dispose();
+      set5((state6) => {
+        const newStores = new Map(state6.stores);
+        newStores.delete(sessionId);
+        const newMetadata = new Map(state6.sessionMetadata);
+        newMetadata.delete(sessionId);
+        const newBackgroundSessionIds = state6.backgroundSessionIds.filter(
+          (id38) => id38 !== sessionId
+        );
+        const newCompletedNotifications = state6.completedNotifications.filter(
+          (id38) => id38 !== sessionId
+        );
+        let newActiveSessionId = state6.activeSessionId;
+        if (state6.activeSessionId === sessionId) {
+          const remainingIds = Array.from(newStores.keys());
+          newActiveSessionId = remainingIds.length > 0 ? remainingIds[remainingIds.length - 1] : null;
+        }
+        return {
+          stores: newStores,
+          sessionMetadata: newMetadata,
+          backgroundSessionIds: newBackgroundSessionIds,
+          completedNotifications: newCompletedNotifications,
+          activeSessionId: newActiveSessionId
+        };
+      });
+      useViewStore.getState().removeFromMultiView(sessionId);
+      log9.info("\u5220\u9664\u4F1A\u8BDD", { sessionId });
+    },
+    switchSession: (sessionId) => {
+      const state5 = get6();
+      const store3 = state5.stores.get(sessionId);
+      if (!store3) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      const currentStore = state5.activeSessionId ? state5.stores.get(state5.activeSessionId) : null;
+      if (currentStore && currentStore.getState().isStreaming && state5.activeSessionId) {
+        get6().addToBackground(state5.activeSessionId);
+      }
+      set5({ activeSessionId: sessionId });
+      get6().removeFromBackground(sessionId);
+      const viewState = useViewStore.getState();
+      viewState.addToMultiView(sessionId);
+      viewState.requestScrollToSession(sessionId);
+      const targetMetadata = get6().sessionMetadata.get(sessionId);
+      if (targetMetadata) {
+        const globalDefault = useConfigStore.getState().config?.activeModelProfileId;
+        const sessionOverride = targetMetadata.modelProfileId;
+        const mirror = sessionOverride === OFFICIAL_API_PROFILE ? "" : sessionOverride ?? globalDefault ?? "";
+        useSessionConfig.getState().setModelProfileId(mirror);
+        const globalProfileMode = useSessionConfig.getState().config.profileMode ?? "profile";
+        useSessionConfig.getState().setModel(targetMetadata.model ?? "");
+        useSessionConfig.getState().setAgent(targetMetadata.agent ?? "");
+        useSessionConfig.getState().setProfileMode(
+          targetMetadata.profileMode ?? globalProfileMode
+        );
+      }
+      log9.info("\u5207\u6362\u4F1A\u8BDD", { sessionId });
+    },
+    updateSessionTitle: (sessionId, title2) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          title: title2,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u6807\u9898", { sessionId, title: title2 });
+    },
+    updateSessionEngine: (sessionId, engineId) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return false;
+      }
+      const store3 = get6().stores.get(sessionId)?.getState();
+      if (store3 && (store3.isStreaming || store3.conversationId || store3.messages.length > 0)) {
+        log9.warn("\u5DF2\u6709\u5185\u5BB9\u7684\u4F1A\u8BDD\u4E0D\u5141\u8BB8\u5207\u6362\u5F15\u64CE", {
+          sessionId,
+          isStreaming: store3.isStreaming,
+          hasConversationId: Boolean(store3.conversationId),
+          messageCount: store3.messages.length
+        });
+        return false;
+      }
+      const normalizedEngineId = normalizeEngineId(engineId);
+      if (normalizeEngineId(metadata.engineId) === normalizedEngineId) {
+        return true;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          engineId: normalizedEngineId,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u5F15\u64CE", { sessionId, engineId: normalizedEngineId });
+      return true;
+    },
+    updateSessionModelProfile: (sessionId, modelProfileId) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          // null = 清除会话级覆盖（→ 跟随全局默认）；字符串（含官方哨兵）原样保留。
+          // 用 ?? 而非 ||：只把 null/undefined 当「清除」，避免误伤有意义的值。
+          modelProfileId: modelProfileId ?? void 0,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD Profile", { sessionId, modelProfileId });
+    },
+    updateSessionProfileMode: (sessionId, profileMode) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          // null/undefined = 清除会话级覆盖（→ 跟随全局默认）；二态值原样写入。
+          profileMode: profileMode ?? void 0,
+          // official 不绑定单 Profile：同步清掉会话级 Profile 覆盖，避免残留穿透。
+          ...profileMode === "official" ? { modelProfileId: void 0 } : {},
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u4F9B\u5E94\u5546\u6A21\u5F0F", { sessionId, profileMode });
+    },
+    updateSessionModel: (sessionId, model) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          // null = 清除会话级覆盖（→ 跟随全局默认）；字符串（含空串）原样保留。
+          // 用 ?? 而非 ||：只把 null/undefined 当「清除」，避免误伤有意义的值。
+          model: model ?? void 0,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u6A21\u578B", { sessionId, model });
+    },
+    updateSessionAgent: (sessionId, agent) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          // null / 空串 = 清除会话级专家覆盖；非空字符串原样保留。
+          agent: agent && agent.length > 0 ? agent : void 0,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u4E13\u5BB6", { sessionId, agent });
+    },
+    makeSessionVisible: (sessionId) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      if (!metadata.silentMode) {
+        get6().switchSession(sessionId);
+        return;
+      }
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, {
+          ...metadata,
+          silentMode: false,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        return { sessionMetadata: newMetadata };
+      });
+      get6().switchSession(sessionId);
+      log9.info("\u4F1A\u8BDD\u5DF2\u8F6C\u4E3A\u53EF\u89C1", { sessionId });
+    },
+    // ===== Store 访问 =====
+    getStore: (sessionId) => {
+      return get6().stores.get(sessionId)?.getState();
+    },
+    getActiveStore: () => {
+      const sessionId = get6().activeSessionId;
+      if (!sessionId) return void 0;
+      return get6().stores.get(sessionId)?.getState();
+    },
+    getActiveSessionId: () => {
+      return get6().activeSessionId;
+    },
+    // ===== 事件分发 =====
+    dispatchEvent: (event3) => {
+      let targetSessionId;
+      const routeSessionId = event3._routeSessionId;
+      if (!routeSessionId) {
+        if (!RENDER_EVENT_TYPES.has(event3.type)) {
+          log9.warn("\u4E8B\u4EF6\u7F3A\u5C11 _routeSessionId\uFF0C\u4E22\u5F03", { type: event3.type });
+          return;
+        }
+        const activeId = get6().activeSessionId;
+        const activeStore = activeId ? get6().stores.get(activeId) : void 0;
+        if (!activeId || !activeStore) {
+          log9.warn("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID \u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { type: event3.type });
+          return;
+        }
+        log9.info("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID\uFF08sessionId \u672A\u586B\uFF09\uFF0C\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
+          target: activeId,
+          type: event3.type
+        });
+        targetSessionId = activeId;
+      } else {
+        const store3 = get6().stores.get(routeSessionId);
+        targetSessionId = routeSessionId;
+        if (!store3) {
+          if (RENDER_EVENT_TYPES.has(event3.type)) {
+            const conversationId = event3.sessionId;
+            const entry = conversationId ? [...get6().stores.entries()].find(
+              ([, s3]) => s3.getState().conversationId === conversationId
+            ) : void 0;
+            if (entry) {
+              log9.info("\u6E32\u67D3\u4E8B\u4EF6\u6309 conversationId \u53CD\u67E5\u6295\u9012", {
+                routeSessionId,
+                target: entry[0],
+                type: event3.type
+              });
+              targetSessionId = entry[0];
+            } else {
+              const activeId = get6().activeSessionId;
+              const activeStore = activeId ? get6().stores.get(activeId) : void 0;
+              if (activeId && activeStore) {
+                log9.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u539F\u59CB\u4F1A\u8BDD\uFF0C\u515C\u5E95\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
+                  routeSessionId,
+                  fallback: activeId,
+                  type: event3.type
+                });
+                targetSessionId = activeId;
+              } else {
+                log9.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
+                return;
+              }
+            }
+          } else {
+            const conversationId = event3.sessionId;
+            const entry = conversationId ? [...get6().stores.entries()].find(
+              ([, s3]) => s3.getState().conversationId === conversationId
+            ) : void 0;
+            if (entry) {
+              targetSessionId = entry[0];
+            } else {
+              log9.warn("\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
+              return;
+            }
+          }
+        }
+      }
+      const targetStore = get6().stores.get(targetSessionId);
+      if (!targetStore) {
+        log9.warn("\u4E8B\u4EF6\u6295\u9012\u5931\u8D25\uFF1A\u76EE\u6807\u4F1A\u8BDD store \u4E0D\u5B58\u5728", { targetSessionId, type: event3.type });
+        return;
+      }
+      const turnId = event3._turnId;
+      if (turnId && !targetStore.getState().observeTurnEvent(turnId, event3.type)) {
+        log9.info("\u65E7\u8F6E\u6B21\u8FDF\u5230\u7684\u7EC8\u6001\u4E8B\u4EF6\u5DF2\u4E22\u5F03", { targetSessionId, type: event3.type, turnId });
+        return;
+      }
+      targetStore.getState().handleAIEvent(event3);
+      if (event3.type === "session_start") {
+        const meta3 = get6().sessionMetadata.get(targetSessionId);
+        if (meta3 && !meta3.silentMode) {
+          const conversationId = event3.sessionId;
+          void Promise.resolve().then(() => (init_services(), services_exports)).then(
+            ({ invoke: invoke2 }) => invoke2("session_index_register", {
+              workspaceKey: "default",
+              record: {
+                id: targetSessionId,
+                conversationId: conversationId ?? null,
+                title: meta3.title ?? "",
+                engineId: meta3.engineId ?? "",
+                workspaceId: meta3.workspaceId ?? null,
+                contextWorkspaceIds: meta3.contextWorkspaceIds ?? [],
+                type: meta3.type ?? "free",
+                silentMode: false,
+                messageIds: [],
+                version: 1,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              }
+            })
+          ).catch(() => {
+          });
+        }
+      }
+      try {
+        getEventBus().emit(event3);
+      } catch (e3) {
+        log9.warn("EventBus emit \u5931\u8D25", { error: String(e3) });
+      }
+      const metadata = get6().sessionMetadata.get(targetSessionId);
+      if (metadata) {
+        let newStatus = metadata.status;
+        if (event3.type === "session_start") {
+          newStatus = "running";
+        } else if (event3.type === "session_end") {
+          newStatus = "idle";
+          if (get6().backgroundSessionIds.includes(targetSessionId)) {
+            get6().addToNotifications(targetSessionId);
+            get6().removeFromBackground(targetSessionId);
+            const sessionMetadata = get6().sessionMetadata.get(targetSessionId);
+            if (sessionMetadata) {
+              Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore2 }) => {
+                useToastStore2.getState().sessionComplete(
+                  sessionMetadata.title,
+                  targetSessionId,
+                  () => get6().switchSession(targetSessionId)
+                );
+              });
+            }
+          }
+        } else if (event3.type === "error") {
+          const isUserInterrupt = get6().stores.get(targetSessionId)?.getState().isInterrupting === true;
+          newStatus = isUserInterrupt ? "idle" : "error";
+        }
+        if (newStatus !== metadata.status) {
+          set5((state5) => {
+            const newMetadata = new Map(state5.sessionMetadata);
+            newMetadata.set(targetSessionId, { ...metadata, status: newStatus, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
+            return { sessionMetadata: newMetadata };
+          });
+        }
+      }
+    },
+    // ===== 后台运行管理 =====
+    addToBackground: (sessionId) => {
+      set5((state5) => {
+        if (state5.backgroundSessionIds.includes(sessionId)) {
+          return state5;
+        }
+        return {
+          backgroundSessionIds: [...state5.backgroundSessionIds, sessionId]
+        };
+      });
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (metadata) {
+        set5((state5) => {
+          const newMetadata = new Map(state5.sessionMetadata);
+          newMetadata.set(sessionId, { ...metadata, status: "background-running" });
+          return { sessionMetadata: newMetadata };
+        });
+      }
+      log9.info("\u4F1A\u8BDD\u8FDB\u5165\u540E\u53F0", { sessionId });
+    },
+    removeFromBackground: (sessionId) => {
+      set5((state5) => ({
+        backgroundSessionIds: state5.backgroundSessionIds.filter((id38) => id38 !== sessionId)
+      }));
+    },
+    addToNotifications: (sessionId) => {
+      set5((state5) => {
+        if (state5.completedNotifications.includes(sessionId)) {
+          return state5;
+        }
+        return {
+          completedNotifications: [...state5.completedNotifications, sessionId]
+        };
+      });
+    },
+    removeFromNotifications: (sessionId) => {
+      set5((state5) => ({
+        completedNotifications: state5.completedNotifications.filter((id38) => id38 !== sessionId)
+      }));
+    },
+    // ===== 批量操作 =====
+    interruptSession: async (sessionId) => {
+      const store3 = get6().stores.get(sessionId);
+      if (!store3) {
+        log9.warn("interruptSession: \u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      const state5 = store3.getState();
+      log9.info("interruptSession", { frontendSessionId: sessionId, backendConversationId: state5.conversationId, isStreaming: state5.isStreaming });
+      try {
+        await state5.interrupt();
+      } catch (e3) {
+        log9.error("\u6253\u65AD\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { sessionId });
+      }
+    },
+    // ===== 工作区管理 =====
+    updateSessionWorkspace: (sessionId, workspaceId) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      log9.info("updateSessionWorkspace \u8C03\u7528", { sessionId, newWorkspaceId: workspaceId, oldWorkspaceId: metadata.workspaceId });
+      let workspaceName;
+      if (workspaceId) {
+        const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
+        workspaceName = workspace?.name;
+        log9.info("\u627E\u5230\u5DE5\u4F5C\u533A", { workspaceId, workspaceName, workspacePath: workspace?.path });
+      }
+      const updatedMetadata = {
+        ...metadata,
+        workspaceId,
+        workspaceName,
+        type: workspaceId ? "project" : "free",
+        // 解除主工作区 = 解锁（转为自由会话，允许再次绑定）
+        workspaceLocked: workspaceId === null ? false : metadata.workspaceLocked,
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, updatedMetadata);
+        return { sessionMetadata: newMetadata };
+      });
+      const store3 = get6().stores.get(sessionId);
+      if (store3) {
+        store3.setState({ workspaceId });
+      }
+      log9.info("\u66F4\u65B0\u4F1A\u8BDD\u5DE5\u4F5C\u533A\u5B8C\u6210", { sessionId, workspaceId });
+    },
+    addContextWorkspace: (sessionId, workspaceId) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      if (metadata.contextWorkspaceIds.includes(workspaceId)) {
+        return;
+      }
+      const updatedMetadata = {
+        ...metadata,
+        contextWorkspaceIds: [...metadata.contextWorkspaceIds, workspaceId],
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, updatedMetadata);
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u6DFB\u52A0\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
+    },
+    removeContextWorkspace: (sessionId, workspaceId) => {
+      const metadata = get6().sessionMetadata.get(sessionId);
+      if (!metadata) {
+        log9.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
+        return;
+      }
+      const updatedMetadata = {
+        ...metadata,
+        contextWorkspaceIds: metadata.contextWorkspaceIds.filter((id38) => id38 !== workspaceId),
+        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      };
+      set5((state5) => {
+        const newMetadata = new Map(state5.sessionMetadata);
+        newMetadata.set(sessionId, updatedMetadata);
+        return { sessionMetadata: newMetadata };
+      });
+      log9.info("\u79FB\u9664\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
+    },
+    // ===== 初始化 =====
+    initialize: async () => {
+      const state5 = get6();
+      if (state5.stores.size === 0) {
+        const currentWorkspace = useWorkspaceStore.getState().getCurrentWorkspace();
+        get6().createSession(
+          currentWorkspace ? {
+            type: "project",
+            title: "\u65B0\u5BF9\u8BDD",
+            workspaceId: currentWorkspace.id,
+            workspaceLocked: false
+          } : {
+            type: "free",
+            title: "\u65B0\u5BF9\u8BDD"
+          }
+        );
+        log9.info("\u5DF2\u521B\u5EFA\u9ED8\u8BA4\u4F1A\u8BDD");
+      }
+      set5({ isInitialized: true });
+      log9.info("\u521D\u59CB\u5316\u5B8C\u6210");
+    }
+  }));
+}
+function useSessionMetadataList() {
+  return useStore(
+    sessionStoreManager,
+    (state5) => {
+      if (state5.sessionMetadata === cachedMetadataMap && cachedMetadataArray !== null) {
+        return cachedMetadataArray;
+      }
+      const newArray = Array.from(state5.sessionMetadata.values());
+      cachedMetadataMap = state5.sessionMetadata;
+      cachedMetadataArray = newArray;
+      return newArray;
+    }
+  );
+}
+function useActiveSessionId() {
+  return useStore(sessionStoreManager, (state5) => state5.activeSessionId);
+}
+var log9, RENDER_EVENT_TYPES, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
+var init_sessionStoreManager = __esm({
+  "src/host/conversationStore/sessionStoreManager.ts"() {
+    init_uuid();
+    init_esm();
+    init_createConversationStore();
+    init_eventRouter();
+    init_stores();
+    init_ai_runtime();
+    init_stores();
+    init_stores();
+    init_logger();
+    init_engineDisplay();
+    init_stores();
+    init_types2();
+    log9 = createLogger("SessionStoreManager");
+    RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
+    sessionStoreManager = createSessionManagerStore();
+    cachedMetadataMap = null;
+    cachedMetadataArray = null;
+  }
+});
+
+// src/host/conversationStore/useActiveSession.ts
+var useActiveSession_exports = {};
+__export(useActiveSession_exports, {
+  useActiveSession: () => useActiveSession,
+  useActiveSessionActions: () => useActiveSessionActions,
+  useActiveSessionBlockMaps: () => useActiveSessionBlockMaps,
+  useActiveSessionChat: () => useActiveSessionChat,
+  useActiveSessionConversationId: () => useActiveSessionConversationId,
+  useActiveSessionError: () => useActiveSessionError,
+  useActiveSessionInputDraft: () => useActiveSessionInputDraft,
+  useActiveSessionKernelStreaming: () => useActiveSessionKernelStreaming,
+  useActiveSessionMessages: () => useActiveSessionMessages,
+  useActiveSessionPendingBriefing: () => useActiveSessionPendingBriefing,
+  useActiveSessionPendingQueue: () => useActiveSessionPendingQueue,
+  useActiveSessionPromptOptimize: () => useActiveSessionPromptOptimize,
+  useActiveSessionPromptSuggestion: () => useActiveSessionPromptSuggestion,
+  useActiveSessionStreamRate: () => useActiveSessionStreamRate,
+  useActiveSessionStreaming: () => useActiveSessionStreaming,
+  useActiveSessionUsage: () => useActiveSessionUsage,
+  useActiveSessionWorkspace: () => useActiveSessionWorkspace,
+  useHasActivePlan: () => useHasActivePlan,
+  useHasPendingQuestion: () => useHasPendingQuestion,
+  usePendingQuestions: () => usePendingQuestions,
+  useSessionError: () => useSessionError,
+  useSessionHasPendingCards: () => useSessionHasPendingCards,
+  useSessionHasPendingQuestion: () => useSessionHasPendingQuestion,
+  useSessionHistoryPaging: () => useSessionHistoryPaging,
+  useSessionMessages: () => useSessionMessages,
+  useSessionState: () => useSessionState,
+  useSessionStreaming: () => useSessionStreaming,
+  useSessionVisibleRange: () => useSessionVisibleRange
+});
+import { useMemo, useCallback as useCallback2, useSyncExternalStore as useSyncExternalStore2 } from "react";
+function useSessionState(sessionId, selector2, fallback) {
+  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
+  const store3 = sessionId ? stores.get(sessionId) ?? null : null;
+  const subscribe = useCallback2(
+    (onChange) => {
+      if (!store3) return sessionStoreManager.subscribe(onChange);
+      return store3.subscribe(onChange);
+    },
+    [store3]
+  );
+  const getSnapshot = useCallback2(() => {
+    if (!store3) return fallback;
+    return selector2(store3.getState());
+  }, [store3, selector2, fallback]);
+  const getServerSnapshot = useCallback2(() => fallback, [fallback]);
+  return useSyncExternalStore2(subscribe, getSnapshot, getServerSnapshot);
+}
+function useActiveSessionSelector(selector2, fallback) {
+  const sessionId = useActiveSessionId();
+  return useSessionState(sessionId, selector2, fallback);
+}
+function useActiveSessionMessages() {
+  const messages = useActiveSessionSelector(
+    useCallback2((s3) => s3.messages, []),
+    EMPTY_MESSAGES
+  );
+  const archivedMessages = useActiveSessionSelector(
+    useCallback2((s3) => s3.archivedMessages, []),
+    EMPTY_MESSAGES
+  );
+  const currentMessage = useActiveSessionSelector(
+    useCallback2((s3) => s3.currentMessage, []),
+    null
+  );
+  return useMemo(
+    () => ({ messages, archivedMessages, currentMessage }),
+    [messages, archivedMessages, currentMessage]
+  );
+}
+function useActiveSessionStreaming() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.isStreaming, []),
+    false
+  );
+}
+function useActiveSessionKernelStreaming() {
+  const sessionId = useActiveSessionId();
+  const { isStreaming } = useKernelSessionState(sessionId);
+  return isStreaming;
+}
+function useActiveSessionError() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.error, []),
+    null
+  );
+}
+function useActiveSessionConversationId() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.conversationId, []),
+    null
+  );
+}
+function useActiveSessionInputDraft() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.inputDraft, []),
+    EMPTY_INPUT_DRAFT
+  );
+}
+function useActiveSessionPendingBriefing() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.pendingBriefing, []),
+    null
+  );
+}
+function useActiveSessionPendingQueue() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.pendingQueue, []),
+    EMPTY_PENDING_QUEUE
+  );
+}
+function useActiveSessionPromptSuggestion() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.promptSuggestion, []),
+    null
+  );
+}
+function useActiveSessionUsage() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.usageStats, []),
+    null
+  );
+}
+function useActiveSessionStreamRate() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.streamRate, []),
+    null
+  );
+}
+function useActiveSessionPromptOptimize() {
+  return useActiveSessionSelector(
+    useCallback2((s3) => s3.promptOptimize, []),
+    EMPTY_PROMPT_OPTIMIZE
+  );
+}
+function useActiveSessionWorkspace() {
+  const workspaceId = useActiveSessionSelector(
+    useCallback2((s3) => s3.workspaceId, []),
+    null
+  );
+  return useWorkspaceStore(
+    useCallback2((state5) => {
+      if (!workspaceId) return null;
+      return state5.workspaces.find((w5) => w5.id === workspaceId) ?? null;
+    }, [workspaceId])
+  );
+}
+function useActiveSessionBlockMaps() {
+  const toolBlockMap = useActiveSessionSelector(
+    useCallback2((s3) => s3.toolBlockMap, []),
+    EMPTY_BLOCK_MAP
+  );
+  const questionBlockMap = useActiveSessionSelector(
+    useCallback2((s3) => s3.questionBlockMap, []),
+    EMPTY_BLOCK_MAP
+  );
+  const planBlockMap = useActiveSessionSelector(
+    useCallback2((s3) => s3.planBlockMap, []),
+    EMPTY_BLOCK_MAP
+  );
+  const activePlanId = useActiveSessionSelector(
+    useCallback2((s3) => s3.activePlanId, []),
+    null
+  );
+  return useMemo(
+    () => ({ toolBlockMap, questionBlockMap, planBlockMap, activePlanId }),
+    [toolBlockMap, questionBlockMap, planBlockMap, activePlanId]
+  );
+}
+function useActiveSessionActions() {
+  return useMemo(() => {
+    const getStore = () => {
+      const sid = sessionStoreManager.getState().activeSessionId;
+      if (!sid) return null;
+      return sessionStoreManager.getState().stores.get(sid)?.getState() ?? null;
+    };
+    const call = (method, ...args) => {
+      const store3 = getStore();
+      if (!store3) return;
+      const fn3 = store3[method];
+      if (typeof fn3 === "function") return fn3(...args);
+    };
+    return {
+      sendMessage: async (...args) => {
+        const sid = sessionStoreManager.getState().activeSessionId;
+        if (!sid) return false;
+        const kernel = await getKernel();
+        const result = await kernel.sendMessage({
+          sessionId: sid,
+          content: args[0],
+          workspaceDir: args[1],
+          attachments: args[2],
+          sendOptions: args[3]
+        });
+        return result.ok !== false;
+      },
+      interrupt: async () => {
+        const sid = sessionStoreManager.getState().activeSessionId;
+        if (!sid) return;
+        const kernel = await getKernel();
+        await kernel.interrupt(sid);
+      },
+      continueChat: async (prompt, allowedTools) => {
+        const sid = sessionStoreManager.getState().activeSessionId;
+        if (!sid) return;
+        const kernel = await getKernel();
+        await kernel.continueChat(sid, prompt ?? "", { allowedTools });
+      },
+      editAndResend: async (messageId, newContent) => {
+        const sid = sessionStoreManager.getState().activeSessionId;
+        if (!sid) return;
+        const kernel = await getKernel();
+        await kernel.editAndResend(sid, messageId, newContent);
+      },
+      regenerateResponse: async (messageId) => {
+        const sid = sessionStoreManager.getState().activeSessionId;
+        if (!sid) return;
+        const kernel = await getKernel();
+        await kernel.regenerate(sid, messageId);
+      },
+      // 同步方法统一委托
+      deleteMessage: (id38) => call("deleteMessage", id38),
+      updateInputDraft: (d3) => call("updateInputDraft", d3),
+      clearInputDraft: () => call("clearInputDraft"),
+      addContextBlock: (b12) => call("addContextBlock", b12),
+      removeContextBlock: (id38) => call("removeContextBlock", id38),
+      clearContextBlocks: () => call("clearContextBlocks"),
+      updateContextBlockNote: (id38, note2) => call("updateContextBlockNote", id38, note2),
+      setPendingBriefing: (b12) => call("setPendingBriefing", b12),
+      enqueuePending: (m4) => call("enqueuePending", m4),
+      removePending: (id38) => call("removePending", id38),
+      clearPendingQueue: () => call("clearPendingQueue"),
+      dispatchNextPending: async () => call("dispatchNextPending"),
+      sendPendingNow: async (id38) => call("sendPendingNow", id38),
+      editPending: (id38) => call("editPending", id38),
+      setPromptSuggestion: (s3) => call("setPromptSuggestion", s3),
+      undoPromptOptimize: () => call("undoPromptOptimize"),
+      redoPromptOptimize: () => call("redoPromptOptimize"),
+      applyPendingPromptOptimize: () => call("applyPendingPromptOptimize"),
+      resetPromptOptimize: () => call("resetPromptOptimize"),
+      clearPromptOptimizeError: () => call("failPromptOptimize", null),
+      clearError: () => call("setError", null),
+      clearMessages: () => call("clearMessages"),
+      loadMoreArchivedMessages: (count2 = 20) => call("loadMoreArchivedMessages", count2),
+      onVisibleRangeChange: (start2, end) => call("onVisibleRangeChange", start2, end),
+      // Manager actions
+      switchSession: sessionStoreManager.getState().switchSession,
+      deleteSession: sessionStoreManager.getState().deleteSession,
+      createSession: sessionStoreManager.getState().createSession
+    };
+  }, []);
+}
+function useActiveSessionChat() {
+  const sessionId = useActiveSessionId();
+  const stores = useStore(sessionStoreManager, (s3) => s3.stores);
+  const store3 = sessionId ? stores.get(sessionId) ?? null : null;
+  return useMemo(() => store3 ? store3.getState() : null, [store3]);
+}
+function useActiveSession() {
+  const messagesState = useActiveSessionMessages();
+  const isStreaming = useActiveSessionStreaming();
+  const error3 = useActiveSessionError();
+  const conversationId = useActiveSessionConversationId();
+  const blockMaps = useActiveSessionBlockMaps();
+  const actions = useActiveSessionActions();
+  return useMemo(
+    () => ({
+      ...messagesState,
+      isStreaming,
+      error: error3,
+      conversationId,
+      ...blockMaps,
+      ...actions
+    }),
+    [messagesState, isStreaming, error3, conversationId, blockMaps, actions]
+  );
+}
+function useSessionMessages(sessionId) {
+  const messages = useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.messages, []),
+    EMPTY_MESSAGES
+  );
+  const archivedMessages = useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.archivedMessages, []),
+    EMPTY_MESSAGES
+  );
+  const currentMessage = useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.currentMessage, []),
+    null
+  );
+  return useMemo(
+    () => ({ messages, archivedMessages, currentMessage }),
+    [messages, archivedMessages, currentMessage]
+  );
+}
+function useSessionStreaming(sessionId) {
+  return useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.isStreaming, []),
+    false
+  );
+}
+function useSessionError(sessionId) {
+  return useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.error, []),
+    null
+  );
+}
+function useSessionHistoryPaging(sessionId) {
+  return useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.historyPaging, []),
+    null
+  );
+}
+function useSessionVisibleRange(sessionId) {
+  return useSessionState(
+    sessionId,
+    useCallback2((s3) => s3.visibleRange, []),
+    null
+  );
+}
+function extractQuestionsFromBlocks(blocks2) {
+  const result = [];
+  for (const block2 of blocks2) {
+    if (block2.type === "question" && block2.status === "pending") {
+      result.push(block2);
+    }
+  }
+  return result;
+}
+function useSessionHasPendingQuestion(sessionId) {
+  const { currentMessage, messages } = useSessionMessages(sessionId);
+  return useMemo(() => {
+    if (currentMessage) {
+      const found = extractQuestionsFromBlocks(currentMessage.blocks);
+      if (found.length > 0) return true;
+    }
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.type === "assistant" && "blocks" in lastMsg) {
+        return extractQuestionsFromBlocks(
+          lastMsg.blocks
+        ).length > 0;
+      }
+    }
+    return false;
+  }, [currentMessage, messages]);
+}
+function useSessionHasPendingCards(sessionId) {
+  const { currentMessage, messages } = useSessionMessages(sessionId);
+  return useMemo(() => {
+    const hasPending = (blocks2) => !!blocks2?.some(
+      (b12) => b12.type === "permission_request" && b12.status === "pending" || b12.type === "form" && b12.status === "pending"
+    );
+    if (hasPending(currentMessage?.blocks)) return true;
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.type === "assistant" && "blocks" in lastMsg) {
+        return hasPending(
+          lastMsg.blocks
+        );
+      }
+    }
+    return false;
+  }, [currentMessage, messages]);
+}
+function usePendingQuestions() {
+  const { currentMessage, messages } = useActiveSessionMessages();
+  return useMemo(() => {
+    if (currentMessage) {
+      const result = extractQuestionsFromBlocks(currentMessage.blocks);
+      if (result.length > 0) return result;
+    }
+    if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.type === "assistant" && "blocks" in lastMsg) {
+        return extractQuestionsFromBlocks(
+          lastMsg.blocks
+        );
+      }
+    }
+    return [];
+  }, [currentMessage, messages]);
+}
+function useHasPendingQuestion() {
+  const pendingQuestions = usePendingQuestions();
+  return useMemo(() => pendingQuestions.length > 0, [pendingQuestions]);
+}
+function useHasActivePlan() {
+  const { planBlockMap, activePlanId } = useActiveSessionBlockMaps();
+  const { currentMessage } = useActiveSessionMessages();
+  return useMemo(() => {
+    if (!activePlanId || !currentMessage) return false;
+    const idx = planBlockMap.get(activePlanId);
+    if (idx === void 0) return false;
+    const block2 = currentMessage.blocks[idx];
+    if (block2?.type === "plan_mode") {
+      const status = block2.status;
+      return status === "pending_approval" || status === "drafting";
+    }
+    return false;
+  }, [planBlockMap, activePlanId, currentMessage]);
+}
+var EMPTY_MESSAGES, EMPTY_INPUT_DRAFT, EMPTY_PENDING_QUEUE, EMPTY_BLOCK_MAP, EMPTY_PROMPT_OPTIMIZE;
+var init_useActiveSession = __esm({
+  "src/host/conversationStore/useActiveSession.ts"() {
+    init_esm();
+    init_sessionStoreManager();
+    init_useKernelSessionState();
+    init_registry();
+    init_stores();
+    EMPTY_MESSAGES = [];
+    EMPTY_INPUT_DRAFT = { text: "", attachments: [] };
+    EMPTY_PENDING_QUEUE = [];
+    EMPTY_BLOCK_MAP = /* @__PURE__ */ new Map();
+    EMPTY_PROMPT_OPTIMIZE = {
+      status: "idle",
+      history: [],
+      cursor: -1,
+      sourceSnapshot: null,
+      pendingResult: null,
+      pendingMeta: null,
+      optimizeSessionId: null,
+      error: null
+    };
+  }
+});
+
+// src/shims/stores.ts
+var stores_exports = {};
+__export(stores_exports, {
+  conversationStoreUtils: () => conversationStoreUtils,
+  coreStore: () => coreStore,
+  findStoreByConversationId: () => findStoreByConversationId,
+  getSessionConfig: () => getSessionConfig,
+  resolveEffectiveProfileId: () => resolveEffectiveProfileId2,
+  resolveSessionEngine: () => resolveSessionEngine2,
+  selectSlotFill: () => selectSlotFill,
+  sessionStoreManager: () => sessionStoreManager2,
+  useActiveSessionActions: () => useActiveSessionActions2,
+  useActiveSessionConversationId: () => useActiveSessionConversationId2,
+  useActiveSessionError: () => useActiveSessionError2,
+  useActiveSessionId: () => useActiveSessionId,
+  useActiveSessionInputDraft: () => useActiveSessionInputDraft2,
+  useActiveSessionKernelStreaming: () => useActiveSessionKernelStreaming2,
+  useActiveSessionMessages: () => useActiveSessionMessages2,
+  useActiveSessionPendingBriefing: () => useActiveSessionPendingBriefing2,
+  useActiveSessionPendingQueue: () => useActiveSessionPendingQueue2,
+  useActiveSessionPromptOptimize: () => useActiveSessionPromptOptimize2,
+  useActiveSessionPromptSuggestion: () => useActiveSessionPromptSuggestion2,
+  useActiveSessionStreamRate: () => useActiveSessionStreamRate2,
+  useActiveSessionStreaming: () => useActiveSessionStreaming2,
+  useActiveSessionUsage: () => useActiveSessionUsage2,
+  useActiveSessionWorkspace: () => useActiveSessionWorkspace2,
+  useAgentStore: () => useAgentStore,
+  useCapCatalogStore: () => useCapCatalogStore,
+  useCliInfoStore: () => useCliInfoStore,
+  useCompactHandoffStore: () => useCompactHandoffStore,
+  useConfigStore: () => useConfigStore,
+  useDispatchStore: () => useDispatchStore,
+  useEngineMetadataStore: () => useEngineMetadataStore,
+  useFileEditorStore: () => useFileEditorStore,
+  useHasActivePlan: () => useHasActivePlan2,
+  useHasPendingQuestion: () => useHasPendingQuestion2,
+  useInputUIStore: () => useInputUIStore,
+  useModelProfileStore: () => useModelProfileStore,
+  useOverlayStore: () => useOverlayStore,
+  usePluginStore: () => usePluginStore,
+  useSessionConfig: () => useSessionConfig,
+  useSessionHasPendingCards: () => useSessionHasPendingCards2,
+  useSessionHasPendingQuestion: () => useSessionHasPendingQuestion2,
+  useSessionManagerActions: () => useSessionManagerActions,
+  useSessionMetadata: () => useSessionMetadata,
+  useSessionMetadataList: () => useSessionMetadataList,
+  useSessionState: () => useSessionState2,
+  useSessionStreaming: () => useSessionStreaming2,
+  useSkillStore: () => useSkillStore,
+  useSnippetStore: () => useSnippetStore,
+  useThemeStore: () => useThemeStore,
+  useToastStore: () => useToastStore,
+  useUiSlotStore: () => useUiSlotStore,
+  useViewStore: () => useViewStore,
+  useWorkspaceStore: () => useWorkspaceStore
+});
+import { useSyncExternalStore as useSyncExternalStore3 } from "react";
+function store(name) {
+  return coreStore(name);
+}
+function useStoreHook(name) {
+  const host = coreStore(name);
+  if (typeof host === "function") {
+    const hook3 = (selector2) => host(selector2);
+    hook3.getState = host.getState ?? (() => store(name).getState());
+    hook3.subscribe = host.subscribe ?? ((cb) => store(name).subscribe(cb));
+    hook3.setState = host.setState ?? ((p3) => store(name).setState(p3));
+    return hook3;
+  }
+  const s3 = store(name);
+  const hook2 = (selector2) => selector2 ? selector2(s3.getState()) : s3.getState();
+  hook2.getState = () => s3.getState();
+  hook2.subscribe = (cb) => s3.subscribe(cb);
+  hook2.setState = (p3) => s3.setState(p3);
+  return hook2;
+}
+function getSessionConfig() {
+  return useSessionConfig.getState().config;
+}
+function selectSlotFill(slots, slotId) {
+  if (!slots) return null;
+  return slots[slotId] ?? null;
+}
+function useSessionManagerActions() {
+  const sm = coreStore("sessionStoreManager");
+  const st3 = sm.getState();
+  return {
+    switchSession: (id38) => st3.switchSession(id38),
+    closeSession: (id38) => st3.deleteSession(id38),
+    createSession: st3.createSession,
+    createSessionFromHistory: st3.createSessionFromHistory,
+    renameSession: (id38, title2) => st3.updateSessionTitle(id38, title2)
+  };
+}
+function useSessionMetadata(sessionId) {
+  const sm = coreStore("sessionStoreManager");
+  return useSyncExternalStore3(
+    (cb) => sm.subscribe(cb),
+    () => sessionId ? sm.getState().sessionMetadata.get(sessionId) ?? null : null,
+    () => null
+  );
+}
+function resolveEffectiveProfileId2(...args) {
+  return resolveEffectiveProfileId(...args);
+}
+function resolveSessionEngine2(...args) {
+  return resolveSessionEngine(...args);
+}
+function findStoreByConversationId(...args) {
+  const sm = coreStore("sessionStoreManager");
+  if (typeof sm.findStoreByConversationId === "function") return sm.findStoreByConversationId(...args);
+  const ua = coreStore("useActiveSession");
+  if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
+  return null;
+}
+var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager2, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
+var init_stores = __esm({
+  "src/shims/stores.ts"() {
+    init_core();
+    init_sessionStoreManager();
+    init_useActiveSession();
+    init_sessionStoreManager();
+    init_conversationStoreUtils();
+    useConfigStore = useStoreHook("useConfigStore");
+    useWorkspaceStore = useStoreHook("useWorkspaceStore");
+    useViewStore = useStoreHook("useViewStore");
+    useToastStore = useStoreHook("useToastStore");
+    useInputUIStore = useStoreHook("useInputUIStore");
+    useUiSlotStore = useStoreHook("useUiSlotStore");
+    useThemeStore = useStoreHook("useThemeStore");
+    useModelProfileStore = useStoreHook("useModelProfileStore");
+    useSessionConfig = useStoreHook("useSessionConfig");
+    useEngineMetadataStore = useStoreHook("useEngineMetadataStore");
+    useCliInfoStore = useStoreHook("useCliInfoStore");
+    useAgentStore = useStoreHook("useAgentStore");
+    useCapCatalogStore = useStoreHook("useCapCatalogStore");
+    usePluginStore = useStoreHook("usePluginStore");
+    useOverlayStore = useStoreHook("useOverlayStore");
+    useSnippetStore = useStoreHook("useSnippetStore");
+    useSkillStore = useStoreHook("useSkillStore");
+    useFileEditorStore = useStoreHook("useFileEditorStore");
+    useCompactHandoffStore = useStoreHook("useCompactHandoffStore");
+    useDispatchStore = useStoreHook("useDispatchStore");
+    sessionStoreManager2 = sessionStoreManager;
+    hostActive = new Proxy({}, {
+      get: (_t, p3) => {
+        const local2 = useActiveSession_exports[p3];
+        if (typeof local2 === "function") return local2;
+        const ua = coreStore("useActiveSession");
+        if (!ua) return void 0;
+        const v5 = ua[p3];
+        if (typeof v5 === "function") return v5;
+        const sm = coreStore("sessionStoreManager");
+        if (p3 === "useActiveSessionId") return () => sm.getState().activeSessionId;
+        if (p3 === "useSessionMetadataList") return () => {
+          const m4 = sm.getState().sessionMetadata;
+          return m4 ? [...m4.values()] : [];
+        };
+        if (p3 === "useSessionManagerActions2") return () => {
+          const st3 = sm.getState();
+          return { switchSession: (id38) => st3.switchSession(id38), closeSession: (id38) => st3.deleteSession(id38), createSession: st3.createSession, createSessionFromHistory: st3.createSessionFromHistory, renameSession: (id38, title2) => st3.updateSessionTitle(id38, title2) };
+        };
+        return void 0;
+      }
+    });
+    useActiveSessionActions2 = (...args) => hostActive.useActiveSessionActions(...args);
+    useActiveSessionMessages2 = (...args) => hostActive.useActiveSessionMessages(...args);
+    useActiveSessionStreaming2 = (...args) => hostActive.useActiveSessionStreaming(...args);
+    useActiveSessionError2 = (...args) => hostActive.useActiveSessionError(...args);
+    useActiveSessionConversationId2 = (...args) => hostActive.useActiveSessionConversationId(...args);
+    useActiveSessionWorkspace2 = (...args) => hostActive.useActiveSessionWorkspace(...args);
+    useActiveSessionInputDraft2 = (...args) => hostActive.useActiveSessionInputDraft(...args);
+    useActiveSessionPendingQueue2 = (...args) => hostActive.useActiveSessionPendingQueue(...args);
+    useActiveSessionPendingBriefing2 = (...args) => hostActive.useActiveSessionPendingBriefing(...args);
+    useActiveSessionPromptOptimize2 = (...args) => hostActive.useActiveSessionPromptOptimize(...args);
+    useActiveSessionPromptSuggestion2 = (...args) => hostActive.useActiveSessionPromptSuggestion(...args);
+    useActiveSessionStreamRate2 = (...args) => hostActive.useActiveSessionStreamRate(...args);
+    useActiveSessionUsage2 = (...args) => hostActive.useActiveSessionUsage(...args);
+    useActiveSessionKernelStreaming2 = (...args) => hostActive.useActiveSessionKernelStreaming(...args);
+    useSessionState2 = (...args) => hostActive.useSessionState(...args);
+    useSessionStreaming2 = (...args) => hostActive.useSessionStreaming(...args);
+    useHasActivePlan2 = (...args) => hostActive.useHasActivePlan(...args);
+    useHasPendingQuestion2 = (...args) => hostActive.useHasPendingQuestion(...args);
+    useSessionHasPendingQuestion2 = (...args) => hostActive.useSessionHasPendingQuestion(...args);
+    useSessionHasPendingCards2 = (...args) => hostActive.useSessionHasPendingCards(...args);
+    conversationStoreUtils = new Proxy({}, { get: (_t, p3) => coreStore("conversationStoreUtils")[p3] });
   }
 });
 
@@ -3225,7 +11235,7 @@ function cleanArray(array7) {
   return array7;
 }
 function clone(object4) {
-  const newObject = create(null);
+  const newObject = create2(null);
   for (const _ref2 of entries(object4)) {
     var _ref3 = _slicedToArray(_ref2, 2);
     const property3 = _ref3[0];
@@ -3239,7 +11249,7 @@ function clone(object4) {
   return newObject;
 }
 function cloneSet(set5) {
-  const newSet = create(null);
+  const newSet = create2(null);
   const keys3 = objectKeys(set5);
   let l4 = keys3.length;
   while (l4--) newSet[keys3[l4]] = set5[keys3[l4]];
@@ -3404,7 +11414,7 @@ function createDOMPurify() {
   let CUSTOM_ELEMENT_HANDLING = null;
   let FORBID_TAGS = null;
   let FORBID_ATTR = null;
-  const EXTRA_ELEMENT_HANDLING = Object.seal(create(null, {
+  const EXTRA_ELEMENT_HANDLING = Object.seal(create2(null, {
     tagCheck: {
       writable: true,
       configurable: false,
@@ -3515,7 +11525,7 @@ function createDOMPurify() {
   let MATHML_TEXT_INTEGRATION_POINTS = null;
   const DEFAULT_HTML_INTEGRATION_POINTS = freeze(addToSet({}, ["annotation-xml"]));
   let HTML_INTEGRATION_POINTS = null;
-  const DEFAULT_CUSTOM_ELEMENT_HANDLING = freeze(create(null));
+  const DEFAULT_CUSTOM_ELEMENT_HANDLING = freeze(create2(null));
   const COMMON_SVG_AND_HTML_ELEMENTS = addToSet({}, [
     "title",
     "style",
@@ -3550,8 +11560,8 @@ function createDOMPurify() {
       base: DEFAULT_DATA_URI_TAGS
     });
     FORBID_CONTENTS = _resolveSetOption(cfg, "FORBID_CONTENTS", DEFAULT_FORBID_CONTENTS, { transform: transformCaseFunc });
-    FORBID_TAGS = _resolveSetOption(cfg, "FORBID_TAGS", create(null), { transform: transformCaseFunc });
-    FORBID_ATTR = _resolveSetOption(cfg, "FORBID_ATTR", create(null), { transform: transformCaseFunc });
+    FORBID_TAGS = _resolveSetOption(cfg, "FORBID_TAGS", create2(null), { transform: transformCaseFunc });
+    FORBID_ATTR = _resolveSetOption(cfg, "FORBID_ATTR", create2(null), { transform: transformCaseFunc });
     USE_PROFILES = objectHasOwnProperty(cfg, "USE_PROFILES") ? cfg.USE_PROFILES && typeof cfg.USE_PROFILES === "object" ? clone(cfg.USE_PROFILES) : cfg.USE_PROFILES : false;
     ALLOW_ARIA_ATTR = cfg.ALLOW_ARIA_ATTR !== false;
     ALLOW_DATA_ATTR = cfg.ALLOW_DATA_ATTR !== false;
@@ -3573,7 +11583,7 @@ function createDOMPurify() {
     MATHML_TEXT_INTEGRATION_POINTS = _resolveObjectOption(cfg, "MATHML_TEXT_INTEGRATION_POINTS", DEFAULT_MATHML_TEXT_INTEGRATION_POINTS);
     HTML_INTEGRATION_POINTS = _resolveObjectOption(cfg, "HTML_INTEGRATION_POINTS", DEFAULT_HTML_INTEGRATION_POINTS);
     const customElementHandling = _resolveObjectOption(cfg, "CUSTOM_ELEMENT_HANDLING", DEFAULT_CUSTOM_ELEMENT_HANDLING);
-    CUSTOM_ELEMENT_HANDLING = create(null);
+    CUSTOM_ELEMENT_HANDLING = create2(null);
     if (objectHasOwnProperty(customElementHandling, "tagNameCheck") && isRegexOrFunction(customElementHandling.tagNameCheck)) CUSTOM_ELEMENT_HANDLING.tagNameCheck = customElementHandling.tagNameCheck;
     if (objectHasOwnProperty(customElementHandling, "attributeNameCheck") && isRegexOrFunction(customElementHandling.attributeNameCheck)) CUSTOM_ELEMENT_HANDLING.attributeNameCheck = customElementHandling.attributeNameCheck;
     if (objectHasOwnProperty(customElementHandling, "allowCustomizedBuiltInElements") && typeof customElementHandling.allowCustomizedBuiltInElements === "boolean") CUSTOM_ELEMENT_HANDLING.allowCustomizedBuiltInElements = customElementHandling.allowCustomizedBuiltInElements;
@@ -3583,7 +11593,7 @@ function createDOMPurify() {
     if (USE_PROFILES) {
       if ((objectHasOwnProperty(cfg, "ALLOWED_TAGS") || objectHasOwnProperty(cfg, "ALLOWED_ATTR")) && typeof console !== "undefined" && typeof console.warn === "function") console.warn("DOMPurify: USE_PROFILES overrides ALLOWED_TAGS and ALLOWED_ATTR. Do not use these options together.");
       ALLOWED_TAGS = addToSet({}, text);
-      ALLOWED_ATTR = create(null);
+      ALLOWED_ATTR = create2(null);
       if (USE_PROFILES.html === true) {
         addToSet(ALLOWED_TAGS, html$1);
         addToSet(ALLOWED_ATTR, html);
@@ -4347,7 +12357,7 @@ function createDOMPurify() {
   };
   return DOMPurify;
 }
-var entries, objectKeys, setPrototypeOf, isFrozen, getPrototypeOf, getOwnPropertyDescriptor, freeze, seal, create, _ref, apply, construct, arrayForEach, arrayLastIndexOf, arrayPop, arrayPush, arraySlice, arraySplice, arrayIsArray, setCreate, setAdd, setHas, stringToLowerCase, stringToString, stringMatch, stringReplace, stringIndexOf, stringTrim, numberToString, booleanToString, bigintToString, symbolToString, objectHasOwnProperty, objectToString, regExpTestRaw, regExpTest, typeErrorCreate, html$1, svg$1, svgFilters, svgDisallowed, mathMl$1, mathMlDisallowed, text, html, svg, mathMl, xml, MUSTACHE_EXPR, ERB_EXPR, TMPLIT_EXPR, TMPL_MARKER_SERIALIZED, DATA_ATTR, ARIA_ATTR, IS_ALLOWED_URI, IS_SCRIPT_OR_DATA, ATTR_WHITESPACE, DOCTYPE_NAME, CUSTOM_ELEMENT, ELEMENT_MARKUP_PROBE, COMMENT_MARKUP_PROBE, FALLBACK_TAG_CLOSE, SELF_CLOSING_TAG, ATTR_VALUE_BREAKOUT, LEADING_WHITESPACE, NODE_TYPE, LITERAL_TEXT_ELEMENTS, getGlobal, _createTrustedTypesPolicy, _createHooksMap, _resolveSetOption, _resolveObjectOption, purify_default;
+var entries, objectKeys, setPrototypeOf, isFrozen, getPrototypeOf, getOwnPropertyDescriptor, freeze, seal, create2, _ref, apply, construct, arrayForEach, arrayLastIndexOf, arrayPop, arrayPush, arraySlice, arraySplice, arrayIsArray, setCreate, setAdd, setHas, stringToLowerCase, stringToString, stringMatch, stringReplace, stringIndexOf, stringTrim, numberToString, booleanToString, bigintToString, symbolToString, objectHasOwnProperty, objectToString, regExpTestRaw, regExpTest, typeErrorCreate, html$1, svg$1, svgFilters, svgDisallowed, mathMl$1, mathMlDisallowed, text, html, svg, mathMl, xml, MUSTACHE_EXPR, ERB_EXPR, TMPLIT_EXPR, TMPL_MARKER_SERIALIZED, DATA_ATTR, ARIA_ATTR, IS_ALLOWED_URI, IS_SCRIPT_OR_DATA, ATTR_WHITESPACE, DOCTYPE_NAME, CUSTOM_ELEMENT, ELEMENT_MARKUP_PROBE, COMMENT_MARKUP_PROBE, FALLBACK_TAG_CLOSE, SELF_CLOSING_TAG, ATTR_VALUE_BREAKOUT, LEADING_WHITESPACE, NODE_TYPE, LITERAL_TEXT_ELEMENTS, getGlobal, _createTrustedTypesPolicy, _createHooksMap, _resolveSetOption, _resolveObjectOption, purify_default;
 var init_purify_es = __esm({
   "node_modules/.pnpm/dompurify@3.4.18/node_modules/dompurify/dist/purify.es.mjs"() {
     AsyncGenerator.prototype["function" == typeof Symbol && Symbol.asyncIterator || "@@asyncIterator"] = function() {
@@ -4367,7 +12377,7 @@ var init_purify_es = __esm({
     getOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
     freeze = Object.freeze;
     seal = Object.seal;
-    create = Object.create;
+    create2 = Object.create;
     _ref = typeof Reflect !== "undefined" && Reflect;
     apply = _ref.apply;
     construct = _ref.construct;
@@ -5136,230 +13146,6 @@ var init_purify_es = __esm({
       return value3 && typeof value3 === "object" ? clone(value3) : fallback;
     };
     purify_default = createDOMPurify();
-  }
-});
-
-// src/shims/logger.ts
-function createLogger(module2, options2) {
-  const cacheKey = module2;
-  if (loggerCache.has(cacheKey) && !options2) {
-    return loggerCache.get(cacheKey) ?? new ModuleLogger({ module: module2 });
-  }
-  const logger2 = new ModuleLogger({
-    module: module2,
-    level: options2?.level ?? globalLevel,
-    transports: options2?.transports ?? globalTransports,
-    context: { ...globalContext, ...options2?.context }
-  });
-  if (!options2) {
-    loggerCache.set(cacheKey, logger2);
-  }
-  return logger2;
-}
-var LogLevelNames, LogLevelColors, ResetColor, ConsoleTransport, JsonTransport, ModuleLogger, globalLevel, globalTransports, globalContext, loggerCache;
-var init_logger = __esm({
-  "src/shims/logger.ts"() {
-    LogLevelNames = {
-      [0 /* Trace */]: "trace",
-      [1 /* Debug */]: "debug",
-      [2 /* Info */]: "info",
-      [3 /* Warn */]: "warn",
-      [4 /* Error */]: "error",
-      [5 /* Fatal */]: "fatal"
-    };
-    LogLevelColors = {
-      [0 /* Trace */]: "\x1B[90m",
-      // 灰色
-      [1 /* Debug */]: "\x1B[36m",
-      // 青色
-      [2 /* Info */]: "\x1B[32m",
-      // 绿色
-      [3 /* Warn */]: "\x1B[33m",
-      // 黄色
-      [4 /* Error */]: "\x1B[31m",
-      // 红色
-      [5 /* Fatal */]: "\x1B[35m"
-      // 紫色
-    };
-    ResetColor = "\x1B[0m";
-    ConsoleTransport = class {
-      constructor(level) {
-        this.name = "console";
-        this.level = 2 /* Info */;
-        this.level = level ?? 2 /* Info */;
-      }
-      setLevel(level) {
-        this.level = level;
-      }
-      log(entry) {
-        if (entry.level < this.level) return;
-        const color2 = LogLevelColors[entry.level];
-        const levelName = LogLevelNames[entry.level].toUpperCase().padEnd(5);
-        const timestamp2 = entry.timestamp.split("T")[1]?.slice(0, 12) || entry.timestamp;
-        const moduleTag = `[${entry.module}]`;
-        const prefix = `${color2}${levelName}${ResetColor} ${timestamp2} ${moduleTag}`;
-        const method = this.getConsoleMethod(entry.level);
-        if (entry.error) {
-          method(prefix, entry.message, entry.context ?? "", "\n  Error:", entry.error.name, entry.error.message);
-          if (entry.error.stack) {
-            method("  Stack:", entry.error.stack);
-          }
-        } else if (entry.context && Object.keys(entry.context).length > 0) {
-          method(prefix, entry.message, entry.context);
-        } else {
-          method(prefix, entry.message);
-        }
-      }
-      getConsoleMethod(level) {
-        switch (level) {
-          case 5 /* Fatal */:
-          case 4 /* Error */:
-            return console.error.bind(console);
-          case 3 /* Warn */:
-            return console.warn.bind(console);
-          case 2 /* Info */:
-            return console.info.bind(console);
-          default:
-            return console.log.bind(console);
-        }
-      }
-    };
-    JsonTransport = class {
-      constructor(level) {
-        this.name = "json";
-        this.level = 2 /* Info */;
-        this.level = level ?? 2 /* Info */;
-      }
-      setLevel(level) {
-        this.level = level;
-      }
-      log(entry) {
-        if (entry.level < this.level) return;
-        console.log(JSON.stringify(entry));
-      }
-    };
-    ModuleLogger = class _ModuleLogger {
-      constructor(config3) {
-        this.config = {
-          level: 2 /* Info */,
-          transports: [new ConsoleTransport()],
-          ...config3
-        };
-        this.transports = this.config.transports ?? [];
-      }
-      /**
-       * 获取当前日志级别
-       */
-      getLevel() {
-        return this.config.level ?? 2 /* Info */;
-      }
-      /**
-       * 设置日志级别
-       */
-      setLevel(level) {
-        this.config.level = level;
-        this.transports.forEach((t5) => t5.setLevel?.(level));
-      }
-      /**
-       * 设置全局上下文
-       */
-      setContext(context) {
-        this.config.context = { ...this.config.context, ...context };
-      }
-      /**
-       * 清除上下文
-       */
-      clearContext() {
-        this.config.context = void 0;
-      }
-      /**
-       * 创建子日志器
-       */
-      child(subModule) {
-        return new _ModuleLogger({
-          ...this.config,
-          module: `${this.config.module}:${subModule}`
-        });
-      }
-      // ===== 日志方法 =====
-      trace(message, context) {
-        this.log(0 /* Trace */, message, void 0, context);
-      }
-      debug(message, context) {
-        this.log(1 /* Debug */, message, void 0, context);
-      }
-      info(message, context) {
-        this.log(2 /* Info */, message, void 0, context);
-      }
-      warn(message, context) {
-        this.log(3 /* Warn */, message, void 0, context);
-      }
-      error(message, error3, context) {
-        this.log(4 /* Error */, message, error3, context);
-      }
-      fatal(message, error3, context) {
-        this.log(5 /* Fatal */, message, error3, context);
-      }
-      /**
-       * 记录性能计时
-       */
-      time(label) {
-        const start2 = performance.now();
-        return () => {
-          const duration = performance.now() - start2;
-          this.debug(`${label} completed`, { duration: `${duration.toFixed(2)}ms` });
-        };
-      }
-      /**
-       * 记录进入函数
-       */
-      enter(fn3, args) {
-        this.trace(`\u2192 ${fn3}`, args);
-      }
-      /**
-       * 记录退出函数
-       */
-      exit(fn3, result) {
-        this.trace(`\u2190 ${fn3}`, result !== void 0 ? { result } : void 0);
-      }
-      // ===== 私有方法 =====
-      log(level, message, error3, context) {
-        if (level < (this.config.level ?? 2 /* Info */)) {
-          return;
-        }
-        const entry = {
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          level,
-          levelName: LogLevelNames[level],
-          module: this.config.module,
-          message,
-          context: { ...this.config.context, ...context },
-          error: error3 ? {
-            name: error3.name,
-            message: error3.message,
-            stack: error3.stack
-          } : void 0,
-          sessionId: this.config.context?.sessionId,
-          requestId: this.config.context?.requestId
-        };
-        for (const transport of this.transports) {
-          try {
-            transport.log(entry);
-          } catch (e3) {
-            console.error("[Logger] Transport error:", e3);
-          }
-        }
-      }
-    };
-    globalLevel = typeof import.meta !== "undefined" && import.meta.env?.DEV ? 1 /* Debug */ : 2 /* Info */;
-    globalTransports = [];
-    globalContext = {};
-    loggerCache = /* @__PURE__ */ new Map();
-    if (typeof import.meta !== "undefined" && import.meta.env?.DEV) {
-      globalTransports = [new ConsoleTransport(1 /* Debug */)];
-    } else {
-      globalTransports = [new JsonTransport(2 /* Info */)];
-    }
   }
 });
 
@@ -19577,7366 +27363,6 @@ var init_katex = __esm({
        */
       __domTree
     };
-  }
-});
-
-// src/shims/uuid.ts
-function generateUUID() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
-    const bytes = new Uint8Array(16);
-    crypto.getRandomValues(bytes);
-    bytes[6] = bytes[6] & 15 | 64;
-    bytes[8] = bytes[8] & 63 | 128;
-    const hex2 = Array.from(bytes, (b12) => b12.toString(16).padStart(2, "0")).join("");
-    return [
-      hex2.slice(0, 8),
-      hex2.slice(8, 12),
-      hex2.slice(12, 16),
-      hex2.slice(16, 20),
-      hex2.slice(20, 32)
-    ].join("-");
-  }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c4) => {
-    const r3 = Math.random() * 16 | 0;
-    const v5 = c4 === "x" ? r3 : r3 & 3 | 8;
-    return v5.toString(16);
-  });
-}
-var init_uuid = __esm({
-  "src/shims/uuid.ts"() {
-  }
-});
-
-// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/vanilla.mjs
-var createStoreImpl, createStore;
-var init_vanilla = __esm({
-  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/vanilla.mjs"() {
-    createStoreImpl = (createState) => {
-      let state5;
-      const listeners = /* @__PURE__ */ new Set();
-      const setState = (partial, replace2) => {
-        const nextState = typeof partial === "function" ? partial(state5) : partial;
-        if (!Object.is(nextState, state5)) {
-          const previousState = state5;
-          state5 = (replace2 != null ? replace2 : typeof nextState !== "object" || nextState === null) ? nextState : Object.assign({}, state5, nextState);
-          listeners.forEach((listener) => listener(state5, previousState));
-        }
-      };
-      const getState2 = () => state5;
-      const getInitialState = () => initialState;
-      const subscribe = (listener) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-      };
-      const api2 = { setState, getState: getState2, getInitialState, subscribe };
-      const initialState = state5 = createState(setState, getState2, api2);
-      return api2;
-    };
-    createStore = (createState) => createState ? createStoreImpl(createState) : createStoreImpl;
-  }
-});
-
-// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/react.mjs
-import React from "react";
-function useStore(api2, selector2 = identity) {
-  const slice8 = React.useSyncExternalStore(
-    api2.subscribe,
-    React.useCallback(() => selector2(api2.getState()), [api2, selector2]),
-    () => selector2(api2.getInitialState())
-  );
-  React.useDebugValue(slice8);
-  return slice8;
-}
-var identity, createImpl, create2;
-var init_react = __esm({
-  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/react.mjs"() {
-    init_vanilla();
-    identity = (arg) => arg;
-    createImpl = (createState) => {
-      const api2 = createStore(createState);
-      const useBoundStore = (selector2) => useStore(api2, selector2);
-      Object.assign(useBoundStore, api2);
-      return useBoundStore;
-    };
-    create2 = (createState) => createState ? createImpl(createState) : createImpl;
-  }
-});
-
-// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/index.mjs
-var init_esm = __esm({
-  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/index.mjs"() {
-    init_vanilla();
-    init_react();
-  }
-});
-
-// node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/middleware.mjs
-function createJSONStorage(getStorage, options2) {
-  let storage;
-  try {
-    storage = getStorage();
-  } catch (e3) {
-    return;
-  }
-  const persistStorage = {
-    getItem: (name) => {
-      var _a;
-      const parse6 = (str22) => {
-        if (str22 === null) {
-          return null;
-        }
-        return JSON.parse(str22, options2 == null ? void 0 : options2.reviver);
-      };
-      const str2 = (_a = storage.getItem(name)) != null ? _a : null;
-      if (isPromiseLike(str2)) {
-        return str2.then(parse6);
-      }
-      return parse6(str2);
-    },
-    setItem: (name, newValue) => storage.setItem(name, JSON.stringify(newValue, options2 == null ? void 0 : options2.replacer)),
-    removeItem: (name) => storage.removeItem(name)
-  };
-  return persistStorage;
-}
-var subscribeWithSelectorImpl, subscribeWithSelector, isPromiseLike, toSyncThenable, toThenable, persistImpl, persist;
-var init_middleware = __esm({
-  "node_modules/.pnpm/zustand@5.1.0_@types+react@18.3.31_react@18.3.1/node_modules/zustand/esm/middleware.mjs"() {
-    subscribeWithSelectorImpl = (fn3) => (set5, get6, api2) => {
-      const origSubscribe = api2.subscribe;
-      api2.subscribe = (selector2, optListener, options2) => {
-        let listener = selector2;
-        if (optListener) {
-          const equalityFn = (options2 == null ? void 0 : options2.equalityFn) || Object.is;
-          let currentSlice = selector2(api2.getState());
-          listener = (state5) => {
-            const nextSlice = selector2(state5);
-            if (!equalityFn(currentSlice, nextSlice)) {
-              const previousSlice = currentSlice;
-              optListener(currentSlice = nextSlice, previousSlice);
-            }
-          };
-          if (options2 == null ? void 0 : options2.fireImmediately) {
-            optListener(currentSlice, currentSlice);
-          }
-        }
-        return origSubscribe(listener);
-      };
-      const initialState = fn3(set5, get6, api2);
-      return initialState;
-    };
-    subscribeWithSelector = subscribeWithSelectorImpl;
-    isPromiseLike = (value3) => typeof (value3 == null ? void 0 : value3.then) === "function";
-    toSyncThenable = (value3) => ({
-      then(onFulfilled) {
-        return onFulfilled ? toThenable(onFulfilled)(value3) : this;
-      }
-    });
-    toThenable = (fn3) => (input) => {
-      try {
-        const result = fn3(input);
-        return isPromiseLike(result) ? result : toSyncThenable(result);
-      } catch (error3) {
-        return {
-          then(_onFulfilled, onRejected) {
-            return onRejected ? toThenable(onRejected)(error3) : this;
-          }
-        };
-      }
-    };
-    persistImpl = (config3, baseOptions) => (set5, get6, api2) => {
-      let options2 = {
-        storage: createJSONStorage(() => window.localStorage),
-        partialize: (state5) => state5,
-        version: 0,
-        merge: (persistedState, currentState) => ({
-          ...currentState,
-          ...persistedState
-        }),
-        ...baseOptions
-      };
-      let hasHydrated = false;
-      let hydrationVersion = 0;
-      const hydrationListeners = /* @__PURE__ */ new Set();
-      const finishHydrationListeners = /* @__PURE__ */ new Set();
-      let storage = options2.storage;
-      if (!storage) {
-        return config3(
-          (...args) => {
-            console.warn(
-              `[zustand persist middleware] Unable to update item '${options2.name}', the given storage is currently unavailable.`
-            );
-            set5(...args);
-          },
-          get6,
-          api2
-        );
-      }
-      const setItem = () => {
-        const state5 = options2.partialize({ ...get6() });
-        return storage.setItem(options2.name, {
-          state: state5,
-          version: options2.version
-        });
-      };
-      const savedSetState = api2.setState;
-      api2.setState = (...args) => {
-        savedSetState(...args);
-        return setItem();
-      };
-      const configResult = config3(
-        (...args) => {
-          set5(...args);
-          return setItem();
-        },
-        get6,
-        api2
-      );
-      api2.getInitialState = () => configResult;
-      let stateFromStorage;
-      const hydrate = () => {
-        var _a, _b;
-        if (!storage) return;
-        const currentVersion = ++hydrationVersion;
-        hasHydrated = false;
-        hydrationListeners.forEach((cb) => {
-          var _a2;
-          return cb((_a2 = get6()) != null ? _a2 : configResult);
-        });
-        const postRehydrationCallback = ((_b = options2.onRehydrateStorage) == null ? void 0 : _b.call(options2, (_a = get6()) != null ? _a : configResult)) || void 0;
-        return toThenable(storage.getItem.bind(storage))(options2.name).then((deserializedStorageValue) => {
-          if (deserializedStorageValue) {
-            if (typeof deserializedStorageValue.version === "number" && deserializedStorageValue.version !== options2.version) {
-              if (options2.migrate) {
-                const migration = options2.migrate(
-                  deserializedStorageValue.state,
-                  deserializedStorageValue.version
-                );
-                if (isPromiseLike(migration)) {
-                  return migration.then((result) => [true, result]);
-                }
-                return [true, migration];
-              }
-              console.error(
-                `State loaded from storage couldn't be migrated since no migrate function was provided`
-              );
-            } else {
-              return [false, deserializedStorageValue.state];
-            }
-          }
-          return [false, void 0];
-        }).then((migrationResult) => {
-          var _a2;
-          if (currentVersion !== hydrationVersion) {
-            return;
-          }
-          const [migrated, migratedState] = migrationResult;
-          stateFromStorage = options2.merge(
-            migratedState,
-            (_a2 = get6()) != null ? _a2 : configResult
-          );
-          set5(stateFromStorage, true);
-          if (migrated) {
-            return setItem();
-          }
-        }).then(() => {
-          if (currentVersion !== hydrationVersion) {
-            return;
-          }
-          postRehydrationCallback == null ? void 0 : postRehydrationCallback(get6(), void 0);
-          stateFromStorage = get6();
-          hasHydrated = true;
-          finishHydrationListeners.forEach((cb) => cb(stateFromStorage));
-        }).then(
-          () => void 0,
-          (e3) => {
-            if (currentVersion !== hydrationVersion) {
-              return;
-            }
-            postRehydrationCallback == null ? void 0 : postRehydrationCallback(void 0, e3);
-          }
-        );
-      };
-      api2.persist = {
-        setOptions: (newOptions) => {
-          options2 = {
-            ...options2,
-            ...newOptions
-          };
-          if (newOptions.storage) {
-            storage = newOptions.storage;
-          }
-        },
-        clearStorage: () => {
-          ++hydrationVersion;
-          storage == null ? void 0 : storage.removeItem(options2.name);
-        },
-        getOptions: () => options2,
-        rehydrate: () => {
-          try {
-            return Promise.resolve(hydrate());
-          } catch (error3) {
-            return Promise.reject(error3);
-          }
-        },
-        hasHydrated: () => hasHydrated,
-        onHydrate: (cb) => {
-          hydrationListeners.add(cb);
-          return () => {
-            hydrationListeners.delete(cb);
-          };
-        },
-        onFinishHydration: (cb) => {
-          finishHydrationListeners.add(cb);
-          return () => {
-            finishHydrationListeners.delete(cb);
-          };
-        }
-      };
-      if (!options2.skipHydration) {
-        hydrate();
-      }
-      return stateFromStorage || configResult;
-    };
-    persist = persistImpl;
-  }
-});
-
-// src/shims/diffExtractor.ts
-function isEditTool(toolName) {
-  const normalized = toolName.toLowerCase();
-  return normalized === "str_replace_editor" || normalized === "edit" || normalized === "edit_file" || normalized.includes("str_replace");
-}
-function isWriteTool(toolName) {
-  const normalized = toolName.toLowerCase();
-  return normalized === "write_file" || normalized === "create_file" || normalized === "write" || normalized === "create";
-}
-function extractEditDiff(block2) {
-  if (!isEditTool(block2.name)) {
-    return null;
-  }
-  const input = block2.input;
-  const filePath = input.file_path || input.path || input.filePath;
-  let oldContent = input.old_string || input.old_str || input.oldContent;
-  let newContent = input.new_string || input.new_str || input.newContent;
-  let edits;
-  if (Array.isArray(input.edits) && input.edits.length > 0) {
-    edits = input.edits;
-    if (!oldContent || !newContent) {
-      const first4 = edits[0];
-      oldContent = first4.oldText;
-      newContent = first4.newText;
-    }
-  }
-  const lineNumberForm = typeof input.start_line === "number" && typeof input.end_line === "number" && typeof input.replacement_text === "string";
-  let firstChangedLine;
-  if (lineNumberForm && !oldContent && !newContent) {
-    newContent = input.replacement_text;
-    if (typeof input.start_line === "number" && input.start_line > 0) {
-      firstChangedLine = input.start_line;
-    }
-  }
-  if (!filePath || typeof newContent !== "string") {
-    return null;
-  }
-  if (!lineNumberForm && typeof oldContent !== "string") {
-    return null;
-  }
-  let diffString;
-  let patchString;
-  if (block2.output) {
-    try {
-      const parsed = JSON.parse(block2.output);
-      if (parsed && typeof parsed === "object") {
-        diffString = parsed.diff ?? parsed.details?.diff;
-        patchString = parsed.patch ?? parsed.details?.patch;
-        firstChangedLine = parsed.firstChangedLine ?? parsed.details?.firstChangedLine ?? firstChangedLine;
-      }
-    } catch {
-    }
-  }
-  return {
-    oldContent,
-    newContent,
-    filePath,
-    edits,
-    diffString,
-    patchString,
-    firstChangedLine
-  };
-}
-function extractWriteInfo(block2) {
-  if (!isWriteTool(block2.name)) {
-    return null;
-  }
-  const input = block2.input;
-  const filePath = input.file_path || input.path || input.filePath;
-  const newContent = input.content || input.newContent;
-  if (!filePath || typeof newContent !== "string") {
-    return null;
-  }
-  return {
-    filePath,
-    newContent
-  };
-}
-var init_diffExtractor = __esm({
-  "src/shims/diffExtractor.ts"() {
-  }
-});
-
-// src/shims/patchParser.ts
-function parseChunkLines(lines) {
-  const result = [];
-  for (const line3 of lines) {
-    if (line3.startsWith("+")) {
-      result.push({ type: "+", text: line3.slice(1) });
-    } else if (line3.startsWith("-")) {
-      result.push({ type: "-", text: line3.slice(1) });
-    } else {
-      const text5 = line3.startsWith(" ") ? line3.slice(1) : line3;
-      result.push({ type: " ", text: text5 });
-    }
-  }
-  return { lines: result };
-}
-function countChunkLines(chunk) {
-  let added = 0;
-  let removed = 0;
-  for (const line3 of chunk.lines) {
-    if (line3.type === "+") added++;
-    if (line3.type === "-") removed++;
-  }
-  return { added, removed };
-}
-function rebuildOldContent(chunks) {
-  const parts = [];
-  for (const chunk of chunks) {
-    for (const line3 of chunk.lines) {
-      if (line3.type === "+" || line3.type === " ") {
-        continue;
-      }
-    }
-    for (const line3 of chunk.lines) {
-      if (line3.type === "-") {
-        parts.push(line3.text);
-      } else if (line3.type === " ") {
-        parts.push(line3.text);
-      }
-    }
-  }
-  return parts.join("\n");
-}
-function rebuildNewContent(chunks) {
-  const parts = [];
-  for (const chunk of chunks) {
-    for (const line3 of chunk.lines) {
-      if (line3.type === "+") {
-        parts.push(line3.text);
-      } else if (line3.type === " ") {
-        parts.push(line3.text);
-      }
-    }
-  }
-  return parts.join("\n");
-}
-function parseApplyPatch(patchText) {
-  if (!patchText || typeof patchText !== "string") {
-    return null;
-  }
-  const lines = patchText.split("\n");
-  const beginIdx = lines.findIndex((l4) => l4.trim() === "*** Begin Patch");
-  if (beginIdx === -1) return null;
-  const files = [];
-  let i2 = beginIdx + 1;
-  while (i2 < lines.length) {
-    const line3 = lines[i2];
-    const trimmed = line3.trim();
-    if (trimmed === "*** End Patch") {
-      break;
-    }
-    const addMatch = trimmed.match(/^\*\*\* Add File:\s*(.+)$/);
-    if (addMatch) {
-      const filePath = addMatch[1].trim();
-      i2++;
-      const newLines = [];
-      while (i2 < lines.length && !isFileMarker(lines[i2])) {
-        const l4 = lines[i2];
-        if (l4.startsWith("+")) {
-          newLines.push(l4.slice(1));
-        } else {
-          newLines.push(l4);
-        }
-        i2++;
-      }
-      files.push({
-        type: "add",
-        filePath,
-        chunkCount: 1,
-        addedLines: newLines.length,
-        removedLines: 0,
-        oldContent: "",
-        newContent: newLines.join("\n")
-      });
-      continue;
-    }
-    const deleteMatch = trimmed.match(/^\*\*\* Delete File:\s*(.+)$/);
-    if (deleteMatch) {
-      const filePath = deleteMatch[1].trim();
-      files.push({
-        type: "delete",
-        filePath,
-        chunkCount: 0,
-        addedLines: 0,
-        removedLines: 0,
-        oldContent: "",
-        newContent: ""
-      });
-      i2++;
-      continue;
-    }
-    const updateMatch = trimmed.match(/^\*\*\* Update File:\s*(.+)$/);
-    if (updateMatch) {
-      const filePath = updateMatch[1].trim();
-      i2++;
-      let movePath = void 0;
-      if (i2 < lines.length) {
-        const moveToMatch = lines[i2].trim().match(/^\*\*\* Move to:\s*(.+)$/);
-        if (moveToMatch) {
-          movePath = moveToMatch[1].trim();
-          i2++;
-        }
-      }
-      const chunks = [];
-      let currentChunkLines = [];
-      while (i2 < lines.length && !isFileMarker(lines[i2])) {
-        const l4 = lines[i2];
-        if (l4.startsWith("@@")) {
-          if (currentChunkLines.length > 0) {
-            chunks.push(parseChunkLines(currentChunkLines));
-          }
-          currentChunkLines = [];
-          i2++;
-          continue;
-        }
-        if (l4.trim() === "*** End of File") {
-          i2++;
-          continue;
-        }
-        currentChunkLines.push(l4);
-        i2++;
-      }
-      if (currentChunkLines.length > 0) {
-        chunks.push(parseChunkLines(currentChunkLines));
-      }
-      let totalAdded2 = 0;
-      let totalRemoved2 = 0;
-      for (const chunk of chunks) {
-        const { added, removed } = countChunkLines(chunk);
-        totalAdded2 += added;
-        totalRemoved2 += removed;
-      }
-      const fileChange = {
-        type: "update",
-        filePath,
-        movePath: movePath || void 0,
-        chunkCount: chunks.length,
-        addedLines: totalAdded2,
-        removedLines: totalRemoved2,
-        oldContent: rebuildOldContent(chunks),
-        newContent: rebuildNewContent(chunks)
-      };
-      files.push(fileChange);
-      continue;
-    }
-    i2++;
-  }
-  if (files.length === 0) return null;
-  const totalAdded = files.reduce((sum2, f2) => sum2 + f2.addedLines, 0);
-  const totalRemoved = files.reduce((sum2, f2) => sum2 + f2.removedLines, 0);
-  return {
-    files,
-    totalFiles: files.length,
-    totalAdded,
-    totalRemoved
-  };
-}
-function isFileMarker(line3) {
-  const t5 = line3.trim();
-  return t5.startsWith("*** Add File:") || t5.startsWith("*** Delete File:") || t5.startsWith("*** Update File:") || t5 === "*** End Patch";
-}
-var init_patchParser = __esm({
-  "src/shims/patchParser.ts"() {
-  }
-});
-
-// src/shims/engineDisplay.ts
-function normalizeEngineId(engineId) {
-  if (!engineId) return "claude-code";
-  const metadatas = useEngineMetadataStore.getState().metadatas;
-  if (metadatas.length === 0) {
-    const fallback = ["claude-code", "simple-ai"];
-    return fallback.includes(engineId) ? engineId : "claude-code";
-  }
-  return metadatas.some((m4) => m4.id === engineId) ? engineId : "claude-code";
-}
-function getEngineDisplayName(engineId) {
-  const id38 = normalizeEngineId(engineId);
-  return useEngineMetadataStore.getState().getEngineDisplayName(id38);
-}
-function getEngineFullName(engineId) {
-  const id38 = normalizeEngineId(engineId);
-  return useEngineMetadataStore.getState().getEngineFullName(id38);
-}
-var init_engineDisplay = __esm({
-  "src/shims/engineDisplay.ts"() {
-    init_stores();
-  }
-});
-
-// src/host/conversationStore/eventHandler.ts
-function pushStreamDelta(state5, set5, at2, text5) {
-  if (!at2 || !text5) return;
-  const tracker = getTracker(state5.sessionId);
-  if (tracker.recordDelta(at2, text5)) {
-    set5({ streamRate: tracker.snapshot(at2) });
-  }
-}
-function pushProviderUsage(state5, set5, outputTokens) {
-  const tracker = getTracker(state5.sessionId);
-  if (!outputTokens || outputTokens <= 0 || tracker.isEmpty()) return;
-  if (tracker.markProviderUsage(outputTokens)) {
-    set5({ streamRate: tracker.snapshot() });
-  }
-}
-function fallbackRunningToolId(currentMessage) {
-  if (!currentMessage?.blocks) return "";
-  for (let i2 = currentMessage.blocks.length - 1; i2 >= 0; i2--) {
-    const b12 = currentMessage.blocks[i2];
-    if (b12.type === "tool_call" && b12.status === "running") return b12.id;
-  }
-  return "";
-}
-function isTaskBoardTool(toolName) {
-  const n2 = toolName.toLowerCase();
-  return n2 === "taskcreate" || n2 === "taskupdate" || n2 === "tasklist" || n2 === "taskget";
-}
-function isInteractiveTool(toolName) {
-  const n2 = toolName.toLowerCase();
-  return n2.includes("ask_user_question") || n2.includes("askuserquestion") || n2 === "form" || n2.includes("__form");
-}
-function isBusDispatchTool(toolName) {
-  const n2 = toolName.toLowerCase();
-  return n2.endsWith("bus_dispatch");
-}
-function parseTaskCreateItem(args) {
-  const subject = args.subject;
-  if (!subject) return null;
-  return {
-    subject,
-    activeForm: args.activeForm,
-    description: args.description
-  };
-}
-function extractTaskIdFromOutput(output2) {
-  const m4 = output2.match(/#\s*(\d+)/);
-  return m4 ? m4[1] : null;
-}
-function parseTaskListOutput(output2) {
-  if (!output2) return null;
-  const items = [];
-  for (const line3 of output2.split("\n")) {
-    const m4 = line3.match(/^\s*#\s*(\d+)\s*\[([A-Za-z_]+)\]\s*(.*)$/);
-    if (!m4) continue;
-    const rawStatus = m4[2];
-    let status = "pending";
-    if (rawStatus === "completed" || rawStatus === "in_progress" || rawStatus === "blocked" || rawStatus === "stopped") {
-      status = rawStatus;
-    } else if (rawStatus === "deleted") {
-      continue;
-    }
-    const subject = m4[3].trim();
-    if (!subject) continue;
-    items.push({ id: m4[1], subject, status });
-  }
-  return items.length > 0 ? items : null;
-}
-function mergeActualModels(list, model) {
-  if (!model) return list;
-  if (list?.includes(model)) return list;
-  return [...list ?? [], model];
-}
-function computeCacheHitRate(input, cacheRead) {
-  const denom = input + cacheRead;
-  return denom > 0 ? cacheRead / denom : 0;
-}
-function isCodeModeCarrierInput(blockInput) {
-  if (!blockInput || typeof blockInput !== "object") return false;
-  const code = blockInput.code;
-  return typeof code === "string" && CODE_MODE_CODE_RE.test(code);
-}
-function isArtifactLike(obj) {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return false;
-  const o2 = obj;
-  return o2.artifactType === "polaris.interactive" || typeof o2.html === "string" && typeof o2.previewId === "string";
-}
-function unwrapCodeModeArtifact(parsed) {
-  if (!parsed || typeof parsed !== "object") return parsed;
-  if (isArtifactLike(parsed)) return parsed;
-  const members = [];
-  if (Array.isArray(parsed)) members.push(...parsed);
-  else {
-    for (const v5 of Object.values(parsed)) {
-      if (Array.isArray(v5)) members.push(...v5);
-      else members.push(v5);
-    }
-  }
-  for (const m4 of members) {
-    if (isArtifactLike(m4)) return m4;
-    if (m4 && typeof m4 === "object" && !Array.isArray(m4)) {
-      const value3 = m4.value;
-      if (isArtifactLike(value3)) return value3;
-    }
-  }
-  return parsed;
-}
-function parseCardData(result, blockInput) {
-  let parsed = result;
-  if (result && typeof result === "object") {
-    const obj = result;
-    if (obj.structuredContent !== void 0) {
-      return obj.structuredContent;
-    }
-    parsed = result;
-  } else if (typeof result === "string") {
-    const fenced = result.match(/```json\s*([\s\S]*?)```/i);
-    if (fenced?.[1]) {
-      try {
-        parsed = JSON.parse(fenced[1].trim());
-      } catch {
-      }
-    }
-    if (parsed === result) {
-      try {
-        parsed = JSON.parse(result.trim());
-      } catch {
-        parsed = result;
-      }
-    }
-  }
-  if (isCodeModeCarrierInput(blockInput)) {
-    return unwrapCodeModeArtifact(parsed);
-  }
-  return parsed;
-}
-function handleAIEvent(event3, set5, get6) {
-  const state5 = get6();
-  switch (event3.type) {
-    case "session_start":
-      resetTracker(state5.sessionId, event3.receivedAtMs);
-      {
-        const isSilentStart = (() => {
-          try {
-            return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
-          } catch {
-            return void 0;
-          }
-        })();
-        set5({
-          conversationId: event3.sessionId,
-          isStreaming: true,
-          error: null,
-          promptSuggestion: null,
-          streamRate: null,
-          runStartAtMs: isSilentStart ? null : event3.receivedAtMs ?? Date.now()
-        });
-      }
-      if (event3.engineId && state5.sessionId) {
-        const managerState = sessionStoreManager2.getState();
-        const currentMeta = managerState.sessionMetadata.get(state5.sessionId);
-        if (currentMeta && currentMeta.engineId !== event3.engineId) {
-          const newMeta = { ...currentMeta, engineId: event3.engineId };
-          const newMetadata = new Map(managerState.sessionMetadata);
-          newMetadata.set(state5.sessionId, newMeta);
-          sessionStoreManager2.setState({ sessionMetadata: newMetadata });
-          log2.info("\u4F1A\u8BDD\u5F15\u64CE\u5DF2\u66F4\u65B0", { sessionId: state5.sessionId, engineId: event3.engineId });
-        }
-      }
-      log2.info("Session started", { sessionId: event3.sessionId });
-      break;
-    case "session_end": {
-      const rateTracker = getTracker(state5.sessionId);
-      rateTracker.markEnd(event3.receivedAtMs);
-      const finalRate = rateTracker.isEmpty() ? null : rateTracker.snapshot(event3.receivedAtMs);
-      const runStart = get6().runStartAtMs;
-      if (runStart != null) {
-        const endAt = event3.receivedAtMs ?? Date.now();
-        const delta = endAt >= runStart ? endAt - runStart : 0;
-        set5({
-          sessionElapsedMs: get6().sessionElapsedMs + delta,
-          runStartAtMs: null,
-          lastTurnMs: delta
-        });
-      }
-      state5.finishMessage();
-      set5({
-        isStreaming: false,
-        progressMessage: null,
-        streamRate: finalRate
-      });
-      const sessionMeta = (() => {
-        try {
-          return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
-        } catch {
-          return void 0;
-        }
-      })();
-      if (!sessionMeta?.silentMode) {
-        saveDialog(get6, set5);
-      }
-      if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
-        if (!sessionMeta?.silentMode) {
-          void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("notify_session_complete", {})).catch(() => {
-          });
-        }
-      }
-      if (event3.reason === "error" && !get6().error) {
-        if (get6().isInterrupting) {
-          log2.info("Session end after user interrupt, suppressed error display");
-        } else {
-          set5({ error: "errors:appError.ai" });
-        }
-      }
-      if (get6().isInterrupting) {
-        set5({ isInterrupting: false });
-      }
-      if (typeof get6().dispatchNextPending === "function") {
-        void get6().dispatchNextPending();
-      }
-      log2.info("Session ended", {
-        sessionId: state5.sessionId,
-        reason: event3.reason,
-        isStreaming: false
-      });
-      break;
-    }
-    case "token":
-      pushStreamDelta(state5, set5, event3.receivedAtMs, event3.value);
-      state5.appendTextBlock(event3.value);
-      break;
-    case "thinking":
-      pushStreamDelta(state5, set5, event3.receivedAtMs, event3.content);
-      state5.appendThinkingBlock(event3.content);
-      break;
-    case "assistant_message":
-      if (event3.isDelta) pushStreamDelta(state5, set5, event3.receivedAtMs, event3.content);
-      if (!event3.isDelta) {
-        const cur = state5.currentMessage;
-        if (cur) {
-          const hasText = cur.blocks.some((b12) => b12.type === "text" && (b12.content || "").length > 0);
-          if (hasText) {
-            log2?.debug?.("[eventHandler] assistant_message(isDelta=false) \u8DF3\u8FC7\uFF1A\u5DF2\u6709\u6D41\u5F0F\u6587\u672C\uFF0C\u5B8C\u6574\u5E27\u56DE\u653E");
-            break;
-          }
-        }
-      }
-      state5.appendTextBlock(event3.content);
-      break;
-    case "tool_call_start": {
-      const toolName = event3.tool;
-      const callId = event3.callId || generateUUID();
-      if (isBusDispatchTool(toolName)) {
-        const { consumed, message } = consumeCapUiDispatch(event3.args);
-        if (consumed) {
-          log2.info("cap.ui consumed", { tool: toolName, message });
-        }
-      }
-      if (isInteractiveTool(toolName)) {
-        break;
-      }
-      if (isTaskBoardTool(toolName) && event3.args) {
-        const boardId = state5.ensureTaskBoard(callId);
-        const lower2 = toolName.toLowerCase();
-        if (lower2 === "taskcreate") {
-          const item = parseTaskCreateItem(event3.args);
-          if (item) state5.queueTaskCreate(boardId, item);
-        } else if (lower2 === "taskupdate") {
-          const taskId = event3.args.taskId || event3.args.task_id;
-          const status = event3.args.status;
-          if (taskId) {
-            state5.patchTaskBoardItem(boardId, String(taskId), {
-              ...status ? { status } : {},
-              ...event3.args.subject ? { subject: String(event3.args.subject) } : {},
-              ...event3.args.activeForm ? { activeForm: String(event3.args.activeForm) } : {}
-            });
-          }
-        }
-        break;
-      }
-      state5.appendToolCallBlock(callId, toolName, event3.args);
-      break;
-    }
-    case "tool_call_end": {
-      const callId = event3.callId ? String(event3.callId) : fallbackRunningToolId(state5.currentMessage);
-      if (isInteractiveTool(event3.tool)) {
-        break;
-      }
-      const output2 = typeof event3.result === "string" ? event3.result : event3.result ? JSON.stringify(event3.result, null, 2) : void 0;
-      if (isTaskBoardTool(event3.tool)) {
-        const { activeTaskBoardId } = get6();
-        const lower2 = event3.tool.toLowerCase();
-        if (activeTaskBoardId && output2) {
-          if (lower2 === "tasklist") {
-            const snapshot = parseTaskListOutput(output2);
-            if (snapshot) state5.syncTaskBoardFromList(activeTaskBoardId, snapshot);
-          } else if (lower2 === "taskcreate") {
-            const taskId = extractTaskIdFromOutput(output2);
-            state5.flushTaskCreate(activeTaskBoardId, taskId);
-          }
-        }
-        break;
-      }
-      state5.updateToolCallBlock(
-        callId,
-        event3.success ? "completed" : "failed",
-        output2
-      );
-      if (event3.taskId) {
-        state5.updateToolCallTaskId(callId, String(event3.taskId));
-      }
-      if (event3.success) {
-        const { currentMessage: cardMsg, toolBlockMap: cardMap } = get6();
-        const cardBlockIdx = cardMsg ? cardMap.get(callId) : void 0;
-        const cardBlockInput = cardBlockIdx !== void 0 && cardMsg ? cardMsg.blocks[cardBlockIdx]?.input : void 0;
-        const resolved = chatCardRegistry.resolveWithKey(event3.tool, cardBlockInput);
-        if (resolved && resolved.entry.mode === "result") {
-          const cardBlock = {
-            type: "plugin_card",
-            id: callId,
-            pluginId: resolved.entry.pluginId,
-            cardId: resolved.entry.cardId,
-            toolName: event3.tool,
-            // Code Mode 载体（execute）解析后的真实注册表 key —— 宿主 load/match 依赖
-            cardKey: resolved.key,
-            mode: "result",
-            status: "ready",
-            // v2 交互组件：表单契约登记（component_register）需要归属会话
-            sessionId: get6().sessionId,
-            data: parseCardData(event3.result, cardBlockInput),
-            createdAt: (/* @__PURE__ */ new Date()).toISOString()
-          };
-          state5.appendPluginCardBlock(cardBlock);
-        }
-      }
-      const { currentMessage, toolBlockMap } = get6();
-      const blockIdx = currentMessage ? toolBlockMap.get(callId) : void 0;
-      if (blockIdx !== void 0 && currentMessage) {
-        const block2 = currentMessage.blocks[blockIdx];
-        if (block2?.type === "tool_call" && isEditTool(block2.name)) {
-          const diff2 = extractEditDiff(block2);
-          if (diff2) {
-            state5.updateToolCallBlockDiff(callId, diff2);
-          }
-        }
-        if (block2?.type === "tool_call" && block2.name === "apply_patch") {
-          const patchInput = block2.input?.input;
-          if (patchInput) {
-            const parsed = parseApplyPatch(patchInput);
-            if (parsed && parsed.files.length > 0) {
-              state5.updateToolCallBlockPatch(callId, parsed.files);
-            }
-          }
-        }
-      }
-      break;
-    }
-    case "progress": {
-      const msg = event3.message || null;
-      const isTerminal = msg && (msg.startsWith("\u2705") || msg.startsWith("\u274C"));
-      if (isTerminal) {
-        const prev2 = get6().progressMessage;
-        if (prev2 && prev2.startsWith("\u{1F527}")) {
-          const prevName = prev2.replace(/^🔧\s*/, "").trim();
-          const termName = msg.replace(/^[✅❌]\s*/, "").trim();
-          if (prevName === termName || termName.startsWith(prevName)) {
-            set5({ progressMessage: null });
-          }
-        }
-        break;
-      }
-      set5({ progressMessage: msg });
-      break;
-    }
-    case "error":
-      if (get6().isInterrupting) {
-        break;
-      }
-      set5({
-        error: event3.error,
-        isStreaming: false,
-        // 批 4b（审计 4.10）：error 收尾同样清 progressMessage——若后续
-        // session_end 丢失，灵动岛不再残留「🔧 XX」转圈
-        progressMessage: null
-      });
-      break;
-    case "result":
-      break;
-    case "user_message": {
-      const content = event3.content;
-      if (!content) break;
-      const clientId = event3.clientMessageId;
-      const existing = state5.messages;
-      const isLocalEcho = clientId ? existing.some((m4) => m4.id === clientId) : state5.isStreaming && [...existing].reverse().find((m4) => m4.type === "user")?.content === content;
-      if (isLocalEcho) {
-        break;
-      }
-      state5.addMessage({
-        id: clientId || generateUUID(),
-        type: "user",
-        content,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString()
-      });
-      break;
-    }
-    case "plan_start":
-      state5.appendPlanModeBlock(
-        event3.planId,
-        event3.sessionId,
-        void 0,
-        // title from plan_content event
-        void 0
-        // description from plan_content event
-      );
-      break;
-    case "plan_content":
-      state5.updatePlanModeBlock(
-        event3.planId,
-        {
-          title: event3.title,
-          description: event3.description,
-          stages: event3.stages,
-          status: event3.status
-        }
-      );
-      break;
-    case "plan_stage_update":
-      state5.updatePlanStageStatus(
-        event3.planId,
-        event3.stageId,
-        event3.status,
-        event3.tasks
-      );
-      break;
-    case "plan_approval_request":
-      state5.appendPermissionRequestBlock(
-        event3.planId,
-        event3.sessionId,
-        []
-        // approval denials
-      );
-      break;
-    case "plan_approval_result":
-      state5.updatePermissionRequestBlock(
-        event3.planId,
-        event3.approved ? "approved" : "denied"
-      );
-      break;
-    case "plan_end":
-      state5.setActivePlan(null);
-      break;
-    case "agent_run_start":
-      state5.appendAgentRunBlock(
-        event3.taskId,
-        event3.agentType,
-        event3.capabilities
-      );
-      break;
-    case "agent_run_end":
-      state5.updateAgentRunBlock(event3.taskId, {
-        status: event3.success ? "success" : "error",
-        output: event3.result,
-        completedAt: (/* @__PURE__ */ new Date()).toISOString()
-      });
-      state5.setActiveTask(null);
-      break;
-    case "permission_request":
-      state5.appendPermissionRequestBlock(
-        `perm-${Date.now()}`,
-        // generate a unique request ID
-        event3.sessionId,
-        event3.denials
-      );
-      break;
-    case "hook": {
-      if (event3.phase === "completed" && event3.outcome && event3.outcome !== "success") {
-        set5({ progressMessage: `\u{1FA9D} ${event3.hookEvent || event3.hookName}: ${event3.outcome}` });
-      } else {
-        log2.debug("Hook event", {
-          hookName: event3.hookName,
-          phase: event3.phase,
-          outcome: event3.outcome
-        });
-      }
-      break;
-    }
-    case "prompt_suggestion":
-      set5({ promptSuggestion: event3.suggestion?.trim() ? event3.suggestion : null });
-      break;
-    case "cli_init":
-      useCliInfoStore.getState().updateFromInit({
-        sessionId: event3.sessionId,
-        tools: event3.tools,
-        mcpServers: event3.mcpServers,
-        agents: event3.agents,
-        skills: event3.skills,
-        model: event3.model ?? void 0,
-        claudeCodeVersion: event3.claudeCodeVersion ?? void 0,
-        slashCommands: event3.slashCommands
-      });
-      if (state5.usageStats) {
-        set5({
-          usageStats: {
-            ...state5.usageStats,
-            turnSnapshotSeen: false,
-            runContribution: null
-          }
-        });
-      }
-      break;
-    case "context_compacted":
-      state5.appendContextCompactBlock(event3.trigger, event3.preTokens, event3.postTokens);
-      set5({ progressMessage: null });
-      break;
-    case "usage": {
-      const prev2 = state5.usageStats;
-      pushProviderUsage(state5, set5, event3.outputTokens);
-      if (event3.scope === "turn") {
-        set5({
-          usageStats: {
-            ...prev2 ?? { output: 0, totalOutput: 0 },
-            input: event3.inputTokens,
-            cacheCreation: event3.cacheCreationInputTokens ?? 0,
-            cacheRead: event3.cacheReadInputTokens ?? 0,
-            contextWindow: event3.contextWindow ?? prev2?.contextWindow,
-            actualModel: event3.actualModel ?? prev2?.actualModel,
-            actualModels: mergeActualModels(prev2?.actualModels, event3.actualModel),
-            contextSource: "turn",
-            turnSnapshotSeen: true
-          }
-        });
-      } else {
-        const snap = prev2?.turnSnapshotSeen ? prev2 : null;
-        const runCost = event3.totalCostUsd ?? Object.values(event3.modelUsage ?? {}).reduce((s3, m4) => s3 + (m4.costUsd ?? 0), 0);
-        const prevTotals = prev2?.sessionTotals;
-        const rc = event3.scope === "cumulative" ? prev2?.runContribution : null;
-        const contribution = {
-          input: event3.inputTokens,
-          cacheCreation: event3.cacheCreationInputTokens ?? 0,
-          cacheRead: event3.cacheReadInputTokens ?? 0,
-          output: event3.outputTokens,
-          costUsd: runCost
-        };
-        set5({
-          usageStats: {
-            input: snap ? snap.input : event3.inputTokens,
-            cacheCreation: snap ? snap.cacheCreation : event3.cacheCreationInputTokens ?? 0,
-            cacheRead: snap ? snap.cacheRead : event3.cacheReadInputTokens ?? 0,
-            output: event3.outputTokens,
-            reasoning: event3.reasoningOutputTokens,
-            contextWindow: event3.contextWindow ?? prev2?.contextWindow,
-            totalOutput: (prev2?.totalOutput ?? 0) - (rc?.output ?? 0) + event3.outputTokens,
-            modelUsage: event3.modelUsage,
-            rawPayload: event3.rawPayload,
-            actualModel: event3.actualModel ?? prev2?.actualModel,
-            actualModels: mergeActualModels(prev2?.actualModels, event3.actualModel),
-            sessionTotals: {
-              input: (prevTotals?.input ?? 0) - (rc?.input ?? 0) + contribution.input,
-              cacheCreation: (prevTotals?.cacheCreation ?? 0) - (rc?.cacheCreation ?? 0) + contribution.cacheCreation,
-              cacheRead: (prevTotals?.cacheRead ?? 0) - (rc?.cacheRead ?? 0) + contribution.cacheRead,
-              output: (prevTotals?.output ?? 0) - (rc?.output ?? 0) + contribution.output,
-              costUsd: (prevTotals?.costUsd ?? 0) - (rc?.costUsd ?? 0) + contribution.costUsd,
-              runs: (prevTotals?.runs ?? 0) + (rc ? 0 : 1),
-              // 成本口径 B：cacheRead / (input + cacheRead)，跨域统一
-              cacheHitRate: computeCacheHitRate(
-                (prevTotals?.input ?? 0) - (rc?.input ?? 0) + contribution.input,
-                (prevTotals?.cacheRead ?? 0) - (rc?.cacheRead ?? 0) + contribution.cacheRead
-              )
-            },
-            contextSource: snap ? snap.contextSource : "cumulative",
-            turnSnapshotSeen: prev2?.turnSnapshotSeen ?? false,
-            runContribution: event3.scope === "cumulative" ? contribution : null
-          }
-        });
-      }
-      break;
-    }
-    // permission_result is handled via plan_approval_result
-    // there is no separate permission_result event type
-    case "question": {
-      const questions = event3.questions && event3.questions.length > 0 ? event3.questions.map((q5) => ({
-        question: q5.question,
-        header: q5.header,
-        multiSelect: q5.multiSelect,
-        options: q5.options,
-        allowCustomInput: q5.allowCustomInput
-      })) : [{
-        question: event3.header,
-        header: event3.categoryLabel || "",
-        multiSelect: event3.multiSelect,
-        options: event3.options,
-        allowCustomInput: event3.allowCustomInput
-      }];
-      state5.appendQuestionBlock(event3.questionId, event3.sessionId, questions);
-      break;
-    }
-    case "question_answered": {
-      if (event3.declined) {
-        state5.updateQuestionBlock(event3.questionId, {
-          declined: true
-        });
-      } else if (event3.answers && event3.answers.length > 0) {
-        state5.updateQuestionBlock(event3.questionId, {
-          answers: event3.answers,
-          declined: false
-        });
-      } else {
-        state5.updateQuestionBlock(event3.questionId, {
-          answers: [{
-            selected: event3.selected || [],
-            customInput: event3.customInput
-          }],
-          declined: false
-        });
-      }
-      break;
-    }
-    case "plugin_card": {
-      const block2 = {
-        type: "plugin_card",
-        id: event3.interactionId,
-        pluginId: event3.pluginId,
-        cardId: event3.cardId,
-        toolName: event3.toolName,
-        mode: "interaction",
-        status: "pending",
-        data: event3.payload,
-        sessionId: event3.sessionId,
-        createdAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      state5.appendPluginCardBlock(block2);
-      break;
-    }
-    case "plugin_card_answered":
-      state5.updatePluginCardBlock(event3.interactionId, {
-        status: event3.declined ? "declined" : "answered",
-        response: event3.result
-      });
-      break;
-    case "form": {
-      state5.appendFormBlock({
-        type: "form",
-        id: event3.formId,
-        sessionId: event3.sessionId,
-        title: event3.title,
-        read: event3.read ?? "full",
-        target: event3.target,
-        action: event3.action,
-        mode: event3.mode ?? "dispatch",
-        style: event3.style,
-        template: event3.template,
-        fields: (event3.fields ?? []).map((f2) => ({
-          name: f2.name,
-          type: f2.type ?? "string",
-          label: f2.label,
-          placeholder: f2.placeholder,
-          options: f2.options,
-          required: f2.required,
-          default: f2.default,
-          secret: f2.secret,
-          hidden: f2.hidden,
-          help: f2.help,
-          col: f2.col
-        })),
-        status: "pending",
-        createdAt: (/* @__PURE__ */ new Date()).toISOString()
-      });
-      break;
-    }
-    case "form-answered":
-      state5.updateFormBlock(event3.formId, {
-        status: "submitted",
-        ok: event3.ok,
-        receipt: event3.receipt
-      });
-      break;
-    case "form-skipped": {
-      const reasonText = event3.reason === "timeout" ? "\u8868\u5355\u7B49\u5F85\u8D85\u65F6\uFF0C\u5DF2\u81EA\u52A8\u8DF3\u8FC7" : "\u7528\u6237\u5DF2\u8DF3\u8FC7\u8BE5\u8868\u5355";
-      state5.updateFormBlock(event3.formId, {
-        status: "skipped",
-        ok: false,
-        receipt: reasonText
-      });
-      break;
-    }
-    // Task 事件 - 由 TaskStore 处理，不在 ConversationStore 范围内
-    case "task_metadata":
-    case "task_progress":
-    case "task_completed":
-    case "task_canceled":
-      break;
-    case "tool_call_update": {
-      const callId = event3.callId || "";
-      if (callId) {
-        state5.updateToolCallBlock(callId, "running", event3.output);
-      }
-      break;
-    }
-    default: {
-      const _exhaustive = event3;
-      log2.warn("Unhandled event type", { type: _exhaustive.type });
-    }
-  }
-}
-function buildDialogMetaInput(state5, messages) {
-  const metadata = sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
-  const engineId = normalizeEngineId(metadata?.engineId);
-  const firstUserMessage = messages.find((m4) => m4.type === "user");
-  let title2 = metadata?.title || "\u65B0\u4F1A\u8BDD";
-  if (firstUserMessage && "content" in firstUserMessage && firstUserMessage.content) {
-    title2 = firstUserMessage.content.slice(0, 50);
-  }
-  let workspacePath = null;
-  if (metadata?.workspaceId) {
-    const ws = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === metadata.workspaceId);
-    workspacePath = ws?.path ?? null;
-  }
-  const totals = state5.usageStats?.sessionTotals;
-  let tokenUsage;
-  if (totals && totals.runs > 0) {
-    const modelUsage = state5.usageStats?.modelUsage;
-    let modelBreakdown;
-    if (modelUsage && Object.keys(modelUsage).length > 0 && totals.runs <= 1) {
-      modelBreakdown = {};
-      for (const [model, m4] of Object.entries(modelUsage)) {
-        modelBreakdown[model] = {
-          input: m4.inputTokens,
-          output: m4.outputTokens,
-          cacheCreation: m4.cacheCreationInputTokens ?? 0,
-          cacheRead: m4.cacheReadInputTokens ?? 0,
-          costUsd: m4.costUsd ?? 0
-        };
-      }
-    }
-    tokenUsage = {
-      input: totals.input,
-      output: totals.output,
-      cacheCreation: totals.cacheCreation,
-      cacheRead: totals.cacheRead,
-      costUsd: totals.costUsd,
-      cacheHitRate: totals.cacheHitRate,
-      modelBreakdown
-    };
-  }
-  return { engineId, title: title2, workspaceId: metadata?.workspaceId ?? null, workspacePath, tokenUsage };
-}
-async function saveDialog(get6, set5) {
-  try {
-    const state5 = get6();
-    const { conversationId } = state5;
-    if (!conversationId) return;
-    const messages = state5.getPersistableMessages();
-    if (messages.length === 0) return;
-    const metaInput = buildDialogMetaInput(state5, messages);
-    const paging = state5.historyPaging;
-    const baseSeq = paging?.earliestSeq ?? 0;
-    const { prefixCount } = await dialogStorageService.saveConversation({
-      externalId: conversationId,
-      ...metaInput,
-      messages,
-      baseSeq,
-      prefixSourceExternalId: paging?.sourceId
-    });
-    const cur = get6();
-    if (cur.conversationId === conversationId) {
-      set5({
-        // 水位 = 本次实际落盘的条数（保存期间新到的消息留给下次 flush）
-        persistedSeq: Math.min(messages.length, cur.messages.length),
-        persistedConversationId: conversationId,
-        historyPaging: prefixCount > 0 ? { earliestSeq: prefixCount, hasMore: true, sourceId: conversationId } : null
-      });
-    }
-    log2.info("\u4F1A\u8BDD\u5DF2\u4FDD\u5B58\u5230 JSONL", { conversationId, messageCount: messages.length });
-  } catch (e3) {
-    log2.error("\u4FDD\u5B58\u4F1A\u8BDD\u5230 JSONL \u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
-  }
-}
-var log2, CODE_MODE_CODE_RE;
-var init_eventHandler = __esm({
-  "src/host/conversationStore/eventHandler.ts"() {
-    init_uuid();
-    init_logger();
-    init_diffExtractor();
-    init_patchParser();
-    init_misc();
-    init_sessionStoreManager();
-    init_engineDisplay();
-    init_stores();
-    init_stores();
-    init_services();
-    init_services();
-    init_services();
-    log2 = createLogger("EventHandler");
-    CODE_MODE_CODE_RE = /\btools\[\s*["'][^"']+["']\s*\]\s*\./;
-  }
-});
-
-// src/shims/messageCompactor.ts
-function isCompacted(message) {
-  return COMPACT_MARKER in message;
-}
-function truncate(str2, maxLen) {
-  if (maxLen === 0) return "";
-  if (str2.length <= maxLen) return str2;
-  return str2.slice(0, maxLen) + `... [compacted, original ${str2.length} chars]`;
-}
-var VISIBLE_BUFFER, MAX_SNAPSHOTS, TRUNCATE, COMPACT_MARKER, MessageCompactor;
-var init_messageCompactor = __esm({
-  "src/shims/messageCompactor.ts"() {
-    VISIBLE_BUFFER = 5;
-    MAX_SNAPSHOTS = 20;
-    TRUNCATE = {
-      /** ToolCallBlock: 截取 output 的长度 */
-      toolOutput: 0,
-      /** ThinkingBlock: 截取 content 的长度 */
-      thinkingContent: 100,
-      /** TextBlock: 截取 content 的长度 */
-      textContent: 500,
-      /** UserChatMessage: 截取 content 的长度 */
-      userContent: 200
-    };
-    COMPACT_MARKER = "__compacted__";
-    MessageCompactor = class {
-      /** 消息快照存储：messageId -> 原始完整消息 */
-      snapshots = /* @__PURE__ */ new Map();
-      /** 快照 LRU 顺序 */
-      snapshotOrder = [];
-      /**
-       * 根据可见范围计算需要压缩和恢复的消息索引
-       * @param totalCount 消息总数
-       * @param visibleStart 可见区域起始索引
-       * @param visibleEnd 可见区域结束索引（含）
-       * @returns { toCompact, toHydrate }
-       */
-      computeRangeActions(totalCount, visibleStart, visibleEnd) {
-        const toCompact = [];
-        const toHydrate = [];
-        const safeStart = Math.max(0, visibleStart - VISIBLE_BUFFER);
-        const safeEnd = Math.min(totalCount - 1, visibleEnd + VISIBLE_BUFFER);
-        for (let i2 = 0; i2 < totalCount; i2++) {
-          if (i2 >= safeStart && i2 <= safeEnd) {
-            toHydrate.push(i2);
-          } else {
-            toCompact.push(i2);
-          }
-        }
-        return { toCompact, toHydrate };
-      }
-      /**
-       * 压缩单条消息
-       * - 先保存快照（用于快速恢复）
-       * - 返回压缩后的消息
-       * - 如果已经是压缩消息或流式消息，直接返回原消息
-       */
-      compactMessage(message) {
-        if (isCompacted(message)) {
-          return message;
-        }
-        if ("isStreaming" in message && message.isStreaming) {
-          return message;
-        }
-        switch (message.type) {
-          case "assistant":
-            this.saveSnapshot(message);
-            return this.compactAssistantMessage(message);
-          case "user":
-            this.saveSnapshot(message);
-            return this.compactUserMessage(message);
-          // system / tool / tool_group 顶层消息暂不压缩，且不占用快照额度
-          default:
-            return message;
-        }
-      }
-      /**
-       * 恢复单条消息
-       * - 优先从快照 Map 恢复
-       * - 如果快照不存在，返回原消息（调用方可以降级到 localStorage）
-       */
-      hydrateMessage(message) {
-        if (!isCompacted(message)) {
-          return message;
-        }
-        const snapshot = this.snapshots.get(message.id);
-        if (snapshot) {
-          this.touchSnapshotOrder(message.id);
-          return snapshot;
-        }
-        return message;
-      }
-      /**
-       * 从外部数据恢复消息（用于 localStorage 降级恢复）
-       * 恢复后同时保存到快照 Map
-       */
-      hydrateFromExternal(_messageId, fullMessage) {
-        this.saveSnapshot(fullMessage);
-        return fullMessage;
-      }
-      /**
-       * 获取快照
-       */
-      getSnapshot(messageId) {
-        return this.snapshots.get(messageId);
-      }
-      /**
-       * 清除所有快照
-       */
-      clearSnapshots() {
-        this.snapshots.clear();
-        this.snapshotOrder = [];
-      }
-      /**
-       * 获取当前快照数量
-       */
-      get snapshotCount() {
-        return this.snapshots.size;
-      }
-      // ========================================================================
-      // 私有方法
-      // ========================================================================
-      /**
-       * 保存消息快照（LRU 淘汰）
-       */
-      saveSnapshot(message) {
-        const id38 = message.id;
-        if (this.snapshots.has(id38)) {
-          this.snapshots.set(id38, message);
-          this.touchSnapshotOrder(id38);
-          return;
-        }
-        if (this.snapshots.size >= MAX_SNAPSHOTS) {
-          const oldestId = this.snapshotOrder.shift();
-          if (oldestId) {
-            this.snapshots.delete(oldestId);
-          }
-        }
-        this.snapshots.set(id38, message);
-        this.snapshotOrder.push(id38);
-      }
-      /**
-       * 更新 LRU 顺序
-       */
-      touchSnapshotOrder(id38) {
-        const idx = this.snapshotOrder.indexOf(id38);
-        if (idx !== -1) {
-          this.snapshotOrder.splice(idx, 1);
-          this.snapshotOrder.push(id38);
-        }
-      }
-      /**
-       * 压缩 Assistant 消息
-       * - 遍历 blocks，按类型执行压缩策略
-       */
-      compactAssistantMessage(message) {
-        const compactedBlocks = message.blocks.map((block2) => this.compactBlock(block2));
-        return {
-          ...message,
-          blocks: compactedBlocks,
-          [COMPACT_MARKER]: true
-        };
-      }
-      /**
-       * 压缩 User 消息
-       */
-      compactUserMessage(message) {
-        return {
-          ...message,
-          content: truncate(message.content, TRUNCATE.userContent),
-          attachments: message.attachments?.map((a3) => ({
-            id: a3.id,
-            type: a3.type,
-            fileName: a3.fileName,
-            fileSize: a3.fileSize,
-            mimeType: a3.mimeType
-          })),
-          [COMPACT_MARKER]: true
-        };
-      }
-      /**
-       * 压缩单个 ContentBlock
-       */
-      compactBlock(block2) {
-        switch (block2.type) {
-          case "tool_call":
-            return this.compactToolCallBlock(block2);
-          case "thinking":
-            return this.compactThinkingBlock(block2);
-          case "text":
-            return this.compactTextBlock(block2);
-          case "tool_group":
-            return this.compactToolGroupBlock(block2);
-          // question / plan_mode / agent_run / permission_request / plugin_card 不压缩
-          default:
-            return block2;
-        }
-      }
-      /**
-       * 压缩 ToolCallBlock — 最大的内存消耗者
-       * 清除 output/diffData.fullOldContent，保留 name/status/error/summary
-       */
-      compactToolCallBlock(block2) {
-        const compacted = {
-          ...block2,
-          output: void 0,
-          input: {}
-        };
-        if (block2.diffData) {
-          compacted.diffData = {
-            oldContent: "",
-            newContent: "",
-            filePath: block2.diffData.filePath
-          };
-        }
-        return compacted;
-      }
-      /**
-       * 压缩 ThinkingBlock — 截取前 100 字
-       */
-      compactThinkingBlock(block2) {
-        return {
-          ...block2,
-          content: truncate(block2.content, TRUNCATE.thinkingContent),
-          collapsed: true
-        };
-      }
-      /**
-       * 压缩 TextBlock — 截取前 500 字
-       */
-      compactTextBlock(block2) {
-        return {
-          ...block2,
-          content: truncate(block2.content, TRUNCATE.textContent)
-        };
-      }
-      /**
-       * 压缩 ToolGroupBlock — 清除各工具的 output/input
-       */
-      compactToolGroupBlock(block2) {
-        return {
-          ...block2,
-          tools: block2.tools.map((tool) => ({
-            ...tool,
-            output: void 0,
-            input: void 0
-          }))
-        };
-      }
-    };
-  }
-});
-
-// src/host/conversationStore/conversationStoreUtils.ts
-function resolveSessionEngine2(sessionId, configEngineId) {
-  const metadataEngineId = sessionStoreManager2.getState().sessionMetadata.get(sessionId)?.engineId;
-  return normalizeEngineId(metadataEngineId || configEngineId);
-}
-function resolveRuntimeConfigForEngine(sessionConfig, engineId) {
-  const model = sessionConfig.model || void 0;
-  const meta3 = useEngineMetadataStore.getState().getEngine(engineId);
-  const declaredSelectors = meta3?.sessionConfig?.selectors;
-  const caps = meta3?.capabilities;
-  const agentSupported = declaredSelectors ? declaredSelectors.includes("agent") : engineId === "claude-code" || engineId === "simple-ai" || (caps?.tools ?? false);
-  const effortSupported = declaredSelectors ? declaredSelectors.includes("effort") : engineId === "claude-code" || engineId === "simple-ai";
-  return {
-    // agent persona 透传：
-    // - claude-code：经 --agent 透传 CLI（注：当前 corpus 未暴露给 CLI，U2-4 待补）
-    // - simple-ai：经 SessionOptions.agent 注入 corpus persona（见 simple_ai/mod.rs start_session）
-    // - 插件引擎：引擎声明 selectors 含 agent 即透传（如 codebuddy --agent）
-    agent: agentSupported ? sessionConfig.agent || void 0 : void 0,
-    model,
-    // effort 透传：
-    // - claude-code：经 --effort 传给 CLI
-    // - simple-ai：经 SessionOptions.effort 注入请求体（OpenAIChat → reasoning_effort /
-    //   Anthropic → thinking.budget_tokens / Responses → reasoning.effort，见 simple_ai_protocol.rs）
-    // - 插件引擎：引擎声明 selectors 含 effort 即透传（如 codebuddy --effort）
-    effort: effortSupported ? sessionConfig.effort || void 0 : void 0,
-    permissionMode: sessionConfig.permissionMode || void 0
-  };
-}
-function getDisabledPluginMcpServers() {
-  const list = listPluginMcpServerStatuses(usePluginStore.getState().pluginStates).filter((server) => !server.enabled).map((server) => server.id);
-  if (!useConfigStore.getState().config?.uiControlEnabled) {
-    list.push("polaris-bus");
-  }
-  return list;
-}
-function resolveEffectiveProfileId2(sessionMetaProfileId, sessionConfigProfileId, globalActiveProfileId) {
-  if (sessionMetaProfileId !== void 0) {
-    return sessionMetaProfileId === OFFICIAL_API_PROFILE || sessionMetaProfileId === "" ? void 0 : sessionMetaProfileId;
-  }
-  const fallback = sessionConfigProfileId || globalActiveProfileId;
-  return fallback && fallback !== OFFICIAL_API_PROFILE ? fallback : void 0;
-}
-function resolveEffectiveProfileMode(sessionMetaProfileMode, sessionConfigProfileMode) {
-  if (sessionMetaProfileMode !== void 0) {
-    return sessionMetaProfileMode;
-  }
-  if (sessionConfigProfileMode !== void 0 && sessionConfigProfileMode !== "profile") {
-    return sessionConfigProfileMode;
-  }
-  return sessionConfigProfileMode;
-}
-function isProfileModeWithoutProfile(mode) {
-  return mode === "official";
-}
-function resolveChatError(e3, context) {
-  const raw = typeof e3 === "string" ? e3 : e3 instanceof Error ? e3.message : "";
-  if (raw.startsWith("errors:")) {
-    return raw;
-  }
-  return toAppError(e3, { source: "ai" /* AI */, context }).getUserMessage();
-}
-function generateTitleFromMessage(content) {
-  const cleanContent = content.replace(/\n/g, " ").trim();
-  const maxTitleLength = 16;
-  if (cleanContent.length <= maxTitleLength) {
-    return cleanContent;
-  }
-  return cleanContent.slice(0, maxTitleLength) + "...";
-}
-function buildWorkspacePrompts(getWorkspace, getContextWorkspaceIds, getAllWorkspaces) {
-  const currentWorkspace = getWorkspace();
-  const contextWorkspaceIds = getContextWorkspaceIds();
-  const allWorkspaces = getAllWorkspaces();
-  const contextWorkspaces = allWorkspaces.filter((w5) => contextWorkspaceIds.includes(w5.id));
-  let workspacePrompt = "";
-  if (currentWorkspace) {
-    workspacePrompt = i18n_default.t("systemPrompt:workingIn", { name: currentWorkspace.name }) + "\n" + i18n_default.t("systemPrompt:projectPath", { path: currentWorkspace.path }) + "\n" + i18n_default.t("systemPrompt:fileRefSyntax");
-  }
-  let userPrompt = null;
-  if (currentWorkspace) {
-    userPrompt = getUserSystemPrompt(currentWorkspace, contextWorkspaces);
-  }
-  return { workspacePrompt, userPrompt, contextWorkspaces, allWorkspaces };
-}
-function normalizeForInvoke(text5) {
-  return text5.replace(/\r\n/g, "\\n").replace(/\r/g, "\\n").replace(/\n/g, "\\n").trim();
-}
-var init_conversationStoreUtils = __esm({
-  "src/host/conversationStore/conversationStoreUtils.ts"() {
-    init_sessionStoreManager();
-    init_engineDisplay();
-    init_stores();
-    init_misc();
-    init_stores();
-    init_stores();
-    init_services();
-    init_types2();
-    init_types2();
-    init_i18n();
-  }
-});
-
-// src/host/conversationStore/dedupMessages.ts
-function dedupeMessagesById(messages) {
-  const byId = /* @__PURE__ */ new Map();
-  for (const m4 of messages) {
-    byId.set(m4.id, m4);
-  }
-  return [...byId.values()];
-}
-function normalizeRecoveredMessages(messages) {
-  return messages.map((m4) => {
-    if (m4.type !== "assistant") return m4;
-    if (m4.isStreaming !== true) return m4;
-    const now4 = Date.now();
-    const timestamp2 = m4.timestamp || new Date(now4).toISOString();
-    return {
-      ...m4,
-      timestamp: timestamp2,
-      isStreaming: false,
-      interrupted: true
-    };
-  });
-}
-var init_dedupMessages = __esm({
-  "src/host/conversationStore/dedupMessages.ts"() {
-  }
-});
-
-// src/host/conversationStore/createConversationStore.ts
-function formatPendingDispatchReports(sessionId) {
-  try {
-    const dispatchStore = useDispatchStore.getState();
-    if (!dispatchStore.hasReports(sessionId)) return "";
-    if (!isDispatchReportInjectionEnabled()) return "";
-    const reports = dispatchStore.takeReports(sessionId);
-    if (reports.length === 0) return "";
-    const lines = reports.map((r3) => {
-      const status = r3.status === "completed" ? i18n_default.t("chat:dispatch.reportDone", "\u5DF2\u5B8C\u6210") : i18n_default.t("chat:dispatch.reportFailed", "\u5931\u8D25");
-      const summary = r3.summary?.trim() ? `
-${r3.summary.trim()}` : "";
-      return `- \u300C${r3.title}\u300D${status}${summary}`;
-    });
-    return i18n_default.t("chat:dispatch.reportPreamble", {
-      defaultValue: "\u4F60\u5148\u524D\u6D3E\u53D1\u7684\u540E\u53F0\u4EFB\u52A1\u5DF2\u6709\u7ED3\u679C\uFF0C\u8BF7\u7ED3\u5408\u4EE5\u4E0B\u62A5\u544A\u7EE7\u7EED\u5F53\u524D\u5DE5\u4F5C\uFF1A\n{{reports}}",
-      reports: lines.join("\n"),
-      interpolation: { escapeValue: false }
-    });
-  } catch (e3) {
-    log3.warn("\u6D3E\u53D1\u62A5\u544A\u6CE8\u5165\u5931\u8D25", { error: String(e3) });
-    return "";
-  }
-}
-function isDispatchReportInjectionEnabled() {
-  try {
-    const config3 = useConfigStore.getState().config;
-    return config3?.dispatch?.autoInjectReports !== false;
-  } catch {
-    return true;
-  }
-}
-function recomputeTaskBoard(block2, items) {
-  const completed2 = items.filter((i2) => i2.status === "completed").length;
-  const inProgress = items.filter((i2) => i2.status === "in_progress").length;
-  const blocked = items.filter((i2) => i2.status === "blocked").length;
-  return {
-    ...block2,
-    items,
-    completed: completed2,
-    inProgress,
-    blocked,
-    total: items.length,
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-function waitFor(cond, timeoutMs) {
-  return new Promise((resolve2) => {
-    const start2 = Date.now();
-    const tick = () => {
-      if (cond() || Date.now() - start2 > timeoutMs) resolve2();
-      else setTimeout(tick, 100);
-    };
-    tick();
-  });
-}
-function createInitialState(sessionId) {
-  return {
-    // 消息状态
-    messages: [],
-    archivedMessages: [],
-    currentMessage: null,
-    // 流式构建映射
-    toolBlockMap: /* @__PURE__ */ new Map(),
-    questionBlockMap: /* @__PURE__ */ new Map(),
-    formBlockMap: /* @__PURE__ */ new Map(),
-    planBlockMap: /* @__PURE__ */ new Map(),
-    activePlanId: null,
-    agentRunBlockMap: /* @__PURE__ */ new Map(),
-    activeTaskId: null,
-    // TaskBoard: boardId → blocks 索引，run 级单板
-    taskBoardBlockMap: /* @__PURE__ */ new Map(),
-    activeTaskBoardId: null,
-    pendingTaskCreates: [],
-    permissionRequestBlockMap: /* @__PURE__ */ new Map(),
-    activePermissionRequestId: null,
-    pluginCardBlockMap: /* @__PURE__ */ new Map(),
-    sessionAllowedTools: [],
-    streamingUpdateCounter: 0,
-    // 会话状态
-    conversationId: null,
-    currentConversationSeed: null,
-    isStreaming: false,
-    isInterrupting: false,
-    turnEpoch: 0,
-    activeTurnId: null,
-    error: null,
-    progressMessage: null,
-    promptSuggestion: null,
-    usageStats: null,
-    streamRate: null,
-    // 会话运行累计时长（纯运行时，不落库）：初始为 0，无活动轮
-    sessionElapsedMs: 0,
-    runStartAtMs: null,
-    // 最近完成一轮时长：初始 0（从未对话）；session_end / settle 时写入
-    lastTurnMs: 0,
-    // 输入草稿
-    inputDraft: {
-      text: "",
-      attachments: [],
-      contextBlocks: []
-    },
-    // 待发送简报（压缩交接产物）
-    pendingBriefing: null,
-    // 待发送队列（流式预输入 / 多行拆分入队）
-    pendingQueue: [],
-    queueDispatching: false,
-    // 提示词优化（版本栈内存态，不持久化）
-    promptOptimize: {
-      status: "idle",
-      history: [],
-      cursor: -1,
-      sourceSnapshot: null,
-      pendingResult: null,
-      pendingMeta: null,
-      optimizeSessionId: null,
-      error: null
-    },
-    // 工作区关联
-    workspaceId: null,
-    // 可见区域追踪
-    visibleRange: null,
-    // 增量落盘水位（WAL 崩溃保护）
-    persistedSeq: 0,
-    persistedConversationId: null,
-    // 历史分页（尾部优先恢复）
-    historyPaging: null,
-    // 元数据
-    sessionId
-  };
-}
-function hasBlockAnywhere(state5, type3, id38) {
-  if (state5.currentMessage?.blocks.some((b12) => b12.type === type3 && "id" in b12 && b12.id === id38)) {
-    return true;
-  }
-  return state5.messages.some(
-    (m4) => m4.type === "assistant" && m4.blocks?.some((b12) => b12.type === type3 && "id" in b12 && b12.id === id38)
-  );
-}
-function updateBlockAcrossSession(get6, set5, match3, patch) {
-  const { currentMessage, messages } = get6();
-  if (currentMessage) {
-    const idx = currentMessage.blocks.findIndex(match3);
-    if (idx >= 0) {
-      const blocks2 = [...currentMessage.blocks];
-      blocks2[idx] = patch(blocks2[idx]);
-      set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      return true;
-    }
-  }
-  let touched = false;
-  const newMessages = messages.map((msg) => {
-    if (msg.type !== "assistant" || !msg.blocks) return msg;
-    const idx = msg.blocks.findIndex(match3);
-    if (idx < 0) return msg;
-    touched = true;
-    const blocks2 = [...msg.blocks];
-    blocks2[idx] = patch(blocks2[idx]);
-    return { ...msg, blocks: blocks2 };
-  });
-  if (touched) set5({ messages: newMessages });
-  return touched;
-}
-function createConversationStore(sessionId, deps) {
-  const initialState = createInitialState(sessionId);
-  const getCurrentEngineId = () => {
-    return resolveSessionEngine2(sessionId, deps.getConfig()?.defaultEngine);
-  };
-  const createCurrentAssistantMessage = (blocks2) => {
-    const id38 = _pendingAssistantMessageId ?? generateUUID();
-    _pendingAssistantMessageId = null;
-    return {
-      id: id38,
-      engineId: getCurrentEngineId(),
-      blocks: blocks2,
-      isStreaming: true
-    };
-  };
-  let _textBuffer = "";
-  let _paragraphTimer = null;
-  let _thinkingBuffer = "";
-  let _pendingAssistantMessageId = null;
-  let _lastCompactionRange = null;
-  let _loadingOlderPage = false;
-  const STREAM_FLUSH_INTERVAL = 50;
-  const compactor = new MessageCompactor();
-  const foldThinkingBlocks = (blocks2) => {
-    let touched = false;
-    const next3 = blocks2.map((b12) => {
-      if (b12.type === "thinking" && !b12.collapsed) {
-        touched = true;
-        return { ...b12, collapsed: true };
-      }
-      return b12;
-    });
-    return touched ? next3 : blocks2;
-  };
-  const store3 = create2()(
-    subscribeWithSelector((set5, get6) => ({
-      ...initialState,
-      // ===== 消息操作 =====
-      addMessage: (message) => {
-        set5((state5) => {
-          const newMessages = [...state5.messages, message];
-          return { messages: newMessages };
-        });
-      },
-      deleteMessage: (messageId) => {
-        set5((state5) => {
-          const newMessages = state5.messages.filter((m4) => m4.id !== messageId);
-          return { messages: newMessages };
-        });
-      },
-      editMessage: (messageId, newContent) => {
-        set5((state5) => {
-          const newMessages = state5.messages.map(
-            (m4) => m4.id === messageId && m4.type === "user" ? { ...m4, content: newContent } : m4
-          );
-          return { messages: newMessages };
-        });
-      },
-      clearMessages: () => {
-        set5({
-          messages: [],
-          archivedMessages: [],
-          currentMessage: null,
-          toolBlockMap: /* @__PURE__ */ new Map(),
-          questionBlockMap: /* @__PURE__ */ new Map(),
-          formBlockMap: /* @__PURE__ */ new Map(),
-          planBlockMap: /* @__PURE__ */ new Map(),
-          activePlanId: null,
-          agentRunBlockMap: /* @__PURE__ */ new Map(),
-          activeTaskId: null,
-          taskBoardBlockMap: /* @__PURE__ */ new Map(),
-          activeTaskBoardId: null,
-          pendingTaskCreates: [],
-          permissionRequestBlockMap: /* @__PURE__ */ new Map(),
-          activePermissionRequestId: null,
-          pluginCardBlockMap: /* @__PURE__ */ new Map(),
-          // 清空会话消息时同步清空待发送队列（语义一致：都视为会话内容重置）
-          pendingQueue: []
-        });
-      },
-      finishMessage: () => {
-        if (_thinkingBuffer) get6()._flushThinkingBuffer();
-        if (_textBuffer) get6()._flushTextBuffer();
-        if (_paragraphTimer) {
-          clearTimeout(_paragraphTimer);
-          _paragraphTimer = null;
-        }
-        _pendingAssistantMessageId = null;
-        const { currentMessage, messages } = get6();
-        if (currentMessage) {
-          const completedMessage = {
-            id: currentMessage.id,
-            type: "assistant",
-            engineId: currentMessage.engineId,
-            blocks: foldThinkingBlocks(currentMessage.blocks),
-            timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-            isStreaming: false
-          };
-          const existingIdx = messages.findIndex((m4) => m4.id === completedMessage.id);
-          if (existingIdx >= 0 && messages[existingIdx].type === "assistant") {
-            const prev2 = messages[existingIdx];
-            const merged = {
-              ...completedMessage,
-              blocks: foldThinkingBlocks([...prev2.blocks, ...completedMessage.blocks])
-            };
-            const next3 = [...messages];
-            next3[existingIdx] = merged;
-            set5({ messages: next3, currentMessage: null });
-            return merged;
-          }
-          set5({
-            messages: [...messages, completedMessage],
-            currentMessage: null
-          });
-          return completedMessage;
-        }
-        return null;
-      },
-      // ===== 输入草稿 =====
-      updateInputDraft: (draft) => {
-        set5({ inputDraft: draft });
-      },
-      clearInputDraft: () => {
-        set5({
-          inputDraft: {
-            text: "",
-            attachments: [],
-            contextBlocks: []
-          }
-        });
-      },
-      // ===== 临时上下文块（TCB） =====
-      addContextBlock: (block2) => {
-        log3.info("[TCB] addContextBlock \u88AB\u8C03\u7528", {
-          id: block2?.id,
-          kind: block2?.kind,
-          title: block2?.title,
-          hasSession: !!get6().sessionId,
-          curBlocks: (block2 ? block2.id : "") ? (get6().inputDraft.contextBlocks ?? []).length : -1
-        });
-        if (!block2 || !block2.id || !block2.kind || !block2.title) return false;
-        const cur = get6().inputDraft;
-        const blocks2 = cur.contextBlocks ?? [];
-        const dupIdx = block2.source && block2.dedupeKey ? blocks2.findIndex(
-          (b12) => b12.source === block2.source && b12.dedupeKey === block2.dedupeKey
-        ) : -1;
-        if (dupIdx >= 0) {
-          const next3 = [...blocks2];
-          next3[dupIdx] = block2;
-          set5({ inputDraft: { ...cur, contextBlocks: next3 } });
-          return false;
-        }
-        set5({ inputDraft: { ...cur, contextBlocks: [...blocks2, block2] } });
-        return true;
-      },
-      removeContextBlock: (blockId) => {
-        const cur = get6().inputDraft;
-        const blocks2 = (cur.contextBlocks ?? []).filter((b12) => b12.id !== blockId);
-        if (blocks2.length === (cur.contextBlocks ?? []).length) return;
-        set5({ inputDraft: { ...cur, contextBlocks: blocks2 } });
-      },
-      clearContextBlocks: () => {
-        const cur = get6().inputDraft;
-        if ((cur.contextBlocks ?? []).length === 0) return;
-        set5({ inputDraft: { ...cur, contextBlocks: [] } });
-      },
-      updateContextBlockNote: (blockId, note2) => {
-        const cur = get6().inputDraft;
-        const blocks2 = cur.contextBlocks ?? [];
-        const idx = blocks2.findIndex((b12) => b12.id === blockId);
-        if (idx < 0) return;
-        const next3 = [...blocks2];
-        next3[idx] = { ...next3[idx], userNote: note2 };
-        set5({ inputDraft: { ...cur, contextBlocks: next3 } });
-      },
-      setPendingBriefing: (briefing) => {
-        set5({ pendingBriefing: briefing && briefing.trim() ? briefing : null });
-      },
-      // ===== 提示词优化（版本栈） =====
-      beginPromptOptimize: (sourceText, meta3) => {
-        const po2 = get6().promptOptimize;
-        if (po2.status === "running") return;
-        let history = po2.history;
-        let cursor = po2.cursor;
-        if (history.length === 0) {
-          history = [{ text: sourceText, origin: "original", createdAt: Date.now() }];
-          cursor = 0;
-        } else {
-          history = history.slice(0, cursor + 1);
-          if (history[cursor].text !== sourceText) {
-            history = [...history, { text: sourceText, origin: "edited", createdAt: Date.now() }];
-            cursor = history.length - 1;
-          }
-        }
-        set5({
-          promptOptimize: {
-            status: "running",
-            history,
-            cursor,
-            sourceSnapshot: sourceText,
-            pendingResult: null,
-            pendingMeta: {
-              engineId: meta3.engineId,
-              model: meta3.model,
-              mode: meta3.mode,
-              direction: meta3.direction,
-              customDirection: meta3.customDirection,
-              iteration: meta3.iteration,
-              totalIterations: meta3.totalIterations
-            },
-            optimizeSessionId: meta3.optimizeSessionId,
-            error: null
-          }
-        });
-      },
-      completePromptOptimize: (resultText) => {
-        const state5 = get6();
-        const po2 = state5.promptOptimize;
-        if (po2.status !== "running") return;
-        const text5 = resultText.trim();
-        if (!text5) {
-          set5({
-            promptOptimize: {
-              ...po2,
-              status: "idle",
-              sourceSnapshot: null,
-              pendingMeta: null,
-              optimizeSessionId: null,
-              // i18n 未初始化（测试环境等）时兜底，保证错误提示非空
-              error: i18n_default.t("chat:promptOptimize.errorEmpty", "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5") || "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5"
-            }
-          });
-          return;
-        }
-        if ((po2.sourceSnapshot ?? "") !== state5.inputDraft.text) {
-          set5({ promptOptimize: { ...po2, status: "ready", pendingResult: text5 } });
-          return;
-        }
-        const history = [
-          ...po2.history,
-          {
-            text: text5,
-            origin: "optimized",
-            engineId: po2.pendingMeta?.engineId,
-            model: po2.pendingMeta?.model,
-            mode: po2.pendingMeta?.mode,
-            direction: po2.pendingMeta?.direction,
-            customDirection: po2.pendingMeta?.customDirection,
-            iteration: po2.pendingMeta?.iteration,
-            totalIterations: po2.pendingMeta?.totalIterations,
-            createdAt: Date.now()
-          }
-        ];
-        set5({
-          promptOptimize: {
-            status: "idle",
-            history,
-            cursor: history.length - 1,
-            sourceSnapshot: null,
-            pendingResult: null,
-            pendingMeta: null,
-            optimizeSessionId: null,
-            error: null
-          },
-          inputDraft: { text: text5, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
-        });
-      },
-      continuePromptOptimize: (resultText) => {
-        const state5 = get6();
-        const po2 = state5.promptOptimize;
-        if (po2.status !== "running") return;
-        const text5 = resultText.trim();
-        if (!text5) {
-          set5({
-            promptOptimize: {
-              ...po2,
-              status: "idle",
-              sourceSnapshot: null,
-              pendingMeta: null,
-              optimizeSessionId: null,
-              error: i18n_default.t("chat:promptOptimize.errorEmpty", "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5") || "\u4F18\u5316\u7ED3\u679C\u4E3A\u7A7A\uFF0C\u8BF7\u91CD\u8BD5"
-            }
-          });
-          return;
-        }
-        const history = [
-          ...po2.history,
-          {
-            text: text5,
-            origin: "optimized",
-            engineId: po2.pendingMeta?.engineId,
-            model: po2.pendingMeta?.model,
-            mode: po2.pendingMeta?.mode,
-            direction: po2.pendingMeta?.direction,
-            customDirection: po2.pendingMeta?.customDirection,
-            iteration: po2.pendingMeta?.iteration,
-            totalIterations: po2.pendingMeta?.totalIterations,
-            createdAt: Date.now()
-          }
-        ];
-        set5({
-          promptOptimize: {
-            status: "idle",
-            history,
-            cursor: history.length - 1,
-            sourceSnapshot: null,
-            pendingResult: null,
-            pendingMeta: null,
-            optimizeSessionId: null,
-            error: null
-          },
-          inputDraft: { text: text5, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
-        });
-      },
-      applyPendingPromptOptimize: () => {
-        const state5 = get6();
-        const po2 = state5.promptOptimize;
-        if (po2.status !== "ready" || !po2.pendingResult) return;
-        const currentInput = state5.inputDraft.text;
-        let history = po2.history.slice(0, po2.cursor + 1);
-        if (history.length > 0 && history[history.length - 1].text !== currentInput && currentInput.trim()) {
-          history = [...history, { text: currentInput, origin: "edited", createdAt: Date.now() }];
-        }
-        const next3 = [
-          ...history,
-          {
-            text: po2.pendingResult,
-            origin: "optimized",
-            engineId: po2.pendingMeta?.engineId,
-            model: po2.pendingMeta?.model,
-            mode: po2.pendingMeta?.mode,
-            direction: po2.pendingMeta?.direction,
-            customDirection: po2.pendingMeta?.customDirection,
-            iteration: po2.pendingMeta?.iteration,
-            totalIterations: po2.pendingMeta?.totalIterations,
-            createdAt: Date.now()
-          }
-        ];
-        set5({
-          promptOptimize: {
-            status: "idle",
-            history: next3,
-            cursor: next3.length - 1,
-            sourceSnapshot: null,
-            pendingResult: null,
-            pendingMeta: null,
-            optimizeSessionId: null,
-            error: null
-          },
-          inputDraft: { text: po2.pendingResult, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
-        });
-      },
-      failPromptOptimize: (error3) => {
-        const po2 = get6().promptOptimize;
-        set5({
-          promptOptimize: {
-            ...po2,
-            status: "idle",
-            sourceSnapshot: null,
-            pendingResult: null,
-            pendingMeta: null,
-            optimizeSessionId: null,
-            error: error3
-          }
-        });
-      },
-      undoPromptOptimize: () => {
-        const state5 = get6();
-        const po2 = state5.promptOptimize;
-        if (po2.status !== "idle" || po2.history.length === 0 || po2.cursor < 0) return;
-        let history = po2.history;
-        let cursor = po2.cursor;
-        if (state5.inputDraft.text !== history[cursor].text) {
-          history = [...history.slice(0, cursor + 1), { text: state5.inputDraft.text, origin: "edited", createdAt: Date.now() }];
-          cursor = history.length - 1;
-        }
-        if (cursor <= 0) return;
-        cursor -= 1;
-        set5({
-          promptOptimize: { ...po2, history, cursor },
-          inputDraft: { text: history[cursor].text, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
-        });
-      },
-      redoPromptOptimize: () => {
-        const state5 = get6();
-        const po2 = state5.promptOptimize;
-        if (po2.status !== "idle" || po2.cursor >= po2.history.length - 1) return;
-        if (state5.inputDraft.text !== po2.history[po2.cursor].text) return;
-        const cursor = po2.cursor + 1;
-        set5({
-          promptOptimize: { ...po2, cursor },
-          inputDraft: { text: po2.history[cursor].text, attachments: state5.inputDraft.attachments, contextBlocks: state5.inputDraft.contextBlocks }
-        });
-      },
-      resetPromptOptimize: () => {
-        set5({
-          promptOptimize: {
-            status: "idle",
-            history: [],
-            cursor: -1,
-            sourceSnapshot: null,
-            pendingResult: null,
-            pendingMeta: null,
-            optimizeSessionId: null,
-            error: null
-          }
-        });
-      },
-      // ===== 流式构建 =====
-      // 段落级缓冲策略：
-      // 1. 首次创建消息时立即 flush（保证首 token 响应速度）
-      // 2. 后续更新等待 \n\n（段落结束）才 flush
-      // 3. 超时保护：200ms 内没有段落结束也 flush
-      // 效果：渲染更像"事件级"，一个段落一次渲染，减少视觉跳动
-      appendTextBlock: (content) => {
-        if (_thinkingBuffer) get6()._flushThinkingBuffer();
-        const preState = get6();
-        if (preState.currentMessage) {
-          const hasUncollapsed = preState.currentMessage.blocks.some((b12) => b12.type === "thinking" && !b12.collapsed);
-          if (hasUncollapsed) {
-            const folded = foldThinkingBlocks(preState.currentMessage.blocks);
-            if (folded !== preState.currentMessage.blocks) {
-              set5({
-                currentMessage: { ...preState.currentMessage, blocks: folded },
-                streamingUpdateCounter: preState.streamingUpdateCounter + 1
-              });
-            }
-          }
-        }
-        _textBuffer += content;
-        const state5 = get6();
-        if (!state5.currentMessage) {
-          if (!state5.isStreaming) {
-            const bufferContent = _textBuffer;
-            _textBuffer = "";
-            if (bufferContent) {
-              const { messages } = get6();
-              const lastIdx = messages.length - 1;
-              if (lastIdx >= 0 && messages[lastIdx].type === "assistant") {
-                const lastMsg = messages[lastIdx];
-                const blocks2 = [...lastMsg.blocks];
-                const lastBlock = blocks2[blocks2.length - 1];
-                if (lastBlock?.type === "text") {
-                  blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferContent };
-                } else {
-                  blocks2.push({ type: "text", content: bufferContent });
-                }
-                const newMessages = [...messages];
-                newMessages[lastIdx] = { ...lastMsg, blocks: blocks2 };
-                set5({ messages: newMessages });
-              }
-            }
-            return;
-          }
-          get6()._flushTextBuffer();
-          return;
-        }
-        if (_textBuffer.includes("\n\n")) {
-          if (_paragraphTimer) {
-            clearTimeout(_paragraphTimer);
-            _paragraphTimer = null;
-          }
-          get6()._flushTextBuffer();
-        } else if (!_paragraphTimer) {
-          _paragraphTimer = setTimeout(() => {
-            _paragraphTimer = null;
-            get6()._flushThinkingBuffer();
-            get6()._flushTextBuffer();
-          }, STREAM_FLUSH_INTERVAL);
-        }
-      },
-      /** 内部方法：将缓冲区文本 flush 到 Zustand store */
-      _flushTextBuffer: () => {
-        if (_paragraphTimer) {
-          clearTimeout(_paragraphTimer);
-          _paragraphTimer = null;
-        }
-        const bufferToFlush = _textBuffer;
-        _textBuffer = "";
-        const state5 = get6();
-        if (!bufferToFlush && state5.currentMessage) return;
-        if (!state5.currentMessage) {
-          if (bufferToFlush) {
-            if (!state5.isStreaming) {
-              const { messages } = get6();
-              const lastIdx = messages.length - 1;
-              if (lastIdx >= 0 && messages[lastIdx].type === "assistant") {
-                const lastMsg = messages[lastIdx];
-                const blocks2 = [...lastMsg.blocks];
-                const lastBlock = blocks2[blocks2.length - 1];
-                if (lastBlock?.type === "text") {
-                  blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
-                } else {
-                  blocks2.push({ type: "text", content: bufferToFlush });
-                }
-                const newMessages = [...messages];
-                newMessages[lastIdx] = { ...lastMsg, blocks: blocks2 };
-                set5({ messages: newMessages });
-              }
-            } else {
-              set5({
-                currentMessage: createCurrentAssistantMessage([{ type: "text", content: bufferToFlush }]),
-                streamingUpdateCounter: state5.streamingUpdateCounter + 1
-              });
-            }
-          }
-        } else {
-          let blocks2 = [...state5.currentMessage.blocks];
-          const lastBlock = blocks2[blocks2.length - 1];
-          if (lastBlock?.type === "text") {
-            blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
-          } else if (bufferToFlush) {
-            blocks2 = foldThinkingBlocks(blocks2);
-            blocks2.push({ type: "text", content: bufferToFlush });
-          }
-          set5({
-            currentMessage: { ...state5.currentMessage, blocks: blocks2 },
-            streamingUpdateCounter: state5.streamingUpdateCounter + 1
-          });
-        }
-      },
-      /**
-       * 内部方法：将缓冲区 thinking 内容一次性 flush 到 Zustand store。
-       * 与 _flushTextBuffer 严格对称（C2 spec §二）：原 appendThinkingBlock 的块操纵
-       * 逻辑（fold/merge/create currentMessage）整体迁入此处，仅把入参从每 delta
-       * content 改为 flush 时一次性 buffer 内容；streamingUpdateCounter 仍由 flush
-       * 触发 +1，delta 期间不再逐条自增。
-       * 注意：不清 _paragraphTimer——定时器为 thinking/text 共享，清空是
-       * _flushTextBuffer 的职责（thinking 落块后同窗 text 仍可能待落块）。
-       */
-      _flushThinkingBuffer: () => {
-        const bufferToFlush = _thinkingBuffer;
-        _thinkingBuffer = "";
-        if (!bufferToFlush) return;
-        const state5 = get6();
-        if (!state5.currentMessage) {
-          if (!state5.isStreaming) {
-            const { messages } = get6();
-            const lastIdx = messages.length - 1;
-            if (lastIdx >= 0 && messages[lastIdx].type === "assistant") {
-              const lastMsg = messages[lastIdx];
-              const blocks2 = [...lastMsg.blocks];
-              const lastBlock = blocks2[blocks2.length - 1];
-              if (lastBlock?.type === "thinking") {
-                blocks2[blocks2.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
-              } else {
-                blocks2.push({ type: "thinking", content: bufferToFlush, collapsed: true });
-              }
-              const newMessages = [...messages];
-              newMessages[lastIdx] = { ...lastMsg, blocks: blocks2 };
-              set5({ messages: newMessages });
-            }
-          } else {
-            set5({
-              currentMessage: createCurrentAssistantMessage([{ type: "thinking", content: bufferToFlush }]),
-              streamingUpdateCounter: state5.streamingUpdateCounter + 1
-            });
-          }
-        } else {
-          const blocks2 = (() => {
-            const lastBlock = state5.currentMessage.blocks[state5.currentMessage.blocks.length - 1];
-            if (lastBlock?.type === "thinking") {
-              const merged = [...state5.currentMessage.blocks];
-              merged[merged.length - 1] = { ...lastBlock, content: lastBlock.content + bufferToFlush };
-              return merged;
-            }
-            return [...foldThinkingBlocks(state5.currentMessage.blocks), { type: "thinking", content: bufferToFlush }];
-          })();
-          set5({
-            currentMessage: { ...state5.currentMessage, blocks: blocks2 },
-            streamingUpdateCounter: state5.streamingUpdateCounter + 1
-          });
-        }
-      },
-      appendThinkingBlock: (content) => {
-        if (_textBuffer) get6()._flushTextBuffer();
-        _thinkingBuffer += content;
-        const state5 = get6();
-        if (!state5.currentMessage) {
-          get6()._flushThinkingBuffer();
-          return;
-        }
-        if (!_paragraphTimer) {
-          _paragraphTimer = setTimeout(() => {
-            _paragraphTimer = null;
-            get6()._flushThinkingBuffer();
-            get6()._flushTextBuffer();
-          }, STREAM_FLUSH_INTERVAL);
-        }
-      },
-      appendToolCallBlock: (toolId, toolName, input) => {
-        if (_thinkingBuffer) get6()._flushThinkingBuffer();
-        if (_textBuffer) get6()._flushTextBuffer();
-        const { currentMessage, toolBlockMap, streamingUpdateCounter } = get6();
-        const existingIdx = toolBlockMap.get(toolId);
-        if (existingIdx !== void 0 && currentMessage) {
-          const existing = currentMessage.blocks[existingIdx];
-          if (existing?.type === "tool_call") {
-            const hasInput = existing.input && Object.keys(existing.input).length > 0;
-            if (!hasInput && input && Object.keys(input).length > 0) {
-              const blocks2 = [...currentMessage.blocks];
-              blocks2[existingIdx] = { ...existing, input };
-              set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-            }
-          }
-          return;
-        }
-        if (existingIdx !== void 0 && !currentMessage) {
-          return;
-        }
-        if (hasBlockAnywhere(get6(), "tool_call", toolId)) {
-          return;
-        }
-        const block2 = {
-          type: "tool_call",
-          id: toolId,
-          name: toolName,
-          input,
-          status: "running",
-          startedAt: (/* @__PURE__ */ new Date()).toISOString()
-        };
-        const newMap = new Map(toolBlockMap);
-        if (!currentMessage) {
-          newMap.set(toolId, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            toolBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...foldThinkingBlocks(currentMessage.blocks), block2];
-          newMap.set(toolId, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            toolBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updateToolCallBlock: (toolId, status, output2, error3) => {
-        const { currentMessage, toolBlockMap } = get6();
-        const completedAt = status === "completed" || status === "failed" ? (/* @__PURE__ */ new Date()).toISOString() : void 0;
-        const patch = (b12) => {
-          if (b12.type !== "tool_call") return b12;
-          return {
-            ...b12,
-            status,
-            output: output2 ?? b12.output,
-            error: error3 ?? b12.error,
-            completedAt: completedAt ?? b12.completedAt
-          };
-        };
-        if (currentMessage) {
-          const idx = toolBlockMap.get(toolId);
-          if (idx === void 0) {
-            updateBlockAcrossSession(
-              get6,
-              set5,
-              (b12) => b12.type === "tool_call" && b12.id === toolId,
-              patch
-            );
-            return;
-          }
-          const blocks2 = [...currentMessage.blocks];
-          const block2 = blocks2[idx];
-          if (block2?.type !== "tool_call") return;
-          blocks2[idx] = patch(block2);
-          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-          return;
-        }
-        updateBlockAcrossSession(
-          get6,
-          set5,
-          (b12) => b12.type === "tool_call" && b12.id === toolId,
-          patch
-        );
-      },
-      updateToolCallTaskId: (toolId, taskId) => {
-        const apply5 = () => updateBlockAcrossSession(
-          get6,
-          set5,
-          (b12) => b12.type === "tool_call" && b12.id === toolId && !("taskId" in b12 && b12.taskId),
-          (b12) => b12.type === "tool_call" && !b12.taskId ? { ...b12, taskId } : b12
-        );
-        const { currentMessage, toolBlockMap } = get6();
-        if (!currentMessage) {
-          apply5();
-          return;
-        }
-        const idx = toolBlockMap.get(toolId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "tool_call") return;
-        if (block2.taskId) return;
-        blocks2[idx] = { ...block2, taskId };
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      updateToolCallBlockDiff: (toolId, diffData) => {
-        const { currentMessage, toolBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = toolBlockMap.get(toolId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        if (blocks2[idx]?.type === "tool_call") {
-          blocks2[idx] = { ...blocks2[idx], diffData };
-          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-        }
-      },
-      updateToolCallBlockPatch: (toolId, patchData) => {
-        const { currentMessage, toolBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = toolBlockMap.get(toolId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        if (blocks2[idx]?.type === "tool_call") {
-          blocks2[idx] = { ...blocks2[idx], patchData };
-          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-        }
-      },
-      updateCurrentAssistantMessage: (blocks2) => {
-        const { currentMessage } = get6();
-        if (currentMessage) {
-          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-        }
-      },
-      // ===== 问题块 =====
-      appendQuestionBlock: (questionId, sessionId2, questions) => {
-        const { currentMessage, messages, questionBlockMap, streamingUpdateCounter } = get6();
-        const alreadyExists = !!currentMessage?.blocks.some(
-          (b12) => b12.type === "question" && b12.id === questionId
-        ) || messages.some(
-          (m4) => m4.type === "assistant" && m4.blocks?.some(
-            (b12) => b12.type === "question" && b12.id === questionId
-          )
-        );
-        if (alreadyExists) {
-          return;
-        }
-        const first4 = questions[0];
-        const block2 = {
-          type: "question",
-          id: questionId,
-          sessionId: sessionId2,
-          questions,
-          status: "pending",
-          // 兼容字段
-          header: first4?.question || first4?.header,
-          options: first4?.options,
-          multiSelect: first4?.multiSelect,
-          allowCustomInput: first4?.allowCustomInput,
-          categoryLabel: first4 && first4.question && first4.header ? first4.header : void 0
-        };
-        const newMap = new Map(questionBlockMap);
-        if (!currentMessage) {
-          newMap.set(questionId, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            questionBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(questionId, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            questionBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updateQuestionBlock: (questionId, payload) => {
-        const { currentMessage, messages, questionBlockMap } = get6();
-        if (!currentMessage && messages.length === 0) return;
-        const applyToBlocks = (blocks2) => {
-          const next3 = blocks2.map((b12) => {
-            if (b12.type === "question" && b12.id === questionId) {
-              const existing = b12;
-              const first4 = payload.answers?.[0];
-              return {
-                ...existing,
-                // 只有 payload 显式传入时才覆盖，避免回滚时把既有 answers 抹成 undefined
-                answers: payload.answers ?? existing.answers,
-                declined: payload.declined ?? existing.declined,
-                status: payload.status ?? "answered",
-                // 兼容字段：首题摘要
-                answer: first4 ? {
-                  selected: first4.selected,
-                  customInput: first4.customInput
-                } : existing.answer
-              };
-            }
-            return b12;
-          });
-          const changed = next3.some((b12, i2) => b12 !== blocks2[i2]);
-          return { next: next3, changed };
-        };
-        if (currentMessage) {
-          const idx = questionBlockMap.get(questionId);
-          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "question" && currentMessage.blocks[idx]?.id === questionId) {
-            const blocks2 = [...currentMessage.blocks];
-            blocks2[idx] = applyToBlocks(blocks2).next[idx];
-            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-            return;
-          }
-          const { next: next3, changed } = applyToBlocks(currentMessage.blocks);
-          if (changed) {
-            set5({ currentMessage: { ...currentMessage, blocks: next3 } });
-            return;
-          }
-        }
-        let touched = false;
-        const newMessages = messages.map((msg) => {
-          if (msg.type !== "assistant" || !msg.blocks) return msg;
-          const { next: next3, changed } = applyToBlocks(msg.blocks);
-          if (!changed) return msg;
-          touched = true;
-          return { ...msg, blocks: next3 };
-        });
-        if (touched) {
-          set5({ messages: newMessages });
-        }
-      },
-      // ===== Form（表单工具） =====
-      appendFormBlock: (block2) => {
-        if (_thinkingBuffer) get6()._flushThinkingBuffer();
-        if (_textBuffer) get6()._flushTextBuffer();
-        const { currentMessage, formBlockMap, streamingUpdateCounter } = get6();
-        const newMap = new Map(formBlockMap);
-        if (hasBlockAnywhere(get6(), "form", block2.id)) {
-          return;
-        }
-        if (!currentMessage) {
-          newMap.set(block2.id, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            formBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(block2.id, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            formBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updateFormBlock: (formId, updates) => {
-        const { currentMessage, messages, formBlockMap } = get6();
-        if (!currentMessage && messages.length === 0) return;
-        const applyToBlocks = (blocks2) => {
-          const next3 = blocks2.map((b12) => {
-            if (b12.type === "form" && b12.id === formId) {
-              return { ...b12, ...updates };
-            }
-            return b12;
-          });
-          const changed = next3.some((b12, i2) => b12 !== blocks2[i2]);
-          return { next: next3, changed };
-        };
-        if (currentMessage) {
-          const idx = formBlockMap.get(formId);
-          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "form" && currentMessage.blocks[idx]?.id === formId) {
-            const blocks2 = [...currentMessage.blocks];
-            const existing = blocks2[idx];
-            blocks2[idx] = { ...existing, ...updates };
-            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-            return;
-          }
-          const { next: next3, changed } = applyToBlocks(currentMessage.blocks);
-          if (changed) {
-            set5({ currentMessage: { ...currentMessage, blocks: next3 } });
-            return;
-          }
-        }
-        let touched = false;
-        const newMessages = messages.map((msg) => {
-          if (msg.type !== "assistant" || !msg.blocks) return msg;
-          const { next: next3, changed } = applyToBlocks(msg.blocks);
-          if (!changed) return msg;
-          touched = true;
-          return { ...msg, blocks: next3 };
-        });
-        if (touched) {
-          set5({ messages: newMessages });
-        }
-      },
-      // ===== PluginCard =====
-      appendPluginCardBlock: (block2) => {
-        if (_thinkingBuffer) get6()._flushThinkingBuffer();
-        if (_textBuffer) get6()._flushTextBuffer();
-        const { currentMessage, pluginCardBlockMap, streamingUpdateCounter } = get6();
-        const newMap = new Map(pluginCardBlockMap);
-        if (hasBlockAnywhere(get6(), "plugin_card", block2.id)) {
-          return;
-        }
-        if (!currentMessage) {
-          newMap.set(block2.id, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            pluginCardBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(block2.id, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            pluginCardBlockMap: newMap,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updatePluginCardBlock: (id38, updates) => {
-        const { currentMessage, pluginCardBlockMap } = get6();
-        const patch = (b12) => b12.type === "plugin_card" ? { ...b12, ...updates } : b12;
-        if (currentMessage) {
-          const idx = pluginCardBlockMap.get(id38);
-          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "plugin_card") {
-            const blocks2 = [...currentMessage.blocks];
-            blocks2[idx] = patch(blocks2[idx]);
-            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-            return;
-          }
-        }
-        updateBlockAcrossSession(
-          get6,
-          set5,
-          (b12) => b12.type === "plugin_card" && b12.id === id38,
-          patch
-        );
-      },
-      appendContextCompactBlock: (trigger, preTokens, postTokens) => {
-        if (_thinkingBuffer) get6()._flushThinkingBuffer();
-        if (_textBuffer) get6()._flushTextBuffer();
-        const block2 = {
-          type: "context_compact",
-          id: generateUUID(),
-          trigger,
-          preTokens,
-          postTokens,
-          createdAt: (/* @__PURE__ */ new Date()).toISOString()
-        };
-        const { currentMessage, streamingUpdateCounter } = get6();
-        if (!currentMessage) {
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          set5({
-            currentMessage: { ...currentMessage, blocks: [...currentMessage.blocks, block2] },
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      // ===== PlanMode =====
-      appendPlanModeBlock: (planId, sessionId2, title2, description, stages) => {
-        const { currentMessage, planBlockMap, streamingUpdateCounter } = get6();
-        const block2 = {
-          type: "plan_mode",
-          id: planId,
-          sessionId: sessionId2,
-          title: title2 ?? "\u6267\u884C\u8BA1\u5212",
-          description,
-          stages: stages ?? [],
-          status: "drafting"
-        };
-        const newMap = new Map(planBlockMap);
-        if (!currentMessage) {
-          newMap.set(planId, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            planBlockMap: newMap,
-            activePlanId: planId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(planId, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            planBlockMap: newMap,
-            activePlanId: planId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updatePlanModeBlock: (planId, updates) => {
-        const { currentMessage, planBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = planBlockMap.get(planId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        if (blocks2[idx]?.type === "plan_mode") {
-          blocks2[idx] = { ...blocks2[idx], ...updates };
-          set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-        }
-      },
-      updatePlanStageStatus: (planId, stageId, status, tasks4) => {
-        const { currentMessage, planBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = planBlockMap.get(planId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "plan_mode") return;
-        const stages = block2.stages?.map((s3) => s3.stageId === stageId ? { ...s3, status, tasks: tasks4 ?? s3.tasks } : s3);
-        blocks2[idx] = { ...block2, stages };
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      setActivePlan: (planId) => set5({ activePlanId: planId }),
-      // ===== AgentRun =====
-      appendAgentRunBlock: (taskId, agentType, capabilities) => {
-        const { currentMessage, agentRunBlockMap, streamingUpdateCounter } = get6();
-        if (agentRunBlockMap.has(taskId)) {
-          return;
-        }
-        const block2 = {
-          type: "agent_run",
-          id: taskId,
-          agentType,
-          capabilities: capabilities ?? [],
-          status: "running",
-          toolCalls: [],
-          startedAt: (/* @__PURE__ */ new Date()).toISOString()
-        };
-        const newMap = new Map(agentRunBlockMap);
-        if (!currentMessage) {
-          newMap.set(taskId, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            agentRunBlockMap: newMap,
-            activeTaskId: taskId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(taskId, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            agentRunBlockMap: newMap,
-            activeTaskId: taskId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updateAgentRunBlock: (taskId, updates) => {
-        const { currentMessage, agentRunBlockMap } = get6();
-        const patch = (b12) => b12.type === "agent_run" ? { ...b12, ...updates } : b12;
-        if (currentMessage) {
-          const idx = agentRunBlockMap.get(taskId);
-          if (idx !== void 0 && currentMessage.blocks[idx]?.type === "agent_run") {
-            const blocks2 = [...currentMessage.blocks];
-            blocks2[idx] = patch(blocks2[idx]);
-            set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-            return;
-          }
-        }
-        updateBlockAcrossSession(
-          get6,
-          set5,
-          (b12) => b12.type === "agent_run" && b12.id === taskId,
-          patch
-        );
-      },
-      appendAgentToolCall: (taskId, toolId, toolName) => {
-        const { currentMessage, agentRunBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = agentRunBlockMap.get(taskId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "agent_run") return;
-        blocks2[idx] = {
-          ...block2,
-          toolCalls: [...block2.toolCalls ?? [], { id: toolId, name: toolName, status: "running" }]
-        };
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      updateAgentToolCallStatus: (taskId, toolId, status, summary) => {
-        const { currentMessage, agentRunBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = agentRunBlockMap.get(taskId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "agent_run") return;
-        blocks2[idx] = {
-          ...block2,
-          toolCalls: block2.toolCalls?.map(
-            (tc) => tc.id === toolId ? { ...tc, status, summary } : tc
-          )
-        };
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      setActiveTask: (taskId) => set5({ activeTaskId: taskId }),
-      // ===== TaskBoard（TaskCreate/Update/List 聚合，run 级单板幂等合并） =====
-      ensureTaskBoard: (callId) => {
-        const { currentMessage, taskBoardBlockMap, activeTaskBoardId, streamingUpdateCounter } = get6();
-        if (activeTaskBoardId && taskBoardBlockMap.has(activeTaskBoardId)) {
-          return activeTaskBoardId;
-        }
-        const boardId = callId;
-        const block2 = {
-          type: "task_board",
-          id: boardId,
-          items: [],
-          completed: 0,
-          inProgress: 0,
-          blocked: 0,
-          total: 0,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        };
-        const newMap = new Map(taskBoardBlockMap);
-        if (!currentMessage) {
-          newMap.set(boardId, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            taskBoardBlockMap: newMap,
-            activeTaskBoardId: boardId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(boardId, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            taskBoardBlockMap: newMap,
-            activeTaskBoardId: boardId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-        return boardId;
-      },
-      upsertTaskBoardItem: (boardId, item) => {
-        const { currentMessage, taskBoardBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = taskBoardBlockMap.get(boardId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "task_board") return;
-        const items = [...block2.items];
-        const existingIdx = items.findIndex((it) => it.id === item.id);
-        if (existingIdx >= 0) {
-          const prev2 = items[existingIdx];
-          items[existingIdx] = {
-            ...prev2,
-            ...item,
-            updateCount: (prev2.updateCount ?? 0) + 1,
-            description: item.description ?? prev2.description
-          };
-        } else {
-          items.push({ ...item, updateCount: 0 });
-        }
-        blocks2[idx] = recomputeTaskBoard(block2, items);
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      patchTaskBoardItem: (boardId, taskId, patch) => {
-        const { currentMessage, taskBoardBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = taskBoardBlockMap.get(boardId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "task_board") return;
-        const items = [...block2.items];
-        const existingIdx = items.findIndex((it) => it.id === taskId);
-        if (existingIdx >= 0) {
-          const prev2 = items[existingIdx];
-          items[existingIdx] = {
-            ...prev2,
-            ...patch,
-            updateCount: (prev2.updateCount ?? 0) + 1
-          };
-        } else {
-          items.push({
-            id: taskId,
-            subject: patch.subject ?? patch.activeForm ?? taskId,
-            status: patch.status ?? "pending",
-            ...patch,
-            updateCount: 0
-          });
-        }
-        blocks2[idx] = recomputeTaskBoard(block2, items);
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      syncTaskBoardFromList: (boardId, snapshotItems) => {
-        const { currentMessage, taskBoardBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = taskBoardBlockMap.get(boardId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        const block2 = blocks2[idx];
-        if (block2?.type !== "task_board") return;
-        const items = [...block2.items];
-        for (const snap of snapshotItems) {
-          const existingIdx = items.findIndex((it) => it.id === snap.id);
-          if (existingIdx >= 0) {
-            items[existingIdx] = { ...items[existingIdx], ...snap };
-          } else {
-            items.push({ ...snap, updateCount: 0 });
-          }
-        }
-        blocks2[idx] = recomputeTaskBoard(block2, items);
-        set5({ currentMessage: { ...currentMessage, blocks: blocks2 } });
-      },
-      queueTaskCreate: (boardId, entry) => {
-        const { pendingTaskCreates } = get6();
-        set5({ pendingTaskCreates: [...pendingTaskCreates, { boardId, entry }] });
-      },
-      flushTaskCreate: (boardId, taskId) => {
-        const { pendingTaskCreates } = get6();
-        if (!pendingTaskCreates.length) return;
-        const idx = pendingTaskCreates.findIndex((e3) => e3.boardId === boardId);
-        if (idx < 0) return;
-        const entry = pendingTaskCreates[idx];
-        set5({ pendingTaskCreates: pendingTaskCreates.filter((_5, i2) => i2 !== idx) });
-        const item = {
-          id: taskId || generateUUID(),
-          subject: entry.entry.subject,
-          activeForm: entry.entry.activeForm,
-          description: entry.entry.description,
-          status: "pending"
-        };
-        get6().upsertTaskBoardItem(boardId, item);
-      },
-      // ===== PermissionRequest =====
-      appendPermissionRequestBlock: (requestId, sessionId2, denials) => {
-        const { currentMessage, permissionRequestBlockMap, streamingUpdateCounter } = get6();
-        const normalizedDenials = denials.map((d3) => {
-          const raw = d3;
-          return {
-            toolName: d3.toolName,
-            reason: d3.reason,
-            toolInput: d3.toolInput ?? raw.tool_input,
-            toolUseId: d3.toolUseId ?? raw.tool_use_id,
-            status: "pending",
-            extra: d3.extra
-          };
-        });
-        const block2 = {
-          type: "permission_request",
-          id: requestId,
-          sessionId: sessionId2,
-          denials: normalizedDenials,
-          status: "pending"
-        };
-        const newMap = new Map(permissionRequestBlockMap);
-        if (!currentMessage) {
-          newMap.set(requestId, 0);
-          set5({
-            currentMessage: createCurrentAssistantMessage([block2]),
-            permissionRequestBlockMap: newMap,
-            activePermissionRequestId: requestId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        } else {
-          const blocks2 = [...currentMessage.blocks, block2];
-          newMap.set(requestId, blocks2.length - 1);
-          set5({
-            currentMessage: { ...currentMessage, blocks: blocks2 },
-            permissionRequestBlockMap: newMap,
-            activePermissionRequestId: requestId,
-            streamingUpdateCounter: streamingUpdateCounter + 1
-          });
-        }
-      },
-      updatePermissionRequestBlock: (requestId, status, decision) => {
-        const { currentMessage, permissionRequestBlockMap } = get6();
-        if (!currentMessage) return;
-        const idx = permissionRequestBlockMap.get(requestId);
-        if (idx === void 0) return;
-        const blocks2 = [...currentMessage.blocks];
-        if (blocks2[idx]?.type === "permission_request") {
-          blocks2[idx] = { ...blocks2[idx], status, decision };
-          set5({ currentMessage: { ...currentMessage, blocks: blocks2 }, activePermissionRequestId: status === "pending" ? requestId : null });
-        }
-      },
-      setActivePermissionRequest: (requestId) => set5({ activePermissionRequestId: requestId }),
-      resolvePermissionRequest: (requestId, perItem) => {
-        const applyToBlocks = (blocks2) => {
-          let changed = false;
-          const next3 = blocks2.map((b12) => {
-            if (b12.type === "permission_request" && b12.id === requestId && b12.status === "pending") {
-              changed = true;
-              const denials = b12.denials.map((d3, i2) => {
-                const dec = perItem[i2];
-                return dec ? { ...d3, status: dec.status, scope: dec.scope } : d3;
-              });
-              const anyApproved = denials.some((d3) => d3.status === "approved");
-              return {
-                ...b12,
-                denials,
-                status: anyApproved ? "approved" : "denied",
-                decision: { approved: anyApproved, timestamp: (/* @__PURE__ */ new Date()).toISOString() }
-              };
-            }
-            return b12;
-          });
-          return changed ? next3 : null;
-        };
-        const { currentMessage, messages } = get6();
-        const nextCurrent = currentMessage ? applyToBlocks(currentMessage.blocks) : null;
-        let messagesChanged = false;
-        const nextMessages = messages.map((m4) => {
-          if (m4.type === "assistant" && m4.blocks) {
-            const nb = applyToBlocks(m4.blocks);
-            if (nb) {
-              messagesChanged = true;
-              return { ...m4, blocks: nb };
-            }
-          }
-          return m4;
-        });
-        if (nextCurrent || messagesChanged) {
-          set5({
-            ...nextCurrent && currentMessage ? { currentMessage: { ...currentMessage, blocks: nextCurrent } } : {},
-            ...messagesChanged ? { messages: nextMessages } : {},
-            activePermissionRequestId: null
-          });
-        }
-      },
-      expireStalePermissionRequests: () => {
-        const expireInBlocks = (blocks2) => {
-          let changed = false;
-          const next3 = blocks2.map((b12) => {
-            if (b12.type === "permission_request" && b12.status === "pending" && b12.denials.length > 0) {
-              changed = true;
-              return { ...b12, status: "expired" };
-            }
-            return b12;
-          });
-          return changed ? next3 : null;
-        };
-        const { currentMessage, messages } = get6();
-        const nextCurrent = currentMessage ? expireInBlocks(currentMessage.blocks) : null;
-        let messagesChanged = false;
-        const nextMessages = messages.map((m4) => {
-          if (m4.type === "assistant" && m4.blocks) {
-            const nb = expireInBlocks(m4.blocks);
-            if (nb) {
-              messagesChanged = true;
-              return { ...m4, blocks: nb };
-            }
-          }
-          return m4;
-        });
-        if (nextCurrent || messagesChanged) {
-          set5({
-            ...nextCurrent && currentMessage ? { currentMessage: { ...currentMessage, blocks: nextCurrent } } : {},
-            ...messagesChanged ? { messages: nextMessages } : {},
-            ...get6().activePermissionRequestId ? { activePermissionRequestId: null } : {}
-          });
-        }
-      },
-      addSessionAllowedTools: (tools) => {
-        if (!tools || tools.length === 0) return;
-        const cur = get6().sessionAllowedTools;
-        const merged = [.../* @__PURE__ */ new Set([...cur, ...tools])];
-        if (merged.length !== cur.length) set5({ sessionAllowedTools: merged });
-      },
-      // ===== 会话控制 =====
-      setConversationId: (id38) => set5({ conversationId: id38 }),
-      setStreaming: (streaming) => set5({ isStreaming: streaming }),
-      setError: (error3) => set5({ error: error3 }),
-      setProgressMessage: (message) => set5({ progressMessage: message }),
-      setPromptSuggestion: (suggestion) => set5({ promptSuggestion: suggestion }),
-      // ===== 历史恢复 =====
-      setMessagesFromHistory: (messages, conversationId, paging) => {
-        compactor.clearSnapshots();
-        _lastCompactionRange = null;
-        const baseMessages = normalizeRecoveredMessages(messages);
-        const processedMessages = baseMessages.map((msg) => {
-          if (msg.type !== "assistant" || !msg.blocks) return msg;
-          let modified = false;
-          const blocks2 = msg.blocks.map((block2) => {
-            if (block2.type === "tool_call" && block2.status === "completed" && !block2.diffData && isEditTool(block2.name)) {
-              const diff2 = extractEditDiff(block2);
-              if (diff2) {
-                modified = true;
-                return { ...block2, diffData: diff2 };
-              }
-            }
-            if (block2.type === "permission_request" && block2.status === "pending" && block2.denials.length > 0) {
-              modified = true;
-              return { ...block2, status: "expired" };
-            }
-            if (block2.type === "plugin_card" && block2.mode === "interaction" && block2.status === "pending") {
-              modified = true;
-              return { ...block2, status: "declined" };
-            }
-            if (block2.type === "form" && block2.status === "pending") {
-              modified = true;
-              return {
-                ...block2,
-                status: "skipped",
-                ok: false,
-                receipt: "\u8868\u5355\u5DF2\u5931\u6548\uFF08\u4F1A\u8BDD\u4E2D\u65AD\u6216\u8D85\u65F6\uFF09\uFF0C\u8BF7\u8BA9 AI \u91CD\u65B0\u53D1\u8D77"
-              };
-            }
-            return block2;
-          });
-          return modified ? { ...msg, blocks: blocks2 } : msg;
-        });
-        set5({
-          messages: processedMessages,
-          archivedMessages: [],
-          conversationId,
-          isStreaming: false,
-          error: null,
-          currentMessage: null,
-          progressMessage: null,
-          visibleRange: null,
-          // 加载新会话历史时重置用量水位，避免沿用上一会话的数字
-          usageStats: null,
-          streamRate: null,
-          // 恢复的消息本就来自磁盘 → 水位直接对齐，避免下轮 session_start 全量重刷；
-          // Fork（conversationId=null）水位归零，首轮 session_start 把完整历史写入新文件
-          persistedSeq: conversationId ? processedMessages.length : 0,
-          persistedConversationId: conversationId,
-          // 尾部优先恢复：记录向上翻页游标（无分页信息 = 已全量在内存）
-          historyPaging: paging ?? null,
-          // 历史恢复 = 会话内容重置，清空待发送队列（避免上一会话残留）
-          pendingQueue: []
-        });
-      },
-      /**
-       * 流式接续（跨端加入/断线恢复）：把快照末条 assistant 接续为 currentMessage，
-       * 后续实时 token 走正常流式追加。见 types.ts 方法注释（不接续会卡死页面）。
-       */
-      resumeStreamingFromLastAssistant: () => {
-        const { messages } = get6();
-        const last3 = messages[messages.length - 1];
-        if (last3 && last3.type === "assistant") {
-          const newMap = /* @__PURE__ */ new Map();
-          (last3.blocks ?? []).forEach((b12, idx) => {
-            if (b12.type === "tool_call") newMap.set(b12.id, idx);
-          });
-          set5({
-            messages: messages.slice(0, -1),
-            currentMessage: { ...last3, isStreaming: true },
-            toolBlockMap: newMap,
-            isStreaming: true
-          });
-        } else {
-          set5({ isStreaming: true });
-        }
-      },
-      // ===== 事件处理 =====
-      handleAIEvent: (event3) => handleAIEvent(event3, set5, get6),
-      // 轮次代际观测（spec F1）：见 types.ts observeTurnEvent 注释。
-      // 由 sessionStoreManager 在事件入口调用，返回 false 时整事件丢弃——
-      // 修复「旧轮迟到的 session_end/error 落在新轮流式期间，误杀新一轮」。
-      observeTurnEvent: (turnId, eventType) => {
-        const isTerminal = eventType === "session_end" || eventType === "error";
-        const current = get6().activeTurnId;
-        if (!isTerminal) {
-          if (current !== turnId) {
-            set5({
-              activeTurnId: turnId,
-              ...get6().isStreaming ? {} : { isStreaming: true }
-            });
-          }
-          return true;
-        }
-        return current === null || current === turnId;
-      },
-      // ===== 主动操作 =====
-      // ===== 待发送队列（流式预输入 / 多行拆分入队） =====
-      // 纯前端内存态、绑定会话生命周期。AI 流式回复期间用户提交的消息入队，
-      // session_end 后由 dispatchNextPending 自动逐条发送；不落盘、不进入 messages 流。
-      enqueuePending: (message) => {
-        set5((state5) => ({ pendingQueue: [...state5.pendingQueue, message] }));
-      },
-      removePending: (id38) => {
-        set5((state5) => ({ pendingQueue: state5.pendingQueue.filter((m4) => m4.id !== id38) }));
-      },
-      clearPendingQueue: () => {
-        set5({ pendingQueue: [] });
-      },
-      dispatchNextPending: async () => {
-        const st3 = get6();
-        if (st3.isStreaming || st3.queueDispatching || st3.pendingQueue.length === 0) return;
-        const [next3, ...rest] = st3.pendingQueue;
-        set5({
-          pendingQueue: rest,
-          queueDispatching: true
-        });
-        let accepted = false;
-        try {
-          accepted = await get6().sendMessage(next3.text, void 0, next3.attachments);
-        } finally {
-          set5({ queueDispatching: false });
-        }
-        if (!accepted) {
-          set5((state5) => ({
-            pendingQueue: [{ ...next3, status: "queued" }, ...state5.pendingQueue]
-          }));
-          try {
-            const { useToastStore: useToastStore2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-            useToastStore2.getState().error(
-              i18n_default.t("chat:input.sendFailedQueued", "\u53D1\u9001\u5931\u8D25\uFF0C\u5DF2\u4FDD\u7559\u5728\u5F85\u53D1\u961F\u5217\uFF0C\u53EF\u70B9\u51FB\u300C\u7ACB\u5373\u53D1\u9001\u300D\u91CD\u8BD5")
-            );
-          } catch (toastErr) {
-            log3.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
-          }
-          return;
-        }
-        const after = get6();
-        if (after.pendingQueue.length > 0 && !after.isStreaming) {
-          void get6().dispatchNextPending();
-        }
-      },
-      // 立即发送队列中的指定条目（PendingQueueCard 点击「立即发送」）。
-      // 从队列取出该条；若正在流式则先中断并等待本轮收尾（session_end / 5s 兜底），
-      // 再走 sendMessage 开启新一轮。与自动派发（dispatchNextPending）互补，可随时提前发。
-      sendPendingNow: async (id38) => {
-        const st3 = get6();
-        const target = st3.pendingQueue.find((m4) => m4.id === id38);
-        if (!target || st3.queueDispatching) return;
-        set5({ queueDispatching: true });
-        try {
-          const originConversationId = st3.conversationId;
-          if (st3.isStreaming) {
-            await Promise.race([
-              get6().interrupt().catch(() => void 0),
-              new Promise((r3) => setTimeout(r3, 16e3))
-            ]);
-            await waitFor(() => !get6().isStreaming, 2e3);
-            if (get6().isStreaming) {
-              set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
-              get6().finishMessage();
-            }
-          }
-          const after = get6();
-          if (after.conversationId !== originConversationId) {
-            const stillQueued = after.pendingQueue.some((m4) => m4.id === id38);
-            if (stillQueued) {
-              set5((state5) => ({
-                pendingQueue: [{ ...target, status: "queued" }, ...state5.pendingQueue]
-              }));
-            }
-            return;
-          }
-          set5({ pendingQueue: after.pendingQueue.filter((m4) => m4.id !== id38) });
-          await get6().sendMessage(target.text, void 0, target.attachments);
-        } finally {
-          set5({ queueDispatching: false });
-        }
-      },
-      // 撤回队列项到输入框草稿（PendingQueueCard 点击「编辑」）。
-      // 语义（对齐 ZCode handleEditQueueItem）：
-      //   ① 草稿冲突守卫：输入框已有内容/busy → 拒绝（避免覆盖用户正在写的消息）；
-      //   ② 从队列移除该条（纯前端队列删除即成功，无后端 ACK 等待）；
-      //   ③ 恢复原文到 inputDraft —— ChatInput 的 inputDraft effect 自动同步到输入框，
-      //      再触发 'chat:focus-input' 事件聚焦。
-      editPending: (id38) => {
-        const st3 = get6();
-        const target = st3.pendingQueue.find((m4) => m4.id === id38);
-        if (!target) return;
-        if (target.status === "sending") return;
-        const draft = st3.inputDraft;
-        if ((draft.text?.trim() ?? "") || (draft.attachments?.length ?? 0) > 0) {
-          try {
-            void Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore2 }) => {
-              useToastStore2.getState().error(
-                i18n_default.t("chat:input.editPendingDraftConflict", "\u8F93\u5165\u6846\u5DF2\u6709\u5185\u5BB9\uFF0C\u8BF7\u5148\u6E05\u7A7A\u6216\u53D1\u9001\u540E\u518D\u64A4\u56DE\u961F\u5217\u6D88\u606F")
-              );
-            });
-          } catch (toastErr) {
-            log3.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
-          }
-          return;
-        }
-        set5((state5) => ({
-          pendingQueue: state5.pendingQueue.filter((m4) => m4.id !== id38),
-          inputDraft: {
-            text: target.text,
-            attachments: target.attachments ?? [],
-            contextBlocks: []
-          }
-        }));
-        try {
-          eventBus.emit("chat:focus-input", void 0);
-        } catch {
-        }
-      },
-      sendMessage: async (content, workspaceDir, attachments, sendOptions) => {
-        const { conversationId, sessionId: sessionId2, messages } = get6();
-        const config3 = deps.getConfig();
-        const engine = resolveSessionEngine2(sessionId2, config3?.defaultEngine);
-        get6().expireStalePermissionRequests();
-        if (get6().currentMessage) {
-          get6().finishMessage();
-        }
-        const currentWorkspace = deps.getWorkspace();
-        const actualWorkspaceDir = workspaceDir || currentWorkspace?.path;
-        const { workspacePrompt, userPrompt, contextWorkspaces, allWorkspaces } = buildWorkspacePrompts(deps.getWorkspace, deps.getContextWorkspaceIds, deps.getAllWorkspaces);
-        const { processedMessage } = parseWorkspaceReferences(
-          content,
-          allWorkspaces,
-          contextWorkspaces,
-          currentWorkspace?.id || null
-        );
-        log3.info("sendMessage debug", {
-          sessionId: sessionId2,
-          conversationId,
-          providedWorkspaceDir: workspaceDir,
-          actualWorkspaceDir,
-          currentWorkspace: currentWorkspace ? { id: currentWorkspace.id, name: currentWorkspace.name, path: currentWorkspace.path } : null,
-          workspacePromptLength: workspacePrompt.length,
-          userPromptLength: userPrompt?.length ?? 0
-        });
-        const userMessage = {
-          id: generateUUID(),
-          type: "user",
-          content,
-          timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-          attachments: attachments?.map((a3) => ({
-            id: a3.id,
-            type: a3.type,
-            fileName: a3.fileName,
-            fileSize: a3.fileSize,
-            mimeType: a3.mimeType
-          }))
-        };
-        const assistantMessageId = generateUUID();
-        _pendingAssistantMessageId = assistantMessageId;
-        get6().addMessage(userMessage);
-        if (messages.length === 0) {
-          const placeholder = generateTitleFromMessage(content);
-          sessionStoreManager2.getState().updateSessionTitle(sessionId2, placeholder);
-        }
-        get6().clearInputDraft();
-        set5({
-          isStreaming: true,
-          error: null,
-          currentMessage: null,
-          toolBlockMap: /* @__PURE__ */ new Map(),
-          taskBoardBlockMap: /* @__PURE__ */ new Map(),
-          activeTaskBoardId: null,
-          pendingTaskCreates: [],
-          // 乐观计时起点（spec：续聊兜底）。SimpleAI 等引擎续聊不发 session_start
-          // 事件，若等它来录起点，后续轮次将永远不计时；此处以发送时刻乐观起算，
-          // 真实 session_start 到达后由其 receivedAtMs 覆盖（同一轮，不双计）。
-          // 静默会话（标题生成/压缩交接触发的 sendMessage）不计入用户可见时长，
-          // 与 eventHandler session_start/session_end 的 silentMode 守卫保持一致。
-          runStartAtMs: (() => {
-            try {
-              const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
-              return meta3?.silentMode ? null : Date.now();
-            } catch {
-              return Date.now();
-            }
-          })(),
-          // 批 4b（审计 4.1）：轮次代际 +1——interrupt 兜底定时器等跨轮回调
-          // 据此识别旧轮次，不再误杀新一轮流式
-          turnEpoch: get6().turnEpoch + 1
-        });
-        try {
-          const router = deps.getEventRouter();
-          await router.initialize();
-          const attachmentsForBackend = attachments?.map((a3) => ({
-            type: a3.type,
-            fileName: a3.fileName,
-            mimeType: a3.mimeType,
-            content: a3.content,
-            textContent: a3.textContent
-          }));
-          const sessionConfig = getSessionConfig();
-          const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, engine);
-          const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
-          const modelProfileId = resolveEffectiveProfileId2(
-            sessionMeta?.modelProfileId,
-            sessionConfig.modelProfileId,
-            getActiveModelProfile()?.id
-          );
-          const profileMode = resolveEffectiveProfileMode(
-            sessionMeta?.profileMode,
-            sessionConfig.profileMode
-          );
-          const effectiveProfileId = isProfileModeWithoutProfile(profileMode) ? void 0 : modelProfileId;
-          const effectiveProfile = getModelProfileById(effectiveProfileId);
-          const resolvedModel = normalizeModelForProfile(
-            sessionMeta?.model ?? runtimeConfig.model,
-            effectiveProfile
-          );
-          const disabledMcpServers = getDisabledPluginMcpServers();
-          const pendingBriefing = get6().pendingBriefing;
-          const dispatchReportText = formatPendingDispatchReports(sessionId2);
-          const oneTimeParts = [
-            pendingBriefing ? i18n_default.t("chat:compactHandoff.contextPreamble", { briefing: pendingBriefing }) : "",
-            dispatchReportText,
-            sendOptions?.oneTimeSystemPrompt ?? ""
-          ].filter(Boolean);
-          const appendPrompt = oneTimeParts.length > 0 ? `${workspacePrompt}
-
-${oneTimeParts.join("\n\n")}` : workspacePrompt;
-          if (pendingBriefing) {
-            set5({ pendingBriefing: null });
-          }
-          const clientDescriptor = detectClientDescriptor();
-          const chatOptions = {
-            appendSystemPrompt: normalizeForInvoke(appendPrompt),
-            systemPrompt: userPrompt ? normalizeForInvoke(userPrompt) : null,
-            workDir: actualWorkspaceDir,
-            contextId: deps.contextId,
-            engineId: engine,
-            enableMcpTools: true,
-            disabledMcpServers,
-            attachments: attachmentsForBackend,
-            additionalDirs: contextWorkspaces.map((w5) => w5.path).filter(Boolean),
-            agent: sendOptions?.runtimeOverride?.agent ?? sessionMeta?.agent ?? runtimeConfig.agent,
-            model: resolvedModel,
-            effort: sendOptions?.runtimeOverride?.effort ?? sessionMeta?.effort ?? runtimeConfig.effort,
-            permissionMode: sendOptions?.runtimeOverride?.permissionMode ?? sessionMeta?.permissionMode ?? runtimeConfig.permissionMode,
-            allowedTools: sendOptions?.allowedTools && sendOptions.allowedTools.length > 0 ? sendOptions.allowedTools : void 0,
-            modelProfileId: effectiveProfileId,
-            profileMode,
-            clientMessageId: userMessage.id,
-            assistantMessageId,
-            clientType: clientDescriptor.clientType,
-            clientPlatform: clientDescriptor.clientPlatform,
-            deviceId: clientDescriptor.deviceId || void 0
-          };
-          if (conversationId) {
-            await aiChatDispatchStream({
-              action: "continue",
-              sessionId: conversationId,
-              message: normalizeForInvoke(processedMessage),
-              options: chatOptions
-            });
-          } else {
-            const sessionMeta2 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
-            const forkSessionId = sessionMeta2?.forkFromId;
-            const newSessionId = await aiChatDispatch({
-              action: "start",
-              message: normalizeForInvoke(processedMessage),
-              options: {
-                ...chatOptions,
-                forkSessionId: forkSessionId || void 0
-              }
-            });
-            set5({ conversationId: newSessionId });
-          }
-          try {
-            const mgrState = sessionStoreManager2.getState();
-            const meta3 = mgrState.sessionMetadata.get(sessionId2);
-            if (meta3 && meta3.status !== "running" && meta3.status !== "background-running") {
-              const newMetadata = new Map(mgrState.sessionMetadata);
-              newMetadata.set(sessionId2, {
-                ...meta3,
-                status: "running",
-                updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-              });
-              sessionStoreManager2.setState({ sessionMetadata: newMetadata });
-            }
-          } catch {
-          }
-          return true;
-        } catch (e3) {
-          const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log3.error("sendMessage failed", err, { sessionId: sessionId2, conversationId, workspaceDir: actualWorkspaceDir });
-          const draftNow = get6().inputDraft;
-          const draftEmpty = !draftNow?.text && (!draftNow?.attachments || draftNow.attachments.length === 0);
-          set5({
-            error: resolveChatError(e3, { sessionId: sessionId2, workspaceDir: actualWorkspaceDir }),
-            isStreaming: false,
-            currentMessage: null,
-            progressMessage: null,
-            // 乐观计时起点对本轮失效：发送失败无真实轮次，清空避免残留起点
-            // 被未来迟到的 session_end 误结算（否则误累加一大段墙面时间）
-            runStartAtMs: null,
-            // 回滚本轮乐观追加的用户消息（未进引擎上下文，不该留在历史）
-            messages: get6().messages.filter((m4) => m4.id !== userMessage.id)
-          });
-          if (draftEmpty) {
-            get6().updateInputDraft({
-              text: content,
-              attachments: attachments ?? [],
-              contextBlocks: []
-            });
-          }
-          return false;
-        }
-      },
-      settleSessionElapsedMs: () => {
-        const runStart = get6().runStartAtMs;
-        if (runStart == null) return;
-        const delta = Math.max(0, Date.now() - runStart);
-        set5((s3) => ({
-          sessionElapsedMs: s3.sessionElapsedMs + delta,
-          runStartAtMs: null,
-          // 记录最近完成一轮时长：会话结束后折叠态继续显示「刚才那轮」而非回 0
-          lastTurnMs: delta
-        }));
-      },
-      interrupt: async () => {
-        const { conversationId, isStreaming } = get6();
-        if (!conversationId || !isStreaming) return;
-        const config3 = deps.getConfig();
-        const engine = resolveSessionEngine2(get6().sessionId, config3?.defaultEngine);
-        log3.info("Attempting to interrupt session", { conversationId, engine, isStreaming });
-        set5({ isInterrupting: true });
-        try {
-          const interruptInvoke = aiChatDispatch({
-            action: "interrupt",
-            sessionId: conversationId,
-            engineId: engine
-          });
-          const invokeTimeout = new Promise(
-            (_5, reject2) => setTimeout(() => reject2(new Error("interrupt invoke \u8D85\u65F6\uFF08\u540E\u7AEF\u65E0\u54CD\u5E94\uFF09")), 8e3)
-          );
-          await Promise.race([interruptInvoke, invokeTimeout]);
-          log3.info("Session interrupted, waiting for backend session_end to finalize", {
-            conversationId
-          });
-          await waitFor(() => !get6().isStreaming, 8e3);
-          const epochAtInterrupt = get6().turnEpoch;
-          setTimeout(() => {
-            const st3 = get6();
-            if (st3.conversationId !== conversationId) return;
-            if (st3.turnEpoch !== epochAtInterrupt) return;
-            if (st3.isStreaming || st3.isInterrupting) {
-              log3.warn("Interrupt timeout fallback: backend session_end not received, force-finishing streaming", {
-                conversationId,
-                isStreaming: st3.isStreaming,
-                isInterrupting: st3.isInterrupting,
-                hasCurrentMessage: !!st3.currentMessage
-              });
-              get6().settleSessionElapsedMs();
-              set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
-              get6().finishMessage();
-              void get6().dispatchNextPending();
-            }
-          }, 5e3);
-        } catch (e3) {
-          const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log3.error("Interrupt failed", err, { conversationId, engine });
-          get6().settleSessionElapsedMs();
-          set5({ isStreaming: false, isInterrupting: false, progressMessage: null });
-          get6().finishMessage();
-          void get6().dispatchNextPending();
-          try {
-            const { useToastStore: useToastStore2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-            useToastStore2.getState().error(
-              i18n_default.t("chat:error.interruptFailed"),
-              i18n_default.t("chat:error.interruptFailedHint")
-            );
-          } catch (toastErr) {
-            log3.warn("Toast \u63D0\u793A\u5931\u8D25", { error: String(toastErr) });
-          }
-        }
-      },
-      continueChat: async (prompt = "", allowedTools) => {
-        const { conversationId } = get6();
-        if (!conversationId) {
-          set5({ error: "\u6CA1\u6709\u6D3B\u52A8\u4F1A\u8BDD", isStreaming: false });
-          return;
-        }
-        const router = deps.getEventRouter();
-        await router.initialize();
-        const currentWorkspace = deps.getWorkspace();
-        const actualWorkspaceDir = currentWorkspace?.path;
-        const config3 = deps.getConfig();
-        const currentEngine = resolveSessionEngine2(get6().sessionId, config3?.defaultEngine);
-        const { workspacePrompt, userPrompt, contextWorkspaces } = buildWorkspacePrompts(deps.getWorkspace, deps.getContextWorkspaceIds, deps.getAllWorkspaces);
-        log3.info("continueChat debug", {
-          conversationId,
-          actualWorkspaceDir,
-          currentWorkspace: currentWorkspace ? { id: currentWorkspace.id, name: currentWorkspace.name, path: currentWorkspace.path } : null,
-          workspacePromptLength: workspacePrompt.length,
-          userPromptLength: userPrompt?.length ?? 0
-        });
-        set5({ isStreaming: true, error: null });
-        const sessionConfig = getSessionConfig();
-        const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, currentEngine);
-        const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
-        const modelProfileId = resolveEffectiveProfileId2(
-          sessionMeta?.modelProfileId,
-          sessionConfig.modelProfileId,
-          getActiveModelProfile()?.id
-        );
-        const profileMode = resolveEffectiveProfileMode(
-          sessionMeta?.profileMode,
-          sessionConfig.profileMode
-        );
-        const effectiveProfileId = isProfileModeWithoutProfile(profileMode) ? void 0 : modelProfileId;
-        const effectiveProfile = getModelProfileById(effectiveProfileId);
-        const resolvedModel = normalizeModelForProfile(
-          sessionMeta?.model ?? runtimeConfig.model,
-          effectiveProfile
-        );
-        const disabledMcpServers = getDisabledPluginMcpServers();
-        const clientDescriptor = detectClientDescriptor();
-        try {
-          await aiChatDispatchStream({
-            sessionId: conversationId,
-            message: normalizeForInvoke(prompt),
-            options: {
-              appendSystemPrompt: normalizeForInvoke(workspacePrompt),
-              systemPrompt: userPrompt ? normalizeForInvoke(userPrompt) : null,
-              workDir: actualWorkspaceDir,
-              contextId: deps.contextId,
-              engineId: currentEngine,
-              enableMcpTools: true,
-              disabledMcpServers,
-              additionalDirs: contextWorkspaces.map((w5) => w5.path).filter(Boolean),
-              agent: sessionMeta?.agent ?? runtimeConfig.agent,
-              model: resolvedModel,
-              effort: sessionMeta?.effort ?? runtimeConfig.effort,
-              permissionMode: sessionMeta?.permissionMode ?? runtimeConfig.permissionMode,
-              // 并入会话级放行集合：scope=session/global 授权过的工具在本会话续聊中持续放行（每次新进程 --resume 自动携带）。
-              // 普通续聊（无显式 allowedTools）同样并入，这是期望行为——会话内放行应跨轮持续生效。
-              allowedTools: (() => {
-                const merged = [.../* @__PURE__ */ new Set([...allowedTools ?? [], ...get6().sessionAllowedTools])];
-                return merged.length > 0 ? merged : void 0;
-              })(),
-              modelProfileId: effectiveProfileId,
-              profileMode,
-              clientType: clientDescriptor.clientType,
-              clientPlatform: clientDescriptor.clientPlatform,
-              deviceId: clientDescriptor.deviceId || void 0
-            }
-          });
-        } catch (e3) {
-          const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log3.error("continueChat failed", err, { conversationId, workspaceDir: actualWorkspaceDir });
-          set5({
-            error: resolveChatError(e3, { conversationId, workspaceDir: actualWorkspaceDir }),
-            isStreaming: false,
-            currentMessage: null,
-            progressMessage: null
-          });
-        }
-      },
-      regenerateResponse: async (assistantMessageId) => {
-        const { messages, isStreaming } = get6();
-        if (isStreaming) {
-          log3.warn("regenerateResponse: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
-          return;
-        }
-        const messageIndex = messages.findIndex((m4) => m4.id === assistantMessageId);
-        if (messageIndex === -1) {
-          log3.warn("regenerateResponse: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { assistantMessageId });
-          return;
-        }
-        let userMessageIndex = -1;
-        for (let i2 = messageIndex - 1; i2 >= 0; i2--) {
-          if (messages[i2].type === "user") {
-            userMessageIndex = i2;
-            break;
-          }
-        }
-        if (userMessageIndex === -1) {
-          log3.warn("regenerateResponse: \u672A\u627E\u5230\u5BF9\u5E94\u7684\u7528\u6237\u6D88\u606F");
-          return;
-        }
-        const userMessage = messages[userMessageIndex];
-        const userContent = userMessage.type === "user" ? userMessage.content : "";
-        const newMessages = messages.slice(0, userMessageIndex);
-        const removedFromTs = messages[userMessageIndex]?.timestamp;
-        const convId = get6().conversationId;
-        if (removedFromTs && convId) {
-          void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_tombstone_after", {
-            conversationId: convId,
-            afterTs: Date.parse(removedFromTs) || 0
-          })).catch(() => void 0);
-        }
-        set5({
-          messages: newMessages,
-          currentMessage: null,
-          isStreaming: false,
-          error: null
-        });
-        log3.info("regenerateResponse: \u91CD\u65B0\u751F\u6210\u54CD\u5E94", {
-          userMessageId: userMessage.id,
-          removedCount: messages.length - userMessageIndex
-        });
-        const workspace = deps.getWorkspace();
-        const workspaceDir = workspace?.path || void 0;
-        const { sendMessage } = get6();
-        const sent = await sendMessage(userContent, workspaceDir);
-        if (sent === false) {
-          log3.warn("regenerateResponse: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
-            removedCount: messages.length - userMessageIndex
-          });
-          set5({ messages, currentMessage: null });
-          const restoredConvId = get6().conversationId;
-          if (removedFromTs && restoredConvId) {
-            void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_revise_undelete", {
-              conversationId: restoredConvId,
-              afterTs: Date.parse(removedFromTs) || 0
-            })).catch(() => void 0);
-          }
-        }
-      },
-      editAndResend: async (userMessageId, newContent) => {
-        const { messages, isStreaming } = get6();
-        if (isStreaming) {
-          log3.warn("editAndResend: \u5F53\u524D\u6B63\u5728\u6D41\u5F0F\u4F20\u8F93\uFF0C\u8BF7\u7A0D\u540E\u518D\u8BD5");
-          return;
-        }
-        const messageIndex = messages.findIndex((m4) => m4.id === userMessageId);
-        if (messageIndex === -1) {
-          log3.warn("editAndResend: \u672A\u627E\u5230\u76EE\u6807\u6D88\u606F", { userMessageId });
-          return;
-        }
-        const targetMessage = messages[messageIndex];
-        if (targetMessage.type !== "user") {
-          log3.warn("editAndResend: \u76EE\u6807\u6D88\u606F\u4E0D\u662F\u7528\u6237\u6D88\u606F");
-          return;
-        }
-        const newMessages = messages.slice(0, messageIndex);
-        {
-          const convId = get6().conversationId;
-          if (convId) {
-            void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_tombstone_after", {
-              conversationId: convId,
-              afterTs: Date.parse(targetMessage.timestamp) || 0
-            })).catch(() => void 0);
-          }
-        }
-        set5({
-          messages: newMessages,
-          currentMessage: null,
-          isStreaming: false,
-          error: null
-        });
-        log3.info("editAndResend: \u7F16\u8F91\u5E76\u91CD\u53D1\u6D88\u606F", {
-          originalMessageId: userMessageId,
-          removedCount: messages.length - messageIndex
-        });
-        const workspace = deps.getWorkspace();
-        const workspaceDir = workspace?.path || void 0;
-        const { sendMessage } = get6();
-        const sent = await sendMessage(newContent, workspaceDir);
-        if (sent === false) {
-          log3.warn("editAndResend: \u91CD\u53D1\u5931\u8D25\uFF0C\u6062\u590D\u88AB\u622A\u65AD\u7684\u5386\u53F2\u6D88\u606F", {
-            removedCount: messages.length - messageIndex
-          });
-          set5({ messages, currentMessage: null });
-          const restoredConvId = get6().conversationId;
-          if (restoredConvId) {
-            void Promise.resolve().then(() => (init_services(), services_exports)).then(({ invoke: invoke2 }) => invoke2("message_revise_undelete", {
-              conversationId: restoredConvId,
-              afterTs: Date.parse(targetMessage.timestamp) || 0
-            })).catch(() => void 0);
-          }
-        }
-      },
-      loadMoreArchivedMessages: (count2 = 20) => {
-        const { archivedMessages, messages, historyPaging, conversationId } = get6();
-        if (archivedMessages.length > 0) {
-          const loadCount = Math.min(count2, archivedMessages.length);
-          const toLoad = archivedMessages.slice(-loadCount);
-          const remaining = archivedMessages.slice(0, -loadCount);
-          set5({
-            messages: [...toLoad, ...messages],
-            archivedMessages: remaining
-          });
-          return;
-        }
-        if (!historyPaging || !historyPaging.hasMore || _loadingOlderPage) return;
-        _loadingOlderPage = true;
-        const { earliestSeq, sourceId } = historyPaging;
-        const persistedSeqAtCall = get6().persistedSeq;
-        void dialogStorageService.getConversationPage(sourceId, earliestSeq, count2).then((page) => {
-          const cur = get6();
-          if (cur.conversationId !== conversationId || cur.historyPaging?.earliestSeq !== earliestSeq || cur.persistedSeq !== persistedSeqAtCall) {
-            return;
-          }
-          if (!page || page.messages.length === 0) {
-            set5({ historyPaging: { ...historyPaging, hasMore: false } });
-            return;
-          }
-          const inMemory = new Set(cur.messages.map((m4) => m4.id));
-          const deduped = dedupeMessagesById(page.messages);
-          const normalized = normalizeRecoveredMessages(deduped);
-          const fresh = normalized.filter((m4) => !inMemory.has(m4.id));
-          set5({
-            messages: fresh.length > 0 ? [...fresh, ...cur.messages] : cur.messages,
-            // 前缀增长 → 已落盘计数同步增长（这些消息本就来自磁盘）
-            persistedSeq: cur.persistedSeq + fresh.length,
-            historyPaging: {
-              earliestSeq: page.earliestSeq ?? earliestSeq,
-              hasMore: page.hasMore,
-              sourceId
-            }
-          });
-        }).finally(() => {
-          _loadingOlderPage = false;
-        });
-      },
-      // ===== 消息压缩 =====
-      onVisibleRangeChange: (start2, end) => {
-        if (start2 < 0 || end < 0 || start2 > end) return;
-        const { messages, conversationId } = get6();
-        if (messages.length === 0) return;
-        set5({ visibleRange: { start: start2, end } });
-        if (_lastCompactionRange) {
-          const overlapStart = Math.max(start2, _lastCompactionRange.start);
-          const overlapEnd = Math.min(end, _lastCompactionRange.end);
-          const overlapSize = Math.max(0, overlapEnd - overlapStart + 1);
-          const currentSize = end - start2 + 1;
-          if (currentSize > 0 && overlapSize / currentSize > 0.8) {
-            return;
-          }
-        }
-        _lastCompactionRange = { start: start2, end };
-        const { toCompact, toHydrate } = compactor.computeRangeActions(messages.length, start2, end);
-        const newMessages = [...messages];
-        let changed = false;
-        let needDiskLoad = false;
-        for (const idx of toHydrate) {
-          if (idx < 0 || idx >= newMessages.length) continue;
-          const msg = newMessages[idx];
-          if (isCompacted(msg)) {
-            let hydrated = compactor.hydrateMessage(msg);
-            if (hydrated === msg && conversationId) {
-              const fromDisk = dialogStorageService.getCachedFullMessage(conversationId, msg.id);
-              if (fromDisk) {
-                hydrated = compactor.hydrateFromExternal(msg.id, fromDisk);
-              } else if (!dialogStorageService.hasMessageMapCache(conversationId)) {
-                needDiskLoad = true;
-              }
-            }
-            if (hydrated !== msg) {
-              newMessages[idx] = hydrated;
-              changed = true;
-            }
-          }
-        }
-        if (needDiskLoad && conversationId) {
-          void dialogStorageService.loadMessageMap(conversationId).then((map6) => {
-            if (!map6 || map6.size === 0) return;
-            const s3 = get6();
-            if (s3.conversationId !== conversationId || !s3.visibleRange) return;
-            const { toHydrate: hydrateIdx } = compactor.computeRangeActions(
-              s3.messages.length,
-              s3.visibleRange.start,
-              s3.visibleRange.end
-            );
-            const patched = [...s3.messages];
-            let dirty = false;
-            for (const idx of hydrateIdx) {
-              if (idx < 0 || idx >= patched.length) continue;
-              const m4 = patched[idx];
-              if (m4 && isCompacted(m4)) {
-                const full = map6.get(m4.id);
-                if (full) {
-                  patched[idx] = compactor.hydrateFromExternal(m4.id, full);
-                  dirty = true;
-                }
-              }
-            }
-            if (dirty) set5({ messages: patched });
-          });
-        }
-        for (const idx of toCompact) {
-          if (idx < 0 || idx >= newMessages.length) continue;
-          const msg = newMessages[idx];
-          if (!isCompacted(msg)) {
-            const compacted = compactor.compactMessage(msg);
-            if (compacted !== msg) {
-              newMessages[idx] = compacted;
-              changed = true;
-            }
-          }
-        }
-        if (changed) {
-          set5({ messages: newMessages });
-        }
-      },
-      // ===== 持久化前恢复 =====
-      getPersistableMessages: () => {
-        const { messages, conversationId } = get6();
-        let newMessages = null;
-        for (let i2 = 0; i2 < messages.length; i2++) {
-          const msg = messages[i2];
-          if (!isCompacted(msg)) continue;
-          if (!newMessages) newMessages = [...messages];
-          const snapshot = compactor.getSnapshot(msg.id);
-          let hydrated = snapshot ?? null;
-          if (!hydrated && conversationId) {
-            hydrated = dialogStorageService.getCachedFullMessage(conversationId, msg.id);
-          }
-          if (hydrated && hydrated !== msg) {
-            newMessages[i2] = hydrated;
-          }
-        }
-        return newMessages ?? messages;
-      },
-      // ===== 资源清理 =====
-      dispose: () => {
-        if (_paragraphTimer) {
-          clearTimeout(_paragraphTimer);
-          _paragraphTimer = null;
-        }
-        _textBuffer = "";
-        _thinkingBuffer = "";
-        compactor.clearSnapshots();
-        const state5 = get6();
-        set5(createInitialState(state5.sessionId));
-      }
-    }))
-  );
-  return store3;
-}
-var log3;
-var init_createConversationStore = __esm({
-  "src/host/conversationStore/createConversationStore.ts"() {
-    init_uuid();
-    init_esm();
-    init_middleware();
-    init_services();
-    init_services();
-    init_eventHandler();
-    init_sessionStoreManager();
-    init_services();
-    init_i18n();
-    init_messageCompactor();
-    init_diffExtractor();
-    init_stores();
-    init_misc();
-    init_types2();
-    init_logger();
-    init_conversationStoreUtils();
-    init_services();
-    init_services();
-    init_dedupMessages();
-    init_stores();
-    init_stores();
-    log3 = createLogger("ConversationStore");
-  }
-});
-
-// src/host/ai-runtime/engine.ts
-var init_engine = __esm({
-  "src/host/ai-runtime/engine.ts"() {
-  }
-});
-
-// src/host/ai-runtime/session.ts
-var init_session = __esm({
-  "src/host/ai-runtime/session.ts"() {
-  }
-});
-
-// src/host/ai-runtime/task.ts
-var init_task = __esm({
-  "src/host/ai-runtime/task.ts"() {
-    init_uuid();
-  }
-});
-
-// src/host/ai-runtime/event.ts
-var init_event = __esm({
-  "src/host/ai-runtime/event.ts"() {
-  }
-});
-
-// src/host/ai-runtime/event-bus.ts
-function getEventBus(config3) {
-  return EventBus.getInstance(config3);
-}
-var log4, NamespacedEventBus, EventBus, EventChannel;
-var init_event_bus = __esm({
-  "src/host/ai-runtime/event-bus.ts"() {
-    init_logger();
-    log4 = createLogger("EventBus");
-    NamespacedEventBus = class {
-      constructor(config3 = {}) {
-        this.listeners = /* @__PURE__ */ new Map();
-        this.config = {
-          maxHistory: config3.maxHistory ?? 20,
-          debug: config3.debug ?? false
-        };
-      }
-      /**
-       * 订阅事件
-       * @param eventType 事件类型（如 'token', 'tool_call_start'）
-       * @param listener 监听器函数
-       * @param options 监听器配置
-       * @returns 取消订阅的函数
-       */
-      on(eventType, listener, options2 = {}) {
-        const id38 = `listener-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-        const wrapper = {
-          id: id38,
-          listener,
-          options: {
-            once: options2.once ?? false,
-            priority: options2.priority ?? 0,
-            namespace: options2.namespace ?? "default"
-          },
-          registeredAt: Date.now()
-        };
-        let typeListeners = this.listeners.get(eventType);
-        if (!typeListeners) {
-          typeListeners = [];
-          this.listeners.set(eventType, typeListeners);
-        }
-        const insertIndex = typeListeners.findIndex(
-          (w5) => w5.options.priority < wrapper.options.priority
-        );
-        if (insertIndex === -1) {
-          typeListeners.push(wrapper);
-        } else {
-          typeListeners.splice(insertIndex, 0, wrapper);
-        }
-        this.log(`[EventBus] Subscribed to "${eventType}" (id: ${id38}, namespace: ${wrapper.options.namespace})`);
-        return () => this.off(eventType, id38);
-      }
-      /**
-       * 订阅事件（只监听一次）
-       */
-      once(eventType, listener, options2 = {}) {
-        return this.on(eventType, listener, { ...options2, once: true });
-      }
-      /**
-       * 取消订阅
-       */
-      off(eventType, listenerId) {
-        const typeListeners = this.listeners.get(eventType);
-        if (!typeListeners) return;
-        const index2 = typeListeners.findIndex((w5) => w5.id === listenerId);
-        if (index2 !== -1) {
-          typeListeners.splice(index2, 1);
-          this.log(`[EventBus] Unsubscribed from "${eventType}" (id: ${listenerId})`);
-        }
-        if (typeListeners.length === 0) {
-          this.listeners.delete(eventType);
-        }
-      }
-      /**
-       * 取消某个命名空间的所有订阅
-       */
-      offNamespace(namespace2) {
-        for (const [eventType, typeListeners] of this.listeners.entries()) {
-          const toRemove = typeListeners.filter((w5) => w5.options.namespace === namespace2);
-          toRemove.forEach((w5) => this.off(eventType, w5.id));
-        }
-      }
-      /**
-       * 发布事件
-       */
-      emit(eventType, data6) {
-        const typeListeners = this.listeners.get(eventType);
-        if (!typeListeners || typeListeners.length === 0) {
-          this.log(`No listeners`, { eventType });
-          return;
-        }
-        this.log(`Emitting`, { eventType, listenerCount: typeListeners.length });
-        const listeners = [...typeListeners];
-        const toRemove = [];
-        for (const wrapper of listeners) {
-          try {
-            wrapper.listener(data6);
-            if (wrapper.options.once) {
-              toRemove.push(wrapper.id);
-            }
-          } catch (error3) {
-            log4.error(`Listener error`, error3, { eventType });
-          }
-        }
-        toRemove.forEach((id38) => this.off(eventType, id38));
-      }
-      /**
-       * 获取某个事件类型的监听器数量
-       */
-      listenerCount(eventType) {
-        const typeListeners = this.listeners.get(eventType);
-        return typeListeners?.length ?? 0;
-      }
-      /**
-       * 获取所有事件类型
-       */
-      eventTypes() {
-        return Array.from(this.listeners.keys());
-      }
-      /**
-       * 清空所有监听器
-       */
-      clear() {
-        this.listeners.clear();
-        if (this.config.debug) {
-          log4.debug("Cleared all listeners");
-        }
-      }
-      /**
-       * 清空某个命名空间的所有监听器
-       */
-      clearNamespace(namespace2) {
-        this.offNamespace(namespace2);
-      }
-      /**
-       * 日志输出
-       */
-      log(message, context) {
-        if (this.config.debug) {
-          log4.debug(message, context);
-        }
-      }
-    };
-    EventBus = class _EventBus {
-      constructor(config3 = {}) {
-        this.history = [];
-        this.config = {
-          maxHistory: config3.maxHistory ?? 20,
-          debug: config3.debug ?? false
-        };
-        this.bus = new NamespacedEventBus(config3);
-      }
-      static {
-        this.instance = null;
-      }
-      /**
-       * 获取全局事件总线实例
-       */
-      static getInstance(config3) {
-        if (!_EventBus.instance) {
-          _EventBus.instance = new _EventBus(config3);
-        }
-        return _EventBus.instance;
-      }
-      /**
-       * 重置实例（主要用于测试）
-       */
-      static reset() {
-        _EventBus.instance = null;
-      }
-      /**
-       * 订阅 AIEvent（按事件类型）
-       */
-      on(eventType, listener, options2) {
-        return this.bus.on(eventType, listener, options2);
-      }
-      /**
-       * 订阅所有 AIEvent
-       */
-      onAny(listener, options2) {
-        return this.bus.on("*", listener, options2);
-      }
-      /**
-       * 订阅事件（只监听一次）
-       */
-      once(eventType, listener, options2) {
-        return this.bus.once(eventType, listener, options2);
-      }
-      /**
-       * 取消订阅
-       */
-      off(eventType, listenerId) {
-        this.bus.off(eventType, listenerId);
-      }
-      /**
-       * 发布 AIEvent
-       */
-      emit(event3) {
-        this.addToHistory(event3);
-        this.bus.emit(event3.type, event3);
-        this.bus.emit("*", event3);
-      }
-      /**
-       * 批量发布事件
-       */
-      emitBatch(events) {
-        for (const event3 of events) {
-          this.emit(event3);
-        }
-      }
-      /**
-       * 添加事件到历史记录
-       */
-      addToHistory(event3) {
-        this.history.push(event3);
-        if (this.history.length > this.config.maxHistory) {
-          this.history.shift();
-        }
-      }
-      /**
-       * 获取历史记录
-       */
-      getHistory(filter8) {
-        if (filter8) {
-          return this.history.filter(filter8);
-        }
-        return [...this.history];
-      }
-      /**
-       * 按类型获取历史记录
-       */
-      getHistoryByType(eventType) {
-        return this.history.filter((e3) => e3.type === eventType);
-      }
-      /**
-       * 清空历史记录
-       */
-      clearHistory() {
-        this.history = [];
-      }
-      /**
-       * 获取监听器数量
-       */
-      listenerCount(eventType) {
-        return this.bus.listenerCount(eventType);
-      }
-      /**
-       * 获取所有事件类型
-       */
-      eventTypes() {
-        return this.bus.eventTypes();
-      }
-      /**
-       * 清空所有监听器
-       */
-      clear() {
-        this.bus.clear();
-        this.clearHistory();
-      }
-      /**
-       * 清空某个命名空间的所有监听器
-       */
-      clearNamespace(namespace2) {
-        this.bus.clearNamespace(namespace2);
-      }
-      /**
-       * 创建命名空间隔离的事件通道
-       */
-      createChannel(namespace2) {
-        return new EventChannel(namespace2, this);
-      }
-    };
-    EventChannel = class {
-      constructor(namespace2, eventBus2) {
-        this.namespace = namespace2;
-        this.eventBus = eventBus2;
-      }
-      /**
-       * 订阅事件（自动附加命名空间）
-       */
-      on(eventType, listener, options2) {
-        return this.eventBus.on(eventType, listener, {
-          ...options2,
-          namespace: this.namespace
-        });
-      }
-      /**
-       * 发布事件（通道本身不发布，只是命名空间标记）
-       */
-      emit(event3) {
-        const enhancedEvent = {
-          ...event3,
-          _namespace: this.namespace
-        };
-        this.eventBus.emit(enhancedEvent);
-      }
-      /**
-       * 清空该命名空间的所有监听器
-       */
-      clear() {
-        this.eventBus.clearNamespace(this.namespace);
-      }
-      /**
-       * 获取命名空间
-       */
-      getNamespace() {
-        return this.namespace;
-      }
-    };
-  }
-});
-
-// src/host/ai-runtime/engine-registry.ts
-var log5;
-var init_engine_registry = __esm({
-  "src/host/ai-runtime/engine-registry.ts"() {
-    init_event_bus();
-    init_logger();
-    log5 = createLogger("AIEngineRegistry");
-  }
-});
-
-// src/host/ai-runtime/tool-registry.ts
-var log6, ToolRegistryImpl, globalToolRegistry;
-var init_tool_registry = __esm({
-  "src/host/ai-runtime/tool-registry.ts"() {
-    init_logger();
-    log6 = createLogger("ToolRegistry");
-    ToolRegistryImpl = class {
-      constructor() {
-        this.tools = /* @__PURE__ */ new Map();
-      }
-      register(tool) {
-        if (this.tools.has(tool.name)) {
-          log6.warn("Tool already registered, overwriting", { toolName: tool.name });
-        }
-        this.tools.set(tool.name, tool);
-        log6.info("Registered tool", { toolName: tool.name });
-      }
-      registerBatch(tools) {
-        for (const tool of tools) {
-          this.register(tool);
-        }
-      }
-      get(name) {
-        return this.tools.get(name);
-      }
-      has(name) {
-        return this.tools.has(name);
-      }
-      listNames() {
-        return Array.from(this.tools.keys());
-      }
-      listAll() {
-        return Array.from(this.tools.values());
-      }
-      async execute(name, input) {
-        const tool = this.tools.get(name);
-        if (!tool) {
-          return {
-            success: false,
-            error: `Tool "${name}" not found`,
-            requiresConfirmation: false
-          };
-        }
-        try {
-          log6.info("Executing tool", { toolName: name, input });
-          const result = await tool.execute(input);
-          log6.info("Tool completed", { toolName: name, success: result.success });
-          return result;
-        } catch (error3) {
-          log6.error(`Tool failed: ${name}`, error3 instanceof Error ? error3 : new Error(String(error3)));
-          return {
-            success: false,
-            error: error3 instanceof Error ? error3.message : String(error3),
-            requiresConfirmation: false
-          };
-        }
-      }
-      generateSystemPrompt() {
-        if (this.tools.size === 0) {
-          return "";
-        }
-        const sections6 = [
-          "# Available Tools",
-          "",
-          "You can use the following tools to help the user manage tasks:",
-          ""
-        ];
-        for (const tool of this.tools.values()) {
-          sections6.push(`## ${tool.name}`);
-          sections6.push(tool.description);
-          if (tool.inputSchema?.properties) {
-            sections6.push("Parameters:");
-            for (const [paramName, paramSchema] of Object.entries(tool.inputSchema.properties)) {
-              const schema2 = paramSchema;
-              const required2 = tool.inputSchema.required?.includes(paramName);
-              const requiredText = required2 ? " (required)" : " (optional)";
-              sections6.push(
-                `- \`${paramName}\`${requiredText}: ${schema2.description || schema2.type}`
-              );
-              if (schema2.enum && Array.isArray(schema2.enum)) {
-                sections6.push(`  - Options: ${schema2.enum.join(", ")}`);
-              }
-              if (schema2.default !== void 0) {
-                sections6.push(`  - Default: ${schema2.default}`);
-              }
-            }
-          }
-          sections6.push("");
-        }
-        sections6.push("## Tool Usage Guidelines");
-        sections6.push("");
-        sections6.push("- Always check if a tool is required before calling it");
-        sections6.push("- Use tools proactively when you detect user intent to manage todos");
-        sections6.push("- When a tool requires confirmation, ask the user first");
-        sections6.push("- Provide clear feedback about what actions you took");
-        sections6.push("");
-        return sections6.join("\n");
-      }
-      unregister(name) {
-        this.tools.delete(name);
-        log6.debug(`Unregistered tool: ${name}`);
-      }
-      clear() {
-        this.tools.clear();
-        log6.debug("Cleared all tools");
-      }
-    };
-    globalToolRegistry = new ToolRegistryImpl();
-  }
-});
-
-// src/host/ai-runtime/base/base-session.ts
-var init_base_session = __esm({
-  "src/host/ai-runtime/base/base-session.ts"() {
-    init_session();
-  }
-});
-
-// src/host/ai-runtime/base/index.ts
-var init_base = __esm({
-  "src/host/ai-runtime/base/index.ts"() {
-    init_base_session();
-  }
-});
-
-// src/host/ai-runtime/config-validator.ts
-var init_config_validator = __esm({
-  "src/host/ai-runtime/config-validator.ts"() {
-  }
-});
-
-// src/host/ai-runtime/index.ts
-var init_ai_runtime = __esm({
-  "src/host/ai-runtime/index.ts"() {
-    init_engine();
-    init_session();
-    init_task();
-    init_event();
-    init_event_bus();
-    init_engine_registry();
-    init_tool_registry();
-    init_base();
-    init_task();
-    init_event();
-    init_session();
-    init_engine();
-    init_engine_registry();
-    init_event_bus();
-    init_tool_registry();
-    init_config_validator();
-  }
-});
-
-// src/host/conversationStore/sessionStoreManager.ts
-function createSessionManagerStore() {
-  return createStore((set5, get6) => ({
-    // ===== 状态 =====
-    stores: /* @__PURE__ */ new Map(),
-    activeSessionId: null,
-    sessionMetadata: /* @__PURE__ */ new Map(),
-    backgroundSessionIds: [],
-    completedNotifications: [],
-    isInitialized: false,
-    // ===== 会话生命周期 =====
-    createSession: (options2) => {
-      const sessionId = options2.id || generateUUID();
-      const timestamp2 = (/* @__PURE__ */ new Date()).toISOString();
-      log7.info("createSession \u8C03\u7528", { sessionId, optionsWorkspaceId: options2.workspaceId, optionsType: options2.type, optionsTitle: options2.title, engineId: options2.engineId });
-      if (get6().stores.has(sessionId)) {
-        log7.info("\u4F1A\u8BDD\u5DF2\u5B58\u5728", { sessionId });
-        return sessionId;
-      }
-      const configEngineId = useConfigStore.getState().config?.defaultEngine;
-      const metadata = {
-        id: sessionId,
-        title: options2.title || `\u65B0\u5BF9\u8BDD ${get6().stores.size + 1}`,
-        type: options2.type,
-        engineId: normalizeEngineId(options2.engineId || configEngineId),
-        workspaceId: options2.workspaceId || null,
-        contextWorkspaceIds: options2.contextWorkspaceIds || [],
-        workspaceLocked: options2.workspaceLocked ?? !!options2.workspaceId,
-        status: "idle",
-        silentMode: options2.silentMode || false,
-        // 设置静默模式
-        createdAt: timestamp2,
-        updatedAt: timestamp2,
-        forkFromId: options2.forkFromId,
-        modelProfileId: options2.modelProfileId,
-        model: options2.model,
-        profileMode: options2.profileMode,
-        agent: options2.agent,
-        effort: options2.effort,
-        permissionMode: options2.permissionMode,
-        kind: options2.kind,
-        commitWorkspaceId: options2.commitWorkspaceId
-      };
-      log7.info("\u521B\u5EFA\u4F1A\u8BDD\u5143\u6570\u636E", { sessionId, metadataWorkspaceId: metadata.workspaceId, metadataType: metadata.type, engineId: metadata.engineId });
-      const contextId = `session-${sessionId}`;
-      const deps = {
-        getConfig: () => {
-          const state5 = useConfigStore.getState();
-          return state5.config;
-        },
-        getWorkspace: () => {
-          const workspaceState = useWorkspaceStore.getState();
-          const managerState = get6();
-          const metadata2 = managerState.sessionMetadata.get(sessionId);
-          const targetWorkspaceId = metadata2?.workspaceId || options2.workspaceId;
-          if (targetWorkspaceId) {
-            const workspace = workspaceState.workspaces.find((w5) => w5.id === targetWorkspaceId);
-            if (workspace) {
-              return workspace;
-            }
-          }
-          if (metadata2?.type === "free") {
-            return null;
-          }
-          return workspaceState.getCurrentWorkspace();
-        },
-        getContextWorkspaceIds: () => {
-          const managerState = get6();
-          const metadata2 = managerState.sessionMetadata.get(sessionId);
-          return metadata2?.contextWorkspaceIds || [];
-        },
-        getAllWorkspaces: () => {
-          return useWorkspaceStore.getState().workspaces;
-        },
-        getEventRouter: () => getEventRouter(),
-        contextId
-      };
-      const conversationStore = createConversationStore(sessionId, deps);
-      set5((state5) => {
-        const newStores = new Map(state5.stores);
-        newStores.set(sessionId, conversationStore);
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, metadata);
-        return {
-          stores: newStores,
-          sessionMetadata: newMetadata,
-          // 静默会话不自动激活
-          activeSessionId: options2.silentMode ? state5.activeSessionId : sessionId
-        };
-      });
-      conversationStore.setState({ workspaceId: metadata.workspaceId });
-      log7.info("\u521B\u5EFA\u4F1A\u8BDD", { sessionId });
-      if (!options2.silentMode) {
-        useViewStore.getState().addToMultiView(sessionId);
-      }
-      return sessionId;
-    },
-    createSessionFromHistory: (messages, conversationId, metadata) => {
-      const sessionId = get6().createSession({
-        type: metadata?.workspaceId ? "project" : "free",
-        workspaceId: metadata?.workspaceId,
-        title: metadata?.title || `\u5386\u53F2\u4F1A\u8BDD ${get6().stores.size + 1}`,
-        forkFromId: metadata?.forkFromId,
-        engineId: metadata?.engineId
-      });
-      const store3 = get6().stores.get(sessionId);
-      if (store3) {
-        store3.getState().setMessagesFromHistory(messages, conversationId, metadata?.paging);
-        log7.info("\u4ECE\u5386\u53F2\u521B\u5EFA\u4F1A\u8BDD", { sessionId, messageCount: messages.length, conversationId, forkFromId: metadata?.forkFromId });
-      }
-      return sessionId;
-    },
-    deleteSession: (sessionId) => {
-      const state5 = get6();
-      const store3 = state5.stores.get(sessionId);
-      if (!store3) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      const conversationId = store3.getState().conversationId;
-      if (conversationId) {
-        void (async () => {
-          try {
-            const { dialogStorageService: dialogStorageService2 } = await Promise.resolve().then(() => (init_services(), services_exports));
-            await dialogStorageService2.deleteConversation(conversationId);
-          } catch (e3) {
-            log7.warn("\u5220\u9664\u4F1A\u8BDD JSONL \u5931\u8D25", { conversationId, error: String(e3) });
-          }
-          try {
-            const { invoke: invoke2 } = await Promise.resolve().then(() => (init_services(), services_exports));
-            await invoke2("message_delete_by_conversation", { conversationId });
-          } catch (e3) {
-            log7.warn("\u5220\u9664\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
-          }
-        })();
-      }
-      store3.getState().dispose();
-      set5((state6) => {
-        const newStores = new Map(state6.stores);
-        newStores.delete(sessionId);
-        const newMetadata = new Map(state6.sessionMetadata);
-        newMetadata.delete(sessionId);
-        const newBackgroundSessionIds = state6.backgroundSessionIds.filter(
-          (id38) => id38 !== sessionId
-        );
-        const newCompletedNotifications = state6.completedNotifications.filter(
-          (id38) => id38 !== sessionId
-        );
-        let newActiveSessionId = state6.activeSessionId;
-        if (state6.activeSessionId === sessionId) {
-          const remainingIds = Array.from(newStores.keys());
-          newActiveSessionId = remainingIds.length > 0 ? remainingIds[remainingIds.length - 1] : null;
-        }
-        return {
-          stores: newStores,
-          sessionMetadata: newMetadata,
-          backgroundSessionIds: newBackgroundSessionIds,
-          completedNotifications: newCompletedNotifications,
-          activeSessionId: newActiveSessionId
-        };
-      });
-      useViewStore.getState().removeFromMultiView(sessionId);
-      log7.info("\u5220\u9664\u4F1A\u8BDD", { sessionId });
-    },
-    switchSession: (sessionId) => {
-      const state5 = get6();
-      const store3 = state5.stores.get(sessionId);
-      if (!store3) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      const currentStore = state5.activeSessionId ? state5.stores.get(state5.activeSessionId) : null;
-      if (currentStore && currentStore.getState().isStreaming && state5.activeSessionId) {
-        get6().addToBackground(state5.activeSessionId);
-      }
-      set5({ activeSessionId: sessionId });
-      get6().removeFromBackground(sessionId);
-      const viewState = useViewStore.getState();
-      viewState.addToMultiView(sessionId);
-      viewState.requestScrollToSession(sessionId);
-      const targetMetadata = get6().sessionMetadata.get(sessionId);
-      if (targetMetadata) {
-        const globalDefault = useConfigStore.getState().config?.activeModelProfileId;
-        const sessionOverride = targetMetadata.modelProfileId;
-        const mirror = sessionOverride === OFFICIAL_API_PROFILE ? "" : sessionOverride ?? globalDefault ?? "";
-        useSessionConfig.getState().setModelProfileId(mirror);
-        const globalProfileMode = useSessionConfig.getState().config.profileMode ?? "profile";
-        useSessionConfig.getState().setModel(targetMetadata.model ?? "");
-        useSessionConfig.getState().setAgent(targetMetadata.agent ?? "");
-        useSessionConfig.getState().setProfileMode(
-          targetMetadata.profileMode ?? globalProfileMode
-        );
-      }
-      log7.info("\u5207\u6362\u4F1A\u8BDD", { sessionId });
-    },
-    updateSessionTitle: (sessionId, title2) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          title: title2,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD\u6807\u9898", { sessionId, title: title2 });
-    },
-    updateSessionEngine: (sessionId, engineId) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return false;
-      }
-      const store3 = get6().stores.get(sessionId)?.getState();
-      if (store3 && (store3.isStreaming || store3.conversationId || store3.messages.length > 0)) {
-        log7.warn("\u5DF2\u6709\u5185\u5BB9\u7684\u4F1A\u8BDD\u4E0D\u5141\u8BB8\u5207\u6362\u5F15\u64CE", {
-          sessionId,
-          isStreaming: store3.isStreaming,
-          hasConversationId: Boolean(store3.conversationId),
-          messageCount: store3.messages.length
-        });
-        return false;
-      }
-      const normalizedEngineId = normalizeEngineId(engineId);
-      if (normalizeEngineId(metadata.engineId) === normalizedEngineId) {
-        return true;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          engineId: normalizedEngineId,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD\u5F15\u64CE", { sessionId, engineId: normalizedEngineId });
-      return true;
-    },
-    updateSessionModelProfile: (sessionId, modelProfileId) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          // null = 清除会话级覆盖（→ 跟随全局默认）；字符串（含官方哨兵）原样保留。
-          // 用 ?? 而非 ||：只把 null/undefined 当「清除」，避免误伤有意义的值。
-          modelProfileId: modelProfileId ?? void 0,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD Profile", { sessionId, modelProfileId });
-    },
-    updateSessionProfileMode: (sessionId, profileMode) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          // null/undefined = 清除会话级覆盖（→ 跟随全局默认）；二态值原样写入。
-          profileMode: profileMode ?? void 0,
-          // official 不绑定单 Profile：同步清掉会话级 Profile 覆盖，避免残留穿透。
-          ...profileMode === "official" ? { modelProfileId: void 0 } : {},
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD\u4F9B\u5E94\u5546\u6A21\u5F0F", { sessionId, profileMode });
-    },
-    updateSessionModel: (sessionId, model) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          // null = 清除会话级覆盖（→ 跟随全局默认）；字符串（含空串）原样保留。
-          // 用 ?? 而非 ||：只把 null/undefined 当「清除」，避免误伤有意义的值。
-          model: model ?? void 0,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD\u6A21\u578B", { sessionId, model });
-    },
-    updateSessionAgent: (sessionId, agent) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          // null / 空串 = 清除会话级专家覆盖；非空字符串原样保留。
-          agent: agent && agent.length > 0 ? agent : void 0,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD\u4E13\u5BB6", { sessionId, agent });
-    },
-    makeSessionVisible: (sessionId) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      if (!metadata.silentMode) {
-        get6().switchSession(sessionId);
-        return;
-      }
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, {
-          ...metadata,
-          silentMode: false,
-          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-        });
-        return { sessionMetadata: newMetadata };
-      });
-      get6().switchSession(sessionId);
-      log7.info("\u4F1A\u8BDD\u5DF2\u8F6C\u4E3A\u53EF\u89C1", { sessionId });
-    },
-    // ===== Store 访问 =====
-    getStore: (sessionId) => {
-      return get6().stores.get(sessionId)?.getState();
-    },
-    getActiveStore: () => {
-      const sessionId = get6().activeSessionId;
-      if (!sessionId) return void 0;
-      return get6().stores.get(sessionId)?.getState();
-    },
-    getActiveSessionId: () => {
-      return get6().activeSessionId;
-    },
-    // ===== 事件分发 =====
-    dispatchEvent: (event3) => {
-      let targetSessionId;
-      const routeSessionId = event3._routeSessionId;
-      if (!routeSessionId) {
-        if (!RENDER_EVENT_TYPES.has(event3.type)) {
-          log7.warn("\u4E8B\u4EF6\u7F3A\u5C11 _routeSessionId\uFF0C\u4E22\u5F03", { type: event3.type });
-          return;
-        }
-        const activeId = get6().activeSessionId;
-        const activeStore = activeId ? get6().stores.get(activeId) : void 0;
-        if (!activeId || !activeStore) {
-          log7.warn("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID \u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { type: event3.type });
-          return;
-        }
-        log7.info("\u6E32\u67D3\u4E8B\u4EF6\u65E0\u8DEF\u7531 ID\uFF08sessionId \u672A\u586B\uFF09\uFF0C\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
-          target: activeId,
-          type: event3.type
-        });
-        targetSessionId = activeId;
-      } else {
-        const store3 = get6().stores.get(routeSessionId);
-        targetSessionId = routeSessionId;
-        if (!store3) {
-          if (RENDER_EVENT_TYPES.has(event3.type)) {
-            const conversationId = event3.sessionId;
-            const entry = conversationId ? [...get6().stores.entries()].find(
-              ([, s3]) => s3.getState().conversationId === conversationId
-            ) : void 0;
-            if (entry) {
-              log7.info("\u6E32\u67D3\u4E8B\u4EF6\u6309 conversationId \u53CD\u67E5\u6295\u9012", {
-                routeSessionId,
-                target: entry[0],
-                type: event3.type
-              });
-              targetSessionId = entry[0];
-            } else {
-              const activeId = get6().activeSessionId;
-              const activeStore = activeId ? get6().stores.get(activeId) : void 0;
-              if (activeId && activeStore) {
-                log7.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u539F\u59CB\u4F1A\u8BDD\uFF0C\u515C\u5E95\u6295\u9012\u5230\u6D3B\u8DC3\u4F1A\u8BDD", {
-                  routeSessionId,
-                  fallback: activeId,
-                  type: event3.type
-                });
-                targetSessionId = activeId;
-              } else {
-                log7.warn("\u6E32\u67D3\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\u4E14\u65E0\u6D3B\u8DC3\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
-                return;
-              }
-            }
-          } else {
-            const conversationId = event3.sessionId;
-            const entry = conversationId ? [...get6().stores.entries()].find(
-              ([, s3]) => s3.getState().conversationId === conversationId
-            ) : void 0;
-            if (entry) {
-              targetSessionId = entry[0];
-            } else {
-              log7.warn("\u4E8B\u4EF6\u672A\u5339\u914D\u5230\u4F1A\u8BDD\uFF0C\u4E22\u5F03", { routeSessionId, type: event3.type });
-              return;
-            }
-          }
-        }
-      }
-      const targetStore = get6().stores.get(targetSessionId);
-      if (!targetStore) {
-        log7.warn("\u4E8B\u4EF6\u6295\u9012\u5931\u8D25\uFF1A\u76EE\u6807\u4F1A\u8BDD store \u4E0D\u5B58\u5728", { targetSessionId, type: event3.type });
-        return;
-      }
-      const turnId = event3._turnId;
-      if (turnId && !targetStore.getState().observeTurnEvent(turnId, event3.type)) {
-        log7.info("\u65E7\u8F6E\u6B21\u8FDF\u5230\u7684\u7EC8\u6001\u4E8B\u4EF6\u5DF2\u4E22\u5F03", { targetSessionId, type: event3.type, turnId });
-        return;
-      }
-      targetStore.getState().handleAIEvent(event3);
-      if (event3.type === "session_start") {
-        const meta3 = get6().sessionMetadata.get(targetSessionId);
-        if (meta3 && !meta3.silentMode) {
-          const conversationId = event3.sessionId;
-          void Promise.resolve().then(() => (init_services(), services_exports)).then(
-            ({ invoke: invoke2 }) => invoke2("session_index_register", {
-              workspaceKey: "default",
-              record: {
-                id: targetSessionId,
-                conversationId: conversationId ?? null,
-                title: meta3.title ?? "",
-                engineId: meta3.engineId ?? "",
-                workspaceId: meta3.workspaceId ?? null,
-                contextWorkspaceIds: meta3.contextWorkspaceIds ?? [],
-                type: meta3.type ?? "free",
-                silentMode: false,
-                messageIds: [],
-                version: 1,
-                createdAt: Date.now(),
-                updatedAt: Date.now()
-              }
-            })
-          ).catch(() => {
-          });
-        }
-      }
-      try {
-        getEventBus().emit(event3);
-      } catch (e3) {
-        log7.warn("EventBus emit \u5931\u8D25", { error: String(e3) });
-      }
-      const metadata = get6().sessionMetadata.get(targetSessionId);
-      if (metadata) {
-        let newStatus = metadata.status;
-        if (event3.type === "session_start") {
-          newStatus = "running";
-        } else if (event3.type === "session_end") {
-          newStatus = "idle";
-          if (get6().backgroundSessionIds.includes(targetSessionId)) {
-            get6().addToNotifications(targetSessionId);
-            get6().removeFromBackground(targetSessionId);
-            const sessionMetadata = get6().sessionMetadata.get(targetSessionId);
-            if (sessionMetadata) {
-              Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore2 }) => {
-                useToastStore2.getState().sessionComplete(
-                  sessionMetadata.title,
-                  targetSessionId,
-                  () => get6().switchSession(targetSessionId)
-                );
-              });
-            }
-          }
-        } else if (event3.type === "error") {
-          const isUserInterrupt = get6().stores.get(targetSessionId)?.getState().isInterrupting === true;
-          newStatus = isUserInterrupt ? "idle" : "error";
-        }
-        if (newStatus !== metadata.status) {
-          set5((state5) => {
-            const newMetadata = new Map(state5.sessionMetadata);
-            newMetadata.set(targetSessionId, { ...metadata, status: newStatus, updatedAt: (/* @__PURE__ */ new Date()).toISOString() });
-            return { sessionMetadata: newMetadata };
-          });
-        }
-      }
-    },
-    // ===== 后台运行管理 =====
-    addToBackground: (sessionId) => {
-      set5((state5) => {
-        if (state5.backgroundSessionIds.includes(sessionId)) {
-          return state5;
-        }
-        return {
-          backgroundSessionIds: [...state5.backgroundSessionIds, sessionId]
-        };
-      });
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (metadata) {
-        set5((state5) => {
-          const newMetadata = new Map(state5.sessionMetadata);
-          newMetadata.set(sessionId, { ...metadata, status: "background-running" });
-          return { sessionMetadata: newMetadata };
-        });
-      }
-      log7.info("\u4F1A\u8BDD\u8FDB\u5165\u540E\u53F0", { sessionId });
-    },
-    removeFromBackground: (sessionId) => {
-      set5((state5) => ({
-        backgroundSessionIds: state5.backgroundSessionIds.filter((id38) => id38 !== sessionId)
-      }));
-    },
-    addToNotifications: (sessionId) => {
-      set5((state5) => {
-        if (state5.completedNotifications.includes(sessionId)) {
-          return state5;
-        }
-        return {
-          completedNotifications: [...state5.completedNotifications, sessionId]
-        };
-      });
-    },
-    removeFromNotifications: (sessionId) => {
-      set5((state5) => ({
-        completedNotifications: state5.completedNotifications.filter((id38) => id38 !== sessionId)
-      }));
-    },
-    // ===== 批量操作 =====
-    interruptSession: async (sessionId) => {
-      const store3 = get6().stores.get(sessionId);
-      if (!store3) {
-        log7.warn("interruptSession: \u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      const state5 = store3.getState();
-      log7.info("interruptSession", { frontendSessionId: sessionId, backendConversationId: state5.conversationId, isStreaming: state5.isStreaming });
-      try {
-        await state5.interrupt();
-      } catch (e3) {
-        log7.error("\u6253\u65AD\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { sessionId });
-      }
-    },
-    // ===== 工作区管理 =====
-    updateSessionWorkspace: (sessionId, workspaceId) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      log7.info("updateSessionWorkspace \u8C03\u7528", { sessionId, newWorkspaceId: workspaceId, oldWorkspaceId: metadata.workspaceId });
-      let workspaceName;
-      if (workspaceId) {
-        const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
-        workspaceName = workspace?.name;
-        log7.info("\u627E\u5230\u5DE5\u4F5C\u533A", { workspaceId, workspaceName, workspacePath: workspace?.path });
-      }
-      const updatedMetadata = {
-        ...metadata,
-        workspaceId,
-        workspaceName,
-        type: workspaceId ? "project" : "free",
-        // 解除主工作区 = 解锁（转为自由会话，允许再次绑定）
-        workspaceLocked: workspaceId === null ? false : metadata.workspaceLocked,
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, updatedMetadata);
-        return { sessionMetadata: newMetadata };
-      });
-      const store3 = get6().stores.get(sessionId);
-      if (store3) {
-        store3.setState({ workspaceId });
-      }
-      log7.info("\u66F4\u65B0\u4F1A\u8BDD\u5DE5\u4F5C\u533A\u5B8C\u6210", { sessionId, workspaceId });
-    },
-    addContextWorkspace: (sessionId, workspaceId) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      if (metadata.contextWorkspaceIds.includes(workspaceId)) {
-        return;
-      }
-      const updatedMetadata = {
-        ...metadata,
-        contextWorkspaceIds: [...metadata.contextWorkspaceIds, workspaceId],
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, updatedMetadata);
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u6DFB\u52A0\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
-    },
-    removeContextWorkspace: (sessionId, workspaceId) => {
-      const metadata = get6().sessionMetadata.get(sessionId);
-      if (!metadata) {
-        log7.warn("\u4F1A\u8BDD\u4E0D\u5B58\u5728", { sessionId });
-        return;
-      }
-      const updatedMetadata = {
-        ...metadata,
-        contextWorkspaceIds: metadata.contextWorkspaceIds.filter((id38) => id38 !== workspaceId),
-        updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-      };
-      set5((state5) => {
-        const newMetadata = new Map(state5.sessionMetadata);
-        newMetadata.set(sessionId, updatedMetadata);
-        return { sessionMetadata: newMetadata };
-      });
-      log7.info("\u79FB\u9664\u5173\u8054\u5DE5\u4F5C\u533A", { sessionId, workspaceId });
-    },
-    // ===== 初始化 =====
-    initialize: async () => {
-      const state5 = get6();
-      if (state5.stores.size === 0) {
-        const currentWorkspace = useWorkspaceStore.getState().getCurrentWorkspace();
-        get6().createSession(
-          currentWorkspace ? {
-            type: "project",
-            title: "\u65B0\u5BF9\u8BDD",
-            workspaceId: currentWorkspace.id,
-            workspaceLocked: false
-          } : {
-            type: "free",
-            title: "\u65B0\u5BF9\u8BDD"
-          }
-        );
-        log7.info("\u5DF2\u521B\u5EFA\u9ED8\u8BA4\u4F1A\u8BDD");
-      }
-      set5({ isInitialized: true });
-      log7.info("\u521D\u59CB\u5316\u5B8C\u6210");
-    }
-  }));
-}
-function useActiveSessionId2() {
-  return useStore(sessionStoreManager2, (state5) => state5.activeSessionId);
-}
-var log7, RENDER_EVENT_TYPES, sessionStoreManager2;
-var init_sessionStoreManager = __esm({
-  "src/host/conversationStore/sessionStoreManager.ts"() {
-    init_uuid();
-    init_esm();
-    init_createConversationStore();
-    init_eventRouter();
-    init_stores();
-    init_ai_runtime();
-    init_stores();
-    init_stores();
-    init_logger();
-    init_engineDisplay();
-    init_stores();
-    init_types2();
-    log7 = createLogger("SessionStoreManager");
-    RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
-    sessionStoreManager2 = createSessionManagerStore();
-  }
-});
-
-// src/host/services/eventRouter.ts
-function extractFrontendSessionId(contextId) {
-  if (contextId.startsWith("session-")) {
-    return contextId.substring("session-".length);
-  }
-  return null;
-}
-function getEventRouter() {
-  if (routerInstance && routerInstance.isDestroyed()) {
-    log8.info("\u68C0\u6D4B\u5230\u5DF2\u9500\u6BC1\u5B9E\u4F8B\uFF0C\u521B\u5EFA\u65B0\u5B9E\u4F8B");
-    routerInstance = new EventRouter();
-  } else if (!routerInstance) {
-    routerInstance = new EventRouter();
-  }
-  return routerInstance;
-}
-async function ensureEventRouterInitialized() {
-  const router = getEventRouter();
-  await router.initialize();
-  return router;
-}
-var log8, EventRouter, routerInstance;
-var init_eventRouter = __esm({
-  "src/host/services/eventRouter.ts"() {
-    init_services();
-    init_logger();
-    init_sessionStoreManager();
-    log8 = createLogger("EventRouter");
-    EventRouter = class {
-      constructor() {
-        this.handlers = /* @__PURE__ */ new Map();
-        this.unlisten = null;
-        this.initialized = false;
-        this.initPromise = null;
-        this.destroyed = false;
-      }
-      async initialize() {
-        if (this.initialized) return;
-        if (this.initPromise) return this.initPromise;
-        this.initPromise = this.doInitialize();
-        return this.initPromise;
-      }
-      async doInitialize() {
-        this.unlisten = await listen("chat-event", (rawPayload) => {
-          try {
-            let rawData;
-            if (typeof rawPayload === "string") {
-              try {
-                rawData = JSON.parse(rawPayload);
-              } catch {
-                rawData = rawPayload;
-              }
-            } else {
-              rawData = rawPayload;
-            }
-            let contextId = "main";
-            let payload = rawData;
-            let turnId;
-            if (rawData && typeof rawData === "object" && "contextId" in rawData && "payload" in rawData) {
-              const envelope = rawData;
-              contextId = envelope.contextId;
-              payload = envelope.payload;
-              turnId = envelope.turnId;
-            }
-            const frontendSessionId = extractFrontendSessionId(contextId);
-            if (frontendSessionId) {
-              this.dispatchToSession(frontendSessionId, payload, turnId);
-              return;
-            }
-            if (contextId.startsWith("scheduler-") || contextId.startsWith("dispatch-")) {
-              this.dispatch({ contextId, payload });
-              return;
-            }
-            if (RENDER_EVENT_TYPES.has(payload?.type ?? "")) {
-              try {
-                sessionStoreManager2.getState().dispatchEvent(payload);
-              } catch (e3) {
-                log8.error("\u5206\u53D1\u65E0\u4FE1\u5C01\u6E32\u67D3\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
-              }
-              return;
-            }
-            this.dispatch({ contextId, payload });
-          } catch (e3) {
-            log8.error("Failed to parse event", e3 instanceof Error ? e3 : new Error(String(e3)));
-          }
-        });
-        this.initialized = true;
-      }
-      /**
-       * 将事件分发到指定的会话 Store
-       *
-       * @param frontendSessionId 前端 sessionId（用于路由到正确的 store）
-       * @param event AI 事件（包含后端 sessionId，用于 API 调用）
-       * @param turnId 事件信封的轮次标识（后端每请求生成；注入 `_turnId` 供
-       *   sessionStoreManager 做终态事件的代际过滤——旧轮迟到的 session_end
-       *   不再误杀新轮流式态，见 spec F1）
-       */
-      dispatchToSession(frontendSessionId, event3, turnId) {
-        try {
-          const eventWithRouteId = {
-            ...event3,
-            _routeSessionId: frontendSessionId,
-            ...turnId ? { _turnId: turnId } : {}
-          };
-          sessionStoreManager2.getState().dispatchEvent(eventWithRouteId);
-        } catch (e3) {
-          log8.error("\u5206\u53D1\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3, { frontendSessionId });
-        }
-      }
-      register(contextId, handler2) {
-        const existingHandlers = this.handlers.get(contextId);
-        if (existingHandlers) {
-          if (existingHandlers.size > 0) {
-            log8.info("contextId \u5DF2\u5B58\u5728 handler\uFF0C\u6E05\u9664\u65E7 handler", { contextId });
-            existingHandlers.clear();
-          }
-        } else {
-          this.handlers.set(contextId, /* @__PURE__ */ new Set());
-        }
-        const handlers = this.handlers.get(contextId);
-        if (handlers) {
-          handlers.add(handler2);
-          log8.info("\u6CE8\u518C handler", { contextId });
-        }
-        return () => {
-          this.handlers.get(contextId)?.delete(handler2);
-        };
-      }
-      dispatch(event3) {
-        const handlers = this.handlers.get(event3.contextId);
-        if (handlers) {
-          log8.debug("dispatch \u5230 handlers", { contextId: event3.contextId, count: handlers.size });
-          handlers.forEach((handler2) => {
-            try {
-              handler2(event3.payload);
-            } catch (e3) {
-              log8.error(`Handler error`, e3, { contextId: event3.contextId });
-            }
-          });
-        } else {
-          log8.debug("\u6CA1\u6709\u627E\u5230 handler", { contextId: event3.contextId });
-        }
-        const wildcardHandlers = this.handlers.get("*");
-        if (wildcardHandlers) {
-          wildcardHandlers.forEach((handler2) => {
-            try {
-              handler2(event3);
-            } catch (e3) {
-              log8.error("Wildcard handler error", e3);
-            }
-          });
-        }
-      }
-      destroy() {
-        if (this.unlisten) {
-          this.unlisten();
-          this.unlisten = null;
-        }
-        this.handlers.clear();
-        this.initialized = false;
-        this.initPromise = null;
-        this.destroyed = true;
-      }
-      isInitialized() {
-        return this.initialized;
-      }
-      isDestroyed() {
-        return this.destroyed;
-      }
-    };
-    routerInstance = null;
-  }
-});
-
-// src/shims/workspacePath.ts
-function getPathBasename(pathStr) {
-  const normalized = pathStr.replace(/\\/g, "/");
-  const parts = normalized.split("/").filter(Boolean);
-  return parts[parts.length - 1] || pathStr;
-}
-function normalizeWorkspacePath(pathStr) {
-  const normalized = pathStr.trim().replace(/\\/g, "/").replace(/\/+$/, "");
-  const isWindowsPath = pathStr.includes("\\") || /^[a-zA-Z]:\//.test(normalized);
-  return isWindowsPath ? normalized.toLowerCase() : normalized;
-}
-var init_workspacePath = __esm({
-  "src/shims/workspacePath.ts"() {
-  }
-});
-
-// src/host/stores/historyPrefsStore.ts
-var clamp, HISTORY_PREFS_LIMITS, useHistoryPrefsStore;
-var init_historyPrefsStore = __esm({
-  "src/host/stores/historyPrefsStore.ts"() {
-    init_esm();
-    init_middleware();
-    clamp = (n2, min10, max10) => Number.isFinite(n2) ? Math.min(max10, Math.max(min10, Math.round(n2))) : min10;
-    HISTORY_PREFS_LIMITS = {
-      listPageSize: { min: 10, max: 100, default: 20 },
-      restorePageSize: { min: 20, max: 500, default: 50 },
-      recentCards: { min: 0, max: 10, default: 5 }
-    };
-    useHistoryPrefsStore = create2()(
-      persist(
-        (set5) => ({
-          listPageSize: HISTORY_PREFS_LIMITS.listPageSize.default,
-          restorePageSize: HISTORY_PREFS_LIMITS.restorePageSize.default,
-          recentCards: HISTORY_PREFS_LIMITS.recentCards.default,
-          setListPageSize: (n2) => set5({
-            listPageSize: clamp(
-              n2,
-              HISTORY_PREFS_LIMITS.listPageSize.min,
-              HISTORY_PREFS_LIMITS.listPageSize.max
-            )
-          }),
-          setRestorePageSize: (n2) => set5({
-            restorePageSize: clamp(
-              n2,
-              HISTORY_PREFS_LIMITS.restorePageSize.min,
-              HISTORY_PREFS_LIMITS.restorePageSize.max
-            )
-          }),
-          setRecentCards: (n2) => set5({
-            recentCards: clamp(
-              n2,
-              HISTORY_PREFS_LIMITS.recentCards.min,
-              HISTORY_PREFS_LIMITS.recentCards.max
-            )
-          })
-        }),
-        { name: "polaris-history-prefs" }
-      )
-    );
-  }
-});
-
-// src/host/utils/dedupMessages.ts
-function dedupeMessagesById2(messages) {
-  const byId = /* @__PURE__ */ new Map();
-  for (const m4 of messages) {
-    byId.set(m4.id, m4);
-  }
-  return [...byId.values()];
-}
-function normalizeRecoveredMessages2(messages) {
-  return messages.map((m4) => {
-    if (m4.type !== "assistant") return m4;
-    if (m4.isStreaming !== true) return m4;
-    const now4 = Date.now();
-    const timestamp2 = m4.timestamp || new Date(now4).toISOString();
-    return {
-      ...m4,
-      timestamp: timestamp2,
-      isStreaming: false,
-      interrupted: true
-    };
-  });
-}
-var init_dedupMessages2 = __esm({
-  "src/host/utils/dedupMessages.ts"() {
-  }
-});
-
-// src/host/services/claudeHistoryConvert.ts
-function convertClaudeHistoryToChatMessages(messages) {
-  const chatMessages = [];
-  const toolResultMap = buildToolResultMap(messages);
-  let accumulatedBlocks = [];
-  let accumulatedTimestamp = "";
-  let hasAssistant = false;
-  for (const msg of messages) {
-    const timestamp2 = msg.timestamp || (/* @__PURE__ */ new Date()).toISOString();
-    if (msg.role === "user") {
-      if (isToolResultMessage(msg)) continue;
-      if (hasAssistant) {
-        chatMessages.push({
-          id: generateUUID(),
-          type: "assistant",
-          blocks: aggregateTaskBlocks(accumulatedBlocks),
-          timestamp: accumulatedTimestamp,
-          isStreaming: false
-        });
-        accumulatedBlocks = [];
-        hasAssistant = false;
-      }
-      chatMessages.push({
-        id: generateUUID(),
-        type: "user",
-        content: extractUserContent(msg.content),
-        timestamp: timestamp2
-      });
-    } else if (msg.role === "assistant") {
-      accumulatedBlocks.push(...parseAssistantBlocks(msg.content, toolResultMap));
-      if (!hasAssistant) {
-        accumulatedTimestamp = timestamp2;
-        hasAssistant = true;
-      }
-    } else {
-      if (hasAssistant) {
-        chatMessages.push({
-          id: generateUUID(),
-          type: "assistant",
-          blocks: aggregateTaskBlocks(accumulatedBlocks),
-          timestamp: accumulatedTimestamp,
-          isStreaming: false
-        });
-        accumulatedBlocks = [];
-        hasAssistant = false;
-      }
-      chatMessages.push({
-        id: generateUUID(),
-        type: "system",
-        content: String(msg.content || ""),
-        timestamp: timestamp2
-      });
-    }
-  }
-  if (hasAssistant) {
-    chatMessages.push({
-      id: generateUUID(),
-      type: "assistant",
-      blocks: aggregateTaskBlocks(accumulatedBlocks),
-      timestamp: accumulatedTimestamp,
-      isStreaming: false
-    });
-  }
-  return chatMessages;
-}
-function buildToolResultMap(messages) {
-  const toolResultMap = /* @__PURE__ */ new Map();
-  for (const msg of messages) {
-    if (msg.role !== "user" || !Array.isArray(msg.content)) continue;
-    for (const item of msg.content) {
-      if (item && typeof item === "object" && "type" in item && item.type === "tool_result") {
-        const id38 = String(item.tool_use_id || "");
-        if (id38) {
-          const raw = item.content;
-          const resultContent = typeof raw === "string" ? raw : JSON.stringify(raw, null, 2);
-          toolResultMap.set(id38, resultContent);
-        }
-      }
-    }
-  }
-  return toolResultMap;
-}
-function isToolResultMessage(msg) {
-  if (msg.role !== "user") return false;
-  const content = msg.content;
-  if (typeof content === "string") return false;
-  if (Array.isArray(content)) {
-    let hasToolResult = false;
-    let hasText = false;
-    for (const item of content) {
-      if (item && typeof item === "object" && "type" in item) {
-        if (item.type === "tool_result") hasToolResult = true;
-        else if (item.type === "text") hasText = true;
-      }
-    }
-    return hasToolResult && !hasText;
-  }
-  return false;
-}
-function parseAssistantBlocks(content, toolResultMap) {
-  const blocks2 = [];
-  if (typeof content === "string") {
-    blocks2.push({ type: "text", content });
-    return blocks2;
-  }
-  if (Array.isArray(content)) {
-    for (const item of content) {
-      if (!item || typeof item !== "object") continue;
-      if ("type" in item) {
-        if (item.type === "text" && "text" in item) {
-          blocks2.push({ type: "text", content: String(item.text) });
-        } else if (item.type === "thinking" && "thinking" in item) {
-          const thinkingContent = String(item.thinking);
-          if (thinkingContent.trim()) {
-            blocks2.push({ type: "thinking", content: thinkingContent, collapsed: true });
-          }
-        } else if (item.type === "tool_use") {
-          const block2 = {
-            type: "tool_call",
-            id: String(item.id || generateUUID()),
-            name: String(item.name || "unknown"),
-            input: item.input || {},
-            status: "completed",
-            startedAt: (/* @__PURE__ */ new Date()).toISOString()
-          };
-          if (toolResultMap) {
-            const resultContent = toolResultMap.get(block2.id);
-            if (resultContent !== void 0) block2.output = resultContent;
-          }
-          blocks2.push(block2);
-        }
-      }
-    }
-  }
-  if (blocks2.length === 0) blocks2.push({ type: "text", content: "" });
-  return blocks2;
-}
-function extractUserContent(content) {
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    const texts = [];
-    for (const item of content) {
-      if (item && typeof item === "object" && "type" in item && item.type === "text" && "text" in item) {
-        texts.push(String(item.text));
-      }
-    }
-    return texts.join("");
-  }
-  return "";
-}
-function aggregateTaskBlocks(blocks2) {
-  const taskIndices = [];
-  let hasTask = false;
-  for (let i2 = 0; i2 < blocks2.length; i2++) {
-    const b12 = blocks2[i2];
-    if (b12.type === "tool_call" && TASK_TOOLS.has(b12.name.toLowerCase())) {
-      taskIndices.push(i2);
-      hasTask = true;
-    }
-  }
-  if (!hasTask) return blocks2;
-  const itemMap = /* @__PURE__ */ new Map();
-  let listSnapshot = null;
-  let boardId = "taskboard-history";
-  for (const idx of taskIndices) {
-    const block2 = blocks2[idx];
-    const lower2 = block2.name.toLowerCase();
-    const input = block2.input || {};
-    if (lower2 === "taskcreate") {
-      boardId = block2.id;
-      const id38 = extractTaskIdFromOutput2(block2.output) || generateUUID();
-      const item = {
-        id: id38,
-        subject: input.subject || input.activeForm || id38,
-        activeForm: input.activeForm,
-        status: "pending",
-        description: input.description
-      };
-      itemMap.set(id38, item);
-    } else if (lower2 === "taskupdate") {
-      const id38 = input.taskId || input.task_id;
-      if (id38 && input.status === "deleted") {
-        itemMap.delete(id38);
-        continue;
-      }
-      if (id38) {
-        const existing = itemMap.get(id38);
-        const patch = {};
-        if (input.status) patch.status = input.status;
-        if (input.subject) patch.subject = input.subject;
-        if (input.activeForm) patch.activeForm = input.activeForm;
-        if (existing) {
-          itemMap.set(id38, { ...existing, ...patch, updateCount: (existing.updateCount ?? 0) + 1 });
-        } else {
-          itemMap.set(id38, {
-            id: id38,
-            subject: patch.subject || patch.activeForm || id38,
-            status: patch.status || "pending",
-            ...patch,
-            updateCount: 0
-          });
-        }
-      }
-    } else if (lower2 === "tasklist") {
-      const snapshot = parseTaskListOutput2(block2.output);
-      if (snapshot) listSnapshot = snapshot;
-    }
-    if (lower2 === "taskstop") {
-      const id38 = input.taskId || input.task_id;
-      if (id38 && itemMap.has(id38)) {
-        const it = itemMap.get(id38);
-        itemMap.set(id38, { ...it, status: "stopped" });
-      }
-    }
-  }
-  if (listSnapshot) {
-    for (const snap of listSnapshot) {
-      if (!itemMap.has(snap.id)) itemMap.set(snap.id, { ...snap, updateCount: 0 });
-    }
-  }
-  const items = [...itemMap.values()];
-  const completed2 = items.filter((i2) => i2.status === "completed").length;
-  const inProgress = items.filter((i2) => i2.status === "in_progress").length;
-  const blocked = items.filter((i2) => i2.status === "blocked").length;
-  const board = {
-    type: "task_board",
-    id: boardId,
-    items,
-    completed: completed2,
-    inProgress,
-    blocked,
-    total: items.length,
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  const result = [];
-  let boardInserted = false;
-  const taskIdxSet = new Set(taskIndices);
-  for (let i2 = 0; i2 < blocks2.length; i2++) {
-    if (taskIdxSet.has(i2)) {
-      if (!boardInserted) {
-        result.push(board);
-        boardInserted = true;
-      }
-    } else {
-      result.push(blocks2[i2]);
-    }
-  }
-  if (!boardInserted) result.push(board);
-  return result;
-}
-function extractTaskIdFromOutput2(output2) {
-  if (!output2) return null;
-  const m4 = output2.match(/#\s*(\d+)/);
-  return m4 ? m4[1] : null;
-}
-function parseTaskListOutput2(output2) {
-  if (!output2) return null;
-  const items = [];
-  for (const line3 of output2.split("\n")) {
-    const m4 = line3.match(/^\s*#\s*(\d+)\s*\[([A-Za-z_]+)\]\s*(.*)$/);
-    if (!m4) continue;
-    const raw = m4[2];
-    let status = "pending";
-    if (raw === "completed" || raw === "in_progress" || raw === "blocked" || raw === "stopped") {
-      status = raw;
-    } else if (raw === "deleted") {
-      continue;
-    }
-    const subject = m4[3].trim();
-    if (!subject) continue;
-    items.push({ id: m4[1], subject, status });
-  }
-  return items.length > 0 ? items : null;
-}
-var TASK_TOOLS;
-var init_claudeHistoryConvert = __esm({
-  "src/host/services/claudeHistoryConvert.ts"() {
-    init_uuid();
-    TASK_TOOLS = /* @__PURE__ */ new Set(["taskcreate", "taskupdate", "tasklist", "taskget"]);
-  }
-});
-
-// src/host/session-v2/core/v2-session-event-log.ts
-var v2_session_event_log_exports = {};
-__export(v2_session_event_log_exports, {
-  V2SessionEventLog: () => V2SessionEventLog,
-  V2StateArbiter: () => V2StateArbiter
-});
-var CMD, V2SessionEventLog, V2StateArbiter;
-var init_v2_session_event_log = __esm({
-  "src/host/session-v2/core/v2-session-event-log.ts"() {
-    init_services();
-    CMD = {
-      append: "session_event_append",
-      read: "session_event_read",
-      readAfterSeq: "session_event_read_after_seq",
-      currentSeq: "session_event_current_seq",
-      deleteByConversation: "session_event_delete_by_conversation",
-      getStatus: "session_get_status",
-      requestStart: "session_request_start",
-      requestInterrupt: "session_request_interrupt",
-      // 注册表（Session Registry）
-      register: "session_register",
-      get: "session_get",
-      list: "session_list",
-      updateMetadata: "session_update_metadata",
-      appendMessageId: "session_append_message",
-      delete: "session_delete"
-    };
-    V2SessionEventLog = class {
-      constructor() {
-        /** 本地缓存的最大 seq（仅本进程内 append/read 更新；跨设备权威值走后端） */
-        this.localMaxSeq = 0;
-      }
-      async append(event3) {
-        const ok = await invoke(CMD.append, { ...event3 });
-        if (ok && event3.seq > this.localMaxSeq) this.localMaxSeq = event3.seq;
-        return ok;
-      }
-      async read(conversationId) {
-        const events = await invoke(CMD.read, { conversationId });
-        for (const e3 of events) {
-          if (e3.seq > this.localMaxSeq) this.localMaxSeq = e3.seq;
-        }
-        return events;
-      }
-      async readAfterSeq(seq2) {
-        const events = await invoke(CMD.readAfterSeq, { seq: seq2 });
-        for (const e3 of events) {
-          if (e3.seq > this.localMaxSeq) this.localMaxSeq = e3.seq;
-        }
-        return events;
-      }
-      currentSeq() {
-        return this.localMaxSeq;
-      }
-      async deleteByConversation(conversationId) {
-        await invoke(CMD.deleteByConversation, { conversationId });
-      }
-    };
-    V2StateArbiter = class {
-      async getStatus(conversationId) {
-        const status = await invoke(CMD.getStatus, { conversationId });
-        return {
-          conversationId: status.conversationId,
-          running: status.running,
-          lastEventSeq: status.lastEventSeq,
-          error: status.error,
-          startedAt: status.startedAt,
-          endedAt: status.endedAt,
-          startedByDevice: status.startedByDevice
-        };
-      }
-      async requestStart(conversationId, deviceId) {
-        return invoke(CMD.requestStart, { conversationId, deviceId });
-      }
-      async requestInterrupt(conversationId, deviceId) {
-        return invoke(CMD.requestInterrupt, {
-          conversationId,
-          deviceId
-        });
-      }
-    };
-  }
-});
-
-// src/host/session-v2/kernel/v2-kernel.ts
-var v2_kernel_exports = {};
-__export(v2_kernel_exports, {
-  V2SessionKernel: () => V2SessionKernel,
-  V2_POLL_INTERVAL_MS: () => V2_POLL_INTERVAL_MS,
-  createV2SessionKernel: () => createV2SessionKernel
-});
-async function createV2SessionKernel(deps) {
-  const { sessionStoreManager: sessionStoreManager3 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-  const { restoreFromHistory: restoreFromHistory3 } = await Promise.resolve().then(() => (init_services(), services_exports));
-  const { V2StateArbiter: V2StateArbiter2 } = await Promise.resolve().then(() => (init_v2_session_event_log(), v2_session_event_log_exports));
-  const { aiChatDispatchStream: aiChatDispatchStream3 } = await Promise.resolve().then(() => (init_services(), services_exports));
-  const { dialogStorageService: dialogStorageService2 } = await Promise.resolve().then(() => (init_services(), services_exports));
-  const { invoke: invoke2 } = await Promise.resolve().then(() => (init_services(), services_exports));
-  return new V2SessionKernel({
-    sessionStoreManager: deps?.sessionStoreManager ?? sessionStoreManager3,
-    // P0（plans/session-history-plugin-prd.md）：恢复核心抽至 sessionRestore
-    // （宿主保留，历史面板 UI 外移后仍可用）；historyService.restoreFromHistory
-    // 保持向后兼容委托（v2-kernel 消费面切到 sessionRestore）。
-    historyService: deps?.historyService ?? {
-      restoreFromHistory: (...args) => restoreFromHistory3(...args).then((id38) => id38 !== null)
-    },
-    eventDispatcher: deps?.eventDispatcher ?? sessionStoreManager3.getState(),
-    stateArbiter: deps?.stateArbiter ?? new V2StateArbiter2(),
-    streamDispatch: deps?.streamDispatch ?? ((payload) => aiChatDispatchStream3(payload)),
-    // 批 5（审计 2.10 修正）：快照源从 JSONL 改为后端消息库（SQLite 权威，
-    // 含 turn_persist 落库的卡片块/错误文本/墓碑过滤）——resyncSession 真正
-    // 「与后端消息库对账」，不再名不副实。JSONL 作为读失败的兜底降级。
-    snapshotSource: deps?.snapshotSource ?? {
-      getSnapshot: async (conversationId) => {
-        try {
-          const entries2 = await invoke2(
-            "message_read",
-            { conversationId, afterTimestamp: null, limit: null }
-          );
-          return entries2.map((e3) => e3.content);
-        } catch {
-          return dialogStorageService2.getConversationMessages(conversationId);
-        }
-      }
-    }
-  });
-}
-var V2SessionKernel, V2_POLL_INTERVAL_MS;
-var init_v2_kernel = __esm({
-  "src/host/session-v2/kernel/v2-kernel.ts"() {
-    V2SessionKernel = class {
-      constructor(deps) {
-        this.deps = deps;
-      }
-      // ==========================================================================
-      // 能力 1：消息发送（委托 store.sendMessage）
-      // ==========================================================================
-      async sendMessage(input) {
-        const store3 = this.getStoreState(input.sessionId);
-        if (!store3) {
-          return { ok: false, reason: `\u4F1A\u8BDD\u4E0D\u5B58\u5728: ${input.sessionId}`, retryable: false };
-        }
-        try {
-          const sent = await store3.sendMessage(
-            input.content,
-            input.workspaceDir,
-            input.attachments,
-            input.sendOptions
-          );
-          return { ok: sent !== false, conversationId: store3.conversationId ?? void 0 };
-        } catch (e3) {
-          const msg = e3 instanceof Error ? e3.message : String(e3);
-          return { ok: false, reason: msg, retryable: true };
-        }
-      }
-      async continueChat(sessionId, prompt, opts) {
-        const store3 = this.getStoreState(sessionId);
-        if (!store3) return;
-        const message = opts?.extraContext ? `${prompt}
-
-${opts.extraContext}` : prompt;
-        await store3.continueChat(message, opts?.allowedTools);
-      }
-      async interrupt(sessionId) {
-        await this.deps.sessionStoreManager.getState().interruptSession(sessionId);
-      }
-      async regenerate(sessionId, assistantMessageId) {
-        const store3 = this.getStoreState(sessionId);
-        if (!store3) return;
-        await store3.regenerateResponse(assistantMessageId);
-      }
-      async editAndResend(sessionId, userMessageId, newContent) {
-        const store3 = this.getStoreState(sessionId);
-        if (!store3) return;
-        await store3.editAndResend(userMessageId, newContent);
-      }
-      // ==========================================================================
-      // 能力 2：会话生命周期（委托 sessionStoreManager）
-      // ==========================================================================
-      async createSession(opts) {
-        const sessionId = this.deps.sessionStoreManager.getState().createSession({
-          id: opts.id,
-          type: opts.type,
-          workspaceId: opts.workspaceId,
-          contextWorkspaceIds: opts.contextWorkspaceIds,
-          title: opts.title,
-          engineId: opts.engineId,
-          silentMode: opts.silentMode,
-          kind: opts.kind,
-          commitWorkspaceId: opts.commitWorkspaceId,
-          forkFromId: opts.forkFromId
-        });
-        const store3 = this.getStoreState(sessionId);
-        return { sessionId, conversationId: store3?.conversationId ?? null };
-      }
-      async deleteSession(sessionId) {
-        this.deps.sessionStoreManager.getState().deleteSession(sessionId);
-      }
-      switchSession(sessionId) {
-        this.deps.sessionStoreManager.getState().switchSession(sessionId);
-      }
-      getActiveSessionId() {
-        return this.deps.sessionStoreManager.getState().getActiveSessionId();
-      }
-      // ==========================================================================
-      // 能力 3：状态查询（后端权威，不读本地 isStreaming）
-      // ==========================================================================
-      async getSessionState(sessionId) {
-        const store3 = this.getStoreState(sessionId);
-        const conversationId = store3?.conversationId ?? null;
-        if (!store3) {
-          return this.noneState(sessionId);
-        }
-        if (conversationId) {
-          try {
-            const status = await this.deps.stateArbiter.getStatus(conversationId);
-            return {
-              sessionId,
-              state: this.statusToRuntime(status),
-              isStreaming: status.running,
-              lastEventSeq: status.lastEventSeq,
-              error: status.error ?? store3.error,
-              startedAt: status.startedAt,
-              endedAt: status.endedAt,
-              startedByDevice: status.startedByDevice
-            };
-          } catch {
-            return this.localFallbackState(sessionId, store3);
-          }
-        }
-        return this.localFallbackState(sessionId, store3);
-      }
-      async getSessionSnapshot(sessionId) {
-        const store3 = this.getStoreState(sessionId);
-        if (!store3) {
-          throw new Error(`\u4F1A\u8BDD\u4E0D\u5B58\u5728: ${sessionId}`);
-        }
-        const meta3 = this.deps.sessionStoreManager.getState().sessionMetadata.get(sessionId);
-        const conversationId = store3.conversationId;
-        const state5 = conversationId ? this.statusToRuntime(await this.safeStatus(conversationId)) : this.localRuntime(store3);
-        return {
-          sessionId,
-          conversationId: conversationId ?? "",
-          metadata: {
-            title: meta3?.title ?? "",
-            engineId: meta3?.engineId ?? "",
-            workspaceId: meta3?.workspaceId ?? null,
-            type: meta3?.type ?? "free",
-            silentMode: meta3?.silentMode ?? false,
-            createdAt: meta3?.createdAt ? new Date(meta3.createdAt).getTime() : 0,
-            updatedAt: meta3?.updatedAt ? new Date(meta3.updatedAt).getTime() : 0
-          },
-          messages: store3.messages,
-          state: state5,
-          lastEventSeq: conversationId ? (await this.safeStatus(conversationId)).lastEventSeq : store3.messages.length
-        };
-      }
-      async getMessages(sessionId) {
-        const store3 = this.getStoreState(sessionId);
-        return store3 ? store3.messages : [];
-      }
-      /** 后端状态订阅：getSessionState 后端权威 + store/manager 双通道事件驱动轮询 */
-      subscribe(sessionId, handler2) {
-        const store3 = this.getStoreInstance(sessionId);
-        const manager = this.deps.sessionStoreManager;
-        if (!store3) return () => {
-        };
-        let prev2 = null;
-        let polling = false;
-        let disposed = false;
-        let timer4 = null;
-        const push3 = async () => {
-          if (disposed) return;
-          try {
-            const next3 = await this.getSessionState(sessionId);
-            if (disposed) return;
-            if (prev2 && this.sameState(prev2, next3)) return;
-            const before = prev2;
-            prev2 = next3;
-            handler2(next3, before ?? next3);
-          } catch {
-          }
-        };
-        const stopPolling = () => {
-          if (timer4) {
-            clearInterval(timer4);
-            timer4 = null;
-          }
-          polling = false;
-        };
-        const schedulePolling = () => {
-          if (disposed) return;
-          const last3 = prev2;
-          if (last3?.state === "running") {
-            if (!polling) {
-              polling = true;
-              timer4 = setInterval(() => void push3(), V2_POLL_INTERVAL_MS);
-            }
-          } else if (polling) {
-            stopPolling();
-          }
-        };
-        void push3().then(schedulePolling);
-        const unsubStore = store3.subscribe(() => {
-          void push3().then(schedulePolling);
-        });
-        const unsubManager = manager.subscribe(() => {
-          void push3().then(schedulePolling);
-        });
-        return () => {
-          disposed = true;
-          stopPolling();
-          unsubStore();
-          unsubManager();
-        };
-      }
-      // ==========================================================================
-      // 能力 4：事件处理（统一入口，委托 dispatchEvent 按 sessionId 路由）
-      // ==========================================================================
-      handleEvent(event3) {
-        const aiEvent = this.toAIEvent(event3);
-        if (!aiEvent) return;
-        this.deps.eventDispatcher.dispatchEvent(aiEvent);
-      }
-      // ==========================================================================
-      // 能力 5：恢复与同步（委托 historyService + 快照合并）
-      // ==========================================================================
-      async restoreFromHistory(historyId) {
-        const ok = await this.deps.historyService.restoreFromHistory(historyId);
-        if (!ok) throw new Error(`\u5386\u53F2\u6062\u590D\u5931\u8D25: ${historyId}`);
-        const activeId = this.deps.sessionStoreManager.getState().getActiveSessionId();
-        if (!activeId) throw new Error("\u5386\u53F2\u6062\u590D\u6210\u529F\u4F46\u65E0\u6D3B\u8DC3\u4F1A\u8BDD");
-        return activeId;
-      }
-      async resyncSession(sessionId) {
-        const store3 = this.getStoreState(sessionId);
-        if (!store3) return;
-        const conversationId = store3.conversationId;
-        if (!conversationId) return;
-        if (!this.deps.snapshotSource) return;
-        const snapshot = await this.deps.snapshotSource.getSnapshot(conversationId);
-        if (!snapshot || snapshot.length === 0) return;
-        const inMemoryIds = new Set(store3.messages.map((m4) => m4.id));
-        const fresh = snapshot.filter((m4) => !inMemoryIds.has(m4.id));
-        if (fresh.length === 0) return;
-        for (const m4 of fresh) store3.addMessage(m4);
-      }
-      // ==========================================================================
-      // 内部辅助
-      // ==========================================================================
-      getStoreInstance(sessionId) {
-        return this.deps.sessionStoreManager.getState().stores.get(sessionId);
-      }
-      getStoreState(sessionId) {
-        return this.getStoreInstance(sessionId)?.getState();
-      }
-      /** 后端 SessionStatus → SessionRuntimeState */
-      statusToRuntime(status) {
-        if (status.running) return "running";
-        if (status.error) return "error";
-        return "idle";
-      }
-      /** 本地兜底运行态（无 conversationId / 后端查询失败时使用） */
-      localRuntime(store3) {
-        if (store3.isStreaming) return "running";
-        if (store3.error) return "error";
-        return "idle";
-      }
-      /** 会话不存在时的 none 状态 */
-      noneState(sessionId) {
-        return {
-          sessionId,
-          state: "none",
-          isStreaming: false,
-          lastEventSeq: 0,
-          error: null,
-          startedAt: null,
-          endedAt: null,
-          startedByDevice: null
-        };
-      }
-      /** 本地兜底状态（不抛错，供消费方降级） */
-      localFallbackState(sessionId, store3) {
-        return {
-          sessionId,
-          state: this.localRuntime(store3),
-          isStreaming: store3.isStreaming,
-          lastEventSeq: store3.messages.length,
-          error: store3.error,
-          startedAt: null,
-          endedAt: null,
-          startedByDevice: null
-        };
-      }
-      async safeStatus(conversationId) {
-        try {
-          return await this.deps.stateArbiter.getStatus(conversationId);
-        } catch {
-          return { conversationId, running: false, lastEventSeq: 0, error: null, startedAt: null, endedAt: null, startedByDevice: null };
-        }
-      }
-      /** 状态比较：isStreaming / error / state 变化才通知 */
-      sameState(a3, b12) {
-        return a3.isStreaming === b12.isStreaming && a3.error === b12.error && a3.state === b12.state;
-      }
-      /** KernelEvent → AIEvent 映射（对齐 ai-runtime 的会话域事件） */
-      toAIEvent(event3) {
-        switch (event3.type) {
-          case "session_start":
-            return { type: "session_start", sessionId: event3.sessionId, engineId: event3.engineId };
-          case "session_end":
-            return {
-              type: "session_end",
-              sessionId: event3.sessionId,
-              reason: event3.reason
-            };
-          case "user_message":
-            return {
-              type: "user_message",
-              sessionId: event3.sessionId,
-              content: event3.content,
-              clientMessageId: event3.clientMessageId
-            };
-          case "assistant_message":
-            return {
-              type: "assistant_message",
-              sessionId: event3.sessionId,
-              content: event3.content,
-              isDelta: true
-              // Kernel 层的 assistant_message 为增量流式事件（Legacy 由 eventHandler 逐块构建）
-            };
-          case "error":
-            return { type: "error", sessionId: event3.sessionId, error: event3.errorMessage };
-          default:
-            return null;
-        }
-      }
-    };
-    V2_POLL_INTERVAL_MS = 1e3;
-  }
-});
-
-// src/host/session-v2/kernel/registry.ts
-var registry_exports = {};
-__export(registry_exports, {
-  getKernel: () => getKernel,
-  resetKernel: () => resetKernel
-});
-function getKernel() {
-  if (!kernelPromise) {
-    kernelPromise = createKernel();
-  }
-  return kernelPromise;
-}
-async function createKernel() {
-  const { createV2SessionKernel: createV2SessionKernel2 } = await Promise.resolve().then(() => (init_v2_kernel(), v2_kernel_exports));
-  return createV2SessionKernel2();
-}
-async function resetKernel(deps) {
-  kernelPromise = null;
-  if (deps) {
-    kernelPromise = createKernelWithDeps(deps);
-  }
-}
-async function createKernelWithDeps(deps) {
-  const { createV2SessionKernel: createV2SessionKernel2 } = await Promise.resolve().then(() => (init_v2_kernel(), v2_kernel_exports));
-  return createV2SessionKernel2(deps);
-}
-var kernelPromise;
-var init_registry = __esm({
-  "src/host/session-v2/kernel/registry.ts"() {
-    kernelPromise = null;
-  }
-});
-
-// src/host/services/sessionRestore.ts
-var sessionRestore_exports = {};
-__export(sessionRestore_exports, {
-  ensureWorkspace: () => ensureWorkspace,
-  forkSession: () => forkSession,
-  loadMessagesForItem: () => loadMessagesForItem,
-  restoreFromHistory: () => restoreFromHistory
-});
-async function mergeBackendMessages(conversationId, archived) {
-  const backend = await loadBackendMessages(conversationId);
-  if (backend.length === 0) return archived;
-  const knownIds = new Set(archived.map((m4) => m4.id));
-  const knownFps = new Set(
-    archived.filter((m4) => m4.type === "assistant").map((m4) => assistantTextFp(m4)).filter(Boolean)
-  );
-  const extra = backend.filter((m4) => {
-    if (knownIds.has(m4.id)) return false;
-    if (m4.type === "assistant") {
-      const fp = assistantTextFp(m4);
-      if (fp && knownFps.has(fp)) return false;
-    }
-    return true;
-  });
-  if (extra.length === 0) return archived;
-  return normalizeRecoveredMessages2([...archived, ...extra]);
-}
-function assistantTextFp(msg) {
-  if (msg.type !== "assistant" || !Array.isArray(msg.blocks)) return "";
-  let s3 = "";
-  for (const b12 of msg.blocks) {
-    if (b12 && typeof b12 === "object" && b12.type === "text") {
-      const c4 = b12.content;
-      if (typeof c4 === "string") s3 += c4;
-    }
-  }
-  return s3.trim();
-}
-function withAssistantEngineId(messages, engineId) {
-  return messages.map((message) => {
-    if (message.type !== "assistant" || message.engineId) return message;
-    return { ...message, engineId };
-  });
-}
-async function ensureWorkspace(projectPath) {
-  if (!projectPath) return void 0;
-  const normalizedProjectPath = normalizeWorkspacePath(projectPath);
-  const workspaces = useWorkspaceStore.getState().workspaces;
-  const existing = workspaces.find(
-    (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
-  );
-  if (existing) return existing.id;
-  try {
-    const workspaceName = getPathBasename(projectPath);
-    await useWorkspaceStore.getState().createWorkspace(workspaceName, projectPath, false);
-    const created = useWorkspaceStore.getState().workspaces.find(
-      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
-    );
-    return created?.id;
-  } catch (e3) {
-    log9.warn("\u521B\u5EFA\u5DE5\u4F5C\u533A\u5931\u8D25\uFF0C\u5C06\u521B\u5EFA\u81EA\u7531\u4F1A\u8BDD", { error: String(e3), projectPath });
-    return void 0;
-  }
-}
-async function loadMessagesForItem(sessionId, engineId, _projectPath, claudeProjectName, titleHint) {
-  try {
-    const restorePageSize = useHistoryPrefsStore.getState().restorePageSize;
-    const page = await dialogStorageService.getConversationPage(
-      sessionId,
-      null,
-      restorePageSize
-    );
-    if (page && page.messages.length > 0) {
-      return {
-        messages: await mergeBackendMessages(
-          sessionId,
-          normalizeRecoveredMessages2(dedupeMessagesById2(page.messages))
-        ),
-        title: page.meta.title,
-        engineId: normalizeEngineId(engineId || page.meta.engineId),
-        externalSessionId: sessionId,
-        workspacePath: page.meta.workspacePath,
-        source: "self",
-        paging: page.hasMore && page.earliestSeq != null ? { earliestSeq: page.earliestSeq, hasMore: true, sourceId: sessionId } : null
-      };
-    }
-  } catch (e3) {
-    log9.warn("\u81EA\u6709\u5B58\u50A8\u6062\u590D\u5931\u8D25\uFF0C\u964D\u7EA7", { error: e3 instanceof Error ? e3.message : String(e3) });
-  }
-  try {
-    const backendMessages = await mergeBackendMessages(sessionId, []);
-    if (backendMessages.length > 0) {
-      return {
-        messages: backendMessages,
-        title: "",
-        engineId: normalizeEngineId(engineId),
-        externalSessionId: sessionId,
-        workspacePath: null,
-        source: "self",
-        paging: null
-      };
-    }
-  } catch (e3) {
-    log9.warn("\u540E\u7AEF\u6D88\u606F\u5E93\u515C\u5E95\u8BFB\u53D6\u5931\u8D25", { error: e3 instanceof Error ? e3.message : String(e3) });
-  }
-  if (!engineId || engineId === "claude-code") {
-    try {
-      const nativeMessages = await aiHistoryDispatch({
-        action: "get_claude_history",
-        sessionId,
-        projectPath: claudeProjectName
-      });
-      if (nativeMessages.length > 0) {
-        return {
-          messages: withAssistantEngineId(
-            convertClaudeHistoryToChatMessages(nativeMessages),
-            "claude-code"
-          ),
-          title: titleHint || "\u6062\u590D\u7684\u4F1A\u8BDD",
-          engineId: "claude-code",
-          externalSessionId: sessionId,
-          workspacePath: null,
-          source: "claude-code-native",
-          paging: null
-        };
-      }
-    } catch (e3) {
-      log9.warn("Claude \u539F\u751F\u5386\u53F2\u8BFB\u53D6\u5931\u8D25\uFF08\u8DF3\u8FC7\u8BE5\u6570\u636E\u6E90\uFF09", { sessionId, error: String(e3) });
-    }
-  }
-  if (engineId && !["claude-code", "simple-ai"].includes(engineId)) {
-    try {
-      const result = await aiHistoryDispatch({
-        action: "get_session_history",
-        sessionId,
-        engineId,
-        page: 1,
-        pageSize: 1e4
-      });
-      if (result.items && result.items.length > 0) {
-        const messages = result.items.filter((m4) => m4.role === "user" || m4.role === "assistant").map((m4, idx) => {
-          const id38 = m4.messageId || `${m4.role}-${idx}`;
-          const timestamp2 = m4.timestamp || (/* @__PURE__ */ new Date()).toISOString();
-          if (m4.role === "assistant") {
-            return {
-              id: id38,
-              type: "assistant",
-              content: m4.content,
-              timestamp: timestamp2,
-              blocks: [{ type: "text", content: m4.content }]
-            };
-          }
-          return {
-            id: id38,
-            type: "user",
-            content: m4.content,
-            timestamp: timestamp2
-          };
-        });
-        return {
-          messages: withAssistantEngineId(messages, normalizeEngineId(engineId)),
-          title: titleHint || "\u6062\u590D\u7684\u4F1A\u8BDD",
-          engineId: normalizeEngineId(engineId),
-          externalSessionId: sessionId,
-          workspacePath: null,
-          source: "plugin-native",
-          paging: null
-        };
-      }
-    } catch (e3) {
-      log9.warn("\u63D2\u4EF6\u5F15\u64CE\u4F1A\u8BDD\u6062\u590D\u5931\u8D25", { engineId, error: e3 instanceof Error ? e3.message : String(e3) });
-    }
-  }
-  return {
-    messages: [],
-    title: titleHint || "\u6062\u590D\u7684\u4F1A\u8BDD",
-    engineId: normalizeEngineId(engineId),
-    externalSessionId: sessionId,
-    workspacePath: null,
-    source: "self",
-    paging: null
-  };
-}
-async function restoreFromHistory(sessionId, engineId, projectPath, claudeProjectName, titleHint) {
-  try {
-    const loaded = await loadMessagesForItem(sessionId, engineId, projectPath, claudeProjectName, titleHint);
-    if (loaded.messages.length === 0) {
-      log9.warn("\u65E0\u6CD5\u4ECE\u5386\u53F2\u52A0\u8F7D\u6D88\u606F", { sessionId, engineId });
-      return null;
-    }
-    const effectiveProjectPath = projectPath || loaded.workspacePath || void 0;
-    const workspaceId = await ensureWorkspace(effectiveProjectPath);
-    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
-      loaded.messages,
-      loaded.externalSessionId || sessionId,
-      { title: loaded.title, workspaceId, engineId: loaded.engineId, paging: loaded.paging }
-    );
-    if (loaded.externalSessionId || sessionId) {
-      try {
-        const { getKernel: getKernel2 } = await Promise.resolve().then(() => (init_registry(), registry_exports));
-        const kernel = await getKernel2();
-        await kernel.resyncSession(newSessionId);
-        log9.info("\u6062\u590D\u540E kernel \u5BF9\u8D26\u5B8C\u6210", { newSessionId });
-      } catch (e3) {
-        log9.warn("\u6062\u590D\u540E kernel \u5BF9\u8D26\u5931\u8D25\uFF08\u4E0D\u963B\u65AD\u6062\u590D\uFF09", { error: String(e3) });
-      }
-    }
-    log9.info("\u4ECE\u5386\u53F2\u6062\u590D\u6210\u529F", {
-      sessionId: newSessionId,
-      source: loaded.source,
-      title: loaded.title,
-      messageCount: loaded.messages.length,
-      paged: !!loaded.paging
-    });
-    useViewStore.getState().addToMultiView(newSessionId);
-    return newSessionId;
-  } catch (e3) {
-    log9.error("\u4ECE\u5386\u53F2\u6062\u590D\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
-    return null;
-  }
-}
-async function forkSession(sessionId, engineId, projectPath, claudeProjectName, branchName) {
-  try {
-    const record = await dialogStorageService.getConversation(sessionId);
-    let messages = record && record.messages.length > 0 ? record.messages : [];
-    if (messages.length === 0) {
-      const loaded = await loadMessagesForItem(sessionId, engineId, projectPath, claudeProjectName);
-      messages = loaded.messages;
-    }
-    if (messages.length === 0) {
-      log9.warn("Fork \u5931\u8D25\uFF1A\u65E0\u6CD5\u52A0\u8F7D\u4F1A\u8BDD\u6D88\u606F", { sessionId });
-      return null;
-    }
-    const title2 = branchName || `Fork: \u4F1A\u8BDD ${sessionId.slice(0, 8)}`;
-    const workspaceId = await ensureWorkspace(projectPath);
-    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
-      messages,
-      null,
-      // 不传 conversationId，确保发消息走 start_chat
-      {
-        title: title2,
-        workspaceId,
-        forkFromId: engineId === "claude-code" ? sessionId : void 0,
-        engineId
-      }
-    );
-    log9.info("Fork created", { newSessionId, sourceId: sessionId, branchName });
-    useViewStore.getState().addToMultiView(newSessionId);
-    return newSessionId;
-  } catch (e3) {
-    log9.error("Fork failed", e3 instanceof Error ? e3 : new Error(String(e3)));
-    return null;
-  }
-}
-var log9;
-var init_sessionRestore = __esm({
-  "src/host/services/sessionRestore.ts"() {
-    init_logger();
-    init_sessionStoreManager();
-    init_stores();
-    init_stores();
-    init_workspacePath();
-    init_historyPrefsStore();
-    init_dedupMessages2();
-    init_services();
-    init_services();
-    init_services();
-    init_claudeHistoryConvert();
-    init_engineDisplay();
-    log9 = createLogger("SessionRestore");
-  }
-});
-
-// src/host/session-v2/hooks/useKernelSessionState.ts
-import { useEffect as useEffect3, useState as useState5 } from "react";
-function getKernelSessionStateSnapshot(sessionId) {
-  return { ...EMPTY_STATE, sessionId };
-}
-function subscribeKernelSessionState(sessionId, onChange) {
-  let disposed = false;
-  let unsubKernel = null;
-  const emit4 = (state5) => {
-    if (!disposed) onChange(state5);
-  };
-  void getKernel().then((kernel) => {
-    if (disposed) return;
-    unsubKernel = kernel.subscribe(sessionId, (next3) => {
-      emit4({
-        sessionId,
-        state: next3.state,
-        isStreaming: next3.state === "running",
-        error: next3.error
-      });
-    });
-  });
-  return () => {
-    disposed = true;
-    unsubKernel?.();
-  };
-}
-function useKernelSessionState(sessionId) {
-  const [state5, setState] = useState5(() => getKernelSessionStateSnapshot(sessionId));
-  useEffect3(() => {
-    if (!sessionId) {
-      setState(getKernelSessionStateSnapshot(null));
-      return;
-    }
-    const localStore = sessionStoreManager.getState().stores.get(sessionId);
-    const localStreaming = localStore?.getState().isStreaming ?? false;
-    const localError = localStore?.getState().error ?? null;
-    setState({
-      sessionId,
-      state: localStreaming ? "running" : localError ? "error" : "idle",
-      isStreaming: localStreaming,
-      error: localError
-    });
-    let disposed = false;
-    void getKernel().then(async (kernel) => {
-      if (disposed) return;
-      try {
-        const s3 = await kernel.getSessionState(sessionId);
-        if (disposed) return;
-        setState({
-          sessionId,
-          state: s3.state,
-          isStreaming: s3.state === "running",
-          error: s3.error
-        });
-      } catch {
-        if (disposed) return;
-      }
-    });
-    return () => {
-      disposed = true;
-    };
-  }, [sessionId]);
-  useEffect3(() => {
-    if (!sessionId) return;
-    return subscribeKernelSessionState(sessionId, (next3) => setState(next3));
-  }, [sessionId]);
-  return state5;
-}
-var EMPTY_STATE;
-var init_useKernelSessionState = __esm({
-  "src/host/session-v2/hooks/useKernelSessionState.ts"() {
-    init_registry();
-    init_stores();
-    EMPTY_STATE = {
-      sessionId: null,
-      state: "none",
-      isStreaming: false,
-      error: null
-    };
-  }
-});
-
-// src/host/services/assistantTextUtils.ts
-function extractAssistantText2(message) {
-  if (!message) return "";
-  if (message.content) return message.content;
-  return message.blocks.filter(isTextBlock).map((b12) => b12.content).join("");
-}
-function pickLatestAssistantText(state5) {
-  if (state5.currentMessage) {
-    const text5 = extractAssistantText2({
-      id: state5.currentMessage.id,
-      type: "assistant",
-      engineId: state5.currentMessage.engineId,
-      blocks: state5.currentMessage.blocks,
-      isStreaming: true,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    if (text5) return text5;
-  }
-  for (let i2 = state5.messages.length - 1; i2 >= 0; i2--) {
-    const msg = state5.messages[i2];
-    if (msg.type === "assistant") {
-      const text5 = extractAssistantText2(msg);
-      if (text5) return text5;
-    }
-  }
-  return "";
-}
-var init_assistantTextUtils = __esm({
-  "src/host/services/assistantTextUtils.ts"() {
-    init_types2();
-  }
-});
-
-// src/host/services/promptOptimizeService.ts
-import { useCallback as useCallback4, useRef as useRef4 } from "react";
-import { useSyncExternalStore as useSyncExternalStore2 } from "react";
-function readStoredOptimizeConfig(defaultEngine) {
-  const fallback = { engineId: defaultEngine, mode: "quick" };
-  try {
-    const raw = localStorage.getItem(OPTIMIZE_CONFIG_STORAGE_KEY);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return {
-      engineId: parsed.engineId ? normalizeEngineId(parsed.engineId) : defaultEngine,
-      mode: parsed.mode === "deep" ? "deep" : "quick",
-      modelProfileId: parsed.modelProfileId || void 0,
-      model: parsed.model || void 0,
-      direction: normalizeDirection(parsed.direction),
-      customDirectionText: typeof parsed.customDirectionText === "string" ? parsed.customDirectionText : void 0,
-      iterations: normalizeIterations(parsed.iterations)
-    };
-  } catch {
-    return fallback;
-  }
-}
-function normalizeDirection(d3) {
-  if (d3 === "structured" || d3 === "convergent" || d3 === "divergent" || d3 === "elaborate" || d3 === "custom") {
-    return d3;
-  }
-  return void 0;
-}
-function normalizeIterations(n2) {
-  if (typeof n2 !== "number" || !Number.isFinite(n2)) return void 0;
-  const i2 = Math.floor(n2);
-  if (i2 < 1 || i2 > MAX_ITERATIONS) return void 0;
-  return i2;
-}
-function storeOptimizeConfig(config3) {
-  try {
-    localStorage.setItem(OPTIMIZE_CONFIG_STORAGE_KEY, JSON.stringify(config3));
-  } catch {
-  }
-}
-function buildRecentContext(state5) {
-  const messages = state5.getPersistableMessages?.() ?? state5.messages ?? [];
-  if (messages.length === 0) return "";
-  const recent = messages.slice(-RECENT_CONTEXT_TURNS);
-  const lines = [];
-  for (const msg of recent) {
-    if (msg.type !== "user" && msg.type !== "assistant") continue;
-    const text5 = extractAssistantText2(msg).trim();
-    if (!text5) continue;
-    const role = msg.type === "user" ? "User" : "Assistant";
-    const clipped = text5.length > RECENT_CONTEXT_PER_MSG ? `${text5.slice(0, RECENT_CONTEXT_PER_MSG)}\u2026` : text5;
-    lines.push(`${role}: ${clipped}`);
-  }
-  return lines.join("\n");
-}
-function buildSystemPrompt(basePrompt, direction2, customDirectionText) {
-  if (direction2 === "custom") {
-    const trimmed = (customDirectionText ?? "").trim();
-    const clipped = trimmed.length > CUSTOM_DIRECTION_MAX ? `${trimmed.slice(0, CUSTOM_DIRECTION_MAX)}\u2026` : trimmed;
-    return `${basePrompt}
-
-\u4F18\u5316\u65B9\u5411\uFF08\u7528\u6237\u6307\u5B9A\uFF09\uFF1A${clipped}\u3002\u5728\u4E0D\u8FDD\u80CC\u4E0A\u8FF0\u57FA\u7840\u7EA6\u675F\u7684\u524D\u63D0\u4E0B\uFF0C\u6309\u6B64\u65B9\u5411\u6DA6\u8272\u3002`;
-  }
-  return `${basePrompt}${DIRECTION_INSTRUCTIONS[direction2] ?? ""}`;
-}
-function executeSingleRound(opts) {
-  return new Promise((resolve2) => {
-    const {
-      srcStore,
-      workspaceId,
-      workspacePath,
-      engineId,
-      modelProfileId,
-      model,
-      mode,
-      direction: direction2,
-      customDirectionText,
-      iteration,
-      totalIterations,
-      sourceText,
-      abortSignal
-    } = opts;
-    const isDeep = mode === "deep";
-    const manager = sessionStoreManager.getState();
-    const settle = (r3) => {
-      if (abortSignal.aborted) {
-        resolve2({ ok: false, error: null });
-        return;
-      }
-      resolve2(r3);
-    };
-    const optimizeSessionId = manager.createSession({
-      type: workspaceId ? "project" : "free",
-      workspaceId,
-      contextWorkspaceIds: workspaceId ? [workspaceId] : [],
-      workspaceLocked: Boolean(workspaceId),
-      engineId,
-      modelProfileId: modelProfileId || void 0,
-      model: model || void 0,
-      title: i18n_default.t("chat:promptOptimize.sessionTitle", "\u63D0\u793A\u8BCD\u4F18\u5316"),
-      silentMode: true,
-      kind: "prompt-optimize"
-    });
-    const optStore = sessionStoreManager.getState().stores.get(optimizeSessionId);
-    if (!optStore) {
-      settle({ ok: false, error: i18n_default.t("chat:promptOptimize.errorCreateSession", "\u4F18\u5316\u4F1A\u8BDD\u521B\u5EFA\u5931\u8D25") });
-      return;
-    }
-    srcStore.getState().beginPromptOptimize(sourceText, {
-      engineId,
-      model,
-      mode,
-      direction: direction2,
-      customDirection: direction2 === "custom" ? customDirectionText : void 0,
-      iteration,
-      totalIterations,
-      optimizeSessionId
-    });
-    let finished = false;
-    const cleanupFns = [];
-    const cleanup2 = () => {
-      cleanupFns.forEach((fn3) => {
-        try {
-          fn3();
-        } catch {
-        }
-      });
-      cleanupFns.length = 0;
-    };
-    const finish = (r3) => {
-      if (finished) return;
-      finished = true;
-      cleanup2();
-      settle(r3);
-    };
-    let sawStreaming = false;
-    const unsubscribe = subscribeKernelSessionState(optimizeSessionId, (state5) => {
-      if (finished) return;
-      if (state5.state === "running") {
-        sawStreaming = true;
-        return;
-      }
-      if (state5.state === "idle" || state5.state === "error") {
-        if (sawStreaming) {
-          const text5 = pickLatestAssistantText(optStore.getState());
-          if (state5.error && !text5.trim()) {
-            finish({ ok: false, error: state5.error });
-          } else {
-            finish({ ok: true, text: text5 });
-          }
-        } else if (state5.error) {
-          finish({ ok: false, error: state5.error });
-        }
-      }
-    });
-    cleanupFns.push(unsubscribe);
-    const timer4 = setTimeout(() => {
-      void optStore.getState().interrupt().catch(() => void 0);
-      finish({ ok: false, error: i18n_default.t("chat:promptOptimize.errorTimeout", "\u4F18\u5316\u8D85\u65F6\uFF0C\u8BF7\u91CD\u8BD5") });
-    }, isDeep ? DEEP_TIMEOUT_MS : QUICK_TIMEOUT_MS);
-    cleanupFns.push(() => clearTimeout(timer4));
-    const recentContext = isDeep ? buildRecentContext(srcStore.getState()) : "";
-    const instructionPrefix = isDeep ? i18n_default.t(
-      "chat:promptOptimize.deepInstructionPrefix",
-      "\u8BF7\u7ED3\u5408\u9879\u76EE\u4E0A\u4E0B\u6587\u4F18\u5316\u4EE5\u4E0B\u63D0\u793A\u8BCD\uFF08\u4EC5\u91CD\u5199\uFF0C\u4E0D\u65B0\u589E\u9700\u6C42\uFF0C\u4E0D\u8981\u6267\u884C\u6216\u56DE\u7B54\u5B83\uFF09\u3002\u4F60\u53EF\u4EE5\u7528 Read/Grep/Glob \u9605\u8BFB\u9879\u76EE\u7EA6\u5B9A\u6587\u4EF6\u4E0E\u8349\u7A3F\u63D0\u5230\u7684\u6587\u4EF6\u3002\u53EA\u8F93\u51FA\u4F18\u5316\u540E\u7684\u63D0\u793A\u8BCD\u672C\u8EAB\uFF1A"
-    ) : i18n_default.t(
-      "chat:promptOptimize.instructionPrefix",
-      "\u8BF7\u4F18\u5316\u4EE5\u4E0B\u63D0\u793A\u8BCD\uFF08\u4EC5\u91CD\u5199\uFF0C\u4E0D\u8981\u6267\u884C\u6216\u56DE\u7B54\u5B83\uFF09\uFF0C\u53EA\u8F93\u51FA\u4F18\u5316\u540E\u7684\u63D0\u793A\u8BCD\u672C\u8EAB\uFF1A"
-    );
-    const roundPrefix = totalIterations > 1 ? i18n_default.t("chat:promptOptimize.roundPrefix", {
-      defaultValue: "\uFF08\u7B2C {{cur}}/{{total}} \u8F6E\uFF0C\u4EE5\u4E0A\u4E00\u8F6E\u4F18\u5316\u7ED3\u679C\u4E3A\u57FA\u7840\u7EE7\u7EED\u6309\u65E2\u5B9A\u65B9\u5411\u6DA6\u8272\uFF0C\u4E0D\u8981\u56DE\u9000\u5DF2\u6709\u6539\u8FDB\uFF0C\u4E0D\u8981\u6267\u884C/\u56DE\u7B54\u63D0\u793A\u8BCD\u672C\u8EAB\uFF09",
-      cur: iteration,
-      total: totalIterations
-    }) : "";
-    const userMessage = (roundPrefix ? `${roundPrefix}
-` : "") + instructionPrefix + (recentContext ? `
-
-<recent_context>
-${recentContext}
-</recent_context>` : "") + `
-
-<original_prompt>
-${sourceText}
-</original_prompt>`;
-    const baseSystemPrompt = isDeep ? PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT : PROMPT_OPTIMIZE_SYSTEM_PROMPT;
-    const systemPrompt = buildSystemPrompt(baseSystemPrompt, direction2, customDirectionText);
-    const sendOptions = isDeep ? {
-      oneTimeSystemPrompt: systemPrompt,
-      allowedTools: DEEP_ALLOWED_TOOLS,
-      // 静默会话不可见，任何交互式权限等待都会永久挂起 —— 强制 bypass
-      runtimeOverride: { permissionMode: "bypassPermissions" }
-    } : { oneTimeSystemPrompt: systemPrompt };
-    void (async () => {
-      try {
-        await optStore.getState().sendMessage(userMessage, workspacePath, void 0, sendOptions);
-      } catch (e3) {
-        finish({ ok: false, error: String(e3) });
-      }
-    })();
-  });
-}
-async function runPromptOptimize(options2) {
-  const {
-    sourceSessionId,
-    workspaceId,
-    workspacePath,
-    engineId,
-    modelProfileId,
-    model,
-    sourceText,
-    direction: direction2,
-    customDirectionText
-  } = options2;
-  const mode = options2.mode === "deep" ? "deep" : "quick";
-  const dir2 = direction2 ?? "structured";
-  const iterations2 = Math.max(1, Math.min(MAX_ITERATIONS, options2.iterations ?? 1));
-  const manager = sessionStoreManager.getState();
-  const srcStore = manager.stores.get(sourceSessionId);
-  if (!srcStore) {
-    log10.warn("\u6E90\u4F1A\u8BDD\u4E0D\u5B58\u5728\uFF0C\u5FFD\u7565\u4F18\u5316\u8BF7\u6C42", { sourceSessionId });
-    return;
-  }
-  activeRuns.get(sourceSessionId)?.();
-  const abort = { aborted: false };
-  activeRuns.set(sourceSessionId, () => {
-    abort.aborted = true;
-  });
-  log10.info("\u5F00\u59CB\u63D0\u793A\u8BCD\u4F18\u5316", {
-    sourceSessionId,
-    engineId,
-    mode,
-    direction: dir2,
-    iterations: iterations2,
-    sourceLength: sourceText.length
-  });
-  let currentText = sourceText;
-  for (let i2 = 1; i2 <= iterations2; i2++) {
-    if (abort.aborted) {
-      log10.info("\u8FED\u4EE3\u88AB\u53D6\u6D88\uFF0C\u505C\u6B62\u540E\u7EED\u8F6E", { sourceSessionId, atIteration: i2 });
-      break;
-    }
-    const isLast = i2 === iterations2;
-    const result = await executeSingleRound({
-      srcStore,
-      sourceSessionId,
-      workspaceId,
-      workspacePath,
-      engineId,
-      modelProfileId,
-      model,
-      mode,
-      direction: dir2,
-      customDirectionText,
-      iteration: i2,
-      totalIterations: iterations2,
-      sourceText: currentText,
-      abortSignal: abort
-    });
-    if (abort.aborted) break;
-    const src = srcStore.getState();
-    if (result.ok) {
-      if (isLast) {
-        src.completePromptOptimize(result.text);
-        log10.info("\u63D0\u793A\u8BCD\u4F18\u5316\u5B8C\u6210", { sourceSessionId, resultLength: result.text.length, iteration: i2 });
-      } else {
-        src.continuePromptOptimize(result.text);
-        log10.info("\u8FED\u4EE3\u8F6E\u5B8C\u6210", { sourceSessionId, iteration: i2, of: iterations2, resultLength: result.text.length });
-      }
-    } else {
-      const failReason = "error" in result ? result.error ?? "" : "";
-      src.failPromptOptimize(failReason);
-      log10.warn("\u63D0\u793A\u8BCD\u4F18\u5316\u5931\u8D25", { sourceSessionId, atIteration: i2, error: failReason });
-      break;
-    }
-    if (isLast) break;
-    if (abort.aborted) break;
-    const po2 = srcStore.getState().promptOptimize;
-    if (po2.status !== "idle" || po2.error) {
-      break;
-    }
-    const lastVersion = po2.history[po2.cursor];
-    if (!lastVersion || !lastVersion.text.trim()) break;
-    currentText = lastVersion.text;
-  }
-  if (!abort.aborted) {
-    activeRuns.delete(sourceSessionId);
-  }
-}
-function cancelPromptOptimize(sourceSessionId) {
-  const manager = sessionStoreManager.getState();
-  const srcStore = manager.stores.get(sourceSessionId);
-  const po2 = srcStore?.getState().promptOptimize;
-  activeRuns.get(sourceSessionId)?.();
-  if (po2?.optimizeSessionId) {
-    const optStore = manager.stores.get(po2.optimizeSessionId);
-    void optStore?.getState().interrupt().catch(() => void 0);
-  }
-  srcStore?.getState().failPromptOptimize(null);
-  log10.info("\u53D6\u6D88\u63D0\u793A\u8BCD\u4F18\u5316", { sourceSessionId });
-}
-function usePromptOptimizePreview(optimizeSessionId) {
-  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
-  const store3 = optimizeSessionId ? stores.get(optimizeSessionId) ?? null : null;
-  const cachedRef = useRef4(EMPTY_PREVIEW);
-  const getSnapshot = useCallback4(() => {
-    if (!store3) return EMPTY_PREVIEW;
-    const state5 = store3.getState();
-    const next3 = { text: pickLatestAssistantText(state5), isStreaming: state5.isStreaming };
-    if (cachedRef.current.text === next3.text && cachedRef.current.isStreaming === next3.isStreaming) {
-      return cachedRef.current;
-    }
-    cachedRef.current = next3;
-    return next3;
-  }, [store3]);
-  const subscribe = useCallback4(
-    (onChange) => {
-      if (!store3) {
-        return sessionStoreManager.subscribe(onChange);
-      }
-      return store3.subscribe(onChange);
-    },
-    [store3]
-  );
-  return useSyncExternalStore2(subscribe, getSnapshot, () => EMPTY_PREVIEW);
-}
-var log10, OPTIMIZE_CONFIG_STORAGE_KEY, QUICK_TIMEOUT_MS, DEEP_TIMEOUT_MS, MAX_ITERATIONS, PROMPT_OPTIMIZE_SYSTEM_PROMPT, PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT, DEEP_ALLOWED_TOOLS, DIRECTION_INSTRUCTIONS, CUSTOM_DIRECTION_MAX, activeRuns, RECENT_CONTEXT_TURNS, RECENT_CONTEXT_PER_MSG, EMPTY_PREVIEW;
-var init_promptOptimizeService = __esm({
-  "src/host/services/promptOptimizeService.ts"() {
-    init_esm();
-    init_i18n();
-    init_stores();
-    init_useKernelSessionState();
-    init_assistantTextUtils();
-    init_engineDisplay();
-    init_logger();
-    log10 = createLogger("PromptOptimize");
-    OPTIMIZE_CONFIG_STORAGE_KEY = "polaris.promptOptimize.config";
-    QUICK_TIMEOUT_MS = 18e4;
-    DEEP_TIMEOUT_MS = 33e4;
-    MAX_ITERATIONS = 5;
-    PROMPT_OPTIMIZE_SYSTEM_PROMPT = `You are a prompt optimization assistant. The user gives you a draft prompt they intend to send to an AI coding assistant. Rewrite it to be clearer, more specific, and better structured, while strictly preserving:
-1. The user's original intent and scope \u2014 never add requirements or drop existing ones
-2. The original language (Chinese stays Chinese, English stays English)
-3. All special tokens verbatim: @/path references, @workspace, /slash-commands, code fences, file paths, URLs
-Structure the result (context / task / constraints / expected output) only when it genuinely helps; keep short prompts short.
-Do NOT answer or execute the prompt itself. Do NOT use any tools.
-Output ONLY the optimized prompt text \u2014 no explanations, no code fences, no preamble.`;
-    PROMPT_OPTIMIZE_DEEP_SYSTEM_PROMPT = `You are a prompt optimization assistant with read-only access to the user's current project and conversation.
-
-The user gives you a draft prompt they intend to send to an AI coding assistant. Your job is to rewrite it to be clearer, more specific, and better grounded in the ACTUAL project context.
-
-You MAY use Read / Grep / Glob to inspect:
-- The project's convention files (CLAUDE.md, AGENTS.md, README) to match its terminology and constraints
-- Files, symbols, or paths the draft explicitly references, to make vague mentions concrete
-- The recent conversation context provided, to align the prompt with what the user is currently doing
-
-Strict rules:
-1. Preserve the user's original intent and scope \u2014 NEVER add requirements the user did not state, even if the project context suggests them. Context is for making the wording precise, NOT for inventing new tasks.
-2. Preserve the original language (Chinese stays Chinese, English stays English).
-3. Preserve all special tokens verbatim: @/path references, @workspace, /slash-commands, code fences, file paths, URLs.
-4. Do NOT modify any files. Do NOT execute or answer the draft prompt itself. Only reading is allowed.
-5. After reading, output ONLY the optimized prompt text \u2014 no explanation of what you read, no tool-call summary, no preamble, no code fences.`;
-    DEEP_ALLOWED_TOOLS = ["Read", "Grep", "Glob"];
-    DIRECTION_INSTRUCTIONS = {
-      structured: "",
-      convergent: "\n\n\u4F18\u5316\u65B9\u5411\uFF1A\u7CBE\u70BC\u3002\u538B\u7F29\u5197\u4F59\u8868\u8FF0\u4E0E\u91CD\u590D\u4FE1\u606F\uFF0C\u4FDD\u7559\u5168\u90E8\u539F\u59CB\u610F\u56FE\u4E0E\u7279\u6B8A\u6807\u8BB0\uFF0C\u4F7F\u63D0\u793A\u8BCD\u66F4\u77ED\u66F4\u51C6\u3002\u4E0D\u8981\u65B0\u589E\u9700\u6C42\u3002",
-      divergent: "\n\n\u4F18\u5316\u65B9\u5411\uFF1A\u53D1\u6563\u3002\u5728\u4E25\u683C\u4FDD\u7559\u539F\u610F\u56FE\u4E0E\u8303\u56F4\u5185\uFF0C\u8865\u5145 2~3 \u4E2A\u4E92\u8865\u7684\u89D2\u5EA6/\u53EF\u80FD\u89E3\u6CD5/\u8FB9\u754C\u573A\u666F\u4F9B\u4E0B\u6E38 AI \u9009\u62E9\uFF0C\u4F46\u4E0D\u8981\u6539\u53D8\u7528\u6237\u8981\u89E3\u51B3\u7684\u6838\u5FC3\u95EE\u9898\u3002",
-      elaborate: "\n\n\u4F18\u5316\u65B9\u5411\uFF1A\u6269\u5199\u3002\u8865\u5168\u7F3A\u5931\u7684\u4E0A\u4E0B\u6587\u3001\u9690\u542B\u5047\u8BBE\u3001\u9A8C\u6536\u6807\u51C6\u4E0E\u9884\u671F\u8F93\u51FA\u5F62\u6001\uFF0C\u4F7F\u4E0B\u6E38 AI \u65E0\u6B67\u4E49\u6267\u884C\uFF1B\u4E0D\u65B0\u589E\u7528\u6237\u672A\u8868\u8FBE\u7684\u9700\u6C42\u3002"
-    };
-    CUSTOM_DIRECTION_MAX = 200;
-    activeRuns = /* @__PURE__ */ new Map();
-    RECENT_CONTEXT_TURNS = 6;
-    RECENT_CONTEXT_PER_MSG = 200;
-    EMPTY_PREVIEW = { text: "", isStreaming: false };
-  }
-});
-
-// src/shims/services.ts
-var services_exports = {};
-__export(services_exports, {
-  CLI_BLOCKED_COMMANDS: () => CLI_BLOCKED_COMMANDS,
-  CLI_KNOWN_HIDDEN_COMMANDS: () => CLI_KNOWN_HIDDEN_COMMANDS,
-  CLI_SUGGESTED_COMMANDS: () => CLI_SUGGESTED_COMMANDS,
-  NEXUS_SCENARIOS: () => NEXUS_SCENARIOS,
-  addClaudePermissionRules: () => addClaudePermissionRules,
-  aiChatDispatch: () => aiChatDispatch,
-  aiChatDispatchStream: () => aiChatDispatchStream,
-  aiHistoryDispatch: () => aiHistoryDispatch,
-  answerQuestion: () => answerQuestion,
-  approvePlan: () => approvePlan,
-  buildCapDetailBlock: () => buildCapDetailBlock,
-  buildCapDigestBlock: () => buildCapDigestBlock,
-  buildCapReferenceBlock: () => buildCapReferenceBlock,
-  cancelCompactHandoff: () => cancelCompactHandoff,
-  cancelPromptOptimize: () => cancelPromptOptimize2,
-  clearAnsweredQuestions: () => clearAnsweredQuestions,
-  clearProcessedPlans: () => clearProcessedPlans,
-  consumeCapUiDispatch: () => consumeCapUiDispatch,
-  currentMode: () => currentMode,
-  detectClientDescriptor: () => detectClientDescriptor,
-  dialogStorageService: () => dialogStorageService,
-  dispatchCapUiAction: () => dispatchCapUiAction,
-  dispatchFromUser: () => dispatchFromUser,
-  dropTracker: () => dropTracker,
-  emit: () => emit,
-  ensureWorkspace: () => ensureWorkspace2,
-  estimateTokens: () => estimateTokens,
-  eventBus: () => eventBus,
-  forkSession: () => forkSession2,
-  getClaudeSettingsPath: () => getClaudeSettingsPath,
-  getCliCommandSuggestions: () => getCliCommandSuggestions,
-  getDefaultCompactInstruction: () => getDefaultCompactInstruction,
-  getEventRouter: () => getEventRouter2,
-  getHandoffEligibility: () => getHandoffEligibility,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
-  getPendingPlans: () => getPendingPlans,
-  getPendingQuestions: () => getPendingQuestions,
-  getTracker: () => getTracker,
-  getUserSystemPrompt: () => getUserSystemPrompt,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
-  handoffSessionToNewSession: () => handoffSessionToNewSession,
-  initDispatchTaskListener: () => initDispatchTaskListener,
-  invoke: () => invoke,
-  isListableRemote: () => isListableRemote,
-  listen: () => listen,
-  loadBackendMessages: () => loadBackendMessages,
-  loadConversationMessages: () => loadConversationMessages,
-  loadMessagesForItem: () => loadMessagesForItem2,
-  manualRefreshActiveSession: () => manualRefreshActiveSession,
-  matchBlockedCliCommand: () => matchBlockedCliCommand,
-  matchCaps: () => matchCaps,
-  maybeAutoMigrateOpfs: () => maybeAutoMigrateOpfs,
-  openExternal: () => openExternal,
-  openExternalLink: () => openExternalLink,
-  packForReference: () => packForReference,
-  packToFile: () => packToFile,
-  packToSummary: () => packToSummary,
-  parseAgentSlashCommand: () => parseAgentSlashCommand,
-  parseAssaultSlashCommand: () => parseAssaultSlashCommand,
-  parseCapSlashCommand: () => parseCapSlashCommand,
-  parseDispatchSlashCommand: () => parseDispatchSlashCommand,
-  parseNexusSlashCommand: () => parseNexusSlashCommand,
-  parseWorkspaceReferences: () => parseWorkspaceReferences,
-  persistNewSessionPrefs: () => persistNewSessionPrefs,
-  persistPromptHistoryEntries: () => persistPromptHistoryEntries,
-  promptHistoryKey: () => promptHistoryKey,
-  readClaudeSettings: () => readClaudeSettings,
-  readNewSessionPrefs: () => readNewSessionPrefs,
-  readPromptHistoryEntries: () => readPromptHistoryEntries,
-  readStoredOptimizeConfig: () => readStoredOptimizeConfig2,
-  registerExternalLinkGlobalHandler: () => registerExternalLinkGlobalHandler,
-  registerPendingPlan: () => registerPendingPlan,
-  registerPendingQuestion: () => registerPendingQuestion,
-  rejectPlan: () => rejectPlan,
-  remoteSessionFollower: () => remoteSessionFollower,
-  requestCompactHandoff: () => requestCompactHandoff,
-  resetTracker: () => resetTracker,
-  resolveTemplateVariables: () => resolveTemplateVariables,
-  respondPluginCard: () => respondPluginCard,
-  restoreFromHistory: () => restoreFromHistory2,
-  resyncAfterResumeGap: () => resyncAfterResumeGap,
-  rewriteDispatchPromptWithAgent: () => rewriteDispatchPromptWithAgent,
-  runPromptOptimize: () => runPromptOptimize2,
-  saveChatToFile: () => saveChatToFile,
-  saveMarkdownImage: () => saveMarkdownImage,
-  searchFiles: () => searchFiles,
-  sendInput: () => sendInput,
-  storeOptimizeConfig: () => storeOptimizeConfig2,
-  usePromptOptimizePreview: () => usePromptOptimizePreview2,
-  writeClaudeSettings: () => writeClaudeSettings
-});
-function lazyObj(name) {
-  return new Proxy({}, {
-    get: (_t, prop) => coreService(name)[prop]
-  });
-}
-function invoke(cmd, args) {
-  return coreService("transport").invoke(cmd, args);
-}
-function listen(event3, handler2) {
-  return coreService("transport").listen(event3, handler2);
-}
-function aiChatDispatch(payload) {
-  return coreService("aiChatDispatch").aiChatDispatch(payload);
-}
-function isListableRemote(s3) {
-  return s3.status !== "ended" || !s3.endedAt;
-}
-var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility, handoffSessionToNewSession, getHistoryHandoffEligibility, handoffHistorySessionToNewSession, loadConversationMessages, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile, packToSummary, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction, openExternalLink;
-var init_services = __esm({
-  "src/shims/services.ts"() {
-    init_core();
-    init_eventRouter();
-    init_sessionRestore();
-    init_promptOptimizeService();
-    emit = (...args) => coreService("transport").emit(...args);
-    currentMode = coreService("transport").currentMode;
-    aiChatDispatchStream = (...args) => coreService("aiChatDispatch").aiChatDispatchStream(...args);
-    dialogStorageService = lazyObj("dialogStorageService");
-    maybeAutoMigrateOpfs = (...args) => coreService("maybeAutoMigrateOpfs")(...args);
-    getEventRouter2 = (...args) => getEventRouter(...args);
-    eventBus = lazyObj("eventBus");
-    remoteSessionFollower = lazyObj("remoteSessionFollower");
-    resyncAfterResumeGap = (...args) => coreService("webReconnectResync").resyncAfterResumeGap(...args);
-    manualRefreshActiveSession = (...args) => coreService("webReconnectResync").manualRefreshActiveSession(...args);
-    registerPendingQuestion = (...args) => coreService("chatService").registerPendingQuestion(...args);
-    answerQuestion = (...args) => coreService("chatService").answerQuestion(...args);
-    respondPluginCard = (...args) => coreService("chatService").respondPluginCard(...args);
-    getPendingQuestions = (...args) => coreService("chatService").getPendingQuestions(...args);
-    clearAnsweredQuestions = (...args) => coreService("chatService").clearAnsweredQuestions(...args);
-    registerPendingPlan = (...args) => coreService("chatService").registerPendingPlan(...args);
-    approvePlan = (...args) => coreService("chatService").approvePlan(...args);
-    rejectPlan = (...args) => coreService("chatService").rejectPlan(...args);
-    getPendingPlans = (...args) => coreService("chatService").getPendingPlans(...args);
-    clearProcessedPlans = (...args) => coreService("chatService").clearProcessedPlans(...args);
-    sendInput = (...args) => coreService("chatService").sendInput(...args);
-    saveChatToFile = (...args) => coreService("chatService").saveChatToFile(...args);
-    restoreFromHistory2 = (...args) => restoreFromHistory(...args);
-    forkSession2 = (...args) => forkSession(...args);
-    ensureWorkspace2 = (...args) => ensureWorkspace(...args);
-    loadMessagesForItem2 = (...args) => loadMessagesForItem(...args);
-    loadBackendMessages = (...args) => coreService("sessionArchive").loadBackendMessages(...args);
-    aiHistoryDispatch = (...args) => coreService("aiHistoryDispatch").aiHistoryDispatch(...args);
-    getHandoffEligibility = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
-    handoffSessionToNewSession = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
-    getHistoryHandoffEligibility = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
-    handoffHistorySessionToNewSession = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
-    loadConversationMessages = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
-    requestCompactHandoff = (...args) => coreService("contextCompactHandoff").requestCompactHandoff(...args);
-    cancelCompactHandoff = (...args) => coreService("contextCompactHandoff").cancelCompactHandoff(...args);
-    runPromptOptimize2 = (...args) => runPromptOptimize(...args);
-    cancelPromptOptimize2 = (...args) => cancelPromptOptimize(...args);
-    readStoredOptimizeConfig2 = (...args) => readStoredOptimizeConfig(...args);
-    storeOptimizeConfig2 = (...args) => storeOptimizeConfig(...args);
-    usePromptOptimizePreview2 = (...args) => usePromptOptimizePreview(...args);
-    promptHistoryKey = (...args) => coreService("promptHistoryService").promptHistoryKey(...args);
-    readPromptHistoryEntries = (...args) => coreService("promptHistoryService").readPromptHistoryEntries(...args);
-    persistPromptHistoryEntries = (...args) => coreService("promptHistoryService").persistPromptHistoryEntries(...args);
-    parseDispatchSlashCommand = (...args) => coreService("dispatchTaskService").parseDispatchSlashCommand(...args);
-    dispatchFromUser = (...args) => coreService("dispatchTaskService").dispatchFromUser(...args);
-    initDispatchTaskListener = (...args) => coreService("dispatchTaskService").initDispatchTaskListener(...args);
-    getTracker = (...args) => coreService("streamRateTracker").getTracker(...args);
-    resetTracker = (...args) => coreService("streamRateTracker").resetTracker(...args);
-    dropTracker = (...args) => coreService("streamRateTracker").dropTracker(...args);
-    estimateTokens = (...args) => coreService("streamRateTracker").estimateTokens(...args);
-    consumeCapUiDispatch = (...args) => coreService("uiDispatchService").consumeCapUiDispatch(...args);
-    dispatchCapUiAction = (...args) => coreService("uiDispatchService").dispatchCapUiAction(...args);
-    parseCapSlashCommand = (...args) => coreService("capSlashCommand").parseCapSlashCommand(...args);
-    matchCaps = (...args) => coreService("capSlashCommand").matchCaps(...args);
-    buildCapDigestBlock = (...args) => coreService("capSlashCommand").buildCapDigestBlock(...args);
-    buildCapDetailBlock = (...args) => coreService("capSlashCommand").buildCapDetailBlock(...args);
-    buildCapReferenceBlock = (...args) => coreService("capSlashCommand").buildCapReferenceBlock(...args);
-    getCliCommandSuggestions = (...args) => coreService("cliSlashCommands").getCliCommandSuggestions(...args);
-    matchBlockedCliCommand = (...args) => coreService("cliSlashCommands").matchBlockedCliCommand(...args);
-    parseAssaultSlashCommand = (...args) => coreService("cliSlashCommands").parseAssaultSlashCommand(...args);
-    CLI_SUGGESTED_COMMANDS = coreService("cliSlashCommands").CLI_SUGGESTED_COMMANDS;
-    CLI_KNOWN_HIDDEN_COMMANDS = coreService("cliSlashCommands").CLI_KNOWN_HIDDEN_COMMANDS;
-    CLI_BLOCKED_COMMANDS = coreService("cliSlashCommands").CLI_BLOCKED_COMMANDS;
-    parseNexusSlashCommand = (...args) => coreService("agentSlashCommand").parseNexusSlashCommand(...args);
-    parseAgentSlashCommand = (...args) => coreService("agentSlashCommand").parseAgentSlashCommand(...args);
-    rewriteDispatchPromptWithAgent = (...args) => coreService("agentSlashCommand").rewriteDispatchPromptWithAgent(...args);
-    NEXUS_SCENARIOS = coreService("agentSlashCommand").NEXUS_SCENARIOS;
-    packForReference = (...args) => coreService("conversationPackager").packForReference(...args);
-    packToFile = (...args) => coreService("conversationPackager").packToFile(...args);
-    packToSummary = (...args) => coreService("conversationPackager").packToSummary(...args);
-    readNewSessionPrefs = (...args) => coreService("newSessionPrefsService").readNewSessionPrefs(...args);
-    persistNewSessionPrefs = (...args) => coreService("newSessionPrefsService").persistNewSessionPrefs(...args);
-    searchFiles = (...args) => coreService("fileSearch").searchFiles(...args);
-    addClaudePermissionRules = (...args) => coreService("claudeSettingsService").addClaudePermissionRules(...args);
-    readClaudeSettings = (...args) => coreService("claudeSettingsService").readClaudeSettings(...args);
-    writeClaudeSettings = (...args) => coreService("claudeSettingsService").writeClaudeSettings(...args);
-    getClaudeSettingsPath = (...args) => coreService("claudeSettingsService").getClaudeSettingsPath(...args);
-    saveMarkdownImage = (...args) => coreService("imageSaveService").saveMarkdownImage(...args);
-    registerExternalLinkGlobalHandler = (...args) => coreService("linkExternal").registerExternalLinkGlobalHandler(...args);
-    openExternal = (...args) => coreService("linkExternal").openExternal(...args);
-    getUserSystemPrompt = (...args) => coreService("workspaceReference").getUserSystemPrompt(...args);
-    parseWorkspaceReferences = (...args) => coreService("workspaceReference").parseWorkspaceReferences(...args);
-    resolveTemplateVariables = (...args) => coreService("workspaceReference").resolveTemplateVariables(...args);
-    detectClientDescriptor = (...args) => coreService("detector").detectClientDescriptor(...args);
-    getDefaultCompactInstruction = (...args) => coreService("contextCompactHandoff").getDefaultCompactInstruction(...args);
-    openExternalLink = (...args) => coreService("linkExternal").openExternal(...args);
   }
 });
 
@@ -310484,7 +310910,7 @@ __export(sessionHandoff_exports, {
   loadConversationMessages: () => loadConversationMessages2
 });
 function getHandoffEligibility2(sessionId) {
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
@@ -310495,7 +310921,7 @@ function getHandoffEligibility2(sessionId) {
   return { enabled: true };
 }
 async function handoffSessionToNewSession2(sessionId, targetEngineId) {
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) {
@@ -310587,7 +311013,7 @@ async function createHandoffSession(params) {
   });
   if (mode === "fork" && !sourceConversationId) mode = "summary";
   if (mode === "message-history") mode = "summary";
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const newTitle = i18n_default.t("chat:handoff.newSessionTitle", { title: sourceTitle });
   if (mode === "fork") {
     const newSessionId2 = manager.createSession({
@@ -310629,7 +311055,7 @@ async function loadConversationMessages2(engineId, conversationId, fallbackMessa
       } else {
         const msgs = await dialogStorageService.getConversationMessages(conversationId);
         if (msgs.length > 0) {
-          return withAssistantEngineId2(normalizeRecoveredMessages2(msgs), engineId);
+          return withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId);
         }
       }
     } catch (e3) {
@@ -310654,7 +311080,7 @@ async function loadHistoryChatMessages(item) {
       return raw.length > 0 ? withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId) : [];
     }
     const msgs = await dialogStorageService.getConversationMessages(item.id);
-    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages2(msgs), engineId) : [];
+    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId) : [];
   } catch (e3) {
     log24.warn("\u52A0\u8F7D\u5386\u53F2\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { sourceId: item.id, engineId, error: String(e3) });
     return [];
@@ -310697,7 +311123,7 @@ var init_sessionHandoff = __esm({
     init_services();
     init_claudeHistoryConvert();
     init_services();
-    init_dedupMessages2();
+    init_dedupMessages();
     init_conversationPackager();
     init_engineDisplay();
     init_workspacePath();
@@ -310839,10 +311265,10 @@ function CompactHandoffModal({
   const sourceEngine = normalizeEngineId(engineId);
   const profiles = useModelProfileStore((s3) => s3.profiles);
   const sourceDefaults = useMemo19(() => {
-    const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId);
+    const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId);
     const sessionConfig = getSessionConfig();
     const activeProfileId = useModelProfileStore.getState().activeProfileId ?? void 0;
-    const profileId = resolveEffectiveProfileId(
+    const profileId = resolveEffectiveProfileId2(
       meta3?.modelProfileId,
       sessionConfig.modelProfileId,
       activeProfileId
@@ -311066,16 +311492,16 @@ import { useCallback as useCallback32, useMemo as useMemo21, useState as useStat
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo28, useCallback as useCallback23, useMemo as useMemo14, useRef as useRef17, forwardRef as forwardRef4, useImperativeHandle, useEffect as useEffect19 } from "react";
+import { memo as memo28, useCallback as useCallback24, useMemo as useMemo15, useRef as useRef17, forwardRef as forwardRef4, useImperativeHandle, useEffect as useEffect19 } from "react";
 
 // src/host/Chat/session/SessionCell.tsx
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo27, useCallback as useCallback22, useState as useState30, useRef as useRef16, useMemo as useMemo13 } from "react";
+import { memo as memo27, useCallback as useCallback23, useState as useState30, useRef as useRef16, useMemo as useMemo14 } from "react";
 
 // src/host/Chat/messages/SessionMessagesView.tsx
-import { forwardRef as forwardRef3, memo as memo26, useMemo as useMemo12, useRef as useRef15, useCallback as useCallback21, useEffect as useEffect18, useState as useState29 } from "react";
+import { forwardRef as forwardRef3, memo as memo26, useMemo as useMemo13, useRef as useRef15, useCallback as useCallback22, useEffect as useEffect18, useState as useState29 } from "react";
 
 // node_modules/.pnpm/react-virtuoso@4.18.22_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/react-virtuoso/dist/index.mjs
 import { jsx as G, jsxs as jt } from "react/jsx-runtime";
@@ -314734,17 +315160,17 @@ init_i18n();
 init_lucide_react();
 init_types2();
 init_stores();
-import { memo as memo2, useState as useState3, useCallback as useCallback3 } from "react";
+import { memo as memo2, useState as useState4, useCallback as useCallback5 } from "react";
 
 // src/host/Chat/chatBubbles/useLongPress.ts
-import { useCallback, useRef, useState } from "react";
+import { useCallback as useCallback3, useRef as useRef2, useState as useState2 } from "react";
 var LONG_PRESS_MS = 500;
 var MOVE_TOLERANCE_PX = 10;
 function useLongPress(onLongPress) {
-  const [pressing, setPressing] = useState(false);
-  const timerRef = useRef(null);
-  const startPosRef = useRef(null);
-  const clear8 = useCallback(() => {
+  const [pressing, setPressing] = useState2(false);
+  const timerRef = useRef2(null);
+  const startPosRef = useRef2(null);
+  const clear8 = useCallback3(() => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -314752,7 +315178,7 @@ function useLongPress(onLongPress) {
     startPosRef.current = null;
     setPressing(false);
   }, []);
-  const onTouchStart = useCallback((e3) => {
+  const onTouchStart = useCallback3((e3) => {
     const touch = e3.touches[0];
     if (!touch) return;
     startPosRef.current = { x: touch.clientX, y: touch.clientY };
@@ -314763,7 +315189,7 @@ function useLongPress(onLongPress) {
       onLongPress(x7, y8);
     }, LONG_PRESS_MS);
   }, [onLongPress, clear8]);
-  const onTouchMove = useCallback((e3) => {
+  const onTouchMove = useCallback3((e3) => {
     if (!startPosRef.current) return;
     const touch = e3.touches[0];
     if (!touch) return;
@@ -314771,14 +315197,14 @@ function useLongPress(onLongPress) {
     const dy = Math.abs(touch.clientY - startPosRef.current.y);
     if (dx > MOVE_TOLERANCE_PX || dy > MOVE_TOLERANCE_PX) clear8();
   }, [clear8]);
-  const onTouchEnd = useCallback(() => clear8(), [clear8]);
+  const onTouchEnd = useCallback3(() => clear8(), [clear8]);
   return { pressing, touchHandlers: { onTouchStart, onTouchMove, onTouchEnd, onTouchCancel: onTouchEnd } };
 }
 
 // src/host/Chat/chatBubbles/MessageContextMenu.tsx
 init_i18n();
 init_lucide_react();
-import { memo, useState as useState2, useEffect, useRef as useRef2, useCallback as useCallback2 } from "react";
+import { memo, useState as useState3, useEffect as useEffect2, useRef as useRef3, useCallback as useCallback4 } from "react";
 import { jsx, jsxs } from "react/jsx-runtime";
 var MessageContextMenu = memo(function MessageContextMenu2({
   visible,
@@ -314792,13 +315218,13 @@ var MessageContextMenu = memo(function MessageContextMenu2({
   onClose
 }) {
   const { t: t5 } = useTranslation("chat");
-  const menuRef = useRef2(null);
-  const positionRef = useRef2({ x: x7, y: y8 });
-  const [copied, setCopied] = useState2(false);
-  useEffect(() => {
+  const menuRef = useRef3(null);
+  const positionRef = useRef3({ x: x7, y: y8 });
+  const [copied, setCopied] = useState3(false);
+  useEffect2(() => {
     positionRef.current = { x: x7, y: y8 };
   }, [x7, y8]);
-  useEffect(() => {
+  useEffect2(() => {
     if (!visible || !menuRef.current) return;
     const menu = menuRef.current;
     const rect2 = menu.getBoundingClientRect();
@@ -314817,7 +315243,7 @@ var MessageContextMenu = memo(function MessageContextMenu2({
       menu.style.top = `${adjustedY}px`;
     }
   }, [visible]);
-  useEffect(() => {
+  useEffect2(() => {
     if (!visible) return;
     const handleClickOutside = (e3) => {
       if (menuRef.current && !menuRef.current.contains(e3.target)) {
@@ -314839,21 +315265,21 @@ var MessageContextMenu = memo(function MessageContextMenu2({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [visible, onClose]);
-  const handleScrollToMessage = useCallback2(() => {
+  const handleScrollToMessage = useCallback4(() => {
     if (onScrollToMessage && messageIndex !== void 0) {
       onScrollToMessage(messageIndex);
       onClose();
     }
   }, [onScrollToMessage, messageIndex, onClose]);
-  const handleScrollToTop = useCallback2(() => {
+  const handleScrollToTop = useCallback4(() => {
     onScrollToTop?.();
     onClose();
   }, [onScrollToTop, onClose]);
-  const handleScrollToBottom = useCallback2(() => {
+  const handleScrollToBottom = useCallback4(() => {
     onScrollToBottom?.();
     onClose();
   }, [onScrollToBottom, onClose]);
-  const handleCopy = useCallback2(async () => {
+  const handleCopy = useCallback4(async () => {
     if (!messageText) return;
     try {
       await navigator.clipboard.writeText(messageText);
@@ -314942,9 +315368,9 @@ var UserBubble = memo2(function UserBubble2({
   onEdit
 }) {
   const { t: t5 } = useTranslation("chat");
-  const [contextMenu, setContextMenu] = useState3(null);
-  const [copied, setCopied] = useState3(false);
-  const handleContextMenu = useCallback3((e3) => {
+  const [contextMenu, setContextMenu] = useState4(null);
+  const [copied, setCopied] = useState4(false);
+  const handleContextMenu = useCallback5((e3) => {
     const selectedText = window.getSelection()?.toString().trim();
     if (selectedText && selectedText.length > 0) {
       return;
@@ -314957,14 +315383,14 @@ var UserBubble = memo2(function UserBubble2({
       y: e3.clientY
     });
   }, []);
-  const handleCloseContextMenu = useCallback3(() => {
+  const handleCloseContextMenu = useCallback5(() => {
     setContextMenu(null);
   }, []);
-  const openMenuAt = useCallback3((x7, y8) => {
+  const openMenuAt = useCallback5((x7, y8) => {
     setContextMenu({ visible: true, x: x7, y: y8 });
   }, []);
   const { touchHandlers: longPressHandlers } = useLongPress(openMenuAt);
-  const handleCopy = useCallback3(async () => {
+  const handleCopy = useCallback5(async () => {
     try {
       await navigator.clipboard.writeText(message.content);
       setCopied(true);
@@ -314976,7 +315402,7 @@ var UserBubble = memo2(function UserBubble2({
       );
     }
   }, [message.content, t5]);
-  const handleEdit = useCallback3(() => {
+  const handleEdit = useCallback5(() => {
     onEdit?.(message.id, message.content);
   }, [onEdit, message.id, message.content]);
   return /* @__PURE__ */ jsxs2(Fragment, { children: [
@@ -315043,7 +315469,7 @@ var UserBubble = memo2(function UserBubble2({
 
 // src/host/Chat/chatBubbles/AssistantBubble.tsx
 init_i18n();
-import { memo as memo21, useState as useState22, useMemo as useMemo9, useCallback as useCallback16 } from "react";
+import { memo as memo21, useState as useState22, useMemo as useMemo10, useCallback as useCallback17 } from "react";
 
 // src/shims/cache.ts
 init_misc();
@@ -316813,7 +317239,7 @@ var markdownCache = new MarkdownRenderCache(20);
 function formatContent(content) {
   return markdownCache.render(content);
 }
-function extractAssistantText(message) {
+function extractAssistantText2(message) {
   if (message.content) return message.content;
   if (message.blocks) {
     return message.blocks.filter((b12) => b12.type === "text").map((b12) => b12.content).join("\n");
@@ -316841,35 +317267,35 @@ import React2 from "react";
 // src/host/Chat/chatBlocks/ThinkingBlockRenderer.tsx
 init_lucide_react();
 init_clsx();
-import { memo as memo3, useState as useState4, useEffect as useEffect2, useRef as useRef3 } from "react";
+import { memo as memo3, useState as useState5, useEffect as useEffect3, useRef as useRef4 } from "react";
 import { Fragment as Fragment2, jsx as jsx3, jsxs as jsxs3 } from "react/jsx-runtime";
 var ThinkingBlockRenderer = memo3(function ThinkingBlockRenderer2({
   block: block2,
   isStreaming = false,
   compact = false
 }) {
-  const [isCollapsed, setIsCollapsed] = useState4(() => {
+  const [isCollapsed, setIsCollapsed] = useState5(() => {
     if (block2.collapsed !== void 0) return block2.collapsed;
     return !isStreaming;
   });
-  useEffect2(() => {
+  useEffect3(() => {
     if (!isStreaming) {
       setIsCollapsed(true);
     }
   }, [isStreaming]);
-  useEffect2(() => {
+  useEffect3(() => {
     if (block2.collapsed === true) {
       setIsCollapsed(true);
     }
   }, [block2.collapsed]);
-  const bodyRef = useRef3(null);
-  const [pinnedToBottom, setPinnedToBottom] = useState4(true);
+  const bodyRef = useRef4(null);
+  const [pinnedToBottom, setPinnedToBottom] = useState5(true);
   const handleBodyScroll = () => {
     const el = bodyRef.current;
     if (!el) return;
     setPinnedToBottom(el.scrollHeight - el.scrollTop - el.clientHeight < 24);
   };
-  useEffect2(() => {
+  useEffect3(() => {
     if (!isStreaming || !pinnedToBottom) return;
     const el = bodyRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -316935,7 +317361,7 @@ init_lucide_react();
 init_logger();
 import { Component } from "react";
 import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
-var log = createLogger("ContentBlockErrorBoundary");
+var log10 = createLogger("ContentBlockErrorBoundary");
 var ContentBlockErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
@@ -316953,7 +317379,7 @@ var ContentBlockErrorBoundary = class extends Component {
   }
   componentDidCatch(error3, errorInfo) {
     const { blockType, blockId } = this.props;
-    log.error("\u5185\u5BB9\u5757\u6E32\u67D3\u9519\u8BEF", error3, {
+    log10.error("\u5185\u5BB9\u5757\u6E32\u67D3\u9519\u8BEF", error3, {
       blockType,
       blockId,
       componentStack: errorInfo.componentStack
@@ -317011,7 +317437,7 @@ init_logger();
 init_stores();
 init_misc();
 init_stores();
-import { memo as memo4, useReducer, useCallback as useCallback5, useEffect as useEffect4, useMemo, useRef as useRef5 } from "react";
+import { memo as memo4, useReducer, useCallback as useCallback6, useEffect as useEffect4, useMemo as useMemo2, useRef as useRef5 } from "react";
 import { Fragment as Fragment3, jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
 var log11 = createLogger("AskQuestionCard");
 function reducer(state5, action) {
@@ -317073,7 +317499,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
   const { t: t5 } = useTranslation("chat");
   const containerRef = useRef5(null);
   const inputRef = useRef5(null);
-  const questions = useMemo(() => {
+  const questions = useMemo2(() => {
     if (block2.questions && block2.questions.length > 0) return block2.questions;
     if (block2.options && block2.header) {
       return [
@@ -317092,7 +317518,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
   const isDeclinedAll = !!block2.declined;
   const N4 = questions.length;
   const isSingle = N4 === 1;
-  const persistedAnswers = useMemo(() => {
+  const persistedAnswers = useMemo2(() => {
     if (block2.answers && block2.answers.length > 0) return block2.answers;
     if (block2.answer) {
       return [
@@ -317116,7 +317542,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
   }));
   const currentQ = questions[state5.currentIdx];
   const currentSlot = state5.per[state5.currentIdx];
-  const isSlotAnswered = useCallback5(
+  const isSlotAnswered = useCallback6(
     (idx) => {
       const s3 = state5.per[idx];
       if (!s3) return false;
@@ -317124,16 +317550,16 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
     },
     [state5.per]
   );
-  const anyAnswered = useMemo(
+  const anyAnswered = useMemo2(
     () => state5.per.some((_5, i2) => isSlotAnswered(i2)),
     [state5.per, isSlotAnswered]
   );
-  const allAnswered = useMemo(
+  const allAnswered = useMemo2(
     () => state5.per.every((_5, i2) => isSlotAnswered(i2)),
     [state5.per, isSlotAnswered]
   );
   const answeredCount = state5.per.filter((_5, i2) => isSlotAnswered(i2)).length;
-  const submitAll = useCallback5(
+  const submitAll = useCallback6(
     async (kind) => {
       if (isAnswered || state5.submitting) return;
       if (!block2.sessionId) return;
@@ -317144,7 +317570,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
         declined: s3.declined
       }));
       dispatch3({ type: "BEGIN_SUBMIT" });
-      const store3 = sessionStoreManager.getState().stores.get(block2.sessionId)?.getState();
+      const store3 = sessionStoreManager2.getState().stores.get(block2.sessionId)?.getState();
       if (kind === "decline-all") {
         store3?.updateQuestionBlock(block2.id, {
           declined: true
@@ -317183,7 +317609,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
     },
     [isAnswered, state5.submitting, state5.per, anyAnswered, block2.id, block2.sessionId]
   );
-  const handleOptionClick = useCallback5(
+  const handleOptionClick = useCallback6(
     (option2) => {
       if (isAnswered || state5.submitting) return;
       dispatch3({
@@ -317195,7 +317621,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
     },
     [isAnswered, state5.submitting, state5.currentIdx, currentQ?.multiSelect]
   );
-  const handleKeyDown = useCallback5(
+  const handleKeyDown = useCallback6(
     (e3) => {
       if (isAnswered || state5.submitting) return;
       const optionCount2 = currentQ?.options.length ?? 0;
@@ -317540,7 +317966,7 @@ init_services();
 init_logger();
 init_stores();
 init_misc();
-import { memo as memo5, useCallback as useCallback6, useRef as useRef6, useState as useState6 } from "react";
+import { memo as memo5, useCallback as useCallback7, useRef as useRef6, useState as useState6 } from "react";
 import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
 var log12 = createLogger("FormCard");
 var buildCardStyle = (style3) => {
@@ -317587,20 +318013,20 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
   const [savingTemplate, setSavingTemplate] = useState6(false);
   const isSubmitted = block2.status === "submitted";
   const isSkipped = block2.status === "skipped";
-  const registerRef = useCallback6(
+  const registerRef = useCallback7(
     (name) => (el) => {
       fieldRefs.current[name] = el;
     },
     []
   );
-  const setValue = useCallback6(
+  const setValue = useCallback7(
     (name, value3) => {
       if (readNone) return;
       setRawValues((prev2) => ({ ...prev2, [name]: value3 }));
     },
     [readNone]
   );
-  const collectValues = useCallback6(() => {
+  const collectValues = useCallback7(() => {
     if (!readNone) return rawValues;
     const vals = {};
     for (const f2 of block2.fields) {
@@ -317614,7 +318040,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
     }
     return vals;
   }, [readNone, rawValues, block2.fields]);
-  const submit = useCallback6(async () => {
+  const submit = useCallback7(async () => {
     if (isSubmitted || isSkipped || submitting) return;
     if (!block2.sessionId) {
       useToastStore.getState().error(
@@ -317657,7 +318083,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
       setSubmitting(false);
     }
   }, [block2, isSubmitted, isSkipped, submitting, privateSubmit, collectValues, t5]);
-  const skip = useCallback6(async () => {
+  const skip = useCallback7(async () => {
     if (isSubmitted || isSkipped || submitting || skipping) return;
     if (!block2.sessionId) return;
     setSkipping(true);
@@ -317680,7 +318106,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
       setSkipping(false);
     }
   }, [block2, isSubmitted, isSkipped, submitting, skipping, t5]);
-  const saveAsTemplate = useCallback6(async () => {
+  const saveAsTemplate = useCallback7(async () => {
     if (savingTemplate || !block2.sessionId) return;
     setSavingTemplate(true);
     try {
@@ -318041,7 +318467,7 @@ init_stores();
 init_lucide_react();
 init_stores();
 init_misc();
-import { memo as memo6, useState as useState7, useCallback as useCallback7, useRef as useRef7, useEffect as useEffect5 } from "react";
+import { memo as memo6, useState as useState7, useCallback as useCallback8, useRef as useRef7, useEffect as useEffect5 } from "react";
 import { jsx as jsx7, jsxs as jsxs7 } from "react/jsx-runtime";
 var log13 = createLogger("PlanModeBlock");
 var PLAN_STATUS_CONFIG = {
@@ -318131,11 +318557,11 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
   const [showFeedbackInput, setShowFeedbackInput] = useState7(false);
   const containerRef = useRef7(null);
   const feedbackInputRef = useRef7(null);
-  const conversationId = useActiveSessionConversationId();
-  const { continueChat } = useActiveSessionActions();
+  const conversationId = useActiveSessionConversationId2();
+  const { continueChat } = useActiveSessionActions2();
   const statusConfig = PLAN_STATUS_CONFIG[block2.status];
   const isInteractive = block2.status === "pending_approval" && block2.isActive;
-  const handleKeyDown = useCallback7(
+  const handleKeyDown = useCallback8(
     (e3) => {
       if (e3.key === "Escape") {
         if (showFeedbackInput) {
@@ -318152,7 +318578,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
       feedbackInputRef.current.focus();
     }
   }, [showFeedbackInput]);
-  const buildApprovalPrompt = useCallback7(
+  const buildApprovalPrompt = useCallback8(
     (approved, feedback) => {
       const planTitle = block2.title || t5("plan.defaultTitle");
       const action = approved ? "\u6279\u51C6" : "\u62D2\u7EDD";
@@ -318164,7 +318590,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
     },
     [block2.title, t5]
   );
-  const handleApprove = useCallback7(async () => {
+  const handleApprove = useCallback8(async () => {
     if (!isInteractive || isSubmitting) return;
     setIsSubmitting(true);
     try {
@@ -318187,7 +318613,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
       setIsSubmitting(false);
     }
   }, [isInteractive, isSubmitting, conversationId, block2.id, buildApprovalPrompt, continueChat, t5]);
-  const handleReject = useCallback7(async () => {
+  const handleReject = useCallback8(async () => {
     if (!isInteractive || isSubmitting) return;
     setIsSubmitting(true);
     try {
@@ -318398,7 +318824,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
 // src/host/Chat/tool-calls/AgentRunBlockRenderer.tsx
 init_i18n();
 init_clsx();
-import { memo as memo7, useState as useState8, useMemo as useMemo2 } from "react";
+import { memo as memo7, useState as useState8, useMemo as useMemo3 } from "react";
 
 // src/shims/toolSummary.ts
 init_misc();
@@ -319588,7 +320014,7 @@ var AgentRunBlockRenderer = memo7(function AgentRunBlockRenderer2({
   const StatusIcon = statusConfig.icon;
   const isRunning = block2.status === "running";
   const hasToolCalls2 = block2.toolCalls.length > 0;
-  const duration = useMemo2(() => {
+  const duration = useMemo3(() => {
     if (block2.duration) return formatDuration(block2.duration);
     const calc = calculateDuration(block2.startedAt, block2.completedAt);
     return calc ? formatDuration(calc) : isRunning ? "\u8FD0\u884C\u4E2D" : "";
@@ -319750,7 +320176,7 @@ init_stores();
 init_stores();
 init_misc();
 init_services();
-import { memo as memo9, useState as useState10, useCallback as useCallback8, useRef as useRef8, useEffect as useEffect6, useMemo as useMemo3 } from "react";
+import { memo as memo9, useState as useState10, useCallback as useCallback9, useRef as useRef8, useEffect as useEffect6, useMemo as useMemo4 } from "react";
 import { Fragment as Fragment4, jsx as jsx10, jsxs as jsxs10 } from "react/jsx-runtime";
 var log14 = createLogger("PermissionRequest");
 function getToolIcon(toolName) {
@@ -319873,15 +320299,15 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
   const [submittedStatus, setSubmittedStatus] = useState10(null);
   const containerRef = useRef8(null);
   const isPlanApproval = block2.denials.length === 0;
-  const getStoreByConversationId = useCallback8((conversationId) => {
-    for (const store3 of sessionStoreManager.getState().stores.values()) {
+  const getStoreByConversationId = useCallback9((conversationId) => {
+    for (const store3 of sessionStoreManager2.getState().stores.values()) {
       if (store3.getState().conversationId === conversationId) {
         return store3.getState() ?? null;
       }
     }
     return null;
   }, []);
-  const setItemDecision = useCallback8((index2, dec) => {
+  const setItemDecision = useCallback9((index2, dec) => {
     setDecisions((prev2) => {
       const next3 = { ...prev2 };
       if (dec === void 0) delete next3[index2];
@@ -319889,14 +320315,14 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
       return next3;
     });
   }, []);
-  const setAllDecisions = useCallback8((dec) => {
+  const setAllDecisions = useCallback9((dec) => {
     const next3 = {};
     block2.denials.forEach((_5, i2) => {
       next3[i2] = dec;
     });
     setDecisions(next3);
   }, [block2.denials]);
-  const counts = useMemo3(() => {
+  const counts = useMemo4(() => {
     let approved = 0, denied = 0;
     block2.denials.forEach((_5, i2) => {
       if (decisions[i2] === "approved") approved++;
@@ -319904,11 +320330,11 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
     });
     return { approved, denied, decided: approved + denied, pending: block2.denials.length - approved - denied };
   }, [block2.denials, decisions]);
-  const globalRulePreview = useMemo3(() => {
+  const globalRulePreview = useMemo4(() => {
     if (scope !== "global") return [];
     return [...new Set(block2.denials.filter((_5, i2) => decisions[i2] === "approved").map(buildGlobalRule))];
   }, [scope, block2.denials, decisions]);
-  const handlePlanDecision = useCallback8(async (approved) => {
+  const handlePlanDecision = useCallback9(async (approved) => {
     if (planLocalStatus !== "pending" || isProcessing) return;
     setIsProcessing(true);
     setPlanLocalStatus(approved ? "approved" : "denied");
@@ -319930,7 +320356,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
       setIsProcessing(false);
     }
   }, [planLocalStatus, isProcessing, block2.denials, block2.sessionId, getStoreByConversationId]);
-  const handleSubmit = useCallback8(async () => {
+  const handleSubmit = useCallback9(async () => {
     if (isProcessing || counts.decided === 0) return;
     setIsProcessing(true);
     try {
@@ -319977,7 +320403,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
       setIsProcessing(false);
     }
   }, [isProcessing, counts.decided, block2.denials, block2.id, block2.sessionId, decisions, scope, getStoreByConversationId, t5]);
-  const handleKeyDown = useCallback8((event3) => {
+  const handleKeyDown = useCallback9((event3) => {
     if (isProcessing) return;
     if (event3.key === "Enter") {
       event3.preventDefault();
@@ -320227,11 +320653,11 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
 import { memo as memo12 } from "react";
 
 // src/shims/lightweightMarkdown.tsx
-import { memo as memo11, useCallback as useCallback10, useMemo as useMemo4, useState as useState12 } from "react";
+import { memo as memo11, useCallback as useCallback11, useMemo as useMemo5, useState as useState12 } from "react";
 
 // src/host/Chat/common/DeferredMermaidDiagram.tsx
 init_i18n();
-import { memo as memo10, useState as useState11, useCallback as useCallback9, useEffect as useEffect7, useRef as useRef9 } from "react";
+import { memo as memo10, useState as useState11, useCallback as useCallback10, useEffect as useEffect7, useRef as useRef9 } from "react";
 
 // src/shims/sanitizeMermaidSvg.ts
 var DANGEROUS_TAGS = /* @__PURE__ */ new Set([
@@ -320467,14 +320893,14 @@ var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
   useEffect7(() => {
     return () => removeDiagramState(id38);
   }, [id38]);
-  const updateState = useCallback9((updates) => {
+  const updateState = useCallback10((updates) => {
     setDiagramState((prev2) => {
       const newState2 = { ...prev2, ...updates };
       saveDiagramState(id38, newState2);
       return newState2;
     });
   }, [id38]);
-  const renderDiagram2 = useCallback9(async () => {
+  const renderDiagram2 = useCallback10(async () => {
     if (hasRequestedRender.current && renderedCodeRef.current === code) return;
     hasRequestedRender.current = true;
     if (!code || !code.trim()) {
@@ -320511,20 +320937,20 @@ var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
       return () => clearTimeout(timer4);
     }
   }, [isStreaming, renderState, code, mermaidEnabled, renderDiagram2]);
-  const handleZoomIn = useCallback9(() => {
+  const handleZoomIn = useCallback10(() => {
     updateState({
       scale: Math.min(diagramState.scale + SCALE_CONFIG.step, SCALE_CONFIG.max)
     });
   }, [diagramState.scale, updateState]);
-  const handleZoomOut = useCallback9(() => {
+  const handleZoomOut = useCallback10(() => {
     updateState({
       scale: Math.max(diagramState.scale - SCALE_CONFIG.step, SCALE_CONFIG.min)
     });
   }, [diagramState.scale, updateState]);
-  const handleReset = useCallback9(() => {
+  const handleReset = useCallback10(() => {
     updateState({ scale: SCALE_CONFIG.default });
   }, [updateState]);
-  const handleWheel = useCallback9((e3) => {
+  const handleWheel = useCallback10((e3) => {
     if (diagramState.viewMode !== "chart") return;
     if (!e3.ctrlKey && !e3.metaKey) return;
     e3.preventDefault();
@@ -320536,10 +320962,10 @@ var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
       )
     });
   }, [diagramState.viewMode, diagramState.scale, updateState]);
-  const handleToggleView = useCallback9((mode) => {
+  const handleToggleView = useCallback10((mode) => {
     updateState({ viewMode: mode });
   }, [updateState]);
-  const handleCopySource = useCallback9(async () => {
+  const handleCopySource = useCallback10(async () => {
     try {
       await navigator.clipboard.writeText(code);
       setCopySuccess(true);
@@ -327109,8 +327535,8 @@ var LightweightMarkdown = memo11(function LightweightMarkdown2({
   content,
   caret: caret2 = false
 }) {
-  const normalizedContent = useMemo4(() => content.replace(/\n/g, " "), [content]);
-  const parts = useMemo4(() => parseInlineMarkdown(normalizedContent), [normalizedContent]);
+  const normalizedContent = useMemo5(() => content.replace(/\n/g, " "), [content]);
+  const parts = useMemo5(() => parseInlineMarkdown(normalizedContent), [normalizedContent]);
   return /* @__PURE__ */ jsxs12("span", { className: "break-words", children: [
     parts.map((part, index2) => renderPart(part, index2)),
     caret2 && content.trim() && /* @__PURE__ */ jsx12("span", { "aria-hidden": true, className: "streaming-caret" })
@@ -327236,13 +327662,13 @@ var StreamingCodeBlock = memo11(function StreamingCodeBlock2({
   completed: completed2 = false
 }) {
   const [copied, setCopied] = useState12(false);
-  const handleCopy = useCallback10(() => {
+  const handleCopy = useCallback11(() => {
     navigator.clipboard.writeText(content).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
   }, [content]);
-  const highlightedHtml = useMemo4(() => {
+  const highlightedHtml = useMemo5(() => {
     if (!completed2) return null;
     return highlightCode(content, language2 || "");
   }, [content, language2, completed2]);
@@ -327285,7 +327711,7 @@ var CompletedTextBlock = memo11(function CompletedTextBlock2({
   caret: caret2 = false,
   blockIndex
 }) {
-  const html3 = useMemo4(() => {
+  const html3 = useMemo5(() => {
     if (!content.trim()) return null;
     const rendered = streamingMdCache.render(content);
     return caret2 ? injectCaretIntoLastBlock(rendered) : rendered;
@@ -327304,7 +327730,7 @@ var ProgressiveStreamingMarkdown = memo11(function ProgressiveStreamingMarkdown2
   content,
   completed: completed2 = false
 }) {
-  const result = useMemo4(() => {
+  const result = useMemo5(() => {
     if (!content) return null;
     if (content.length > 5e4) {
       return /* @__PURE__ */ jsx12("span", { className: "whitespace-pre-wrap break-words", children: content });
@@ -327433,14 +327859,14 @@ var ProgressiveStreamingMarkdown = memo11(function ProgressiveStreamingMarkdown2
 });
 
 // src/host/Chat/common/MarkdownImageSurface.tsx
-import { useCallback as useCallback12, useState as useState14 } from "react";
+import { useCallback as useCallback13, useState as useState14 } from "react";
 
 // src/host/Chat/common/MarkdownImageViewer.tsx
 init_i18n();
 init_lucide_react();
 init_services();
 init_stores();
-import { useCallback as useCallback11, useEffect as useEffect8, useState as useState13 } from "react";
+import { useCallback as useCallback12, useEffect as useEffect8, useState as useState13 } from "react";
 import { createPortal } from "react-dom";
 import { jsx as jsx13, jsxs as jsxs13 } from "react/jsx-runtime";
 function MarkdownImageViewer({ image, onClose }) {
@@ -327456,12 +327882,12 @@ function MarkdownImageViewer({ image, onClose }) {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
-  const handleBackdropMouseDown = useCallback11((event3) => {
+  const handleBackdropMouseDown = useCallback12((event3) => {
     if (event3.target === event3.currentTarget) {
       onClose();
     }
   }, [onClose]);
-  const handleSave = useCallback11(async () => {
+  const handleSave = useCallback12(async () => {
     if (saving) return;
     setSaving(true);
     try {
@@ -327531,7 +327957,7 @@ function MarkdownImageViewer({ image, onClose }) {
 import { jsx as jsx14, jsxs as jsxs14 } from "react/jsx-runtime";
 function MarkdownImageSurface({ children: children2 }) {
   const [viewerImage, setViewerImage] = useState14(null);
-  const handleClick = useCallback12((event3) => {
+  const handleClick = useCallback13((event3) => {
     const target = event3.target;
     if (!(target instanceof Element)) return;
     const image = target.closest("img.markdown-chat-image");
@@ -327569,7 +327995,7 @@ var TextBlockRenderer = memo12(function TextBlockRenderer2({
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo17, useState as useState16, useMemo as useMemo7, useCallback as useCallback13, useEffect as useEffect9 } from "react";
+import { memo as memo17, useState as useState16, useMemo as useMemo8, useCallback as useCallback14, useEffect as useEffect9 } from "react";
 
 // src/shims/clipboard.ts
 async function copyToClipboard(text5) {
@@ -327595,7 +328021,7 @@ init_stores();
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo13, useMemo as useMemo5 } from "react";
+import { memo as memo13, useMemo as useMemo6 } from "react";
 
 // node_modules/.pnpm/diff@8.0.4/node_modules/diff/libesm/diff/base.js
 var Diff = class {
@@ -327901,7 +328327,7 @@ var InlineDiffView = memo13(function InlineDiffView2({
   noHeader = false
 }) {
   const { t: t5 } = useTranslation("chat");
-  const isTooLarge = useMemo5(() => {
+  const isTooLarge = useMemo6(() => {
     if (diffString) {
       return diffString.length > MAX_DIFF_CHARS;
     }
@@ -327910,7 +328336,7 @@ var InlineDiffView = memo13(function InlineDiffView2({
     }
     return false;
   }, [diffString, oldContent, newContent]);
-  const displayLines = useMemo5(() => {
+  const displayLines = useMemo6(() => {
     if (isTooLarge) return [];
     if (diffString) {
       return parseUnifiedDiff(diffString);
@@ -327920,10 +328346,10 @@ var InlineDiffView = memo13(function InlineDiffView2({
     }
     return [];
   }, [diffString, oldContent, newContent, isTooLarge]);
-  const resultTooLarge = useMemo5(() => {
+  const resultTooLarge = useMemo6(() => {
     return displayLines.length > MAX_DIFF_LINES;
   }, [displayLines]);
-  const stats = useMemo5(() => {
+  const stats = useMemo6(() => {
     let added = 0;
     let removed = 0;
     for (const line3 of displayLines) {
@@ -328273,7 +328699,7 @@ var PatchDiffRenderer = memo15(function PatchDiffRenderer2({
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo16, useMemo as useMemo6 } from "react";
+import { memo as memo16, useMemo as useMemo7 } from "react";
 
 // src/shims/language.ts
 var EXTENSION_LANGUAGE_MAP = {
@@ -328332,20 +328758,20 @@ var CodePreviewView = memo16(function CodePreviewView2({
   noHeader = false
 }) {
   const { t: t5 } = useTranslation("chat");
-  const language2 = useMemo6(() => {
+  const language2 = useMemo7(() => {
     const lang = filePath ? getLanguageFromPath(filePath) : "plaintext";
     return lang || "plaintext";
   }, [filePath]);
-  const isTooLarge = useMemo6(() => {
+  const isTooLarge = useMemo7(() => {
     return content ? content.length > MAX_PREVIEW_CHARS : false;
   }, [content]);
-  const lineCount = useMemo6(() => {
+  const lineCount = useMemo7(() => {
     return content ? content.split("\n").length : 0;
   }, [content]);
-  const isTooManyLines = useMemo6(() => {
+  const isTooManyLines = useMemo7(() => {
     return lineCount > MAX_PREVIEW_LINES;
   }, [lineCount]);
-  const highlighted = useMemo6(() => {
+  const highlighted = useMemo7(() => {
     if (!content) return null;
     if (isTooLarge) return null;
     if (isTooManyLines) {
@@ -328359,7 +328785,7 @@ var CodePreviewView = memo16(function CodePreviewView2({
   const handleClick = () => {
     onOpenFile?.(filePath);
   };
-  const plainContent = useMemo6(() => {
+  const plainContent = useMemo7(() => {
     if (!content) return "";
     if (isTooLarge || isTooManyLines) {
       return content.split("\n").slice(0, MAX_PREVIEW_LINES).join("\n");
@@ -328479,14 +328905,14 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
   const [showToolDetails, setShowToolDetails] = useState16(false);
   const [copiedCommand, setCopiedCommand] = useState16(false);
   const [copiedOutput, setCopiedOutput] = useState16(false);
-  const toolConfig = useMemo7(() => getToolConfig(block2.name), [block2.name]);
+  const toolConfig = useMemo8(() => getToolConfig(block2.name), [block2.name]);
   const openFile = useFileEditorStore((s3) => s3.openFile);
   const currentWorkspace = useWorkspaceStore((s3) => {
     const { workspaces, currentWorkspaceId } = s3;
     return workspaces.find((w5) => w5.id === currentWorkspaceId) || null;
   });
-  const fullFilePath = useMemo7(() => extractFullFilePath(block2.input), [block2.input]);
-  const handleFilePathClick = useCallback13((e3) => {
+  const fullFilePath = useMemo8(() => extractFullFilePath(block2.input), [block2.input]);
+  const handleFilePathClick = useCallback14((e3) => {
     e3.stopPropagation();
     if (!fullFilePath) return;
     const isAbsolute = fullFilePath.startsWith("/") || /^[A-Za-z]:[\\/]/.test(fullFilePath);
@@ -328494,7 +328920,7 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
     const fileName = fullFilePath.split(/[/\\]/).pop() || fullFilePath;
     openFile(absolutePath, fileName);
   }, [fullFilePath, currentWorkspace, openFile]);
-  const handleOpenFileByPath = useCallback13((path4) => {
+  const handleOpenFileByPath = useCallback14((path4) => {
     if (!path4) return;
     const isAbsolute = path4.startsWith("/") || /^[A-Za-z]:[\\/]/.test(path4);
     const absolutePath = isAbsolute ? path4 : currentWorkspace ? currentWorkspace.path.replace(/[\\/]+$/, "") + "/" + path4.replace(/^[\\/]+/, "") : path4;
@@ -328503,16 +328929,16 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
   }, [currentWorkspace, openFile]);
   const statusConfig = STATUS_CONFIG[block2.status] || STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
-  const duration = useMemo7(() => {
+  const duration = useMemo8(() => {
     if (block2.duration) return formatDuration(block2.duration);
     const calculated = calculateDuration(block2.startedAt, block2.completedAt);
     return calculated ? formatDuration(calculated) : "";
   }, [block2.duration, block2.startedAt, block2.completedAt]);
-  const durationMs = useMemo7(() => {
+  const durationMs = useMemo8(() => {
     if (block2.duration) return block2.duration;
     return calculateDuration(block2.startedAt, block2.completedAt) ?? 0;
   }, [block2.duration, block2.startedAt, block2.completedAt]);
-  const errorSummary = useMemo7(() => {
+  const errorSummary = useMemo8(() => {
     if (block2.status !== "failed" || !block2.error) return "";
     const firstLine = block2.error.split("\n").map((l4) => l4.trim()).find((l4) => l4.length > 0);
     return firstLine ? firstLine.length > 80 ? firstLine.slice(0, 80) + "\u2026" : firstLine : "";
@@ -328522,8 +328948,8 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
       setIsExpanded(false);
     }
   }, [isStreaming]);
-  const keyInfo = useMemo7(() => extractToolKeyInfo(block2.name, block2.input), [block2.name, block2.input]);
-  const editOutputSummary = useMemo7(() => {
+  const keyInfo = useMemo8(() => extractToolKeyInfo(block2.name, block2.input), [block2.name, block2.input]);
+  const editOutputSummary = useMemo8(() => {
     if (!isEditTool(block2.name) || block2.status !== "completed") {
       return null;
     }
@@ -328544,38 +328970,38 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
     }
     return null;
   }, [block2.output, block2.name, block2.status]);
-  const grepData = useMemo7(() => {
+  const grepData = useMemo8(() => {
     if (isGrepTool(block2) && block2.output) {
       return parseGrepMatches(block2.output, block2.input);
     }
     return null;
   }, [block2]);
   const outputNeedsExpand = (block2.output?.length ?? 0) > 1e3;
-  const collapsedSummary = useMemo7(() => {
+  const collapsedSummary = useMemo8(() => {
     if (block2.status === "completed" || block2.status === "failed") {
       return generateCollapsedSummary(block2.name, block2.input, block2.output, block2.status);
     }
     return null;
   }, [block2.name, block2.input, block2.output, block2.status]);
-  const toolShortName = useMemo7(() => getToolShortName(block2.name), [block2.name]);
+  const toolShortName = useMemo8(() => getToolShortName(block2.name), [block2.name]);
   const hasInput = block2.input && Object.keys(block2.input).length > 0;
   const hasOutput = block2.output && block2.output.length > 0;
   const hasError = block2.status === "failed" && block2.error;
   const canExpand = hasInput || hasOutput || hasError;
-  const showDiffButton = useMemo7(() => {
+  const showDiffButton = useMemo8(() => {
     const isEdit = isEditTool(block2.name);
     const isCompleted = block2.status === "completed";
     const hasDiff = !!block2.diffData;
     return isEdit && isCompleted && hasDiff;
   }, [block2.name, block2.status, block2.diffData]);
-  const hasPatchData = useMemo7(() => {
+  const hasPatchData = useMemo8(() => {
     return block2.name === "apply_patch" && block2.patchData && block2.patchData.length > 0;
   }, [block2.name, block2.patchData]);
-  const isUpdatePlan = useMemo7(() => {
+  const isUpdatePlan = useMemo8(() => {
     return block2.name === "update_plan";
   }, [block2.name]);
   const useCustomRenderer = grepData !== null || hasPatchData;
-  const statusAnimationClass = useMemo7(() => {
+  const statusAnimationClass = useMemo8(() => {
     switch (block2.status) {
       case "pending":
         return "animate-pulse border-dashed";
@@ -328591,7 +329017,7 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
         return "";
     }
   }, [block2.status]);
-  const displayOutput = useMemo7(() => {
+  const displayOutput = useMemo8(() => {
     if (!block2.output) return "";
     const normalizedToolName = block2.name.toLowerCase();
     if (normalizedToolName.includes("bash") || normalizedToolName.includes("command") || normalizedToolName.includes("execute")) {
@@ -328599,17 +329025,17 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
     }
     return block2.output;
   }, [block2.name, block2.output]);
-  const isBashTool = useMemo7(() => {
+  const isBashTool = useMemo8(() => {
     const n2 = block2.name.toLowerCase();
     return n2.includes("bash") || n2.includes("command") || n2.includes("execute");
   }, [block2.name]);
-  const renderedOutput = useMemo7(() => {
+  const renderedOutput = useMemo8(() => {
     if (!block2.output) return "";
     if (isBashTool) return ansiToHtml(block2.output);
     return "";
   }, [block2.name, block2.output, isBashTool]);
-  const fullCommand = useMemo7(() => extractFullCommand(block2.input), [block2.input]);
-  const outputIsJson = useMemo7(() => {
+  const fullCommand = useMemo8(() => extractFullCommand(block2.input), [block2.input]);
+  const outputIsJson = useMemo8(() => {
     if (!displayOutput) return false;
     const trimmed = displayOutput.trim();
     if (!(trimmed.startsWith("{") && trimmed.endsWith("}") || trimmed.startsWith("[") && trimmed.endsWith("]"))) {
@@ -328622,14 +329048,14 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
       return false;
     }
   }, [displayOutput]);
-  const handleCopyCommand = useCallback13(async (e3) => {
+  const handleCopyCommand = useCallback14(async (e3) => {
     e3.stopPropagation();
     if (!fullCommand) return;
     await copyToClipboard(fullCommand);
     setCopiedCommand(true);
     setTimeout(() => setCopiedCommand(false), 2e3);
   }, [fullCommand]);
-  const handleCopyOutput = useCallback13(async () => {
+  const handleCopyOutput = useCallback14(async () => {
     const text5 = block2.output ? stripAnsiCodes(block2.output) : "";
     if (!text5) return;
     await copyToClipboard(text5);
@@ -328887,7 +329313,7 @@ var ToolCallBlockRenderer = memo17(function ToolCallBlockRenderer2({
 // src/host/Chat/chatBlocks/PluginCardHost.tsx
 init_lucide_react();
 init_misc();
-import { Suspense, useCallback as useCallback14, useEffect as useEffect10, useState as useState17 } from "react";
+import { Suspense, useCallback as useCallback15, useEffect as useEffect10, useState as useState17 } from "react";
 
 // src/host/Chat/chatBlocks/chatSessionContext.ts
 import { createContext, useContext } from "react";
@@ -328938,7 +329364,7 @@ function PluginCardFallback({ block: block2 }) {
   const [copied, setCopied] = useState17(false);
   const dataText = typeof block2.data === "string" ? block2.data : JSON.stringify(block2.data, null, 2);
   const preview = dataText.length > 120 ? dataText.slice(0, 120) + "\u2026" : dataText;
-  const handleCopy = useCallback14(async () => {
+  const handleCopy = useCallback15(async () => {
     await copyToClipboard(dataText);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1400);
@@ -328986,7 +329412,7 @@ function PluginCardHost({ block: block2, onSendToChat }) {
   const [loadKey, setLoadKey] = useState17(0);
   const ctxSessionId = useChatSessionId();
   const cardKey = block2.cardKey ?? block2.toolName;
-  const loadCard = useCallback14(async () => {
+  const loadCard = useCallback15(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -329079,7 +329505,7 @@ function ContextCompactRenderer({ block: block2 }) {
 // src/host/Chat/tool-calls/AssaultResultCard.tsx
 init_clsx();
 init_lucide_react();
-import { memo as memo18, useMemo as useMemo8, useState as useState18 } from "react";
+import { memo as memo18, useMemo as useMemo9, useState as useState18 } from "react";
 import { jsx as jsx23, jsxs as jsxs22 } from "react/jsx-runtime";
 function parseWorkflowOutput(output2) {
   if (!output2) return null;
@@ -329141,11 +329567,11 @@ var STATUS_STYLE = {
   open: "border-warning/30 bg-warning/[0.04] text-warning"
 };
 var AssaultResultCard = memo18(function AssaultResultCard2({ block: block2 }) {
-  const wf = useMemo8(() => parseWorkflowOutput(block2.output), [block2.output]);
+  const wf = useMemo9(() => parseWorkflowOutput(block2.output), [block2.output]);
   const [familiesExpanded, setFamiliesExpanded] = useState18(true);
   const [timelineExpanded, setTimelineExpanded] = useState18(true);
-  const events = useMemo8(() => extractTimelineEvents(wf?.logs || []), [wf?.logs]);
-  const lastSnapshot = useMemo8(() => {
+  const events = useMemo9(() => extractTimelineEvents(wf?.logs || []), [wf?.logs]);
+  const lastSnapshot = useMemo9(() => {
     for (let i2 = events.length - 1; i2 >= 0; i2--) {
       if (events[i2].type === "snapshot") return parseSnapshot(events[i2].text);
     }
@@ -329505,7 +329931,7 @@ init_misc();
 init_lucide_react();
 init_misc();
 init_logger();
-import { Component as Component3, Suspense as Suspense2, useCallback as useCallback15, useEffect as useEffect11, useState as useState20 } from "react";
+import { Component as Component3, Suspense as Suspense2, useCallback as useCallback16, useEffect as useEffect11, useState as useState20 } from "react";
 import { jsx as jsx25, jsxs as jsxs24 } from "react/jsx-runtime";
 var log20 = createLogger("BlockCardOverrideHost");
 function blockToCardProps(block2, entry) {
@@ -329564,7 +329990,7 @@ function BlockCardOverrideHost({ block: block2, entry, cardKey }) {
   const [error3, setError] = useState20(null);
   const [loading, setLoading] = useState20(true);
   const [loadKey, setLoadKey] = useState20(0);
-  const loadCard = useCallback15(async () => {
+  const loadCard = useCallback16(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -329837,12 +330263,12 @@ var AssistantBubble = memo21(function AssistantBubble2({
   const hasBlocks = message.blocks && message.blocks.length > 0;
   const immersiveAvatarUrl = useThemeStore((s3) => s3.activeTheme?.immersive?.enabled ? s3.activeTheme.immersive.avatar?.url : null);
   const avatarUrl = immersiveAvatarUrl;
-  const messageText = useMemo9(() => extractAssistantText(message), [message]);
-  const handleRegenerate = useCallback16(() => {
+  const messageText = useMemo10(() => extractAssistantText2(message), [message]);
+  const handleRegenerate = useCallback17(() => {
     onRegenerate?.(message.id);
   }, [onRegenerate, message.id]);
   const [copied, setCopied] = useState22(false);
-  const handleCopy = useCallback16(async () => {
+  const handleCopy = useCallback17(async () => {
     if (!messageText) return;
     try {
       await navigator.clipboard.writeText(messageText);
@@ -329856,7 +330282,7 @@ var AssistantBubble = memo21(function AssistantBubble2({
     }
   }, [messageText, t5]);
   const [contextMenu, setContextMenu] = useState22(null);
-  const handleContextMenu = useCallback16((e3) => {
+  const handleContextMenu = useCallback17((e3) => {
     const selectedText = window.getSelection()?.toString().trim();
     if (selectedText && selectedText.length > 0) {
       return;
@@ -329869,10 +330295,10 @@ var AssistantBubble = memo21(function AssistantBubble2({
       y: e3.clientY
     });
   }, []);
-  const handleCloseContextMenu = useCallback16(() => {
+  const handleCloseContextMenu = useCallback17(() => {
     setContextMenu(null);
   }, []);
-  const openMenuAt = useCallback16((x7, y8) => {
+  const openMenuAt = useCallback17((x7, y8) => {
     setContextMenu({ visible: true, x: x7, y: y8 });
   }, []);
   const { touchHandlers: longPressHandlers } = useLongPress(openMenuAt);
@@ -330245,11 +330671,11 @@ var ThinkingOrb = memo23(function ThinkingOrb2({
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { useState as useState24, useCallback as useCallback18, useMemo as useMemo10, useRef as useRef11, useEffect as useEffect14 } from "react";
+import { useState as useState24, useCallback as useCallback19, useMemo as useMemo11, useRef as useRef11, useEffect as useEffect14 } from "react";
 
 // src/shims/hooks.ts
 init_services();
-import { useCallback as useCallback17, useEffect as useEffect13, useRef as useRef10, useState as useState23 } from "react";
+import { useCallback as useCallback18, useEffect as useEffect13, useRef as useRef10, useState as useState23 } from "react";
 function useContainerWidth(initialWidth = 0) {
   const ref = useRef10(null);
   const [width3, setWidth2] = useState23(initialWidth);
@@ -330319,7 +330745,7 @@ function useWindowSize(options2 = {}) {
 function useFileSearch() {
   const [fileMatches, setFileMatches] = useState23([]);
   const [isSearching, setIsSearching] = useState23(false);
-  const searchFiles2 = useCallback17(async (query, workspace) => {
+  const searchFiles2 = useCallback18(async (query, workspace) => {
     const q5 = query.trim();
     if (!q5) {
       setFileMatches([]);
@@ -330340,7 +330766,7 @@ function useFileSearch() {
       setIsSearching(false);
     }
   }, []);
-  const clearResults = useCallback17(() => setFileMatches([]), []);
+  const clearResults = useCallback18(() => setFileMatches([]), []);
   return { fileMatches, isSearching, searchFiles: searchFiles2, clearResults };
 }
 
@@ -330364,7 +330790,7 @@ function ChatNavigator({
   const hideTimerRef = useRef11(null);
   const showTimerRef = useRef11(null);
   const currentItemRef = useRef11(null);
-  const clearTimers = useCallback18(() => {
+  const clearTimers = useCallback19(() => {
     if (hideTimerRef.current) {
       clearTimeout(hideTimerRef.current);
       hideTimerRef.current = null;
@@ -330374,7 +330800,7 @@ function ChatNavigator({
       showTimerRef.current = null;
     }
   }, []);
-  const scheduleHide = useCallback18(() => {
+  const scheduleHide = useCallback19(() => {
     clearTimers();
     hideTimerRef.current = setTimeout(() => {
       if (!isHoveringRef.current && !isHoveringPanelRef.current) {
@@ -330382,32 +330808,32 @@ function ChatNavigator({
       }
     }, HIDE_DELAY);
   }, [clearTimers]);
-  const scheduleShow = useCallback18(() => {
+  const scheduleShow = useCallback19(() => {
     clearTimers();
     showTimerRef.current = setTimeout(() => {
       setIsPanelVisible(true);
     }, SHOW_DELAY);
   }, [clearTimers]);
-  const handleFloatingBallMouseEnter = useCallback18(() => {
+  const handleFloatingBallMouseEnter = useCallback19(() => {
     isHoveringRef.current = true;
     scheduleShow();
   }, [scheduleShow]);
-  const handleFloatingBallMouseLeave = useCallback18(() => {
+  const handleFloatingBallMouseLeave = useCallback19(() => {
     isHoveringRef.current = false;
     scheduleHide();
   }, [scheduleHide]);
-  const handlePanelMouseEnter = useCallback18(() => {
+  const handlePanelMouseEnter = useCallback19(() => {
     isHoveringPanelRef.current = true;
     clearTimers();
   }, [clearTimers]);
-  const handlePanelMouseLeave = useCallback18(() => {
+  const handlePanelMouseLeave = useCallback19(() => {
     isHoveringPanelRef.current = false;
     scheduleHide();
   }, [scheduleHide]);
   useEffect14(() => {
     return () => clearTimers();
   }, [clearTimers]);
-  const panelWrapperStyle = useMemo10(() => {
+  const panelWrapperStyle = useMemo11(() => {
     if (isCompact) {
       return {
         right: "8px",
@@ -330437,15 +330863,15 @@ function ChatNavigator({
       });
     }
   }, [isPanelVisible, currentRoundIndex]);
-  const handleRoundClick = useCallback18((roundIndex) => {
+  const handleRoundClick = useCallback19((roundIndex) => {
     onScrollToRound(roundIndex);
     setIsPanelVisible(false);
   }, [onScrollToRound]);
-  const handleScrollToBottom = useCallback18(() => {
+  const handleScrollToBottom = useCallback19(() => {
     onScrollToBottom();
     setIsPanelVisible(false);
   }, [onScrollToBottom]);
-  const handleFloatingBallClick = useCallback18(() => {
+  const handleFloatingBallClick = useCallback19(() => {
     setIsPanelVisible((prev2) => !prev2);
   }, []);
   const floatingBallRef = useRef11(null);
@@ -330623,12 +331049,12 @@ function ChatNavigator({
 // src/host/Chat/dynamic-island/index.tsx
 init_clsx();
 init_lucide_react();
-import { useState as useState27, useEffect as useEffect16, useRef as useRef13, useCallback as useCallback19 } from "react";
+import { useState as useState27, useEffect as useEffect16, useRef as useRef13, useCallback as useCallback20 } from "react";
 
 // src/host/Chat/dynamic-island/useRuntimeSummary.ts
 init_esm();
 init_stores();
-import { useState as useState25, useEffect as useEffect15, useRef as useRef12, useSyncExternalStore as useSyncExternalStore3 } from "react";
+import { useState as useState25, useEffect as useEffect15, useRef as useRef12, useSyncExternalStore as useSyncExternalStore4 } from "react";
 
 // src/host/Chat/dynamic-island/changeSummary.ts
 init_diffExtractor();
@@ -331251,7 +331677,7 @@ ${c4.output}` : c4.output;
 function useRuntimeSummary(sessionId) {
   const activeId = useActiveSessionId();
   const targetId = sessionId ?? activeId;
-  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
   const store3 = targetId ? stores.get(targetId) : null;
   const [tick, setTick] = useState25(0);
   const tickStartRef = useRef12(0);
@@ -331286,10 +331712,10 @@ function useRuntimeSummary(sessionId) {
     return nextWithSession;
   };
   const subscribe = (onChange) => {
-    if (!store3) return sessionStoreManager.subscribe(onChange);
+    if (!store3) return sessionStoreManager2.subscribe(onChange);
     return store3.subscribe(onChange);
   };
-  const summary = useSyncExternalStore3(subscribe, getSnapshot, () => EMPTY_SUMMARY);
+  const summary = useSyncExternalStore4(subscribe, getSnapshot, () => EMPTY_SUMMARY);
   const storeIsStreaming = store3?.getState().isStreaming ?? false;
   const tickActive = summary.hasRunning || summary.isInterrupting || storeIsStreaming;
   useEffect15(() => {
@@ -331386,7 +331812,7 @@ function shallowEqualSummary(a3, b12) {
 
 // src/host/Chat/dynamic-island/DynamicIslandExpanded.tsx
 init_clsx();
-import { useMemo as useMemo11, useState as useState26 } from "react";
+import { useMemo as useMemo12, useState as useState26 } from "react";
 init_lucide_react();
 init_stores();
 init_stores();
@@ -331598,7 +332024,7 @@ function buildDiffRows(diff2) {
   return { rows: rows.slice(0, MAX_DIFF_ROWS), cut: rows.length > MAX_DIFF_ROWS };
 }
 function ChangeDiffView({ diff: diff2 }) {
-  const { rows, cut } = useMemo11(() => buildDiffRows(diff2), [diff2]);
+  const { rows, cut } = useMemo12(() => buildDiffRows(diff2), [diff2]);
   return /* @__PURE__ */ jsxs29("div", { className: "island-diff", children: [
     /* @__PURE__ */ jsxs29("div", { className: "island-diff-body", children: [
       rows.map((r3, i2) => /* @__PURE__ */ jsxs29(
@@ -331816,7 +332242,7 @@ function DynamicIsland({ sessionId = null }) {
       }
     };
   }, [isCollapsed, expanded, hasRunning, urgent.length]);
-  const toggleExpanded = useCallback19(() => {
+  const toggleExpanded = useCallback20(() => {
     setExpanded((prev2) => !prev2);
   }, []);
   useEffect16(() => {
@@ -331845,7 +332271,7 @@ function DynamicIsland({ sessionId = null }) {
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [expanded]);
-  const handleUrgentDecision = useCallback19((card2, approved) => {
+  const handleUrgentDecision = useCallback20((card2, approved) => {
     void (async () => {
       try {
         const store3 = findStoreByConversationId(card2.sessionId);
@@ -332053,7 +332479,7 @@ function ChangeDelta({ summary }) {
 }
 
 // src/host/Chat/messages/useMessageAutoScroll.ts
-import { useCallback as useCallback20, useEffect as useEffect17, useRef as useRef14, useState as useState28 } from "react";
+import { useCallback as useCallback21, useEffect as useEffect17, useRef as useRef14, useState as useState28 } from "react";
 var BOTTOM_ANCHOR_EPSILON_PX = 48;
 var STREAM_COMPENSATE_OFFSET = 40;
 var PROGRAMMATIC_SCROLL_GUARD_MS = 220;
@@ -332081,16 +332507,16 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
   const stateRef = useRef14({ autoScroll, isStreaming: !!isStreaming });
   stateRef.current.autoScroll = autoScroll;
   stateRef.current.isStreaming = !!isStreaming;
-  const isSuspended = useCallback20(() => {
+  const isSuspended = useCallback21(() => {
     return performance.now() < suspendUntilRef.current;
   }, []);
-  const suspendFollow = useCallback20((ms3 = 350) => {
+  const suspendFollow = useCallback21((ms3 = 350) => {
     suspendUntilRef.current = performance.now() + ms3;
   }, []);
-  const setAutoScroll = useCallback20((v5) => {
+  const setAutoScroll = useCallback21((v5) => {
     setAutoScrollState(v5);
   }, []);
-  const handleAtBottomStateChange = useCallback20((atBottom) => {
+  const handleAtBottomStateChange = useCallback21((atBottom) => {
     if (firstAtBottomCallbackRef.current) {
       firstAtBottomCallbackRef.current = false;
       return;
@@ -332102,12 +332528,12 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
       setAutoScrollState(false);
     }
   }, [isStreaming, isSuspended]);
-  const handleWheel = useCallback20((e3) => {
+  const handleWheel = useCallback21((e3) => {
     if (e3.deltaY < 0) {
       setAutoScrollState(false);
     }
   }, []);
-  const handleScroll = useCallback20(() => {
+  const handleScroll = useCallback21(() => {
     const scroller = scrollerElRef.current;
     if (!scroller) return;
     if (performance.now() < programmaticUntilRef.current) return;
@@ -332119,7 +332545,7 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
       setAutoScrollState(false);
     }
   }, []);
-  const handleKeyDown = useCallback20((e3) => {
+  const handleKeyDown = useCallback21((e3) => {
     const target = e3.target;
     if (target && (target.isContentEditable || target.tagName === "INPUT" || target.tagName === "TEXTAREA")) {
       return;
@@ -332128,7 +332554,7 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
       setAutoScrollState(false);
     }
   }, []);
-  const doScrollToBottom = useCallback20((behavior) => {
+  const doScrollToBottom = useCallback21((behavior) => {
     const cur = virtuosoRef.current;
     if (!cur) return;
     programmaticUntilRef.current = performance.now() + PROGRAMMATIC_SCROLL_GUARD_MS;
@@ -332142,7 +332568,7 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
       lastObservedScrollTopRef.current = scroller.scrollTop;
     }
   }, [virtuosoRef]);
-  const scrollToBottom = useCallback20(() => {
+  const scrollToBottom = useCallback21(() => {
     if (virtuosoRef.current) {
       virtuosoRef.current.scrollTo({
         top: Number.MAX_SAFE_INTEGER,
@@ -332151,7 +332577,7 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
     }
     setAutoScrollState(true);
   }, [virtuosoRef]);
-  const scheduleCompensate = useCallback20(() => {
+  const scheduleCompensate = useCallback21(() => {
     if (compensateRafRef.current !== null) return;
     compensatePendingRef.current = true;
     compensateRafRef.current = requestAnimationFrame(() => {
@@ -332177,14 +332603,14 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
     }, STREAM_END_COMPENSATE_WINDOW_MS);
     return () => clearTimeout(timer4);
   }, [isStreaming]);
-  const compensateScroll = useCallback20(() => {
+  const compensateScroll = useCallback21(() => {
     if (!autoScroll || isSuspended()) return false;
     const ref = virtuosoRef.current;
     if (!ref) return false;
     scheduleCompensate();
     return true;
   }, [autoScroll, virtuosoRef, scheduleCompensate, isSuspended]);
-  const handleListResize = useCallback20(() => {
+  const handleListResize = useCallback21(() => {
     const { autoScroll: follow, isStreaming: streaming } = stateRef.current;
     const scroller = scrollerElRef.current;
     if (!follow || !scroller || isSuspended()) return;
@@ -332201,7 +332627,7 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
       scheduleCompensate();
     }
   }, [scheduleCompensate, isSuspended]);
-  const setScrollerRef = useCallback20((ref) => {
+  const setScrollerRef = useCallback21((ref) => {
     scrollerElRef.current = ref;
     listRoRef.current?.disconnect();
     listMutationRef.current?.disconnect();
@@ -332229,7 +332655,7 @@ function useMessageAutoScroll(virtuosoRef, opts = {}) {
     mo2.observe(ref, { childList: true });
     listMutationRef.current = mo2;
   }, [handleListResize]);
-  const followOutput = useCallback20((isAtBottom) => {
+  const followOutput = useCallback21((isAtBottom) => {
     if (!autoScroll) return false;
     if (isSuspended()) return false;
     if (isStreaming) return true;
@@ -332324,34 +332750,34 @@ var ChatScrollContext = createContext2(null);
 
 // src/host/Chat/messages/SessionMessagesView.tsx
 import { Fragment as Fragment13, jsx as jsx37, jsxs as jsxs32 } from "react/jsx-runtime";
-var EMPTY_MESSAGES = [];
+var EMPTY_MESSAGES2 = [];
 var EmptyState3 = EmptyState;
 var SessionMessagesView = memo26(function SessionMessagesView2({ sessionId, onEditMessage }) {
   const virtuosoRef = useRef15(null);
   const [currentRoundIndex, setCurrentRoundIndex] = useState29(0);
-  const messages = useSessionState(
+  const messages = useSessionState2(
     sessionId,
-    useCallback21((state5) => state5.messages, []),
-    EMPTY_MESSAGES
+    useCallback22((state5) => state5.messages, []),
+    EMPTY_MESSAGES2
   );
-  const currentMessage = useSessionState(
+  const currentMessage = useSessionState2(
     sessionId,
-    useCallback21((state5) => state5.currentMessage, []),
+    useCallback22((state5) => state5.currentMessage, []),
     null
   );
-  const isStreaming = useSessionState(
+  const isStreaming = useSessionState2(
     sessionId,
-    useCallback21((state5) => state5.isStreaming, []),
+    useCallback22((state5) => state5.isStreaming, []),
     false
   );
   const { isStreaming: kernelStreaming } = useKernelSessionState(sessionId);
   const scrollIsStreaming = isStreaming || kernelStreaming;
-  const visibleRange = useSessionState(
+  const visibleRange = useSessionState2(
     sessionId,
-    useCallback21((state5) => state5.visibleRange, []),
+    useCallback22((state5) => state5.visibleRange, []),
     null
   );
-  const displayMessages = useMemo12(() => {
+  const displayMessages = useMemo13(() => {
     if (!currentMessage || !scrollIsStreaming) {
       return messages;
     }
@@ -332390,14 +332816,14 @@ var SessionMessagesView = memo26(function SessionMessagesView2({ sessionId, onEd
       compensateScroll();
     }
   }, [isStreaming]);
-  const conversationRounds = useMemo12(() => {
+  const conversationRounds = useMemo13(() => {
     return groupConversationRounds(displayMessages);
   }, [displayMessages]);
-  const handleRangeChange = useCallback21((range3) => {
+  const handleRangeChange = useCallback22((range3) => {
     const target = findCurrentRoundIndexForRange(conversationRounds, range3.startIndex, range3.endIndex);
     if (target >= 0) setCurrentRoundIndex(target);
   }, [conversationRounds]);
-  const scrollToRound = useCallback21((roundIndex) => {
+  const scrollToRound = useCallback22((roundIndex) => {
     const round2 = conversationRounds[roundIndex];
     if (!round2 || !virtuosoRef.current) return;
     const targetIndex = getRoundScrollTargetIndex(round2);
@@ -332410,7 +332836,7 @@ var SessionMessagesView = memo26(function SessionMessagesView2({ sessionId, onEd
     setAutoScroll(false);
     setCurrentRoundIndex(roundIndex);
   }, [conversationRounds, setAutoScroll]);
-  const scrollToMessage = useCallback21((index2) => {
+  const scrollToMessage = useCallback22((index2) => {
     if (!virtuosoRef.current) return;
     virtuosoRef.current.scrollToIndex({
       index: index2,
@@ -332419,7 +332845,7 @@ var SessionMessagesView = memo26(function SessionMessagesView2({ sessionId, onEd
     });
     setAutoScroll(false);
   }, [setAutoScroll]);
-  const scrollToTop = useCallback21(() => {
+  const scrollToTop = useCallback22(() => {
     if (!virtuosoRef.current) return;
     virtuosoRef.current.scrollToIndex({
       index: 0,
@@ -332428,7 +332854,7 @@ var SessionMessagesView = memo26(function SessionMessagesView2({ sessionId, onEd
     });
     setAutoScroll(false);
   }, [setAutoScroll]);
-  const scrollToBottom = useCallback21(() => {
+  const scrollToBottom = useCallback22(() => {
     if (!virtuosoRef.current) return;
     virtuosoRef.current.scrollTo({
       top: Number.MAX_SAFE_INTEGER,
@@ -332436,25 +332862,25 @@ var SessionMessagesView = memo26(function SessionMessagesView2({ sessionId, onEd
     });
     setAutoScroll(true);
   }, [setAutoScroll]);
-  const scrollActions = useMemo12(() => ({
+  const scrollActions = useMemo13(() => ({
     scrollToMessage,
     scrollToTop,
     scrollToBottom
   }), [scrollToMessage, scrollToTop, scrollToBottom]);
-  const handleRegenerateMessage = useCallback21((messageId) => {
+  const handleRegenerateMessage = useCallback22((messageId) => {
     void getKernel().then((kernel) => kernel.regenerate(sessionId, messageId));
   }, [sessionId]);
-  const handleEditGuarded = useCallback21((messageId, content) => {
+  const handleEditGuarded = useCallback22((messageId, content) => {
     if (scrollIsStreaming) {
       useToastStore.getState().warning("\u56DE\u590D\u8FDB\u884C\u4E2D\uFF0C\u6682\u4E0D\u80FD\u7F16\u8F91\u6D88\u606F\uFF0C\u8BF7\u7B49\u56DE\u590D\u7ED3\u675F");
       return;
     }
     onEditMessage?.(messageId, content);
   }, [onEditMessage, scrollIsStreaming]);
-  const messageActions = useMemo12(() => {
+  const messageActions = useMemo13(() => {
     return { onEdit: handleEditGuarded, onRegenerate: handleRegenerateMessage };
   }, [handleEditGuarded, handleRegenerateMessage]);
-  const Scroller = useMemo12(() => {
+  const Scroller = useMemo13(() => {
     const Scroller2 = forwardRef3(
       ({ onScroll: _ignoredScroll, onWheel: _ignoredWheel, ...props }, ref) => /* @__PURE__ */ jsx37(
         "div",
@@ -332553,11 +332979,11 @@ var SessionCell = memo27(function SessionCell2({
   const { t: t5 } = useTranslation("chat");
   const { switchSession } = useSessionManagerActions();
   const chatDisplay = useConfigStore((state5) => state5.config?.chatDisplay);
-  const chatDisplayStyle = useMemo13(() => getChatDisplayStyleVars(chatDisplay), [chatDisplay]);
+  const chatDisplayStyle = useMemo14(() => getChatDisplayStyleVars(chatDisplay), [chatDisplay]);
   const sessionMetadata = useSessionMetadataList().find((m4) => m4.id === sessionId);
-  const isStreaming = useSessionStreaming(sessionId);
-  const hasPendingQuestion = useSessionHasPendingQuestion(sessionId);
-  const hasPendingCards = useSessionHasPendingCards(sessionId);
+  const isStreaming = useSessionStreaming2(sessionId);
+  const hasPendingQuestion = useSessionHasPendingQuestion2(sessionId);
+  const hasPendingCards = useSessionHasPendingCards2(sessionId);
   const [showWorkspaceMenu, setShowWorkspaceMenu] = useState30(false);
   const badgeRef = useRef16(null);
   const workspace = useWorkspaceStore(
@@ -332568,12 +332994,12 @@ var SessionCell = memo27(function SessionCell2({
   const statusConfig = SESSION_STATUS_CONFIG[statusKey] || SESSION_STATUS_CONFIG.idle;
   const StatusIcon = statusConfig.icon;
   const engineId = sessionMetadata?.engineId;
-  const handleClick = useCallback22(() => {
+  const handleClick = useCallback23(() => {
     if (!isActive) {
       switchSession(sessionId);
     }
   }, [isActive, sessionId, switchSession]);
-  const handleClose = useCallback22((e3) => {
+  const handleClose = useCallback23((e3) => {
     e3.stopPropagation();
     useViewStore.getState().removeFromMultiView(sessionId);
     if (isActive) {
@@ -332583,15 +333009,15 @@ var SessionCell = memo27(function SessionCell2({
       }
     }
   }, [sessionId, isActive, switchSession]);
-  const handleInterrupt = useCallback22((e3) => {
+  const handleInterrupt = useCallback23((e3) => {
     e3.stopPropagation();
-    sessionStoreManager.getState().interruptSession(sessionId);
+    sessionStoreManager2.getState().interruptSession(sessionId);
   }, [sessionId]);
-  const handleExpand = useCallback22((e3) => {
+  const handleExpand = useCallback23((e3) => {
     e3.stopPropagation();
     onToggleExpand?.();
   }, [onToggleExpand]);
-  const handleMoveToFront = useCallback22((e3) => {
+  const handleMoveToFront = useCallback23((e3) => {
     e3.stopPropagation();
     useViewStore.getState().moveSessionToFront(sessionId);
   }, [sessionId]);
@@ -332718,10 +333144,10 @@ var MultiSessionGrid = memo28(forwardRef4(
     const row1Ref = useRef17(null);
     const row2Ref = useRef17(null);
     const allSessionMetadata = useSessionMetadataList();
-    const displaySessions = useMemo14(() => {
+    const displaySessions = useMemo15(() => {
       return multiSessionIds.map((id38) => allSessionMetadata.find((m4) => m4.id === id38)).filter((m4) => m4 !== void 0);
     }, [multiSessionIds, allSessionMetadata]);
-    const { row1Sessions, row2Sessions } = useMemo14(() => {
+    const { row1Sessions, row2Sessions } = useMemo15(() => {
       if (multiSessionRows === 1) {
         return { row1Sessions: displaySessions, row2Sessions: [] };
       } else {
@@ -332732,7 +333158,7 @@ var MultiSessionGrid = memo28(forwardRef4(
         };
       }
     }, [displaySessions, multiSessionRows]);
-    const scrollToIndex = useCallback23((index2) => {
+    const scrollToIndex = useCallback24((index2) => {
       if (multiSessionRows === 1) {
         scrollRowTo(row1Ref, index2, multiSessionCellWidth);
       } else {
@@ -332757,7 +333183,7 @@ var MultiSessionGrid = memo28(forwardRef4(
         clearScrollRequest();
       }
     }, [pendingScrollToId, displaySessions, scrollToIndex, clearScrollRequest]);
-    const handleToggleExpand = useCallback23((sessionId) => {
+    const handleToggleExpand = useCallback24((sessionId) => {
       setExpandSessionId(expandSessionId === sessionId ? null : sessionId);
     }, [expandSessionId, setExpandSessionId]);
     if (expandSessionId) {
@@ -332844,438 +333270,7 @@ var MultiSessionGrid = memo28(forwardRef4(
 // src/bootstrap.ts
 init_core();
 init_sessionStoreManager();
-
-// src/host/conversationStore/useActiveSession.ts
-var useActiveSession_exports = {};
-__export(useActiveSession_exports, {
-  useActiveSession: () => useActiveSession,
-  useActiveSessionActions: () => useActiveSessionActions2,
-  useActiveSessionBlockMaps: () => useActiveSessionBlockMaps,
-  useActiveSessionChat: () => useActiveSessionChat,
-  useActiveSessionConversationId: () => useActiveSessionConversationId2,
-  useActiveSessionError: () => useActiveSessionError2,
-  useActiveSessionInputDraft: () => useActiveSessionInputDraft2,
-  useActiveSessionKernelStreaming: () => useActiveSessionKernelStreaming2,
-  useActiveSessionMessages: () => useActiveSessionMessages2,
-  useActiveSessionPendingBriefing: () => useActiveSessionPendingBriefing2,
-  useActiveSessionPendingQueue: () => useActiveSessionPendingQueue2,
-  useActiveSessionPromptOptimize: () => useActiveSessionPromptOptimize2,
-  useActiveSessionPromptSuggestion: () => useActiveSessionPromptSuggestion2,
-  useActiveSessionStreamRate: () => useActiveSessionStreamRate2,
-  useActiveSessionStreaming: () => useActiveSessionStreaming2,
-  useActiveSessionUsage: () => useActiveSessionUsage2,
-  useActiveSessionWorkspace: () => useActiveSessionWorkspace2,
-  useHasActivePlan: () => useHasActivePlan2,
-  useHasPendingQuestion: () => useHasPendingQuestion2,
-  usePendingQuestions: () => usePendingQuestions,
-  useSessionError: () => useSessionError,
-  useSessionHasPendingCards: () => useSessionHasPendingCards2,
-  useSessionHasPendingQuestion: () => useSessionHasPendingQuestion2,
-  useSessionHistoryPaging: () => useSessionHistoryPaging,
-  useSessionMessages: () => useSessionMessages,
-  useSessionState: () => useSessionState2,
-  useSessionStreaming: () => useSessionStreaming2,
-  useSessionVisibleRange: () => useSessionVisibleRange
-});
-init_esm();
-init_sessionStoreManager();
-init_useKernelSessionState();
-init_registry();
-init_stores();
-import { useMemo as useMemo15, useCallback as useCallback24, useSyncExternalStore as useSyncExternalStore4 } from "react";
-var EMPTY_MESSAGES2 = [];
-var EMPTY_INPUT_DRAFT = { text: "", attachments: [] };
-var EMPTY_PENDING_QUEUE = [];
-var EMPTY_BLOCK_MAP = /* @__PURE__ */ new Map();
-var EMPTY_PROMPT_OPTIMIZE = {
-  status: "idle",
-  history: [],
-  cursor: -1,
-  sourceSnapshot: null,
-  pendingResult: null,
-  pendingMeta: null,
-  optimizeSessionId: null,
-  error: null
-};
-function useSessionState2(sessionId, selector2, fallback) {
-  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
-  const store3 = sessionId ? stores.get(sessionId) ?? null : null;
-  const subscribe = useCallback24(
-    (onChange) => {
-      if (!store3) return sessionStoreManager2.subscribe(onChange);
-      return store3.subscribe(onChange);
-    },
-    [store3]
-  );
-  const getSnapshot = useCallback24(() => {
-    if (!store3) return fallback;
-    return selector2(store3.getState());
-  }, [store3, selector2, fallback]);
-  const getServerSnapshot = useCallback24(() => fallback, [fallback]);
-  return useSyncExternalStore4(subscribe, getSnapshot, getServerSnapshot);
-}
-function useActiveSessionSelector(selector2, fallback) {
-  const sessionId = useActiveSessionId2();
-  return useSessionState2(sessionId, selector2, fallback);
-}
-function useActiveSessionMessages2() {
-  const messages = useActiveSessionSelector(
-    useCallback24((s3) => s3.messages, []),
-    EMPTY_MESSAGES2
-  );
-  const archivedMessages = useActiveSessionSelector(
-    useCallback24((s3) => s3.archivedMessages, []),
-    EMPTY_MESSAGES2
-  );
-  const currentMessage = useActiveSessionSelector(
-    useCallback24((s3) => s3.currentMessage, []),
-    null
-  );
-  return useMemo15(
-    () => ({ messages, archivedMessages, currentMessage }),
-    [messages, archivedMessages, currentMessage]
-  );
-}
-function useActiveSessionStreaming2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.isStreaming, []),
-    false
-  );
-}
-function useActiveSessionKernelStreaming2() {
-  const sessionId = useActiveSessionId2();
-  const { isStreaming } = useKernelSessionState(sessionId);
-  return isStreaming;
-}
-function useActiveSessionError2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.error, []),
-    null
-  );
-}
-function useActiveSessionConversationId2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.conversationId, []),
-    null
-  );
-}
-function useActiveSessionInputDraft2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.inputDraft, []),
-    EMPTY_INPUT_DRAFT
-  );
-}
-function useActiveSessionPendingBriefing2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.pendingBriefing, []),
-    null
-  );
-}
-function useActiveSessionPendingQueue2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.pendingQueue, []),
-    EMPTY_PENDING_QUEUE
-  );
-}
-function useActiveSessionPromptSuggestion2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.promptSuggestion, []),
-    null
-  );
-}
-function useActiveSessionUsage2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.usageStats, []),
-    null
-  );
-}
-function useActiveSessionStreamRate2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.streamRate, []),
-    null
-  );
-}
-function useActiveSessionPromptOptimize2() {
-  return useActiveSessionSelector(
-    useCallback24((s3) => s3.promptOptimize, []),
-    EMPTY_PROMPT_OPTIMIZE
-  );
-}
-function useActiveSessionWorkspace2() {
-  const workspaceId = useActiveSessionSelector(
-    useCallback24((s3) => s3.workspaceId, []),
-    null
-  );
-  return useWorkspaceStore(
-    useCallback24((state5) => {
-      if (!workspaceId) return null;
-      return state5.workspaces.find((w5) => w5.id === workspaceId) ?? null;
-    }, [workspaceId])
-  );
-}
-function useActiveSessionBlockMaps() {
-  const toolBlockMap = useActiveSessionSelector(
-    useCallback24((s3) => s3.toolBlockMap, []),
-    EMPTY_BLOCK_MAP
-  );
-  const questionBlockMap = useActiveSessionSelector(
-    useCallback24((s3) => s3.questionBlockMap, []),
-    EMPTY_BLOCK_MAP
-  );
-  const planBlockMap = useActiveSessionSelector(
-    useCallback24((s3) => s3.planBlockMap, []),
-    EMPTY_BLOCK_MAP
-  );
-  const activePlanId = useActiveSessionSelector(
-    useCallback24((s3) => s3.activePlanId, []),
-    null
-  );
-  return useMemo15(
-    () => ({ toolBlockMap, questionBlockMap, planBlockMap, activePlanId }),
-    [toolBlockMap, questionBlockMap, planBlockMap, activePlanId]
-  );
-}
-function useActiveSessionActions2() {
-  return useMemo15(() => {
-    const getStore = () => {
-      const sid = sessionStoreManager2.getState().activeSessionId;
-      if (!sid) return null;
-      return sessionStoreManager2.getState().stores.get(sid)?.getState() ?? null;
-    };
-    const call = (method, ...args) => {
-      const store3 = getStore();
-      if (!store3) return;
-      const fn3 = store3[method];
-      if (typeof fn3 === "function") return fn3(...args);
-    };
-    return {
-      sendMessage: async (...args) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
-        if (!sid) return false;
-        const kernel = await getKernel();
-        const result = await kernel.sendMessage({
-          sessionId: sid,
-          content: args[0],
-          workspaceDir: args[1],
-          attachments: args[2],
-          sendOptions: args[3]
-        });
-        return result.ok !== false;
-      },
-      interrupt: async () => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
-        if (!sid) return;
-        const kernel = await getKernel();
-        await kernel.interrupt(sid);
-      },
-      continueChat: async (prompt, allowedTools) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
-        if (!sid) return;
-        const kernel = await getKernel();
-        await kernel.continueChat(sid, prompt ?? "", { allowedTools });
-      },
-      editAndResend: async (messageId, newContent) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
-        if (!sid) return;
-        const kernel = await getKernel();
-        await kernel.editAndResend(sid, messageId, newContent);
-      },
-      regenerateResponse: async (messageId) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
-        if (!sid) return;
-        const kernel = await getKernel();
-        await kernel.regenerate(sid, messageId);
-      },
-      // 同步方法统一委托
-      deleteMessage: (id38) => call("deleteMessage", id38),
-      updateInputDraft: (d3) => call("updateInputDraft", d3),
-      clearInputDraft: () => call("clearInputDraft"),
-      addContextBlock: (b12) => call("addContextBlock", b12),
-      removeContextBlock: (id38) => call("removeContextBlock", id38),
-      clearContextBlocks: () => call("clearContextBlocks"),
-      updateContextBlockNote: (id38, note2) => call("updateContextBlockNote", id38, note2),
-      setPendingBriefing: (b12) => call("setPendingBriefing", b12),
-      enqueuePending: (m4) => call("enqueuePending", m4),
-      removePending: (id38) => call("removePending", id38),
-      clearPendingQueue: () => call("clearPendingQueue"),
-      dispatchNextPending: async () => call("dispatchNextPending"),
-      sendPendingNow: async (id38) => call("sendPendingNow", id38),
-      editPending: (id38) => call("editPending", id38),
-      setPromptSuggestion: (s3) => call("setPromptSuggestion", s3),
-      undoPromptOptimize: () => call("undoPromptOptimize"),
-      redoPromptOptimize: () => call("redoPromptOptimize"),
-      applyPendingPromptOptimize: () => call("applyPendingPromptOptimize"),
-      resetPromptOptimize: () => call("resetPromptOptimize"),
-      clearPromptOptimizeError: () => call("failPromptOptimize", null),
-      clearError: () => call("setError", null),
-      clearMessages: () => call("clearMessages"),
-      loadMoreArchivedMessages: (count2 = 20) => call("loadMoreArchivedMessages", count2),
-      onVisibleRangeChange: (start2, end) => call("onVisibleRangeChange", start2, end),
-      // Manager actions
-      switchSession: sessionStoreManager2.getState().switchSession,
-      deleteSession: sessionStoreManager2.getState().deleteSession,
-      createSession: sessionStoreManager2.getState().createSession
-    };
-  }, []);
-}
-function useActiveSessionChat() {
-  const sessionId = useActiveSessionId2();
-  const stores = useStore(sessionStoreManager2, (s3) => s3.stores);
-  const store3 = sessionId ? stores.get(sessionId) ?? null : null;
-  return useMemo15(() => store3 ? store3.getState() : null, [store3]);
-}
-function useActiveSession() {
-  const messagesState = useActiveSessionMessages2();
-  const isStreaming = useActiveSessionStreaming2();
-  const error3 = useActiveSessionError2();
-  const conversationId = useActiveSessionConversationId2();
-  const blockMaps = useActiveSessionBlockMaps();
-  const actions = useActiveSessionActions2();
-  return useMemo15(
-    () => ({
-      ...messagesState,
-      isStreaming,
-      error: error3,
-      conversationId,
-      ...blockMaps,
-      ...actions
-    }),
-    [messagesState, isStreaming, error3, conversationId, blockMaps, actions]
-  );
-}
-function useSessionMessages(sessionId) {
-  const messages = useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.messages, []),
-    EMPTY_MESSAGES2
-  );
-  const archivedMessages = useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.archivedMessages, []),
-    EMPTY_MESSAGES2
-  );
-  const currentMessage = useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.currentMessage, []),
-    null
-  );
-  return useMemo15(
-    () => ({ messages, archivedMessages, currentMessage }),
-    [messages, archivedMessages, currentMessage]
-  );
-}
-function useSessionStreaming2(sessionId) {
-  return useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.isStreaming, []),
-    false
-  );
-}
-function useSessionError(sessionId) {
-  return useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.error, []),
-    null
-  );
-}
-function useSessionHistoryPaging(sessionId) {
-  return useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.historyPaging, []),
-    null
-  );
-}
-function useSessionVisibleRange(sessionId) {
-  return useSessionState2(
-    sessionId,
-    useCallback24((s3) => s3.visibleRange, []),
-    null
-  );
-}
-function extractQuestionsFromBlocks(blocks2) {
-  const result = [];
-  for (const block2 of blocks2) {
-    if (block2.type === "question" && block2.status === "pending") {
-      result.push(block2);
-    }
-  }
-  return result;
-}
-function useSessionHasPendingQuestion2(sessionId) {
-  const { currentMessage, messages } = useSessionMessages(sessionId);
-  return useMemo15(() => {
-    if (currentMessage) {
-      const found = extractQuestionsFromBlocks(currentMessage.blocks);
-      if (found.length > 0) return true;
-    }
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.type === "assistant" && "blocks" in lastMsg) {
-        return extractQuestionsFromBlocks(
-          lastMsg.blocks
-        ).length > 0;
-      }
-    }
-    return false;
-  }, [currentMessage, messages]);
-}
-function useSessionHasPendingCards2(sessionId) {
-  const { currentMessage, messages } = useSessionMessages(sessionId);
-  return useMemo15(() => {
-    const hasPending = (blocks2) => !!blocks2?.some(
-      (b12) => b12.type === "permission_request" && b12.status === "pending" || b12.type === "form" && b12.status === "pending"
-    );
-    if (hasPending(currentMessage?.blocks)) return true;
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.type === "assistant" && "blocks" in lastMsg) {
-        return hasPending(
-          lastMsg.blocks
-        );
-      }
-    }
-    return false;
-  }, [currentMessage, messages]);
-}
-function usePendingQuestions() {
-  const { currentMessage, messages } = useActiveSessionMessages2();
-  return useMemo15(() => {
-    if (currentMessage) {
-      const result = extractQuestionsFromBlocks(currentMessage.blocks);
-      if (result.length > 0) return result;
-    }
-    if (messages.length > 0) {
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.type === "assistant" && "blocks" in lastMsg) {
-        return extractQuestionsFromBlocks(
-          lastMsg.blocks
-        );
-      }
-    }
-    return [];
-  }, [currentMessage, messages]);
-}
-function useHasPendingQuestion2() {
-  const pendingQuestions = usePendingQuestions();
-  return useMemo15(() => pendingQuestions.length > 0, [pendingQuestions]);
-}
-function useHasActivePlan2() {
-  const { planBlockMap, activePlanId } = useActiveSessionBlockMaps();
-  const { currentMessage } = useActiveSessionMessages2();
-  return useMemo15(() => {
-    if (!activePlanId || !currentMessage) return false;
-    const idx = planBlockMap.get(activePlanId);
-    if (idx === void 0) return false;
-    const block2 = currentMessage.blocks[idx];
-    if (block2?.type === "plan_mode") {
-      const status = block2.status;
-      return status === "pending_approval" || status === "drafting";
-    }
-    return false;
-  }, [planBlockMap, activePlanId, currentMessage]);
-}
-
-// src/bootstrap.ts
+init_useActiveSession();
 init_eventRouter();
 init_services();
 init_logger();
@@ -333287,7 +333282,7 @@ function ensureChatDomainBootstrapped() {
   try {
     const core5 = getAppCore();
     if (!core5.stores.sessionStoreManager) {
-      core5.stores.sessionStoreManager = sessionStoreManager2;
+      core5.stores.sessionStoreManager = sessionStoreManager;
       core5.stores.useActiveSession = useActiveSession_exports;
       void Promise.all([
         Promise.resolve().then(() => (init_sessionRestore(), sessionRestore_exports)),
@@ -333309,7 +333304,7 @@ function ensureChatDomainBootstrapped() {
       });
     }
     void ensureEventRouterInitialized();
-    void sessionStoreManager2.getState().initialize();
+    void sessionStoreManager.getState().initialize();
     try {
       ;
       remoteSessionFollower.start?.();
@@ -334153,8 +334148,8 @@ import { memo as memo29, useEffect as useEffect21, useRef as useRef20, useState 
 import { jsx as jsx45, jsxs as jsxs39 } from "react/jsx-runtime";
 var PendingBriefingCard = memo29(function PendingBriefingCard2() {
   const { t: t5 } = useTranslation("chat");
-  const briefing = useActiveSessionPendingBriefing();
-  const { setPendingBriefing } = useActiveSessionActions();
+  const briefing = useActiveSessionPendingBriefing2();
+  const { setPendingBriefing } = useActiveSessionActions2();
   const [expanded, setExpanded] = useState34(false);
   const [editing, setEditing] = useState34(false);
   const [draft, setDraft] = useState34("");
@@ -334268,8 +334263,8 @@ import { memo as memo30, useState as useState35 } from "react";
 import { Fragment as Fragment16, jsx as jsx46, jsxs as jsxs40 } from "react/jsx-runtime";
 var PendingQueueCard = memo30(function PendingQueueCard2() {
   const { t: t5 } = useTranslation("chat");
-  const pendingQueue = useActiveSessionPendingQueue();
-  const { removePending, clearPendingQueue, sendPendingNow, editPending } = useActiveSessionActions();
+  const pendingQueue = useActiveSessionPendingQueue2();
+  const { removePending, clearPendingQueue, sendPendingNow, editPending } = useActiveSessionActions2();
   const [expanded, setExpanded] = useState35(false);
   if (pendingQueue.length === 0) return null;
   return /* @__PURE__ */ jsxs40("div", { className: "mx-3 mt-2 rounded-lg border border-warning/30 bg-warning/5 overflow-hidden", children: [
@@ -334582,7 +334577,7 @@ ${digest}` : digest };
     } else {
       useSessionConfig.getState().setAgent(agentCmd.slug ?? "");
       if (ctx.activeSessionId) {
-        sessionStoreManager.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
+        sessionStoreManager2.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
       }
       useToastStore.getState().info("/agent", agentCmd.slug ? i18n_default.t("chat:agentCmd.set", { defaultValue: "\u5F53\u524D\u4E13\u5BB6\u5DF2\u8BBE\u4E3A {{slug}}", slug: agentCmd.slug, interpolation: { escapeValue: false } }) : i18n_default.t("chat:agentCmd.cleared", "\u5DF2\u6E05\u9664\u5F53\u524D\u4E13\u5BB6"));
     }
@@ -334736,22 +334731,22 @@ function ChatInput({
       name: pluginsById.get(server.pluginId)?.name ?? server.id
     })).filter((s3) => s3.name);
   }, [pluginStates]);
-  const currentWorkspace = useActiveSessionWorkspace();
+  const currentWorkspace = useActiveSessionWorkspace2();
   const promptHistoryWorkspacePath = currentWorkspace?.path ?? null;
   const activeSessionId = useActiveSessionId();
-  const isInterrupting = useSessionState(
+  const isInterrupting = useSessionState2(
     activeSessionId,
     useCallback25((s3) => s3.isInterrupting ?? false, []),
     false
   );
   const defaultEngine = useConfigStore((state5) => state5.config?.defaultEngine);
   const isClaudeEngine = useMemo16(
-    () => resolveSessionEngine(activeSessionId ?? "", defaultEngine) === "claude-code",
+    () => resolveSessionEngine2(activeSessionId ?? "", defaultEngine) === "claude-code",
     [activeSessionId, defaultEngine]
   );
   const [snippetTriggerBefore, setSnippetTriggerBefore] = useState36(null);
-  const inputDraft = useActiveSessionInputDraft();
-  const promptSuggestion = useActiveSessionPromptSuggestion();
+  const inputDraft = useActiveSessionInputDraft2();
+  const promptSuggestion = useActiveSessionPromptSuggestion2();
   const {
     updateInputDraft,
     setPromptSuggestion,
@@ -334763,9 +334758,9 @@ function ChatInput({
     updateContextBlockNote,
     enqueuePending,
     sendPendingNow
-  } = useActiveSessionActions();
-  const pendingQueue = useActiveSessionPendingQueue();
-  const promptOptimize = useActiveSessionPromptOptimize();
+  } = useActiveSessionActions2();
+  const pendingQueue = useActiveSessionPendingQueue2();
+  const promptOptimize = useActiveSessionPromptOptimize2();
   const optimizePreview = usePromptOptimizePreview2(
     promptOptimize.status === "running" ? promptOptimize.optimizeSessionId : null
   );
@@ -336477,20 +336472,20 @@ function SessionConfigSelector({
       ...config3,
       ...nextConfig
     });
-    const activeId = writeThroughToSession ? sessionStoreManager.getState().activeSessionId : null;
+    const activeId = writeThroughToSession ? sessionStoreManager2.getState().activeSessionId : null;
     if (activeId) {
       if (type3 === "profile") {
         if (value3 === "") {
-          sessionStoreManager.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
-          sessionStoreManager.getState().updateSessionProfileMode(activeId, "official");
+          sessionStoreManager2.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
+          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "official");
         } else {
-          sessionStoreManager.getState().updateSessionModelProfile(activeId, value3);
-          sessionStoreManager.getState().updateSessionProfileMode(activeId, "profile");
+          sessionStoreManager2.getState().updateSessionModelProfile(activeId, value3);
+          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "profile");
         }
       } else if (type3 === "model") {
-        sessionStoreManager.getState().updateSessionModel(activeId, value3);
+        sessionStoreManager2.getState().updateSessionModel(activeId, value3);
       } else if (type3 === "agent") {
-        sessionStoreManager.getState().updateSessionAgent(activeId, value3 || null);
+        sessionStoreManager2.getState().updateSessionAgent(activeId, value3 || null);
       }
     }
     setOpenDropdown(null);
@@ -337222,7 +337217,7 @@ function getHiddenTypes(visible, engineSelectors) {
 function ChatStatusBar({ children: children2, embedded = false }) {
   const { t: t5 } = useTranslation("chat");
   const { config: config3, healthStatus } = useConfigStore();
-  const isStreaming = useActiveSessionStreaming();
+  const isStreaming = useActiveSessionStreaming2();
   const activeSessionId = useActiveSessionId();
   const sessionMetadataList = useSessionMetadataList();
   const {
@@ -337230,11 +337225,11 @@ function ChatStatusBar({ children: children2, embedded = false }) {
     attachmentCount,
     suggestionMode
   } = useInputUIStore();
-  const hasPendingQuestion = useHasPendingQuestion();
-  const hasActivePlan = useHasActivePlan();
+  const hasPendingQuestion = useHasPendingQuestion2();
+  const hasActivePlan = useHasActivePlan2();
   const { config: sessionConfig, setConfig: setSessionConfig } = useSessionConfig();
-  const usageStats = useActiveSessionUsage();
-  const streamRate = useActiveSessionStreamRate();
+  const usageStats = useActiveSessionUsage2();
+  const streamRate = useActiveSessionStreamRate2();
   const activeProfileContextWindow = useModelProfileStore(
     useCallback27((s3) => s3.getActiveProfile()?.contextWindow, [])
   );
@@ -337430,8 +337425,8 @@ function mapStoredAttachmentsForRetry(stored) {
 }
 function ErrorBanner({ error: error3 }) {
   const { t: t5 } = useTranslation(["errors", "common"]);
-  const { sendMessage, clearError } = useActiveSessionActions();
-  const { messages } = useActiveSessionMessages();
+  const { sendMessage, clearError } = useActiveSessionActions2();
+  const { messages } = useActiveSessionMessages2();
   const currentWorkspace = useWorkspaceStore(
     (state5) => state5.workspaces.find((w5) => w5.id === state5.currentWorkspaceId) || null
   );
@@ -338129,9 +338124,9 @@ ensureChatDomainBootstrapped();
 function ChatDeskEntry(_props) {
   const activeSessionId = useActiveSessionId();
   void useSessionMetadataList();
-  const { sendMessage, interrupt: interruptChat, editAndResend } = useActiveSessionActions();
-  const isStreaming = useActiveSessionStreaming();
-  const error3 = useActiveSessionError();
+  const { sendMessage, interrupt: interruptChat, editAndResend } = useActiveSessionActions2();
+  const isStreaming = useActiveSessionStreaming2();
+  const error3 = useActiveSessionError2();
   const [editMode, setEditMode] = useState45(null);
   const handleEditMessage = useCallback32((messageId, content) => {
     setEditMode({ messageId, content });
@@ -338141,7 +338136,7 @@ function ChatDeskEntry(_props) {
     editAndResend(messageId, newContent);
     setEditMode(null);
   }, [editAndResend]);
-  const currentSession = activeSessionId ? sessionStoreManager.getState().sessionMetadata.get(activeSessionId) : void 0;
+  const currentSession = activeSessionId ? sessionStoreManager2.getState().sessionMetadata.get(activeSessionId) : void 0;
   const sessionMetadataList = useSessionMetadataList();
   const activeSessionIsFree = useMemo21(
     () => sessionMetadataList.some((s3) => s3.id === activeSessionId && s3.type === "free"),

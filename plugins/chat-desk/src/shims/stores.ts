@@ -14,6 +14,7 @@ import { useSyncExternalStore } from 'react'
 import { coreStore } from '../core'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+type AnyFn = (...args: any[]) => any
 type AnyStore = { getState: () => any; subscribe: (cb: () => void) => () => void; setState: (p: any) => void }
 
 function store(name: string): AnyStore {
@@ -63,17 +64,11 @@ export const useFileEditorStore = useStoreHook('useFileEditorStore') as any
 export const useCompactHandoffStore = useStoreHook('useCompactHandoffStore') as any
 export const useDispatchStore = useStoreHook('useDispatchStore') as any
 
-// sessionStoreManager（P6：单写者随域迁入插件）——
-// 优先读反向桥（bootstrap 回挂的插件内实例，宿主 sessionDirectory 也从桥读）；
-// 灰度中间态桥上是宿主实现。桥上无该键（bootstrap 未跑）时惰性兜底，
-// 避免 shims 顶层求值固化 undefined。
-export const sessionStoreManager: any = new Proxy({} as Record<string, unknown>, {
-  get(_t, prop: string) {
-    const fromBridge = coreStore<Record<string, any>>('sessionStoreManager')
-    if (fromBridge) return fromBridge[prop as string]
-    return undefined
-  },
-})
+// sessionStoreManager（P6：单写者随域迁入插件）——直接用本地实现
+// （host/conversationStore/sessionStoreManager，宿主同源）。bootstrap 会把该
+// 实例回挂到宿主反向桥，供 sessionDirectory 与 chrome 消费。
+import { sessionStoreManager as _localManager } from '../host/conversationStore/sessionStoreManager'
+export const sessionStoreManager: any = _localManager
 
 // ── 非 hook 具名导出（宿主单例转发）──
 export function getSessionConfig(): any {
@@ -85,9 +80,13 @@ export function selectSlotFill(slots: Record<string, unknown> | undefined, slotI
 }
 
 // ── 会话域转发（宿主单实例）：全部经 appCore.stores 桥取，禁用 host/ 拷贝模块 ──
+import * as _localUseActiveSession from '../host/conversationStore/useActiveSession'
 const hostActive: any = new Proxy({}, {
   get: (_t, p) => {
-    const ua = coreStore<Record<string, any>>('useActiveSession') as Record<string, any>
+    const local = (_localUseActiveSession as Record<string, unknown>)[p as string]
+    if (typeof local === 'function') return local
+    const ua = coreStore<Record<string, any>>('useActiveSession') as Record<string, any> | undefined
+    if (!ua) return undefined
     const v = ua[p as string]
     if (typeof v === 'function') return v
     // 宿主命名空间缺该导出 → 用 sessionStoreManager 派生（选择器型 hook）
@@ -102,31 +101,7 @@ const hostActive: any = new Proxy({}, {
     return undefined
   },
 })
-export function useActiveSessionId(): any {
-  const sm: any = coreStore<any>('sessionStoreManager')
-  return useSyncExternalStore(
-    (cb: () => void) => sm.subscribe(cb),
-    () => sm.getState().activeSessionId,
-    () => sm.getState().activeSessionId,
-  )
-}
-// 宿主版缓存数组语义：Map 引用不变时复用上次数组（防无限渲染）
-let cachedMetadataMap: any = null
-let cachedMetadataArray: any[] | null = null
-export function useSessionMetadataList(): any {
-  const sm: any = coreStore<any>('sessionStoreManager')
-  return useSyncExternalStore(
-    (cb: () => void) => sm.subscribe(cb),
-    () => {
-      const m = sm.getState().sessionMetadata
-      if (m === cachedMetadataMap && cachedMetadataArray !== null) return cachedMetadataArray
-      cachedMetadataMap = m
-      cachedMetadataArray = m ? Array.from(m.values()) : []
-      return cachedMetadataArray
-    },
-    () => [],
-  )
-}
+export { useActiveSessionId, useSessionMetadataList } from '../host/conversationStore/sessionStoreManager'
 export const useActiveSessionActions: any = (...args: unknown[]) => (hostActive.useActiveSessionActions as any)(...args)
 export const useActiveSessionMessages: any = (...args: unknown[]) => (hostActive.useActiveSessionMessages as any)(...args)
 export const useActiveSessionStreaming: any = (...args: unknown[]) => (hostActive.useActiveSessionStreaming as any)(...args)
@@ -189,13 +164,12 @@ export function useSessionMetadata(sessionId: string | null): any {
 export { coreStore }
 
 // ── 会话域工具函数（宿主 conversationStoreUtils / modelProfileStore 同源转发）──
+import * as _localUtils from '../host/conversationStore/conversationStoreUtils'
 export function resolveEffectiveProfileId(...args: unknown[]): any {
-  const u = coreStore<Record<string, any>>('conversationStoreUtils').resolveEffectiveProfileId
-  return u(...args)
+  return (_localUtils as unknown as Record<string, AnyFn>).resolveEffectiveProfileId(...args)
 }
 export function resolveSessionEngine(...args: unknown[]): any {
-  const u = coreStore<Record<string, any>>('conversationStoreUtils').resolveSessionEngine
-  return u(...args)
+  return (_localUtils as unknown as Record<string, AnyFn>).resolveSessionEngine(...args)
 }
 export function findStoreByConversationId(...args: unknown[]): any {
   const sm: any = coreStore<any>('sessionStoreManager')
