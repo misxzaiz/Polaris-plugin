@@ -970,9 +970,11 @@ const __globalRegistry = globalThis as unknown as Record<string, unknown>
 const __appCore = __globalRegistry.__POLARIS_APP_CORE__ as { stores?: Record<string, unknown> } | undefined
 const __candidate = __appCore?.stores?.sessionStoreManager as ReturnType<typeof createSessionManagerStore> | undefined
 export const sessionStoreManager =
-  // 仅当注册表里的对象具备真实 manager 形状（有 createSession action）才复用；
-  // vitest 桩等环境会给出空壳对象，此时创建真实 store 并自挂，保证单实例。
-  (__candidate && typeof __candidate.getState?.().createSession === 'function'
+  // 仅当注册表里的对象具备真实 manager 形状（stores 为 Map 且有 createSession）才复用；
+  // vitest 桩（Proxy 按名自动建空 store）会给出空壳对象，此时创建真实 store 并自挂。
+  (__candidate
+    && __candidate.getState?.().stores instanceof Map
+    && typeof __candidate.getState?.().createSession === 'function'
     ? __candidate
     : (() => {
         const created = createSessionManagerStore()

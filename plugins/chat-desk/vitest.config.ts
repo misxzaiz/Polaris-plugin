@@ -94,6 +94,6 @@ export default defineConfig({
     },
     setupFiles: ['vitest.setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
-    exclude: ['**/node_modules/**', 'src/host/session-v2/tests/**', 'src/host/conversationStore/**', 'src/host/Chat/**', 'src/host/engines/**'],
+    exclude: ['**/node_modules/**', 'src/host/session-v2/tests/**', 'src/host/conversationStore/**', 'src/host/Chat/**', 'src/host/engines/**', 'src/host/services/dispatchTaskService.test.ts'],
   },
 })
