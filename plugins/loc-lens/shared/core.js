@@ -22,6 +22,9 @@ const SKIP_DIR_NAMES = new Set([
   'vendor', 'coverage', '.next', '.nuxt', '.output', '__pycache__',
   'site-packages', '.venv', 'venv', 'env', '.idea', '.vscode', '.polaris',
   '.workbuddy', '.gradle', 'Pods', 'Carthage', '.terraform', '.cache',
+  '.claude', '.agents', '.zcode', '.cursor', '.codex', '.polaris-handoff',
+  'temp', 'tmp', 'logs', '.pytest_cache', '.mypy_cache', '.ruff_cache',
+  'bower_components', '.pnpm-store', '.turbo', '.svelte-kit', '.angular',
 ]);
 
 /** 二进制扩展名（这些文件计入 skippedBinary，不读内容） */

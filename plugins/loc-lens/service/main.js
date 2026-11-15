@@ -390,26 +390,19 @@ const server = http.createServer((req, res) => {
   if (p === '/api/stats' && req.method === 'GET') {
     const root = url.searchParams.get('root') || '';
     resolveRoot(root).then(async ({ root: r }) => {
-      let entry = scans.get(r);
-      if (!entry) {
-        // 首次访问：全量扫描（可能数秒），期间标记 scanning
-        entry = { root: r, scanning: true };
-        scans.set(r, entry);
-        try {
-          const full = await ensureScan(r);
-          scans.set(r, full);
-          sendJson(res, 200, statsPayload(full));
-        } catch (e) {
-          scans.delete(r);
-          sendJson(res, e.status || 500, { ok: false, error: e.message });
-        }
-        return;
+      const existing = scans.get(r);
+      // 进行中的占位（scanning=true）与未缓存一样走全量扫描通道，避免 202 死锁
+      if (existing && !existing.scanning) {
+        existing.lastAccess = Date.now();
+        return sendJson(res, 200, statsPayload(existing));
       }
-      entry.lastAccess = Date.now();
-      if (entry.scanning) {
-        return sendJson(res, 202, { ok: false, scanning: true, root: r });
+      try {
+        const full = await ensureScan(r);
+        sendJson(res, 200, statsPayload(full));
+      } catch (e) {
+        scans.delete(r);
+        sendJson(res, e.status || 500, { ok: false, error: e.message });
       }
-      sendJson(res, 200, statsPayload(entry));
     }).catch((e) => sendJson(res, e.status || 500, { ok: false, error: e.message }));
     return;
   }
