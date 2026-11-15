@@ -150,3 +150,9 @@ export const useCompactHandoffStore = create<CompactHandoffState>((set, get) => 
     set({ task: null })
   },
 }))
+
+// 供 shims/stores 的惰性代理在模块循环下取到本实现（循环安全：运行时才读）
+;(globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ = {
+  ...((globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ as Record<string, unknown> | undefined),
+  useCompactHandoffStore,
+}

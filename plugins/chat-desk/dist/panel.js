@@ -1999,68 +1999,6 @@ var init_lucide_react = __esm({
   }
 });
 
-// src/shims/misc.ts
-function core() {
-  return globalThis.__POLARIS_APP_CORE__;
-}
-function isMobileUserAgent() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-function isMobileTauriRuntime() {
-  return isMobileUserAgent() && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-function listEnabledPluginMcpServers(pluginStates) {
-  return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
-}
-function convertFileSrc(path4) {
-  return core().tauri.convertFileSrc(path4);
-}
-function listPluginMcpServerStatuses(pluginStates) {
-  return core().pluginSystem.listPluginMcpServerStatuses?.(pluginStates) ?? [];
-}
-function getActiveModelProfile() {
-  return core().stores.useModelProfileStore.getState().getActiveProfile?.() ?? core().stores.useModelProfileStore.getState().activeProfile;
-}
-function getModelProfileById(id38) {
-  const s3 = core().stores.useModelProfileStore.getState();
-  return s3.profiles?.find?.((p3) => p3.id === id38);
-}
-var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
-var init_misc = __esm({
-  "src/shims/misc.ts"() {
-    init_stores();
-    i18n = new Proxy({}, {
-      get: (_t, prop) => {
-        const inst2 = core().i18n;
-        return inst2 ? inst2[prop] : void 0;
-      }
-    });
-    pluginRegistry = new Proxy({}, {
-      get: (_t, prop) => core().pluginSystem.pluginRegistry[prop]
-    });
-    chatCardRegistry = new Proxy({}, {
-      get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
-    });
-    Button = core().components.Button;
-    JsonTreeView = core().components.JsonTreeView;
-    OverlayGuard = core().components.OverlayGuard;
-    ConfirmDialog = core().components.ConfirmDialog;
-    Modal = core().components.Modal;
-    DropdownMenu = core().components.DropdownMenu;
-    DiffViewer = core().components.DiffViewer;
-    WorkspaceBadge = core().components.WorkspaceBadge;
-    WorkspaceMenu = core().components.WorkspaceMenu;
-    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
-    useWorkspaceFilter = core().components.useWorkspaceFilter;
-    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
-    Icons = new Proxy({}, { get: () => core().components.Icons });
-    IconSend = core().components.Icons.IconSend;
-    IconStop = core().components.Icons.IconStop;
-    IconPaperclip = core().components.Icons.IconPaperclip;
-  }
-});
-
 // src/shims/uuid.ts
 function generateUUID() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -2684,7 +2622,7 @@ var init_eventRouter = __esm({
             }
             if (RENDER_EVENT_TYPES.has(payload?.type ?? "")) {
               try {
-                sessionStoreManager2.getState().dispatchEvent(payload);
+                sessionStoreManager.getState().dispatchEvent(payload);
               } catch (e3) {
                 log.error("\u5206\u53D1\u65E0\u4FE1\u5C01\u6E32\u67D3\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
               }
@@ -2713,7 +2651,7 @@ var init_eventRouter = __esm({
             _routeSessionId: frontendSessionId,
             ...turnId ? { _turnId: turnId } : {}
           };
-          sessionStoreManager2.getState().dispatchEvent(eventWithRouteId);
+          sessionStoreManager.getState().dispatchEvent(eventWithRouteId);
         } catch (e3) {
           log.error("\u5206\u53D1\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3, { frontendSessionId });
         }
@@ -3844,7 +3782,7 @@ async function restoreFromHistory(sessionId, engineId, projectPath, claudeProjec
     }
     const effectiveProjectPath = projectPath || loaded.workspacePath || void 0;
     const workspaceId = await ensureWorkspace(effectiveProjectPath);
-    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
+    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
       loaded.messages,
       loaded.externalSessionId || sessionId,
       { title: loaded.title, workspaceId, engineId: loaded.engineId, paging: loaded.paging }
@@ -3887,7 +3825,7 @@ async function forkSession(sessionId, engineId, projectPath, claudeProjectName, 
     }
     const title2 = branchName || `Fork: \u4F1A\u8BDD ${sessionId.slice(0, 8)}`;
     const workspaceId = await ensureWorkspace(projectPath);
-    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
+    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
       messages,
       null,
       // 不传 conversationId，确保发消息走 start_chat
@@ -4143,7 +4081,7 @@ __export(sessionHandoff_exports, {
   loadConversationMessages: () => loadConversationMessages
 });
 function getHandoffEligibility(sessionId) {
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
@@ -4154,7 +4092,7 @@ function getHandoffEligibility(sessionId) {
   return { enabled: true };
 }
 async function handoffSessionToNewSession(sessionId, targetEngineId) {
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) {
@@ -4246,7 +4184,7 @@ async function createHandoffSession(params) {
   });
   if (mode === "fork" && !sourceConversationId) mode = "summary";
   if (mode === "message-history") mode = "summary";
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const newTitle = i18n_default.t("chat:handoff.newSessionTitle", { title: sourceTitle });
   if (mode === "fork") {
     const newSessionId2 = manager.createSession({
@@ -4472,7 +4410,7 @@ function useKernelSessionState(sessionId) {
       setState(getKernelSessionStateSnapshot(null));
       return;
     }
-    const localStore = sessionStoreManager.getState().stores.get(sessionId);
+    const localStore = sessionStoreManager2.getState().stores.get(sessionId);
     const localStreaming = localStore?.getState().isStreaming ?? false;
     const localError = localStore?.getState().error ?? null;
     setState({
@@ -5359,7 +5297,7 @@ var init_types2 = __esm({
 async function compactAndHandoff(params) {
   const { sessionId, compact, onStage, signal } = params;
   const mode = params.mode ?? "newSession";
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) {
@@ -5385,7 +5323,7 @@ async function compactAndHandoff(params) {
     log5.info("\u538B\u7F29\u4EA4\u63A5\uFF1A\u6E90\u4F1A\u8BDD\u5DF2\u5B58\u6863", { absPath: fileRef.absPath, messageCount: messages.length });
     throwIfAborted(signal);
     onStage?.("compacting");
-    compactSessionId = sessionStoreManager2.getState().createSession({
+    compactSessionId = sessionStoreManager.getState().createSession({
       type: "project",
       workspaceId: meta3.workspaceId,
       title: i18n_default.t("chat:compactHandoff.compactSessionTitle", { title: meta3.title }),
@@ -5394,7 +5332,7 @@ async function compactAndHandoff(params) {
       modelProfileId: compact.modelProfileId || void 0,
       model: compact.model || void 0
     });
-    const compactStore = sessionStoreManager2.getState().stores.get(compactSessionId);
+    const compactStore = sessionStoreManager.getState().stores.get(compactSessionId);
     if (!compactStore) {
       return { ok: false, error: i18n_default.t("chat:compactHandoff.failCreateCompactSession") };
     }
@@ -5427,7 +5365,7 @@ ${compact.instruction}`;
     if (!briefing) {
       return { ok: false, error: i18n_default.t("chat:compactHandoff.emptyBriefing") };
     }
-    sessionStoreManager2.getState().deleteSession(compactSessionId);
+    sessionStoreManager.getState().deleteSession(compactSessionId);
     compactSessionId = null;
     throwIfAborted(signal);
     if (mode === "copyPrompt") {
@@ -5443,7 +5381,7 @@ ${backtrack2}`;
     }
     const newSession = params.newSession ?? {};
     onStage?.("creating");
-    const newSessionId = sessionStoreManager2.getState().createSession({
+    const newSessionId = sessionStoreManager.getState().createSession({
       type: "project",
       workspaceId: meta3.workspaceId,
       title: i18n_default.t("chat:compactHandoff.newSessionTitle", { title: meta3.title }),
@@ -5456,7 +5394,7 @@ ${backtrack2}`;
     const fullBriefing = `${briefing}
 
 ${backtrack}`;
-    sessionStoreManager2.getState().stores.get(newSessionId)?.getState().setPendingBriefing(fullBriefing);
+    sessionStoreManager.getState().stores.get(newSessionId)?.getState().setPendingBriefing(fullBriefing);
     log5.info("\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { sourceSessionId: sessionId, newSessionId, briefingLength: fullBriefing.length });
     return { ok: true, newSessionId, briefing: fullBriefing };
   } catch (e3) {
@@ -5465,11 +5403,11 @@ ${backtrack}`;
     return { ok: false, error: err.message };
   } finally {
     if (compactSessionId) {
-      const leftover = sessionStoreManager2.getState().stores.get(compactSessionId);
+      const leftover = sessionStoreManager.getState().stores.get(compactSessionId);
       if (leftover?.getState().isStreaming) {
         void leftover.getState().interrupt();
       }
-      sessionStoreManager2.getState().deleteSession(compactSessionId);
+      sessionStoreManager.getState().deleteSession(compactSessionId);
     }
   }
 }
@@ -5484,7 +5422,7 @@ function waitForIdle(sessionId, signal) {
     signal,
     requireRunEvidence: true
   }).catch(async (err) => {
-    const store3 = sessionStoreManager2.getState().stores.get(sessionId);
+    const store3 = sessionStoreManager.getState().stores.get(sessionId);
     if (store3?.getState().isStreaming) {
       void store3.getState().interrupt();
     }
@@ -5649,7 +5587,7 @@ function executeSingleRound(opts) {
       abortSignal
     } = opts;
     const isDeep = mode === "deep";
-    const manager = sessionStoreManager.getState();
+    const manager = sessionStoreManager2.getState();
     const settle = (r3) => {
       if (abortSignal.aborted) {
         resolve2({ ok: false, error: null });
@@ -5669,7 +5607,7 @@ function executeSingleRound(opts) {
       silentMode: true,
       kind: "prompt-optimize"
     });
-    const optStore = sessionStoreManager.getState().stores.get(optimizeSessionId);
+    const optStore = sessionStoreManager2.getState().stores.get(optimizeSessionId);
     if (!optStore) {
       settle({ ok: false, error: i18n_default.t("chat:promptOptimize.errorCreateSession", "\u4F18\u5316\u4F1A\u8BDD\u521B\u5EFA\u5931\u8D25") });
       return;
@@ -5782,7 +5720,7 @@ async function runPromptOptimize(options2) {
   const mode = options2.mode === "deep" ? "deep" : "quick";
   const dir2 = direction2 ?? "structured";
   const iterations2 = Math.max(1, Math.min(MAX_ITERATIONS, options2.iterations ?? 1));
-  const manager = sessionStoreManager.getState();
+  const manager = sessionStoreManager2.getState();
   const srcStore = manager.stores.get(sourceSessionId);
   if (!srcStore) {
     log6.warn("\u6E90\u4F1A\u8BDD\u4E0D\u5B58\u5728\uFF0C\u5FFD\u7565\u4F18\u5316\u8BF7\u6C42", { sourceSessionId });
@@ -5855,7 +5793,7 @@ async function runPromptOptimize(options2) {
   }
 }
 function cancelPromptOptimize(sourceSessionId) {
-  const manager = sessionStoreManager.getState();
+  const manager = sessionStoreManager2.getState();
   const srcStore = manager.stores.get(sourceSessionId);
   const po2 = srcStore?.getState().promptOptimize;
   activeRuns.get(sourceSessionId)?.();
@@ -5867,7 +5805,7 @@ function cancelPromptOptimize(sourceSessionId) {
   log6.info("\u53D6\u6D88\u63D0\u793A\u8BCD\u4F18\u5316", { sourceSessionId });
 }
 function usePromptOptimizePreview(optimizeSessionId) {
-  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
   const store3 = optimizeSessionId ? stores.get(optimizeSessionId) ?? null : null;
   const cachedRef = useRef(EMPTY_PREVIEW);
   const getSnapshot = useCallback(() => {
@@ -5883,7 +5821,7 @@ function usePromptOptimizePreview(optimizeSessionId) {
   const subscribe = useCallback(
     (onChange) => {
       if (!store3) {
-        return sessionStoreManager.subscribe(onChange);
+        return sessionStoreManager2.subscribe(onChange);
       }
       return store3.subscribe(onChange);
     },
@@ -6421,6 +6359,68 @@ var init_patchParser = __esm({
   }
 });
 
+// src/shims/misc.ts
+function core() {
+  return globalThis.__POLARIS_APP_CORE__;
+}
+function isMobileUserAgent() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function isMobileTauriRuntime() {
+  return isMobileUserAgent() && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+function listEnabledPluginMcpServers(pluginStates) {
+  return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
+}
+function convertFileSrc(path4) {
+  return core().tauri.convertFileSrc(path4);
+}
+function listPluginMcpServerStatuses(pluginStates) {
+  return core().pluginSystem.listPluginMcpServerStatuses?.(pluginStates) ?? [];
+}
+function getActiveModelProfile() {
+  return core().stores.useModelProfileStore.getState().getActiveProfile?.() ?? core().stores.useModelProfileStore.getState().activeProfile;
+}
+function getModelProfileById(id38) {
+  const s3 = core().stores.useModelProfileStore.getState();
+  return s3.profiles?.find?.((p3) => p3.id === id38);
+}
+var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
+var init_misc = __esm({
+  "src/shims/misc.ts"() {
+    init_stores();
+    i18n = new Proxy({}, {
+      get: (_t, prop) => {
+        const inst2 = core().i18n;
+        return inst2 ? inst2[prop] : void 0;
+      }
+    });
+    pluginRegistry = new Proxy({}, {
+      get: (_t, prop) => core().pluginSystem.pluginRegistry[prop]
+    });
+    chatCardRegistry = new Proxy({}, {
+      get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
+    });
+    Button = core().components.Button;
+    JsonTreeView = core().components.JsonTreeView;
+    OverlayGuard = core().components.OverlayGuard;
+    ConfirmDialog = core().components.ConfirmDialog;
+    Modal = core().components.Modal;
+    DropdownMenu = core().components.DropdownMenu;
+    DiffViewer = core().components.DiffViewer;
+    WorkspaceBadge = core().components.WorkspaceBadge;
+    WorkspaceMenu = core().components.WorkspaceMenu;
+    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
+    useWorkspaceFilter = core().components.useWorkspaceFilter;
+    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
+    Icons = new Proxy({}, { get: () => core().components.Icons });
+    IconSend = core().components.Icons.IconSend;
+    IconStop = core().components.Icons.IconStop;
+    IconPaperclip = core().components.Icons.IconPaperclip;
+  }
+});
+
 // src/host/conversationStore/eventHandler.ts
 function pushStreamDelta(state5, set5, at2, text5) {
   if (!at2 || !text5) return;
@@ -6564,7 +6564,7 @@ function handleAIEvent(event3, set5, get6) {
       {
         const isSilentStart = (() => {
           try {
-            return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
+            return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
           } catch {
             return void 0;
           }
@@ -6579,13 +6579,13 @@ function handleAIEvent(event3, set5, get6) {
         });
       }
       if (event3.engineId && state5.sessionId) {
-        const managerState = sessionStoreManager2.getState();
+        const managerState = sessionStoreManager.getState();
         const currentMeta = managerState.sessionMetadata.get(state5.sessionId);
         if (currentMeta && currentMeta.engineId !== event3.engineId) {
           const newMeta = { ...currentMeta, engineId: event3.engineId };
           const newMetadata = new Map(managerState.sessionMetadata);
           newMetadata.set(state5.sessionId, newMeta);
-          sessionStoreManager2.setState({ sessionMetadata: newMetadata });
+          sessionStoreManager.setState({ sessionMetadata: newMetadata });
           log7.info("\u4F1A\u8BDD\u5F15\u64CE\u5DF2\u66F4\u65B0", { sessionId: state5.sessionId, engineId: event3.engineId });
         }
       }
@@ -6613,7 +6613,7 @@ function handleAIEvent(event3, set5, get6) {
       });
       const sessionMeta = (() => {
         try {
-          return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
+          return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
         } catch {
           return void 0;
         }
@@ -7125,7 +7125,7 @@ function handleAIEvent(event3, set5, get6) {
   }
 }
 function buildDialogMetaInput(state5, messages) {
-  const metadata = sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
+  const metadata = sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
   const engineId = normalizeEngineId(metadata?.engineId);
   const firstUserMessage = messages.find((m4) => m4.type === "user");
   let title2 = metadata?.title || "\u65B0\u4F1A\u8BDD";
@@ -7487,7 +7487,7 @@ __export(conversationStoreUtils_exports, {
   resolveSessionEngine: () => resolveSessionEngine
 });
 function resolveSessionEngine(sessionId, configEngineId) {
-  const metadataEngineId = sessionStoreManager2.getState().sessionMetadata.get(sessionId)?.engineId;
+  const metadataEngineId = sessionStoreManager.getState().sessionMetadata.get(sessionId)?.engineId;
   return normalizeEngineId(metadataEngineId || configEngineId);
 }
 function resolveAuxiliaryEngine(config3) {
@@ -9427,7 +9427,7 @@ function createConversationStore(sessionId, deps) {
         get6().addMessage(userMessage);
         if (messages.length === 0) {
           const placeholder = generateTitleFromMessage(content);
-          sessionStoreManager2.getState().updateSessionTitle(sessionId2, placeholder);
+          sessionStoreManager.getState().updateSessionTitle(sessionId2, placeholder);
         }
         get6().clearInputDraft();
         set5({
@@ -9445,7 +9445,7 @@ function createConversationStore(sessionId, deps) {
           // 与 eventHandler session_start/session_end 的 silentMode 守卫保持一致。
           runStartAtMs: (() => {
             try {
-              const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
+              const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
               return meta3?.silentMode ? null : Date.now();
             } catch {
               return Date.now();
@@ -9467,7 +9467,7 @@ function createConversationStore(sessionId, deps) {
           }));
           const sessionConfig = getSessionConfig();
           const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, engine);
-          const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
+          const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
           const modelProfileId = resolveEffectiveProfileId(
             sessionMeta?.modelProfileId,
             sessionConfig.modelProfileId,
@@ -9529,7 +9529,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
               options: chatOptions
             });
           } else {
-            const sessionMeta2 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
+            const sessionMeta2 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
             const forkSessionId = sessionMeta2?.forkFromId;
             const newSessionId = await aiChatDispatch({
               action: "start",
@@ -9542,7 +9542,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
             set5({ conversationId: newSessionId });
           }
           try {
-            const mgrState = sessionStoreManager2.getState();
+            const mgrState = sessionStoreManager.getState();
             const meta3 = mgrState.sessionMetadata.get(sessionId2);
             if (meta3 && meta3.status !== "running" && meta3.status !== "background-running") {
               const newMetadata = new Map(mgrState.sessionMetadata);
@@ -9551,7 +9551,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
                 status: "running",
                 updatedAt: (/* @__PURE__ */ new Date()).toISOString()
               });
-              sessionStoreManager2.setState({ sessionMetadata: newMetadata });
+              sessionStoreManager.setState({ sessionMetadata: newMetadata });
             }
           } catch {
           }
@@ -9673,7 +9673,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         set5({ isStreaming: true, error: null });
         const sessionConfig = getSessionConfig();
         const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, currentEngine);
-        const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
+        const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
         const modelProfileId = resolveEffectiveProfileId(
           sessionMeta?.modelProfileId,
           sessionConfig.modelProfileId,
@@ -11181,7 +11181,7 @@ function createSessionManagerStore() {
 }
 function useSessionMetadataList() {
   return useStore(
-    sessionStoreManager2,
+    sessionStoreManager,
     (state5) => {
       if (state5.sessionMetadata === cachedMetadataMap && cachedMetadataArray !== null) {
         return cachedMetadataArray;
@@ -11194,9 +11194,9 @@ function useSessionMetadataList() {
   );
 }
 function useActiveSessionId() {
-  return useStore(sessionStoreManager2, (state5) => state5.activeSessionId);
+  return useStore(sessionStoreManager, (state5) => state5.activeSessionId);
 }
-var log12, RENDER_EVENT_TYPES, sessionStoreManager2, cachedMetadataMap, cachedMetadataArray;
+var log12, RENDER_EVENT_TYPES, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
 var init_sessionStoreManager = __esm({
   "src/host/conversationStore/sessionStoreManager.ts"() {
     init_uuid();
@@ -11213,7 +11213,7 @@ var init_sessionStoreManager = __esm({
     init_types2();
     log12 = createLogger("SessionStoreManager");
     RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
-    sessionStoreManager2 = createSessionManagerStore();
+    sessionStoreManager = createSessionManagerStore();
     cachedMetadataMap = null;
     cachedMetadataArray = null;
   }
@@ -11253,11 +11253,11 @@ __export(useActiveSession_exports, {
 });
 import { useMemo, useCallback as useCallback2, useSyncExternalStore as useSyncExternalStore2 } from "react";
 function useSessionState(sessionId, selector2, fallback) {
-  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
   const store3 = sessionId ? stores.get(sessionId) ?? null : null;
   const subscribe = useCallback2(
     (onChange) => {
-      if (!store3) return sessionStoreManager2.subscribe(onChange);
+      if (!store3) return sessionStoreManager.subscribe(onChange);
       return store3.subscribe(onChange);
     },
     [store3]
@@ -11393,9 +11393,9 @@ function useActiveSessionBlockMaps() {
 function useActiveSessionActions() {
   return useMemo(() => {
     const getStore = () => {
-      const sid = sessionStoreManager2.getState().activeSessionId;
+      const sid = sessionStoreManager.getState().activeSessionId;
       if (!sid) return null;
-      return sessionStoreManager2.getState().stores.get(sid)?.getState() ?? null;
+      return sessionStoreManager.getState().stores.get(sid)?.getState() ?? null;
     };
     const call = (method, ...args) => {
       const store3 = getStore();
@@ -11405,7 +11405,7 @@ function useActiveSessionActions() {
     };
     return {
       sendMessage: async (...args) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
+        const sid = sessionStoreManager.getState().activeSessionId;
         if (!sid) return false;
         const kernel = await getKernel();
         const result = await kernel.sendMessage({
@@ -11418,25 +11418,25 @@ function useActiveSessionActions() {
         return result.ok !== false;
       },
       interrupt: async () => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
+        const sid = sessionStoreManager.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.interrupt(sid);
       },
       continueChat: async (prompt, allowedTools) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
+        const sid = sessionStoreManager.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.continueChat(sid, prompt ?? "", { allowedTools });
       },
       editAndResend: async (messageId, newContent) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
+        const sid = sessionStoreManager.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.editAndResend(sid, messageId, newContent);
       },
       regenerateResponse: async (messageId) => {
-        const sid = sessionStoreManager2.getState().activeSessionId;
+        const sid = sessionStoreManager.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.regenerate(sid, messageId);
@@ -11467,15 +11467,15 @@ function useActiveSessionActions() {
       loadMoreArchivedMessages: (count2 = 20) => call("loadMoreArchivedMessages", count2),
       onVisibleRangeChange: (start2, end) => call("onVisibleRangeChange", start2, end),
       // Manager actions
-      switchSession: sessionStoreManager2.getState().switchSession,
-      deleteSession: sessionStoreManager2.getState().deleteSession,
-      createSession: sessionStoreManager2.getState().createSession
+      switchSession: sessionStoreManager.getState().switchSession,
+      deleteSession: sessionStoreManager.getState().deleteSession,
+      createSession: sessionStoreManager.getState().createSession
     };
   }, []);
 }
 function useActiveSessionChat() {
   const sessionId = useActiveSessionId();
-  const stores = useStore(sessionStoreManager2, (s3) => s3.stores);
+  const stores = useStore(sessionStoreManager, (s3) => s3.stores);
   const store3 = sessionId ? stores.get(sessionId) ?? null : null;
   return useMemo(() => store3 ? store3.getState() : null, [store3]);
 }
@@ -11664,7 +11664,7 @@ __export(stores_exports, {
   resolveEffectiveProfileId: () => resolveEffectiveProfileId2,
   resolveSessionEngine: () => resolveSessionEngine2,
   selectSlotFill: () => selectSlotFill,
-  sessionStoreManager: () => sessionStoreManager,
+  sessionStoreManager: () => sessionStoreManager2,
   useActiveSessionActions: () => useActiveSessionActions2,
   useActiveSessionConversationId: () => useActiveSessionConversationId2,
   useActiveSessionError: () => useActiveSessionError2,
@@ -11731,7 +11731,7 @@ function useStoreHook(name) {
   return hook2;
 }
 function localManager() {
-  return sessionStoreManager2;
+  return sessionStoreManager;
 }
 function getSessionConfig() {
   return useSessionConfig.getState().config;
@@ -11772,11 +11772,10 @@ function findStoreByConversationId(...args) {
   if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
   return null;
 }
-var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
+var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager2, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
 var init_stores = __esm({
   "src/shims/stores.ts"() {
     init_core();
-    init_misc();
     init_sessionStoreManager();
     init_useActiveSession();
     init_sessionStoreManager();
@@ -11799,9 +11798,18 @@ var init_stores = __esm({
     useSnippetStore = useStoreHook("useSnippetStore");
     useSkillStore = useStoreHook("useSkillStore");
     useFileEditorStore = useStoreHook("useFileEditorStore");
-    useCompactHandoffStore = useCompactHandoffStore;
+    useCompactHandoffStore = new Proxy(() => void 0, {
+      get(_t, prop) {
+        const real = globalThis.__CHAT_DESK_LOCAL_STORES__.useCompactHandoffStore;
+        return real[prop];
+      },
+      apply(_t, _this, args) {
+        const real = globalThis.__CHAT_DESK_LOCAL_STORES__.useCompactHandoffStore;
+        return real(...args);
+      }
+    });
     useDispatchStore = useStoreHook("useDispatchStore");
-    sessionStoreManager = sessionStoreManager2;
+    sessionStoreManager2 = sessionStoreManager;
     hostActive = new Proxy({}, {
       get: (_t, p3) => {
         const local2 = useActiveSession_exports[p3];
@@ -311557,7 +311565,7 @@ function CompactHandoffModal({
   const sourceEngine = normalizeEngineId(engineId);
   const profiles = useModelProfileStore((s3) => s3.profiles);
   const sourceDefaults = useMemo19(() => {
-    const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId);
+    const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId);
     const sessionConfig = getSessionConfig();
     const activeProfileId = useModelProfileStore.getState().activeProfileId ?? void 0;
     const profileId = resolveEffectiveProfileId2(
@@ -317862,7 +317870,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
         declined: s3.declined
       }));
       dispatch3({ type: "BEGIN_SUBMIT" });
-      const store3 = sessionStoreManager.getState().stores.get(block2.sessionId)?.getState();
+      const store3 = sessionStoreManager2.getState().stores.get(block2.sessionId)?.getState();
       if (kind === "decline-all") {
         store3?.updateQuestionBlock(block2.id, {
           declined: true
@@ -320592,7 +320600,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
   const containerRef = useRef8(null);
   const isPlanApproval = block2.denials.length === 0;
   const getStoreByConversationId = useCallback9((conversationId) => {
-    for (const store3 of sessionStoreManager.getState().stores.values()) {
+    for (const store3 of sessionStoreManager2.getState().stores.values()) {
       if (store3.getState().conversationId === conversationId) {
         return store3.getState() ?? null;
       }
@@ -331969,7 +331977,7 @@ ${c4.output}` : c4.output;
 function useRuntimeSummary(sessionId) {
   const activeId = useActiveSessionId();
   const targetId = sessionId ?? activeId;
-  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
   const store3 = targetId ? stores.get(targetId) : null;
   const [tick, setTick] = useState25(0);
   const tickStartRef = useRef12(0);
@@ -332004,7 +332012,7 @@ function useRuntimeSummary(sessionId) {
     return nextWithSession;
   };
   const subscribe = (onChange) => {
-    if (!store3) return sessionStoreManager.subscribe(onChange);
+    if (!store3) return sessionStoreManager2.subscribe(onChange);
     return store3.subscribe(onChange);
   };
   const summary = useSyncExternalStore4(subscribe, getSnapshot, () => EMPTY_SUMMARY);
@@ -333303,7 +333311,7 @@ var SessionCell = memo27(function SessionCell2({
   }, [sessionId, isActive, switchSession]);
   const handleInterrupt = useCallback23((e3) => {
     e3.stopPropagation();
-    sessionStoreManager.getState().interruptSession(sessionId);
+    sessionStoreManager2.getState().interruptSession(sessionId);
   }, [sessionId]);
   const handleExpand = useCallback23((e3) => {
     e3.stopPropagation();
@@ -333574,7 +333582,7 @@ function ensureChatDomainBootstrapped() {
   try {
     const core5 = getAppCore();
     if (!core5.stores.sessionStoreManager) {
-      core5.stores.sessionStoreManager = sessionStoreManager2;
+      core5.stores.sessionStoreManager = sessionStoreManager;
       core5.stores.useActiveSession = useActiveSession_exports;
       void Promise.all([
         Promise.resolve().then(() => (init_sessionRestore(), sessionRestore_exports)),
@@ -333596,7 +333604,7 @@ function ensureChatDomainBootstrapped() {
       });
     }
     void ensureEventRouterInitialized();
-    void sessionStoreManager2.getState().initialize();
+    void sessionStoreManager.getState().initialize();
     try {
       ;
       remoteSessionFollower.start?.();
@@ -334869,7 +334877,7 @@ ${digest}` : digest };
     } else {
       useSessionConfig.getState().setAgent(agentCmd.slug ?? "");
       if (ctx.activeSessionId) {
-        sessionStoreManager.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
+        sessionStoreManager2.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
       }
       useToastStore.getState().info("/agent", agentCmd.slug ? i18n_default.t("chat:agentCmd.set", { defaultValue: "\u5F53\u524D\u4E13\u5BB6\u5DF2\u8BBE\u4E3A {{slug}}", slug: agentCmd.slug, interpolation: { escapeValue: false } }) : i18n_default.t("chat:agentCmd.cleared", "\u5DF2\u6E05\u9664\u5F53\u524D\u4E13\u5BB6"));
     }
@@ -336764,20 +336772,20 @@ function SessionConfigSelector({
       ...config3,
       ...nextConfig
     });
-    const activeId = writeThroughToSession ? sessionStoreManager.getState().activeSessionId : null;
+    const activeId = writeThroughToSession ? sessionStoreManager2.getState().activeSessionId : null;
     if (activeId) {
       if (type3 === "profile") {
         if (value3 === "") {
-          sessionStoreManager.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
-          sessionStoreManager.getState().updateSessionProfileMode(activeId, "official");
+          sessionStoreManager2.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
+          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "official");
         } else {
-          sessionStoreManager.getState().updateSessionModelProfile(activeId, value3);
-          sessionStoreManager.getState().updateSessionProfileMode(activeId, "profile");
+          sessionStoreManager2.getState().updateSessionModelProfile(activeId, value3);
+          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "profile");
         }
       } else if (type3 === "model") {
-        sessionStoreManager.getState().updateSessionModel(activeId, value3);
+        sessionStoreManager2.getState().updateSessionModel(activeId, value3);
       } else if (type3 === "agent") {
-        sessionStoreManager.getState().updateSessionAgent(activeId, value3 || null);
+        sessionStoreManager2.getState().updateSessionAgent(activeId, value3 || null);
       }
     }
     setOpenDropdown(null);
@@ -338428,7 +338436,7 @@ function ChatDeskEntry(_props) {
     editAndResend(messageId, newContent);
     setEditMode(null);
   }, [editAndResend]);
-  const currentSession = activeSessionId ? sessionStoreManager.getState().sessionMetadata.get(activeSessionId) : void 0;
+  const currentSession = activeSessionId ? sessionStoreManager2.getState().sessionMetadata.get(activeSessionId) : void 0;
   const sessionMetadataList = useSessionMetadataList();
   const activeSessionIsFree = useMemo21(
     () => sessionMetadataList.some((s3) => s3.id === activeSessionId && s3.type === "free"),
