@@ -33,6 +33,26 @@ export function ensureChatDomainBootstrapped(): void {
     if (!core.stores.sessionStoreManager) {
       core.stores.sessionStoreManager = sessionStoreManager
       core.stores.useActiveSession = useActiveSession
+      // sessionRestore/sessionHandoff 服务回挂：宿主 sessionHostApi
+      //（history-desk 的 __POLARIS_SESSION_API__）与 QuickSwitch 续接经此工作
+      void Promise.all([
+        import('./host/services/sessionRestore'),
+        import('./host/services/sessionHandoff'),
+        import('./host/services/aiChatDispatch'),
+      ]).then(([restore, handoff, aiChat]) => {
+        core.services.sessionRestore = {
+          restoreFromHistory: restore.restoreFromHistory,
+          forkSession: restore.forkSession,
+        }
+        core.services.sessionHandoff = {
+          getHandoffEligibility: handoff.getHandoffEligibility,
+          handoffSessionToNewSession: handoff.handoffSessionToNewSession,
+        }
+        core.services.aiChatDispatch = {
+          aiChatDispatch: aiChat.aiChatDispatch,
+          aiChatDispatchStream: aiChat.aiChatDispatchStream,
+        }
+      })
     }
 
     // 2) 事件路由 + 会话域初始化（原宿主 useAppInit 子集）

@@ -70,10 +70,13 @@ export const sendInput: AnyFn = (...args) => (coreService<Record<string, AnyFn>>
 export const saveChatToFile: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('chatService').saveChatToFile)(...args)
 
 // ── 恢复/交接/压缩/优化/历史/派发 ──
-export const restoreFromHistory: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionRestore').restoreFromHistory)(...args)
-export const forkSession: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionRestore').forkSession)(...args)
-export const ensureWorkspace: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionRestore').ensureWorkspace)(...args)
-export const loadMessagesForItem: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionRestore').loadMessagesForItem)(...args)
+import * as _localSessionRestore from '../host/services/sessionRestore'
+export const restoreFromHistory: AnyFn = (...args) => ((_localSessionRestore as unknown as Record<string, AnyFn>).restoreFromHistory)(...args)
+export const forkSession: AnyFn = (...args) => ((_localSessionRestore as unknown as Record<string, AnyFn>).forkSession)(...args)
+export const ensureWorkspace: AnyFn = (...args) => ((_localSessionRestore as unknown as Record<string, AnyFn>).ensureWorkspace)(...args)
+export const loadMessagesForItem: AnyFn = (...args) => ((_localSessionRestore as unknown as Record<string, AnyFn>).loadMessagesForItem)(...args)
+export const loadBackendMessages: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionArchive').loadBackendMessages)(...args)
+export const aiHistoryDispatch: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('aiHistoryDispatch').aiHistoryDispatch)(...args)
 
 export const getHandoffEligibility: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionHandoff').getHandoffEligibility)(...args)
 export const handoffSessionToNewSession: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('sessionHandoff').handoffSessionToNewSession)(...args)

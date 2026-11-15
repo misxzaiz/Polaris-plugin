@@ -91,6 +91,11 @@ const aliasPlugin = {
       const srcNorm = srcRoot.split(String.fromCharCode(92)).join('/');
       if (!norm.startsWith(srcNorm)) return null;
       const tail = norm.slice(srcNorm.length + 1);
+      // P6：插件自持实现目录（host/services|stores|utils 等）内的相对引用
+      // 交还 esbuild 默认解析（这些目录已从宿主拷贝进来，不再转发 shims）。
+      if (tail.startsWith('host/services/')
+        || tail.startsWith('host/stores/')
+        || tail.startsWith('host/utils/')) return null;
       // 宿主共享面 → shims（host/conversationStore 内的根级 store 相对引用、
       // 非 Chat 域组件 Common/Diff/Session/Workspace）
       const hit = tail.startsWith('host/stores/')
