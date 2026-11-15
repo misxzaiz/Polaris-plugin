@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "AI 对话域插件（P2 骨架，ai-chat-plugin-extraction-spec）：mainSurface 主面板 shadow 接管。P2 最小闭环 = 新建会话/发送（cap.ai.chat start/continue 流式）+ 中断 + 文本/思考/工具块渲染 + 会话切换/删除。",
   "core": true,
-  "enabledByDefault": false,
+  "enabledByDefault": true,
   "contributes": {
     "views": [
       {
