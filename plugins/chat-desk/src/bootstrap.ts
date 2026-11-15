@@ -38,21 +38,21 @@ export function ensureChatDomainBootstrapped(): void {
     if (!core.stores.sessionStoreManager) {
       core.stores.sessionStoreManager = sessionStoreManager
       core.stores.useActiveSession = useActiveSession
-      // sessionRestore/sessionHandoff/aiChatDispatch 服务回挂：宿主 sessionHostApi
-      //（history-desk 的 __POLARIS_SESSION_API__）、QuickSwitch 续接与 sessionBus
-      // 经此工作。顶层静态 import，模块加载即同步回挂——早于任何 chrome 渲染。
-      core.services.sessionRestore = {
-        restoreFromHistory: _sessionRestoreSvc.restoreFromHistory,
-        forkSession: _sessionRestoreSvc.forkSession,
-      }
-      core.services.sessionHandoff = {
-        getHandoffEligibility: _sessionHandoffSvc.getHandoffEligibility,
-        handoffSessionToNewSession: _sessionHandoffSvc.handoffSessionToNewSession,
-      }
-      core.services.aiChatDispatch = {
-        aiChatDispatch: _aiChatDispatchSvc.aiChatDispatch,
-        aiChatDispatchStream: _aiChatDispatchSvc.aiChatDispatchStream,
-      }
+    }
+    // 2) 服务回挂（无条件）：宿主 sessionHostApi（history-desk 的
+    // __POLARIS_SESSION_API__）、QuickSwitch 续接与 sessionBus 经此工作。
+    // 顶层静态 import，模块加载即同步回挂——早于任何 chrome 渲染。
+    core.services.sessionRestore = {
+      restoreFromHistory: _sessionRestoreSvc.restoreFromHistory,
+      forkSession: _sessionRestoreSvc.forkSession,
+    }
+    core.services.sessionHandoff = {
+      getHandoffEligibility: _sessionHandoffSvc.getHandoffEligibility,
+      handoffSessionToNewSession: _sessionHandoffSvc.handoffSessionToNewSession,
+    }
+    core.services.aiChatDispatch = {
+      aiChatDispatch: _aiChatDispatchSvc.aiChatDispatch,
+      aiChatDispatchStream: _aiChatDispatchSvc.aiChatDispatchStream,
     }
 
     // 2) 事件路由 + 会话域初始化（原宿主 useAppInit 子集）

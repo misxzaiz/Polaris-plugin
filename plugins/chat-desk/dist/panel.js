@@ -333711,19 +333711,19 @@ function ensureChatDomainBootstrapped() {
     if (!core5.stores.sessionStoreManager) {
       core5.stores.sessionStoreManager = sessionStoreManager;
       core5.stores.useActiveSession = useActiveSession_exports;
-      core5.services.sessionRestore = {
-        restoreFromHistory,
-        forkSession
-      };
-      core5.services.sessionHandoff = {
-        getHandoffEligibility,
-        handoffSessionToNewSession
-      };
-      core5.services.aiChatDispatch = {
-        aiChatDispatch: aiChatDispatch2,
-        aiChatDispatchStream: aiChatDispatchStream2
-      };
     }
+    core5.services.sessionRestore = {
+      restoreFromHistory,
+      forkSession
+    };
+    core5.services.sessionHandoff = {
+      getHandoffEligibility,
+      handoffSessionToNewSession
+    };
+    core5.services.aiChatDispatch = {
+      aiChatDispatch: aiChatDispatch2,
+      aiChatDispatchStream: aiChatDispatchStream2
+    };
     void ensureEventRouterInitialized();
     void sessionStoreManager.getState().initialize();
     try {
