@@ -11199,7 +11199,7 @@ function useSessionMetadataList() {
 function useActiveSessionId() {
   return useStore(sessionStoreManager, (state5) => state5.activeSessionId);
 }
-var log12, RENDER_EVENT_TYPES, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
+var log12, RENDER_EVENT_TYPES, __globalRegistry, __appCore, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
 var init_sessionStoreManager = __esm({
   "src/host/conversationStore/sessionStoreManager.ts"() {
     init_uuid();
@@ -11216,7 +11216,13 @@ var init_sessionStoreManager = __esm({
     init_types2();
     log12 = createLogger("SessionStoreManager");
     RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
-    sessionStoreManager = createSessionManagerStore();
+    __globalRegistry = globalThis;
+    __appCore = __globalRegistry.__POLARIS_APP_CORE__;
+    sessionStoreManager = __appCore?.stores?.sessionStoreManager ?? (() => {
+      const created = createSessionManagerStore();
+      if (__appCore?.stores) __appCore.stores.sessionStoreManager = created;
+      return created;
+    })();
     cachedMetadataMap = null;
     cachedMetadataArray = null;
   }

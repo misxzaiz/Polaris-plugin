@@ -964,7 +964,17 @@ function createSessionManagerStore() {
 /**
  * 全局 SessionStoreManager store 实例
  */
-export const sessionStoreManager = createSessionManagerStore()
+// P6：单实例保证——优先取全局注册表（bootstrap 反向桥/宿主灰度实例），
+// 无则创建并自挂，确保面板内所有模块与宿主 chrome 共享同一 manager。
+const __globalRegistry = globalThis as unknown as Record<string, unknown>
+const __appCore = __globalRegistry.__POLARIS_APP_CORE__ as { stores?: Record<string, unknown> } | undefined
+export const sessionStoreManager =
+  (__appCore?.stores?.sessionStoreManager as ReturnType<typeof createSessionManagerStore>) ??
+  (() => {
+    const created = createSessionManagerStore()
+    if (__appCore?.stores) __appCore.stores.sessionStoreManager = created
+    return created
+  })()
 
 /**
  * 缓存的 actions 对象，确保引用稳定

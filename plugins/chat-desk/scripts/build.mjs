@@ -164,7 +164,9 @@ await build({
     // eslint-disable-next-line no-console
     console.log('[metafile] total=', inputs.length)
     // eslint-disable-next-line no-console
-    console.log('[metafile] hits=', inputs.filter((k) => k.includes('compactHandoff') || k.includes('bootstrap') || k.includes('toastStore') || k.includes('sessionStoreManager')))
+    console.log('[metafile] sessionStoreManager inputs=', inputs.filter((k) => k.includes('sessionStoreManager')))
+    // eslint-disable-next-line no-console
+    console.log('[metafile] useActiveSession inputs=', inputs.filter((k) => k.includes('useActiveSession')))
   }
 });
 
