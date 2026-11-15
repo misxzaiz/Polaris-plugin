@@ -21,6 +21,10 @@ const srcRoot = join(pluginRoot, 'src');
 // 这里内联最小实现，避免构建期额外产物。
 const srcRootNorm = srcRoot.split(String.fromCharCode(92)).join('/');
 const HOST_PREFIXES = [
+  'stores/conversationStore/sessionStoreManager.ts',
+  'stores/conversationStore/useActiveSession.ts',
+  'stores/conversationStore/conversationStoreUtils.ts',
+  'stores/conversationStore/types.ts',
   'stores/conversationStore/',
   'ai-runtime',
   'engines/',
@@ -36,6 +40,12 @@ function resolveHostFile(base) {
   return base + '.ts'
 }
 function resolveAlias(sub) {
+  // 会话域单实例：manager/hooks/utils 一律走 shims/stores（宿主桥单例），
+  // 防止 host/ 拷贝模块被打进面板造成第二实例（状态分裂）。
+  if (sub === 'stores/conversationStore/sessionStoreManager' || sub.startsWith('stores/conversationStore/sessionStoreManager')) return join(srcRoot, 'shims', 'stores.ts');
+  if (sub === 'stores/conversationStore/useActiveSession' || sub.startsWith('stores/conversationStore/useActiveSession')) return join(srcRoot, 'shims', 'stores.ts');
+  if (sub === 'stores/conversationStore/conversationStoreUtils') return join(srcRoot, 'shims', 'stores.ts');
+  if (sub === 'stores/conversationStore/types') return join(srcRoot, 'shims', 'stores.ts');
   // 会话域单实例：sessionStoreManager/useActiveSession/... 一律走 shims/stores（宿主桥单例），
   // 不指 host/ 拷贝（否则面板树与宿主各持一份 manager，状态分裂）。
   if (sub.startsWith('stores/conversationStore/')) return join(srcRoot, 'shims', 'stores.ts');
