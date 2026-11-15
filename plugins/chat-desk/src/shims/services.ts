@@ -88,8 +88,8 @@ import * as _localCCH from '../host/services/contextCompactHandoff'
 export const compactAndHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).compactAndHandoff)(...args)
 export type CompactHandoffStage = import('../host/services/contextCompactHandoff').CompactHandoffStage
 export type CompactHandoffParams = import('../host/services/contextCompactHandoff').CompactHandoffParams
-export const requestCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).requestCompactHandoff)(...args)
-export const cancelCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).cancelCompactHandoff)(...args)
+export const requestCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).compactAndHandoff)(...args)
+export const cancelCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown as Record<string, AnyFn>).getDefaultCompactInstruction)(...args)
 
 import * as _localPromptOptimize from '../host/services/promptOptimizeService'
 export const runPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).runPromptOptimize)(...args)

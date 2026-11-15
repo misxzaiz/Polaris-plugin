@@ -18,7 +18,7 @@ import {
   compactAndHandoff,
   type CompactHandoffStage,
   type CompactHandoffParams,
-} from '../../shims/services'
+} from '../services/contextCompactHandoff'
 import { copyToClipboard } from '@/utils/clipboard'
 
 const log = createLogger('CompactHandoffStore')
@@ -155,6 +155,8 @@ export const useCompactHandoffStore = create<CompactHandoffState>((set, get) => 
 // 双写 globalThis 与 window（面板 realm 读 window；不同运行环境取其一）。
 const __localStores = (((globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__) ?? {}) as Record<string, unknown>
 __localStores.useCompactHandoffStore = useCompactHandoffStore
+// eslint-disable-next-line no-console
+console.log('[chat-desk] compactHandoffStore self-registered', typeof useCompactHandoffStore)
 ;(globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ = __localStores
 ;if (typeof window !== 'undefined') {
   ;(window as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ = __localStores

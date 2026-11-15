@@ -1999,6 +1999,68 @@ var init_lucide_react = __esm({
   }
 });
 
+// src/shims/misc.ts
+function core() {
+  return globalThis.__POLARIS_APP_CORE__;
+}
+function isMobileUserAgent() {
+  if (typeof navigator === "undefined") return false;
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+function isMobileTauriRuntime() {
+  return isMobileUserAgent() && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+}
+function listEnabledPluginMcpServers(pluginStates) {
+  return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
+}
+function convertFileSrc(path4) {
+  return core().tauri.convertFileSrc(path4);
+}
+function listPluginMcpServerStatuses(pluginStates) {
+  return core().pluginSystem.listPluginMcpServerStatuses?.(pluginStates) ?? [];
+}
+function getActiveModelProfile() {
+  return core().stores.useModelProfileStore.getState().getActiveProfile?.() ?? core().stores.useModelProfileStore.getState().activeProfile;
+}
+function getModelProfileById(id38) {
+  const s3 = core().stores.useModelProfileStore.getState();
+  return s3.profiles?.find?.((p3) => p3.id === id38);
+}
+var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
+var init_misc = __esm({
+  "src/shims/misc.ts"() {
+    init_stores();
+    i18n = new Proxy({}, {
+      get: (_t, prop) => {
+        const inst2 = core().i18n;
+        return inst2 ? inst2[prop] : void 0;
+      }
+    });
+    pluginRegistry = new Proxy({}, {
+      get: (_t, prop) => core().pluginSystem.pluginRegistry[prop]
+    });
+    chatCardRegistry = new Proxy({}, {
+      get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
+    });
+    Button = core().components.Button;
+    JsonTreeView = core().components.JsonTreeView;
+    OverlayGuard = core().components.OverlayGuard;
+    ConfirmDialog = core().components.ConfirmDialog;
+    Modal = core().components.Modal;
+    DropdownMenu = core().components.DropdownMenu;
+    DiffViewer = core().components.DiffViewer;
+    WorkspaceBadge = core().components.WorkspaceBadge;
+    WorkspaceMenu = core().components.WorkspaceMenu;
+    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
+    useWorkspaceFilter = core().components.useWorkspaceFilter;
+    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
+    Icons = new Proxy({}, { get: () => core().components.Icons });
+    IconSend = core().components.Icons.IconSend;
+    IconStop = core().components.Icons.IconStop;
+    IconPaperclip = core().components.Icons.IconPaperclip;
+  }
+});
+
 // src/shims/uuid.ts
 function generateUUID() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -2622,7 +2684,7 @@ var init_eventRouter = __esm({
             }
             if (RENDER_EVENT_TYPES.has(payload?.type ?? "")) {
               try {
-                sessionStoreManager.getState().dispatchEvent(payload);
+                sessionStoreManager2.getState().dispatchEvent(payload);
               } catch (e3) {
                 log.error("\u5206\u53D1\u65E0\u4FE1\u5C01\u6E32\u67D3\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
               }
@@ -2651,7 +2713,7 @@ var init_eventRouter = __esm({
             _routeSessionId: frontendSessionId,
             ...turnId ? { _turnId: turnId } : {}
           };
-          sessionStoreManager.getState().dispatchEvent(eventWithRouteId);
+          sessionStoreManager2.getState().dispatchEvent(eventWithRouteId);
         } catch (e3) {
           log.error("\u5206\u53D1\u4E8B\u4EF6\u5230\u4F1A\u8BDD\u5931\u8D25", e3, { frontendSessionId });
         }
@@ -3782,7 +3844,7 @@ async function restoreFromHistory(sessionId, engineId, projectPath, claudeProjec
     }
     const effectiveProjectPath = projectPath || loaded.workspacePath || void 0;
     const workspaceId = await ensureWorkspace(effectiveProjectPath);
-    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
+    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
       loaded.messages,
       loaded.externalSessionId || sessionId,
       { title: loaded.title, workspaceId, engineId: loaded.engineId, paging: loaded.paging }
@@ -3825,7 +3887,7 @@ async function forkSession(sessionId, engineId, projectPath, claudeProjectName, 
     }
     const title2 = branchName || `Fork: \u4F1A\u8BDD ${sessionId.slice(0, 8)}`;
     const workspaceId = await ensureWorkspace(projectPath);
-    const newSessionId = sessionStoreManager.getState().createSessionFromHistory(
+    const newSessionId = sessionStoreManager2.getState().createSessionFromHistory(
       messages,
       null,
       // 不传 conversationId，确保发消息走 start_chat
@@ -4081,7 +4143,7 @@ __export(sessionHandoff_exports, {
   loadConversationMessages: () => loadConversationMessages
 });
 function getHandoffEligibility(sessionId) {
-  const manager = sessionStoreManager.getState();
+  const manager = sessionStoreManager2.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
@@ -4092,7 +4154,7 @@ function getHandoffEligibility(sessionId) {
   return { enabled: true };
 }
 async function handoffSessionToNewSession(sessionId, targetEngineId) {
-  const manager = sessionStoreManager.getState();
+  const manager = sessionStoreManager2.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) {
@@ -4184,7 +4246,7 @@ async function createHandoffSession(params) {
   });
   if (mode === "fork" && !sourceConversationId) mode = "summary";
   if (mode === "message-history") mode = "summary";
-  const manager = sessionStoreManager.getState();
+  const manager = sessionStoreManager2.getState();
   const newTitle = i18n_default.t("chat:handoff.newSessionTitle", { title: sourceTitle });
   if (mode === "fork") {
     const newSessionId2 = manager.createSession({
@@ -4410,7 +4472,7 @@ function useKernelSessionState(sessionId) {
       setState(getKernelSessionStateSnapshot(null));
       return;
     }
-    const localStore = sessionStoreManager2.getState().stores.get(sessionId);
+    const localStore = sessionStoreManager.getState().stores.get(sessionId);
     const localStreaming = localStore?.getState().isStreaming ?? false;
     const localError = localStore?.getState().error ?? null;
     setState({
@@ -5294,10 +5356,13 @@ var init_types2 = __esm({
 });
 
 // src/host/services/contextCompactHandoff.ts
+function getDefaultCompactInstruction() {
+  return i18n_default.t("chat:compactHandoff.defaultInstruction");
+}
 async function compactAndHandoff(params) {
   const { sessionId, compact, onStage, signal } = params;
   const mode = params.mode ?? "newSession";
-  const manager = sessionStoreManager.getState();
+  const manager = sessionStoreManager2.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
   const store3 = manager.stores.get(sessionId)?.getState();
   if (!meta3 || !store3) {
@@ -5323,7 +5388,7 @@ async function compactAndHandoff(params) {
     log5.info("\u538B\u7F29\u4EA4\u63A5\uFF1A\u6E90\u4F1A\u8BDD\u5DF2\u5B58\u6863", { absPath: fileRef.absPath, messageCount: messages.length });
     throwIfAborted(signal);
     onStage?.("compacting");
-    compactSessionId = sessionStoreManager.getState().createSession({
+    compactSessionId = sessionStoreManager2.getState().createSession({
       type: "project",
       workspaceId: meta3.workspaceId,
       title: i18n_default.t("chat:compactHandoff.compactSessionTitle", { title: meta3.title }),
@@ -5332,7 +5397,7 @@ async function compactAndHandoff(params) {
       modelProfileId: compact.modelProfileId || void 0,
       model: compact.model || void 0
     });
-    const compactStore = sessionStoreManager.getState().stores.get(compactSessionId);
+    const compactStore = sessionStoreManager2.getState().stores.get(compactSessionId);
     if (!compactStore) {
       return { ok: false, error: i18n_default.t("chat:compactHandoff.failCreateCompactSession") };
     }
@@ -5365,7 +5430,7 @@ ${compact.instruction}`;
     if (!briefing) {
       return { ok: false, error: i18n_default.t("chat:compactHandoff.emptyBriefing") };
     }
-    sessionStoreManager.getState().deleteSession(compactSessionId);
+    sessionStoreManager2.getState().deleteSession(compactSessionId);
     compactSessionId = null;
     throwIfAborted(signal);
     if (mode === "copyPrompt") {
@@ -5381,7 +5446,7 @@ ${backtrack2}`;
     }
     const newSession = params.newSession ?? {};
     onStage?.("creating");
-    const newSessionId = sessionStoreManager.getState().createSession({
+    const newSessionId = sessionStoreManager2.getState().createSession({
       type: "project",
       workspaceId: meta3.workspaceId,
       title: i18n_default.t("chat:compactHandoff.newSessionTitle", { title: meta3.title }),
@@ -5394,7 +5459,7 @@ ${backtrack2}`;
     const fullBriefing = `${briefing}
 
 ${backtrack}`;
-    sessionStoreManager.getState().stores.get(newSessionId)?.getState().setPendingBriefing(fullBriefing);
+    sessionStoreManager2.getState().stores.get(newSessionId)?.getState().setPendingBriefing(fullBriefing);
     log5.info("\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { sourceSessionId: sessionId, newSessionId, briefingLength: fullBriefing.length });
     return { ok: true, newSessionId, briefing: fullBriefing };
   } catch (e3) {
@@ -5403,11 +5468,11 @@ ${backtrack}`;
     return { ok: false, error: err.message };
   } finally {
     if (compactSessionId) {
-      const leftover = sessionStoreManager.getState().stores.get(compactSessionId);
+      const leftover = sessionStoreManager2.getState().stores.get(compactSessionId);
       if (leftover?.getState().isStreaming) {
         void leftover.getState().interrupt();
       }
-      sessionStoreManager.getState().deleteSession(compactSessionId);
+      sessionStoreManager2.getState().deleteSession(compactSessionId);
     }
   }
 }
@@ -5422,7 +5487,7 @@ function waitForIdle(sessionId, signal) {
     signal,
     requireRunEvidence: true
   }).catch(async (err) => {
-    const store3 = sessionStoreManager.getState().stores.get(sessionId);
+    const store3 = sessionStoreManager2.getState().stores.get(sessionId);
     if (store3?.getState().isStreaming) {
       void store3.getState().interrupt();
     }
@@ -5587,7 +5652,7 @@ function executeSingleRound(opts) {
       abortSignal
     } = opts;
     const isDeep = mode === "deep";
-    const manager = sessionStoreManager2.getState();
+    const manager = sessionStoreManager.getState();
     const settle = (r3) => {
       if (abortSignal.aborted) {
         resolve2({ ok: false, error: null });
@@ -5607,7 +5672,7 @@ function executeSingleRound(opts) {
       silentMode: true,
       kind: "prompt-optimize"
     });
-    const optStore = sessionStoreManager2.getState().stores.get(optimizeSessionId);
+    const optStore = sessionStoreManager.getState().stores.get(optimizeSessionId);
     if (!optStore) {
       settle({ ok: false, error: i18n_default.t("chat:promptOptimize.errorCreateSession", "\u4F18\u5316\u4F1A\u8BDD\u521B\u5EFA\u5931\u8D25") });
       return;
@@ -5720,7 +5785,7 @@ async function runPromptOptimize(options2) {
   const mode = options2.mode === "deep" ? "deep" : "quick";
   const dir2 = direction2 ?? "structured";
   const iterations2 = Math.max(1, Math.min(MAX_ITERATIONS, options2.iterations ?? 1));
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const srcStore = manager.stores.get(sourceSessionId);
   if (!srcStore) {
     log6.warn("\u6E90\u4F1A\u8BDD\u4E0D\u5B58\u5728\uFF0C\u5FFD\u7565\u4F18\u5316\u8BF7\u6C42", { sourceSessionId });
@@ -5793,7 +5858,7 @@ async function runPromptOptimize(options2) {
   }
 }
 function cancelPromptOptimize(sourceSessionId) {
-  const manager = sessionStoreManager2.getState();
+  const manager = sessionStoreManager.getState();
   const srcStore = manager.stores.get(sourceSessionId);
   const po2 = srcStore?.getState().promptOptimize;
   activeRuns.get(sourceSessionId)?.();
@@ -5805,7 +5870,7 @@ function cancelPromptOptimize(sourceSessionId) {
   log6.info("\u53D6\u6D88\u63D0\u793A\u8BCD\u4F18\u5316", { sourceSessionId });
 }
 function usePromptOptimizePreview(optimizeSessionId) {
-  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
   const store3 = optimizeSessionId ? stores.get(optimizeSessionId) ?? null : null;
   const cachedRef = useRef(EMPTY_PREVIEW);
   const getSnapshot = useCallback(() => {
@@ -5821,7 +5886,7 @@ function usePromptOptimizePreview(optimizeSessionId) {
   const subscribe = useCallback(
     (onChange) => {
       if (!store3) {
-        return sessionStoreManager2.subscribe(onChange);
+        return sessionStoreManager.subscribe(onChange);
       }
       return store3.subscribe(onChange);
     },
@@ -5897,7 +5962,7 @@ __export(services_exports, {
   buildCapDetailBlock: () => buildCapDetailBlock,
   buildCapDigestBlock: () => buildCapDigestBlock,
   buildCapReferenceBlock: () => buildCapReferenceBlock,
-  cancelCompactHandoff: () => cancelCompactHandoff2,
+  cancelCompactHandoff: () => cancelCompactHandoff,
   cancelPromptOptimize: () => cancelPromptOptimize2,
   clearAnsweredQuestions: () => clearAnsweredQuestions,
   clearProcessedPlans: () => clearProcessedPlans,
@@ -5916,7 +5981,7 @@ __export(services_exports, {
   forkSession: () => forkSession2,
   getClaudeSettingsPath: () => getClaudeSettingsPath,
   getCliCommandSuggestions: () => getCliCommandSuggestions,
-  getDefaultCompactInstruction: () => getDefaultCompactInstruction,
+  getDefaultCompactInstruction: () => getDefaultCompactInstruction2,
   getEventRouter: () => getEventRouter2,
   getHandoffEligibility: () => getHandoffEligibility2,
   getHistoryHandoffEligibility: () => getHistoryHandoffEligibility2,
@@ -5960,7 +6025,7 @@ __export(services_exports, {
   registerPendingQuestion: () => registerPendingQuestion,
   rejectPlan: () => rejectPlan,
   remoteSessionFollower: () => remoteSessionFollower,
-  requestCompactHandoff: () => requestCompactHandoff2,
+  requestCompactHandoff: () => requestCompactHandoff,
   resetTracker: () => resetTracker,
   resolveTemplateVariables: () => resolveTemplateVariables,
   respondPluginCard: () => respondPluginCard,
@@ -5993,7 +6058,7 @@ function aiChatDispatch(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff2, cancelCompactHandoff2, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction, openExternalLink;
+var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -6035,8 +6100,8 @@ var init_services = __esm({
     handoffHistorySessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
     loadConversationMessages2 = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
     compactAndHandoff2 = (...args) => compactAndHandoff(...args);
-    requestCompactHandoff2 = (...args) => (void 0)(...args);
-    cancelCompactHandoff2 = (...args) => (void 0)(...args);
+    requestCompactHandoff = (...args) => compactAndHandoff(...args);
+    cancelCompactHandoff = (...args) => getDefaultCompactInstruction(...args);
     runPromptOptimize2 = (...args) => runPromptOptimize(...args);
     cancelPromptOptimize2 = (...args) => cancelPromptOptimize(...args);
     readStoredOptimizeConfig2 = (...args) => readStoredOptimizeConfig(...args);
@@ -6086,7 +6151,7 @@ var init_services = __esm({
     parseWorkspaceReferences = (...args) => coreService("workspaceReference").parseWorkspaceReferences(...args);
     resolveTemplateVariables = (...args) => coreService("workspaceReference").resolveTemplateVariables(...args);
     detectClientDescriptor = (...args) => coreService("detector").detectClientDescriptor(...args);
-    getDefaultCompactInstruction = (...args) => coreService("contextCompactHandoff").getDefaultCompactInstruction(...args);
+    getDefaultCompactInstruction2 = (...args) => coreService("contextCompactHandoff").getDefaultCompactInstruction(...args);
     openExternalLink = (...args) => coreService("linkExternal").openExternal(...args);
   }
 });
@@ -6359,68 +6424,6 @@ var init_patchParser = __esm({
   }
 });
 
-// src/shims/misc.ts
-function core() {
-  return globalThis.__POLARIS_APP_CORE__;
-}
-function isMobileUserAgent() {
-  if (typeof navigator === "undefined") return false;
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-function isMobileTauriRuntime() {
-  return isMobileUserAgent() && typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-function listEnabledPluginMcpServers(pluginStates) {
-  return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
-}
-function convertFileSrc(path4) {
-  return core().tauri.convertFileSrc(path4);
-}
-function listPluginMcpServerStatuses(pluginStates) {
-  return core().pluginSystem.listPluginMcpServerStatuses?.(pluginStates) ?? [];
-}
-function getActiveModelProfile() {
-  return core().stores.useModelProfileStore.getState().getActiveProfile?.() ?? core().stores.useModelProfileStore.getState().activeProfile;
-}
-function getModelProfileById(id38) {
-  const s3 = core().stores.useModelProfileStore.getState();
-  return s3.profiles?.find?.((p3) => p3.id === id38);
-}
-var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, IconSend, IconStop, IconPaperclip;
-var init_misc = __esm({
-  "src/shims/misc.ts"() {
-    init_stores();
-    i18n = new Proxy({}, {
-      get: (_t, prop) => {
-        const inst2 = core().i18n;
-        return inst2 ? inst2[prop] : void 0;
-      }
-    });
-    pluginRegistry = new Proxy({}, {
-      get: (_t, prop) => core().pluginSystem.pluginRegistry[prop]
-    });
-    chatCardRegistry = new Proxy({}, {
-      get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
-    });
-    Button = core().components.Button;
-    JsonTreeView = core().components.JsonTreeView;
-    OverlayGuard = core().components.OverlayGuard;
-    ConfirmDialog = core().components.ConfirmDialog;
-    Modal = core().components.Modal;
-    DropdownMenu = core().components.DropdownMenu;
-    DiffViewer = core().components.DiffViewer;
-    WorkspaceBadge = core().components.WorkspaceBadge;
-    WorkspaceMenu = core().components.WorkspaceMenu;
-    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
-    useWorkspaceFilter = core().components.useWorkspaceFilter;
-    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
-    Icons = new Proxy({}, { get: () => core().components.Icons });
-    IconSend = core().components.Icons.IconSend;
-    IconStop = core().components.Icons.IconStop;
-    IconPaperclip = core().components.Icons.IconPaperclip;
-  }
-});
-
 // src/host/conversationStore/eventHandler.ts
 function pushStreamDelta(state5, set5, at2, text5) {
   if (!at2 || !text5) return;
@@ -6564,7 +6567,7 @@ function handleAIEvent(event3, set5, get6) {
       {
         const isSilentStart = (() => {
           try {
-            return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
+            return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId)?.silentMode;
           } catch {
             return void 0;
           }
@@ -6579,13 +6582,13 @@ function handleAIEvent(event3, set5, get6) {
         });
       }
       if (event3.engineId && state5.sessionId) {
-        const managerState = sessionStoreManager.getState();
+        const managerState = sessionStoreManager2.getState();
         const currentMeta = managerState.sessionMetadata.get(state5.sessionId);
         if (currentMeta && currentMeta.engineId !== event3.engineId) {
           const newMeta = { ...currentMeta, engineId: event3.engineId };
           const newMetadata = new Map(managerState.sessionMetadata);
           newMetadata.set(state5.sessionId, newMeta);
-          sessionStoreManager.setState({ sessionMetadata: newMetadata });
+          sessionStoreManager2.setState({ sessionMetadata: newMetadata });
           log7.info("\u4F1A\u8BDD\u5F15\u64CE\u5DF2\u66F4\u65B0", { sessionId: state5.sessionId, engineId: event3.engineId });
         }
       }
@@ -6613,7 +6616,7 @@ function handleAIEvent(event3, set5, get6) {
       });
       const sessionMeta = (() => {
         try {
-          return sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
+          return sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
         } catch {
           return void 0;
         }
@@ -7125,7 +7128,7 @@ function handleAIEvent(event3, set5, get6) {
   }
 }
 function buildDialogMetaInput(state5, messages) {
-  const metadata = sessionStoreManager.getState().sessionMetadata.get(state5.sessionId);
+  const metadata = sessionStoreManager2.getState().sessionMetadata.get(state5.sessionId);
   const engineId = normalizeEngineId(metadata?.engineId);
   const firstUserMessage = messages.find((m4) => m4.type === "user");
   let title2 = metadata?.title || "\u65B0\u4F1A\u8BDD";
@@ -7487,7 +7490,7 @@ __export(conversationStoreUtils_exports, {
   resolveSessionEngine: () => resolveSessionEngine
 });
 function resolveSessionEngine(sessionId, configEngineId) {
-  const metadataEngineId = sessionStoreManager.getState().sessionMetadata.get(sessionId)?.engineId;
+  const metadataEngineId = sessionStoreManager2.getState().sessionMetadata.get(sessionId)?.engineId;
   return normalizeEngineId(metadataEngineId || configEngineId);
 }
 function resolveAuxiliaryEngine(config3) {
@@ -9295,8 +9298,8 @@ function createConversationStore(sessionId, deps) {
             pendingQueue: [{ ...next3, status: "queued" }, ...state5.pendingQueue]
           }));
           try {
-            const { useToastStore: useToastStore2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-            useToastStore2.getState().error(
+            const { useToastStore: useToastStore3 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
+            useToastStore3.getState().error(
               i18n_default.t("chat:input.sendFailedQueued", "\u53D1\u9001\u5931\u8D25\uFF0C\u5DF2\u4FDD\u7559\u5728\u5F85\u53D1\u961F\u5217\uFF0C\u53EF\u70B9\u51FB\u300C\u7ACB\u5373\u53D1\u9001\u300D\u91CD\u8BD5")
             );
           } catch (toastErr) {
@@ -9360,8 +9363,8 @@ function createConversationStore(sessionId, deps) {
         const draft = st3.inputDraft;
         if ((draft.text?.trim() ?? "") || (draft.attachments?.length ?? 0) > 0) {
           try {
-            void Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore2 }) => {
-              useToastStore2.getState().error(
+            void Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore3 }) => {
+              useToastStore3.getState().error(
                 i18n_default.t("chat:input.editPendingDraftConflict", "\u8F93\u5165\u6846\u5DF2\u6709\u5185\u5BB9\uFF0C\u8BF7\u5148\u6E05\u7A7A\u6216\u53D1\u9001\u540E\u518D\u64A4\u56DE\u961F\u5217\u6D88\u606F")
               );
             });
@@ -9427,7 +9430,7 @@ function createConversationStore(sessionId, deps) {
         get6().addMessage(userMessage);
         if (messages.length === 0) {
           const placeholder = generateTitleFromMessage(content);
-          sessionStoreManager.getState().updateSessionTitle(sessionId2, placeholder);
+          sessionStoreManager2.getState().updateSessionTitle(sessionId2, placeholder);
         }
         get6().clearInputDraft();
         set5({
@@ -9445,7 +9448,7 @@ function createConversationStore(sessionId, deps) {
           // 与 eventHandler session_start/session_end 的 silentMode 守卫保持一致。
           runStartAtMs: (() => {
             try {
-              const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
+              const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
               return meta3?.silentMode ? null : Date.now();
             } catch {
               return Date.now();
@@ -9467,7 +9470,7 @@ function createConversationStore(sessionId, deps) {
           }));
           const sessionConfig = getSessionConfig();
           const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, engine);
-          const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
+          const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
           const modelProfileId = resolveEffectiveProfileId(
             sessionMeta?.modelProfileId,
             sessionConfig.modelProfileId,
@@ -9529,7 +9532,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
               options: chatOptions
             });
           } else {
-            const sessionMeta2 = sessionStoreManager.getState().sessionMetadata.get(sessionId2);
+            const sessionMeta2 = sessionStoreManager2.getState().sessionMetadata.get(sessionId2);
             const forkSessionId = sessionMeta2?.forkFromId;
             const newSessionId = await aiChatDispatch({
               action: "start",
@@ -9542,7 +9545,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
             set5({ conversationId: newSessionId });
           }
           try {
-            const mgrState = sessionStoreManager.getState();
+            const mgrState = sessionStoreManager2.getState();
             const meta3 = mgrState.sessionMetadata.get(sessionId2);
             if (meta3 && meta3.status !== "running" && meta3.status !== "background-running") {
               const newMetadata = new Map(mgrState.sessionMetadata);
@@ -9551,7 +9554,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
                 status: "running",
                 updatedAt: (/* @__PURE__ */ new Date()).toISOString()
               });
-              sessionStoreManager.setState({ sessionMetadata: newMetadata });
+              sessionStoreManager2.setState({ sessionMetadata: newMetadata });
             }
           } catch {
           }
@@ -9640,8 +9643,8 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
           get6().finishMessage();
           void get6().dispatchNextPending();
           try {
-            const { useToastStore: useToastStore2 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
-            useToastStore2.getState().error(
+            const { useToastStore: useToastStore3 } = await Promise.resolve().then(() => (init_stores(), stores_exports));
+            useToastStore3.getState().error(
               i18n_default.t("chat:error.interruptFailed"),
               i18n_default.t("chat:error.interruptFailedHint")
             );
@@ -9673,7 +9676,7 @@ ${oneTimeParts.join("\n\n")}` : workspacePrompt;
         set5({ isStreaming: true, error: null });
         const sessionConfig = getSessionConfig();
         const runtimeConfig = resolveRuntimeConfigForEngine(sessionConfig, currentEngine);
-        const sessionMeta = sessionStoreManager.getState().sessionMetadata.get(get6().sessionId);
+        const sessionMeta = sessionStoreManager2.getState().sessionMetadata.get(get6().sessionId);
         const modelProfileId = resolveEffectiveProfileId(
           sessionMeta?.modelProfileId,
           sessionConfig.modelProfileId,
@@ -11006,8 +11009,8 @@ function createSessionManagerStore() {
             get6().removeFromBackground(targetSessionId);
             const sessionMetadata = get6().sessionMetadata.get(targetSessionId);
             if (sessionMetadata) {
-              Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore2 }) => {
-                useToastStore2.getState().sessionComplete(
+              Promise.resolve().then(() => (init_stores(), stores_exports)).then(({ useToastStore: useToastStore3 }) => {
+                useToastStore3.getState().sessionComplete(
                   sessionMetadata.title,
                   targetSessionId,
                   () => get6().switchSession(targetSessionId)
@@ -11181,7 +11184,7 @@ function createSessionManagerStore() {
 }
 function useSessionMetadataList() {
   return useStore(
-    sessionStoreManager,
+    sessionStoreManager2,
     (state5) => {
       if (state5.sessionMetadata === cachedMetadataMap && cachedMetadataArray !== null) {
         return cachedMetadataArray;
@@ -11194,9 +11197,9 @@ function useSessionMetadataList() {
   );
 }
 function useActiveSessionId() {
-  return useStore(sessionStoreManager, (state5) => state5.activeSessionId);
+  return useStore(sessionStoreManager2, (state5) => state5.activeSessionId);
 }
-var log12, RENDER_EVENT_TYPES, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
+var log12, RENDER_EVENT_TYPES, sessionStoreManager2, cachedMetadataMap, cachedMetadataArray;
 var init_sessionStoreManager = __esm({
   "src/host/conversationStore/sessionStoreManager.ts"() {
     init_uuid();
@@ -11213,7 +11216,7 @@ var init_sessionStoreManager = __esm({
     init_types2();
     log12 = createLogger("SessionStoreManager");
     RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
-    sessionStoreManager = createSessionManagerStore();
+    sessionStoreManager2 = createSessionManagerStore();
     cachedMetadataMap = null;
     cachedMetadataArray = null;
   }
@@ -11253,11 +11256,11 @@ __export(useActiveSession_exports, {
 });
 import { useMemo, useCallback as useCallback2, useSyncExternalStore as useSyncExternalStore2 } from "react";
 function useSessionState(sessionId, selector2, fallback) {
-  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
   const store3 = sessionId ? stores.get(sessionId) ?? null : null;
   const subscribe = useCallback2(
     (onChange) => {
-      if (!store3) return sessionStoreManager.subscribe(onChange);
+      if (!store3) return sessionStoreManager2.subscribe(onChange);
       return store3.subscribe(onChange);
     },
     [store3]
@@ -11393,9 +11396,9 @@ function useActiveSessionBlockMaps() {
 function useActiveSessionActions() {
   return useMemo(() => {
     const getStore = () => {
-      const sid = sessionStoreManager.getState().activeSessionId;
+      const sid = sessionStoreManager2.getState().activeSessionId;
       if (!sid) return null;
-      return sessionStoreManager.getState().stores.get(sid)?.getState() ?? null;
+      return sessionStoreManager2.getState().stores.get(sid)?.getState() ?? null;
     };
     const call = (method, ...args) => {
       const store3 = getStore();
@@ -11405,7 +11408,7 @@ function useActiveSessionActions() {
     };
     return {
       sendMessage: async (...args) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return false;
         const kernel = await getKernel();
         const result = await kernel.sendMessage({
@@ -11418,25 +11421,25 @@ function useActiveSessionActions() {
         return result.ok !== false;
       },
       interrupt: async () => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.interrupt(sid);
       },
       continueChat: async (prompt, allowedTools) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.continueChat(sid, prompt ?? "", { allowedTools });
       },
       editAndResend: async (messageId, newContent) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.editAndResend(sid, messageId, newContent);
       },
       regenerateResponse: async (messageId) => {
-        const sid = sessionStoreManager.getState().activeSessionId;
+        const sid = sessionStoreManager2.getState().activeSessionId;
         if (!sid) return;
         const kernel = await getKernel();
         await kernel.regenerate(sid, messageId);
@@ -11467,15 +11470,15 @@ function useActiveSessionActions() {
       loadMoreArchivedMessages: (count2 = 20) => call("loadMoreArchivedMessages", count2),
       onVisibleRangeChange: (start2, end) => call("onVisibleRangeChange", start2, end),
       // Manager actions
-      switchSession: sessionStoreManager.getState().switchSession,
-      deleteSession: sessionStoreManager.getState().deleteSession,
-      createSession: sessionStoreManager.getState().createSession
+      switchSession: sessionStoreManager2.getState().switchSession,
+      deleteSession: sessionStoreManager2.getState().deleteSession,
+      createSession: sessionStoreManager2.getState().createSession
     };
   }, []);
 }
 function useActiveSessionChat() {
   const sessionId = useActiveSessionId();
-  const stores = useStore(sessionStoreManager, (s3) => s3.stores);
+  const stores = useStore(sessionStoreManager2, (s3) => s3.stores);
   const store3 = sessionId ? stores.get(sessionId) ?? null : null;
   return useMemo(() => store3 ? store3.getState() : null, [store3]);
 }
@@ -11664,7 +11667,7 @@ __export(stores_exports, {
   resolveEffectiveProfileId: () => resolveEffectiveProfileId2,
   resolveSessionEngine: () => resolveSessionEngine2,
   selectSlotFill: () => selectSlotFill,
-  sessionStoreManager: () => sessionStoreManager2,
+  sessionStoreManager: () => sessionStoreManager,
   useActiveSessionActions: () => useActiveSessionActions2,
   useActiveSessionConversationId: () => useActiveSessionConversationId2,
   useActiveSessionError: () => useActiveSessionError2,
@@ -11731,7 +11734,7 @@ function useStoreHook(name) {
   return hook2;
 }
 function localManager() {
-  return sessionStoreManager;
+  return sessionStoreManager2;
 }
 function getSessionConfig() {
   return useSessionConfig.getState().config;
@@ -11772,10 +11775,11 @@ function findStoreByConversationId(...args) {
   if (typeof ua.findStoreByConversationId === "function") return ua.findStoreByConversationId(...args);
   return null;
 }
-var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager2, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
+var useConfigStore, useWorkspaceStore, useViewStore, useToastStore, useInputUIStore, useUiSlotStore, useThemeStore, useModelProfileStore, useSessionConfig, useEngineMetadataStore, useCliInfoStore, useAgentStore, useCapCatalogStore, usePluginStore, useOverlayStore, useSnippetStore, useSkillStore, useFileEditorStore, useCompactHandoffStore, useDispatchStore, sessionStoreManager, hostActive, useActiveSessionActions2, useActiveSessionMessages2, useActiveSessionStreaming2, useActiveSessionError2, useActiveSessionConversationId2, useActiveSessionWorkspace2, useActiveSessionInputDraft2, useActiveSessionPendingQueue2, useActiveSessionPendingBriefing2, useActiveSessionPromptOptimize2, useActiveSessionPromptSuggestion2, useActiveSessionStreamRate2, useActiveSessionUsage2, useActiveSessionKernelStreaming2, useSessionState2, useSessionStreaming2, useHasActivePlan2, useHasPendingQuestion2, useSessionHasPendingQuestion2, useSessionHasPendingCards2, conversationStoreUtils;
 var init_stores = __esm({
   "src/shims/stores.ts"() {
     init_core();
+    init_misc();
     init_sessionStoreManager();
     init_useActiveSession();
     init_sessionStoreManager();
@@ -11798,18 +11802,9 @@ var init_stores = __esm({
     useSnippetStore = useStoreHook("useSnippetStore");
     useSkillStore = useStoreHook("useSkillStore");
     useFileEditorStore = useStoreHook("useFileEditorStore");
-    useCompactHandoffStore = new Proxy(() => void 0, {
-      get(_t, prop) {
-        const real = globalThis.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore ?? window.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore;
-        return real[prop];
-      },
-      apply(_t, _this, args) {
-        const real = globalThis.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore ?? window.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore;
-        return real(...args);
-      }
-    });
+    useCompactHandoffStore = (...args) => useCompactHandoffStore(...args);
     useDispatchStore = useStoreHook("useDispatchStore");
-    sessionStoreManager2 = sessionStoreManager;
+    sessionStoreManager = sessionStoreManager2;
     hostActive = new Proxy({}, {
       get: (_t, p3) => {
         const local2 = useActiveSession_exports[p3];
@@ -161471,12 +161466,12 @@ function clearContainerAlgorithmOptions(layoutOptions) {
   layoutOptions["spacing.baseValue"] = DEFAULT_SUBGRAPH_SPACING_BASE_VALUE;
   layoutOptions["spacing.nodeNode"] = DEFAULT_SUBGRAPH_NODE_SPACING;
 }
-function resolveContainerAlgorithm(requested, log29) {
+function resolveContainerAlgorithm(requested, log30) {
   if (typeof requested !== "string") {
     return void 0;
   }
   if (!CONTAINER_ALGORITHMS.has(requested)) {
-    log29?.warn(
+    log30?.warn(
       `Unknown container layout algorithm "${requested}". Supported values: ${[...CONTAINER_ALGORITHMS].join(", ")}. Falling back to the diagram's layout algorithm.`
     );
     return void 0;
@@ -161513,7 +161508,7 @@ function groupTitleSizeOptions(node2) {
     "nodeSize.minimum": `(${groupTitleWidth(node2)}, 0)`
   };
 }
-function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log29) {
+function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log30) {
   const labelW = node2.labelData?.width ?? 0;
   const pad4 = node2.padding ?? 0;
   const minWidth = labelW + 2 * pad4;
@@ -161581,7 +161576,7 @@ function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log29) {
     // cross-boundary edge attaches to the frame rather than to a node inside it.
     "elk.spacing.portsSurrounding": PORTS_SURROUNDING
   };
-  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log29);
+  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log30);
   if (algo) {
     const padTop = labelH + CONTAINER_PADDING;
     layoutOptions["nodeSize.constraints"] = "[MINIMUM_SIZE, NODE_LABELS]";
@@ -161887,10 +161882,10 @@ function createRootElkGraph(data4Layout, algorithm, rootLayoutOptions) {
   );
   return graph;
 }
-function addSubGraphs(nodeArr, log29) {
+function addSubGraphs(nodeArr, log30) {
   const parentLookupDb = { parentById: {}, childrenById: {} };
   const subgraphs = nodeArr.filter((node2) => node2.isGroup);
-  log29.info("Subgraphs - ", subgraphs);
+  log30.info("Subgraphs - ", subgraphs);
   subgraphs.forEach((subgraph) => {
     const children2 = nodeArr.filter((node2) => node2.parentId === subgraph.id);
     children2.forEach((node2) => {
@@ -162054,39 +162049,39 @@ function configureSubgraphNodes(data4Layout, nodeDb2, parentLookupDb, elkContext
     delete node2.height;
   });
 }
-function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log29) {
-  log29.debug("APA01 processing edges, count:", elkGraph.edges.length);
+function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log30) {
+  log30.debug("APA01 processing edges, count:", elkGraph.edges.length);
   elkGraph.edges.forEach((edge, index2) => {
-    log29.debug("APA01 processing edge", index2, ":", edge);
+    log30.debug("APA01 processing edge", index2, ":", edge);
     const source = edge.sources[0];
     const target = edge.targets[0];
-    log29.debug("APA01 source:", source, "target:", target);
-    log29.debug("APA01 nodeDb[source]:", nodeDb2[source]);
-    log29.debug("APA01 nodeDb[target]:", nodeDb2[target]);
+    log30.debug("APA01 source:", source, "target:", target);
+    log30.debug("APA01 nodeDb[source]:", nodeDb2[source]);
+    log30.debug("APA01 nodeDb[target]:", nodeDb2[target]);
     if (nodeDb2[source] && nodeDb2[target] && nodeDb2[source].parentId !== nodeDb2[target].parentId) {
       const ancestorId = findCommonAncestor(source, target, parentLookupDb);
-      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log29);
-      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log29);
+      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log30);
+      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log30);
     }
   });
 }
-function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log29) {
+function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log30) {
   const node2 = nodeDb2[nodeId];
   if (!node2) {
     return;
   }
   node2.layoutOptions ??= {};
   if (node2.layoutOptions["elk.hierarchyHandling"] === "SEPARATE_CHILDREN" && resolveContainerAlgorithm(node2.metadata?.algorithm)) {
-    log29.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
+    log30.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
     clearContainerAlgorithmOptions(node2.layoutOptions);
     Object.assign(node2.layoutOptions, groupTitleSizeOptions(node2));
   }
   node2.layoutOptions["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
   if (node2.id !== ancestorId && node2.parentId) {
-    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log29);
+    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log30);
   }
 }
-async function runElkLayout(elk, elkGraph, log29) {
+async function runElkLayout(elk, elkGraph, log30) {
   const profiler4 = globalThis.__mermaidProfiler;
   try {
     profiler4?.begin("layoutCore");
@@ -162096,19 +162091,19 @@ async function runElkLayout(elk, elkGraph, log29) {
     } finally {
       profiler4?.end();
     }
-    log29.debug("APA01 after - success");
-    log29.debug("APA01 layout result:", graph);
+    log30.debug("APA01 after - success");
+    log30.debug("APA01 layout result:", graph);
     return graph;
   } catch (error3) {
-    log29.error("ELK layout error:", error3);
+    log30.error("ELK layout error:", error3);
     throw error3;
   }
 }
-function applyElkLayoutResult(data4Layout, graph, layoutState, log29) {
+function applyElkLayoutResult(data4Layout, graph, layoutState, log30) {
   const nodeById = new Map(data4Layout.nodes.map((node2) => [node2.id, node2]));
-  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log29);
+  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log30);
   evenGroupFrames(graph.children ?? [], layoutState, nodeById, graph);
-  applyElkEdgeLayout(data4Layout, graph, layoutState, log29);
+  applyElkEdgeLayout(data4Layout, graph, layoutState, log30);
 }
 function collectDescendantIds(elkNode, into = /* @__PURE__ */ new Set()) {
   for (const child of elkNode.children ?? []) {
@@ -162199,7 +162194,7 @@ function evenGroupFrames(elkNodes, layoutState, nodeById, graph = {}) {
     }
   }
 }
-function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log29) {
+function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log30) {
   nodeArray.forEach((node2) => {
     if (!node2) {
       return;
@@ -162231,7 +162226,7 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
       layoutNodeLabels.labels = node2.labels;
     }
     if (node2.isGroup) {
-      log29.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
+      log30.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
       applyElkNodePositions(
         node2.children ?? [],
         layoutState,
@@ -162239,10 +162234,10 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
         offset.posX,
         offset.posY,
         depth + 1,
-        log29
+        log30
       );
     } else {
-      log29.info(
+      log30.info(
         "Id NODE = ",
         node2.id,
         node2.x,
@@ -162432,7 +162427,7 @@ function straightenEdgeTerminals(edges3) {
   }
   return changed;
 }
-function applyElkEdgeLayout(data4Layout, graph, layoutState, log29) {
+function applyElkEdgeLayout(data4Layout, graph, layoutState, log30) {
   const edgeById = new Map(data4Layout.edges.map((edge) => [edge.id, edge]));
   const straightenEdges = data4Layout.config.elk?.straightenEdges !== false;
   const terminalLabelPorts = /* @__PURE__ */ new Map();
@@ -162498,20 +162493,20 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log29) {
       startNode.y = from2.y;
       endNode.x = to2.x;
       endNode.y = to2.y;
-      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log29);
+      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log30);
       layoutEdge.points = straightPoints;
       layoutEdge.curve = "linear";
       const lineStart = straightPoints[0];
       const lineEnd = straightPoints[straightPoints.length - 1];
       layoutEdge.x = (lineStart.x + lineEnd.x) / 2;
       layoutEdge.y = (lineStart.y + lineEnd.y) / 2;
-      log29.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
+      log30.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
       return;
     }
     const sourceId = edge.start ?? edge.sourceId ?? startId;
     const targetId = edge.end ?? edge.targetId ?? endId;
     const offset = calcOffset(sourceId, targetId, layoutState.parentLookupDb, layoutState.nodeDb);
-    log29.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
+    log30.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
     const section = edge.sections[0];
     const points = createEdgePointsFromSection(section, offset);
     if (reversed) {
@@ -162528,17 +162523,17 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log29) {
     if (endNode.shape !== "rect33") {
       points.push({ x: endNode.x, y: endNode.y });
     }
-    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log29);
+    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log30);
     layoutEdge.points = ensureStartMarkerSegmentLength(
       ensureEndMarkerSegmentLength(
         clipped,
         boundsFor(endNode),
         getEndMarkerPathOffset(layoutEdge),
-        log29
+        log30
       ),
       boundsFor(startNode),
       getStartMarkerPathOffset(layoutEdge),
-      log29
+      log30
     );
     layoutEdge.curve = "rounded";
     const label = edge.labels?.[0];
@@ -162803,10 +162798,10 @@ function calcOffset(src, dest, parentLookupDb, nodeDb2) {
     y: ancestorOffset?.posY ?? 0
   };
 }
-function sanitizeElkEdgePoints(points, startNode, endNode, log29) {
+function sanitizeElkEdgePoints(points, startNode, endNode, log30) {
   const prevPoints = Array.isArray(points) ? [...points] : [];
   const endBounds = boundsFor(endNode);
-  log29.debug(
+  log30.debug(
     "PPP cutter2: Points before cutter2:",
     JSON.stringify(points),
     "endBounds:",
@@ -162841,12 +162836,12 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log29) {
     }
     if (skipStart || skipEnd) {
       if (!skipStart) {
-        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log29);
+        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log30);
       }
       if (!skipEnd) {
-        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log29);
+        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log30);
       }
-      log29.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
+      log30.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
         skipStart,
         skipEnd,
         startCenterApprox,
@@ -162856,22 +162851,22 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log29) {
       });
       clippedPoints = prevPoints;
     } else {
-      clippedPoints = cutter2(startNode, endNode, prevPoints, log29);
+      clippedPoints = cutter2(startNode, endNode, prevPoints, log30);
     }
   }
-  log29.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
+  log30.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
   if (!Array.isArray(clippedPoints) || clippedPoints.length < 2 || hasInvalidPoint(clippedPoints)) {
-    log29.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
+    log30.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
     const cleaned = prevPoints.filter((p3) => Number.isFinite(p3?.x) && Number.isFinite(p3?.y));
     clippedPoints = cleaned.length >= 2 ? cleaned : prevPoints;
   }
-  log29.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
-  return dedupeConsecutivePoints(clippedPoints, log29);
+  log30.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
+  return dedupeConsecutivePoints(clippedPoints, log30);
 }
 function hasInvalidPoint(points) {
   return points?.some((point3) => !Number.isFinite(point3?.x) || !Number.isFinite(point3?.y));
 }
-function dedupeConsecutivePoints(points, log29) {
+function dedupeConsecutivePoints(points, log30) {
   const deduped = points.filter((point3, index2, arr) => {
     if (index2 === 0) {
       return true;
@@ -162880,7 +162875,7 @@ function dedupeConsecutivePoints(points, log29) {
     return Math.abs(point3.x - prev2.x) > 1e-6 || Math.abs(point3.y - prev2.y) > 1e-6;
   });
   if (deduped.length !== points.length) {
-    log29.debug("UIO cutter2: removed consecutive duplicate points", {
+    log30.debug("UIO cutter2: removed consecutive duplicate points", {
       before: points,
       after: deduped
     });
@@ -162893,7 +162888,7 @@ function getEndMarkerPathOffset(edge) {
 function getStartMarkerPathOffset(edge) {
   return markerPathOffset(edge.arrowTypeStart);
 }
-function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log29) {
+function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log30) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -162907,7 +162902,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log29
     return points;
   }
   const adjusted = [start2, ...points.slice(2)];
-  log29.debug("UIO cutter2: removed short start marker segment", {
+  log30.debug("UIO cutter2: removed short start marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -162915,7 +162910,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log29
   });
   return adjusted;
 }
-function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log29) {
+function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log30) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -162929,7 +162924,7 @@ function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log29) {
     return points;
   }
   const adjusted = [...points.slice(0, -2), end];
-  log29.debug("UIO cutter2: removed short end marker segment", {
+  log30.debug("UIO cutter2: removed short end marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -163099,7 +163094,7 @@ function clipGroupEndpoint(points, bounds4, side) {
   }
   return true;
 }
-function applyStartIntersectionIfNeeded(points, startNode, startBounds, log29) {
+function applyStartIntersectionIfNeeded(points, startNode, startBounds, log30) {
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (outsideNode2(startBounds, point3)) {
@@ -163117,10 +163112,10 @@ function applyStartIntersectionIfNeeded(points, startNode, startBounds, log29) {
       startCenter
     );
     replaceEndpoint(points, "start", startIntersection);
-    log29.debug("UIO cutter2: start-only intersection applied", { startIntersection });
+    log30.debug("UIO cutter2: start-only intersection applied", { startIntersection });
   }
 }
-function applyEndIntersectionIfNeeded(points, endNode, endBounds, log29) {
+function applyEndIntersectionIfNeeded(points, endNode, endBounds, log30) {
   let outsideIndexForEnd = -1;
   for (let index2 = points.length - 1; index2 >= 0; index2--) {
     if (outsideNode2(endBounds, points[index2])) {
@@ -163138,7 +163133,7 @@ function applyEndIntersectionIfNeeded(points, endNode, endBounds, log29) {
       endCenter
     );
     replaceEndpoint(points, "end", endIntersection);
-    log29.debug("UIO cutter2: end-only intersection applied", { endIntersection });
+    log30.debug("UIO cutter2: end-only intersection applied", { endIntersection });
   }
 }
 function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
@@ -163152,7 +163147,7 @@ function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
   }
   return outlineAttachPoint(node2, bounds4, port, next3);
 }
-function cutter2(startNode, endNode, originalPoints, log29) {
+function cutter2(startNode, endNode, originalPoints, log30) {
   const startBounds = boundsFor(startNode);
   const endBounds = boundsFor(endNode);
   if (originalPoints.length === 0) {
@@ -163161,8 +163156,8 @@ function cutter2(startNode, endNode, originalPoints, log29) {
   const points = [...originalPoints];
   const startCenter = points[0];
   const endCenter = points[points.length - 1];
-  log29.debug("PPP cutter2: bounds", { startBounds, endBounds });
-  log29.debug("PPP cutter2: original points", originalPoints);
+  log30.debug("PPP cutter2: bounds", { startBounds, endBounds });
+  log30.debug("PPP cutter2: original points", originalPoints);
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (firstOutsideStartIndex === -1 && outsideNode2(startBounds, point3)) {
@@ -163177,7 +163172,7 @@ function cutter2(startNode, endNode, originalPoints, log29) {
       // is all a non-axis-aligned or shapeless endpoint can offer.
       attachAlongDepartureAxis(startNode, startBounds, points, firstOutsideStartIndex, 1) ?? computeNodeIntersection(startNode, startBounds, outsidePointForStart, startCenter)
     );
-    log29.debug("UIO cutter2: start intersection", startIntersection);
+    log30.debug("UIO cutter2: start intersection", startIntersection);
     replaceEndpoint(points, "start", startIntersection);
   }
   let outsidePointForEnd = null;
@@ -163195,7 +163190,7 @@ function cutter2(startNode, endNode, originalPoints, log29) {
   }
   if (outsidePointForEnd) {
     const endIntersection = attachAlongDepartureAxis(endNode, endBounds, points, outsideIndexForEnd, -1) ?? computeNodeIntersection(endNode, endBounds, outsidePointForEnd, endCenter);
-    log29.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
+    log30.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
     replaceEndpoint(points, "end", endIntersection);
   }
   if (points.length > 1) {
@@ -163205,7 +163200,7 @@ function cutter2(startNode, endNode, originalPoints, log29) {
       (lastPoint2.x - secondLastPoint.x) ** 2 + (lastPoint2.y - secondLastPoint.y) ** 2
     );
     if (distance3 < 2) {
-      log29.debug("UIO cutter2: trimming tail point (too close)", {
+      log30.debug("UIO cutter2: trimming tail point (too close)", {
         distance: distance3,
         lastPoint: lastPoint2,
         secondLastPoint
@@ -163213,7 +163208,7 @@ function cutter2(startNode, endNode, originalPoints, log29) {
       points.pop();
     }
   }
-  log29.debug("UIO cutter2: final points", points);
+  log30.debug("UIO cutter2: final points", points);
   return points;
 }
 var import_elk_bundled, findCommonAncestor, ROOT, JUMP_RADIUS, PLACEMENT_OPTIONS, EDGE_ROUTING_OPTIONS, ROOT_EXPERIMENT_OVERRIDES, SUBGRAPH_EXPERIMENT_OVERRIDES, EPS, PUSH_OUT, onBorder, intersection2, outsideNode2, ensureTrulyOutside, makeInsidePoint, tryNodeIntersect, fallbackIntersection, OUTLINE_RAY_STEPS, DEPARTURE_AXIS_EPS, insideOutline, outlineAttachPoint, computeNodeIntersection, replaceEndpoint, MIN_END_MARKER_SEGMENT_LENGTH, markerPathOffset, ARROW_MAP, PORTS_SURROUNDING_MARGIN, PORTS_SURROUNDING, SUBGRAPH_PADDING, DEFAULT_SUBGRAPH_SPACING_BASE_VALUE, DEFAULT_SUBGRAPH_NODE_SPACING, CONTAINER_PADDING, RECTPACKING_CONTAINER_PADDING, RECTPACKING_OPTIONS, CONTAINER_ALGORITHM_OVERRIDES, CONTAINER_ALGORITHMS, render3, ELK_PRESETS, TERMINAL_LABEL_MARKER_CLEARANCE, TERMINAL_JOG_MAX, TERMINAL_RUN_MAX, JOG_EPS, labelBox, OPPOSITE_LABEL_MIN_GAP, boxesOverlap, TERMINAL_LABEL_FRAME_CLEARANCE;
@@ -211025,7 +211020,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
       insertEdgeLabel: insertEdgeLabel2,
       insertMarkers: insertMarkers2,
       insertNode: insertNode2,
-      log: log29,
+      log: log210,
       positionEdgeLabel: positionEdgeLabel2
     }, { algorithm: _algorithm }) => {
       const nodeDb2 = {};
@@ -211036,7 +211031,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
       const edgePaths = element3.insert("g").attr("class", "edgePaths");
       const edgeLabels2 = element3.insert("g").attr("class", "edgeLabels");
       const nodes5 = element3.insert("g").attr("class", "nodes");
-      log29.debug("Inserting nodes into DOM for dimension calculation");
+      log210.debug("Inserting nodes into DOM for dimension calculation");
       await Promise.all(
         data4Layout.nodes.map(async (node2) => {
           if (node2.isGroup) {
@@ -211055,11 +211050,11 @@ var init_cose_bilkent_JH36ORCC = __esm({
             nodeWithPosition.width = boundingBox3.width;
             nodeWithPosition.height = boundingBox3.height;
             nodeWithPosition.domId = nodeEl;
-            log29.debug(`Node ${node2.id} dimensions: ${boundingBox3.width}x${boundingBox3.height}`);
+            log210.debug(`Node ${node2.id} dimensions: ${boundingBox3.width}x${boundingBox3.height}`);
           }
         })
       );
-      log29.debug("Running cose-bilkent layout algorithm");
+      log210.debug("Running cose-bilkent layout algorithm");
       const updatedLayoutData = {
         ...data4Layout,
         nodes: data4Layout.nodes.map((node2) => {
@@ -211072,7 +211067,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
         })
       };
       const layoutResult = await executeCoseBilkentLayout(updatedLayoutData, data4Layout.config);
-      log29.debug("Positioning nodes based on layout results");
+      log210.debug("Positioning nodes based on layout results");
       layoutResult.nodes.forEach((positionedNode) => {
         const node2 = nodeDb2[positionedNode.id];
         if (node2?.domId) {
@@ -211082,7 +211077,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           );
           node2.x = positionedNode.x;
           node2.y = positionedNode.y;
-          log29.debug(`Positioned node ${node2.id} at center (${positionedNode.x}, ${positionedNode.y})`);
+          log210.debug(`Positioned node ${node2.id} at center (${positionedNode.x}, ${positionedNode.y})`);
         }
       });
       layoutResult.edges.forEach((positionedEdge) => {
@@ -211095,7 +211090,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           ];
         }
       });
-      log29.debug("Inserting and positioning edges");
+      log210.debug("Inserting and positioning edges");
       await Promise.all(
         data4Layout.edges.map(async (edge) => {
           const _edgeLabel = await insertEdgeLabel2(edgeLabels2, edge);
@@ -211104,7 +211099,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           if (startNode && endNode) {
             const positionedEdge = layoutResult.edges.find((e3) => e3.id === edge.id);
             if (positionedEdge) {
-              log29.debug("APA01 positionedEdge", positionedEdge);
+              log210.debug("APA01 positionedEdge", positionedEdge);
               const edgeWithPath = { ...edge };
               const paths = insertEdge2(
                 edgePaths,
@@ -211138,7 +211133,7 @@ var init_cose_bilkent_JH36ORCC = __esm({
           }
         })
       );
-      log29.debug("Cose-bilkent rendering completed");
+      log210.debug("Cose-bilkent rendering completed");
     }, "render");
     render22 = render6;
   }
@@ -311565,7 +311560,7 @@ function CompactHandoffModal({
   const sourceEngine = normalizeEngineId(engineId);
   const profiles = useModelProfileStore((s3) => s3.profiles);
   const sourceDefaults = useMemo19(() => {
-    const meta3 = sessionStoreManager2.getState().sessionMetadata.get(sessionId);
+    const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId);
     const sessionConfig = getSessionConfig();
     const activeProfileId = useModelProfileStore.getState().activeProfileId ?? void 0;
     const profileId = resolveEffectiveProfileId2(
@@ -311579,7 +311574,7 @@ function CompactHandoffModal({
   const [compactEngine, setCompactEngine] = useState40(sourceEngine);
   const [compactProfileId, setCompactProfileId] = useState40(sourceDefaults.profileId);
   const [compactModel, setCompactModel] = useState40(sourceDefaults.model);
-  const [instruction, setInstruction] = useState40(() => getDefaultCompactInstruction());
+  const [instruction, setInstruction] = useState40(() => getDefaultCompactInstruction2());
   const [newEngine, setNewEngine] = useState40(sourceEngine);
   const [mode, setMode] = useState40("newSession");
   const [showInstruction, setShowInstruction] = useState40(false);
@@ -311606,7 +311601,7 @@ function CompactHandoffModal({
         engineId: compactEngine,
         modelProfileId: compactProfileId || void 0,
         model: compactModel || void 0,
-        instruction: instruction.trim() || getDefaultCompactInstruction()
+        instruction: instruction.trim() || getDefaultCompactInstruction2()
       },
       ...mode === "newSession" ? { newSession: { engineId: newEngine } } : {}
     });
@@ -317870,7 +317865,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
         declined: s3.declined
       }));
       dispatch3({ type: "BEGIN_SUBMIT" });
-      const store3 = sessionStoreManager2.getState().stores.get(block2.sessionId)?.getState();
+      const store3 = sessionStoreManager.getState().stores.get(block2.sessionId)?.getState();
       if (kind === "decline-all") {
         store3?.updateQuestionBlock(block2.id, {
           declined: true
@@ -320600,7 +320595,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
   const containerRef = useRef8(null);
   const isPlanApproval = block2.denials.length === 0;
   const getStoreByConversationId = useCallback9((conversationId) => {
-    for (const store3 of sessionStoreManager2.getState().stores.values()) {
+    for (const store3 of sessionStoreManager.getState().stores.values()) {
       if (store3.getState().conversationId === conversationId) {
         return store3.getState() ?? null;
       }
@@ -331977,7 +331972,7 @@ ${c4.output}` : c4.output;
 function useRuntimeSummary(sessionId) {
   const activeId = useActiveSessionId();
   const targetId = sessionId ?? activeId;
-  const stores = useStore(sessionStoreManager2, (state5) => state5.stores);
+  const stores = useStore(sessionStoreManager, (state5) => state5.stores);
   const store3 = targetId ? stores.get(targetId) : null;
   const [tick, setTick] = useState25(0);
   const tickStartRef = useRef12(0);
@@ -332012,7 +332007,7 @@ function useRuntimeSummary(sessionId) {
     return nextWithSession;
   };
   const subscribe = (onChange) => {
-    if (!store3) return sessionStoreManager2.subscribe(onChange);
+    if (!store3) return sessionStoreManager.subscribe(onChange);
     return store3.subscribe(onChange);
   };
   const summary = useSyncExternalStore4(subscribe, getSnapshot, () => EMPTY_SUMMARY);
@@ -333311,7 +333306,7 @@ var SessionCell = memo27(function SessionCell2({
   }, [sessionId, isActive, switchSession]);
   const handleInterrupt = useCallback23((e3) => {
     e3.stopPropagation();
-    sessionStoreManager2.getState().interruptSession(sessionId);
+    sessionStoreManager.getState().interruptSession(sessionId);
   }, [sessionId]);
   const handleExpand = useCallback23((e3) => {
     e3.stopPropagation();
@@ -333573,8 +333568,231 @@ init_sessionStoreManager();
 init_useActiveSession();
 init_eventRouter();
 init_services();
+
+// src/host/stores/compactHandoffStore.ts
+init_esm();
+init_i18n();
 init_logger();
-var log26 = createLogger("chat-desk:bootstrap");
+
+// src/host/stores/toastStore.ts
+init_esm();
+init_middleware();
+init_i18n();
+var MAX_TOASTS = 5;
+var MAX_NOTIFICATIONS = 100;
+var toastTimers = /* @__PURE__ */ new Map();
+var toastId = 0;
+var useToastStore2 = create()(
+  persist(
+    (set5, get6) => ({
+      toasts: [],
+      notifications: [],
+      addToast: (toast) => {
+        const id38 = `toast-${++toastId}`;
+        const newToast = {
+          id: id38,
+          duration: 4e3,
+          // 默认 4 秒
+          ...toast
+        };
+        set5((state5) => {
+          const toasts = [...state5.toasts, newToast];
+          if (toasts.length > MAX_TOASTS) {
+            toasts.shift();
+          }
+          const record = {
+            id: id38,
+            type: newToast.type,
+            title: newToast.title,
+            message: newToast.message,
+            timestamp: Date.now(),
+            read: false,
+            sessionId: newToast.sessionId
+          };
+          const notifications2 = [...state5.notifications, record];
+          if (notifications2.length > MAX_NOTIFICATIONS) {
+            notifications2.shift();
+          }
+          return { toasts, notifications: notifications2 };
+        });
+        if (newToast.duration && newToast.duration > 0) {
+          const timerId = setTimeout(() => {
+            get6().removeToast(id38);
+          }, newToast.duration);
+          toastTimers.set(id38, timerId);
+        }
+        return id38;
+      },
+      removeToast: (id38) => {
+        const timer4 = toastTimers.get(id38);
+        if (timer4) {
+          clearTimeout(timer4);
+          toastTimers.delete(id38);
+        }
+        set5((state5) => ({
+          toasts: state5.toasts.filter((t5) => t5.id !== id38)
+        }));
+      },
+      clearAll: () => {
+        toastTimers.forEach((timer4) => clearTimeout(timer4));
+        toastTimers.clear();
+        set5({ toasts: [] });
+      },
+      success: (title2, message) => {
+        return get6().addToast({ type: "success", title: title2, message, duration: 3e3 });
+      },
+      error: (title2, message) => {
+        return get6().addToast({ type: "error", title: title2, message, duration: 6e3 });
+      },
+      warning: (title2, message) => {
+        return get6().addToast({ type: "warning", title: title2, message, duration: 4e3 });
+      },
+      info: (title2, message) => {
+        return get6().addToast({ type: "info", title: title2, message, duration: 3e3 });
+      },
+      sessionComplete: (title2, sessionId, onSwitch) => {
+        return get6().addToast({
+          type: "session_complete",
+          title: i18n_default.t("common:toast.sessionComplete", { title: title2 }),
+          sessionId,
+          duration: 3e4,
+          // 30 秒（原 2 分钟，缩短以减少占屏）
+          action: {
+            label: i18n_default.t("common:toast.switch"),
+            onClick: onSwitch
+          }
+        });
+      },
+      markAllNotificationsRead: () => {
+        set5((state5) => ({
+          notifications: state5.notifications.map((n2) => n2.read ? n2 : { ...n2, read: true })
+        }));
+      },
+      clearNotifications: () => {
+        set5({ notifications: [] });
+      },
+      removeNotification: (id38) => {
+        set5((state5) => ({
+          notifications: state5.notifications.filter((n2) => n2.id !== id38)
+        }));
+      }
+    }),
+    {
+      name: "toast-store",
+      // 仅持久化通知历史；绝不持久化活跃 toasts（避免刷新后重弹并重新计时）
+      partialize: (state5) => ({ notifications: state5.notifications })
+    }
+  )
+);
+
+// src/host/stores/compactHandoffStore.ts
+init_sessionStoreManager();
+init_contextCompactHandoff();
+var log26 = createLogger("CompactHandoffStore");
+async function onCopyPromptReady(briefing, sourceTitle) {
+  try {
+    await copyToClipboard(briefing);
+    useToastStore2.getState().addToast({
+      type: "success",
+      title: i18n_default.t("chat:compactHandoff.copyPromptCopiedTitle"),
+      message: i18n_default.t("chat:compactHandoff.copyPromptCopiedHint", { title: sourceTitle }),
+      duration: 1e4
+    });
+  } catch (e3) {
+    useToastStore2.getState().error(
+      i18n_default.t("chat:compactHandoff.failToast"),
+      i18n_default.t("chat:compactHandoff.copyPromptCopyFailed")
+    );
+    log26.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+  }
+}
+var activeAbort = null;
+var useCompactHandoffStore2 = create((set5, get6) => ({
+  task: null,
+  start: (params) => {
+    if (get6().task) {
+      useToastStore2.getState().info(
+        i18n_default.t("chat:compactHandoff.busyToast"),
+        i18n_default.t("chat:compactHandoff.busyToastHint")
+      );
+      return false;
+    }
+    const id38 = `compact-${params.sessionId}-${Date.now()}`;
+    const abort = new AbortController();
+    activeAbort = abort;
+    set5({ task: { id: id38, sourceTitle: params.sourceTitle, stage: "loading" } });
+    void (async () => {
+      let cancelled = false;
+      abort.signal.addEventListener("abort", () => {
+        cancelled = true;
+      }, { once: true });
+      try {
+        const result = await compactAndHandoff({
+          sessionId: params.sessionId,
+          compact: params.compact,
+          newSession: params.newSession,
+          signal: abort.signal,
+          onStage: (stage) => {
+            const cur = get6().task;
+            if (cur?.id === id38) set5({ task: { ...cur, stage } });
+          }
+        });
+        if (cancelled) {
+          log26.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
+        } else if (result.ok && result.briefing && params.mode === "copyPrompt") {
+          await onCopyPromptReady(result.briefing, params.sourceTitle);
+          log26.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
+        } else if (result.ok && result.newSessionId) {
+          const newSessionId = result.newSessionId;
+          useToastStore2.getState().addToast({
+            type: "success",
+            title: i18n_default.t("chat:compactHandoff.successToast"),
+            message: i18n_default.t("chat:compactHandoff.successToastHint"),
+            duration: 8e3,
+            sessionId: newSessionId,
+            action: {
+              label: i18n_default.t("chat:compactHandoff.gotoNewSession"),
+              onClick: () => sessionStoreManager2.getState().switchSession(newSessionId)
+            }
+          });
+          log26.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
+        } else {
+          useToastStore2.getState().error(
+            i18n_default.t("chat:compactHandoff.failToast"),
+            result.error
+          );
+        }
+      } catch (e3) {
+        if (cancelled) {
+          log26.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
+        } else {
+          useToastStore2.getState().error(i18n_default.t("chat:compactHandoff.failToast"), String(e3));
+          log26.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
+        }
+      } finally {
+        if (activeAbort === abort) activeAbort = null;
+        if (get6().task?.id === id38) set5({ task: null });
+      }
+    })();
+    return true;
+  },
+  cancel: () => {
+    activeAbort?.abort();
+    set5({ task: null });
+  }
+}));
+var __localStores = globalThis.__CHAT_DESK_LOCAL_STORES__ ?? {};
+__localStores.useCompactHandoffStore = useCompactHandoffStore2;
+console.log("[chat-desk] compactHandoffStore self-registered", typeof useCompactHandoffStore2);
+globalThis.__CHAT_DESK_LOCAL_STORES__ = __localStores;
+if (typeof window !== "undefined") {
+  ;
+  window.__CHAT_DESK_LOCAL_STORES__ = __localStores;
+}
+
+// src/bootstrap.ts
+init_logger();
+var log27 = createLogger("chat-desk:bootstrap");
 var bootstrapped = false;
 function ensureChatDomainBootstrapped() {
   if (bootstrapped) return;
@@ -333582,7 +333800,7 @@ function ensureChatDomainBootstrapped() {
   try {
     const core5 = getAppCore();
     if (!core5.stores.sessionStoreManager) {
-      core5.stores.sessionStoreManager = sessionStoreManager;
+      core5.stores.sessionStoreManager = sessionStoreManager2;
       core5.stores.useActiveSession = useActiveSession_exports;
       void Promise.all([
         Promise.resolve().then(() => (init_sessionRestore(), sessionRestore_exports)),
@@ -333604,15 +333822,15 @@ function ensureChatDomainBootstrapped() {
       });
     }
     void ensureEventRouterInitialized();
-    void sessionStoreManager.getState().initialize();
+    void sessionStoreManager2.getState().initialize();
     try {
       ;
       remoteSessionFollower.start?.();
     } catch (e3) {
-      log26.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
+      log27.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
     }
   } catch (e3) {
-    log26.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log27.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 
@@ -334066,7 +334284,7 @@ init_services();
 init_path();
 init_logger();
 init_services();
-var log27 = createLogger("ContextBlockRegistry");
+var log28 = createLogger("ContextBlockRegistry");
 var TCB_DIR = ".polaris-handoff";
 var kindRegistry = /* @__PURE__ */ new Map();
 function registerContextBlockKind(kind, spec) {
@@ -334122,7 +334340,7 @@ async function materializeContextBlocks(blocks2, workspacePath) {
         };
       }
     } catch (e3) {
-      log27.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
+      log28.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
     }
   }
   const body = formatContextBlocks(blocks2);
@@ -334140,7 +334358,7 @@ async function packContextBlocksAsReference(blocks2, workspacePath) {
   const relPath = `${TCB_DIR}/${fileName}`;
   const absPath = joinPath(workspacePath, relPath);
   await invoke("create_file", { path: absPath, content: markdown2 });
-  log27.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
+  log28.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
   return { hasContent: true, fileRef: { relPath, absPath } };
 }
 function formatContextBlock(block2) {
@@ -334877,7 +335095,7 @@ ${digest}` : digest };
     } else {
       useSessionConfig.getState().setAgent(agentCmd.slug ?? "");
       if (ctx.activeSessionId) {
-        sessionStoreManager2.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
+        sessionStoreManager.getState().updateSessionAgent(ctx.activeSessionId, agentCmd.slug ?? null);
       }
       useToastStore.getState().info("/agent", agentCmd.slug ? i18n_default.t("chat:agentCmd.set", { defaultValue: "\u5F53\u524D\u4E13\u5BB6\u5DF2\u8BBE\u4E3A {{slug}}", slug: agentCmd.slug, interpolation: { escapeValue: false } }) : i18n_default.t("chat:agentCmd.cleared", "\u5DF2\u6E05\u9664\u5F53\u524D\u4E13\u5BB6"));
     }
@@ -334988,7 +335206,7 @@ init_misc();
 init_stores();
 init_types2();
 import { Fragment as Fragment17, jsx as jsx49, jsxs as jsxs43 } from "react/jsx-runtime";
-var log28 = createLogger("ChatInput");
+var log29 = createLogger("ChatInput");
 var OPTIMIZE_ENGINE_OPTIONS = [
   { id: "claude-code", label: "Claude", Icon: Bot },
   { id: "simple-ai", label: "Simple", Icon: Zap }
@@ -335130,7 +335348,7 @@ function ChatInput({
     };
   }, [activeSessionId, cancelPersistDraft]);
   useEffect22(() => {
-    log28.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
+    log29.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
       textLen: inputDraft.text?.length,
       attachLen: inputDraft.attachments?.length,
       blockLen: inputDraft.contextBlocks?.length ?? 0
@@ -335175,7 +335393,7 @@ function ChatInput({
       }));
       setConversationMatches(items);
     } catch (e3) {
-      log28.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
+      log29.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
       setConversationMatches([]);
     }
   }, []);
@@ -335209,7 +335427,7 @@ function ChatInput({
   const addAttachment = useCallback25(async (file, source) => {
     const validation = validateAttachment(file);
     if (!validation.valid) {
-      log28.warn("Attachment validation failed", { error: validation.error });
+      log29.warn("Attachment validation failed", { error: validation.error });
       useToastStore.getState().error(validation.error);
       return;
     }
@@ -335217,7 +335435,7 @@ function ChatInput({
     const newAttachments = [...attachments, attachment];
     const totalValidation = validateAttachments(newAttachments);
     if (!totalValidation.valid) {
-      log28.warn("Total attachment validation failed", { error: totalValidation.error });
+      log29.warn("Total attachment validation failed", { error: totalValidation.error });
       useToastStore.getState().error(totalValidation.error);
       return;
     }
@@ -335820,7 +336038,7 @@ function ChatInput({
           const replaced = beforeCursor.replace(/@对话(?:\s+\S*)?$/, `@${fileRef.relPath} `) + afterCursor;
           setLocalText(replaced);
           debouncedPersistDraft(replaced, attachments);
-          log28.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
+          log29.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
           setTimeout(() => {
             textarea.focus();
             const newCursorPos = replaced.length - afterCursor.length;
@@ -335828,7 +336046,7 @@ function ChatInput({
           }, 0);
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log28.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
+          log29.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
           useToastStore.getState().error(t5("handoff.failToast"), err.message);
         }
       })();
@@ -336772,20 +336990,20 @@ function SessionConfigSelector({
       ...config3,
       ...nextConfig
     });
-    const activeId = writeThroughToSession ? sessionStoreManager2.getState().activeSessionId : null;
+    const activeId = writeThroughToSession ? sessionStoreManager.getState().activeSessionId : null;
     if (activeId) {
       if (type3 === "profile") {
         if (value3 === "") {
-          sessionStoreManager2.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
-          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "official");
+          sessionStoreManager.getState().updateSessionModelProfile(activeId, OFFICIAL_API_PROFILE);
+          sessionStoreManager.getState().updateSessionProfileMode(activeId, "official");
         } else {
-          sessionStoreManager2.getState().updateSessionModelProfile(activeId, value3);
-          sessionStoreManager2.getState().updateSessionProfileMode(activeId, "profile");
+          sessionStoreManager.getState().updateSessionModelProfile(activeId, value3);
+          sessionStoreManager.getState().updateSessionProfileMode(activeId, "profile");
         }
       } else if (type3 === "model") {
-        sessionStoreManager2.getState().updateSessionModel(activeId, value3);
+        sessionStoreManager.getState().updateSessionModel(activeId, value3);
       } else if (type3 === "agent") {
-        sessionStoreManager2.getState().updateSessionAgent(activeId, value3 || null);
+        sessionStoreManager.getState().updateSessionAgent(activeId, value3 || null);
       }
     }
     setOpenDropdown(null);
@@ -338436,7 +338654,7 @@ function ChatDeskEntry(_props) {
     editAndResend(messageId, newContent);
     setEditMode(null);
   }, [editAndResend]);
-  const currentSession = activeSessionId ? sessionStoreManager2.getState().sessionMetadata.get(activeSessionId) : void 0;
+  const currentSession = activeSessionId ? sessionStoreManager.getState().sessionMetadata.get(activeSessionId) : void 0;
   const sessionMetadataList = useSessionMetadataList();
   const activeSessionIsFree = useMemo21(
     () => sessionMetadataList.some((s3) => s3.id === activeSessionId && s3.type === "free"),

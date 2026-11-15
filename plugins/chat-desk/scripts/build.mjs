@@ -50,6 +50,14 @@ function resolveAlias(sub) {
   // 不指 host/ 拷贝（否则面板树与宿主各持一份 manager，状态分裂）。
   if (sub.startsWith('stores/conversationStore/')) return join(srcRoot, 'shims', 'stores.ts');
   if (sub === 'stores') return join(srcRoot, 'shims', 'stores.ts');
+  // P6：插件自持的本地 store/服务（host/stores、host/services）直接解析到实现文件
+  if (sub.startsWith('host/stores/') || sub.startsWith('host/services/') || sub.startsWith('host/utils/')) {
+    const p2 = join(srcRoot, sub)
+    for (const cand of [p2, p2 + '.ts', p2 + '.tsx', join(p2, 'index.ts')]) {
+      if (exists(cand)) return cand
+    }
+    return p2 + '.ts'
+  }
   for (const prefix of HOST_PREFIXES) {
     if (sub === prefix || sub.startsWith(prefix)) {
       const rel = sub
@@ -149,6 +157,15 @@ await build({
   plugins: [aliasPlugin],
   sourcemap: false,
   logLevel: 'info',
+  metafile: process.env.METAFILE === '1',
+}).then((res) => {
+  if (process.env.METAFILE === '1') {
+    const inputs = Object.keys(res.metafile.inputs)
+    // eslint-disable-next-line no-console
+    console.log('[metafile] total=', inputs.length)
+    // eslint-disable-next-line no-console
+    console.log('[metafile] hits=', inputs.filter((k) => k.includes('compactHandoff') || k.includes('bootstrap') || k.includes('toastStore') || k.includes('sessionStoreManager')))
+  }
 });
 
 const panelCss = readFileSync(join(srcRoot, 'styles.css'), 'utf8');

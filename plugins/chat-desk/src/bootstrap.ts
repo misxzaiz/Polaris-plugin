@@ -14,6 +14,8 @@ import { sessionStoreManager } from './host/conversationStore/sessionStoreManage
 import * as useActiveSession from './host/conversationStore/useActiveSession'
 import { ensureEventRouterInitialized } from './host/services/eventRouter'
 import { remoteSessionFollower } from './shims/services'
+// 保证 compactHandoffStore 打进 bundle 并执行全局自挂（shims 惰性代理的数据源）
+import '@/host/stores/compactHandoffStore'
 import { createLogger } from './shims/logger'
 
 const log = createLogger('chat-desk:bootstrap')
