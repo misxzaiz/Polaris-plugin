@@ -333807,24 +333807,9 @@ function ensureChatDomainBootstrapped() {
     if (!core5.stores.sessionStoreManager) {
       core5.stores.sessionStoreManager = sessionStoreManager;
       core5.stores.useActiveSession = useActiveSession_exports;
-      void Promise.all([
-        Promise.resolve().then(() => (init_sessionRestore(), sessionRestore_exports)),
-        Promise.resolve().then(() => (init_sessionHandoff(), sessionHandoff_exports)),
-        Promise.resolve().then(() => (init_aiChatDispatch(), aiChatDispatch_exports))
-      ]).then(([restore, handoff, aiChat]) => {
-        core5.services.sessionRestore = {
-          restoreFromHistory: restore.restoreFromHistory,
-          forkSession: restore.forkSession
-        };
-        core5.services.sessionHandoff = {
-          getHandoffEligibility: handoff.getHandoffEligibility,
-          handoffSessionToNewSession: handoff.handoffSessionToNewSession
-        };
-        core5.services.aiChatDispatch = {
-          aiChatDispatch: aiChat.aiChatDispatch,
-          aiChatDispatchStream: aiChat.aiChatDispatchStream
-        };
-      });
+      Promise.resolve().then(() => init_sessionRestore());
+      Promise.resolve().then(() => init_sessionHandoff());
+      Promise.resolve().then(() => init_aiChatDispatch());
     }
     void ensureEventRouterInitialized();
     void sessionStoreManager.getState().initialize();
