@@ -968,13 +968,17 @@ function createSessionManagerStore() {
 // 无则创建并自挂，确保面板内所有模块与宿主 chrome 共享同一 manager。
 const __globalRegistry = globalThis as unknown as Record<string, unknown>
 const __appCore = __globalRegistry.__POLARIS_APP_CORE__ as { stores?: Record<string, unknown> } | undefined
+const __candidate = __appCore?.stores?.sessionStoreManager as ReturnType<typeof createSessionManagerStore> | undefined
 export const sessionStoreManager =
-  (__appCore?.stores?.sessionStoreManager as ReturnType<typeof createSessionManagerStore>) ??
-  (() => {
-    const created = createSessionManagerStore()
-    if (__appCore?.stores) __appCore.stores.sessionStoreManager = created
-    return created
-  })()
+  // 仅当注册表里的对象具备真实 manager 形状（有 createSession action）才复用；
+  // vitest 桩等环境会给出空壳对象，此时创建真实 store 并自挂，保证单实例。
+  (__candidate && typeof __candidate.getState?.().createSession === 'function'
+    ? __candidate
+    : (() => {
+        const created = createSessionManagerStore()
+        if (__appCore?.stores) __appCore.stores.sessionStoreManager = created
+        return created
+      })())
 
 /**
  * 缓存的 actions 对象，确保引用稳定

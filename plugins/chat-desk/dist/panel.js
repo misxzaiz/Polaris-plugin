@@ -2324,6 +2324,11 @@ var init_middleware = __esm({
 });
 
 // src/host/services/aiChatDispatch.ts
+var aiChatDispatch_exports = {};
+__export(aiChatDispatch_exports, {
+  aiChatDispatch: () => aiChatDispatch,
+  aiChatDispatchStream: () => aiChatDispatchStream
+});
 async function aiChatDispatch(payload) {
   const res = await invoke("router_dispatch", {
     req: { target: TARGET, payload }
@@ -2585,6 +2590,12 @@ function getEventRouter() {
     routerInstance = new EventRouter();
   }
   return routerInstance;
+}
+function resetEventRouter() {
+  if (routerInstance) {
+    routerInstance.destroy();
+    routerInstance = null;
+  }
 }
 async function ensureEventRouterInitialized() {
   const router = getEventRouter();
@@ -3220,6 +3231,11 @@ var init_registry = __esm({
 });
 
 // src/host/services/webReconnectResync.ts
+var webReconnectResync_exports = {};
+__export(webReconnectResync_exports, {
+  manualRefreshActiveSession: () => manualRefreshActiveSession,
+  resyncAfterResumeGap: () => resyncAfterResumeGap
+});
 async function resyncAfterResumeGap() {
   if (resyncInFlight) {
     log2.info("\u6062\u590D\u5DF2\u5728\u8FDB\u884C\u4E2D\uFF0C\u8DF3\u8FC7\u91CD\u590D\u89E6\u53D1");
@@ -3719,6 +3735,13 @@ var init_engineDisplay = __esm({
 });
 
 // src/host/services/sessionRestore.ts
+var sessionRestore_exports = {};
+__export(sessionRestore_exports, {
+  ensureWorkspace: () => ensureWorkspace,
+  forkSession: () => forkSession,
+  loadMessagesForItem: () => loadMessagesForItem,
+  restoreFromHistory: () => restoreFromHistory
+});
 async function mergeBackendMessages(conversationId, archived) {
   const backend = await loadBackendMessages(conversationId);
   if (backend.length === 0) return archived;
@@ -4192,6 +4215,14 @@ var init_conversationPackager = __esm({
 });
 
 // src/host/services/sessionHandoff.ts
+var sessionHandoff_exports = {};
+__export(sessionHandoff_exports, {
+  getHandoffEligibility: () => getHandoffEligibility,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
+  handoffSessionToNewSession: () => handoffSessionToNewSession,
+  loadConversationMessages: () => loadConversationMessages
+});
 function getHandoffEligibility(sessionId) {
   const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
@@ -4238,6 +4269,42 @@ async function handoffSessionToNewSession(sessionId, targetEngineId) {
   } catch (e3) {
     const err = e3 instanceof Error ? e3 : new Error(String(e3));
     log5.error("\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sessionId });
+    return { ok: false, error: err.message };
+  }
+}
+function getHistoryHandoffEligibility(item, fallbackWorkspaceId) {
+  if (!item.id) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
+  if (!item.projectPath && !fallbackWorkspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
+  return { enabled: true };
+}
+async function handoffHistorySessionToNewSession(item, fallbackWorkspaceId, targetEngineId) {
+  try {
+    const workspaceId = await resolveHistoryWorkspaceId(item, fallbackWorkspaceId);
+    if (!workspaceId) {
+      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+    }
+    const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
+    if (!workspace?.path) {
+      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+    }
+    const chatMessages = await loadHistoryChatMessages(item);
+    if (chatMessages.length === 0) {
+      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
+    }
+    const sourceEngineId = normalizeEngineId(item.engineId);
+    const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
+    return await createHandoffSession({
+      messages: chatMessages,
+      sourceTitle: item.title,
+      sourceEngineId,
+      sourceConversationId: item.id,
+      targetEngineId: targetEngine,
+      workspaceId,
+      workspacePath: workspace.path
+    });
+  } catch (e3) {
+    const err = e3 instanceof Error ? e3 : new Error(String(e3));
+    log5.error("\u5386\u53F2\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sourceId: item.id });
     return { ok: false, error: err.message };
   }
 }
@@ -4315,11 +4382,50 @@ async function loadConversationMessages(engineId, conversationId, fallbackMessag
   }
   return [];
 }
+async function loadHistoryChatMessages(item) {
+  const engineId = normalizeEngineId(item.engineId);
+  try {
+    if (engineId === "claude-code") {
+      const raw = await aiHistoryDispatch({
+        action: "get_claude_history",
+        sessionId: item.id,
+        projectPath: item.claudeProjectName
+      });
+      return raw.length > 0 ? withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId) : [];
+    }
+    const msgs = await dialogStorageService.getConversationMessages(item.id);
+    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId) : [];
+  } catch (e3) {
+    log5.warn("\u52A0\u8F7D\u5386\u53F2\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { sourceId: item.id, engineId, error: String(e3) });
+    return [];
+  }
+}
 function withAssistantEngineId2(messages, engineId) {
   return messages.map((message) => {
     if (message.type !== "assistant" || message.engineId) return message;
     return { ...message, engineId };
   });
+}
+async function resolveHistoryWorkspaceId(item, fallbackWorkspaceId) {
+  const projectPath = item.projectPath?.trim();
+  const workspaceState = useWorkspaceStore.getState();
+  if (projectPath) {
+    const normalizedProjectPath = normalizeWorkspacePath(projectPath);
+    let workspace = workspaceState.workspaces.find(
+      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+    );
+    if (workspace) return workspace.id;
+    try {
+      await workspaceState.createWorkspace(getPathBasename(projectPath), projectPath, false);
+      workspace = useWorkspaceStore.getState().workspaces.find(
+        (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+      );
+      if (workspace) return workspace.id;
+    } catch (error3) {
+      log5.warn("Failed to resolve handoff workspace", { error: String(error3), projectPath });
+    }
+  }
+  return fallbackWorkspaceId ?? void 0;
 }
 var log5;
 var init_sessionHandoff = __esm({
@@ -5331,6 +5437,12 @@ var init_types2 = __esm({
 });
 
 // src/host/services/contextCompactHandoff.ts
+var contextCompactHandoff_exports = {};
+__export(contextCompactHandoff_exports, {
+  compactAndHandoff: () => compactAndHandoff,
+  getDefaultCompactInstruction: () => getDefaultCompactInstruction,
+  sanitizeBriefing: () => sanitizeBriefing
+});
 function getDefaultCompactInstruction() {
   return i18n_default.t("chat:compactHandoff.defaultInstruction");
 }
@@ -5950,6 +6062,7 @@ __export(services_exports, {
   dispatchFromUser: () => dispatchFromUser,
   dropTracker: () => dropTracker,
   emit: () => emit,
+  ensureEventRouterInitialized: () => ensureEventRouterInitialized,
   ensureWorkspace: () => ensureWorkspace2,
   estimateTokens: () => estimateTokens2,
   eventBus: () => eventBus,
@@ -5959,12 +6072,12 @@ __export(services_exports, {
   getDefaultCompactInstruction: () => getDefaultCompactInstruction2,
   getEventRouter: () => getEventRouter2,
   getHandoffEligibility: () => getHandoffEligibility2,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility2,
   getPendingPlans: () => getPendingPlans,
   getPendingQuestions: () => getPendingQuestions,
   getTracker: () => getTracker,
   getUserSystemPrompt: () => getUserSystemPrompt,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession2,
   handoffSessionToNewSession: () => handoffSessionToNewSession2,
   initDispatchTaskListener: () => initDispatchTaskListener,
   invoke: () => invoke,
@@ -6002,6 +6115,7 @@ __export(services_exports, {
   rejectPlan: () => rejectPlan,
   remoteSessionFollower: () => remoteSessionFollower,
   requestCompactHandoff: () => requestCompactHandoff,
+  resetEventRouter: () => resetEventRouter,
   resetTracker: () => resetTracker,
   resolveTemplateVariables: () => resolveTemplateVariables,
   respondPluginCard: () => respondPluginCard,
@@ -6034,7 +6148,7 @@ function aiChatDispatch2(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility, handoffHistorySessionToNewSession, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -6075,8 +6189,8 @@ var init_services = __esm({
     aiHistoryDispatch = (...args) => coreService("aiHistoryDispatch").aiHistoryDispatch(...args);
     getHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
     handoffSessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
-    getHistoryHandoffEligibility = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
-    handoffHistorySessionToNewSession = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
+    getHistoryHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
+    handoffHistorySessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
     loadConversationMessages2 = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
     compactAndHandoff2 = (...args) => compactAndHandoff(...args);
     requestCompactHandoff = (...args) => compactAndHandoff(...args);
@@ -11240,7 +11354,7 @@ function useSessionMetadataList() {
 function useActiveSessionId() {
   return useStore(sessionStoreManager, (state5) => state5.activeSessionId);
 }
-var log13, RENDER_EVENT_TYPES, __globalRegistry, __appCore, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
+var log13, RENDER_EVENT_TYPES, __globalRegistry, __appCore, __candidate, sessionStoreManager, cachedMetadataMap, cachedMetadataArray;
 var init_sessionStoreManager = __esm({
   "src/host/conversationStore/sessionStoreManager.ts"() {
     init_uuid();
@@ -11259,7 +11373,10 @@ var init_sessionStoreManager = __esm({
     RENDER_EVENT_TYPES = /* @__PURE__ */ new Set(["plugin_card", "plugin_card_answered"]);
     __globalRegistry = globalThis;
     __appCore = __globalRegistry.__POLARIS_APP_CORE__;
-    sessionStoreManager = __appCore?.stores?.sessionStoreManager ?? (() => {
+    __candidate = __appCore?.stores?.sessionStoreManager;
+    sessionStoreManager = // 仅当注册表里的对象具备真实 manager 形状（有 createSession action）才复用；
+    // vitest 桩等环境会给出空壳对象，此时创建真实 store 并自挂，保证单实例。
+    __candidate && typeof __candidate.getState?.().createSession === "function" ? __candidate : (() => {
       const created = createSessionManagerStore();
       if (__appCore?.stores) __appCore.stores.sessionStoreManager = created;
       return created;
@@ -161517,12 +161634,12 @@ function clearContainerAlgorithmOptions(layoutOptions) {
   layoutOptions["spacing.baseValue"] = DEFAULT_SUBGRAPH_SPACING_BASE_VALUE;
   layoutOptions["spacing.nodeNode"] = DEFAULT_SUBGRAPH_NODE_SPACING;
 }
-function resolveContainerAlgorithm(requested, log31) {
+function resolveContainerAlgorithm(requested, log33) {
   if (typeof requested !== "string") {
     return void 0;
   }
   if (!CONTAINER_ALGORITHMS.has(requested)) {
-    log31?.warn(
+    log33?.warn(
       `Unknown container layout algorithm "${requested}". Supported values: ${[...CONTAINER_ALGORITHMS].join(", ")}. Falling back to the diagram's layout algorithm.`
     );
     return void 0;
@@ -161559,7 +161676,7 @@ function groupTitleSizeOptions(node2) {
     "nodeSize.minimum": `(${groupTitleWidth(node2)}, 0)`
   };
 }
-function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log31) {
+function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log33) {
   const labelW = node2.labelData?.width ?? 0;
   const pad4 = node2.padding ?? 0;
   const minWidth = labelW + 2 * pad4;
@@ -161627,7 +161744,7 @@ function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log31) {
     // cross-boundary edge attaches to the frame rather than to a node inside it.
     "elk.spacing.portsSurrounding": PORTS_SURROUNDING
   };
-  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log31);
+  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log33);
   if (algo) {
     const padTop = labelH + CONTAINER_PADDING;
     layoutOptions["nodeSize.constraints"] = "[MINIMUM_SIZE, NODE_LABELS]";
@@ -161933,10 +162050,10 @@ function createRootElkGraph(data4Layout, algorithm, rootLayoutOptions) {
   );
   return graph;
 }
-function addSubGraphs(nodeArr, log31) {
+function addSubGraphs(nodeArr, log33) {
   const parentLookupDb = { parentById: {}, childrenById: {} };
   const subgraphs = nodeArr.filter((node2) => node2.isGroup);
-  log31.info("Subgraphs - ", subgraphs);
+  log33.info("Subgraphs - ", subgraphs);
   subgraphs.forEach((subgraph) => {
     const children2 = nodeArr.filter((node2) => node2.parentId === subgraph.id);
     children2.forEach((node2) => {
@@ -162100,39 +162217,39 @@ function configureSubgraphNodes(data4Layout, nodeDb2, parentLookupDb, elkContext
     delete node2.height;
   });
 }
-function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log31) {
-  log31.debug("APA01 processing edges, count:", elkGraph.edges.length);
+function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log33) {
+  log33.debug("APA01 processing edges, count:", elkGraph.edges.length);
   elkGraph.edges.forEach((edge, index2) => {
-    log31.debug("APA01 processing edge", index2, ":", edge);
+    log33.debug("APA01 processing edge", index2, ":", edge);
     const source = edge.sources[0];
     const target = edge.targets[0];
-    log31.debug("APA01 source:", source, "target:", target);
-    log31.debug("APA01 nodeDb[source]:", nodeDb2[source]);
-    log31.debug("APA01 nodeDb[target]:", nodeDb2[target]);
+    log33.debug("APA01 source:", source, "target:", target);
+    log33.debug("APA01 nodeDb[source]:", nodeDb2[source]);
+    log33.debug("APA01 nodeDb[target]:", nodeDb2[target]);
     if (nodeDb2[source] && nodeDb2[target] && nodeDb2[source].parentId !== nodeDb2[target].parentId) {
       const ancestorId = findCommonAncestor(source, target, parentLookupDb);
-      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log31);
-      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log31);
+      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log33);
+      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log33);
     }
   });
 }
-function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log31) {
+function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log33) {
   const node2 = nodeDb2[nodeId];
   if (!node2) {
     return;
   }
   node2.layoutOptions ??= {};
   if (node2.layoutOptions["elk.hierarchyHandling"] === "SEPARATE_CHILDREN" && resolveContainerAlgorithm(node2.metadata?.algorithm)) {
-    log31.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
+    log33.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
     clearContainerAlgorithmOptions(node2.layoutOptions);
     Object.assign(node2.layoutOptions, groupTitleSizeOptions(node2));
   }
   node2.layoutOptions["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
   if (node2.id !== ancestorId && node2.parentId) {
-    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log31);
+    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log33);
   }
 }
-async function runElkLayout(elk, elkGraph, log31) {
+async function runElkLayout(elk, elkGraph, log33) {
   const profiler4 = globalThis.__mermaidProfiler;
   try {
     profiler4?.begin("layoutCore");
@@ -162142,19 +162259,19 @@ async function runElkLayout(elk, elkGraph, log31) {
     } finally {
       profiler4?.end();
     }
-    log31.debug("APA01 after - success");
-    log31.debug("APA01 layout result:", graph);
+    log33.debug("APA01 after - success");
+    log33.debug("APA01 layout result:", graph);
     return graph;
   } catch (error3) {
-    log31.error("ELK layout error:", error3);
+    log33.error("ELK layout error:", error3);
     throw error3;
   }
 }
-function applyElkLayoutResult(data4Layout, graph, layoutState, log31) {
+function applyElkLayoutResult(data4Layout, graph, layoutState, log33) {
   const nodeById = new Map(data4Layout.nodes.map((node2) => [node2.id, node2]));
-  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log31);
+  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log33);
   evenGroupFrames(graph.children ?? [], layoutState, nodeById, graph);
-  applyElkEdgeLayout(data4Layout, graph, layoutState, log31);
+  applyElkEdgeLayout(data4Layout, graph, layoutState, log33);
 }
 function collectDescendantIds(elkNode, into = /* @__PURE__ */ new Set()) {
   for (const child of elkNode.children ?? []) {
@@ -162245,7 +162362,7 @@ function evenGroupFrames(elkNodes, layoutState, nodeById, graph = {}) {
     }
   }
 }
-function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log31) {
+function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log33) {
   nodeArray.forEach((node2) => {
     if (!node2) {
       return;
@@ -162277,7 +162394,7 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
       layoutNodeLabels.labels = node2.labels;
     }
     if (node2.isGroup) {
-      log31.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
+      log33.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
       applyElkNodePositions(
         node2.children ?? [],
         layoutState,
@@ -162285,10 +162402,10 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
         offset.posX,
         offset.posY,
         depth + 1,
-        log31
+        log33
       );
     } else {
-      log31.info(
+      log33.info(
         "Id NODE = ",
         node2.id,
         node2.x,
@@ -162478,7 +162595,7 @@ function straightenEdgeTerminals(edges3) {
   }
   return changed;
 }
-function applyElkEdgeLayout(data4Layout, graph, layoutState, log31) {
+function applyElkEdgeLayout(data4Layout, graph, layoutState, log33) {
   const edgeById = new Map(data4Layout.edges.map((edge) => [edge.id, edge]));
   const straightenEdges = data4Layout.config.elk?.straightenEdges !== false;
   const terminalLabelPorts = /* @__PURE__ */ new Map();
@@ -162544,20 +162661,20 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log31) {
       startNode.y = from2.y;
       endNode.x = to2.x;
       endNode.y = to2.y;
-      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log31);
+      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log33);
       layoutEdge.points = straightPoints;
       layoutEdge.curve = "linear";
       const lineStart = straightPoints[0];
       const lineEnd = straightPoints[straightPoints.length - 1];
       layoutEdge.x = (lineStart.x + lineEnd.x) / 2;
       layoutEdge.y = (lineStart.y + lineEnd.y) / 2;
-      log31.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
+      log33.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
       return;
     }
     const sourceId = edge.start ?? edge.sourceId ?? startId;
     const targetId = edge.end ?? edge.targetId ?? endId;
     const offset = calcOffset(sourceId, targetId, layoutState.parentLookupDb, layoutState.nodeDb);
-    log31.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
+    log33.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
     const section = edge.sections[0];
     const points = createEdgePointsFromSection(section, offset);
     if (reversed) {
@@ -162574,17 +162691,17 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log31) {
     if (endNode.shape !== "rect33") {
       points.push({ x: endNode.x, y: endNode.y });
     }
-    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log31);
+    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log33);
     layoutEdge.points = ensureStartMarkerSegmentLength(
       ensureEndMarkerSegmentLength(
         clipped,
         boundsFor(endNode),
         getEndMarkerPathOffset(layoutEdge),
-        log31
+        log33
       ),
       boundsFor(startNode),
       getStartMarkerPathOffset(layoutEdge),
-      log31
+      log33
     );
     layoutEdge.curve = "rounded";
     const label = edge.labels?.[0];
@@ -162849,10 +162966,10 @@ function calcOffset(src, dest, parentLookupDb, nodeDb2) {
     y: ancestorOffset?.posY ?? 0
   };
 }
-function sanitizeElkEdgePoints(points, startNode, endNode, log31) {
+function sanitizeElkEdgePoints(points, startNode, endNode, log33) {
   const prevPoints = Array.isArray(points) ? [...points] : [];
   const endBounds = boundsFor(endNode);
-  log31.debug(
+  log33.debug(
     "PPP cutter2: Points before cutter2:",
     JSON.stringify(points),
     "endBounds:",
@@ -162887,12 +163004,12 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log31) {
     }
     if (skipStart || skipEnd) {
       if (!skipStart) {
-        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log31);
+        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log33);
       }
       if (!skipEnd) {
-        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log31);
+        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log33);
       }
-      log31.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
+      log33.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
         skipStart,
         skipEnd,
         startCenterApprox,
@@ -162902,22 +163019,22 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log31) {
       });
       clippedPoints = prevPoints;
     } else {
-      clippedPoints = cutter2(startNode, endNode, prevPoints, log31);
+      clippedPoints = cutter2(startNode, endNode, prevPoints, log33);
     }
   }
-  log31.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
+  log33.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
   if (!Array.isArray(clippedPoints) || clippedPoints.length < 2 || hasInvalidPoint(clippedPoints)) {
-    log31.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
+    log33.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
     const cleaned = prevPoints.filter((p3) => Number.isFinite(p3?.x) && Number.isFinite(p3?.y));
     clippedPoints = cleaned.length >= 2 ? cleaned : prevPoints;
   }
-  log31.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
-  return dedupeConsecutivePoints(clippedPoints, log31);
+  log33.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
+  return dedupeConsecutivePoints(clippedPoints, log33);
 }
 function hasInvalidPoint(points) {
   return points?.some((point3) => !Number.isFinite(point3?.x) || !Number.isFinite(point3?.y));
 }
-function dedupeConsecutivePoints(points, log31) {
+function dedupeConsecutivePoints(points, log33) {
   const deduped = points.filter((point3, index2, arr) => {
     if (index2 === 0) {
       return true;
@@ -162926,7 +163043,7 @@ function dedupeConsecutivePoints(points, log31) {
     return Math.abs(point3.x - prev2.x) > 1e-6 || Math.abs(point3.y - prev2.y) > 1e-6;
   });
   if (deduped.length !== points.length) {
-    log31.debug("UIO cutter2: removed consecutive duplicate points", {
+    log33.debug("UIO cutter2: removed consecutive duplicate points", {
       before: points,
       after: deduped
     });
@@ -162939,7 +163056,7 @@ function getEndMarkerPathOffset(edge) {
 function getStartMarkerPathOffset(edge) {
   return markerPathOffset(edge.arrowTypeStart);
 }
-function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log31) {
+function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log33) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -162953,7 +163070,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log31
     return points;
   }
   const adjusted = [start2, ...points.slice(2)];
-  log31.debug("UIO cutter2: removed short start marker segment", {
+  log33.debug("UIO cutter2: removed short start marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -162961,7 +163078,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log31
   });
   return adjusted;
 }
-function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log31) {
+function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log33) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -162975,7 +163092,7 @@ function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log31) {
     return points;
   }
   const adjusted = [...points.slice(0, -2), end];
-  log31.debug("UIO cutter2: removed short end marker segment", {
+  log33.debug("UIO cutter2: removed short end marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -163145,7 +163262,7 @@ function clipGroupEndpoint(points, bounds4, side) {
   }
   return true;
 }
-function applyStartIntersectionIfNeeded(points, startNode, startBounds, log31) {
+function applyStartIntersectionIfNeeded(points, startNode, startBounds, log33) {
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (outsideNode2(startBounds, point3)) {
@@ -163163,10 +163280,10 @@ function applyStartIntersectionIfNeeded(points, startNode, startBounds, log31) {
       startCenter
     );
     replaceEndpoint(points, "start", startIntersection);
-    log31.debug("UIO cutter2: start-only intersection applied", { startIntersection });
+    log33.debug("UIO cutter2: start-only intersection applied", { startIntersection });
   }
 }
-function applyEndIntersectionIfNeeded(points, endNode, endBounds, log31) {
+function applyEndIntersectionIfNeeded(points, endNode, endBounds, log33) {
   let outsideIndexForEnd = -1;
   for (let index2 = points.length - 1; index2 >= 0; index2--) {
     if (outsideNode2(endBounds, points[index2])) {
@@ -163184,7 +163301,7 @@ function applyEndIntersectionIfNeeded(points, endNode, endBounds, log31) {
       endCenter
     );
     replaceEndpoint(points, "end", endIntersection);
-    log31.debug("UIO cutter2: end-only intersection applied", { endIntersection });
+    log33.debug("UIO cutter2: end-only intersection applied", { endIntersection });
   }
 }
 function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
@@ -163198,7 +163315,7 @@ function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
   }
   return outlineAttachPoint(node2, bounds4, port, next3);
 }
-function cutter2(startNode, endNode, originalPoints, log31) {
+function cutter2(startNode, endNode, originalPoints, log33) {
   const startBounds = boundsFor(startNode);
   const endBounds = boundsFor(endNode);
   if (originalPoints.length === 0) {
@@ -163207,8 +163324,8 @@ function cutter2(startNode, endNode, originalPoints, log31) {
   const points = [...originalPoints];
   const startCenter = points[0];
   const endCenter = points[points.length - 1];
-  log31.debug("PPP cutter2: bounds", { startBounds, endBounds });
-  log31.debug("PPP cutter2: original points", originalPoints);
+  log33.debug("PPP cutter2: bounds", { startBounds, endBounds });
+  log33.debug("PPP cutter2: original points", originalPoints);
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (firstOutsideStartIndex === -1 && outsideNode2(startBounds, point3)) {
@@ -163223,7 +163340,7 @@ function cutter2(startNode, endNode, originalPoints, log31) {
       // is all a non-axis-aligned or shapeless endpoint can offer.
       attachAlongDepartureAxis(startNode, startBounds, points, firstOutsideStartIndex, 1) ?? computeNodeIntersection(startNode, startBounds, outsidePointForStart, startCenter)
     );
-    log31.debug("UIO cutter2: start intersection", startIntersection);
+    log33.debug("UIO cutter2: start intersection", startIntersection);
     replaceEndpoint(points, "start", startIntersection);
   }
   let outsidePointForEnd = null;
@@ -163241,7 +163358,7 @@ function cutter2(startNode, endNode, originalPoints, log31) {
   }
   if (outsidePointForEnd) {
     const endIntersection = attachAlongDepartureAxis(endNode, endBounds, points, outsideIndexForEnd, -1) ?? computeNodeIntersection(endNode, endBounds, outsidePointForEnd, endCenter);
-    log31.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
+    log33.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
     replaceEndpoint(points, "end", endIntersection);
   }
   if (points.length > 1) {
@@ -163251,7 +163368,7 @@ function cutter2(startNode, endNode, originalPoints, log31) {
       (lastPoint2.x - secondLastPoint.x) ** 2 + (lastPoint2.y - secondLastPoint.y) ** 2
     );
     if (distance3 < 2) {
-      log31.debug("UIO cutter2: trimming tail point (too close)", {
+      log33.debug("UIO cutter2: trimming tail point (too close)", {
         distance: distance3,
         lastPoint: lastPoint2,
         secondLastPoint
@@ -163259,7 +163376,7 @@ function cutter2(startNode, endNode, originalPoints, log31) {
       points.pop();
     }
   }
-  log31.debug("UIO cutter2: final points", points);
+  log33.debug("UIO cutter2: final points", points);
   return points;
 }
 var import_elk_bundled, findCommonAncestor, ROOT, JUMP_RADIUS, PLACEMENT_OPTIONS, EDGE_ROUTING_OPTIONS, ROOT_EXPERIMENT_OVERRIDES, SUBGRAPH_EXPERIMENT_OVERRIDES, EPS, PUSH_OUT, onBorder, intersection2, outsideNode2, ensureTrulyOutside, makeInsidePoint, tryNodeIntersect, fallbackIntersection, OUTLINE_RAY_STEPS, DEPARTURE_AXIS_EPS, insideOutline, outlineAttachPoint, computeNodeIntersection, replaceEndpoint, MIN_END_MARKER_SEGMENT_LENGTH, markerPathOffset, ARROW_MAP, PORTS_SURROUNDING_MARGIN, PORTS_SURROUNDING, SUBGRAPH_PADDING, DEFAULT_SUBGRAPH_SPACING_BASE_VALUE, DEFAULT_SUBGRAPH_NODE_SPACING, CONTAINER_PADDING, RECTPACKING_CONTAINER_PADDING, RECTPACKING_OPTIONS, CONTAINER_ALGORITHM_OVERRIDES, CONTAINER_ALGORITHMS, render3, ELK_PRESETS, TERMINAL_LABEL_MARKER_CLEARANCE, TERMINAL_JOG_MAX, TERMINAL_RUN_MAX, JOG_EPS, labelBox, OPPOSITE_LABEL_MIN_GAP, boxesOverlap, TERMINAL_LABEL_FRAME_CLEARANCE;
@@ -333593,6 +333710,522 @@ init_eventRouter();
 init_sessionRestore();
 init_sessionHandoff();
 init_aiChatDispatch();
+
+// src/host/services/dispatchTaskService.ts
+var dispatchTaskService_exports = {};
+__export(dispatchTaskService_exports, {
+  attachDispatchSessionHandler: () => attachDispatchSessionHandler,
+  continueDispatchedTask: () => continueDispatchedTask,
+  dispatchFromUser: () => dispatchFromUser2,
+  handOffResultToSource: () => handOffResultToSource,
+  handleDispatchTaskRequest: () => handleDispatchTaskRequest,
+  initDispatchTaskListener: () => initDispatchTaskListener2,
+  interruptDispatchedTask: () => interruptDispatchedTask,
+  openDispatchSession: () => openDispatchSession,
+  parseDispatchSlashCommand: () => parseDispatchSlashCommand2
+});
+init_services();
+init_aiChatDispatch();
+init_eventRouter();
+init_sessionStoreManager();
+init_stores();
+init_stores();
+init_stores();
+init_stores();
+
+// src/host/stores/schedulerStoreUtils.ts
+function parseEventToLog(event3) {
+  const type3 = event3.type;
+  switch (type3) {
+    case "session_start":
+      return { type: "session_start", content: "\u5F00\u59CB\u6267\u884C\u4EFB\u52A1..." };
+    case "progress":
+      return { type: "message", content: event3.message || "\u5904\u7406\u4E2D..." };
+    case "thinking":
+      return { type: "thinking", content: event3.content || "\u601D\u8003\u4E2D..." };
+    case "assistant_message":
+    case "assistant":
+      return { type: "message", content: event3.content || "" };
+    case "tool_call_start": {
+      const toolName = event3.tool || event3.toolName || event3.name || "unknown";
+      return {
+        type: "tool_call_start",
+        content: `\u8C03\u7528\u5DE5\u5177: ${toolName}`,
+        metadata: { toolName, args: event3.args }
+      };
+    }
+    case "tool_call_end": {
+      const endToolName = event3.tool || event3.toolName || event3.name || "unknown";
+      const success = event3.success !== false;
+      return {
+        type: "tool_call_end",
+        content: success ? `${endToolName} \u5B8C\u6210` : `${endToolName} \u5931\u8D25`,
+        metadata: { toolName: endToolName, success }
+      };
+    }
+    case "session_end": {
+      const reason = event3.reason;
+      if (reason === "error" || reason === "failed") {
+        return {
+          type: "error",
+          content: event3.error || "\u6267\u884C\u5931\u8D25"
+        };
+      }
+      return { type: "session_end", content: "\u4EFB\u52A1\u6267\u884C\u5B8C\u6210", metadata: { success: true } };
+    }
+    case "error":
+      return { type: "error", content: event3.error || event3.message || "\u672A\u77E5\u9519\u8BEF" };
+    default:
+      return null;
+  }
+}
+
+// src/host/services/dispatchTaskService.ts
+init_conversationStoreUtils();
+init_useKernelSessionState();
+init_stores();
+init_logger();
+init_i18n();
+var log27 = createLogger("DispatchTask");
+var ACTIVITY_REPORT_INTERVAL_MS = 3e3;
+async function reportStatus(dispatchId, status, extra) {
+  try {
+    const result = await invoke(
+      "dispatch_report_status",
+      {
+        dispatchId,
+        status,
+        summary: extra?.summary,
+        latestActivity: extra?.latestActivity,
+        conversationId: extra?.conversationId
+      }
+    );
+    if (result?.verdictStatus) {
+      useDispatchStore.getState().updateTask(dispatchId, {
+        verdict: result.verdict,
+        verdictStatus: result.verdictStatus
+      });
+    }
+  } catch (e3) {
+    log27.warn("\u56DE\u62A5\u6D3E\u53D1\u72B6\u6001\u5931\u8D25", { dispatchId, status, error: String(e3) });
+  }
+}
+function extractSummary2(sessionId) {
+  const store3 = sessionStoreManager.getState().stores.get(sessionId);
+  if (!store3) return void 0;
+  const messages = store3.getState().messages;
+  for (let i2 = messages.length - 1; i2 >= 0; i2--) {
+    const msg = messages[i2];
+    if (msg.type !== "assistant") continue;
+    if (typeof msg.content === "string" && msg.content.trim()) {
+      return msg.content;
+    }
+    const text5 = (msg.blocks || []).filter((b12) => b12.type === "text").map((b12) => b12.content).join("\n").trim();
+    if (text5) return text5;
+  }
+  return void 0;
+}
+function extractActivity(event3) {
+  const type3 = event3.type;
+  if (type3 !== "tool_call_start" && type3 !== "tool_call_end") return void 0;
+  const entry = parseEventToLog(event3);
+  return entry?.content;
+}
+function resolveWorkspace(event3) {
+  if (event3.workDir && event3.workDir.trim()) {
+    return { workDir: event3.workDir.trim(), workspaceId: void 0 };
+  }
+  const workspaceState = useWorkspaceStore.getState();
+  const sourceSessionId = event3.sourceSessionId || "";
+  const sourceMeta = sessionStoreManager.getState().sessionMetadata.get(sourceSessionId);
+  if (sourceMeta?.workspaceId) {
+    const workspace = workspaceState.workspaces.find((w5) => w5.id === sourceMeta.workspaceId);
+    if (workspace) {
+      return { workDir: workspace.path, workspaceId: workspace.id };
+    }
+  }
+  const current = workspaceState.getCurrentWorkspace();
+  return { workDir: current?.path, workspaceId: current?.id };
+}
+function resolveEngineId(event3) {
+  if (event3.engineId && event3.engineId.trim()) {
+    return event3.engineId.trim();
+  }
+  const sourceSessionId = event3.sourceSessionId || "";
+  return sessionStoreManager.getState().sessionMetadata.get(sourceSessionId)?.engineId;
+}
+function resolveModelProfileId(event3, _engineId) {
+  if (event3.modelProfileId === "official") return void 0;
+  if (event3.modelProfileId) return event3.modelProfileId;
+  const sourceSessionId = event3.sourceSessionId || "";
+  const sourceMeta = sessionStoreManager.getState().sessionMetadata.get(sourceSessionId);
+  return resolveEffectiveProfileId(
+    sourceMeta?.modelProfileId,
+    void 0,
+    getActiveModelProfile2()?.id
+  );
+}
+function attachDispatchSessionHandler(dispatchId, sessionId) {
+  const router = getEventRouter();
+  let lastActivityReportAt = 0;
+  let reportedConversationId = null;
+  const unsubscribe = router.register(sessionId, (payload) => {
+    const aiEvent = payload;
+    if (aiEvent.type === "session_start") {
+      const realConversationId = aiEvent.sessionId;
+      if (realConversationId && realConversationId !== reportedConversationId) {
+        reportedConversationId = realConversationId;
+        log27.info("\u56DE\u5199\u6D3E\u53D1\u4F1A\u8BDD\u771F\u5B9E conversationId", { dispatchId, realConversationId });
+        void reportStatus(dispatchId, "running", { conversationId: realConversationId });
+      }
+    }
+    sessionStoreManager.getState().dispatchEvent({
+      ...aiEvent,
+      _routeSessionId: sessionId
+    });
+    const dispatchStore = useDispatchStore.getState();
+    const activity = extractActivity(aiEvent);
+    if (activity) {
+      dispatchStore.updateTask(dispatchId, { latestActivity: activity });
+      const now4 = Date.now();
+      if (now4 - lastActivityReportAt >= ACTIVITY_REPORT_INTERVAL_MS) {
+        lastActivityReportAt = now4;
+        void reportStatus(dispatchId, "running", { latestActivity: activity });
+      }
+    }
+    if (aiEvent.type === "session_end") {
+      const reason = aiEvent.reason;
+      const failed = reason !== void 0 && reason !== "completed";
+      const summary = extractSummary2(sessionId);
+      const status = failed ? "failed" : "completed";
+      dispatchStore.finishTask(dispatchId, status, summary, failed ? reason : void 0);
+      void reportStatus(dispatchId, status, { summary });
+      unsubscribe();
+    } else if (aiEvent.type === "error") {
+      const summary = extractSummary2(sessionId);
+      const errorText = aiEvent.error || aiEvent.message;
+      dispatchStore.finishTask(dispatchId, "failed", summary, errorText);
+      void reportStatus(dispatchId, "failed", { summary });
+      unsubscribe();
+    }
+  });
+  return unsubscribe;
+}
+async function handleDispatchTaskRequest(event3, options2) {
+  const { dispatchId, sessionId, prompt } = event3;
+  if (!dispatchId || !sessionId || !prompt?.trim()) {
+    log27.warn("\u6D3E\u53D1\u8BF7\u6C42\u7F3A\u5C11\u5FC5\u8981\u5B57\u6BB5\uFF0C\u5FFD\u7565", { dispatchId, sessionId });
+    return;
+  }
+  const title2 = event3.title?.trim() || i18n_default.t("chat:dispatch.defaultTitle", "\u6D3E\u53D1\u4EFB\u52A1");
+  if (!options2?.skipPolicyCheck && getDispatchPolicy() === "ask") {
+    const allowed = window.confirm(
+      i18n_default.t("chat:dispatch.confirmMessage", {
+        defaultValue: "AI \u8BF7\u6C42\u6D3E\u53D1\u540E\u53F0\u4EFB\u52A1\u300C{{title}}\u300D\uFF0C\u662F\u5426\u5141\u8BB8\u6267\u884C\uFF1F",
+        title: title2,
+        interpolation: { escapeValue: false }
+      })
+    );
+    if (!allowed) {
+      log27.info("\u7528\u6237\u62D2\u7EDD\u6D3E\u53D1", { dispatchId });
+      void reportStatus(dispatchId, "failed", {
+        summary: i18n_default.t("chat:dispatch.userDeclined", "\u7528\u6237\u62D2\u7EDD\u4E86\u672C\u6B21\u6D3E\u53D1")
+      });
+      return;
+    }
+  }
+  const { workDir, workspaceId } = resolveWorkspace(event3);
+  const engineId = resolveEngineId(event3);
+  log27.info("\u6536\u5230\u6D3E\u53D1\u8BF7\u6C42", { dispatchId, sessionId, title: title2, workDir, engineId, role: event3.role });
+  const manager = sessionStoreManager.getState();
+  manager.createSession({
+    id: sessionId,
+    type: workspaceId ? "project" : "free",
+    workspaceId,
+    title: title2,
+    engineId,
+    silentMode: true
+  });
+  sessionStoreManager.getState().addToBackground(sessionId);
+  useDispatchStore.getState().upsertTask({
+    dispatchId,
+    sessionId,
+    sourceSessionId: event3.sourceSessionId || "",
+    title: title2,
+    status: "pending",
+    engineId,
+    model: event3.model || void 0,
+    role: event3.role || void 0,
+    workDir,
+    startedAt: Date.now()
+  });
+  const router = getEventRouter();
+  await router.initialize();
+  const unsubscribe = attachDispatchSessionHandler(dispatchId, sessionId);
+  try {
+    const conversationId = await aiChatDispatch({
+      message: prompt,
+      options: {
+        workDir,
+        contextId: sessionId,
+        engineId,
+        enableMcpTools: true,
+        modelProfileId: resolveModelProfileId(event3, engineId),
+        model: event3.model || void 0,
+        appendSystemPrompt: event3.appendSystemPrompt || void 0,
+        permissionMode: event3.permissionMode || void 0
+      }
+    });
+    log27.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u542F\u52A8", { dispatchId, sessionId, conversationId });
+    useDispatchStore.getState().updateTask(dispatchId, { status: "running" });
+    void reportStatus(dispatchId, "running", { conversationId });
+  } catch (e3) {
+    const message = e3 instanceof Error ? e3.message : String(e3);
+    log27.error("\u6D3E\u53D1\u4F1A\u8BDD\u542F\u52A8\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message), { dispatchId });
+    unsubscribe();
+    useDispatchStore.getState().finishTask(dispatchId, "failed", message, message);
+    void reportStatus(dispatchId, "failed", { summary: message });
+  }
+}
+function getDispatchPolicy() {
+  try {
+    const config3 = useConfigStore.getState().config;
+    return config3?.dispatch?.policy === "ask" ? "ask" : "auto";
+  } catch {
+    return "auto";
+  }
+}
+var reportedPipelines = /* @__PURE__ */ new Set();
+function initDispatchTaskListener2() {
+  const unlistenPipeline = listen("nexus-pipeline-update", (p3) => {
+    if (p3.status !== "completed" || !p3.finalReport || reportedPipelines.has(p3.id)) return;
+    reportedPipelines.add(p3.id);
+    if (!p3.sourceSessionId) return;
+    const store3 = useDispatchStore.getState();
+    store3.upsertTask({
+      dispatchId: `roster-${p3.id}`,
+      sessionId: "",
+      sourceSessionId: p3.sourceSessionId,
+      title: `NEXUS \u4E13\u5BB6\u56E2 \xB7 ${p3.scenario}`,
+      status: "completed",
+      startedAt: Date.now()
+    });
+    store3.finishTask(`roster-${p3.id}`, "completed", p3.finalReport);
+  });
+  const unlistenRequest = listen(
+    "dispatch-task-request",
+    (event3) => {
+      void handleDispatchTaskRequest(event3);
+    }
+  );
+  const unlistenContinue = listen(
+    "dispatch-task-continue",
+    (event3) => {
+      void (async () => {
+        const dispatchStore = useDispatchStore.getState();
+        if (!dispatchStore.getTask(event3.dispatchId)) {
+          dispatchStore.upsertTask({
+            dispatchId: event3.dispatchId,
+            sessionId: event3.sessionId,
+            sourceSessionId: "",
+            title: event3.sessionId,
+            status: "completed",
+            startedAt: Date.now()
+          });
+        }
+        const ok = await continueDispatchedTask(event3.dispatchId, event3.prompt, {
+          conversationId: event3.conversationId || void 0
+        });
+        if (!ok) {
+          void reportStatus(event3.dispatchId, "failed", {
+            summary: "\u7EED\u6D3E\u5931\u8D25\uFF1A\u540E\u53F0\u4F1A\u8BDD\u4E0D\u53EF\u6062\u590D\uFF08conversationId \u7F3A\u5931\u6216\u4EFB\u52A1\u6267\u884C\u4E2D\uFF09"
+          });
+        }
+      })();
+    }
+  );
+  return () => {
+    unlistenRequest.then((unlisten) => unlisten());
+    unlistenContinue.then((unlisten) => unlisten());
+    unlistenPipeline.then((unlisten) => unlisten());
+  };
+}
+function parseDispatchSlashCommand2(text5) {
+  if (!text5.startsWith("/dispatch")) return null;
+  const rest = text5.slice("/dispatch".length);
+  if (rest && !/^\s/.test(rest)) return null;
+  let remaining = rest.trim();
+  let role;
+  if (remaining.startsWith("@")) {
+    const spaceIdx = remaining.search(/\s/);
+    if (spaceIdx > 0) {
+      role = remaining.slice(1, spaceIdx);
+      remaining = remaining.slice(spaceIdx).trim();
+    } else {
+      role = remaining.slice(1);
+      remaining = "";
+    }
+  }
+  return { role: role || void 0, prompt: remaining };
+}
+async function dispatchFromUser2(parsed) {
+  const toast = useToastStore.getState();
+  if (!parsed.prompt.trim()) {
+    toast.info(
+      i18n_default.t("chat:dispatch.usageTitle", "\u7528\u6CD5"),
+      i18n_default.t("chat:dispatch.usageDetail", "/dispatch [@\u89D2\u8272] \u4EFB\u52A1\u5185\u5BB9")
+    );
+    return false;
+  }
+  const sourceSessionId = sessionStoreManager.getState().activeSessionId || "";
+  try {
+    const task = await invoke("dispatch_create_task", {
+      prompt: parsed.prompt,
+      role: parsed.role,
+      appendSystemPrompt: parsed.appendSystemPrompt,
+      sourceSessionId
+    });
+    await handleDispatchTaskRequest(task, { skipPolicyCheck: true });
+    toast.info(
+      i18n_default.t("chat:dispatch.dispatchedTitle", "\u5DF2\u6D3E\u53D1"),
+      i18n_default.t("chat:dispatch.dispatchedDetail", {
+        defaultValue: "\u4EFB\u52A1\u300C{{title}}\u300D\u5DF2\u5728\u540E\u53F0\u4F1A\u8BDD\u6267\u884C",
+        title: task.title || parsed.prompt.slice(0, 24),
+        interpolation: { escapeValue: false }
+      })
+    );
+    return true;
+  } catch (e3) {
+    const message = e3 instanceof Error ? e3.message : String(e3);
+    toast.error(i18n_default.t("chat:dispatch.dispatchFailed", "\u6D3E\u53D1\u5931\u8D25"), message);
+    return false;
+  }
+}
+function openDispatchSession(sessionId) {
+  sessionStoreManager.getState().makeSessionVisible(sessionId);
+}
+async function interruptDispatchedTask(dispatchId) {
+  const task = useDispatchStore.getState().getTask(dispatchId);
+  if (!task) return;
+  const store3 = sessionStoreManager.getState().stores.get(task.sessionId);
+  const conversationId = store3?.getState().conversationId;
+  if (!conversationId) {
+    log27.warn("\u4E2D\u65AD\u5931\u8D25\uFF1A\u6D3E\u53D1\u4F1A\u8BDD\u65E0 conversationId", { dispatchId });
+    return;
+  }
+  const engineId = sessionStoreManager.getState().sessionMetadata.get(task.sessionId)?.engineId;
+  try {
+    await aiChatDispatch({ action: "interrupt", sessionId: conversationId, engineId });
+    log27.info("\u6D3E\u53D1\u4EFB\u52A1\u5DF2\u4E2D\u65AD", { dispatchId });
+  } catch (e3) {
+    log27.error("\u4E2D\u65AD\u6D3E\u53D1\u4EFB\u52A1\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { dispatchId });
+  }
+}
+async function continueDispatchedTask(dispatchId, prompt, options2) {
+  const trimmed = prompt.trim();
+  if (!trimmed) return false;
+  const dispatchStore = useDispatchStore.getState();
+  const task = dispatchStore.getTask(dispatchId);
+  if (!task) {
+    log27.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u672C\u5730\u65E0\u4EFB\u52A1\u89C6\u56FE", { dispatchId });
+    return false;
+  }
+  if (task.status === "running" || task.status === "pending") {
+    log27.warn("\u7EED\u6D3E\u62D2\u7EDD\uFF1A\u4EFB\u52A1\u4ECD\u5728\u6267\u884C", { dispatchId });
+    return false;
+  }
+  const manager = sessionStoreManager.getState();
+  let store3 = manager.stores.get(task.sessionId);
+  const conversationId = store3?.getState().conversationId || options2?.conversationId;
+  if (!store3 && conversationId) {
+    manager.createSession({
+      id: task.sessionId,
+      type: "free",
+      title: task.title,
+      engineId: task.engineId,
+      silentMode: true
+    });
+    store3 = sessionStoreManager.getState().stores.get(task.sessionId);
+    store3?.setState({ conversationId });
+    log27.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u6062\u590D\uFF08\u5386\u53F2\u672A\u52A0\u8F7D\uFF09", { dispatchId, sessionId: task.sessionId });
+  }
+  if (!store3 || !conversationId) {
+    log27.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0E conversationId \u5747\u4E0D\u53EF\u7528", { dispatchId });
+    return false;
+  }
+  sessionStoreManager.getState().addToBackground(task.sessionId);
+  useDispatchStore.getState().updateTask(dispatchId, {
+    status: "running",
+    endedAt: void 0,
+    latestActivity: void 0,
+    error: void 0
+  });
+  const unsubscribe = attachDispatchSessionHandler(dispatchId, task.sessionId);
+  try {
+    await aiChatDispatchStream({
+      sessionId: conversationId,
+      message: trimmed,
+      options: {
+        workDir: task.workDir,
+        contextId: task.sessionId,
+        engineId: task.engineId,
+        enableMcpTools: true
+      }
+    });
+    void reportStatus(dispatchId, "running", { conversationId });
+    log27.info("\u6D3E\u53D1\u4EFB\u52A1\u7EED\u6D3E\u6210\u529F", { dispatchId });
+    return true;
+  } catch (e3) {
+    const message = e3 instanceof Error ? e3.message : String(e3);
+    log27.error("\u7EED\u6D3E\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message), { dispatchId });
+    unsubscribe();
+    useDispatchStore.getState().finishTask(dispatchId, "failed", message, message);
+    void reportStatus(dispatchId, "failed", { summary: message });
+    return false;
+  }
+}
+async function handOffResultToSource(dispatchId) {
+  const task = useDispatchStore.getState().getTask(dispatchId);
+  if (!task?.sourceSessionId) return false;
+  const store3 = sessionStoreManager.getState().stores.get(task.sourceSessionId);
+  if (!store3) return false;
+  if (await kernelSessionIsStreaming(task.sourceSessionId)) return false;
+  const statusText = task.status === "completed" ? i18n_default.t("chat:dispatch.reportDone", "\u5DF2\u5B8C\u6210") : i18n_default.t("chat:dispatch.reportFailed", "\u5931\u8D25");
+  const message = i18n_default.t("chat:dispatch.handOffMessage", {
+    defaultValue: "\u540E\u53F0\u6D3E\u53D1\u4EFB\u52A1\u300C{{title}}\u300D{{status}}\uFF0C\u8BF7\u5904\u7406\u5176\u7ED3\u679C\uFF1A\n{{summary}}",
+    title: task.title,
+    status: statusText,
+    summary: task.summary || task.error || "",
+    interpolation: { escapeValue: false }
+  });
+  useDispatchStore.getState().removeReport(task.sourceSessionId, dispatchId);
+  sessionStoreManager.getState().makeSessionVisible(task.sourceSessionId);
+  await store3.getState().sendMessage(message);
+  return true;
+}
+
+// src/host/services/sessionArchive.ts
+var sessionArchive_exports = {};
+__export(sessionArchive_exports, {
+  loadBackendMessages: () => loadBackendMessages2
+});
+init_services();
+init_logger();
+var log28 = createLogger("SessionBackendMessages");
+async function loadBackendMessages2(conversationId) {
+  if (!conversationId) return [];
+  try {
+    const entries2 = await invoke("message_read", { conversationId });
+    return (entries2 ?? []).map((e3) => e3?.content).filter((c4) => !!c4 && typeof c4 === "object" && "type" in c4);
+  } catch (e3) {
+    log28.warn("\u8BFB\u53D6\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+    return [];
+  }
+}
+
+// src/bootstrap.ts
+init_webReconnectResync();
+init_contextCompactHandoff();
 init_services();
 
 // src/host/stores/compactHandoffStore.ts
@@ -333714,7 +334347,7 @@ var useToastStore2 = create()(
 // src/host/stores/compactHandoffStore.ts
 init_sessionStoreManager();
 init_contextCompactHandoff();
-var log27 = createLogger("CompactHandoffStore");
+var log29 = createLogger("CompactHandoffStore");
 async function onCopyPromptReady(briefing, sourceTitle) {
   try {
     await copyToClipboard(briefing);
@@ -333729,7 +334362,7 @@ async function onCopyPromptReady(briefing, sourceTitle) {
       i18n_default.t("chat:compactHandoff.failToast"),
       i18n_default.t("chat:compactHandoff.copyPromptCopyFailed")
     );
-    log27.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log29.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 var activeAbort = null;
@@ -333764,10 +334397,10 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
           }
         });
         if (cancelled) {
-          log27.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
+          log29.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
         } else if (result.ok && result.briefing && params.mode === "copyPrompt") {
           await onCopyPromptReady(result.briefing, params.sourceTitle);
-          log27.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
+          log29.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
         } else if (result.ok && result.newSessionId) {
           const newSessionId = result.newSessionId;
           useToastStore2.getState().addToast({
@@ -333781,7 +334414,7 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
               onClick: () => sessionStoreManager.getState().switchSession(newSessionId)
             }
           });
-          log27.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
+          log29.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
         } else {
           useToastStore2.getState().error(
             i18n_default.t("chat:compactHandoff.failToast"),
@@ -333790,10 +334423,10 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
         }
       } catch (e3) {
         if (cancelled) {
-          log27.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
+          log29.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
         } else {
           useToastStore2.getState().error(i18n_default.t("chat:compactHandoff.failToast"), String(e3));
-          log27.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
+          log29.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
         }
       } finally {
         if (activeAbort === abort) activeAbort = null;
@@ -333818,7 +334451,7 @@ if (typeof window !== "undefined") {
 
 // src/bootstrap.ts
 init_logger();
-var log28 = createLogger("chat-desk:bootstrap");
+var log30 = createLogger("chat-desk:bootstrap");
 var bootstrapped = false;
 function ensureChatDomainBootstrapped() {
   if (bootstrapped) return;
@@ -333829,28 +334462,23 @@ function ensureChatDomainBootstrapped() {
       core5.stores.sessionStoreManager = sessionStoreManager;
       core5.stores.useActiveSession = useActiveSession_exports;
     }
-    core5.services.sessionRestore = {
-      restoreFromHistory,
-      forkSession
-    };
-    core5.services.sessionHandoff = {
-      getHandoffEligibility,
-      handoffSessionToNewSession
-    };
-    core5.services.aiChatDispatch = {
-      aiChatDispatch,
-      aiChatDispatchStream
-    };
+    core5.services.sessionRestore = Object.assign({}, sessionRestore_exports);
+    core5.services.sessionHandoff = Object.assign({}, sessionHandoff_exports);
+    core5.services.aiChatDispatch = Object.assign({}, aiChatDispatch_exports);
+    core5.services.dispatchTaskService = Object.assign({}, dispatchTaskService_exports);
+    core5.services.sessionArchive = Object.assign({}, sessionArchive_exports);
+    core5.services.webReconnectResync = Object.assign({}, webReconnectResync_exports);
+    core5.services.contextCompactHandoff = Object.assign({}, contextCompactHandoff_exports);
     void ensureEventRouterInitialized();
     void sessionStoreManager.getState().initialize();
     try {
       ;
       remoteSessionFollower.start?.();
     } catch (e3) {
-      log28.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
+      log30.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
     }
   } catch (e3) {
-    log28.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log30.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 
@@ -334304,7 +334932,7 @@ init_services();
 init_path();
 init_logger();
 init_services();
-var log29 = createLogger("ContextBlockRegistry");
+var log31 = createLogger("ContextBlockRegistry");
 var TCB_DIR = ".polaris-handoff";
 var kindRegistry = /* @__PURE__ */ new Map();
 function registerContextBlockKind(kind, spec) {
@@ -334360,7 +334988,7 @@ async function materializeContextBlocks(blocks2, workspacePath) {
         };
       }
     } catch (e3) {
-      log29.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
+      log31.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
     }
   }
   const body = formatContextBlocks(blocks2);
@@ -334378,7 +335006,7 @@ async function packContextBlocksAsReference(blocks2, workspacePath) {
   const relPath = `${TCB_DIR}/${fileName}`;
   const absPath = joinPath(workspacePath, relPath);
   await invoke("create_file", { path: absPath, content: markdown2 });
-  log29.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
+  log31.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
   return { hasContent: true, fileRef: { relPath, absPath } };
 }
 function formatContextBlock(block2) {
@@ -335226,7 +335854,7 @@ init_misc();
 init_stores();
 init_types2();
 import { Fragment as Fragment17, jsx as jsx49, jsxs as jsxs43 } from "react/jsx-runtime";
-var log30 = createLogger("ChatInput");
+var log32 = createLogger("ChatInput");
 var OPTIMIZE_ENGINE_OPTIONS = [
   { id: "claude-code", label: "Claude", Icon: Bot },
   { id: "simple-ai", label: "Simple", Icon: Zap }
@@ -335368,7 +335996,7 @@ function ChatInput({
     };
   }, [activeSessionId, cancelPersistDraft]);
   useEffect22(() => {
-    log30.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
+    log32.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
       textLen: inputDraft.text?.length,
       attachLen: inputDraft.attachments?.length,
       blockLen: inputDraft.contextBlocks?.length ?? 0
@@ -335413,7 +336041,7 @@ function ChatInput({
       }));
       setConversationMatches(items);
     } catch (e3) {
-      log30.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
+      log32.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
       setConversationMatches([]);
     }
   }, []);
@@ -335447,7 +336075,7 @@ function ChatInput({
   const addAttachment = useCallback25(async (file, source) => {
     const validation = validateAttachment(file);
     if (!validation.valid) {
-      log30.warn("Attachment validation failed", { error: validation.error });
+      log32.warn("Attachment validation failed", { error: validation.error });
       useToastStore.getState().error(validation.error);
       return;
     }
@@ -335455,7 +336083,7 @@ function ChatInput({
     const newAttachments = [...attachments, attachment];
     const totalValidation = validateAttachments(newAttachments);
     if (!totalValidation.valid) {
-      log30.warn("Total attachment validation failed", { error: totalValidation.error });
+      log32.warn("Total attachment validation failed", { error: totalValidation.error });
       useToastStore.getState().error(totalValidation.error);
       return;
     }
@@ -336058,7 +336686,7 @@ function ChatInput({
           const replaced = beforeCursor.replace(/@对话(?:\s+\S*)?$/, `@${fileRef.relPath} `) + afterCursor;
           setLocalText(replaced);
           debouncedPersistDraft(replaced, attachments);
-          log30.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
+          log32.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
           setTimeout(() => {
             textarea.focus();
             const newCursorPos = replaced.length - afterCursor.length;
@@ -336066,7 +336694,7 @@ function ChatInput({
           }, 0);
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log30.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
+          log32.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
           useToastStore.getState().error(t5("handoff.failToast"), err.message);
         }
       })();

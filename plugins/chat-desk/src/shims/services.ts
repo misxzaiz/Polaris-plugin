@@ -48,8 +48,9 @@ export const maybeAutoMigrateOpfs: AnyFn = (...args) => (coreService<any>('maybe
 // P6：eventRouter 实现随域迁入插件（host/services/eventRouter），不再经宿主桥。
 // 静态 import 自实现模块（无环：eventRouter → manager → shims/stores → core，
 // shims/services 不被那条链引用）。
-import { getEventRouter as _localGetEventRouter } from '../host/services/eventRouter'
+import { getEventRouter as _localGetEventRouter, resetEventRouter, ensureEventRouterInitialized } from '../host/services/eventRouter'
 export const getEventRouter: AnyFn = (...args) => (_localGetEventRouter as AnyFn)(...args)
+export { resetEventRouter, ensureEventRouterInitialized }
 export const eventBus: any = lazyObj('eventBus')
 
 // ── 跨端/静默服务 ──

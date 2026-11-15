@@ -11,10 +11,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const invokeMock = vi.fn()
 
-vi.mock('@/services/transport', () => ({
-  listen: vi.fn(() => Promise.resolve(vi.fn())),
-  invoke: (...args: unknown[]) => invokeMock(...args),
-}))
+// P6 插件布局：'@/services/transport' 与 '@/services/eventRouter' 在插件 alias 下
+// 都指向 shims/services.ts（单一 barrel），故 mock 工厂须同时提供 barrel 上
+// 测试所需成员（getEventRouter/resetEventRouter 来自本地 eventRouter 实现）。
+vi.mock('@/services/transport', async () => {
+  const eventRouter = await import('./eventRouter')
+  return {
+    listen: vi.fn(() => Promise.resolve(vi.fn())),
+    invoke: (...args: unknown[]) => invokeMock(...args),
+    getEventRouter: eventRouter.getEventRouter,
+    resetEventRouter: eventRouter.resetEventRouter,
+    ensureEventRouterInitialized: eventRouter.ensureEventRouterInitialized,
+  }
+})
 
 vi.mock('@/i18n', () => ({
   default: {

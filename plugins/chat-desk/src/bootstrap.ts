@@ -16,6 +16,10 @@ import { ensureEventRouterInitialized } from './host/services/eventRouter'
 import * as _sessionRestoreSvc from './host/services/sessionRestore'
 import * as _sessionHandoffSvc from './host/services/sessionHandoff'
 import * as _aiChatDispatchSvc from './host/services/aiChatDispatch'
+import * as _dispatchTaskSvc from './host/services/dispatchTaskService'
+import * as _sessionArchiveSvc from './host/services/sessionArchive'
+import * as _webReconnectResyncSvc from './host/services/webReconnectResync'
+import * as _contextCompactHandoffSvc from './host/services/contextCompactHandoff'
 import { remoteSessionFollower } from './shims/services'
 // 保证 compactHandoffStore 打进 bundle 并执行全局自挂（shims 惰性代理的数据源）
 import '@/host/stores/compactHandoffStore'
@@ -42,18 +46,15 @@ export function ensureChatDomainBootstrapped(): void {
     // 2) 服务回挂（无条件）：宿主 sessionHostApi（history-desk 的
     // __POLARIS_SESSION_API__）、QuickSwitch 续接与 sessionBus 经此工作。
     // 顶层静态 import，模块加载即同步回挂——早于任何 chrome 渲染。
-    core.services.sessionRestore = {
-      restoreFromHistory: _sessionRestoreSvc.restoreFromHistory,
-      forkSession: _sessionRestoreSvc.forkSession,
-    }
-    core.services.sessionHandoff = {
-      getHandoffEligibility: _sessionHandoffSvc.getHandoffEligibility,
-      handoffSessionToNewSession: _sessionHandoffSvc.handoffSessionToNewSession,
-    }
-    core.services.aiChatDispatch = {
-      aiChatDispatch: _aiChatDispatchSvc.aiChatDispatch,
-      aiChatDispatchStream: _aiChatDispatchSvc.aiChatDispatchStream,
-    }
+    // 对话域服务整体回挂（spread 全量导出）——这些服务已随域迁出宿主，
+    // shims/services 的按成员转发经此命名空间工作。
+    core.services.sessionRestore = Object.assign({}, _sessionRestoreSvc)
+    core.services.sessionHandoff = Object.assign({}, _sessionHandoffSvc)
+    core.services.aiChatDispatch = Object.assign({}, _aiChatDispatchSvc)
+    core.services.dispatchTaskService = Object.assign({}, _dispatchTaskSvc)
+    core.services.sessionArchive = Object.assign({}, _sessionArchiveSvc)
+    core.services.webReconnectResync = Object.assign({}, _webReconnectResyncSvc)
+    core.services.contextCompactHandoff = Object.assign({}, _contextCompactHandoffSvc)
 
     // 2) 事件路由 + 会话域初始化（原宿主 useAppInit 子集）
     void ensureEventRouterInitialized()
