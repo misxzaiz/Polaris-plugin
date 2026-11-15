@@ -63,8 +63,17 @@ export const useFileEditorStore = useStoreHook('useFileEditorStore') as any
 export const useCompactHandoffStore = useStoreHook('useCompactHandoffStore') as any
 export const useDispatchStore = useStoreHook('useDispatchStore') as any
 
-// sessionStoreManager（宿主 zustand store，非 hook 命名）
-export const sessionStoreManager: any = store('sessionStoreManager')
+// sessionStoreManager（P6：单写者随域迁入插件）——
+// 优先读反向桥（bootstrap 回挂的插件内实例，宿主 sessionDirectory 也从桥读）；
+// 灰度中间态桥上是宿主实现。桥上无该键（bootstrap 未跑）时惰性兜底，
+// 避免 shims 顶层求值固化 undefined。
+export const sessionStoreManager: any = new Proxy({} as Record<string, unknown>, {
+  get(_t, prop: string) {
+    const fromBridge = coreStore<Record<string, any>>('sessionStoreManager')
+    if (fromBridge) return fromBridge[prop as string]
+    return undefined
+  },
+})
 
 // ── 非 hook 具名导出（宿主单例转发）──
 export function getSessionConfig(): any {

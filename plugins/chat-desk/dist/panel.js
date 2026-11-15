@@ -2162,7 +2162,13 @@ var init_stores = __esm({
     useFileEditorStore = useStoreHook("useFileEditorStore");
     useCompactHandoffStore = useStoreHook("useCompactHandoffStore");
     useDispatchStore = useStoreHook("useDispatchStore");
-    sessionStoreManager = store("sessionStoreManager");
+    sessionStoreManager = new Proxy({}, {
+      get(_t, prop) {
+        const fromBridge = coreStore("sessionStoreManager");
+        if (fromBridge) return fromBridge[prop];
+        return void 0;
+      }
+    });
     hostActive = new Proxy({}, {
       get: (_t, p3) => {
         const ua = coreStore("useActiveSession");
