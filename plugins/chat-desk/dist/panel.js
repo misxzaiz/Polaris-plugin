@@ -3592,13 +3592,6 @@ var init_registry = __esm({
 });
 
 // src/host/services/sessionRestore.ts
-var sessionRestore_exports = {};
-__export(sessionRestore_exports, {
-  ensureWorkspace: () => ensureWorkspace,
-  forkSession: () => forkSession,
-  loadMessagesForItem: () => loadMessagesForItem,
-  restoreFromHistory: () => restoreFromHistory
-});
 async function mergeBackendMessages(conversationId, archived) {
   const backend = await loadBackendMessages(conversationId);
   if (backend.length === 0) return archived;
@@ -4072,14 +4065,6 @@ var init_conversationPackager = __esm({
 });
 
 // src/host/services/sessionHandoff.ts
-var sessionHandoff_exports = {};
-__export(sessionHandoff_exports, {
-  getHandoffEligibility: () => getHandoffEligibility,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
-  handoffSessionToNewSession: () => handoffSessionToNewSession,
-  loadConversationMessages: () => loadConversationMessages
-});
 function getHandoffEligibility(sessionId) {
   const manager = sessionStoreManager.getState();
   const meta3 = manager.sessionMetadata.get(sessionId);
@@ -4126,42 +4111,6 @@ async function handoffSessionToNewSession(sessionId, targetEngineId) {
   } catch (e3) {
     const err = e3 instanceof Error ? e3 : new Error(String(e3));
     log4.error("\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sessionId });
-    return { ok: false, error: err.message };
-  }
-}
-function getHistoryHandoffEligibility(item, fallbackWorkspaceId) {
-  if (!item.id) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
-  if (!item.projectPath && !fallbackWorkspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
-  return { enabled: true };
-}
-async function handoffHistorySessionToNewSession(item, fallbackWorkspaceId, targetEngineId) {
-  try {
-    const workspaceId = await resolveHistoryWorkspaceId(item, fallbackWorkspaceId);
-    if (!workspaceId) {
-      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
-    }
-    const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
-    if (!workspace?.path) {
-      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
-    }
-    const chatMessages = await loadHistoryChatMessages(item);
-    if (chatMessages.length === 0) {
-      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
-    }
-    const sourceEngineId = normalizeEngineId(item.engineId);
-    const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
-    return await createHandoffSession({
-      messages: chatMessages,
-      sourceTitle: item.title,
-      sourceEngineId,
-      sourceConversationId: item.id,
-      targetEngineId: targetEngine,
-      workspaceId,
-      workspacePath: workspace.path
-    });
-  } catch (e3) {
-    const err = e3 instanceof Error ? e3 : new Error(String(e3));
-    log4.error("\u5386\u53F2\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sourceId: item.id });
     return { ok: false, error: err.message };
   }
 }
@@ -4239,50 +4188,11 @@ async function loadConversationMessages(engineId, conversationId, fallbackMessag
   }
   return [];
 }
-async function loadHistoryChatMessages(item) {
-  const engineId = normalizeEngineId(item.engineId);
-  try {
-    if (engineId === "claude-code") {
-      const raw = await aiHistoryDispatch({
-        action: "get_claude_history",
-        sessionId: item.id,
-        projectPath: item.claudeProjectName
-      });
-      return raw.length > 0 ? withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId) : [];
-    }
-    const msgs = await dialogStorageService.getConversationMessages(item.id);
-    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages(msgs), engineId) : [];
-  } catch (e3) {
-    log4.warn("\u52A0\u8F7D\u5386\u53F2\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { sourceId: item.id, engineId, error: String(e3) });
-    return [];
-  }
-}
 function withAssistantEngineId2(messages, engineId) {
   return messages.map((message) => {
     if (message.type !== "assistant" || message.engineId) return message;
     return { ...message, engineId };
   });
-}
-async function resolveHistoryWorkspaceId(item, fallbackWorkspaceId) {
-  const projectPath = item.projectPath?.trim();
-  const workspaceState = useWorkspaceStore.getState();
-  if (projectPath) {
-    const normalizedProjectPath = normalizeWorkspacePath(projectPath);
-    let workspace = workspaceState.workspaces.find(
-      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
-    );
-    if (workspace) return workspace.id;
-    try {
-      await workspaceState.createWorkspace(getPathBasename(projectPath), projectPath, false);
-      workspace = useWorkspaceStore.getState().workspaces.find(
-        (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
-      );
-      if (workspace) return workspace.id;
-    } catch (error3) {
-      log4.warn("Failed to resolve handoff workspace", { error: String(error3), projectPath });
-    }
-  }
-  return fallbackWorkspaceId ?? void 0;
 }
 var log4;
 var init_sessionHandoff = __esm({
@@ -5922,12 +5832,12 @@ __export(services_exports, {
   getDefaultCompactInstruction: () => getDefaultCompactInstruction2,
   getEventRouter: () => getEventRouter2,
   getHandoffEligibility: () => getHandoffEligibility2,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility2,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
   getPendingPlans: () => getPendingPlans,
   getPendingQuestions: () => getPendingQuestions,
   getTracker: () => getTracker,
   getUserSystemPrompt: () => getUserSystemPrompt,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession2,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
   handoffSessionToNewSession: () => handoffSessionToNewSession2,
   initDispatchTaskListener: () => initDispatchTaskListener,
   invoke: () => invoke,
@@ -5996,7 +5906,7 @@ function aiChatDispatch(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, currentMode, aiChatDispatchStream, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap, manualRefreshActiveSession, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility, handoffHistorySessionToNewSession, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -6034,8 +5944,8 @@ var init_services = __esm({
     aiHistoryDispatch = (...args) => coreService("aiHistoryDispatch").aiHistoryDispatch(...args);
     getHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
     handoffSessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
-    getHistoryHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
-    handoffHistorySessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
+    getHistoryHandoffEligibility = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
+    handoffHistorySessionToNewSession = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
     loadConversationMessages2 = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
     compactAndHandoff2 = (...args) => compactAndHandoff(...args);
     requestCompactHandoff = (...args) => compactAndHandoff(...args);
@@ -311431,34 +311341,6 @@ var require_core = __commonJS({
   }
 });
 
-// src/host/services/aiChatDispatch.ts
-var aiChatDispatch_exports = {};
-__export(aiChatDispatch_exports, {
-  aiChatDispatch: () => aiChatDispatch2,
-  aiChatDispatchStream: () => aiChatDispatchStream2
-});
-async function aiChatDispatch2(payload) {
-  const res = await invoke("router_dispatch", {
-    req: { target: TARGET, payload }
-  });
-  if (!res.ok) {
-    throw new Error(res.error || "cap.ai.chat " + String(payload.action ?? "") + " \u5931\u8D25");
-  }
-  return res.result;
-}
-async function aiChatDispatchStream2(payload) {
-  return invoke("router_dispatch_stream", {
-    req: { target: TARGET, payload }
-  });
-}
-var TARGET;
-var init_aiChatDispatch = __esm({
-  "src/host/services/aiChatDispatch.ts"() {
-    init_services();
-    TARGET = "cap.ai.chat";
-  }
-});
-
 // src/host/Chat/compact-handoff/CompactHandoffModal.tsx
 var CompactHandoffModal_exports = {};
 __export(CompactHandoffModal_exports, {
@@ -333572,6 +333454,28 @@ init_core();
 init_sessionStoreManager();
 init_useActiveSession();
 init_eventRouter();
+init_sessionRestore();
+init_sessionHandoff();
+
+// src/host/services/aiChatDispatch.ts
+init_services();
+var TARGET = "cap.ai.chat";
+async function aiChatDispatch2(payload) {
+  const res = await invoke("router_dispatch", {
+    req: { target: TARGET, payload }
+  });
+  if (!res.ok) {
+    throw new Error(res.error || "cap.ai.chat " + String(payload.action ?? "") + " \u5931\u8D25");
+  }
+  return res.result;
+}
+async function aiChatDispatchStream2(payload) {
+  return invoke("router_dispatch_stream", {
+    req: { target: TARGET, payload }
+  });
+}
+
+// src/bootstrap.ts
 init_services();
 
 // src/host/stores/compactHandoffStore.ts
@@ -333807,9 +333711,18 @@ function ensureChatDomainBootstrapped() {
     if (!core5.stores.sessionStoreManager) {
       core5.stores.sessionStoreManager = sessionStoreManager;
       core5.stores.useActiveSession = useActiveSession_exports;
-      Promise.resolve().then(() => init_sessionRestore());
-      Promise.resolve().then(() => init_sessionHandoff());
-      Promise.resolve().then(() => init_aiChatDispatch());
+      core5.services.sessionRestore = {
+        restoreFromHistory,
+        forkSession
+      };
+      core5.services.sessionHandoff = {
+        getHandoffEligibility,
+        handoffSessionToNewSession
+      };
+      core5.services.aiChatDispatch = {
+        aiChatDispatch: aiChatDispatch2,
+        aiChatDispatchStream: aiChatDispatchStream2
+      };
     }
     void ensureEventRouterInitialized();
     void sessionStoreManager.getState().initialize();

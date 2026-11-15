@@ -13,6 +13,9 @@ import { getAppCore } from './core'
 import { sessionStoreManager } from './host/conversationStore/sessionStoreManager'
 import * as useActiveSession from './host/conversationStore/useActiveSession'
 import { ensureEventRouterInitialized } from './host/services/eventRouter'
+import * as _sessionRestoreSvc from './host/services/sessionRestore'
+import * as _sessionHandoffSvc from './host/services/sessionHandoff'
+import * as _aiChatDispatchSvc from './host/services/aiChatDispatch'
 import { remoteSessionFollower } from './shims/services'
 // 保证 compactHandoffStore 打进 bundle 并执行全局自挂（shims 惰性代理的数据源）
 import '@/host/stores/compactHandoffStore'
@@ -37,10 +40,19 @@ export function ensureChatDomainBootstrapped(): void {
       core.stores.useActiveSession = useActiveSession
       // sessionRestore/sessionHandoff/aiChatDispatch 服务回挂：宿主 sessionHostApi
       //（history-desk 的 __POLARIS_SESSION_API__）、QuickSwitch 续接与 sessionBus
-      // 经此工作。静态 import 同步回挂——早于任何 chrome 渲染。
-      import('./host/services/sessionRestore')
-      import('./host/services/sessionHandoff')
-      import('./host/services/aiChatDispatch')
+      // 经此工作。顶层静态 import，模块加载即同步回挂——早于任何 chrome 渲染。
+      core.services.sessionRestore = {
+        restoreFromHistory: _sessionRestoreSvc.restoreFromHistory,
+        forkSession: _sessionRestoreSvc.forkSession,
+      }
+      core.services.sessionHandoff = {
+        getHandoffEligibility: _sessionHandoffSvc.getHandoffEligibility,
+        handoffSessionToNewSession: _sessionHandoffSvc.handoffSessionToNewSession,
+      }
+      core.services.aiChatDispatch = {
+        aiChatDispatch: _aiChatDispatchSvc.aiChatDispatch,
+        aiChatDispatchStream: _aiChatDispatchSvc.aiChatDispatchStream,
+      }
     }
 
     // 2) 事件路由 + 会话域初始化（原宿主 useAppInit 子集）
