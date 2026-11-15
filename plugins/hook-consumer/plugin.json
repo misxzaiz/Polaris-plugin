@@ -6,22 +6,40 @@
   "enabledByDefault": true,
   "contributes": {
     "mcpServers": [
-      { "id": "hook-consumer", "command": "node", "args": ["mcp/server.mjs"] }
+      {
+        "id": "hook-consumer",
+        "transport": "stdio",
+        "command": "node",
+        "argsTemplate": [
+          "{{pluginDir}}/mcp/server.mjs",
+          "{{appConfigDir}}",
+          "{{workspacePath}}",
+          "{{pluginDir}}"
+        ]
+      }
     ],
     "capabilities": [
       {
         "id": "cap.hook-consumer.rpc",
         "summary": "hook 回调入口（宿主 dispatch hooks 时经 plugin-rpc 调用）",
         "handler": {
-          "type": "plugin-rpc",
-          "serverId": "hook-consumer",
-          "tool": "on_hook"
+          "plugin-rpc": {
+            "plugin_id": "hook-consumer",
+            "server_id": "hook-consumer",
+            "tool": "on_hook"
+          }
         }
       }
     ],
     "hooks": [
-      { "id": "ai.session.start", "capId": "cap.hook-consumer.rpc" },
-      { "id": "ai.session.end", "capId": "cap.hook-consumer.rpc" }
+      {
+        "id": "ai.session.start",
+        "capId": "cap.hook-consumer.rpc"
+      },
+      {
+        "id": "ai.session.end",
+        "capId": "cap.hook-consumer.rpc"
+      }
     ]
   }
 }
