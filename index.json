@@ -5336,14 +5336,14 @@
       "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chat-desk/plugin.json",
       "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@chat-desk-v0.1.0/plugins/chat-desk/chat-desk.zip",
       "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/chat-desk/update.json",
-      "sha256": "f8934f30a9e6564fa71806df545ffd9e51847ccafdd9978471d7cad8c44fe5ed",
+      "sha256": "78cd25fd69ff2b7fa58016cf23f89d3f9e3f98a22f58d4e01fc224f89513b453",
       "versions": [
         {
           "version": "0.1.0",
           "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@chat-desk-v0.1.0/plugins/chat-desk/chat-desk.zip"
         }
       ],
-      "updatedAt": "2026-11-15T04:23:25.733Z",
+      "updatedAt": "2026-11-15T04:35:55.764Z",
       "createdAt": "2026-11-15T04:23:25.733Z"
     }
   ]

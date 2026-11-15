@@ -1,0 +1,6 @@
+node_modules/
+src/
+tsconfig.json
+tsconfig.typecheck.json
+scripts/
+chat-desk.zip
