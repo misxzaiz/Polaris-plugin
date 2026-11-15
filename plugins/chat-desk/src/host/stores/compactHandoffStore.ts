@@ -12,7 +12,7 @@
 import { create } from 'zustand'
 import i18n from 'i18next'
 import { createLogger } from '@/utils/logger'
-import { useToastStore } from '../../shims/stores'
+import { useToastStore } from './toastStore'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
 import {
   compactAndHandoff,
@@ -151,8 +151,11 @@ export const useCompactHandoffStore = create<CompactHandoffState>((set, get) => 
   },
 }))
 
-// 供 shims/stores 的惰性代理在模块循环下取到本实现（循环安全：运行时才读）
-;(globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ = {
-  ...((globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ as Record<string, unknown> | undefined),
-  useCompactHandoffStore,
+// 供 shims/stores 的惰性代理在模块循环下取到本实现（循环安全：运行时才读）。
+// 双写 globalThis 与 window（面板 realm 读 window；不同运行环境取其一）。
+const __localStores = (((globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__) ?? {}) as Record<string, unknown>
+__localStores.useCompactHandoffStore = useCompactHandoffStore
+;(globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ = __localStores
+;if (typeof window !== 'undefined') {
+  ;(window as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_STORES__ = __localStores
 }

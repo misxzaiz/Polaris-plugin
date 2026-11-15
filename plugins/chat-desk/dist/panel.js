@@ -11800,11 +11800,11 @@ var init_stores = __esm({
     useFileEditorStore = useStoreHook("useFileEditorStore");
     useCompactHandoffStore = new Proxy(() => void 0, {
       get(_t, prop) {
-        const real = globalThis.__CHAT_DESK_LOCAL_STORES__.useCompactHandoffStore;
+        const real = globalThis.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore ?? window.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore;
         return real[prop];
       },
       apply(_t, _this, args) {
-        const real = globalThis.__CHAT_DESK_LOCAL_STORES__.useCompactHandoffStore;
+        const real = globalThis.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore ?? window.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore;
         return real(...args);
       }
     });

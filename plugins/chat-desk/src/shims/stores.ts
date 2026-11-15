@@ -65,11 +65,13 @@ export const useFileEditorStore = useStoreHook('useFileEditorStore') as any
 // （host/stores/compactHandoffStore ↔ shims/stores 存在模块循环，顶层取值会固化 undefined）
 export const useCompactHandoffStore: any = new Proxy((() => undefined) as any, {
   get(_t, prop: string) {
-    const real = (globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__.useCompactHandoffStore
+    const real = (globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore
+      ?? (window as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore
     return (real as Record<string, unknown>)[prop]
   },
   apply(_t, _this, args) {
-    const real = (globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__.useCompactHandoffStore
+    const real = (globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore
+      ?? (window as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore
     return (real as (...a: unknown[]) => unknown)(...args)
   },
 })
