@@ -1,0 +1,27 @@
+{
+  "id": "hook-consumer",
+  "name": "Hook Consumer",
+  "version": "0.1.0",
+  "description": "验证 hook 体系多插件配合：订阅 ai.session.start/end，回调经 MCP 工具落日志",
+  "enabledByDefault": true,
+  "contributes": {
+    "mcpServers": [
+      { "id": "hook-consumer", "command": "node", "args": ["mcp/server.mjs"] }
+    ],
+    "capabilities": [
+      {
+        "id": "cap.hook-consumer.rpc",
+        "summary": "hook 回调入口（宿主 dispatch hooks 时经 plugin-rpc 调用）",
+        "handler": {
+          "type": "plugin-rpc",
+          "serverId": "hook-consumer",
+          "tool": "on_hook"
+        }
+      }
+    ],
+    "hooks": [
+      { "id": "ai.session.start", "capId": "cap.hook-consumer.rpc" },
+      { "id": "ai.session.end", "capId": "cap.hook-consumer.rpc" }
+    ]
+  }
+}
