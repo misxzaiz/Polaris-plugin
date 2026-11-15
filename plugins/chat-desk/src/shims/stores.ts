@@ -61,11 +61,12 @@ export const useOverlayStore = useStoreHook('useOverlayStore') as any
 export const useSnippetStore = useStoreHook('useSnippetStore') as any
 export const useSkillStore = useStoreHook('useSkillStore') as any
 export const useFileEditorStore = useStoreHook('useFileEditorStore') as any
-// P6：compactHandoffStore 随对话域迁入插件（宿主已删）。
-// 与本文件存在模块循环——ESM live binding 运行时自愈，直接转发。
-import { useCompactHandoffStore as _localCompactHandoffStore } from '../host/stores/compactHandoffStore'
-export const useCompactHandoffStore: any = ((...args: unknown[]) =>
-  (_localCompactHandoffStore as unknown as (...a: unknown[]) => unknown)(...args))
+// P6：compactHandoffStore 随对话域迁入插件（宿主已删）——直接 re-export 本地实现。
+// 与本文件存在模块循环：host 版模块尾已把实现自挂到 __CHAT_DESK_LOCAL_STORES__，
+// shims 侧用惰性转发避免循环顶层固化 undefined。
+export const useCompactHandoffStore: any = (...args: unknown[]) =>
+  ((globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore ??
+   (window as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore)(...args)
 export const useDispatchStore = useStoreHook('useDispatchStore') as any
 
 // sessionStoreManager（P6：单写者随域迁入插件）——直接用本地实现
