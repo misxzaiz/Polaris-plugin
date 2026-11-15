@@ -1,0 +1,9 @@
+# 打包排除：dist 由 pack 前构建产出，其余源码/测试/构建配置不进 zip
+node_modules
+src
+test
+scripts
+tsconfig.json
+package-lock.json
+*.log
+.loc-lens-smoke

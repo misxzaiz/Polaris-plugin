@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/index.schema.json",
   "version": "1.1.0",
-  "updated": "2026-11-15T04:10:07.372Z",
+  "updated": "2026-11-15T10:44:30.352Z",
   "marketplace": {
     "name": "Polaris Plugin Marketplace",
     "homepage": "https://github.com/misxzaiz/Polaris-plugin",
@@ -5345,6 +5345,28 @@
       ],
       "updatedAt": "2026-11-15T04:35:55.764Z",
       "createdAt": "2026-11-15T04:23:25.733Z"
+    },
+    {
+      "id": "loc-lens",
+      "name": "行数透视台",
+      "version": "0.1.0",
+      "description": "实时查看当前项目各模块代码行数：自动跟随 Polaris 当前工作区（切换项目即自动重扫），也可手动指定任意目录。按一级目录分桶统计物理行数（Buffer 字节级计数，UTF-8/GBK 等任意编码精确），附非空行、语言分布、二进制/锁文件跳过明细；fs.watch 递归监听 + 防抖增量重算，改代码后约 2 秒内自动反映，无需手动刷新。数据全部本地处理，零网络出站，零写入用户文件。",
+      "author": "Polaris",
+      "category": "dev",
+      "tags": [
+        "code-stats",
+        "lines-of-code",
+        "metrics",
+        "panel",
+        "devtools"
+      ],
+      "icon": "Barcode",
+      "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/loc-lens",
+      "repository": "https://github.com/misxzaiz/Polaris-plugin",
+      "manifestUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/loc-lens/plugin.json",
+      "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/loc-lens/loc-lens.zip",
+      "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/loc-lens/update.json",
+      "enabledByDefault": true
     }
   ]
 }

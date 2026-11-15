@@ -1,0 +1,48 @@
+{
+  "id": "loc-lens",
+  "name": "行数透视台",
+  "version": "0.1.0",
+  "description": "实时查看当前项目各模块代码行数：自动跟随 Polaris 当前工作区（切换项目即自动重扫），也可手动指定任意目录。按一级目录分桶统计物理行数（Buffer 字节级计数，UTF-8/GBK 等任意编码精确），附非空行、语言分布、二进制/锁文件跳过明细；fs.watch 递归监听 + 防抖增量重算，改代码后约 2 秒内自动反映，无需手动刷新。数据全部本地处理，零网络出站，零写入用户文件。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "loc-lens.panel",
+        "area": "activityBar",
+        "panelType": "locLens",
+        "icon": "Barcode",
+        "labelKey": "plugins.locLens",
+        "labelDefault": "行数透视台",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js"
+    },
+    "services": [
+      {
+        "id": "loc-lens-server",
+        "type": "http",
+        "command": "node",
+        "argsTemplate": ["{{pluginDir}}/service/main.js", "{{port}}", "{{appConfigDir}}"],
+        "port": 9881,
+        "healthCheck": "/__health",
+        "healthCheckTimeout": 5000,
+        "autoStart": true,
+        "restartOnFailure": true,
+        "maxRestarts": 10,
+        "description": "行数统计引擎（127.0.0.1 监听；目录扫描 + Buffer 计行 + fs.watch 增量；REST API）"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "workspaceRead": true
+  },
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/loc-lens",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/loc-lens/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/loc-lens/loc-lens.zip"
+  }
+}

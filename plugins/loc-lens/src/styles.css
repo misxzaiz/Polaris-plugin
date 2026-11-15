@@ -1,0 +1,5 @@
+/* 行数透视台面板样式 —— esbuild 处理 .css import 时会内联；这里作为 Panel.tsx
+ * `import './styles.css'` 的落点。esbuild --bundle 对 CSS import 默认会尝试输出
+ * 独立 css 文件，为避免多余产物，本文件内容为空，真正的样式在 Panel.tsx 内以
+ * <style>{STYLE}</style> 注入（repo-lens 同款做法，见 Panel.tsx 底部常量）。
+ */

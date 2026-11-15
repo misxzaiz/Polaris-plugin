@@ -1,0 +1,17 @@
+{
+  "name": "loc-lens-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "loc-lens 插件（构建用）：行数透视台——当前项目各模块代码行数实时统计",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime --loader:.css=empty",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/core.test.js"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.0"
+  }
+}
