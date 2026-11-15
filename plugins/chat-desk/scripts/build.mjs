@@ -170,7 +170,13 @@ await build({
   }
 });
 
-const panelCss = readFileSync(join(srcRoot, 'styles.css'), 'utf8');
+// 样式合成：esbuild 会把组件内 side-effect import 的 CSS（DynamicIsland.css 等）
+// 产出到 dist/panel.css；manifest 内联必须合并它与 src/styles.css（全局主题/共享样式），
+// 否则组件样式（如悬浮岛）在运行时缺失。
+const esbuildCssPath = join(pluginRoot, 'dist/panel.css');
+const esbuildCss = exists(esbuildCssPath) ? readFileSync(esbuildCssPath, 'utf8') : '';
+const stylesCss = readFileSync(join(srcRoot, 'styles.css'), 'utf8');
+const panelCss = [esbuildCss, stylesCss].join(String.fromCharCode(10));
 const byId = { panel: panelCss };
 
 for (const filename of ['plugin.json', 'update.json']) {
