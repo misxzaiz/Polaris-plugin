@@ -1,9 +1,265 @@
+// locales/zh-CN.json
+var zh_CN_default = {
+  settings: {
+    dataStorage: {
+      anchorHint: "\u951A\u70B9\u6587\u4EF6",
+      clearing: "\u6E05\u7406\u4E2D\u2026",
+      dialogClearOpfs: "\u6E05\u7406 OPFS\uFF08\u53EF\u9009\uFF09",
+      dialogMigrateBtn: "\u8FC1\u79FB\u5230\u78C1\u76D8",
+      dialogMigrateTitle: "\u5386\u53F2\u5BF9\u8BDD\u8FC1\u79FB",
+      dialogMigrated: "\u5DF2\u8FC1\u79FB",
+      dialogTotal: "\u6761",
+      legacyTitle: "\u68C0\u6D4B\u5230\u65E7\u7248\u6570\u636E",
+      migrate: "\u8FC1\u79FB",
+      migrateMode: "\u51B2\u7A81\u7B56\u7565",
+      migrateOverwrite: "\u8986\u76D6\u5DF2\u8FC1\u79FB\u6807\u8BB0",
+      migrating: "\u8FC1\u79FB\u4E2D\u2026",
+      modeMerge: "\u5408\u5E76\uFF08\u63A8\u8350\uFF09",
+      modeOverwrite: "\u65E7\u7248\u8986\u76D6\u65B0\u7248",
+      restartNow: "\u7ACB\u5373\u91CD\u542F",
+      restartRequired: "\u8FC1\u79FB\u5B8C\u6210\uFF0C\u8BF7\u91CD\u542F\u5E94\u7528",
+      restarting: "\u91CD\u542F\u4E2D\u2026",
+      sources: "\u5904",
+      copied: "\u5DF2\u590D\u5236",
+      sourceEnv: "\u542F\u52A8\u73AF\u5883\u53D8\u91CF",
+      sourceAnchor: "\u951A\u70B9\u81EA\u5B9A\u4E49",
+      sourceDefault: "\u9ED8\u8BA4\u76EE\u5F55",
+      custom: "\u81EA\u5B9A\u4E49\u8DEF\u5F84",
+      default: "\u9ED8\u8BA4\u8DEF\u5F84",
+      title: "\u6570\u636E\u5B58\u50A8",
+      loading: "\u52A0\u8F7D\u4E2D\u2026",
+      refresh: "\u5237\u65B0",
+      loadFailed: "\u52A0\u8F7D\u5931\u8D25",
+      currentLocation: "\u5F53\u524D\u4F4D\u7F6E",
+      open: "\u6253\u5F00",
+      copy: "\u590D\u5236",
+      totalSize: "\u5360\u7528",
+      totalFiles: "\u6587\u4EF6",
+      collapse: "\u6298\u53E0\u5B50\u76EE\u5F55",
+      expand: "\u5C55\u5F00\u5B50\u76EE\u5F55",
+      changeLocation: "\u66F4\u6539\u4F4D\u7F6E\u2026",
+      items: "\u9879",
+      "report.copied": "\u5DF2\u590D\u5236",
+      "report.skipped": "\u8DF3\u8FC7",
+      "report.conflict": "\u51B2\u7A81",
+      "report.failed": "\u5931\u8D25",
+      "report.collapse": "\u6536\u8D77\u8BE6\u60C5",
+      "report.expand": "\u67E5\u770B\u8BE6\u60C5",
+      "report.logFile": "\u65E5\u5FD7",
+      historyPrefsTitle: "\u4F1A\u8BDD\u5386\u53F2\u4F53\u9A8C",
+      historyListPageSize: "\u5217\u8868\u6BCF\u9875\u6761\u6570",
+      historyRestorePageSize: "\u6062\u590D\u9996\u5C4F\u6D88\u606F\u6570",
+      historyRestoreHint: "\u66F4\u65E9\u6D88\u606F\u5411\u4E0A\u6EDA\u52A8\u6309\u9700\u52A0\u8F7D",
+      historyRecentCards: "\u300C\u7EE7\u7EED\u5DE5\u4F5C\u300D\u5361\u7247\u6570",
+      "wizard.tauriOnly": "\u6539\u8DEF\u5F84\u4EC5\u5728\u684C\u9762\u7AEF\u53EF\u7528",
+      "wizard.pickTitle": "\u9009\u62E9\u65B0\u7684\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+      "wizard.title": "\u66F4\u6539\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+      "wizard.currentLabel": "\u5F53\u524D\u4F4D\u7F6E",
+      "wizard.targetLabel": "\u65B0\u4F4D\u7F6E",
+      "wizard.browse": "\u6D4F\u89C8\u2026",
+      "wizard.resetDefault": "\u6062\u590D\u9ED8\u8BA4\u4F4D\u7F6E",
+      "wizard.modeLabel": "\u5904\u7406\u65B9\u5F0F",
+      "wizard.modeMove": "\u540C\u65F6\u79FB\u52A8\u6570\u636E\uFF08\u63A8\u8350\uFF09",
+      "wizard.modeSwitch": "\u4EC5\u5207\u6362\u4F4D\u7F6E",
+      "wizard.confirmTitle": "\u786E\u8BA4\u5207\u6362",
+      "wizard.from": "\u4ECE",
+      "wizard.to": "\u5230",
+      "wizard.mode": "\u65B9\u5F0F",
+      "wizard.dataSize": "\u6570\u636E\u91CF",
+      "wizard.processing": "\u6B63\u5728\u5207\u6362\u6570\u636E\u6839\uFF0C\u8BF7\u7A0D\u5019\u2026",
+      "wizard.dontClose": "\u8BF7\u52FF\u5173\u95ED\u5E94\u7528",
+      "wizard.success": "\u5207\u6362\u6210\u529F",
+      "wizard.errorTitle": "\u5207\u6362\u5931\u8D25",
+      "wizard.validating": "\u6821\u9A8C\u4E2D\u2026",
+      "wizard.confirm": "\u5F00\u59CB\u5207\u6362",
+      "wizard.restartLater": "\u7A0D\u540E\u91CD\u542F",
+      "wizard.restarting": "\u91CD\u542F\u4E2D\u2026",
+      "wizard.restartNowBtn": "\u7ACB\u5373\u91CD\u542F",
+      wizard: {
+        tauriOnly: "\u6539\u8DEF\u5F84\u4EC5\u5728\u684C\u9762\u7AEF\u53EF\u7528",
+        pickTitle: "\u9009\u62E9\u65B0\u7684\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+        title: "\u66F4\u6539\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+        currentLabel: "\u5F53\u524D\u4F4D\u7F6E",
+        targetLabel: "\u65B0\u4F4D\u7F6E",
+        browse: "\u6D4F\u89C8\u2026",
+        resetDefault: "\u6062\u590D\u9ED8\u8BA4\u4F4D\u7F6E",
+        modeLabel: "\u5904\u7406\u65B9\u5F0F",
+        modeMove: "\u540C\u65F6\u79FB\u52A8\u6570\u636E\uFF08\u63A8\u8350\uFF09",
+        modeSwitch: "\u4EC5\u5207\u6362\u4F4D\u7F6E",
+        confirmTitle: "\u786E\u8BA4\u5207\u6362",
+        from: "\u4ECE",
+        to: "\u5230",
+        mode: "\u65B9\u5F0F",
+        dataSize: "\u6570\u636E\u91CF",
+        processing: "\u6B63\u5728\u5207\u6362\u6570\u636E\u6839\uFF0C\u8BF7\u7A0D\u5019\u2026",
+        dontClose: "\u8BF7\u52FF\u5173\u95ED\u5E94\u7528",
+        success: "\u5207\u6362\u6210\u529F",
+        errorTitle: "\u5207\u6362\u5931\u8D25",
+        validating: "\u6821\u9A8C\u4E2D\u2026",
+        confirm: "\u5F00\u59CB\u5207\u6362",
+        restartLater: "\u7A0D\u540E\u91CD\u542F",
+        restarting: "\u91CD\u542F\u4E2D\u2026",
+        restartNowBtn: "\u7ACB\u5373\u91CD\u542F"
+      },
+      legacyMigrateHint: "\u5408\u5E76\u6A21\u5F0F\uFF1A\u590D\u5236\u5230\u6570\u636E\u6839\uFF0C\u91CD\u590D\u5185\u5BB9\u8DF3\u8FC7\uFF1B\u51B2\u7A81\u6587\u4EF6\u5199\u5165 *.legacy-* \u526F\u672C\uFF0C\u65B0\u7248\u6570\u636E\u4FDD\u6301\u4E0D\u53D8\u3002",
+      legacyMigrateHintOverwrite: "\u26A0 \u8986\u76D6\u6A21\u5F0F\uFF1A\u65E7\u7248\u6570\u636E\u76F4\u63A5\u66FF\u6362\u65B0\u7248\u540C\u540D\u6587\u4EF6\uFF0C\u64CD\u4F5C\u4E0D\u53EF\u64A4\u9500\u3002",
+      merge: "\u5408\u5E76\uFF08\u4FDD\u7559\u53CC\u65B9\uFF09",
+      migrateHint: "\u628A\u65E7\u7248\u5BF9\u8BDD\u6570\u636E\u8FC1\u79FB\u5230\u5F53\u524D\u6570\u636E\u6839",
+      conflictStrategy: "\u51B2\u7A81\u7B56\u7565",
+      keepBoth: "\u4FDD\u7559\u53CC\u65B9",
+      overwriteNew: "\u8986\u76D6\u65B0\u7248"
+    },
+    nav: {
+      storageDesk: "\u5B58\u50A8\u7BA1\u7406"
+    }
+  },
+  common: {
+    back: "\u4E0A\u4E00\u6B65",
+    cancel: "\u53D6\u6D88",
+    close: "\u5173\u95ED",
+    next: "\u4E0B\u4E00\u6B65",
+    retry: "\u91CD\u8BD5"
+  }
+};
+
+// locales/en-US.json
+var en_US_default = {
+  settings: {
+    dataStorage: {
+      anchorHint: "\u951A\u70B9\u6587\u4EF6",
+      clearing: "\u6E05\u7406\u4E2D\u2026",
+      dialogClearOpfs: "\u6E05\u7406 OPFS\uFF08\u53EF\u9009\uFF09",
+      dialogMigrateBtn: "\u8FC1\u79FB\u5230\u78C1\u76D8",
+      dialogMigrateTitle: "\u5386\u53F2\u5BF9\u8BDD\u8FC1\u79FB",
+      dialogMigrated: "\u5DF2\u8FC1\u79FB",
+      dialogTotal: "\u6761",
+      legacyTitle: "\u68C0\u6D4B\u5230\u65E7\u7248\u6570\u636E",
+      migrate: "\u8FC1\u79FB",
+      migrateMode: "\u51B2\u7A81\u7B56\u7565",
+      migrateOverwrite: "\u8986\u76D6\u5DF2\u8FC1\u79FB\u6807\u8BB0",
+      migrating: "\u8FC1\u79FB\u4E2D\u2026",
+      modeMerge: "\u5408\u5E76\uFF08\u63A8\u8350\uFF09",
+      modeOverwrite: "\u65E7\u7248\u8986\u76D6\u65B0\u7248",
+      restartNow: "\u7ACB\u5373\u91CD\u542F",
+      restartRequired: "\u8FC1\u79FB\u5B8C\u6210\uFF0C\u8BF7\u91CD\u542F\u5E94\u7528",
+      restarting: "\u91CD\u542F\u4E2D\u2026",
+      sources: "\u5904",
+      copied: "\u5DF2\u590D\u5236",
+      sourceEnv: "\u542F\u52A8\u73AF\u5883\u53D8\u91CF",
+      sourceAnchor: "\u951A\u70B9\u81EA\u5B9A\u4E49",
+      sourceDefault: "\u9ED8\u8BA4\u76EE\u5F55",
+      custom: "\u81EA\u5B9A\u4E49\u8DEF\u5F84",
+      default: "\u9ED8\u8BA4\u8DEF\u5F84",
+      title: "\u6570\u636E\u5B58\u50A8",
+      loading: "\u52A0\u8F7D\u4E2D\u2026",
+      refresh: "\u5237\u65B0",
+      loadFailed: "\u52A0\u8F7D\u5931\u8D25",
+      currentLocation: "\u5F53\u524D\u4F4D\u7F6E",
+      open: "\u6253\u5F00",
+      copy: "\u590D\u5236",
+      totalSize: "\u5360\u7528",
+      totalFiles: "\u6587\u4EF6",
+      collapse: "\u6298\u53E0\u5B50\u76EE\u5F55",
+      expand: "\u5C55\u5F00\u5B50\u76EE\u5F55",
+      changeLocation: "\u66F4\u6539\u4F4D\u7F6E\u2026",
+      items: "\u9879",
+      "report.copied": "\u5DF2\u590D\u5236",
+      "report.skipped": "\u8DF3\u8FC7",
+      "report.conflict": "\u51B2\u7A81",
+      "report.failed": "\u5931\u8D25",
+      "report.collapse": "\u6536\u8D77\u8BE6\u60C5",
+      "report.expand": "\u67E5\u770B\u8BE6\u60C5",
+      "report.logFile": "\u65E5\u5FD7",
+      historyPrefsTitle: "\u4F1A\u8BDD\u5386\u53F2\u4F53\u9A8C",
+      historyListPageSize: "\u5217\u8868\u6BCF\u9875\u6761\u6570",
+      historyRestorePageSize: "\u6062\u590D\u9996\u5C4F\u6D88\u606F\u6570",
+      historyRestoreHint: "\u66F4\u65E9\u6D88\u606F\u5411\u4E0A\u6EDA\u52A8\u6309\u9700\u52A0\u8F7D",
+      historyRecentCards: "\u300C\u7EE7\u7EED\u5DE5\u4F5C\u300D\u5361\u7247\u6570",
+      "wizard.tauriOnly": "\u6539\u8DEF\u5F84\u4EC5\u5728\u684C\u9762\u7AEF\u53EF\u7528",
+      "wizard.pickTitle": "\u9009\u62E9\u65B0\u7684\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+      "wizard.title": "\u66F4\u6539\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+      "wizard.currentLabel": "\u5F53\u524D\u4F4D\u7F6E",
+      "wizard.targetLabel": "\u65B0\u4F4D\u7F6E",
+      "wizard.browse": "\u6D4F\u89C8\u2026",
+      "wizard.resetDefault": "\u6062\u590D\u9ED8\u8BA4\u4F4D\u7F6E",
+      "wizard.modeLabel": "\u5904\u7406\u65B9\u5F0F",
+      "wizard.modeMove": "\u540C\u65F6\u79FB\u52A8\u6570\u636E\uFF08\u63A8\u8350\uFF09",
+      "wizard.modeSwitch": "\u4EC5\u5207\u6362\u4F4D\u7F6E",
+      "wizard.confirmTitle": "\u786E\u8BA4\u5207\u6362",
+      "wizard.from": "\u4ECE",
+      "wizard.to": "\u5230",
+      "wizard.mode": "\u65B9\u5F0F",
+      "wizard.dataSize": "\u6570\u636E\u91CF",
+      "wizard.processing": "\u6B63\u5728\u5207\u6362\u6570\u636E\u6839\uFF0C\u8BF7\u7A0D\u5019\u2026",
+      "wizard.dontClose": "\u8BF7\u52FF\u5173\u95ED\u5E94\u7528",
+      "wizard.success": "\u5207\u6362\u6210\u529F",
+      "wizard.errorTitle": "\u5207\u6362\u5931\u8D25",
+      "wizard.validating": "\u6821\u9A8C\u4E2D\u2026",
+      "wizard.confirm": "\u5F00\u59CB\u5207\u6362",
+      "wizard.restartLater": "\u7A0D\u540E\u91CD\u542F",
+      "wizard.restarting": "\u91CD\u542F\u4E2D\u2026",
+      "wizard.restartNowBtn": "\u7ACB\u5373\u91CD\u542F",
+      wizard: {
+        tauriOnly: "\u6539\u8DEF\u5F84\u4EC5\u5728\u684C\u9762\u7AEF\u53EF\u7528",
+        pickTitle: "\u9009\u62E9\u65B0\u7684\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+        title: "\u66F4\u6539\u6570\u636E\u5B58\u50A8\u4F4D\u7F6E",
+        currentLabel: "\u5F53\u524D\u4F4D\u7F6E",
+        targetLabel: "\u65B0\u4F4D\u7F6E",
+        browse: "\u6D4F\u89C8\u2026",
+        resetDefault: "\u6062\u590D\u9ED8\u8BA4\u4F4D\u7F6E",
+        modeLabel: "\u5904\u7406\u65B9\u5F0F",
+        modeMove: "\u540C\u65F6\u79FB\u52A8\u6570\u636E\uFF08\u63A8\u8350\uFF09",
+        modeSwitch: "\u4EC5\u5207\u6362\u4F4D\u7F6E",
+        confirmTitle: "\u786E\u8BA4\u5207\u6362",
+        from: "\u4ECE",
+        to: "\u5230",
+        mode: "\u65B9\u5F0F",
+        dataSize: "\u6570\u636E\u91CF",
+        processing: "\u6B63\u5728\u5207\u6362\u6570\u636E\u6839\uFF0C\u8BF7\u7A0D\u5019\u2026",
+        dontClose: "\u8BF7\u52FF\u5173\u95ED\u5E94\u7528",
+        success: "\u5207\u6362\u6210\u529F",
+        errorTitle: "\u5207\u6362\u5931\u8D25",
+        validating: "\u6821\u9A8C\u4E2D\u2026",
+        confirm: "\u5F00\u59CB\u5207\u6362",
+        restartLater: "\u7A0D\u540E\u91CD\u542F",
+        restarting: "\u91CD\u542F\u4E2D\u2026",
+        restartNowBtn: "\u7ACB\u5373\u91CD\u542F"
+      }
+    },
+    nav: {
+      storageDesk: "Storage"
+    }
+  },
+  common: {
+    back: "\u4E0A\u4E00\u6B65",
+    cancel: "\u53D6\u6D88",
+    close: "\u5173\u95ED",
+    next: "\u4E0B\u4E00\u6B65",
+    retry: "\u91CD\u8BD5"
+  }
+};
+
 // src/i18nShim.ts
+var merged = false;
 function hostI18n() {
   return globalThis.__POLARIS_APP_CORE__?.i18n;
 }
-function useTranslation(...namespaces) {
+function ensureMerged() {
   const inst = hostI18n();
+  if (inst && !merged && typeof inst.addResourceBundle === "function") {
+    try {
+      inst.addResourceBundle("zh-CN", "settings", zh_CN_default.settings, true, true);
+      inst.addResourceBundle("en-US", "settings", en_US_default.settings, true, true);
+      if (zh_CN_default.common) inst.addResourceBundle("zh-CN", "common", zh_CN_default.common, true, true);
+      if (en_US_default.common) inst.addResourceBundle("en-US", "common", en_US_default.common, true, true);
+      merged = true;
+    } catch {
+    }
+  }
+  return inst;
+}
+function useTranslation(...namespaces) {
+  const inst = ensureMerged();
   const ns = Array.isArray(namespaces) && namespaces.length > 0 ? namespaces[0] : void 0;
   if (!inst) {
     return { t: (key, opts) => key, i18n: void 0 };
