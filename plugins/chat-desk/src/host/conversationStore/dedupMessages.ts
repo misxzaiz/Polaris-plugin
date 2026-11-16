@@ -11,7 +11,7 @@
  * 恢复侧统一归一为**中断态完整消息**：isStreaming 置 false 并标记 interrupted，
  * 保留已输出的 blocks 供展示；同时对已完整消息补 timestamp（隔离历史遗留缺省）。
  */
-import type { ChatMessage } from '@/types'
+import type { ChatMessage } from './deps'
 
 export function dedupeMessagesById<T extends { id: string }>(messages: T[]): T[] {
   const byId = new Map<string, T>()

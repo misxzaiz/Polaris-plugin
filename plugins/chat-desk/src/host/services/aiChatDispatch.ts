@@ -5,7 +5,7 @@
  * （同步动作 router_dispatch；流式动作 router_dispatch_stream，
  *   事件经既有 chat-event 通道推送，前端 EventRouter 零改动）。
  */
-import { invoke } from '@/services/transport'
+import { invoke } from './deps'
 
 /** router_dispatch 返回形态（与 commands/router.rs RouterDispatchResponse 对应） */
 export interface AiDispatchResponse {

@@ -10,8 +10,8 @@
  * 历史面板 UI 外移（P4）后本模块留守宿主；loadMessagesForItem 等查询编排随面板出仓。
  */
 
-import type { ChatMessage, EngineId } from '@/types'
-import { createLogger } from '@/utils/logger'
+import type { ChatMessage, EngineId } from './deps'
+import { createLogger } from '../../logger'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
 import { useWorkspaceStore } from '../../shims/stores'
 import { useViewStore } from '../../shims/stores'
@@ -22,7 +22,7 @@ import { dialogStorageService } from '../../shims/services'
 import { loadBackendMessages } from '../../shims/services'
 import { aiHistoryDispatch } from '../../shims/services'
 import { convertClaudeHistoryToChatMessages, type ClaudeCodeMessage } from './claudeHistoryConvert'
-import { normalizeEngineId } from '@/utils/engineDisplay'
+import { normalizeEngineId } from '../session-config/engineDisplay'
 
 const log = createLogger('SessionRestore')
 

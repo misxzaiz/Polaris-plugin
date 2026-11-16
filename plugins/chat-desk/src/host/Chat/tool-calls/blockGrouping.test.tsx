@@ -17,7 +17,7 @@ import type {
   TextBlock,
   ThinkingBlock,
   ToolCallBlock,
-} from '@/types';
+} from './deps';
 
 let seq = 0;
 const think = (content: string): ThinkingBlock => ({ type: 'thinking', content });

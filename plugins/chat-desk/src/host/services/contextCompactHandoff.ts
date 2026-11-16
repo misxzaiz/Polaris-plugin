@@ -15,15 +15,15 @@
  */
 
 import i18n from 'i18next'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
 import { useWorkspaceStore } from '../../shims/stores'
-import type { ConversationStoreInstance } from '../conversationStore/types'
-import { packToFile } from './conversationPackager/index'
-import { loadConversationMessages } from './sessionHandoff'
+import type { ConversationStoreInstance } from '../../types'
+import { packToFile } from '../../index'
+import { loadConversationMessages } from '../../sessionHandoff'
 import { waitKernelSessionStreamEnd } from '@/session-v2/hooks/useKernelSessionState'
 import { isAssistantMessage } from '@/types/chat'
-import { normalizeEngineId } from '@/utils/engineDisplay'
+import { normalizeEngineId } from '../session-config/engineDisplay'
 
 const log = createLogger('ContextCompactHandoff')
 

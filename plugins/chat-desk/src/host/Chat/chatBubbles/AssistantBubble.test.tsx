@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { render } from '@testing-library/react';
 import { AssistantBubble } from './AssistantBubble';
-import type { AssistantChatMessage, FormBlock, QuestionBlock } from '@/types';
+import type { AssistantChatMessage, FormBlock, QuestionBlock } from './deps';
 
 /** 构造一条含 form 块的 assistant 消息 */
 function makeAssistantMessage(

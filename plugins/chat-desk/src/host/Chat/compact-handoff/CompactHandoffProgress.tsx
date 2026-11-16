@@ -7,8 +7,8 @@
 
 import { useTranslation } from 'react-i18next'
 import { Loader2, X } from 'lucide-react'
-import { useCompactHandoffStore } from '@/stores/compactHandoffStore'
-import type { CompactHandoffStage } from '@/services/contextCompactHandoff'
+import { useCompactHandoffStore } from './deps'
+import type { CompactHandoffStage } from './deps'
 
 const STAGE_KEYS: Record<CompactHandoffStage, string> = {
   loading: 'compactHandoff.stageLoading',

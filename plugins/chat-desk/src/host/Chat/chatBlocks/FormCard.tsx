@@ -17,11 +17,11 @@ import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { CheckCircle, CircleX, ClipboardList, Loader2, Save, Send, XCircle } from 'lucide-react';
-import { aiChatDispatch } from '@/services/aiChatDispatch';
-import { createLogger } from '@/utils/logger';
-import { useToastStore } from '@/stores/toastStore';
+import { aiChatDispatch } from './deps';
+import { createLogger } from '../../../logger';
+import { useToastStore } from './deps';
 import { Button } from '../../../shims/misc';
-import type { FormBlock, FormFieldSchema } from '@/types';
+import type { FormBlock, FormFieldSchema } from './deps';
 
 const log = createLogger('FormCard');
 

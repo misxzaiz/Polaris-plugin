@@ -27,7 +27,7 @@ import type {
 } from '@/plugin-system/uiFrameTypes'
 import { collectDefaultValues, interpolateParams } from '@/plugin-system/uiFrameTypes'
 import { renderTemplateNodes } from './uiTemplateNodes'
-import { openExternalLink } from '@/services/linkExternal';
+import { openExternalLink } from './deps';
 
 // ============================ 小工具 ============================
 

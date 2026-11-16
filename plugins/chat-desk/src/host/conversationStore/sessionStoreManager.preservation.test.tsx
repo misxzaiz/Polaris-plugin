@@ -20,7 +20,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { sessionStoreManager } from './sessionStoreManager'
 import * as fc from 'fast-check'
-import type { SessionMetadata } from './types'
+import type { SessionMetadata } from '../../types'
 
 describe('Preservation Property Tests - Reactivity to Data Changes', () => {
   beforeEach(() => {

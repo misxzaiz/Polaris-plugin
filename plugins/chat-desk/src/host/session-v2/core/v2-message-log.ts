@@ -13,8 +13,8 @@
  * （ipc.rs 已注册同名命令路由）。
  */
 
-import { invoke } from '@/services/transport'
-import type { MessageEntry, MessageLogStorage, MessageContent, ReadOptions } from './types'
+import { invoke } from './deps'
+import type { MessageEntry, MessageLogStorage, MessageContent, ReadOptions } from '../../../types'
 
 /** 后端命令名（与 src-tauri commands/session_messages.rs + web/api/ipc.rs 对齐） */
 const CMD = {

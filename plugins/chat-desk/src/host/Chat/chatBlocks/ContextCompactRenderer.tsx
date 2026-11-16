@@ -5,7 +5,7 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import type { ContextCompactBlock } from '@/types';
+import type { ContextCompactBlock } from './deps';
 import { formatTokens } from '@/utils/formatTokens';
 
 export function ContextCompactRenderer({ block }: { block: ContextCompactBlock }) {

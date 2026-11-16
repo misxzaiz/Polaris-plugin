@@ -521,7 +521,7 @@ export function parseLogLevel(level: string): LogLevel {
  *
  * 此对象保留仅为向后兼容，内部已委托给 ModuleLogger。
  * 新代码应使用：
- *   import { createLogger } from '@/utils/logger'
+ *   import { createLogger } from '../logger'
  *   const log = createLogger('ModuleName')
  *   log.info('message', { key: 'value' })
  */

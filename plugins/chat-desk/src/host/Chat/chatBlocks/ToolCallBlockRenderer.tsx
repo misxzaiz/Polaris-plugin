@@ -7,12 +7,12 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Check, XCircle, ChevronDown, ChevronRight, Code, Copy, ListChecks } from 'lucide-react';
-import type { ToolCallBlock } from '@/types';
+import type { ToolCallBlock } from './deps';
 import { getToolConfig, extractToolKeyInfo, getToolShortName } from '@/utils/toolConfig';
 import { extractFullFilePath, extractFullCommand } from '@/utils/toolInputExtractor';
 import { copyToClipboard } from '@/utils/clipboard';
-import { useFileEditorStore } from '@/stores/fileEditorStore';
-import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { useFileEditorStore } from './deps';
+import { useWorkspaceStore } from './deps';
 import {
   formatDuration,
   calculateDuration,

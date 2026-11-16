@@ -10,8 +10,8 @@
  * 请使用 ai-runtime 的 EventBus。
  */
 
-import { listen } from '@/services/transport'
-import { createLogger } from '@/utils/logger'
+import { listen } from './deps'
+import { createLogger } from '../../logger'
 import { sessionStoreManager, RENDER_EVENT_TYPES } from '../conversationStore/sessionStoreManager'
 import type { AIEvent } from '../ai-runtime'
 

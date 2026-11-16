@@ -13,20 +13,20 @@ import { generateUUID } from '@/utils/uuid';
 
 import { create, StoreApi, UseBoundStore } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
-import { aiChatDispatch, aiChatDispatchStream } from '@/services/aiChatDispatch'
+import { aiChatDispatch, aiChatDispatchStream } from './deps'
 import { detectClientDescriptor } from '@/services/transport/detector'
-import type { ConversationStore, ConversationState, StoreDeps } from './types'
-import type { ContentBlock, EngineId, ChatMessage, TaskBoardBlock, TaskBoardItem } from '@/types'
+import type { ConversationStore, ConversationState, StoreDeps } from '../../types'
+import type { ContentBlock, EngineId, ChatMessage, TaskBoardBlock, TaskBoardItem } from './deps'
 import { handleAIEvent } from './eventHandler'
 import { sessionStoreManager } from './sessionStoreManager'
-import { parseWorkspaceReferences } from '@/services/workspaceReference'
+import { parseWorkspaceReferences } from './deps'
 import i18n from 'i18next'
 import { MessageCompactor, isCompacted } from '@/utils/messageCompactor'
 import { isEditTool, extractEditDiff } from '@/utils/diffExtractor'
 import { getSessionConfig } from '../../shims/stores'
 import { getActiveModelProfile, getModelProfileById } from '../../shims/misc'
 import { normalizeModelForProfile } from '@/types/modelProfile'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import {
   resolveSessionEngine,
   resolveRuntimeConfigForEngine,
@@ -39,10 +39,10 @@ import {
   resolveEffectiveProfileMode,
   isProfileModeWithoutProfile,
 } from './conversationStoreUtils'
-import { dialogStorageService } from '@/services/dialogStorage'
-import { eventBus } from '@/services/eventBus'
+import { dialogStorageService } from './deps'
+import { eventBus } from './deps'
 import { dedupeMessagesById, normalizeRecoveredMessages } from './dedupMessages'
-import { useDispatchStore } from '@/stores/dispatchStore'
+import { useDispatchStore } from './deps'
 import { useConfigStore } from '../../shims/stores'
 
 const log = createLogger('ConversationStore')

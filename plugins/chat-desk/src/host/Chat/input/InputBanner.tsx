@@ -6,7 +6,7 @@
  * 背景色按 tone 分级，遵循主题 token（不硬编码颜色）。
  */
 import { X } from 'lucide-react'
-import { useInputUIStore, type InputBanner as InputBannerType } from '@/stores/inputUIStore'
+import { useInputUIStore, type InputBanner as InputBannerType } from './deps'
 
 const TONE_CLASSES: Record<InputBannerType['tone'], string> = {
   info: 'bg-primary/10 border-primary/20 text-primary',

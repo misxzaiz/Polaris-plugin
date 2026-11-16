@@ -32,7 +32,7 @@ export type {
   SessionPlugin,
   PluginContext,
   PluginHost,
-} from './core/types'
+} from '../../types'
 
 export { InMemoryMessageLog } from './core/in-memory-log'
 export { V2MessageLog } from './core/v2-message-log'
@@ -60,14 +60,14 @@ export type {
   SessionState,
   StateChangeHandler,
   KernelEvent,
-} from './kernel/types'
+} from '../../types'
 
 export {
   MESSAGE_STATE_TRANSITIONS,
   SESSION_STATE_TRANSITIONS,
   MessageStateMachine,
   SessionStateMachine,
-} from './kernel/types'
+} from '../../types'
 
 export type {
   MessageSendCapability,

@@ -12,10 +12,10 @@ import { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeMermaidSvg } from '@/utils/sanitizeMermaidSvg';
 import { getMermaidConfig } from '@/utils/mermaid-config';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from './deps';
 import { modKey } from '@/utils/path';
 import { usePerformanceFlag } from '@/utils/performanceFeatures';
-import { createLogger } from '@/utils/logger';
+import { createLogger } from '../../../logger';
 import {
   type ViewMode,
   type DiagramState,

@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { V2SessionKernel } from '../kernel/v2-kernel'
 import type { ChatMessage } from '@/types/chat'
 import type { AIEvent } from '@/ai-runtime'
-import type { SessionStatus } from '../core/types'
+import type { SessionStatus } from '../../../types'
 import type { V2SessionKernelDeps } from '../kernel/v2-kernel'
 
 // ============================================================================

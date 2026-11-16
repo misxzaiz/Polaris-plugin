@@ -15,11 +15,11 @@ import { memo, useState } from 'react'
 import { useStore } from 'zustand'
 import { useTranslation } from 'react-i18next'
 import { Loader2, Radio, LogIn } from 'lucide-react'
-import { useToastStore } from '@/stores/toastStore'
+import { useToastStore } from './deps'
 import {
   remoteSessionFollower,
   isListableRemote,
-} from '@/services/remoteSessionFollower'
+} from '../../../remoteSessionFollower'
 
 export const RemoteSessionsNavSection = memo(function RemoteSessionsNavSection() {
   const { t } = useTranslation('chat');

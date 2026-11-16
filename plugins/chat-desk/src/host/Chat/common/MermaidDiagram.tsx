@@ -16,9 +16,9 @@ import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { sanitizeMermaidSvg } from '@/utils/sanitizeMermaidSvg';
 import { getMermaidConfig } from '@/utils/mermaid-config';
-import { useThemeStore } from '@/stores/themeStore';
+import { useThemeStore } from './deps';
 import { modKey } from '@/utils/path';
-import { createLogger } from '@/utils/logger';
+import { createLogger } from '../../../logger';
 import {
   type ViewMode,
   type DiagramState,

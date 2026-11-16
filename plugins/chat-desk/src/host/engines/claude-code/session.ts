@@ -9,9 +9,9 @@ import type { AISessionConfig } from '@/ai-runtime'
 import type { AITask, AIEvent } from '@/ai-runtime'
 import { BaseSession } from '@/ai-runtime/base'
 import { createEventIterable } from '@/ai-runtime/base'
-import { listen } from '@/services/tauri'
-import { aiChatDispatch, aiChatDispatchStream } from '@/services/aiChatDispatch'
-import { createLogger } from '@/utils/logger'
+import { listen } from './deps'
+import { aiChatDispatch, aiChatDispatchStream } from './deps'
+import { createLogger } from '../../../logger'
 
 const log = createLogger('ClaudeCodeSession')
 

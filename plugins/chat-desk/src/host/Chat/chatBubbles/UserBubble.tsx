@@ -5,9 +5,9 @@
 import { memo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Image, Code, FileText, File, Pencil, Copy, Check } from 'lucide-react';
-import type { UserChatMessage } from '@/types';
+import type { UserChatMessage } from './deps';
 import { formatFileSize, getFileIcon } from '@/types/attachment';
-import { useToastStore } from '@/stores/toastStore';
+import { useToastStore } from './deps';
 import { useLongPress } from './useLongPress';
 import { MessageContextMenu } from '../chatBubbles/MessageContextMenu';
 

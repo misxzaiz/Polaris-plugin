@@ -38,10 +38,10 @@ import {
   Terminal,
   type LucideIcon,
 } from 'lucide-react';
-import { useViewStore } from '@/stores/viewStore';
-import { useToastStore } from '@/stores/toastStore';
-import { useFileEditorStore } from '@/stores/fileEditorStore';
-import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { useViewStore } from './deps';
+import { useToastStore } from './deps';
+import { useFileEditorStore } from './deps';
+import { useWorkspaceStore } from './deps';
 import { resolveWorkspacePath } from '@/utils/path';
 import { formatDuration, formatTokens, type ContextWater, type RuntimeCard, type TaskRow, type UrgentCard } from './useRuntimeSummary';
 import {

@@ -13,18 +13,18 @@
  * 本模块只产出 ConversationPack / 文件引用。
  */
 
-import { invoke } from '@/services/tauri'
+import { invoke } from './deps'
 import { joinPath } from '@/utils/path'
-import { normalizeEngineId } from '@/utils/engineDisplay'
+import { normalizeEngineId } from '../session-config/engineDisplay'
 import { messagesToMarkdown } from '@/utils/sessionExport'
-import { createLogger } from '@/utils/logger'
-import type { EngineId } from '@/types'
+import { createLogger } from '../../../logger'
+import type { EngineId } from './deps'
 import type { ChatMessage } from '@/types/chat'
 import type {
   TransferMode,
   TransferModeInput,
   PackToFileResult,
-} from './types'
+} from '../../../types'
 
 const log = createLogger('ConversationPackager')
 
@@ -207,4 +207,4 @@ export async function packForReference(
   return packToSummary(messages, title, idSeed, workspacePath)
 }
 
-export type { TransferMode, TransferModeInput } from './types'
+export type { TransferMode, TransferModeInput } from '../../../types'

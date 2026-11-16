@@ -14,10 +14,10 @@ import { Suspense, useCallback, useEffect, useState } from 'react'
 import { AlertTriangle, ChevronDown, ChevronRight, RefreshCw } from 'lucide-react'
 import { chatCardRegistry } from '@/plugin-system/chatCardRegistry'
 import type { PluginChatCardComponent, PluginChatCardProps } from '@/plugin-system/types'
-import type { PluginCardBlock } from '@/types'
+import type { PluginCardBlock } from './deps'
 import { copyToClipboard } from '@/utils/clipboard'
 import { useChatSessionId } from './chatSessionContext'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../../logger'
 import { respondPluginCard } from '@/services/tauri/chatService'
 
 const log = createLogger('PluginCardHost')

@@ -16,7 +16,7 @@ import React from 'react';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { ChatNavigator } from './ChatNavigator';
 import type { ConversationRound } from '@/utils/conversationRounds';
-import type { UserChatMessage } from '@/types';
+import type { UserChatMessage } from './deps';
 
 function makeRounds(n: number): ConversationRound[] {
   return Array.from({ length: n }, (_, i) => ({

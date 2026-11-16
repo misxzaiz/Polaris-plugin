@@ -16,8 +16,8 @@ import type {
   PluginChatCardComponent,
   PluginChatCardContribution,
   PluginChatCardLoader,
-} from './types'
-import { createLogger } from '../../shims/logger'
+} from '../../types'
+import { createLogger } from '../../logger'
 import { buildMcpToolName } from '../../shims/toolConfig'
 import type { ContentBlock } from '../../types/chat'
 

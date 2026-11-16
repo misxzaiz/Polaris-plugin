@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { deriveChangeSummary, EMPTY_CHANGE_SUMMARY, MAX_DIFF_CHARS, MAX_FILES } from './changeSummary';
-import type { AssistantChatMessage, ChatMessage, ToolCallBlock } from '@/types';
+import type { AssistantChatMessage, ChatMessage, ToolCallBlock } from './deps';
 
 function toolBlock(overrides?: Partial<ToolCallBlock>): ToolCallBlock {
   return {

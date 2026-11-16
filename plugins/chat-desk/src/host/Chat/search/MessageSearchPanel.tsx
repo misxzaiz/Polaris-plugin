@@ -13,7 +13,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Search, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { useWindowSize } from '@/hooks/useWindowSize';
+import { useWindowSize } from './deps';
 
 export interface SearchMatch {
   messageId: string;

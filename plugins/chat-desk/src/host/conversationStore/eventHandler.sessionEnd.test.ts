@@ -21,7 +21,7 @@ vi.mock('@/stores/cliInfoStore', () => ({
 vi.mock('@/plugin-system/chatCardRegistry', () => ({ chatCardRegistry: { get: () => undefined } }))
 
 import { handleAIEvent } from './eventHandler'
-import type { ConversationStore } from './types'
+import type { ConversationStore } from '../../types'
 import type { AIEvent } from '@/ai-runtime'
 
 function makeStore(error: string | null = null) {

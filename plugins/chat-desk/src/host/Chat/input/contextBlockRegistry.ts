@@ -21,10 +21,10 @@ import {
   formatMarqueeContextBlock,
   type MarqueeContextBlock,
 } from '@/types/browserContext'
-import { invoke } from '@/services/tauri'
+import { invoke } from './deps'
 import { joinPath } from '@/utils/path'
-import { createLogger } from '@/utils/logger'
-import { buildCapDetailBlock, buildCapDigestBlock, type CapCatalogEntry } from '@/services/capSlashCommand'
+import { createLogger } from '../../../logger'
+import { buildCapDetailBlock, buildCapDigestBlock, type CapCatalogEntry } from './deps'
 
 const log = createLogger('ContextBlockRegistry')
 

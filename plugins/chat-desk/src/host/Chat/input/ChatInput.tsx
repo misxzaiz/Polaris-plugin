@@ -12,9 +12,9 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconSend, IconStop, IconPaperclip } from '../../../shims/misc'
 import { Sparkles, Wand2, Undo2, Redo2, Loader2, Check, X, Bot, Zap, ChevronDown } from 'lucide-react'
-import { useWorkspaceStore, useToastStore, useConfigStore } from '@/stores'
-import { useInputUIStore } from '@/stores/inputUIStore'
-import { eventBus } from '@/services/eventBus'
+import { useWorkspaceStore, useToastStore, useConfigStore } from './deps'
+import { useInputUIStore } from './deps'
+import { eventBus } from './deps'
 import { useActiveSessionInputDraft, useActiveSessionActions, useActiveSessionWorkspace, useActiveSessionPromptSuggestion, useActiveSessionPromptOptimize, useActiveSessionPendingQueue, useSessionState } from '@/stores/conversationStore/useActiveSession'
 import type { ConversationState } from '@/stores/conversationStore/types'
 import {
@@ -24,8 +24,8 @@ import {
   readStoredOptimizeConfig,
   storeOptimizeConfig,
   type PromptOptimizeConfig,
-} from '@/services/promptOptimizeService'
-import { useDebouncedCallback } from '@/hooks/useDebounce'
+} from './deps'
+import { useDebouncedCallback } from './deps'
 import { UnifiedSuggestion, type SuggestionItem, type ConversationSuggestion, type CapSuggestion } from './FileSuggestion'
 import { AttachmentPreview } from './AttachmentPreview'
 import { ContextBlockPreview } from './ContextBlockPreview'
@@ -35,37 +35,37 @@ import { PendingBriefingCard } from '../compact-handoff/PendingBriefingCard'
 import { PendingQueueCard } from './PendingQueueCard'
 import { InputBanner } from './InputBanner'
 import { UiSlot } from './UiSlot'
-import { useFileSearch } from '@/hooks/useFileSearch'
-import { useSnippetStore } from '@/stores/snippetStore'
-import { resolveTemplateVariables } from '@/services/workspaceReference'
-import type { FileMatch } from '@/services/fileSearch'
-import type { Workspace, EngineId } from '@/types'
-import { getChatDisplayStyleVars } from '@/types'
+import { useFileSearch } from './deps'
+import { useSnippetStore } from './deps'
+import { resolveTemplateVariables } from './deps'
+import type { FileMatch } from './deps'
+import type { Workspace, EngineId } from './deps'
+import { getChatDisplayStyleVars } from './deps'
 import type { Attachment } from '@/types/attachment'
 import type { ContextBlock } from '@/stores/conversationStore/types'
 import { materializeContextBlocks, upsertContextBlock } from './contextBlockRegistry'
-import { createLogger } from '@/utils/logger'
-import { normalizeEngineId, getEngineFullName } from '@/utils/engineDisplay'
+import { createLogger } from '../../../logger'
+import { normalizeEngineId, getEngineFullName } from '../session-config/engineDisplay'
 import { dialogStorageService } from '@/services/dialogStorage/service'
-import { packForReference } from '@/services/conversationPackager'
+import { packForReference } from './deps'
 import type { PromptSnippet } from '@/types/promptSnippet'
 import type { SkillItem } from '@/types/skill'
 import { McpServerItem } from './FileSuggestion'
-import { useSkillStore } from '@/stores/skillStore'
-import { useCliInfoStore } from '@/stores/cliInfoStore'
+import { useSkillStore } from './deps'
+import { useCliInfoStore } from '../session-config/cliInfoStore'
 import { useActiveSessionId } from '@/stores/conversationStore/sessionStoreManager'
 import { resolveSessionEngine } from '@/stores/conversationStore/conversationStoreUtils'
-import { useModelProfileStore } from '@/stores/modelProfileStore'
+import { useModelProfileStore } from '../session-config/modelProfileStore'
 import { isProfileForEngine } from '@/types/modelProfile'
 import type { PromptOptimizeMode, OptimizeDirection } from '@/stores/conversationStore/types'
 import {
   getCliCommandSuggestions,
   matchBlockedCliCommand,
   type CliCommandSuggestion,
-} from '@/services/cliSlashCommands'
+} from './deps'
 import { tryHandleSlashCommand } from './chatCommandRouter'
-import { buildCapReferenceBlock, matchCaps, parseCapSlashCommand } from '@/services/capSlashCommand'
-import { useCapCatalogStore } from '@/stores/capCatalogStore'
+import { buildCapReferenceBlock, matchCaps, parseCapSlashCommand } from './deps'
+import { useCapCatalogStore } from './deps'
 import {
   appendPromptHistoryEntry,
   arePromptHistoryEntriesEqual,
@@ -74,10 +74,10 @@ import {
 import {
   persistPromptHistoryEntries,
   readPromptHistoryEntries,
-} from '@/services/promptHistoryService'
-import { useAgentStore } from '@/stores/agentStore'
+} from './deps'
+import { useAgentStore } from '../session-config/agentStore'
 import { pluginRegistry, listEnabledPluginMcpServers } from '@/plugin-system'
-import { usePluginStore } from '@/stores/pluginStore'
+import { usePluginStore } from './deps'
 import {
   createAttachment,
   validateAttachment,

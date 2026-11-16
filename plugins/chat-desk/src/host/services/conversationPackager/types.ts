@@ -12,7 +12,7 @@
  * - summary       默认兜底：只注入结构化摘要（~2k token），全文落盘作回查库
  */
 
-import type { EngineId } from '@/types'
+import type { EngineId } from './deps'
 import type { ChatMessage } from '@/types/chat'
 
 /** 打包模式 */

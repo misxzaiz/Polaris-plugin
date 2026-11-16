@@ -9,21 +9,21 @@
 
 import { useState, useCallback, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useConfigStore, useModelProfileStore } from '@/stores';
-import { useInputUIStore } from '@/stores/inputUIStore';
+import { useConfigStore, useModelProfileStore } from './deps';
+import { useInputUIStore } from './deps';
 import { useActiveSessionStreaming, useHasPendingQuestion, useHasActivePlan, useActiveSessionUsage, useActiveSessionStreamRate } from '@/stores/conversationStore/useActiveSession';
-import { useSessionConfig } from '@/stores/sessionConfigStore';
+import { useSessionConfig } from '../session-config/sessionConfigStore';
 import { Paperclip, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useContainerWidth } from '@/hooks/useContainerWidth';
+import { useContainerWidth } from './deps';
 import { SessionConfigSelector } from '../session/SessionConfigSelector';
 import { ContextMeter } from './ContextMeter';
 import { getSelectedEngineHealth } from '@/utils/engineHealth';
-import { normalizeEngineId } from '@/utils/engineDisplay';
-import { getEngineSelectors } from '@/utils/engineCapabilities';
+import { normalizeEngineId } from '../session-config/engineDisplay';
+import { getEngineSelectors } from '../session-config/engineCapabilities';
 import { useActiveSessionId, useSessionMetadataList } from '@/stores/conversationStore/sessionStoreManager';
-import { currentMode } from '@/services/transport';
-import { useToastStore } from '@/stores/toastStore';
+import { currentMode } from './deps';
+import { useToastStore } from './deps';
 
 /**
  * 宽度分级阈值（主行可容纳的高频选择器数量）

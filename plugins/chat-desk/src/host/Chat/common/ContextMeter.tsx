@@ -21,9 +21,9 @@
 import { useState, useRef } from 'react';
 import { clsx } from 'clsx';
 import type { UsageStats } from '@/stores/conversationStore/types';
-import type { StreamRateSnapshot } from '@/services/streamRateTracker';
-import { eventBus } from '@/services/eventBus';
-import { useNowTicker } from '@/hooks/useNowTicker';
+import type { StreamRateSnapshot } from './deps';
+import { eventBus } from './deps';
+import { useNowTicker } from './deps';
 
 interface ContextMeterProps {
   usage: UsageStats;

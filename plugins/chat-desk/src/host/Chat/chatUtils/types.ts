@@ -2,7 +2,7 @@
  * 聊天组件局部类型定义
  */
 
-import type { ThinkingBlock, ToolCallBlock } from '@/types';
+import type { ThinkingBlock, ToolCallBlock } from './deps';
 
 /** 可折叠块分组（支持 thinking + tool_call 混合；组可跨面板类块，indices 不要求连续） */
 export interface CollapsibleBlockGroup {

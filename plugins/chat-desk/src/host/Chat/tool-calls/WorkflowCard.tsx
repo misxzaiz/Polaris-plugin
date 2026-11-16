@@ -22,7 +22,7 @@ import {
   Cpu,
   Coins,
 } from 'lucide-react';
-import type { ToolCallBlock } from '@/types';
+import type { ToolCallBlock } from './deps';
 import type { WorkflowGenericOutput } from './workflowParsers';
 
 function formatDuration(ms?: number): string {

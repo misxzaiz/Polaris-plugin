@@ -11,7 +11,7 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { Brain, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
-import type { ThinkingBlock } from '@/types';
+import type { ThinkingBlock } from './deps';
 
 export const ThinkingBlockRenderer = memo(function ThinkingBlockRenderer({
   block,

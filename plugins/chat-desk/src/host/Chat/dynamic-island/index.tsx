@@ -27,8 +27,8 @@ import { useRuntimeSummary, formatDuration, type CompactSlide, type UrgentCard }
 import { DynamicIslandExpanded } from './DynamicIslandExpanded';
 import type { SessionChangeSummary } from './changeSummary';
 import { findStoreByConversationId } from '@/stores/conversationStore/sessionStoreManager';
-import { useToastStore } from '@/stores/toastStore';
-import { aiChatDispatch } from '@/services/aiChatDispatch'
+import { useToastStore } from './deps';
+import { aiChatDispatch } from './deps'
 import type { PermissionRequestBlock, QuestionBlock } from '@/types/chat';
 import './DynamicIsland.css';
 

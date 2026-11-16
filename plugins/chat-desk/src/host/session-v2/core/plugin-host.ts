@@ -22,7 +22,7 @@ import type {
   SessionRecord,
   MessageEntry,
   SessionStatus,
-} from './types'
+} from '../../../types'
 
 export class InMemoryPluginHost implements PluginHost {
   private plugins = new Map<string, SessionPlugin>()

@@ -27,7 +27,7 @@ import { kernelSessionIsStreaming } from '@/session-v2/hooks/useKernelSessionSta
 import { getActiveModelProfile } from '../../shims/stores'
 import type { AIEvent } from '@/ai-runtime'
 import type { ChatMessage } from '@/types/chat'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import i18n from '../../shims/i18n'
 
 const log = createLogger('DispatchTask')

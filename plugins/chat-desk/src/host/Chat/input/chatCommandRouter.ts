@@ -10,20 +10,20 @@
  * - { handled: true, sendText } 命中但需把 sendText 作为普通消息发送
  */
 
-import { parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS } from '@/services/agentSlashCommand'
-import { parseDispatchSlashCommand, dispatchFromUser } from '@/services/dispatchTaskService'
-import { parseAssaultSlashCommand } from '@/services/cliSlashCommands'
+import { parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS } from './deps'
+import { parseDispatchSlashCommand, dispatchFromUser } from './deps'
+import { parseAssaultSlashCommand } from './deps'
 import {
   buildCapDetailBlock,
   buildCapDigestBlock,
   matchCaps,
   parseCapSlashCommand,
-} from '@/services/capSlashCommand'
-import { useCapCatalogStore } from '@/stores/capCatalogStore'
-import { invoke as transportInvoke } from '@/services/transport'
-import { useToastStore } from '@/stores/toastStore'
-import { useAgentStore } from '@/stores/agentStore'
-import { useSessionConfig } from '@/stores/sessionConfigStore'
+} from './deps'
+import { useCapCatalogStore } from './deps'
+import { invoke as transportInvoke } from './deps'
+import { useToastStore } from './deps'
+import { useAgentStore } from '../session-config/agentStore'
+import { useSessionConfig } from '../session-config/sessionConfigStore'
 import { sessionStoreManager } from '@/stores/conversationStore/sessionStoreManager'
 import i18n from 'i18next'
 

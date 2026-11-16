@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { deriveRuntimeSummary } from './useRuntimeSummary';
-import type { PlanModeBlock, PlanStageBlock } from '@/types';
+import type { PlanModeBlock, PlanStageBlock } from './deps';
 
 function createPlanStage(overrides?: Partial<PlanStageBlock>): PlanStageBlock {
   return {

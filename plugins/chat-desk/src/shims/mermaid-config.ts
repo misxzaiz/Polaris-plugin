@@ -270,14 +270,14 @@ export const mermaidLightTheme: Partial<MermaidConfig> = {
  *
  * 在 React 组件中使用：
  * ```tsx
- * import { useThemeStore } from '@/stores/themeStore';
+ * import { useThemeStore } from './deps';
  * const theme = useThemeStore(state => state.activeThemeId);
  * const config = getMermaidConfig(theme);
  * ```
  *
  * 在非 React 上下文中使用：
  * ```ts
- * import { useThemeStore } from '@/stores/themeStore';
+ * import { useThemeStore } from './deps';
  * const config = getMermaidConfig(useThemeStore.getState().theme);
  * ```
  */

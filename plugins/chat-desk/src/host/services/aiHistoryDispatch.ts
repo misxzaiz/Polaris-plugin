@@ -4,7 +4,7 @@
  * 会话历史命令层已摘除：list/get/delete + Claude Code 会话树全部经
  * RouterBus dispatch（同步动作）。Web 模式自动映射 /api/router-dispatch。
  */
-import { invoke } from '@/services/transport'
+import { invoke } from './deps'
 
 /** router_dispatch 返回形态（与 commands/router.rs RouterDispatchResponse 对应） */
 export interface HistoryDispatchResponse {

@@ -43,4 +43,4 @@ export type {
   SessionManagerActions,
   SessionMetadata,
   CreateSessionOptions,
-} from './types'
+} from '../../types'

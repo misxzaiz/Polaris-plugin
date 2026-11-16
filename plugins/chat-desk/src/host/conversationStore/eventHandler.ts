@@ -5,7 +5,7 @@
  */
 
 import { generateUUID } from '@/utils/uuid'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import type { AIEvent } from '@/ai-runtime'
 import { isEditTool, extractEditDiff } from '@/utils/diffExtractor'
 import { parseApplyPatch } from '@/utils/patchParser'
@@ -14,16 +14,16 @@ import type {
   ChatMessage,
   TaskBoardItem,
   ToolCallBlock,
-} from '@/types'
+} from './deps'
 import { chatCardRegistry } from '@/plugin-system/chatCardRegistry'
-import type { ConversationStore } from './types'
+import type { ConversationStore } from '../../types'
 import { sessionStoreManager } from './sessionStoreManager'
-import { normalizeEngineId } from '@/utils/engineDisplay'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useCliInfoStore } from '@/stores/cliInfoStore'
-import { dialogStorageService } from '@/services/dialogStorage'
-import { consumeCapUiDispatch } from '@/services/uiDispatchService'
-import { getTracker, resetTracker } from '@/services/streamRateTracker'
+import { normalizeEngineId } from '../session-config/engineDisplay'
+import { useWorkspaceStore } from './deps'
+import { useCliInfoStore } from '../session-config/cliInfoStore'
+import { dialogStorageService } from './deps'
+import { consumeCapUiDispatch } from './deps'
+import { getTracker, resetTracker } from './deps'
 
 const log = createLogger('EventHandler')
 

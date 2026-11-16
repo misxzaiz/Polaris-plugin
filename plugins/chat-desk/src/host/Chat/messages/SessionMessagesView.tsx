@@ -8,7 +8,7 @@ import { forwardRef, memo, useMemo, useRef, useCallback, useEffect, useState } f
 import type { ComponentProps, MutableRefObject } from 'react';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
-import { useToastStore } from '@/stores/toastStore';
+import { useToastStore } from './deps';
 import { useSessionState } from '@/stores/conversationStore/useActiveSession';
 import { renderChatMessage } from './renderChatMessage';
 import type { MessageScrollActions, MessageActions } from './renderChatMessage';

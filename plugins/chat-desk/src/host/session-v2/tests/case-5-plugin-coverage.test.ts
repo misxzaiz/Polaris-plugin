@@ -25,7 +25,7 @@ import type {
   SessionRecord,
   SessionStatus,
   SessionPlugin,
-} from '../core/types'
+} from '../../../types'
 
 // ============================================================================
 // 测试工具

@@ -4,15 +4,15 @@
 
 import { memo, useState, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { AssistantChatMessage, TextBlock, ThinkingBlock } from '@/types';
+import type { AssistantChatMessage, TextBlock, ThinkingBlock } from './deps';
 import { formatContent, extractAssistantText } from '../chatUtils/helpers';
 import { renderBlocksWithGrouping } from '../tool-calls/blockGrouping';
 import { MessageContextMenu } from './MessageContextMenu';
 import { Bot, RefreshCw, Copy, Check } from 'lucide-react';
-import { getEngineDisplayName } from '@/utils/engineDisplay';
+import { getEngineDisplayName } from '../session-config/engineDisplay';
 import { MarkdownImageSurface } from '../common/MarkdownImageSurface';
-import { useThemeStore } from '@/stores/themeStore';
-import { useToastStore } from '@/stores/toastStore';
+import { useThemeStore } from './deps';
+import { useToastStore } from './deps';
 import { useLongPress } from './useLongPress';
 
 export const AssistantBubble = memo(function AssistantBubble({

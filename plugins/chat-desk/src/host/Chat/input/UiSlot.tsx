@@ -9,7 +9,7 @@
  * 组件内容：kind → 映射为受控 React element，props 来自 store（字段白名单后端已校验）。
  * 遵循主题 token，不硬编码颜色。
  */
-import { useUiSlotStore, selectSlotFill, type SlotId, type SlotFill } from '@/stores/uiSlotStore'
+import { useUiSlotStore, selectSlotFill, type SlotId, type SlotFill } from './deps'
 
 /** 渲染单个插槽填充（未知 kind → null，安全降级） */
 export function SlotFillView({ fill, slotId }: { fill: SlotFill; slotId: string }) {

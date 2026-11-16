@@ -18,15 +18,15 @@ import type {
   SessionMetadata,
   CreateSessionOptions,
   StoreDeps,
-} from './types'
+} from '../../types'
 import { createConversationStore } from './createConversationStore'
 import { getEventRouter } from '../services/eventRouter'
 import { useConfigStore } from '../../shims/stores'
 import { getEventBus } from '../ai-runtime'
 import { useWorkspaceStore } from '../../shims/stores'
 import { useViewStore } from '../../shims/stores'
-import { createLogger } from '@/utils/logger'
-import { normalizeEngineId } from '@/utils/engineDisplay'
+import { createLogger } from '../../logger'
+import { normalizeEngineId } from '../session-config/engineDisplay'
 import { useSessionConfig } from '../../shims/stores'
 import { OFFICIAL_API_PROFILE } from '@/types/modelProfile'
 

@@ -16,12 +16,12 @@ import { SessionMessagesView } from '../messages/SessionMessagesView';
 import { useSessionMetadataList, useSessionManagerActions } from '@/stores/conversationStore/sessionStoreManager';
 import { useSessionStreaming, useSessionHasPendingQuestion, useSessionHasPendingCards } from '@/stores/conversationStore/useActiveSession';
 import { sessionStoreManager } from '@/stores/conversationStore/sessionStoreManager';
-import { useViewStore } from '@/stores/viewStore';
-import { useWorkspaceStore, useConfigStore } from '@/stores';
-import { getChatDisplayStyleVars } from '@/types';
+import { useViewStore } from './deps';
+import { useWorkspaceStore, useConfigStore } from './deps';
+import { getChatDisplayStyleVars } from './deps';
 import { WorkspaceBadge } from '../../../shims/misc';
 import { WorkspaceMenu } from '../../../shims/misc';
-import { getEngineDisplayName, getEngineFullName } from '@/utils/engineDisplay';
+import { getEngineDisplayName, getEngineFullName } from '../session-config/engineDisplay';
 
 /** 状态图标映射 */
 const SESSION_STATUS_CONFIG = {

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { render } from '@testing-library/react';
 import { ThinkingBlockRenderer } from '@/components/Chat/chatBlocks/ThinkingBlockRenderer';
-import type { ThinkingBlock } from '@/types';
+import type { ThinkingBlock } from './deps';
 
 function makeThinking(content: string, collapsed?: boolean): ThinkingBlock {
   return { type: 'thinking', content, ...(collapsed !== undefined ? { collapsed } : {}) };

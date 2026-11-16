@@ -13,13 +13,13 @@
  * 通过统一 transport `invoke` 调用：Tauri 模式 IPC、HTTP 模式 Web API 桥。
  */
 
-import { invoke } from '@/services/transport'
+import { invoke } from './deps'
 import type {
   SessionEventEntry,
   SessionEventLog,
   SessionStatus,
   StateArbiter,
-} from './types'
+} from '../../../types'
 
 /** 后端命令名（与 src-tauri commands/session_state_commands.rs + web/api/ipc.rs 对齐） */
 const CMD = {

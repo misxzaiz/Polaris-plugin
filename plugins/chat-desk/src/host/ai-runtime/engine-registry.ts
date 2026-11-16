@@ -8,7 +8,7 @@
 import type { AIEngine, EngineDescriptor, EngineCapabilities } from './engine'
 import type { AIEvent } from './event'
 import { getEventBus } from './event-bus'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 
 const log = createLogger('AIEngineRegistry')
 

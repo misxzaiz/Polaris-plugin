@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PlanModeBlockRenderer, PLAN_STATUS_CONFIG } from './PlanModeBlockRenderer';
-import type { PlanModeBlock, PlanStageBlock } from '../../types';
+import type { PlanModeBlock, PlanStageBlock } from '../../../types';
 
 // Mock aiChatDispatch（组件已上总线：approve_plan/reject_plan 走 cap.ai.chat dispatch）
 const mockAiChatDispatch = vi.fn();

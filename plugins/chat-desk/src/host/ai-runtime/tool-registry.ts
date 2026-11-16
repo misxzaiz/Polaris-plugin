@@ -5,7 +5,7 @@
  */
 
 import type { AITool, AIToolInput, AIToolResult } from './types/tool-types'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 
 const log = createLogger('ToolRegistry')
 

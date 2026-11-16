@@ -18,21 +18,21 @@
  */
 
 import i18n from 'i18next'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
 import { useWorkspaceStore } from '../../shims/stores'
 import { aiHistoryDispatch } from '../../shims/services'
 import { convertClaudeHistoryToChatMessages, type ClaudeCodeMessage } from './claudeHistoryConvert'
 import { dialogStorageService } from '../../shims/services'
 import { normalizeRecoveredMessages } from '../utils/dedupMessages'
-import type { ChatMessage, EngineId } from '@/types'
+import type { ChatMessage, EngineId } from './deps'
 import {
   packToFile,
   packToSummary,
   resolveTransferMode,
   estimateTokens,
-} from './conversationPackager/index'
-import { normalizeEngineId } from '@/utils/engineDisplay'
+} from '../../index'
+import { normalizeEngineId } from '../session-config/engineDisplay'
 import { getPathBasename, normalizeWorkspacePath } from '@/utils/workspacePath'
 
 const log = createLogger('SessionHandoff')

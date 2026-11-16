@@ -38,10 +38,10 @@ vi.mock('@/i18n', () => ({
 }))
 
 import { handleDispatchTaskRequest, continueDispatchedTask, parseDispatchSlashCommand } from './dispatchTaskService'
-import { sessionStoreManager } from '@/stores/conversationStore'
-import { getEventRouter, resetEventRouter } from '@/services/eventRouter'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { useDispatchStore } from '@/stores/dispatchStore'
+import { sessionStoreManager } from './deps'
+import { getEventRouter, resetEventRouter } from './deps'
+import { useWorkspaceStore } from './deps'
+import { useDispatchStore } from './deps'
 
 function resetManager() {
   sessionStoreManager.setState({

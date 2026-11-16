@@ -17,12 +17,12 @@ import {
   Terminal, FileText, Eye, Search, Wrench, Boxes,
   ChevronDown, ChevronRight,
 } from 'lucide-react';
-import { createLogger } from '@/utils/logger';
+import { createLogger } from '../../../logger';
 import { sessionStoreManager } from '@/stores/conversationStore/sessionStoreManager';
-import { useToastStore } from '@/stores/toastStore';
+import { useToastStore } from './deps';
 import { Button } from '../../../shims/misc';
-import type { PermissionRequestBlock, PermissionDenialBlock, PermissionScope } from '@/types';
-import { addClaudePermissionRules } from '@/services/claudeSettingsService';
+import type { PermissionRequestBlock, PermissionDenialBlock, PermissionScope } from './deps';
+import { addClaudePermissionRules } from './deps';
 import { getToolDisplayName, MCP_TOOL_PREFIX } from '@/utils/toolConfig';
 
 const log = createLogger('PermissionRequest');

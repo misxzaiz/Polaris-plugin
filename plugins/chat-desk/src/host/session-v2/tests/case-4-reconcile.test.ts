@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { InMemoryMessageLog } from '../core/in-memory-log'
 import { InMemorySessionEventLog, InMemoryStateArbiter } from '../core/in-memory-state'
 import { reconcile } from '../core/reconcile'
-import type { MessageEntry, SessionEventEntry } from '../core/types'
+import type { MessageEntry, SessionEventEntry } from '../../../types'
 
 let seqCounter = 0
 

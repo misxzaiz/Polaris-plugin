@@ -10,14 +10,14 @@ import type {
   EngineId,
   ToolStatus,
   Workspace,
-} from '@/types'
+} from './deps'
 import type { Attachment } from '@/types/attachment'
 import type { BrowserRegion } from '@/types/browserContext'
 import type { AIEvent, ModelUsageBreakdown } from '@/ai-runtime'
 import type { ProfileMode } from '@/types/sessionConfig'
-import type { StreamRateSnapshot } from '@/services/streamRateTracker'
+import type { StreamRateSnapshot } from './deps'
 import type { StoreApi, UseBoundStore } from 'zustand'
-import type { EventRouter } from '@/services/eventRouter'
+import type { EventRouter } from './deps'
 
 /** 当前正在构建的 Assistant 消息 */
 export interface CurrentAssistantMessage {

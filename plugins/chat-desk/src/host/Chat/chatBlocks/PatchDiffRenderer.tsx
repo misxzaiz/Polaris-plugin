@@ -10,10 +10,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { ChevronRight, FilePlus, FileEdit, Trash2 } from 'lucide-react';
-import type { ToolCallBlock } from '@/types';
+import type { ToolCallBlock } from './deps';
 import { DiffViewer } from '../../../shims/misc';
-import { useFileEditorStore } from '@/stores/fileEditorStore';
-import { useWorkspaceStore } from '@/stores/workspaceStore';
+import { useFileEditorStore } from './deps';
+import { useWorkspaceStore } from './deps';
 
 /** 单个文件的操作类型标签 */
 const FILE_TYPE_CONFIG = {

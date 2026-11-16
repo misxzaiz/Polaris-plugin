@@ -7,7 +7,7 @@
 import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, RotateCcw } from 'lucide-react'
-import { useWorkspaceStore } from '@/stores'
+import { useWorkspaceStore } from './deps'
 import type { Attachment } from '@/types/attachment'
 import {
   useActiveSessionActions,

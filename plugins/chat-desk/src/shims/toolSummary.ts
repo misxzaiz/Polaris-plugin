@@ -6,7 +6,7 @@
  */
 
 import { i18n } from './misc';
-import type { ToolStatus } from '../host/types';
+import type { ToolStatus } from '../types';
 import { getToolDisplayName } from './toolConfig';
 import {
   extractFilePath,

@@ -11,7 +11,7 @@
 import { memo, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import type { AgentRunBlock } from '@/types';
+import type { AgentRunBlock } from './deps';
 import { formatDuration, calculateDuration } from '@/utils/toolSummary';
 import { Check, XCircle, Loader2, Circle, ChevronDown, Play } from 'lucide-react';
 

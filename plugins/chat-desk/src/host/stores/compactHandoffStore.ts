@@ -11,7 +11,7 @@
 
 import { create } from 'zustand'
 import i18n from 'i18next'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import { useToastStore } from './toastStore'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
 import {

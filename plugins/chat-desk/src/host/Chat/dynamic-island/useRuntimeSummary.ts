@@ -27,7 +27,7 @@ import type {
   TaskBoardBlock,
   ThinkingBlock,
   ToolCallBlock,
-} from '@/types';
+} from './deps';
 import { parseWorkflowResult } from '../tool-calls/workflowParsers';
 import { extractToolKeyInfo, getToolCategoryDescription, getToolDisplayName } from '@/utils/toolConfig';
 import { deriveChangeSummary, EMPTY_CHANGE_SUMMARY, type SessionChangeSummary } from './changeSummary';

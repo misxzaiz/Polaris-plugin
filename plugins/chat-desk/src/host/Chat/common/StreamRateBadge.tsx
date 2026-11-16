@@ -11,7 +11,7 @@
  */
 import { Gauge, Hourglass } from 'lucide-react';
 import { clsx } from 'clsx';
-import type { StreamRateSnapshot } from '@/services/streamRateTracker';
+import type { StreamRateSnapshot } from './deps';
 
 export interface StreamRateBadgeProps {
   snapshot: StreamRateSnapshot;

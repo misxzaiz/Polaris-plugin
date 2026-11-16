@@ -8,7 +8,7 @@
  * 而非直接 import configStore。
  */
 
-import type { Config } from '../host/types';
+import type { Config } from '../types';
 import { useConfigStore } from './stores';
 
 type PerfConfig = NonNullable<Config['performance']>;

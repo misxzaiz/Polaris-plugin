@@ -4,12 +4,12 @@
 
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { FileMatch } from '@/services/fileSearch';
-import type { Workspace, EngineId } from '@/types';
+import type { FileMatch } from './deps';
+import type { Workspace, EngineId } from './deps';
 import type { PromptSnippet } from '@/types/promptSnippet';
 import type { SkillItem as SkillItemType } from '@/types/skill';
-import type { CliCommandSuggestion } from '@/services/cliSlashCommands';
-import { getEngineDisplayName } from '@/utils/engineDisplay';
+import type { CliCommandSuggestion } from './deps';
+import { getEngineDisplayName } from '../session-config/engineDisplay';
 
 // 分离文件名和目录路径
 function splitPath(relativePath: string): { dir: string; name: string } {

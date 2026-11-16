@@ -11,7 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
-import type { SessionState } from '../kernel/types'
+import type { SessionState } from '../../../types'
 
 // mock kernel 单例：返回可控 FakeKernel
 const fakeKernel = {

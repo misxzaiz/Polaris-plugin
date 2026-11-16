@@ -10,7 +10,7 @@ import { memo, useCallback, useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Grid3x3, RowsIcon, ColumnsIcon, Minus, Plus } from 'lucide-react';
-import { useViewStore } from '@/stores';
+import { useViewStore } from './deps';
 
 /** 预设宽度选项 */
 const WIDTH_PRESETS = [250, 450, 650, 850];

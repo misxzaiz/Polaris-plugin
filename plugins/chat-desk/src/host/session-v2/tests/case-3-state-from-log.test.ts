@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { InMemorySessionEventLog, InMemoryStateArbiter } from '../core/in-memory-state'
-import type { SessionEventEntry } from '../core/types'
+import type { SessionEventEntry } from '../../../types'
 
 let seqCounter = 0
 

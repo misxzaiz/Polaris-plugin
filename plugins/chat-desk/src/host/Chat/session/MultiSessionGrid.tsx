@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { LayoutGrid } from 'lucide-react';
 import { SessionCell } from './SessionCell';
-import { useViewStore } from '@/stores';
+import { useViewStore } from './deps';
 import {
   useSessionMetadataList,
   useActiveSessionId,

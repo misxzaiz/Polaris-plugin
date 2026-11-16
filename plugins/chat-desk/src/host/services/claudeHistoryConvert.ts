@@ -14,7 +14,7 @@
  */
 
 import { generateUUID } from '@/utils/uuid'
-import type { ChatMessage, ContentBlock, UserChatMessage, AssistantChatMessage, SystemChatMessage, ToolCallBlock, TaskBoardBlock, TaskBoardItem } from '@/types'
+import type { ChatMessage, ContentBlock, UserChatMessage, AssistantChatMessage, SystemChatMessage, ToolCallBlock, TaskBoardBlock, TaskBoardItem } from './deps'
 
 /** Claude Code 原生消息（cap.history get_claude_history 返回项） */
 export interface ClaudeCodeMessage {

@@ -5,7 +5,7 @@ vi.mock('@/services/tauri', () => ({
   invoke: vi.fn(),
 }))
 
-import { invoke } from '@/services/tauri'
+import { invoke } from './deps'
 import {
   formatContextBlock,
   getKindSpec,
@@ -13,7 +13,7 @@ import {
   registerContextBlockKind,
   upsertContextBlock,
 } from './contextBlockRegistry'
-import { buildCapReferenceBlock, type CapCatalogEntry } from '@/services/capSlashCommand'
+import { buildCapReferenceBlock, type CapCatalogEntry } from './deps'
 import type { ContextBlock } from '@/stores/conversationStore/types'
 
 const ENTRY: CapCatalogEntry = {

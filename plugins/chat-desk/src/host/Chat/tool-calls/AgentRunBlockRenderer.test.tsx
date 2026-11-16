@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { AgentRunBlockRenderer } from './AgentRunBlockRenderer';
-import type { AgentRunBlock, AgentNestedToolCall } from '../../types';
+import type { AgentRunBlock, AgentNestedToolCall } from '../../../types';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

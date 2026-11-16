@@ -14,9 +14,9 @@
  * 触发方：transport 层收到 resume-complete { gap: true } 时调用。
  */
 
-import type { ConversationStoreInstance } from '../conversationStore/types'
+import type { ConversationStoreInstance } from '../../types'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 import { currentMode, invoke, manualReconnect } from '../../shims/services'
 // 批次 3 类 4：恢复触发源从「前端 isStreaming」切到 kernel 后端权威状态，
 // 消除「页面重载/断线后前端 isStreaming 丢失 → 活跃会话漏恢复」的根因。

@@ -3,25 +3,25 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Folder, Check, Bot, Search, Zap, Link, Plus } from 'lucide-react';
-import { useWorkspaceStore, useConfigStore } from '@/stores';
-import { useOverlayStore } from '@/stores/overlayStore';
+import { useWorkspaceStore, useConfigStore } from './deps';
+import { useOverlayStore } from './deps';
 import {
   useSessionMetadataList,
   useSessionManagerActions,
 } from '@/stores/conversationStore/sessionStoreManager';
 import { useWorkspaceFilter } from '@/components/Workspace/WorkspaceSearchInput';
-import type { EngineId } from '@/types';
-import { getEngineFullName, normalizeEngineId } from '@/utils/engineDisplay';
-import { useEngineMetadataStore } from '@/stores/engineMetadataStore';
+import type { EngineId } from './deps';
+import { getEngineFullName, normalizeEngineId } from '../session-config/engineDisplay';
+import { useEngineMetadataStore } from '../session-config/engineMetadataStore';
 import { SessionConfigSelector } from './SessionConfigSelector';
 import type { SessionRuntimeConfig } from '@/types/sessionConfig';
-import { useSessionConfig } from '@/stores/sessionConfigStore';
+import { useSessionConfig } from '../session-config/sessionConfigStore';
 import {
   readNewSessionPrefs,
   persistNewSessionPrefs,
-} from '@/services/newSessionPrefsService';
+} from './newSessionPrefsService';
 import { OFFICIAL_API_PROFILE, isProfileForEngine } from '@/types/modelProfile';
-import { useModelProfileStore } from '@/stores/modelProfileStore';
+import { useModelProfileStore } from '../session-config/modelProfileStore';
 
 /**
  * 新建会话面板（共享面板体，原 NewSessionButton 内联面板抽出）

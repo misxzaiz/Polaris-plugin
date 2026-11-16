@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { ArrowDown } from 'lucide-react';
 import type { ConversationRound } from '@/utils/conversationRounds';
-import { useWindowSize } from '@/hooks/useWindowSize';
+import { useWindowSize } from './deps';
 
 interface ChatNavigatorProps {
   /** 对话轮次列表 */

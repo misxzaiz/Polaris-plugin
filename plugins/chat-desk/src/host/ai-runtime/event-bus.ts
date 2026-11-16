@@ -16,7 +16,7 @@
  */
 
 import type { AIEvent } from './event'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../logger'
 
 const log = createLogger('EventBus')
 

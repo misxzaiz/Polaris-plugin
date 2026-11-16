@@ -14,7 +14,7 @@ import {
   useActiveSessionId,
   useSessionMetadataList,
 } from '@/stores/conversationStore/sessionStoreManager'
-import { getHandoffEligibility } from '@/services/sessionHandoff'
+import { getHandoffEligibility } from '../../../sessionHandoff'
 
 const CompactHandoffModal = lazy(() =>
   import('./CompactHandoffModal').then((m) => ({ default: m.CompactHandoffModal })),

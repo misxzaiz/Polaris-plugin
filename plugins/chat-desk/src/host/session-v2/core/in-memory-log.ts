@@ -5,7 +5,7 @@
  * 用于验证 append-only 模型的并发安全性和接口正确性。
  */
 
-import type { MessageEntry, MessageLogStorage, MessageContent, ReadOptions } from './types'
+import type { MessageEntry, MessageLogStorage, MessageContent, ReadOptions } from '../../../types'
 
 export class InMemoryMessageLog implements MessageLogStorage {
   /** messageId → 按版本升序排列的条目列表 */

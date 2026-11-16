@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { V2SessionEventLog, V2StateArbiter } from '../core/v2-session-event-log'
 import { V2MessageLog } from '../core/v2-message-log'
 import { reconcile } from '../core/reconcile'
-import type { MessageEntry, SessionEventEntry } from '../core/types'
+import type { MessageEntry, SessionEventEntry } from '../../../types'
 
 // ============================================================================
 // 伪后端：模拟后端 SQLite 的事件日志 + 消息日志 + 状态计算语义

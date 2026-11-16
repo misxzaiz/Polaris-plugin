@@ -18,14 +18,14 @@
 import { Component, Suspense, useCallback, useEffect, useState } from 'react'
 import type { ErrorInfo, ReactNode } from 'react'
 import { AlertTriangle, RefreshCw } from 'lucide-react'
-import type { ContentBlock } from '@/types'
+import type { ContentBlock } from './deps'
 import { chatCardRegistry, type CardEntry } from '@/plugin-system/chatCardRegistry'
 import type {
   PluginChatCardComponent,
   PluginChatCardProps,
   PluginChatCardStatus,
 } from '@/plugin-system/types'
-import { createLogger } from '@/utils/logger'
+import { createLogger } from '../../../logger'
 
 const log = createLogger('BlockCardOverrideHost')
 

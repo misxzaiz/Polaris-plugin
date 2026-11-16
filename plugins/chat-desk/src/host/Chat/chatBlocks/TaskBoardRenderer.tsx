@@ -20,7 +20,7 @@ import {
   ChevronRight,
   ListPlus,
 } from 'lucide-react';
-import type { TaskBoardBlock, TaskBoardItem } from '@/types';
+import type { TaskBoardBlock, TaskBoardItem } from './deps';
 import { TASK_STATUS_CONFIG } from '../chatUtils/constants';
 
 const STATUS_ICON = {

@@ -9,9 +9,9 @@
  * 只读，不改写任何状态；失败返回空数组（不影响恢复主流程）。
  */
 
-import { invoke } from '@/services/transport'
-import type { ChatMessage } from '@/types'
-import { createLogger } from '@/utils/logger'
+import { invoke } from './deps'
+import type { ChatMessage } from './deps'
+import { createLogger } from '../../logger'
 
 const log = createLogger('SessionBackendMessages')
 

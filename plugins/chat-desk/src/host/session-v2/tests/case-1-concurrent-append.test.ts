@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { InMemoryMessageLog } from '../core/in-memory-log'
-import type { MessageEntry } from '../core/types'
+import type { MessageEntry } from '../../../types'
 
 /** 生成消息条目 */
 function makeEntry(

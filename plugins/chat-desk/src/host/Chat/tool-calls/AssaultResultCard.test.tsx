@@ -10,7 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { AssaultResultCard, isAssaultWorkflowOutput } from './AssaultResultCard';
-import type { ToolCallBlock } from '@/types';
+import type { ToolCallBlock } from './deps';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

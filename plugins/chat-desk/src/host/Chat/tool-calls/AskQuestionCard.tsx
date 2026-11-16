@@ -15,11 +15,11 @@ import { memo, useReducer, useCallback, useEffect, useMemo, useRef } from 'react
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Check, HelpCircle, CheckCircle, X, ChevronLeft, ChevronRight, SkipForward } from 'lucide-react';
-import { aiChatDispatch } from '@/services/aiChatDispatch'
-import { createLogger } from '@/utils/logger';
-import { useToastStore } from '@/stores/toastStore';
+import { aiChatDispatch } from './deps'
+import { createLogger } from '../../../logger';
+import { useToastStore } from './deps';
 import { Button } from '../../../shims/misc';
-import type { QuestionBlock, QuestionItem, QuestionOption, SubAnswer } from '@/types';
+import type { QuestionBlock, QuestionItem, QuestionOption, SubAnswer } from './deps';
 import { sessionStoreManager } from '@/stores/conversationStore/sessionStoreManager';
 
 const log = createLogger('AskQuestionCard');

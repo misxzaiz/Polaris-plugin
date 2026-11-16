@@ -28,7 +28,7 @@ import {
   Unlock,
   Activity,
 } from 'lucide-react';
-import type { ToolCallBlock } from '@/types';
+import type { ToolCallBlock } from './deps';
 import { formatTokensStrict } from '@/utils/formatTokens';
 import { ToolCallBlockRenderer } from '../chatBlocks/ToolCallBlockRenderer';
 

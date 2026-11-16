@@ -19,8 +19,8 @@ vi.mock('@/services/transport', () => ({
 
 // Import after mocking
 import { createConversationStore } from './createConversationStore'
-import type { StoreDeps } from './types'
-import type { ContentBlock } from '@/types'
+import type { StoreDeps } from '../../types'
+import type { ContentBlock } from './deps'
 
 type PermissionBlock = Extract<ContentBlock, { type: 'permission_request' }>
 

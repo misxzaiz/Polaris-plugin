@@ -8,7 +8,7 @@
  * @since 2025-02-01
  */
 
-import { createLogger } from './logger'
+import { createLogger } from '../logger'
 
 const log = createLogger('LRUCache')
 

@@ -20,16 +20,16 @@ import {
   type EffortLevel,
   type PermissionMode,
 } from '@/types/sessionConfig'
-import { useCliInfoStore } from '@/stores/cliInfoStore'
-import { useAgentStore } from '@/stores/agentStore'
-import { useConfigStore } from '@/stores'
-import { useModelProfileStore } from '@/stores/modelProfileStore'
-import { useEngineMetadataStore } from '@/stores/engineMetadataStore'
-import { getEngineEffortOptions, getEnginePermissionOptions } from '@/utils/engineCapabilities'
+import { useCliInfoStore } from '../session-config/cliInfoStore'
+import { useAgentStore } from '../session-config/agentStore'
+import { useConfigStore } from './deps'
+import { useModelProfileStore } from '../session-config/modelProfileStore'
+import { useEngineMetadataStore } from '../session-config/engineMetadataStore'
+import { getEngineEffortOptions, getEnginePermissionOptions } from '../session-config/engineCapabilities'
 import { isProfileForEngine, OFFICIAL_API_PROFILE, profileModelOptions, type WireApi } from '@/types/modelProfile'
 import { useActiveSessionId, useSessionMetadataList, sessionStoreManager } from '@/stores/conversationStore/sessionStoreManager'
-import { normalizeEngineId } from '@/utils/engineDisplay'
-import { getEngineSelectors } from '@/utils/engineCapabilities'
+import { normalizeEngineId } from '../session-config/engineDisplay'
+import { getEngineSelectors } from '../session-config/engineCapabilities'
 
 interface SessionConfigSelectorProps {
   /** 当前配置 */

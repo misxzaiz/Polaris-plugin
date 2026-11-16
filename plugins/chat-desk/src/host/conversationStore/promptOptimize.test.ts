@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createConversationStore } from './createConversationStore'
-import type { StoreDeps } from './types'
+import type { StoreDeps } from '../../types'
 
 function createDeps(): StoreDeps {
   return {

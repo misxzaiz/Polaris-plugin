@@ -8,7 +8,7 @@ import DOMPurify from 'dompurify';
 import type { FileMatch } from './services';
 import { isMobileTauriRuntime } from './misc';
 import { isKatexMathEnabled } from './performanceFeatures';
-import { createLogger } from './logger';
+import { createLogger } from '../logger';
 
 const logger = createLogger('cache');
 

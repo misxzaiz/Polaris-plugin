@@ -11,7 +11,7 @@
  */
 
 import { memo } from 'react';
-import type { TextBlock } from '@/types';
+import type { TextBlock } from './deps';
 import { ProgressiveStreamingMarkdown } from '@/utils/lightweightMarkdown';
 import { MarkdownImageSurface } from '../common/MarkdownImageSurface';
 

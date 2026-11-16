@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import type { ContentBlock } from '@/types';
+import type { ContentBlock } from './deps';
 import { ContentBlockErrorBoundary } from '../common/ContentBlockErrorBoundary';
 import { AskQuestionCard } from '../tool-calls/AskQuestionCard';
 import { FormCard } from './FormCard';

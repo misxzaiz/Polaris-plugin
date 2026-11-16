@@ -10,9 +10,9 @@
 import { memo, useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import { aiChatDispatch } from '@/services/aiChatDispatch'
-import { createLogger } from '@/utils/logger';
-import { useToastStore } from '@/stores/toastStore';
+import { aiChatDispatch } from './deps'
+import { createLogger } from '../../../logger';
+import { useToastStore } from './deps';
 import {
   Check,
   XCircle,
@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { useActiveSessionConversationId, useActiveSessionActions } from '@/stores/conversationStore/useActiveSession';
 import { Button } from '../../../shims/misc';
-import type { PlanModeBlock, PlanModeStatus } from '@/types';
+import type { PlanModeBlock, PlanModeStatus } from './deps';
 
 const log = createLogger('PlanModeBlock');
 

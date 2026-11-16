@@ -19,7 +19,7 @@
  * 不会每 token 重扫）；currentBlocks 每次快照现算（单消息块数，代价小）。
  */
 
-import type { AssistantChatMessage, ChatMessage, ContentBlock, ToolCallBlock } from '@/types';
+import type { AssistantChatMessage, ChatMessage, ContentBlock, ToolCallBlock } from './deps';
 import { extractEditDiff, extractWriteInfo, isEditTool, isWriteTool } from '@/utils/diffExtractor';
 import { extractCommand } from '@/utils/toolInputExtractor';
 

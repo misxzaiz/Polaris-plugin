@@ -12,7 +12,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ContentBlockErrorBoundary, withErrorBoundary } from './ContentBlockErrorBoundary';
-import type { ContentBlock } from '@/types';
+import type { ContentBlock } from './deps';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({

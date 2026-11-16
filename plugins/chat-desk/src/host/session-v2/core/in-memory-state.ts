@@ -10,7 +10,7 @@ import type {
   SessionEventLog,
   SessionStatus,
   StateArbiter,
-} from './types'
+} from '../../../types'
 
 // ============================================================================
 // InMemorySessionEventLog

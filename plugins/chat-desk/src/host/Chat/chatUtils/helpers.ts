@@ -2,7 +2,7 @@
  * 聊天组件共享工具函数
  */
 
-import type { AssistantChatMessage, ContentBlock, TextBlock, ToolCallBlock } from '@/types';
+import type { AssistantChatMessage, ContentBlock, TextBlock, ToolCallBlock } from './deps';
 import { markdownCache } from '@/utils/cache';
 
 /** Markdown 渲染器（使用缓存优化） */

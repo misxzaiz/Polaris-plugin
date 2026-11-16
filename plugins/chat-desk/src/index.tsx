@@ -85,3 +85,12 @@ export default function ChatDeskEntry(_props: EntryProps) {
     </>
   );
 }
+
+import { sessionDirectoryStore } from './sessionDirectoryStore'
+import { QuickSwitchPanel } from './QuickSwitchPanel'
+
+try {
+  const c = (globalThis as any).__POLARIS_APP_CORE__
+  if (c?.stores) c.stores.sessionDirectoryStore = sessionDirectoryStore
+  if (c?.components) c.components.QuickSwitchPanel = QuickSwitchPanel
+} catch { /* 宿主过旧 */ }
