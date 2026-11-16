@@ -10,7 +10,7 @@
         "id": "model-desk.panel",
         "area": "activityBar",
         "panelType": "model-desk",
-        "icon": "Server",
+        "icon": "Beaker",
         "labelKey": "plugins.modelDesk",
         "labelDefault": "模型管理台",
         "order": 97

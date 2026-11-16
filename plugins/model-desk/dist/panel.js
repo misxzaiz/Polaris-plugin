@@ -1,10 +1,24 @@
 // src/index.tsx
 import { useEffect as useEffect4, useMemo as useMemo4, useState as useState4 } from "react";
-import { useTranslation as useTranslation4 } from "react-i18next";
+
+// src/i18nShim.ts
+function hostI18n() {
+  return globalThis.__POLARIS_APP_CORE__?.i18n;
+}
+function useTranslation(...namespaces) {
+  const inst = hostI18n();
+  const ns = Array.isArray(namespaces) && namespaces.length > 0 ? namespaces[0] : void 0;
+  if (!inst) {
+    return { t: (key, opts) => key, i18n: void 0 };
+  }
+  return {
+    t: (key, opts) => inst.t(key, { ns, ...typeof opts === "object" && opts ? opts : {} }),
+    i18n: inst
+  };
+}
 
 // src/ModelProviderTab.tsx
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useTranslation } from "react-i18next";
 
 // src/deps.ts
 function core() {
@@ -12,32 +26,35 @@ function core() {
   if (!c?.stores) throw new Error("\u5BBF\u4E3B App Core \u672A\u6302\u8F7D\uFF1A\u8BF7\u628A Polaris \u66F4\u65B0\u5230\u8F83\u65B0\u7248\u672C\u540E\u518D\u6253\u5F00\u672C\u63D2\u4EF6\u3002");
   return c;
 }
-var useModelProfileStore = new Proxy({}, {
-  get: (_t, p) => core().stores.useModelProfileStore[p]
-});
-var useSessionConfig = new Proxy({}, {
-  get: (_t, p) => core().stores.useSessionConfig[p]
-});
-var useEngineMetadataStore = new Proxy({}, {
-  get: (_t, p) => core().stores.useEngineMetadataStore[p]
-});
-var useToastStore = new Proxy({}, {
-  get: (_t, p) => core().stores.useToastStore[p]
-});
-var useConfigStore = new Proxy({}, {
-  get: (_t, p) => core().stores.useConfigStore[p]
-});
-var sessionStoreManager = new Proxy({}, {
-  get: (_t, p) => core().stores.sessionStoreManager[p]
-});
+function forwardStore(name) {
+  const fn = (...args) => {
+    const hook = core().stores[name];
+    if (typeof hook !== "function") throw new Error(`\u5BBF\u4E3B ${name} \u4E0D\u53EF\u7528`);
+    return hook(...args);
+  };
+  return new Proxy(fn, {
+    get: (_t, prop) => {
+      const hook = core().stores[name];
+      const v = hook[prop];
+      return typeof v === "function" ? v.bind(hook) : v;
+    }
+  });
+}
+var useModelProfileStore = forwardStore("useModelProfileStore");
+var useSessionConfig = forwardStore("useSessionConfig");
+var useEngineMetadataStore = forwardStore("useEngineMetadataStore");
+var useToastStore = forwardStore("useToastStore");
+var useConfigStore = forwardStore("useConfigStore");
+var sessionStoreManager = forwardStore("sessionStoreManager");
 function getSessionDirectorySnapshot() {
   const s = core().stores.sessionStoreManager.getState();
   return { metadataMap: s.sessionMetadata, activeSessionId: s.activeSessionId };
 }
-function getEngineDisplayName(...args) {
-  const svc = core().services;
-  const fn = svc.engineDisplay?.getEngineDisplayName ?? svc.getEngineDisplayName;
-  return fn(...args);
+function getEngineDisplayName(engineId) {
+  if (!engineId) return "Claude Code";
+  const metadatas = core().stores.useEngineMetadataStore.getState().metadatas || [];
+  const meta = metadatas.find((m) => m.id === engineId);
+  return meta?.displayName || meta?.name || String(engineId);
 }
 async function testModelProfileConnection(profile) {
   return core().services.transport.invoke("test_model_profile_connection", { profile });
@@ -1397,7 +1414,6 @@ function ModelProviderTab() {
 
 // src/TokenStatsTab.tsx
 import { useEffect as useEffect3, useState as useState3, useMemo as useMemo3, useCallback as useCallback2 } from "react";
-import { useTranslation as useTranslation3 } from "react-i18next";
 
 // node_modules/zustand/esm/vanilla.mjs
 var createStoreImpl = (createState) => {
@@ -1551,7 +1567,6 @@ function clsx() {
 
 // src/TimeRangePicker.tsx
 import { useEffect as useEffect2, useMemo as useMemo2, useRef, useState as useState2 } from "react";
-import { useTranslation as useTranslation2 } from "react-i18next";
 import { jsx as jsx2, jsxs as jsxs2 } from "react/jsx-runtime";
 function fmtDate(d) {
   const p = (n) => String(n).padStart(2, "0");
@@ -1567,7 +1582,7 @@ function dowMon(d) {
   return (d.getDay() + 6) % 7;
 }
 function TimeRangePicker({ start, end, onChange, allowClear = true, minDate, maxDate }) {
-  const { t } = useTranslation2("settings");
+  const { t } = useTranslation("settings");
   const weekdays = t("tokenStats.timeRange.weekdays", { returnObjects: true });
   const WEEKDAYS = Array.isArray(weekdays) && weekdays.length === 7 ? weekdays : ["\u4E00", "\u4E8C", "\u4E09", "\u56DB", "\u4E94", "\u516D", "\u65E5"];
   const [open, setOpen] = useState2(false);
@@ -1891,7 +1906,7 @@ var PRESET_GROUP_LABEL = {
   all: "tokenStats.presetGroup.all"
 };
 function FilterBar({ engineId, model, start, end, activePreset, modelOptions, onEngineChange, onModelChange, onPreset, onRangeChange, onRefresh }) {
-  const { t } = useTranslation3("settings");
+  const { t } = useTranslation("settings");
   const groups = useMemo3(() => {
     const order = ["day", "rolling", "period", "all"];
     return order.map((g) => ({ group: g, items: PRESETS.filter((p) => p.group === g) })).filter((g) => g.items.length > 0);
@@ -1948,7 +1963,7 @@ function FilterBar({ engineId, model, start, end, activePreset, modelOptions, on
   ] });
 }
 function TokenStatsTab() {
-  const { t } = useTranslation3("settings");
+  const { t } = useTranslation("settings");
   const { loaded, loadData, refreshData, getSummary, getModelStats, getEngineStats, filterParams } = useTokenAnalyticsStore2();
   const [engineFilter, setEngineFilter] = useState3("");
   const [modelFilter, setModelFilter] = useState3("");
@@ -2287,7 +2302,7 @@ function TokenStatsTab() {
 import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
 var log3 = createLogger("model-desk");
 function ModelDeskEntry() {
-  const { t } = useTranslation4("settings");
+  const { t } = useTranslation("settings");
   const [view, setView] = useState4("provider");
   useEffect4(() => {
     log3.info("model-desk panel mounted");

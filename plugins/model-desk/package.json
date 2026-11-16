@@ -4,7 +4,7 @@
   "private": true,
   "description": "model-desk 插件(打包用)：模型供应商管理台——Profile CRUD/连接测试/拉模型/Token 用量看板",
   "scripts": {
-    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime --external:react-dom --external:react-i18next",
+    "build": "node build.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
