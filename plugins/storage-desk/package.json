@@ -1,0 +1,21 @@
+{
+  "name": "storage-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "storage-desk 插件(打包用)：存储管理台——数据根/OPFS 迁移/切换向导",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "zustand": "^5.1.0"
+  }
+}

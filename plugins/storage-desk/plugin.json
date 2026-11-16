@@ -1,0 +1,31 @@
+{
+  "id": "storage-desk",
+  "name": "存储管理台",
+  "version": "0.1.0",
+  "description": "把「数据根在哪、占了多少、OPFS 旧数据迁没迁、怎么换位置」从翻 config.json + 手工拷目录变成可视化管理台：数据根信息/子目录占用、OPFS 迁移状态与统计、旧数据扫描迁移、数据根切换向导（switch_only/move_data）。数据面走 cap.data_root 总线 + 宿主 opfsHelpers 桥，零外联。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "storage-desk.panel",
+        "area": "activityBar",
+        "panelType": "storage-desk",
+        "icon": "BookOpen",
+        "labelKey": "plugins.storageDesk",
+        "labelDefault": "存储管理台",
+        "order": 95
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {},
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/storage-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/storage-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/storage-desk/storage-desk.zip"
+  }
+}
