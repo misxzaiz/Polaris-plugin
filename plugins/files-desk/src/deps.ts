@@ -69,7 +69,7 @@ function forwardAny(path: string, name: string): any {
   }
 }
 export const createLogger: any = forwardAny('utils', 'createLogger')
-export const formatFileSize: any = forwardAny('utils', 'formatFileSize')
+export { formatFileSize } from './vendor/types/attachment'
 export const fsGetFileInfo: any = forwardAny('tauri', 'fsGetFileInfo')
 export const generateUUID: any = forwardAny('tauri', 'generateUUID')
 export const normalizePath: any = forwardAny('utils', 'normalizePath')

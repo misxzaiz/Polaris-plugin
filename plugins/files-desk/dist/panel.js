@@ -31,6 +31,82 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
+// src/vendor/types/attachment.ts
+function formatFileSize(bytes) {
+  if (bytes === 0) return "0 B";
+  const k6 = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i2 = Math.floor(Math.log(bytes) / Math.log(k6));
+  return `${parseFloat((bytes / Math.pow(k6, i2)).toFixed(1))} ${sizes[i2]}`;
+}
+var ATTACHMENT_LIMITS;
+var init_attachment = __esm({
+  "src/vendor/types/attachment.ts"() {
+    ATTACHMENT_LIMITS = {
+      /** 最大附件数量 */
+      maxCount: 10,
+      /** 单张图片最大尺寸 (20MB) */
+      maxImageSize: 20 * 1024 * 1024,
+      /** 单个文件最大尺寸 (50MB) */
+      maxFileSize: 50 * 1024 * 1024,
+      /** 总附件最大尺寸 (100MB) */
+      maxTotalSize: 100 * 1024 * 1024,
+      /** 支持的图片类型 */
+      supportedImageTypes: ["image/png", "image/jpeg", "image/gif", "image/webp", "image/bmp"],
+      /** 支持的文本文件类型 */
+      supportedTextTypes: [
+        "text/plain",
+        "text/markdown",
+        "text/html",
+        "text/css",
+        "text/javascript",
+        "application/json",
+        "application/xml",
+        "text/xml",
+        "text/yaml",
+        "application/yaml"
+      ],
+      /** 支持的代码文件扩展名 */
+      codeExtensions: [
+        ".ts",
+        ".tsx",
+        ".js",
+        ".jsx",
+        ".vue",
+        ".svelte",
+        ".py",
+        ".rb",
+        ".go",
+        ".rs",
+        ".java",
+        ".kt",
+        ".swift",
+        ".c",
+        ".cpp",
+        ".h",
+        ".hpp",
+        ".cs",
+        ".php",
+        ".sh",
+        ".bash",
+        ".zsh",
+        ".ps1",
+        ".sql",
+        ".graphql",
+        ".yaml",
+        ".yml",
+        ".toml",
+        ".ini",
+        ".conf",
+        ".md",
+        ".rst",
+        ".txt",
+        ".log"
+      ]
+    };
+  }
+});
+
 // src/deps.ts
 var deps_exports = {};
 __export(deps_exports, {
@@ -102,9 +178,10 @@ function forwardAny(path4, name2) {
     return fn3(...args);
   };
 }
-var useTabStore, useFileEditorStore, useWorkspaceStore, useOverlayStore, useConfigStore, useThemeStore, useEditorSettingsStore, useEditorContextStore, useNarrowTabStore, useCommandStore, useViewStore, useFileExplorerStore, useToastStore, services, eventBus, tauri, pluginSystem, hostComponents, listen, invoke, currentMode, searchFileContentsDetailed, fileService, createLogger, formatFileSize, fsGetFileInfo, generateUUID, normalizePath, openInDefaultApp, importFn;
+var useTabStore, useFileEditorStore, useWorkspaceStore, useOverlayStore, useConfigStore, useThemeStore, useEditorSettingsStore, useEditorContextStore, useNarrowTabStore, useCommandStore, useViewStore, useFileExplorerStore, useToastStore, services, eventBus, tauri, pluginSystem, hostComponents, listen, invoke, currentMode, searchFileContentsDetailed, fileService, createLogger, fsGetFileInfo, generateUUID, normalizePath, openInDefaultApp, importFn;
 var init_deps = __esm({
   "src/deps.ts"() {
+    init_attachment();
     useTabStore = forward("stores", "useTabStore");
     useFileEditorStore = forward("stores", "useFileEditorStore");
     useWorkspaceStore = forward("stores", "useWorkspaceStore");
@@ -129,7 +206,6 @@ var init_deps = __esm({
     searchFileContentsDetailed = (...args) => core().services.tauri.searchFileContentsDetailed(...args);
     fileService = new Proxy({}, { get: (_t, p3) => core().services.tauri[p3] });
     createLogger = forwardAny("utils", "createLogger");
-    formatFileSize = forwardAny("utils", "formatFileSize");
     fsGetFileInfo = forwardAny("tauri", "fsGetFileInfo");
     generateUUID = forwardAny("tauri", "generateUUID");
     normalizePath = forwardAny("utils", "normalizePath");
