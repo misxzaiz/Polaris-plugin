@@ -20,7 +20,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createConversationStore } from './createConversationStore'
-import type { StoreDeps } from '../../types'
+import type { StoreDeps } from './types'
 import type { TextBlock, ThinkingBlock } from './deps'
 
 function createDeps(): StoreDeps {

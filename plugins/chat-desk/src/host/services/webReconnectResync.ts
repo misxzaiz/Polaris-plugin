@@ -14,7 +14,7 @@
  * 触发方：transport 层收到 resume-complete { gap: true } 时调用。
  */
 
-import type { ConversationStoreInstance } from '../../types'
+import type { ConversationStoreInstance } from '../conversationStore/types'
 import { sessionStoreManager } from '../conversationStore/sessionStoreManager'
 import { createLogger } from '../../logger'
 import { currentMode, invoke, manualReconnect } from '../../shims/services'

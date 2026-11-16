@@ -53,3 +53,9 @@ export { calculateDuration, formatDuration, escapeRegExp, stripAnsiCodes, parseG
 export { usePerformanceFlag } from './performanceFeatures'
 
 export { modKey } from './path'
+
+// ── cn（宿主 @/utils/cn 同源：clsx 直通）──
+import { clsx, type ClassValue } from 'clsx'
+export function cn(...inputs: ClassValue[]) {
+  return clsx(inputs)
+}

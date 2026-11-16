@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createConversationStore } from './createConversationStore'
 import type { AIEvent } from '../../ai-runtime'
-import type { StoreDeps } from '../../types'
+import type { StoreDeps } from './types'
 
 // mock configStore：捕获 updateConfigPatch，验证 cap.ui.chat patch 落 store
 const updateConfigPatchMock = vi.fn()

@@ -15,15 +15,7 @@
  */
 
 import type { ChatMessage } from '@/types/chat'
-import type {
-  SendMessageInput,
-  SendResult,
-  ContinueOptions,
-  SessionState,
-  SessionSnapshot,
-  StateChangeHandler,
-  KernelEvent,
-} from '../../../types'
+import type { SendMessageInput, SendResult, ContinueOptions, SessionState, SessionSnapshot, StateChangeHandler, KernelEvent } from '../kernel/types'
 
 // ============================================================================
 // 能力 1：消息发送（用户直接交互 — 全景图类 1）
@@ -190,4 +182,4 @@ export interface SessionKernel
 // 命名空间导出（供模块引用）
 // ============================================================================
 
-export type { KernelEvent } from '../../../types'
+export type { KernelEvent } from '../kernel/types'

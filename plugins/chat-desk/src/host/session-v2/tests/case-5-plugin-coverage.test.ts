@@ -19,13 +19,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { InMemoryMessageLog } from '../core/in-memory-log'
 import { InMemorySessionEventLog, InMemoryStateArbiter } from '../core/in-memory-state'
 import { InMemoryPluginHost } from '../core/plugin-host'
-import type {
-  MessageEntry,
-  SessionEventEntry,
-  SessionRecord,
-  SessionStatus,
-  SessionPlugin,
-} from '../../../types'
+import type { MessageEntry, SessionEventEntry, SessionRecord, SessionStatus, SessionPlugin } from '../core/types'
 
 // ============================================================================
 // 测试工具

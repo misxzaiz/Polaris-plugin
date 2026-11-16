@@ -14,12 +14,7 @@
  */
 
 import { invoke } from './deps'
-import type {
-  SessionEventEntry,
-  SessionEventLog,
-  SessionStatus,
-  StateArbiter,
-} from '../../../types'
+import type { SessionEventEntry, SessionEventLog, SessionStatus, StateArbiter } from '../core/types'
 
 /** 后端命令名（与 src-tauri commands/session_state_commands.rs + web/api/ipc.rs 对齐） */
 const CMD = {

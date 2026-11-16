@@ -19,4 +19,7 @@ export * from '../host/types/browserContext'
 export * from '../host/types/promptSnippet'
 export * from '../host/types/skill'
 export * from '../host/types/sessionConfig'
-export * from '../types'
+// src/types/index 与上面 host/types 同名文件双 re-export 会让 esbuild 报
+// 「Ambiguous import has multiple matching exports」（toAppError/ErrorSource 等）。
+// host/types 已覆盖 src/types 全部同名集合，这里只补 host 树没有的 session 域类型。
+export * from '../types/session'

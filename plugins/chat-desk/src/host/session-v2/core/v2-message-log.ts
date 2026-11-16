@@ -14,7 +14,7 @@
  */
 
 import { invoke } from './deps'
-import type { MessageEntry, MessageLogStorage, MessageContent, ReadOptions } from '../../../types'
+import type { MessageEntry, MessageLogStorage, MessageContent, ReadOptions } from '../core/types'
 
 /** 后端命令名（与 src-tauri commands/session_messages.rs + web/api/ipc.rs 对齐） */
 const CMD = {

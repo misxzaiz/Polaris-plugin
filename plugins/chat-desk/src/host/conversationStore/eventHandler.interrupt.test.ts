@@ -27,7 +27,7 @@ vi.mock('@/stores/cliInfoStore', () => ({
 vi.mock('@/plugin-system/chatCardRegistry', () => ({ chatCardRegistry: { get: () => undefined } }))
 
 import { handleAIEvent } from './eventHandler'
-import type { ConversationStore } from '../../types'
+import type { ConversationStore } from './types'
 
 const currentMsg = {
   id: 'msg-1',

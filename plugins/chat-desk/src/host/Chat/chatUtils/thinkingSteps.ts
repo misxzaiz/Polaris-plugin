@@ -2,7 +2,7 @@
  * 思考内容步骤提取
  */
 
-import type { ThinkingStep } from '../../../types';
+import type { ThinkingStep } from './types';
 
 /**
  * 从思考内容中提取关键步骤

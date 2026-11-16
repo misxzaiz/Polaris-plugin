@@ -24,7 +24,7 @@ import type {
   TransferMode,
   TransferModeInput,
   PackToFileResult,
-} from '../../../types'
+} from './types'
 
 const log = createLogger('ConversationPackager')
 
@@ -207,4 +207,4 @@ export async function packForReference(
   return packToSummary(messages, title, idSeed, workspacePath)
 }
 
-export type { TransferMode, TransferModeInput } from '../../../types'
+export type { TransferMode, TransferModeInput } from './types'

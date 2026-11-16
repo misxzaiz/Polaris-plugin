@@ -88,9 +88,16 @@ export default function ChatDeskEntry(_props: EntryProps) {
 
 import { sessionDirectoryStore } from './sessionDirectoryStore'
 import { QuickSwitchPanel } from './QuickSwitchPanel'
+import { WorkspaceBadge, WorkspaceMenu } from './Session/WorkspaceBadgeAndMenu'
+import { CreateSessionModal } from './Session/CreateSessionModal'
 
 try {
   const c = (globalThis as any).__POLARIS_APP_CORE__
   if (c?.stores) c.stores.sessionDirectoryStore = sessionDirectoryStore
-  if (c?.components) c.components.QuickSwitchPanel = QuickSwitchPanel
+  if (c?.components) {
+    c.components.QuickSwitchPanel = QuickSwitchPanel
+    c.components.WorkspaceBadge = WorkspaceBadge
+    c.components.WorkspaceMenu = WorkspaceMenu
+    c.components.CreateSessionModal = CreateSessionModal
+  }
 } catch { /* 宿主过旧 */ }

@@ -12,7 +12,7 @@
  * - seq 顺序号：解析时按 seq 排序，即使文件行被意外重排也能恢复正确顺序
  */
 
-import type { ChatMessage, EngineId } from '../../index'
+import type { ChatMessage } from './chat'; import type { EngineId } from './config'
 
 /** 当前 JSONL 格式版本（用于未来兼容性迁移）。v2：新增 preview（最后一条消息摘要）；v3：新增 tokenUsage（会话级 token 用量汇总） */
 export const DIALOG_FORMAT_VERSION = 3

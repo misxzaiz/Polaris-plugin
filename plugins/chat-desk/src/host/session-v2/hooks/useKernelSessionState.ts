@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from 'react'
 import { getKernel } from '../kernel/registry'
-import type { SessionState } from '../../../types'
+import type { SessionState } from '../kernel/types'
 import { sessionStoreManager } from '@/stores/conversationStore/sessionStoreManager'
 
 // ============================================================================

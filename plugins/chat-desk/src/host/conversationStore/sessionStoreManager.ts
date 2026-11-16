@@ -10,15 +10,7 @@ import { generateUUID } from '@/utils/uuid';
 
 import { createStore, useStore } from 'zustand'
 import type { AIEvent } from '../ai-runtime'
-import type {
-  ConversationStore,
-  ConversationStoreInstance,
-  SessionManagerState,
-  SessionManagerActions,
-  SessionMetadata,
-  CreateSessionOptions,
-  StoreDeps,
-} from '../../types'
+import type { ConversationStore, ConversationStoreInstance, SessionManagerState, SessionManagerActions, SessionMetadata, CreateSessionOptions, StoreDeps } from './types'
 import { createConversationStore } from './createConversationStore'
 import { getEventRouter } from '../services/eventRouter'
 import { useConfigStore } from '../../shims/stores'

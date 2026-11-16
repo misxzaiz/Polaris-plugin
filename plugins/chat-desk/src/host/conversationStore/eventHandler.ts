@@ -16,7 +16,7 @@ import type {
   ToolCallBlock,
 } from './deps'
 import { chatCardRegistry } from '@/plugin-system/chatCardRegistry'
-import type { ConversationStore } from '../../types'
+import type { ConversationStore } from './types'
 import { sessionStoreManager } from './sessionStoreManager'
 import { normalizeEngineId } from '../session-config/engineDisplay'
 import { useWorkspaceStore } from './deps'

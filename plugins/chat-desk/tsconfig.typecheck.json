@@ -56,6 +56,9 @@
       "@/components/Common/*": [
         "src/shims/misc.ts"
       ],
+      "@/components/Common": [
+        "src/shims/misc.ts"
+      ],
       "@/components/Workspace/*": [
         "src/shims/misc.ts"
       ],

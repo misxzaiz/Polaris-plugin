@@ -175,6 +175,29 @@ export function createSessionFromHistory(...args: unknown[]): string {
   return typeof fn === 'function' ? (fn(...args) as string) : ''
 }
 
+// ── 宿主 chrome 兼容出口（useWindowManager / NotificationCenterPanel 消费）──
+// 宿主侧 SessionDirectoryLike 形态 = { getState(): { sessions, metadataMap,
+// activeSessionId, createSession, switchSession, ... }, subscribe }。
+// 这里把投影 state + 动作委托包成该形态，回挂 __POLARIS_APP_CORE__.stores。
+export const sessionDirectoryStore = {
+  getState: (): SessionDirectoryState => {
+    ensureProjected()
+    return state
+  },
+  subscribe: (cb: () => void): (() => void) => {
+    listeners.add(cb)
+    return () => listeners.delete(cb)
+  },
+  switchSession,
+  deleteSession,
+  updateSessionTitle,
+  updateSessionWorkspace,
+  addContextWorkspace,
+  removeContextWorkspace,
+  createSession,
+  createSessionFromHistory,
+}
+
 // ── chrome 会话 hooks（P6：替代 conversationStore 的 useSessionMetadataList 等）──
 export function useActiveSessionId(): string | null {
   ensureProjected()

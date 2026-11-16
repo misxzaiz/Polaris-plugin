@@ -5,13 +5,7 @@
  * 借鉴银行对账：日志即真相，前端只是缓存，差异触发修复。
  */
 
-import type {
-  MessageEntry,
-  MessageLogStorage,
-  SessionEventLog,
-  SessionStatus,
-  ReconcileResult,
-} from '../../../types'
+import type { MessageEntry, MessageLogStorage, SessionEventLog, SessionStatus, ReconcileResult } from '../core/types'
 
 /**
  * 执行对账

@@ -12,13 +12,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import {
-  MessageStateMachine,
-  SessionStateMachine,
-  MESSAGE_STATE_TRANSITIONS,
-  SESSION_STATE_TRANSITIONS,
-} from '../../../types'
-import type { MessageStateName } from '../../../types'
+import { MessageStateMachine, SessionStateMachine, MESSAGE_STATE_TRANSITIONS, SESSION_STATE_TRANSITIONS } from '../kernel/types'
+import type { MessageStateName } from '../kernel/types'
 
 describe('阶段 0：Message 状态机', () => {
   let machine: MessageStateMachine

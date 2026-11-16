@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createConversationStore } from './createConversationStore'
-import type { StoreDeps } from '../../types'
+import type { StoreDeps } from './types'
 
 vi.mock('@/services/dialogStorage', () => ({ dialogStorageService: {} }))
 vi.mock('./sessionStoreManager', () => ({ sessionStoreManager: {} }))

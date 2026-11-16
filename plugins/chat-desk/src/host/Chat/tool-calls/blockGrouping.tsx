@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { ChevronRight, ChevronUp, Layers } from 'lucide-react';
 import type { ContentBlock, ThinkingBlock, ToolCallBlock } from './deps';
-import type { CollapsibleBlockGroup } from '../../../types';
+import type { CollapsibleBlockGroup } from '../chatUtils/types';
 import { isEmptyTextBlock } from '../chatUtils/helpers';
 import { ThinkingBlockRenderer } from '../chatBlocks/ThinkingBlockRenderer';
 import { renderContentBlock } from '../chatBlocks';

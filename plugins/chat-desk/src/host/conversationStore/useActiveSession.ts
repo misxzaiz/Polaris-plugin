@@ -17,7 +17,7 @@ import {
 import { useKernelSessionState } from '@/session-v2/hooks/useKernelSessionState'
 import { getKernel } from '@/session-v2/kernel/registry'
 import { useWorkspaceStore } from '../../shims/stores'
-import type { ConversationStore, ConversationState, InputDraft, PromptOptimizeState } from '../../types'
+import type { ConversationStore, ConversationState, InputDraft, PromptOptimizeState } from './types'
 import type { ContentBlock } from './deps'
 import type { ChatMessage } from '@/types/chat'
 

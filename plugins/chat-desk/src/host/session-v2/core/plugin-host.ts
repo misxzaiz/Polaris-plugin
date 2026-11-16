@@ -10,19 +10,7 @@
  * onSessionStatusChange / beforeRequestStart）能否覆盖 6 类触发场景。
  */
 
-import type {
-  LoadPhase,
-  SessionPlugin,
-  PluginContext,
-  PluginHost,
-  BeforeCreateSessionHook,
-  BeforeAppendMessageHook,
-  OnSessionStatusChangeHook,
-  BeforeRequestStartHook,
-  SessionRecord,
-  MessageEntry,
-  SessionStatus,
-} from '../../../types'
+import type { LoadPhase, SessionPlugin, PluginContext, PluginHost, BeforeCreateSessionHook, BeforeAppendMessageHook, OnSessionStatusChangeHook, BeforeRequestStartHook, SessionRecord, MessageEntry, SessionStatus } from '../core/types'
 
 export class InMemoryPluginHost implements PluginHost {
   private plugins = new Map<string, SessionPlugin>()

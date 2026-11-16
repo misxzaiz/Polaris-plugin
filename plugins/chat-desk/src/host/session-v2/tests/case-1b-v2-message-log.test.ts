@@ -11,7 +11,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { V2MessageLog } from '../core/v2-message-log'
-import type { MessageEntry } from '../../../types'
+import type { MessageEntry } from '../core/types'
 
 // ============================================================================
 // 伪后端：模拟后端 SQLite 的 append-only 语义（INSERT OR IGNORE 幂等/修订链）

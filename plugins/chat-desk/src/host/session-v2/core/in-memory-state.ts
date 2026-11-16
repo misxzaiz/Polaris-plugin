@@ -5,12 +5,7 @@
  * 验证"状态是计算结果不是存储值"的可靠性。
  */
 
-import type {
-  SessionEventEntry,
-  SessionEventLog,
-  SessionStatus,
-  StateArbiter,
-} from '../../../types'
+import type { SessionEventEntry, SessionEventLog, SessionStatus, StateArbiter } from '../core/types'
 
 // ============================================================================
 // InMemorySessionEventLog

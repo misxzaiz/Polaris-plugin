@@ -31,7 +31,7 @@ import {
   packToSummary,
   resolveTransferMode,
   estimateTokens,
-} from '../../index'
+} from './conversationPackager/index'
 import { normalizeEngineId } from '../session-config/engineDisplay'
 import { getPathBasename, normalizeWorkspacePath } from '@/utils/workspacePath'
 

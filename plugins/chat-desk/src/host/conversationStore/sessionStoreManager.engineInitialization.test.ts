@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useConfigStore } from '../configStore'
 import { sessionStoreManager } from './sessionStoreManager'
-import type { Config } from '../../types'
+import type { Config } from '../types'
 
 function resetSessionManager() {
   const state = sessionStoreManager.getState()

@@ -27,19 +27,11 @@ import type {
   EventHandlingCapability,
   RecoveryCapability,
 } from './capabilities'
-import type {
-  SendMessageInput,
-  SendResult,
-  ContinueOptions,
-  SessionState,
-  SessionSnapshot,
-  StateChangeHandler,
-  KernelEvent,
-} from '../../../types'
+import type { SendMessageInput, SendResult, ContinueOptions, SessionState, SessionSnapshot, StateChangeHandler, KernelEvent } from '../kernel/types'
 import type { ChatMessage } from '@/types/chat'
 import type { SessionStoreManager, ConversationStore, ConversationStoreInstance } from '@/stores/conversationStore/types'
 import type { AIEvent } from '@/ai-runtime'
-import type { SessionStatus } from '../../../types'
+import type { SessionStatus } from '../core/types'
 
 // ============================================================================
 // 委托目标类型（依赖注入，仅类型引用，不 import 具体实现）

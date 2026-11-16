@@ -14,7 +14,7 @@ import { RemoteSessionsQuickSection } from '../Session/RemoteSessionsPanel'
 import { CreateWorkspaceModal } from '@/components/Workspace/CreateWorkspaceModal'
 import { WorkspaceSearchInput, useWorkspaceFilter } from '@/components/Workspace/WorkspaceSearchInput'
 import { createLogger } from '../logger'
-import type { QuickSessionInfo, QuickWorkspaceInfo } from '../types'
+import type { QuickSessionInfo, QuickWorkspaceInfo } from './types'
 
 const log = createLogger('QuickSwitchContent')
 

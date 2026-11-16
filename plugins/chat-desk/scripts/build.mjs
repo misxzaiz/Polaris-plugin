@@ -95,7 +95,26 @@ const aliasPlugin = {
     });
     // host 树源码内的相对引用（../configStore、../../Common/Icons 等）→ shims/host
     build.onResolve({ filter: /^\.\.?\// }, (args) => {
-      const norm = resolve(args.importer, args.path).split(String.fromCharCode(92)).join('/');
+      // K-F2：域内统一依赖出口 —— 任何目录里的 `./deps` / `../deps` 都指 src/deps.ts
+      //（host/Chat/**、QuickSwitchPanel/、Session/ 等多个目录都这样引）。
+      // 必须在 norm 计算前拦：importer 是文件路径，resolve(file, './deps') 会得到错误路径。
+      const base = args.path.split('/').pop();
+      if (base === 'deps') return { path: join(srcRoot, 'deps.ts'), external: false };
+      // K-F2：newSessionPrefsService 在插件根（src/newSessionPrefsService.ts，宿主
+      // services 同源拷贝，invoke 改走 deps 桥）。host/Chat/session、Session/ 的
+      // `./newSessionPrefsService` 相对引用统一指过去。
+      if (base === 'newSessionPrefsService') return { path: join(srcRoot, 'newSessionPrefsService.ts'), external: false };
+      // K-F2：session-config 域（engineDisplay/engineCapabilities/五个 store 等）
+      // 已随会话域迁入插件 src/session-config（本地同源实现 + bridgeTransport 直连）。
+      // host/Chat/**、host/conversationStore、host/services/**、Session/ 的
+      // `../session-config/*` 相对引用统一解析到该目录；否则 resolve(file, '../..') 会算错层级。
+      if (base !== undefined && args.path.endsWith('session-config') === false && /(^|\/)\.\.\/session-config\//.test(args.path)) {
+        const sub = args.path.replace(/^(\.\.\/)+session-config\//, '');
+        return { path: resolveHostFile(join(srcRoot, 'session-config', sub)), external: false };
+      }
+      // 根修：importer 是文件路径，resolve(file, rel) 会把相对段拼到文件名后
+      //（src/index.tsx/Session/...），必须先取目录再 resolve。
+      const norm = resolve(dirname(args.importer), args.path).split(String.fromCharCode(92)).join('/');
       const srcNorm = srcRoot.split(String.fromCharCode(92)).join('/');
       if (!norm.startsWith(srcNorm)) return null;
       const tail = norm.slice(srcNorm.length + 1);
@@ -132,8 +151,10 @@ const aliasPlugin = {
         || tail.startsWith('host/conversationStore/toastStore')
         || tail.includes('/Common/')
         || tail.includes('/Diff/')
-        || tail.includes('/Session/')
-        || tail.includes('/Workspace/');
+        // K-F2：src/Session/、src/QuickSwitchPanel/ 已是插件本地实现目录，
+        // 相对引用交还 esbuild 默认解析（不再转发 shims/misc）。
+        || (tail.includes('/Session/') && !tail.startsWith('Session/') && !tail.startsWith('QuickSwitchPanel/'))
+        || (tail.includes('/Workspace/') && !tail.startsWith('Session/') && !tail.startsWith('QuickSwitchPanel/'));
       if (hit) {
         // store 单例 → shims/stores.ts；其余（Common/Diff/...）→ shims/misc.ts
         const isStore = /\/(configStore|workspaceStore|viewStore|sessionConfigStore|toastStore|pluginStore|cliInfoStore|agentStore|engineMetadataStore|modelProfileStore|overlayStore|uiSlotStore|snippetStore|skillStore|compactHandoffStore|dispatchStore|fileEditorStore)\.ts$/.test(tail)
