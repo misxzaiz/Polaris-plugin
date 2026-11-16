@@ -1,0 +1,23 @@
+{
+  "name": "model-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "model-desk 插件(打包用)：模型供应商管理台——Profile CRUD/连接测试/拉模型/Token 用量看板",
+  "scripts": {
+    "build": "esbuild src/index.tsx --bundle --format=esm --outfile=dist/panel.js --jsx=automatic --external:react --external:react/jsx-runtime --external:react-dom --external:react-i18next",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "zustand": "^5.1.0"
+  }
+}
