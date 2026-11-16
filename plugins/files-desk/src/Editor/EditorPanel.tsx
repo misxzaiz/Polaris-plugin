@@ -3,7 +3,7 @@
  */
 
 import { useFileEditorStore } from '../deps';
-import { CodeMirrorEditor } from './Editor';
+import { CodeMirrorEditor } from '../Editor';
 import { EditorHeader } from './EditorHeader';
 import { MarkdownEditor } from './MarkdownEditor';
 import { StatusBar } from './StatusBar';
