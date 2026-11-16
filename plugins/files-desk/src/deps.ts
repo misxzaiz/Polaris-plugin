@@ -56,6 +56,7 @@ export function getEngineDisplayName(...args: any[]): string {
   return meta?.displayName || meta?.name || String(id ?? 'Claude Code')
 }
 
+export const searchFileContentsDetailed: any = (...args: any[]) => core().services.tauri.searchFileContentsDetailed(...args)
 export const fileService: any = new Proxy({}, { get: (_t, p) => core().services.tauri[p] })
 
 /** 宿主 utils/tauri 任意函数兜底转发 */

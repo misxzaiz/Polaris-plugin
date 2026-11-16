@@ -23,7 +23,7 @@ import { useTranslation } from 'react-i18next'
 import { useTabStore } from '../deps'
 import { useNarrowTabStore } from '../deps'
 import { EditorPanel } from './EditorPanel'
-import { DiffViewer } from './DiffViewer'
+import { DiffViewer } from '../Diff/DiffViewer'
 
 export function NarrowTabOverlay() {
   const { t } = useTranslation('common')

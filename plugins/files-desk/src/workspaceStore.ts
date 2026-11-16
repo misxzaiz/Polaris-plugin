@@ -8,12 +8,12 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Workspace, WorkspaceStore } from '@/types';
+import type { Workspace, WorkspaceStore } from './deps';
 import type { WorkspaceEntry } from '@/types/config';
-import * as tauri from '@/services/tauri';
-import { createLogger } from '@/utils/logger';
+import * as tauri from './deps';
+import { createLogger } from './logger';
 import { generateUUID } from '@/utils/uuid';
-import { eventBus } from '@/services/eventBus';
+import { eventBus } from './deps';
 
 const log = createLogger('WorkspaceStore');
 
