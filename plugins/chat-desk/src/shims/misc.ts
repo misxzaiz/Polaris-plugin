@@ -54,18 +54,37 @@ export function listEnabledPluginMcpServers(pluginStates: unknown): any {
 }
 
 // ── components（宿主共享 UI 件）──
-export const Button: any = (core().components as Record<string, any>).Button
-export const JsonTreeView: any = (core().components as Record<string, any>).JsonTreeView
-export const OverlayGuard: any = (core().components as Record<string, any>).OverlayGuard
-export const ConfirmDialog: any = (core().components as Record<string, any>).ConfirmDialog
-export const Modal: any = (core().components as Record<string, any>).Modal
-export const DropdownMenu: any = (core().components as Record<string, any>).DropdownMenu
-export const DiffViewer: any = (core().components as Record<string, any>).DiffViewer
-export const WorkspaceBadge: any = (core().components as Record<string, any>).WorkspaceBadge
-export const WorkspaceMenu: any = (core().components as Record<string, any>).WorkspaceMenu
-export const WorkspaceSearchInput: any = (core().components as Record<string, any>).WorkspaceSearchInput
-export const useWorkspaceFilter: any = (core().components as Record<string, any>).useWorkspaceFilter
-export const CreateWorkspaceModal: any = (core().components as Record<string, any>).CreateWorkspaceModal
+// K-F2 真机实证：这里若顶层直接读 core().components.X，shims/misc init（blob 求值期）
+// 会把「面板尚未回挂时的 undefined」固化进 const，SessionCell 渲染 <undefined> 报
+// Element type is invalid（SessionCell2）。改为惰性转发：运行时每次访问取桥上最新值。
+function lazyComponent(name: string): any {
+  return new Proxy(function () {}, {
+    get: (_t, p) => {
+      const v = (core().components as Record<string, any>)[name]
+      return v?.[p as string]
+    },
+    apply: (_t, _this, args) => {
+      const v = (core().components as Record<string, any>)[name]
+      return typeof v === 'function' ? v(...args) : v
+    },
+    construct: (_t, args) => {
+      const v = (core().components as Record<string, any>)[name]
+      return new v(...args)
+    },
+  })
+}
+export const Button: any = lazyComponent('Button')
+export const JsonTreeView: any = lazyComponent('JsonTreeView')
+export const OverlayGuard: any = lazyComponent('OverlayGuard')
+export const ConfirmDialog: any = lazyComponent('ConfirmDialog')
+export const Modal: any = lazyComponent('Modal')
+export const DropdownMenu: any = lazyComponent('DropdownMenu')
+export const DiffViewer: any = lazyComponent('DiffViewer')
+export const WorkspaceBadge: any = lazyComponent('WorkspaceBadge')
+export const WorkspaceMenu: any = lazyComponent('WorkspaceMenu')
+export const WorkspaceSearchInput: any = lazyComponent('WorkspaceSearchInput')
+export const useWorkspaceFilter: any = new Proxy({}, { get: (_t, p) => (core().components as Record<string, any>).useWorkspaceFilter?.[p as string] })
+export const CreateWorkspaceModal: any = lazyComponent('CreateWorkspaceModal')
 export const Icons: any = new Proxy({}, { get: () => (core().components as Record<string, any>).Icons })
 
 // ── @tauri-apps/api/core ──
@@ -106,6 +125,22 @@ export function getModelProfileById(id: string | null | undefined): any {
 }
 
 // ── Icons（宿主 Common/Icons 共享）──
-export const IconSend: any = (core().components as Record<string, any>).Icons.IconSend
-export const IconStop: any = (core().components as Record<string, any>).Icons.IconStop
-export const IconPaperclip: any = (core().components as Record<string, any>).Icons.IconPaperclip
+// 同理惰性：IconSend 等在 blob 求值期读桥会固化 undefined。
+// Proxy target 必须是 function（React 以 typeof type==='function' 判组件；target 为 {} 会被判 object → Element type is invalid）。
+function lazyIcon(name: string): any {
+  return new Proxy(function () {}, {
+    get: (_t, p) => (core().components as Record<string, any>).Icons?.[name]?.[p as string],
+    // React 渲染函数组件时会 call type(props)；转发到桥上真组件。
+    apply: (_t, _this, args) => {
+      const v = (core().components as Record<string, any>).Icons?.[name]
+      return typeof v === 'function' ? v(...args) : v
+    },
+    construct: (_t, args) => {
+      const v = (core().components as Record<string, any>).Icons?.[name]
+      return new v(...args)
+    },
+  })
+}
+export const IconSend: any = lazyIcon('IconSend')
+export const IconStop: any = lazyIcon('IconStop')
+export const IconPaperclip: any = lazyIcon('IconPaperclip')

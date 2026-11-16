@@ -19,8 +19,8 @@ import { sessionStoreManager } from '@/stores/conversationStore/sessionStoreMana
 import { useViewStore } from './deps';
 import { useWorkspaceStore, useConfigStore } from './deps';
 import { getChatDisplayStyleVars } from './deps';
-import { WorkspaceBadge } from '../../../shims/misc';
-import { WorkspaceMenu } from '../../../shims/misc';
+import { WorkspaceBadge } from '../../../Session/WorkspaceBadge';
+import { WorkspaceMenu } from '../../../Session/WorkspaceMenu';
 import { getEngineDisplayName, getEngineFullName } from '../session-config/engineDisplay';
 
 /** 状态图标映射 */

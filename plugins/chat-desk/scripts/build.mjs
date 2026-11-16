@@ -153,7 +153,7 @@ const aliasPlugin = {
         || tail.includes('/Diff/')
         // K-F2：src/Session/、src/QuickSwitchPanel/ 已是插件本地实现目录，
         // 相对引用交还 esbuild 默认解析（不再转发 shims/misc）。
-        || (tail.includes('/Session/') && !tail.startsWith('Session/') && !tail.startsWith('QuickSwitchPanel/'))
+        || (tail.includes('/Session/') && !tail.startsWith('Session/') && !tail.startsWith('QuickSwitchPanel/') && !tail.startsWith('host/Chat/session/'))
         || (tail.includes('/Workspace/') && !tail.startsWith('Session/') && !tail.startsWith('QuickSwitchPanel/'));
       if (hit) {
         // store 单例 → shims/stores.ts；其余（Common/Diff/...）→ shims/misc.ts

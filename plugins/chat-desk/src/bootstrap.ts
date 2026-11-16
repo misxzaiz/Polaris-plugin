@@ -14,7 +14,7 @@ import { sessionStoreManager } from './host/conversationStore/sessionStoreManage
 import * as useActiveSession from './host/conversationStore/useActiveSession'
 import { ensureEventRouterInitialized } from './host/services/eventRouter'
 import * as _sessionRestoreSvc from './host/services/sessionRestore'
-import * as _sessionHandoffSvc from './sessionHandoff'
+import * as _sessionHandoffSvc from './host/services/sessionHandoff'
 import * as _aiChatDispatchSvc from './host/services/aiChatDispatch'
 import * as _dispatchTaskSvc from './host/services/dispatchTaskService'
 import * as _sessionArchiveSvc from './host/services/sessionArchive'

@@ -4986,7 +4986,7 @@ function useStoreHook(name) {
   return hook2;
 }
 function localManager() {
-  return sessionStoreManager2;
+  return globalThis.__CHAT_DESK_LOCAL_MANAGER__ ?? window.__CHAT_DESK_LOCAL_MANAGER__ ?? sessionStoreManager2;
 }
 function getSessionConfig() {
   return useSessionConfig.getState().config;
@@ -5059,7 +5059,12 @@ var init_stores = __esm({
     useFileEditorStore = useStoreHook("useFileEditorStore");
     useCompactHandoffStore = (...args) => (globalThis.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore ?? window.__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore)(...args);
     useDispatchStore = useStoreHook("useDispatchStore");
-    sessionStoreManager = sessionStoreManager2;
+    sessionStoreManager = new Proxy({}, {
+      get: (_t, p3) => {
+        const m4 = globalThis.__CHAT_DESK_LOCAL_MANAGER__ ?? window.__CHAT_DESK_LOCAL_MANAGER__ ?? sessionStoreManager2;
+        return m4?.[p3];
+      }
+    });
     hostActive = new Proxy({}, {
       get: (_t, p3) => {
         const local2 = useActiveSession_exports[p3];
@@ -5119,6 +5124,23 @@ function isMobileTauriRuntime() {
 function listEnabledPluginMcpServers(pluginStates) {
   return core().pluginSystem.listEnabledPluginMcpServers(pluginStates);
 }
+function lazyComponent(name) {
+  return new Proxy(function() {
+  }, {
+    get: (_t, p3) => {
+      const v5 = core().components[name];
+      return v5?.[p3];
+    },
+    apply: (_t, _this, args) => {
+      const v5 = core().components[name];
+      return typeof v5 === "function" ? v5(...args) : v5;
+    },
+    construct: (_t, args) => {
+      const v5 = core().components[name];
+      return new v5(...args);
+    }
+  });
+}
 function convertFileSrc(path4) {
   return core().tauri.convertFileSrc(path4);
 }
@@ -5131,6 +5153,21 @@ function getActiveModelProfile2() {
 function getModelProfileById(id38) {
   const s3 = core().stores.useModelProfileStore.getState();
   return s3.profiles?.find?.((p3) => p3.id === id38);
+}
+function lazyIcon(name) {
+  return new Proxy(function() {
+  }, {
+    get: (_t, p3) => core().components.Icons?.[name]?.[p3],
+    // React 渲染函数组件时会 call type(props)；转发到桥上真组件。
+    apply: (_t, _this, args) => {
+      const v5 = core().components.Icons?.[name];
+      return typeof v5 === "function" ? v5(...args) : v5;
+    },
+    construct: (_t, args) => {
+      const v5 = core().components.Icons?.[name];
+      return new v5(...args);
+    }
+  });
 }
 var i18n, pluginRegistry, chatCardRegistry, Button, JsonTreeView, OverlayGuard, ConfirmDialog, Modal, DropdownMenu, DiffViewer, WorkspaceBadge, WorkspaceMenu, WorkspaceSearchInput, useWorkspaceFilter, CreateWorkspaceModal, Icons, parseEventToLog, IconSend, IconStop, IconPaperclip;
 var init_misc = __esm({
@@ -5148,23 +5185,23 @@ var init_misc = __esm({
     chatCardRegistry = new Proxy({}, {
       get: (_t, prop) => core().pluginSystem.chatCardRegistry[prop]
     });
-    Button = core().components.Button;
-    JsonTreeView = core().components.JsonTreeView;
-    OverlayGuard = core().components.OverlayGuard;
-    ConfirmDialog = core().components.ConfirmDialog;
-    Modal = core().components.Modal;
-    DropdownMenu = core().components.DropdownMenu;
-    DiffViewer = core().components.DiffViewer;
-    WorkspaceBadge = core().components.WorkspaceBadge;
-    WorkspaceMenu = core().components.WorkspaceMenu;
-    WorkspaceSearchInput = core().components.WorkspaceSearchInput;
-    useWorkspaceFilter = core().components.useWorkspaceFilter;
-    CreateWorkspaceModal = core().components.CreateWorkspaceModal;
+    Button = lazyComponent("Button");
+    JsonTreeView = lazyComponent("JsonTreeView");
+    OverlayGuard = lazyComponent("OverlayGuard");
+    ConfirmDialog = lazyComponent("ConfirmDialog");
+    Modal = lazyComponent("Modal");
+    DropdownMenu = lazyComponent("DropdownMenu");
+    DiffViewer = lazyComponent("DiffViewer");
+    WorkspaceBadge = lazyComponent("WorkspaceBadge");
+    WorkspaceMenu = lazyComponent("WorkspaceMenu");
+    WorkspaceSearchInput = lazyComponent("WorkspaceSearchInput");
+    useWorkspaceFilter = new Proxy({}, { get: (_t, p3) => core().components.useWorkspaceFilter?.[p3] });
+    CreateWorkspaceModal = lazyComponent("CreateWorkspaceModal");
     Icons = new Proxy({}, { get: () => core().components.Icons });
     parseEventToLog = (...args) => globalThis.__POLARIS_APP_CORE__.services.schedulerStoreUtils.parseEventToLog(...args);
-    IconSend = core().components.Icons.IconSend;
-    IconStop = core().components.Icons.IconStop;
-    IconPaperclip = core().components.Icons.IconPaperclip;
+    IconSend = lazyIcon("IconSend");
+    IconStop = lazyIcon("IconStop");
+    IconPaperclip = lazyIcon("IconPaperclip");
   }
 });
 
@@ -9984,6 +10021,7 @@ var init_sessionStoreManager = __esm({
       if (__appCore?.stores) __appCore.stores.sessionStoreManager = created;
       return created;
     })();
+    globalThis.__CHAT_DESK_LOCAL_MANAGER__ = sessionStoreManager2;
     cachedMetadataMap = null;
     cachedMetadataArray = null;
   }
@@ -11041,6 +11079,21 @@ var init_sessionExport = __esm({
 });
 
 // src/host/services/conversationPackager/index.ts
+function resolveTransferMode(input) {
+  const sourceId = normalizeEngineId(input.sourceEngineId);
+  const targetId = normalizeEngineId(input.targetEngineId);
+  const sameEngine = sourceId === targetId;
+  if (sameEngine && ENGINE_FORK_CAPABILITY[targetId]) {
+    return "fork";
+  }
+  if (input.estimatedTokens < TOKEN_FULL_CAP) {
+    return "full-file";
+  }
+  if (targetId === "simple-ai" && input.estimatedTokens < TOKEN_MSG_HISTORY_CAP) {
+    return "message-history";
+  }
+  return "summary";
+}
 function estimateTokens(messages) {
   let chars = 0;
   for (const m4 of messages) {
@@ -11078,7 +11131,24 @@ async function packToFile(messages, title2, idSeed, workspacePath) {
     markdown: markdown2
   };
 }
-var log12, HANDOFF_DIR;
+async function packToSummary(messages, title2, idSeed, workspacePath) {
+  const markdown2 = messagesToMarkdown(messages, { title: title2, compact: true });
+  const fileName = `${sanitizeFileName(title2)}-${idSeed.slice(0, 8)}-summary.md`;
+  const relPath = `${HANDOFF_DIR}/${fileName}`;
+  const absPath = joinPath(workspacePath, relPath);
+  await invoke("create_file", { path: absPath, content: markdown2 });
+  log12.info("\u5BF9\u8BDD\u6458\u8981\u5DF2\u6253\u5305\u843D\u76D8", { absPath, messageCount: messages.length });
+  return {
+    fileRef: {
+      absPath,
+      relPath,
+      // 摘要体积远小于原文，用实际 markdown 长度估算
+      tokenEstimate: Math.ceil(markdown2.length / 4)
+    },
+    markdown: markdown2
+  };
+}
+var log12, HANDOFF_DIR, ENGINE_FORK_CAPABILITY, TOKEN_FULL_CAP, TOKEN_MSG_HISTORY_CAP;
 var init_conversationPackager = __esm({
   "src/host/services/conversationPackager/index.ts"() {
     init_deps();
@@ -11088,10 +11158,158 @@ var init_conversationPackager = __esm({
     init_logger();
     log12 = createLogger("ConversationPackager");
     HANDOFF_DIR = ".polaris-handoff";
+    ENGINE_FORK_CAPABILITY = {
+      "claude-code": true,
+      "simple-ai": false
+    };
+    TOKEN_FULL_CAP = 3e3;
+    TOKEN_MSG_HISTORY_CAP = 8e3;
   }
 });
 
 // src/host/services/sessionHandoff.ts
+var sessionHandoff_exports = {};
+__export(sessionHandoff_exports, {
+  getHandoffEligibility: () => getHandoffEligibility,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
+  handoffSessionToNewSession: () => handoffSessionToNewSession,
+  loadConversationMessages: () => loadConversationMessages
+});
+function getHandoffEligibility(sessionId) {
+  const manager2 = sessionStoreManager2.getState();
+  const meta3 = manager2.sessionMetadata.get(sessionId);
+  const store4 = manager2.stores.get(sessionId)?.getState();
+  if (!meta3 || !store4) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
+  if (!meta3.workspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
+  if (!store4.conversationId && store4.messages.length === 0) {
+    return { enabled: false, reasonKey: "handoff.reasonEmpty" };
+  }
+  return { enabled: true };
+}
+async function handoffSessionToNewSession(sessionId, targetEngineId) {
+  const manager2 = sessionStoreManager2.getState();
+  const meta3 = manager2.sessionMetadata.get(sessionId);
+  const store4 = manager2.stores.get(sessionId)?.getState();
+  if (!meta3 || !store4) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoSession") };
+  }
+  if (!meta3.workspaceId) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+  }
+  const sourceEngineId = normalizeEngineId(meta3.engineId);
+  const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
+  const conversationId = store4.conversationId ?? "";
+  const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === meta3.workspaceId);
+  if (!workspace?.path) {
+    return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+  }
+  try {
+    const fallbackMessages = [...store4.getPersistableMessages(), ...store4.archivedMessages ?? []];
+    const chatMessages = await loadConversationMessages(sourceEngineId, conversationId, fallbackMessages);
+    if (chatMessages.length === 0) {
+      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
+    }
+    return await createHandoffSession({
+      messages: chatMessages,
+      sourceTitle: meta3.title,
+      sourceEngineId,
+      sourceConversationId: conversationId,
+      targetEngineId: targetEngine,
+      workspaceId: meta3.workspaceId,
+      workspacePath: workspace.path
+    });
+  } catch (e3) {
+    const err = e3 instanceof Error ? e3 : new Error(String(e3));
+    log13.error("\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sessionId });
+    return { ok: false, error: err.message };
+  }
+}
+function getHistoryHandoffEligibility(item, fallbackWorkspaceId) {
+  if (!item.id) return { enabled: false, reasonKey: "handoff.reasonNoSession" };
+  if (!item.projectPath && !fallbackWorkspaceId) return { enabled: false, reasonKey: "handoff.reasonNoWorkspace" };
+  return { enabled: true };
+}
+async function handoffHistorySessionToNewSession(item, fallbackWorkspaceId, targetEngineId) {
+  try {
+    const workspaceId = await resolveHistoryWorkspaceId(item, fallbackWorkspaceId);
+    if (!workspaceId) {
+      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+    }
+    const workspace = useWorkspaceStore.getState().workspaces.find((w5) => w5.id === workspaceId);
+    if (!workspace?.path) {
+      return { ok: false, error: i18n_default.t("chat:handoff.reasonNoWorkspace") };
+    }
+    const chatMessages = await loadHistoryChatMessages(item);
+    if (chatMessages.length === 0) {
+      return { ok: false, error: i18n_default.t("chat:handoff.emptyContent") };
+    }
+    const sourceEngineId = normalizeEngineId(item.engineId);
+    const targetEngine = normalizeEngineId(targetEngineId ?? sourceEngineId);
+    return await createHandoffSession({
+      messages: chatMessages,
+      sourceTitle: item.title,
+      sourceEngineId,
+      sourceConversationId: item.id,
+      targetEngineId: targetEngine,
+      workspaceId,
+      workspacePath: workspace.path
+    });
+  } catch (e3) {
+    const err = e3 instanceof Error ? e3 : new Error(String(e3));
+    log13.error("\u5386\u53F2\u4F1A\u8BDD\u7EED\u63A5\u5931\u8D25", err, { sourceId: item.id });
+    return { ok: false, error: err.message };
+  }
+}
+async function createHandoffSession(params) {
+  const {
+    messages,
+    sourceTitle,
+    sourceEngineId,
+    sourceConversationId,
+    targetEngineId,
+    workspaceId,
+    workspacePath
+  } = params;
+  const estimatedTokens = estimateTokens(messages);
+  let mode = resolveTransferMode({
+    sourceEngineId,
+    targetEngineId,
+    messageCount: messages.length,
+    estimatedTokens
+  });
+  if (mode === "fork" && !sourceConversationId) mode = "summary";
+  if (mode === "message-history") mode = "summary";
+  const manager2 = sessionStoreManager2.getState();
+  const newTitle = i18n_default.t("chat:handoff.newSessionTitle", { title: sourceTitle });
+  if (mode === "fork") {
+    const newSessionId2 = manager2.createSession({
+      type: "project",
+      workspaceId,
+      title: newTitle,
+      engineId: targetEngineId,
+      forkFromId: sourceConversationId
+    });
+    log13.info("\u7EED\u63A5\u65B0\u4F1A\u8BDD\u5DF2\u521B\u5EFA\uFF08fork\uFF09", { sourceConversationId, newSessionId: newSessionId2, targetEngineId });
+    return { ok: true, newSessionId: newSessionId2 };
+  }
+  const packer = mode === "full-file" ? packToFile : packToSummary;
+  const { fileRef } = await packer(messages, sourceTitle, sourceConversationId, workspacePath);
+  log13.info("\u4F1A\u8BDD\u5DF2\u5BFC\u51FA", { mode, absPath: fileRef.absPath, messageCount: messages.length, targetEngineId });
+  const newSessionId = manager2.createSession({
+    type: "project",
+    workspaceId,
+    title: newTitle,
+    engineId: targetEngineId
+  });
+  const newStore = manager2.stores.get(newSessionId)?.getState();
+  if (newStore) {
+    const guide = i18n_default.t("chat:handoff.guidePrompt", { ref: `@${fileRef.relPath}` });
+    newStore.updateInputDraft({ text: guide, attachments: [] });
+  }
+  log13.info("\u7EED\u63A5\u65B0\u4F1A\u8BDD\u5DF2\u521B\u5EFA", { mode, newSessionId, targetEngineId });
+  return { ok: true, newSessionId };
+}
 async function loadConversationMessages(engineId, conversationId, fallbackMessages) {
   if (conversationId) {
     try {
@@ -11117,11 +11335,50 @@ async function loadConversationMessages(engineId, conversationId, fallbackMessag
   }
   return [];
 }
+async function loadHistoryChatMessages(item) {
+  const engineId = normalizeEngineId(item.engineId);
+  try {
+    if (engineId === "claude-code") {
+      const raw = await aiHistoryDispatch({
+        action: "get_claude_history",
+        sessionId: item.id,
+        projectPath: item.claudeProjectName
+      });
+      return raw.length > 0 ? withAssistantEngineId2(convertClaudeHistoryToChatMessages(raw), engineId) : [];
+    }
+    const msgs = await dialogStorageService.getConversationMessages(item.id);
+    return msgs.length > 0 ? withAssistantEngineId2(normalizeRecoveredMessages2(msgs), engineId) : [];
+  } catch (e3) {
+    log13.warn("\u52A0\u8F7D\u5386\u53F2\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { sourceId: item.id, engineId, error: String(e3) });
+    return [];
+  }
+}
 function withAssistantEngineId2(messages, engineId) {
   return messages.map((message) => {
     if (message.type !== "assistant" || message.engineId) return message;
     return { ...message, engineId };
   });
+}
+async function resolveHistoryWorkspaceId(item, fallbackWorkspaceId) {
+  const projectPath = item.projectPath?.trim();
+  const workspaceState = useWorkspaceStore.getState();
+  if (projectPath) {
+    const normalizedProjectPath = normalizeWorkspacePath(projectPath);
+    let workspace = workspaceState.workspaces.find(
+      (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+    );
+    if (workspace) return workspace.id;
+    try {
+      await workspaceState.createWorkspace(getPathBasename(projectPath), projectPath, false);
+      workspace = useWorkspaceStore.getState().workspaces.find(
+        (w5) => normalizeWorkspacePath(w5.path) === normalizedProjectPath
+      );
+      if (workspace) return workspace.id;
+    } catch (error3) {
+      log13.warn("Failed to resolve handoff workspace", { error: String(error3), projectPath });
+    }
+  }
+  return fallbackWorkspaceId ?? void 0;
 }
 var log13;
 var init_sessionHandoff = __esm({
@@ -11776,14 +12033,14 @@ __export(services_exports, {
   getCliCommandSuggestions: () => getCliCommandSuggestions,
   getDefaultCompactInstruction: () => getDefaultCompactInstruction2,
   getEventRouter: () => getEventRouter2,
-  getHandoffEligibility: () => getHandoffEligibility,
-  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility,
+  getHandoffEligibility: () => getHandoffEligibility2,
+  getHistoryHandoffEligibility: () => getHistoryHandoffEligibility2,
   getPendingPlans: () => getPendingPlans,
   getPendingQuestions: () => getPendingQuestions,
   getTracker: () => getTracker,
   getUserSystemPrompt: () => getUserSystemPrompt,
-  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession,
-  handoffSessionToNewSession: () => handoffSessionToNewSession,
+  handoffHistorySessionToNewSession: () => handoffHistorySessionToNewSession2,
+  handoffSessionToNewSession: () => handoffSessionToNewSession2,
   initDispatchTaskListener: () => initDispatchTaskListener,
   invoke: () => invoke,
   isListableRemote: () => isListableRemote,
@@ -11853,7 +12110,7 @@ function aiChatDispatch2(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility, handoffSessionToNewSession, getHistoryHandoffEligibility, handoffHistorySessionToNewSession, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey, readPromptHistoryEntries, persistPromptHistoryEntries, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs, persistNewSessionPrefs, searchFiles, addClaudePermissionRules, readClaudeSettings, writeClaudeSettings, getClaudeSettingsPath, saveMarkdownImage, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -11892,10 +12149,10 @@ var init_services = __esm({
     loadMessagesForItem2 = (...args) => loadMessagesForItem(...args);
     loadBackendMessages = (...args) => coreService("sessionArchive").loadBackendMessages(...args);
     aiHistoryDispatch = (...args) => coreService("aiHistoryDispatch").aiHistoryDispatch(...args);
-    getHandoffEligibility = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
-    handoffSessionToNewSession = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
-    getHistoryHandoffEligibility = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
-    handoffHistorySessionToNewSession = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
+    getHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHandoffEligibility(...args);
+    handoffSessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffSessionToNewSession(...args);
+    getHistoryHandoffEligibility2 = (...args) => coreService("sessionHandoff").getHistoryHandoffEligibility(...args);
+    handoffHistorySessionToNewSession2 = (...args) => coreService("sessionHandoff").handoffHistorySessionToNewSession(...args);
     loadConversationMessages2 = (...args) => coreService("sessionHandoff").loadConversationMessages(...args);
     compactAndHandoff2 = (...args) => compactAndHandoff(...args);
     requestCompactHandoff = (...args) => compactAndHandoff(...args);
@@ -312424,8 +312681,8 @@ __export(CompactHandoffModal_exports, {
   CompactHandoffModal: () => CompactHandoffModal,
   default: () => CompactHandoffModal_default
 });
-import { useEffect as useEffect24, useMemo as useMemo19, useRef as useRef24, useState as useState40 } from "react";
-import { jsx as jsx54, jsxs as jsxs48 } from "react/jsx-runtime";
+import { useEffect as useEffect25, useMemo as useMemo20, useRef as useRef25, useState as useState41 } from "react";
+import { jsx as jsx56, jsxs as jsxs50 } from "react/jsx-runtime";
 function toProfileEngine2(engineId) {
   const e3 = normalizeEngineId(engineId);
   return e3 === "simple-ai" ? "simple-ai" : e3 === "claude-code" ? "claude" : e3;
@@ -312435,7 +312692,7 @@ function EnginePicker({
   onChange,
   disabled
 }) {
-  return /* @__PURE__ */ jsx54("div", { className: "grid grid-cols-4 gap-1", children: ENGINE_OPTIONS.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs48(
+  return /* @__PURE__ */ jsx56("div", { className: "grid grid-cols-4 gap-1", children: ENGINE_OPTIONS.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs50(
     "button",
     {
       type: "button",
@@ -312448,8 +312705,8 @@ function EnginePicker({
         value3 === id38 ? "bg-primary/10 text-primary border-primary/30" : "text-text-secondary hover:text-text-primary hover:bg-background-hover border-border-subtle"
       ),
       children: [
-        /* @__PURE__ */ jsx54(Icon2, { size: 15 }),
-        /* @__PURE__ */ jsx54("span", { children: label })
+        /* @__PURE__ */ jsx56(Icon2, { size: 15 }),
+        /* @__PURE__ */ jsx56("span", { children: label })
       ]
     },
     id38
@@ -312462,9 +312719,9 @@ function Dropdown({
   onChange,
   disabled
 }) {
-  const [open2, setOpen] = useState40(false);
-  const ref = useRef24(null);
-  useEffect24(() => {
+  const [open2, setOpen] = useState41(false);
+  const ref = useRef25(null);
+  useEffect25(() => {
     const onClickOutside = (e3) => {
       if (ref.current && !ref.current.contains(e3.target)) setOpen(false);
     };
@@ -312472,8 +312729,8 @@ function Dropdown({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
   const current = options2.find((o2) => o2.value === value3);
-  return /* @__PURE__ */ jsxs48("div", { ref, className: "relative", children: [
-    /* @__PURE__ */ jsxs48(
+  return /* @__PURE__ */ jsxs50("div", { ref, className: "relative", children: [
+    /* @__PURE__ */ jsxs50(
       "button",
       {
         type: "button",
@@ -312485,14 +312742,14 @@ function Dropdown({
           disabled ? "opacity-50 cursor-not-allowed" : "hover:border-primary/50"
         ),
         children: [
-          /* @__PURE__ */ jsx54("span", { className: clsx("truncate", !current && "text-text-tertiary"), children: current?.label ?? placeholder }),
-          /* @__PURE__ */ jsx54(ChevronDown, { size: 14, className: "opacity-50 shrink-0" })
+          /* @__PURE__ */ jsx56("span", { className: clsx("truncate", !current && "text-text-tertiary"), children: current?.label ?? placeholder }),
+          /* @__PURE__ */ jsx56(ChevronDown, { size: 14, className: "opacity-50 shrink-0" })
         ]
       }
     ),
-    open2 && !disabled && /* @__PURE__ */ jsxs48("div", { className: "absolute top-full left-0 right-0 mt-1 z-dropdown max-h-[220px] overflow-y-auto bg-background-elevated border border-border rounded-lg shadow-lg", children: [
-      options2.length === 0 && /* @__PURE__ */ jsx54("div", { className: "px-3 py-2 text-xs text-text-tertiary", children: "\u2014" }),
-      options2.map((o2) => /* @__PURE__ */ jsxs48(
+    open2 && !disabled && /* @__PURE__ */ jsxs50("div", { className: "absolute top-full left-0 right-0 mt-1 z-dropdown max-h-[220px] overflow-y-auto bg-background-elevated border border-border rounded-lg shadow-lg", children: [
+      options2.length === 0 && /* @__PURE__ */ jsx56("div", { className: "px-3 py-2 text-xs text-text-tertiary", children: "\u2014" }),
+      options2.map((o2) => /* @__PURE__ */ jsxs50(
         "button",
         {
           type: "button",
@@ -312505,8 +312762,8 @@ function Dropdown({
             value3 === o2.value && "bg-primary/10 text-primary"
           ),
           children: [
-            /* @__PURE__ */ jsx54("span", { className: "font-medium truncate", children: o2.label }),
-            o2.description && /* @__PURE__ */ jsx54("span", { className: "text-text-tertiary text-[10px] truncate", children: o2.description })
+            /* @__PURE__ */ jsx56("span", { className: "font-medium truncate", children: o2.label }),
+            o2.description && /* @__PURE__ */ jsx56("span", { className: "text-text-tertiary text-[10px] truncate", children: o2.description })
           ]
         },
         o2.value
@@ -312523,7 +312780,7 @@ function CompactHandoffModal({
   const { t: t5 } = useTranslation("chat");
   const sourceEngine = normalizeEngineId(engineId);
   const profiles = useModelProfileStore2((s3) => s3.profiles);
-  const sourceDefaults = useMemo19(() => {
+  const sourceDefaults = useMemo20(() => {
     const meta3 = sessionStoreManager.getState().sessionMetadata.get(sessionId);
     const sessionConfig = getSessionConfig2();
     const activeProfileId = useModelProfileStore2.getState().activeProfileId ?? void 0;
@@ -312535,21 +312792,21 @@ function CompactHandoffModal({
     const model = meta3?.model || sessionConfig.model || "";
     return { profileId, model };
   }, [sessionId]);
-  const [compactEngine, setCompactEngine] = useState40(sourceEngine);
-  const [compactProfileId, setCompactProfileId] = useState40(sourceDefaults.profileId);
-  const [compactModel, setCompactModel] = useState40(sourceDefaults.model);
-  const [instruction, setInstruction] = useState40(() => getDefaultCompactInstruction2());
-  const [newEngine, setNewEngine] = useState40(sourceEngine);
-  const [mode, setMode] = useState40("newSession");
-  const [showInstruction, setShowInstruction] = useState40(false);
-  const profileOptions = useMemo19(
+  const [compactEngine, setCompactEngine] = useState41(sourceEngine);
+  const [compactProfileId, setCompactProfileId] = useState41(sourceDefaults.profileId);
+  const [compactModel, setCompactModel] = useState41(sourceDefaults.model);
+  const [instruction, setInstruction] = useState41(() => getDefaultCompactInstruction2());
+  const [newEngine, setNewEngine] = useState41(sourceEngine);
+  const [mode, setMode] = useState41("newSession");
+  const [showInstruction, setShowInstruction] = useState41(false);
+  const profileOptions = useMemo20(
     () => [
       { value: "", label: t5("sessionConfig.officialApi"), description: t5("sessionConfig.officialApiDesc") },
       ...profiles.filter((p3) => isProfileForEngine(p3, toProfileEngine2(compactEngine))).map((p3) => ({ value: p3.id, label: p3.name, description: p3.baseUrl }))
     ],
     [profiles, compactEngine, t5]
   );
-  const modelOptions = useMemo19(() => {
+  const modelOptions = useMemo20(() => {
     const profile = profiles.find((p3) => p3.id === compactProfileId);
     const base = profile ? (profile.modelOptions?.length ? profile.modelOptions : [profile.model]).filter(Boolean) : [];
     const set5 = new Set(base);
@@ -312578,26 +312835,26 @@ function CompactHandoffModal({
     }
   };
   const handleCancel = () => onClose();
-  return /* @__PURE__ */ jsx54(OverlayGuard, { label: "CompactHandoffModal", children: /* @__PURE__ */ jsx54("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4", children: /* @__PURE__ */ jsxs48("div", { className: "bg-background-elevated rounded-xl shadow-2xl border border-border w-[440px] max-w-[92vw] max-h-[88vh] flex flex-col", children: [
-    /* @__PURE__ */ jsxs48("div", { className: "flex items-center justify-between px-5 py-4 border-b border-border shrink-0", children: [
-      /* @__PURE__ */ jsxs48("div", { className: "flex items-center gap-2", children: [
-        /* @__PURE__ */ jsx54(Archive, { className: "w-5 h-5 text-primary" }),
-        /* @__PURE__ */ jsx54("h2", { className: "text-base font-semibold text-text-primary", children: t5("compactHandoff.title") })
+  return /* @__PURE__ */ jsx56(OverlayGuard, { label: "CompactHandoffModal", children: /* @__PURE__ */ jsx56("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/40 p-4", children: /* @__PURE__ */ jsxs50("div", { className: "bg-background-elevated rounded-xl shadow-2xl border border-border w-[440px] max-w-[92vw] max-h-[88vh] flex flex-col", children: [
+    /* @__PURE__ */ jsxs50("div", { className: "flex items-center justify-between px-5 py-4 border-b border-border shrink-0", children: [
+      /* @__PURE__ */ jsxs50("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsx56(Archive, { className: "w-5 h-5 text-primary" }),
+        /* @__PURE__ */ jsx56("h2", { className: "text-base font-semibold text-text-primary", children: t5("compactHandoff.title") })
       ] }),
-      /* @__PURE__ */ jsx54(
+      /* @__PURE__ */ jsx56(
         "button",
         {
           onClick: handleCancel,
           className: "p-1 rounded-md text-text-tertiary hover:text-text-primary hover:bg-background-hover",
-          children: /* @__PURE__ */ jsx54(X, { className: "w-4 h-4" })
+          children: /* @__PURE__ */ jsx56(X, { className: "w-4 h-4" })
         }
       )
     ] }),
-    /* @__PURE__ */ jsxs48("div", { className: "px-5 py-4 overflow-y-auto flex flex-col gap-4", children: [
-      /* @__PURE__ */ jsx54("p", { className: "text-xs text-text-tertiary leading-relaxed", children: t5("compactHandoff.description", { title: sessionTitle }) }),
-      /* @__PURE__ */ jsxs48("div", { className: "flex flex-col gap-2", children: [
-        /* @__PURE__ */ jsx54("span", { className: "text-xs font-medium text-text-secondary", children: t5("compactHandoff.compactEngineLabel") }),
-        /* @__PURE__ */ jsx54(
+    /* @__PURE__ */ jsxs50("div", { className: "px-5 py-4 overflow-y-auto flex flex-col gap-4", children: [
+      /* @__PURE__ */ jsx56("p", { className: "text-xs text-text-tertiary leading-relaxed", children: t5("compactHandoff.description", { title: sessionTitle }) }),
+      /* @__PURE__ */ jsxs50("div", { className: "flex flex-col gap-2", children: [
+        /* @__PURE__ */ jsx56("span", { className: "text-xs font-medium text-text-secondary", children: t5("compactHandoff.compactEngineLabel") }),
+        /* @__PURE__ */ jsx56(
           EnginePicker,
           {
             value: compactEngine,
@@ -312608,8 +312865,8 @@ function CompactHandoffModal({
             }
           }
         ),
-        /* @__PURE__ */ jsxs48("div", { className: "grid grid-cols-2 gap-2", children: [
-          /* @__PURE__ */ jsx54(
+        /* @__PURE__ */ jsxs50("div", { className: "grid grid-cols-2 gap-2", children: [
+          /* @__PURE__ */ jsx56(
             Dropdown,
             {
               value: compactProfileId,
@@ -312621,7 +312878,7 @@ function CompactHandoffModal({
               }
             }
           ),
-          /* @__PURE__ */ jsx54(
+          /* @__PURE__ */ jsx56(
             Dropdown,
             {
               value: compactModel,
@@ -312633,20 +312890,20 @@ function CompactHandoffModal({
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsxs48("div", { className: "flex flex-col gap-2", children: [
-        /* @__PURE__ */ jsxs48(
+      /* @__PURE__ */ jsxs50("div", { className: "flex flex-col gap-2", children: [
+        /* @__PURE__ */ jsxs50(
           "button",
           {
             type: "button",
             onClick: () => setShowInstruction((v5) => !v5),
             className: "flex items-center gap-1 text-xs font-medium text-text-secondary hover:text-text-primary self-start",
             children: [
-              /* @__PURE__ */ jsx54(ChevronDown, { size: 12, className: clsx("transition-transform", !showInstruction && "-rotate-90") }),
+              /* @__PURE__ */ jsx56(ChevronDown, { size: 12, className: clsx("transition-transform", !showInstruction && "-rotate-90") }),
               t5("compactHandoff.instructionLabel")
             ]
           }
         ),
-        showInstruction && /* @__PURE__ */ jsx54(
+        showInstruction && /* @__PURE__ */ jsx56(
           "textarea",
           {
             value: instruction,
@@ -312656,10 +312913,10 @@ function CompactHandoffModal({
           }
         )
       ] }),
-      /* @__PURE__ */ jsxs48("div", { className: "flex flex-col gap-2 pt-1 border-t border-border-subtle", children: [
-        /* @__PURE__ */ jsx54("span", { className: "text-xs font-medium text-text-secondary pt-2", children: t5("compactHandoff.modeLabel") }),
-        /* @__PURE__ */ jsxs48("div", { className: "grid grid-cols-2 gap-2", children: [
-          /* @__PURE__ */ jsxs48(
+      /* @__PURE__ */ jsxs50("div", { className: "flex flex-col gap-2 pt-1 border-t border-border-subtle", children: [
+        /* @__PURE__ */ jsx56("span", { className: "text-xs font-medium text-text-secondary pt-2", children: t5("compactHandoff.modeLabel") }),
+        /* @__PURE__ */ jsxs50("div", { className: "grid grid-cols-2 gap-2", children: [
+          /* @__PURE__ */ jsxs50(
             "button",
             {
               type: "button",
@@ -312669,12 +312926,12 @@ function CompactHandoffModal({
                 mode === "newSession" ? "bg-primary/10 text-primary border-primary/30" : "text-text-secondary hover:text-text-primary hover:bg-background-hover border-border-subtle"
               ),
               children: [
-                /* @__PURE__ */ jsx54(FolderOpen, { size: 14 }),
-                /* @__PURE__ */ jsx54("span", { children: t5("compactHandoff.modeNewSession") })
+                /* @__PURE__ */ jsx56(FolderOpen, { size: 14 }),
+                /* @__PURE__ */ jsx56("span", { children: t5("compactHandoff.modeNewSession") })
               ]
             }
           ),
-          /* @__PURE__ */ jsxs48(
+          /* @__PURE__ */ jsxs50(
             "button",
             {
               type: "button",
@@ -312684,21 +312941,21 @@ function CompactHandoffModal({
                 mode === "copyPrompt" ? "bg-primary/10 text-primary border-primary/30" : "text-text-secondary hover:text-text-primary hover:bg-background-hover border-border-subtle"
               ),
               children: [
-                /* @__PURE__ */ jsx54(Copy, { size: 14 }),
-                /* @__PURE__ */ jsx54("span", { children: t5("compactHandoff.modeCopyPrompt") })
+                /* @__PURE__ */ jsx56(Copy, { size: 14 }),
+                /* @__PURE__ */ jsx56("span", { children: t5("compactHandoff.modeCopyPrompt") })
               ]
             }
           )
         ] }),
-        /* @__PURE__ */ jsx54("p", { className: "text-[10px] text-text-tertiary leading-relaxed", children: mode === "copyPrompt" ? t5("compactHandoff.modeCopyPromptHint") : t5("compactHandoff.modeNewSessionHint") })
+        /* @__PURE__ */ jsx56("p", { className: "text-[10px] text-text-tertiary leading-relaxed", children: mode === "copyPrompt" ? t5("compactHandoff.modeCopyPromptHint") : t5("compactHandoff.modeNewSessionHint") })
       ] }),
-      mode === "newSession" && /* @__PURE__ */ jsxs48("div", { className: "flex flex-col gap-2", children: [
-        /* @__PURE__ */ jsx54("span", { className: "text-xs font-medium text-text-secondary", children: t5("compactHandoff.newEngineLabel") }),
-        /* @__PURE__ */ jsx54(EnginePicker, { value: newEngine, onChange: setNewEngine })
+      mode === "newSession" && /* @__PURE__ */ jsxs50("div", { className: "flex flex-col gap-2", children: [
+        /* @__PURE__ */ jsx56("span", { className: "text-xs font-medium text-text-secondary", children: t5("compactHandoff.newEngineLabel") }),
+        /* @__PURE__ */ jsx56(EnginePicker, { value: newEngine, onChange: setNewEngine })
       ] })
     ] }),
-    /* @__PURE__ */ jsxs48("div", { className: "flex items-center justify-end gap-2 px-5 py-4 border-t border-border shrink-0", children: [
-      /* @__PURE__ */ jsx54(
+    /* @__PURE__ */ jsxs50("div", { className: "flex items-center justify-end gap-2 px-5 py-4 border-t border-border shrink-0", children: [
+      /* @__PURE__ */ jsx56(
         "button",
         {
           onClick: handleCancel,
@@ -312706,13 +312963,13 @@ function CompactHandoffModal({
           children: t5("sessionConfig.cancel")
         }
       ),
-      /* @__PURE__ */ jsxs48(
+      /* @__PURE__ */ jsxs50(
         "button",
         {
           onClick: handleStart,
           className: "flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-lg font-medium transition-colors bg-primary text-white hover:bg-primary-hover",
           children: [
-            mode === "copyPrompt" && /* @__PURE__ */ jsx54(Copy, { size: 12 }),
+            mode === "copyPrompt" && /* @__PURE__ */ jsx56(Copy, { size: 12 }),
             mode === "copyPrompt" ? t5("compactHandoff.startCopy") : t5("compactHandoff.start")
           ]
         }
@@ -312751,13 +313008,13 @@ import { useCallback as useCallback36, useMemo as useMemo28, useState as useStat
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo28, useCallback as useCallback24, useMemo as useMemo15, useRef as useRef17, forwardRef as forwardRef4, useImperativeHandle, useEffect as useEffect19 } from "react";
+import { memo as memo29, useCallback as useCallback24, useMemo as useMemo16, useRef as useRef18, forwardRef as forwardRef5, useImperativeHandle, useEffect as useEffect20 } from "react";
 
 // src/host/Chat/session/SessionCell.tsx
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo27, useCallback as useCallback23, useState as useState30, useRef as useRef16, useMemo as useMemo14 } from "react";
+import { memo as memo28, useCallback as useCallback23, useState as useState31, useRef as useRef17, useMemo as useMemo15 } from "react";
 
 // src/host/Chat/messages/SessionMessagesView.tsx
 import { forwardRef as forwardRef3, memo as memo26, useMemo as useMemo13, useRef as useRef15, useCallback as useCallback22, useEffect as useEffect18, useState as useState29 } from "react";
@@ -334111,10 +334368,391 @@ init_stores();
 init_deps();
 init_deps();
 init_deps();
+
+// src/Session/WorkspaceBadge.tsx
+import { memo as memo27, forwardRef as forwardRef4 } from "react";
+
+// src/shims/utils.ts
+init_uuid();
+init_path();
+
+// src/shims/engineDisplay.ts
+init_stores();
+function normalizeEngineId2(engineId) {
+  if (!engineId) return "claude-code";
+  const metadatas = useEngineMetadataStore.getState().metadatas;
+  if (metadatas.length === 0) {
+    const fallback = ["claude-code", "simple-ai"];
+    return fallback.includes(engineId) ? engineId : "claude-code";
+  }
+  return metadatas.some((m4) => m4.id === engineId) ? engineId : "claude-code";
+}
+function getEngineFullName2(engineId) {
+  const id38 = normalizeEngineId2(engineId);
+  return useEngineMetadataStore.getState().getEngineFullName(id38);
+}
+
+// src/shims/engineCapabilities.ts
+init_stores();
+
+// src/shims/engineHealth.ts
+init_stores();
+function resolveEngineHealthFromStatus(engineId, health) {
+  if (!health) return { available: false };
+  const fieldMap = {
+    "claude-code": { available: "claudeAvailable", version: "claudeVersion" }
+  };
+  const fields = fieldMap[engineId];
+  if (fields) {
+    return {
+      available: !!health[fields.available],
+      version: health[fields.version]
+    };
+  }
+  return { available: false };
+}
+function getSelectedEngineHealth(config3, health, engineOverride) {
+  const engineId = normalizeEngineId2(engineOverride ?? config3?.defaultEngine);
+  if (engineId === "simple-ai") {
+    const hasProfile = (config3?.modelProfiles ?? []).some(
+      (p3) => p3.baseUrl && p3.apiKey && p3.model
+    );
+    return {
+      engineId,
+      name: getEngineFullName2(engineId),
+      healthPrefix: "simple-ai",
+      command: "",
+      cliPath: "",
+      available: hasProfile,
+      version: void 0
+    };
+  }
+  const status = resolveEngineHealthFromStatus(engineId, health);
+  const cliConfig = config3?.[engineId === "claude-code" ? "claudeCode" : engineId];
+  const cliPath = cliConfig?.cliPath || "";
+  const commandMap = {
+    "claude-code": "claude"
+  };
+  return {
+    engineId,
+    name: getEngineFullName2(engineId),
+    healthPrefix: engineId,
+    command: commandMap[engineId] ?? engineId,
+    cliPath,
+    available: status.available,
+    version: status.version
+  };
+}
+
+// src/shims/utils.ts
+init_diffExtractor();
+init_patchParser();
+init_messageCompactor();
+init_path();
+init_clsx();
+function mkLogger(scope) {
+  const emit5 = (level, msg, args) => {
+    if (level === "debug") return;
+    const text5 = `[chat-desk] ${scope} ${msg}`.trim();
+    console[level === "warn" ? "warn" : level === "error" ? "error" : "log"](text5, ...args);
+  };
+  return {
+    debug: (m4, ...a3) => emit5("debug", m4, a3),
+    info: (m4, ...a3) => emit5("info", m4, a3),
+    warn: (m4, ...a3) => emit5("warn", m4, a3),
+    error: (m4, ...a3) => emit5("error", m4, a3)
+  };
+}
+var loggers = /* @__PURE__ */ new Map();
+function createLogger2(scope) {
+  let lg = loggers.get(scope);
+  if (!lg) {
+    lg = mkLogger(scope);
+    loggers.set(scope, lg);
+  }
+  return lg;
+}
+var logger2 = createLogger2("utils");
+function cn2(...inputs) {
+  return clsx(inputs);
+}
+
+// src/Session/WorkspaceBadge.tsx
+init_lucide_react();
+import { jsx as jsx38, jsxs as jsxs33 } from "react/jsx-runtime";
+var WorkspaceBadge2 = memo27(
+  forwardRef4(function WorkspaceBadge3({ workspaceId, workspaceName, contextWorkspaceCount = 0, onClick }, ref) {
+    if (!workspaceId) {
+      return /* @__PURE__ */ jsx38(
+        "button",
+        {
+          ref,
+          onClick,
+          className: cn2(
+            "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs",
+            "bg-gray-500/20 text-gray-400",
+            "hover:bg-gray-500/30 transition-colors",
+            "shrink-0"
+          ),
+          title: "\u9009\u62E9\u5DE5\u4F5C\u533A",
+          "aria-label": "\u9009\u62E9\u5DE5\u4F5C\u533A",
+          children: /* @__PURE__ */ jsx38(Plus, { className: "w-3 h-3" })
+        }
+      );
+    }
+    return /* @__PURE__ */ jsxs33(
+      "button",
+      {
+        ref,
+        onClick,
+        className: cn2(
+          "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs",
+          "bg-blue-500/20 text-blue-400",
+          "hover:bg-blue-500/30 transition-colors",
+          "shrink-0 max-w-[120px]"
+        ),
+        title: `\u5DE5\u4F5C\u533A: ${workspaceName || "\u672A\u547D\u540D"}${contextWorkspaceCount > 0 ? ` (+${contextWorkspaceCount} \u5173\u8054)` : ""}`,
+        "aria-label": `\u5DE5\u4F5C\u533A: ${workspaceName || "\u672A\u547D\u540D"}`,
+        children: [
+          /* @__PURE__ */ jsx38(Folder, { className: "w-3 h-3 shrink-0" }),
+          /* @__PURE__ */ jsx38("span", { className: "truncate", children: workspaceName || "\u672A\u547D\u540D" }),
+          contextWorkspaceCount > 0 && /* @__PURE__ */ jsxs33("span", { className: "px-1 bg-blue-500/40 rounded shrink-0", children: [
+            "+",
+            contextWorkspaceCount
+          ] })
+        ]
+      }
+    );
+  })
+);
+
+// src/Session/WorkspaceMenu.tsx
+init_i18n();
+init_logger();
+import { useState as useState30, useRef as useRef16, useEffect as useEffect19, useMemo as useMemo14 } from "react";
+import { createPortal as createPortal2 } from "react-dom";
+init_lucide_react();
+init_deps();
+init_sessionDirectoryStore();
 init_misc();
 init_misc();
+import { jsx as jsx39, jsxs as jsxs34 } from "react/jsx-runtime";
+var log30 = createLogger("WorkspaceMenu");
+function WorkspaceMenu2({ sessionId, anchorEl, onClose }) {
+  const { t: t5 } = useTranslation("workspace");
+  const workspacesRaw = useWorkspaceStore((state6) => state6.workspaces);
+  const workspaces = useMemo14(
+    () => workspacesRaw.slice().sort(
+      (a3, b12) => new Date(b12.lastAccessed).getTime() - new Date(a3.lastAccessed).getTime()
+    ),
+    [workspacesRaw]
+  );
+  const sessions = useSessionDirectorySessions();
+  const updateSessionWorkspace2 = updateSessionWorkspace;
+  const addContextWorkspace2 = addContextWorkspace;
+  const removeContextWorkspace2 = removeContextWorkspace;
+  const [showCreateModal, setShowCreateModal] = useState30(false);
+  const [searchQuery, setSearchQuery] = useState30("");
+  const filteredWorkspaces = useWorkspaceFilter(workspaces, searchQuery);
+  const [position5, setPosition] = useState30({ top: 0, left: 0 });
+  const menuRef = useRef16(null);
+  useEffect19(() => {
+    if (anchorEl) {
+      const rect2 = anchorEl.getBoundingClientRect();
+      setPosition({
+        top: rect2.bottom + 4,
+        // 徽章下方 4px
+        left: rect2.left
+      });
+    }
+  }, [anchorEl]);
+  useEffect19(() => {
+    const handleClickOutside = (event3) => {
+      if (menuRef.current && !menuRef.current.contains(event3.target)) {
+        onClose();
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+  const session = sessions.find((s3) => s3.id === sessionId);
+  if (!session) {
+    return null;
+  }
+  const effectiveWorkspaceId = session.workspaceId;
+  const contextWorkspaceIds = session.contextWorkspaceIds || [];
+  const isLocked = session.workspaceLocked || false;
+  const handleWorkspaceClick = (workspaceId) => {
+    if (isLocked) return;
+    log30.debug("Switch workspace", { sessionId, workspaceId });
+    updateSessionWorkspace2(sessionId, workspaceId);
+  };
+  const handleToggleContext = (workspaceId) => {
+    log30.debug("Toggle context workspace", { sessionId, workspaceId });
+    if (contextWorkspaceIds.includes(workspaceId)) {
+      removeContextWorkspace2(sessionId, workspaceId);
+    } else {
+      addContextWorkspace2(sessionId, workspaceId);
+    }
+  };
+  const currentWorkspace = workspaces.find((w5) => w5.id === effectiveWorkspaceId);
+  const contextWorkspaces = workspaces.filter((w5) => contextWorkspaceIds.includes(w5.id));
+  const menuContent = /* @__PURE__ */ jsxs34(
+    "div",
+    {
+      ref: menuRef,
+      className: "fixed w-64 bg-background-elevated border border-border rounded-xl shadow-lg overflow-hidden z-popover",
+      style: {
+        top: `${position5.top}px`,
+        left: `${position5.left}px`
+      },
+      children: [
+        /* @__PURE__ */ jsxs34("div", { className: "px-3 py-2 text-xs font-medium text-text-tertiary border-b border-border-subtle flex items-center justify-between", children: [
+          /* @__PURE__ */ jsx39("span", { children: "\u4F1A\u8BDD\u5DE5\u4F5C\u533A" }),
+          /* @__PURE__ */ jsx39(
+            "button",
+            {
+              onClick: () => setShowCreateModal(true),
+              className: "text-primary hover:text-primary-hover transition-colors",
+              children: "+ \u65B0\u589E"
+            }
+          )
+        ] }),
+        isLocked && /* @__PURE__ */ jsxs34("div", { className: "px-3 py-2 bg-warning/10 border-b border-border-subtle flex items-center gap-2 text-xs text-warning", children: [
+          /* @__PURE__ */ jsx39(Lock, { className: "w-3.5 h-3.5" }),
+          /* @__PURE__ */ jsx39("span", { children: "\u521B\u5EFA\u65F6\u5DF2\u6307\u5B9A\u4E3B\u5DE5\u4F5C\u533A\uFF0C\u4E0D\u53EF\u4FEE\u6539" })
+        ] }),
+        workspaces.length > 3 && /* @__PURE__ */ jsx39("div", { className: "px-3 py-2 border-b border-border-subtle", children: /* @__PURE__ */ jsx39(
+          WorkspaceSearchInput,
+          {
+            value: searchQuery,
+            onChange: setSearchQuery,
+            autoFocus: true
+          }
+        ) }),
+        /* @__PURE__ */ jsx39("div", { className: "max-h-48 overflow-y-auto", children: filteredWorkspaces.length === 0 ? /* @__PURE__ */ jsx39("div", { className: "py-4 text-center text-sm text-text-tertiary", children: t5("search.noResults") }) : filteredWorkspaces.map((workspace) => {
+          const isCurrent = workspace.id === effectiveWorkspaceId;
+          const isContext = contextWorkspaceIds.includes(workspace.id);
+          return /* @__PURE__ */ jsxs34(
+            "div",
+            {
+              className: cn2(
+                "group relative flex items-center",
+                isCurrent && (isLocked ? "bg-primary/10 opacity-80" : "bg-primary/10")
+              ),
+              children: [
+                isCurrent && /* @__PURE__ */ jsx39("div", { className: "absolute left-0 top-0 bottom-0 w-1 bg-primary" }),
+                isCurrent && isLocked && /* @__PURE__ */ jsx39("div", { className: "px-2", children: /* @__PURE__ */ jsx39(Lock, { className: "w-3.5 h-3.5 text-text-muted" }) }),
+                /* @__PURE__ */ jsxs34(
+                  "button",
+                  {
+                    onClick: (e3) => {
+                      e3.stopPropagation();
+                      handleWorkspaceClick(workspace.id);
+                    },
+                    disabled: isLocked && isCurrent,
+                    className: cn2(
+                      "flex-1 text-left px-3 py-2 text-sm transition-colors",
+                      isCurrent ? "text-primary" : isLocked ? "text-text-secondary cursor-not-allowed" : "text-text-secondary hover:text-text-primary hover:bg-background-hover",
+                      isLocked && isCurrent && "cursor-not-allowed"
+                    ),
+                    children: [
+                      /* @__PURE__ */ jsxs34("div", { className: "pr-16 font-medium truncate flex items-center gap-2", children: [
+                        isCurrent && !isLocked && /* @__PURE__ */ jsx39("span", { className: "w-1.5 h-1.5 rounded-full bg-primary" }),
+                        workspace.name
+                      ] }),
+                      /* @__PURE__ */ jsx39("div", { className: "text-xs truncate text-text-tertiary", children: workspace.path })
+                    ]
+                  }
+                ),
+                isCurrent && /* @__PURE__ */ jsx39("span", { className: "px-2 text-xs text-primary", children: "\u4E3B" }),
+                filteredWorkspaces.length > 1 && !isCurrent && /* @__PURE__ */ jsx39(
+                  "button",
+                  {
+                    onClick: (e3) => {
+                      e3.stopPropagation();
+                      handleToggleContext(workspace.id);
+                    },
+                    className: cn2(
+                      "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-colors",
+                      isContext ? "text-primary bg-primary/10" : "text-text-tertiary hover:text-text-primary hover:bg-background-hover opacity-0 group-hover:opacity-100"
+                    ),
+                    title: isContext ? "\u79FB\u9664\u5173\u8054" : "\u6DFB\u52A0\u5173\u8054",
+                    children: isContext ? /* @__PURE__ */ jsx39(Check, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx39(Plus, { className: "w-3.5 h-3.5" })
+                  }
+                )
+              ]
+            },
+            workspace.id
+          );
+        }) }),
+        /* @__PURE__ */ jsxs34("div", { className: "border-t border-border-subtle", children: [
+          /* @__PURE__ */ jsxs34("div", { className: "px-3 py-2 text-xs text-text-tertiary flex items-center gap-1", children: [
+            /* @__PURE__ */ jsx39(Link, { className: "w-3 h-3" }),
+            "\u5173\u8054\u5DE5\u4F5C\u533A (",
+            contextWorkspaceIds.length,
+            ")"
+          ] }),
+          contextWorkspaces.length > 0 ? /* @__PURE__ */ jsxs34("div", { className: "max-h-32 overflow-y-auto", children: [
+            currentWorkspace && /* @__PURE__ */ jsxs34("div", { className: "group flex items-center px-3 py-1.5 text-sm text-text-secondary bg-primary/5", children: [
+              /* @__PURE__ */ jsx39("span", { className: "w-2 h-2 rounded-full bg-primary mr-2" }),
+              /* @__PURE__ */ jsx39("span", { className: "flex-1 truncate", children: currentWorkspace.name }),
+              /* @__PURE__ */ jsx39("span", { className: "text-xs text-text-tertiary mr-2", children: "\u4E3B" })
+            ] }),
+            contextWorkspaces.map((workspace) => /* @__PURE__ */ jsxs34(
+              "div",
+              {
+                className: "group flex items-center px-3 py-1.5 text-sm text-text-secondary hover:bg-background-hover",
+                children: [
+                  /* @__PURE__ */ jsx39("span", { className: "w-2 h-2 rounded-full bg-primary/50 mr-2" }),
+                  /* @__PURE__ */ jsx39("span", { className: "flex-1 truncate", children: workspace.name }),
+                  /* @__PURE__ */ jsx39(
+                    "button",
+                    {
+                      onClick: (e3) => {
+                        e3.stopPropagation();
+                        handleToggleContext(workspace.id);
+                      },
+                      className: "p-1 rounded text-text-tertiary hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity",
+                      title: "\u79FB\u9664\u5173\u8054",
+                      children: /* @__PURE__ */ jsx39(X, { className: "w-3 h-3" })
+                    }
+                  )
+                ]
+              },
+              workspace.id
+            ))
+          ] }) : /* @__PURE__ */ jsx39("div", { className: "px-3 py-2 text-xs text-text-tertiary text-center", children: effectiveWorkspaceId ? "\u65E0\u5173\u8054\u5DE5\u4F5C\u533A" : "\u70B9\u51FB\u5DE5\u4F5C\u533A\u53F3\u4FA7\u7684 + \u6DFB\u52A0\u5173\u8054" }),
+          effectiveWorkspaceId && /* @__PURE__ */ jsx39("div", { className: "border-t border-border-subtle p-1.5", children: /* @__PURE__ */ jsxs34(
+            "button",
+            {
+              onClick: (e3) => {
+                e3.stopPropagation();
+                log30.debug("Detach workspace -> free session", { sessionId });
+                updateSessionWorkspace2(sessionId, null);
+              },
+              className: "w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs text-text-tertiary hover:text-danger hover:bg-danger/10 rounded transition-colors",
+              title: "\u79FB\u9664\u6B64\u5DE5\u4F5C\u533A\uFF0C\u8F6C\u4E3A\u81EA\u7531\u4F1A\u8BDD\uFF08\u4F1A\u8986\u76D6\u521B\u5EFA\u65F6\u7684\u9501\u5B9A\uFF09",
+              children: [
+                /* @__PURE__ */ jsx39(X, { className: "w-3 h-3" }),
+                "\u79FB\u9664\u6B64\u5DE5\u4F5C\u533A\uFF08\u81EA\u7531\u4F1A\u8BDD\uFF09"
+              ]
+            }
+          ) })
+        ] }),
+        contextWorkspaces.length > 0 && /* @__PURE__ */ jsx39("div", { className: "mx-2 my-2 p-2 bg-primary/5 border border-primary/20 rounded text-xs text-text-secondary", children: "AI \u53EF\u4EE5\u8BBF\u95EE\u5173\u8054\u5DE5\u4F5C\u533A\u4E2D\u7684\u6587\u4EF6" }),
+        showCreateModal && /* @__PURE__ */ jsx39(CreateWorkspaceModal, { onClose: () => setShowCreateModal(false) })
+      ]
+    }
+  );
+  return createPortal2(menuContent, document.body);
+}
+
+// src/host/Chat/session/SessionCell.tsx
 init_engineDisplay();
-import { Fragment as Fragment14, jsx as jsx38, jsxs as jsxs33 } from "react/jsx-runtime";
+import { Fragment as Fragment14, jsx as jsx40, jsxs as jsxs35 } from "react/jsx-runtime";
 var SESSION_STATUS_CONFIG = {
   idle: { icon: Circle, className: "text-text-muted" },
   running: { icon: LoaderCircle, className: "animate-spin text-primary" },
@@ -334122,7 +334760,7 @@ var SESSION_STATUS_CONFIG = {
   error: { icon: CircleX, className: "text-error" },
   background_running: { icon: LoaderCircle, className: "animate-spin text-text-muted" }
 };
-var SessionCell = memo27(function SessionCell2({
+var SessionCell = memo28(function SessionCell2({
   sessionId,
   isActive,
   isExpanded = false,
@@ -334132,13 +334770,13 @@ var SessionCell = memo27(function SessionCell2({
   const { t: t5 } = useTranslation("chat");
   const { switchSession: switchSession2 } = useSessionManagerActions();
   const chatDisplay = useConfigStore((state6) => state6.config?.chatDisplay);
-  const chatDisplayStyle = useMemo14(() => getChatDisplayStyleVars(chatDisplay), [chatDisplay]);
+  const chatDisplayStyle = useMemo15(() => getChatDisplayStyleVars(chatDisplay), [chatDisplay]);
   const sessionMetadata = useSessionMetadataList().find((m4) => m4.id === sessionId);
   const isStreaming = useSessionStreaming2(sessionId);
   const hasPendingQuestion = useSessionHasPendingQuestion2(sessionId);
   const hasPendingCards = useSessionHasPendingCards2(sessionId);
-  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState30(false);
-  const badgeRef = useRef16(null);
+  const [showWorkspaceMenu, setShowWorkspaceMenu] = useState31(false);
+  const badgeRef = useRef17(null);
   const workspace = useWorkspaceStore(
     (state6) => sessionMetadata?.workspaceId ? state6.workspaces.find((w5) => w5.id === sessionMetadata.workspaceId) : null
   );
@@ -334174,8 +334812,8 @@ var SessionCell = memo27(function SessionCell2({
     e3.stopPropagation();
     useViewStore.getState().moveSessionToFront(sessionId);
   }, [sessionId]);
-  return /* @__PURE__ */ jsxs33(Fragment14, { children: [
-    /* @__PURE__ */ jsxs33(
+  return /* @__PURE__ */ jsxs35(Fragment14, { children: [
+    /* @__PURE__ */ jsxs35(
       "div",
       {
         className: clsx(
@@ -334184,15 +334822,15 @@ var SessionCell = memo27(function SessionCell2({
         ),
         onClick: handleClick,
         children: [
-          /* @__PURE__ */ jsxs33("div", { className: clsx(
+          /* @__PURE__ */ jsxs35("div", { className: clsx(
             "flex items-center gap-1.5 px-2 py-1 border-b shrink-0",
             isActive ? "bg-primary/10 border-primary/20" : "bg-background-surface border-border"
           ), children: [
-            /* @__PURE__ */ jsx38("span", { className: clsx(
+            /* @__PURE__ */ jsx40("span", { className: clsx(
               "text-xs font-medium truncate min-w-0",
               isActive ? "text-primary" : "text-text-secondary"
             ), children: sessionMetadata?.title || t5("sessionCell.unnamed") }),
-            /* @__PURE__ */ jsx38(
+            /* @__PURE__ */ jsx40(
               "span",
               {
                 className: clsx(
@@ -334203,8 +334841,8 @@ var SessionCell = memo27(function SessionCell2({
                 children: getEngineDisplayName(engineId)
               }
             ),
-            /* @__PURE__ */ jsx38(
-              WorkspaceBadge,
+            /* @__PURE__ */ jsx40(
+              WorkspaceBadge2,
               {
                 ref: badgeRef,
                 workspaceId: sessionMetadata?.workspaceId || null,
@@ -334216,54 +334854,54 @@ var SessionCell = memo27(function SessionCell2({
                 }
               }
             ),
-            /* @__PURE__ */ jsx38("span", { className: "flex-1" }),
-            isStreaming && /* @__PURE__ */ jsx38("span", { className: "w-1.5 h-1.5 bg-primary rounded-full animate-pulse shrink-0" }),
-            hasPendingQuestion && !isActive && !isStreaming && /* @__PURE__ */ jsx38("span", { className: "w-1.5 h-1.5 bg-warning rounded-full shrink-0", title: t5("sessionCell.pendingQuestion") }),
-            hasPendingCards && !isActive && !isStreaming && /* @__PURE__ */ jsx38("span", { className: "w-1.5 h-1.5 bg-warning rounded-full shrink-0 animate-pulse", title: "\u6709\u5F85\u5904\u7406\u7684\u6743\u9650/\u8868\u5355\u786E\u8BA4" }),
-            isStreaming && /* @__PURE__ */ jsx38(
+            /* @__PURE__ */ jsx40("span", { className: "flex-1" }),
+            isStreaming && /* @__PURE__ */ jsx40("span", { className: "w-1.5 h-1.5 bg-primary rounded-full animate-pulse shrink-0" }),
+            hasPendingQuestion && !isActive && !isStreaming && /* @__PURE__ */ jsx40("span", { className: "w-1.5 h-1.5 bg-warning rounded-full shrink-0", title: t5("sessionCell.pendingQuestion") }),
+            hasPendingCards && !isActive && !isStreaming && /* @__PURE__ */ jsx40("span", { className: "w-1.5 h-1.5 bg-warning rounded-full shrink-0 animate-pulse", title: "\u6709\u5F85\u5904\u7406\u7684\u6743\u9650/\u8868\u5355\u786E\u8BA4" }),
+            isStreaming && /* @__PURE__ */ jsx40(
               "button",
               {
                 onClick: handleInterrupt,
                 className: "shrink-0 p-0.5 rounded bg-danger/80 text-white hover:bg-danger transition-colors",
                 title: t5("sessionCell.interrupt"),
-                children: /* @__PURE__ */ jsx38(Square, { className: "w-3 h-3" })
+                children: /* @__PURE__ */ jsx40(Square, { className: "w-3 h-3" })
               }
             ),
-            /* @__PURE__ */ jsx38(
+            /* @__PURE__ */ jsx40(
               "button",
               {
                 onClick: handleExpand,
                 className: "shrink-0 p-0.5 rounded text-text-muted hover:text-text-primary hover:bg-background-hover transition-colors",
                 title: isExpanded ? t5("sessionCell.collapse") : t5("sessionCell.expand"),
-                children: isExpanded ? /* @__PURE__ */ jsx38(Minimize2, { className: "w-3 h-3" }) : /* @__PURE__ */ jsx38(Maximize2, { className: "w-3 h-3" })
+                children: isExpanded ? /* @__PURE__ */ jsx40(Minimize2, { className: "w-3 h-3" }) : /* @__PURE__ */ jsx40(Maximize2, { className: "w-3 h-3" })
               }
             ),
-            /* @__PURE__ */ jsx38(
+            /* @__PURE__ */ jsx40(
               "button",
               {
                 onClick: handleMoveToFront,
                 className: "shrink-0 p-0.5 rounded text-text-muted hover:text-primary hover:bg-background-hover transition-colors",
                 title: t5("sessionCell.moveToFront"),
-                children: /* @__PURE__ */ jsx38(ArrowUpToLine, { className: "w-3 h-3" })
+                children: /* @__PURE__ */ jsx40(ArrowUpToLine, { className: "w-3 h-3" })
               }
             ),
-            /* @__PURE__ */ jsx38(StatusIcon, { className: clsx("w-3.5 h-3.5 shrink-0", statusConfig2.className) }),
-            /* @__PURE__ */ jsx38(
+            /* @__PURE__ */ jsx40(StatusIcon, { className: clsx("w-3.5 h-3.5 shrink-0", statusConfig2.className) }),
+            /* @__PURE__ */ jsx40(
               "button",
               {
                 onClick: handleClose,
                 className: "shrink-0 p-0.5 rounded ml-1 text-text-muted hover:text-text-primary hover:bg-background-hover transition-colors",
                 title: t5("sessionCell.closeWindow", { defaultValue: "\u5173\u95ED\u7A97\u53E3" }),
-                children: /* @__PURE__ */ jsx38(X, { className: "w-3 h-3" })
+                children: /* @__PURE__ */ jsx40(X, { className: "w-3 h-3" })
               }
             )
           ] }),
-          /* @__PURE__ */ jsx38("div", { className: "chat-display-root flex-1 min-h-0 overflow-hidden bg-background-base", style: chatDisplayStyle, children: /* @__PURE__ */ jsx38(SessionMessagesView, { sessionId, onEditMessage }) })
+          /* @__PURE__ */ jsx40("div", { className: "chat-display-root flex-1 min-h-0 overflow-hidden bg-background-base", style: chatDisplayStyle, children: /* @__PURE__ */ jsx40(SessionMessagesView, { sessionId, onEditMessage }) })
         ]
       }
     ),
-    showWorkspaceMenu && /* @__PURE__ */ jsx38(
-      WorkspaceMenu,
+    showWorkspaceMenu && /* @__PURE__ */ jsx40(
+      WorkspaceMenu2,
       {
         sessionId,
         anchorEl: badgeRef.current,
@@ -334276,14 +334914,14 @@ var SessionCell = memo27(function SessionCell2({
 // src/host/Chat/session/MultiSessionGrid.tsx
 init_deps();
 init_stores();
-import { jsx as jsx39, jsxs as jsxs34 } from "react/jsx-runtime";
+import { jsx as jsx41, jsxs as jsxs36 } from "react/jsx-runtime";
 var ROW2_MIN_HEIGHT_STYLE = { minHeight: "50%" };
 function scrollRowTo(rowRef, index2, cellWidth) {
   if (rowRef.current) {
     rowRef.current.scrollTo({ left: index2 * cellWidth, behavior: "smooth" });
   }
 }
-var MultiSessionGrid = memo28(forwardRef4(
+var MultiSessionGrid = memo29(forwardRef5(
   function MultiSessionGrid2({ onEditMessage }, ref) {
     const { t: t5 } = useTranslation("chat");
     const multiSessionIds = useViewStore((state6) => state6.multiSessionIds);
@@ -334294,13 +334932,13 @@ var MultiSessionGrid = memo28(forwardRef4(
     const activeSessionId = useActiveSessionId();
     const pendingScrollToId = useViewStore((state6) => state6.pendingScrollToId);
     const clearScrollRequest = useViewStore((state6) => state6.clearScrollRequest);
-    const row1Ref = useRef17(null);
-    const row2Ref = useRef17(null);
+    const row1Ref = useRef18(null);
+    const row2Ref = useRef18(null);
     const allSessionMetadata = useSessionMetadataList();
-    const displaySessions = useMemo15(() => {
+    const displaySessions = useMemo16(() => {
       return multiSessionIds.map((id38) => allSessionMetadata.find((m4) => m4.id === id38)).filter((m4) => m4 !== void 0);
     }, [multiSessionIds, allSessionMetadata]);
-    const { row1Sessions, row2Sessions } = useMemo15(() => {
+    const { row1Sessions, row2Sessions } = useMemo16(() => {
       if (multiSessionRows === 1) {
         return { row1Sessions: displaySessions, row2Sessions: [] };
       } else {
@@ -334328,7 +334966,7 @@ var MultiSessionGrid = memo28(forwardRef4(
         scrollToIndex(index2);
       }
     }), [displaySessions, scrollToIndex]);
-    useEffect19(() => {
+    useEffect20(() => {
       if (!pendingScrollToId) return;
       const index2 = displaySessions.findIndex((s3) => s3.id === pendingScrollToId);
       if (index2 !== -1) {
@@ -334345,7 +334983,7 @@ var MultiSessionGrid = memo28(forwardRef4(
         setExpandSessionId(null);
         return null;
       }
-      return /* @__PURE__ */ jsx39("div", { className: "flex flex-col h-full", children: /* @__PURE__ */ jsx39("div", { className: "flex-1 p-1", children: /* @__PURE__ */ jsx39(
+      return /* @__PURE__ */ jsx41("div", { className: "flex flex-col h-full", children: /* @__PURE__ */ jsx41("div", { className: "flex-1 p-1", children: /* @__PURE__ */ jsx41(
         SessionCell,
         {
           sessionId: expandSessionId,
@@ -334356,14 +334994,14 @@ var MultiSessionGrid = memo28(forwardRef4(
       ) }) });
     }
     if (displaySessions.length === 0) {
-      return /* @__PURE__ */ jsxs34("div", { className: "flex flex-col items-center justify-center h-full text-center p-4", children: [
-        /* @__PURE__ */ jsx39(LayoutGrid, { className: "w-12 h-12 text-text-muted mb-4" }),
-        /* @__PURE__ */ jsx39("p", { className: "text-text-secondary text-sm mb-4", children: t5("multiSession.mode") }),
-        /* @__PURE__ */ jsx39("p", { className: "text-text-muted text-xs mb-4", children: t5("multiSession.hint") })
+      return /* @__PURE__ */ jsxs36("div", { className: "flex flex-col items-center justify-center h-full text-center p-4", children: [
+        /* @__PURE__ */ jsx41(LayoutGrid, { className: "w-12 h-12 text-text-muted mb-4" }),
+        /* @__PURE__ */ jsx41("p", { className: "text-text-secondary text-sm mb-4", children: t5("multiSession.mode") }),
+        /* @__PURE__ */ jsx41("p", { className: "text-text-muted text-xs mb-4", children: t5("multiSession.hint") })
       ] });
     }
-    return /* @__PURE__ */ jsxs34("div", { className: "flex flex-col h-full overflow-hidden", children: [
-      /* @__PURE__ */ jsx39(
+    return /* @__PURE__ */ jsxs36("div", { className: "flex flex-col h-full overflow-hidden", children: [
+      /* @__PURE__ */ jsx41(
         "div",
         {
           ref: row1Ref,
@@ -334372,12 +335010,12 @@ var MultiSessionGrid = memo28(forwardRef4(
             multiSessionRows === 2 && "border-b border-border"
           ),
           style: { minHeight: multiSessionRows === 2 ? "50%" : "100%" },
-          children: row1Sessions.map((session) => /* @__PURE__ */ jsx39(
+          children: row1Sessions.map((session) => /* @__PURE__ */ jsx41(
             "div",
             {
               className: "flex-shrink-0 h-full",
               style: { width: multiSessionCellWidth },
-              children: /* @__PURE__ */ jsx39(
+              children: /* @__PURE__ */ jsx41(
                 SessionCell,
                 {
                   sessionId: session.id,
@@ -334391,18 +335029,18 @@ var MultiSessionGrid = memo28(forwardRef4(
           ))
         }
       ),
-      multiSessionRows === 2 && /* @__PURE__ */ jsx39(
+      multiSessionRows === 2 && /* @__PURE__ */ jsx41(
         "div",
         {
           ref: row2Ref,
           className: "flex-1 flex gap-1 p-1 overflow-x-auto overflow-y-hidden",
           style: ROW2_MIN_HEIGHT_STYLE,
-          children: row2Sessions.map((session) => /* @__PURE__ */ jsx39(
+          children: row2Sessions.map((session) => /* @__PURE__ */ jsx41(
             "div",
             {
               className: "flex-shrink-0 h-full",
               style: { width: multiSessionCellWidth },
-              children: /* @__PURE__ */ jsx39(
+              children: /* @__PURE__ */ jsx41(
                 SessionCell,
                 {
                   sessionId: session.id,
@@ -334426,29 +335064,7 @@ init_sessionStoreManager();
 init_useActiveSession();
 init_eventRouter();
 init_sessionRestore();
-
-// src/sessionHandoff.ts
-var sessionHandoff_exports = {};
-__export(sessionHandoff_exports, {
-  getHandoffEligibility: () => getHandoffEligibility2,
-  handoffSessionToNewSession: () => handoffSessionToNewSession2
-});
-init_i18n();
-function handoffService() {
-  return window.__POLARIS_APP_CORE__?.services?.sessionHandoff;
-}
-function getHandoffEligibility2(sessionId) {
-  const svc = handoffService();
-  if (svc) return svc.getHandoffEligibility(sessionId);
-  return { enabled: false, reasonKey: "handoff.reasonNoSession" };
-}
-async function handoffSessionToNewSession2(sessionId, targetEngineId) {
-  const svc = handoffService();
-  if (svc) return svc.handoffSessionToNewSession(sessionId, targetEngineId);
-  return { ok: false, error: i18n_default.t("chat:handoff.reasonNoSession") };
-}
-
-// src/bootstrap.ts
+init_sessionHandoff();
 init_aiChatDispatch();
 
 // src/host/services/dispatchTaskService.ts
@@ -334478,7 +335094,7 @@ init_useKernelSessionState();
 init_stores();
 init_logger();
 init_i18n();
-var log30 = createLogger("DispatchTask");
+var log31 = createLogger("DispatchTask");
 var ACTIVITY_REPORT_INTERVAL_MS = 3e3;
 async function reportStatus(dispatchId, status, extra) {
   try {
@@ -334499,7 +335115,7 @@ async function reportStatus(dispatchId, status, extra) {
       });
     }
   } catch (e3) {
-    log30.warn("\u56DE\u62A5\u6D3E\u53D1\u72B6\u6001\u5931\u8D25", { dispatchId, status, error: String(e3) });
+    log31.warn("\u56DE\u62A5\u6D3E\u53D1\u72B6\u6001\u5931\u8D25", { dispatchId, status, error: String(e3) });
   }
 }
 function extractSummary2(sessionId) {
@@ -334567,7 +335183,7 @@ function attachDispatchSessionHandler(dispatchId, sessionId) {
       const realConversationId = aiEvent.sessionId;
       if (realConversationId && realConversationId !== reportedConversationId) {
         reportedConversationId = realConversationId;
-        log30.info("\u56DE\u5199\u6D3E\u53D1\u4F1A\u8BDD\u771F\u5B9E conversationId", { dispatchId, realConversationId });
+        log31.info("\u56DE\u5199\u6D3E\u53D1\u4F1A\u8BDD\u771F\u5B9E conversationId", { dispatchId, realConversationId });
         void reportStatus(dispatchId, "running", { conversationId: realConversationId });
       }
     }
@@ -334606,7 +335222,7 @@ function attachDispatchSessionHandler(dispatchId, sessionId) {
 async function handleDispatchTaskRequest(event3, options2) {
   const { dispatchId, sessionId, prompt } = event3;
   if (!dispatchId || !sessionId || !prompt?.trim()) {
-    log30.warn("\u6D3E\u53D1\u8BF7\u6C42\u7F3A\u5C11\u5FC5\u8981\u5B57\u6BB5\uFF0C\u5FFD\u7565", { dispatchId, sessionId });
+    log31.warn("\u6D3E\u53D1\u8BF7\u6C42\u7F3A\u5C11\u5FC5\u8981\u5B57\u6BB5\uFF0C\u5FFD\u7565", { dispatchId, sessionId });
     return;
   }
   const title2 = event3.title?.trim() || i18n_default.t("chat:dispatch.defaultTitle", "\u6D3E\u53D1\u4EFB\u52A1");
@@ -334619,7 +335235,7 @@ async function handleDispatchTaskRequest(event3, options2) {
       })
     );
     if (!allowed) {
-      log30.info("\u7528\u6237\u62D2\u7EDD\u6D3E\u53D1", { dispatchId });
+      log31.info("\u7528\u6237\u62D2\u7EDD\u6D3E\u53D1", { dispatchId });
       void reportStatus(dispatchId, "failed", {
         summary: i18n_default.t("chat:dispatch.userDeclined", "\u7528\u6237\u62D2\u7EDD\u4E86\u672C\u6B21\u6D3E\u53D1")
       });
@@ -334628,7 +335244,7 @@ async function handleDispatchTaskRequest(event3, options2) {
   }
   const { workDir, workspaceId } = resolveWorkspace(event3);
   const engineId = resolveEngineId(event3);
-  log30.info("\u6536\u5230\u6D3E\u53D1\u8BF7\u6C42", { dispatchId, sessionId, title: title2, workDir, engineId, role: event3.role });
+  log31.info("\u6536\u5230\u6D3E\u53D1\u8BF7\u6C42", { dispatchId, sessionId, title: title2, workDir, engineId, role: event3.role });
   const manager2 = sessionStoreManager2.getState();
   manager2.createSession({
     id: sessionId,
@@ -334668,12 +335284,12 @@ async function handleDispatchTaskRequest(event3, options2) {
         permissionMode: event3.permissionMode || void 0
       }
     });
-    log30.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u542F\u52A8", { dispatchId, sessionId, conversationId });
+    log31.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u542F\u52A8", { dispatchId, sessionId, conversationId });
     useDispatchStore.getState().updateTask(dispatchId, { status: "running" });
     void reportStatus(dispatchId, "running", { conversationId });
   } catch (e3) {
     const message = e3 instanceof Error ? e3.message : String(e3);
-    log30.error("\u6D3E\u53D1\u4F1A\u8BDD\u542F\u52A8\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message), { dispatchId });
+    log31.error("\u6D3E\u53D1\u4F1A\u8BDD\u542F\u52A8\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message), { dispatchId });
     unsubscribe();
     useDispatchStore.getState().finishTask(dispatchId, "failed", message, message);
     void reportStatus(dispatchId, "failed", { summary: message });
@@ -334802,15 +335418,15 @@ async function interruptDispatchedTask(dispatchId) {
   const store4 = sessionStoreManager2.getState().stores.get(task.sessionId);
   const conversationId = store4?.getState().conversationId;
   if (!conversationId) {
-    log30.warn("\u4E2D\u65AD\u5931\u8D25\uFF1A\u6D3E\u53D1\u4F1A\u8BDD\u65E0 conversationId", { dispatchId });
+    log31.warn("\u4E2D\u65AD\u5931\u8D25\uFF1A\u6D3E\u53D1\u4F1A\u8BDD\u65E0 conversationId", { dispatchId });
     return;
   }
   const engineId = sessionStoreManager2.getState().sessionMetadata.get(task.sessionId)?.engineId;
   try {
     await aiChatDispatch({ action: "interrupt", sessionId: conversationId, engineId });
-    log30.info("\u6D3E\u53D1\u4EFB\u52A1\u5DF2\u4E2D\u65AD", { dispatchId });
+    log31.info("\u6D3E\u53D1\u4EFB\u52A1\u5DF2\u4E2D\u65AD", { dispatchId });
   } catch (e3) {
-    log30.error("\u4E2D\u65AD\u6D3E\u53D1\u4EFB\u52A1\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { dispatchId });
+    log31.error("\u4E2D\u65AD\u6D3E\u53D1\u4EFB\u52A1\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { dispatchId });
   }
 }
 async function continueDispatchedTask(dispatchId, prompt, options2) {
@@ -334819,11 +335435,11 @@ async function continueDispatchedTask(dispatchId, prompt, options2) {
   const dispatchStore = useDispatchStore.getState();
   const task = dispatchStore.getTask(dispatchId);
   if (!task) {
-    log30.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u672C\u5730\u65E0\u4EFB\u52A1\u89C6\u56FE", { dispatchId });
+    log31.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u672C\u5730\u65E0\u4EFB\u52A1\u89C6\u56FE", { dispatchId });
     return false;
   }
   if (task.status === "running" || task.status === "pending") {
-    log30.warn("\u7EED\u6D3E\u62D2\u7EDD\uFF1A\u4EFB\u52A1\u4ECD\u5728\u6267\u884C", { dispatchId });
+    log31.warn("\u7EED\u6D3E\u62D2\u7EDD\uFF1A\u4EFB\u52A1\u4ECD\u5728\u6267\u884C", { dispatchId });
     return false;
   }
   const manager2 = sessionStoreManager2.getState();
@@ -334839,10 +335455,10 @@ async function continueDispatchedTask(dispatchId, prompt, options2) {
     });
     store4 = sessionStoreManager2.getState().stores.get(task.sessionId);
     store4?.setState({ conversationId });
-    log30.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u6062\u590D\uFF08\u5386\u53F2\u672A\u52A0\u8F7D\uFF09", { dispatchId, sessionId: task.sessionId });
+    log31.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u6062\u590D\uFF08\u5386\u53F2\u672A\u52A0\u8F7D\uFF09", { dispatchId, sessionId: task.sessionId });
   }
   if (!store4 || !conversationId) {
-    log30.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0E conversationId \u5747\u4E0D\u53EF\u7528", { dispatchId });
+    log31.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0E conversationId \u5747\u4E0D\u53EF\u7528", { dispatchId });
     return false;
   }
   sessionStoreManager2.getState().addToBackground(task.sessionId);
@@ -334865,11 +335481,11 @@ async function continueDispatchedTask(dispatchId, prompt, options2) {
       }
     });
     void reportStatus(dispatchId, "running", { conversationId });
-    log30.info("\u6D3E\u53D1\u4EFB\u52A1\u7EED\u6D3E\u6210\u529F", { dispatchId });
+    log31.info("\u6D3E\u53D1\u4EFB\u52A1\u7EED\u6D3E\u6210\u529F", { dispatchId });
     return true;
   } catch (e3) {
     const message = e3 instanceof Error ? e3.message : String(e3);
-    log30.error("\u7EED\u6D3E\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message), { dispatchId });
+    log31.error("\u7EED\u6D3E\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message), { dispatchId });
     unsubscribe();
     useDispatchStore.getState().finishTask(dispatchId, "failed", message, message);
     void reportStatus(dispatchId, "failed", { summary: message });
@@ -334903,14 +335519,14 @@ __export(sessionArchive_exports, {
 });
 init_deps();
 init_logger();
-var log31 = createLogger("SessionBackendMessages");
+var log32 = createLogger("SessionBackendMessages");
 async function loadBackendMessages2(conversationId) {
   if (!conversationId) return [];
   try {
     const entries2 = await invoke("message_read", { conversationId });
     return (entries2 ?? []).map((e3) => e3?.content).filter((c4) => !!c4 && typeof c4 === "object" && "type" in c4);
   } catch (e3) {
-    log31.warn("\u8BFB\u53D6\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+    log32.warn("\u8BFB\u53D6\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
     return [];
   }
 }
@@ -335039,7 +335655,7 @@ var useToastStore2 = create()(
 // src/host/stores/compactHandoffStore.ts
 init_sessionStoreManager();
 init_contextCompactHandoff();
-var log32 = createLogger("CompactHandoffStore");
+var log33 = createLogger("CompactHandoffStore");
 async function onCopyPromptReady(briefing, sourceTitle) {
   try {
     await copyToClipboard(briefing);
@@ -335054,7 +335670,7 @@ async function onCopyPromptReady(briefing, sourceTitle) {
       i18n_default.t("chat:compactHandoff.failToast"),
       i18n_default.t("chat:compactHandoff.copyPromptCopyFailed")
     );
-    log32.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log33.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 var activeAbort = null;
@@ -335089,10 +335705,10 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
           }
         });
         if (cancelled) {
-          log32.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
+          log33.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
         } else if (result.ok && result.briefing && params.mode === "copyPrompt") {
           await onCopyPromptReady(result.briefing, params.sourceTitle);
-          log32.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
+          log33.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
         } else if (result.ok && result.newSessionId) {
           const newSessionId = result.newSessionId;
           useToastStore2.getState().addToast({
@@ -335106,7 +335722,7 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
               onClick: () => sessionStoreManager2.getState().switchSession(newSessionId)
             }
           });
-          log32.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
+          log33.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
         } else {
           useToastStore2.getState().error(
             i18n_default.t("chat:compactHandoff.failToast"),
@@ -335115,10 +335731,10 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
         }
       } catch (e3) {
         if (cancelled) {
-          log32.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
+          log33.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
         } else {
           useToastStore2.getState().error(i18n_default.t("chat:compactHandoff.failToast"), String(e3));
-          log32.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
+          log33.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
         }
       } finally {
         if (activeAbort === abort) activeAbort = null;
@@ -335143,7 +335759,7 @@ if (typeof window !== "undefined") {
 
 // src/bootstrap.ts
 init_logger();
-var log33 = createLogger("chat-desk:bootstrap");
+var log34 = createLogger("chat-desk:bootstrap");
 var bootstrapped = false;
 function ensureChatDomainBootstrapped() {
   if (bootstrapped) return;
@@ -335167,10 +335783,10 @@ function ensureChatDomainBootstrapped() {
       ;
       remoteSessionFollower.start?.();
     } catch (e3) {
-      log33.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
+      log34.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
     }
   } catch (e3) {
-    log33.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log34.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 
@@ -335184,13 +335800,13 @@ init_deps();
 init_stores();
 init_deps();
 init_deps();
-import { useState as useState36, useRef as useRef21, useEffect as useEffect22, useCallback as useCallback25, useMemo as useMemo16 } from "react";
+import { useState as useState37, useRef as useRef22, useEffect as useEffect23, useCallback as useCallback25, useMemo as useMemo17 } from "react";
 
 // src/host/Chat/input/FileSuggestion.tsx
 init_i18n();
 init_engineDisplay();
-import { useEffect as useEffect20, useRef as useRef18 } from "react";
-import { Fragment as Fragment15, jsx as jsx40, jsxs as jsxs35 } from "react/jsx-runtime";
+import { useEffect as useEffect21, useRef as useRef19 } from "react";
+import { Fragment as Fragment15, jsx as jsx42, jsxs as jsxs37 } from "react/jsx-runtime";
 function splitPath(relativePath) {
   const parts = relativePath.split(/[/\\]/);
   const name = parts[parts.length - 1];
@@ -335205,10 +335821,10 @@ function UnifiedSuggestion({
   position: position5,
   currentWorkspaceId
 }) {
-  const containerRef = useRef18(null);
+  const containerRef = useRef19(null);
   const { t: t5 } = useTranslation("promptSnippet");
   const { t: tChat } = useTranslation("chat");
-  useEffect20(() => {
+  useEffect21(() => {
     if (containerRef.current) {
       const selectedEl = containerRef.current.querySelector(`[data-index="${selectedIndex}"]`);
       if (selectedEl) {
@@ -335229,7 +335845,7 @@ function UnifiedSuggestion({
   const mcpItems = items.filter((i2) => i2.type === "mcp");
   const capItems = items.filter((i2) => i2.type === "cap");
   const conversationItems = items.filter((i2) => i2.type === "conversation");
-  return /* @__PURE__ */ jsxs35(
+  return /* @__PURE__ */ jsxs37(
     "div",
     {
       ref: containerRef,
@@ -335244,13 +335860,13 @@ function UnifiedSuggestion({
         backgroundColor: "rgb(var(--c-bg-elevated))"
       },
       children: [
-        workspaceItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u5DE5\u4F5C\u533A" }),
+        workspaceItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u5DE5\u4F5C\u533A" }),
           workspaceItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const workspace = item.data;
             const isCurrent = workspace.id === currentWorkspaceId;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335258,22 +335874,22 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsx40("span", { className: "shrink-0", children: isCurrent ? /* @__PURE__ */ jsx40("span", { className: "w-2 h-2 rounded-full bg-primary inline-block" }) : /* @__PURE__ */ jsx40("span", { className: "w-2 h-2 rounded-full bg-primary/50 inline-block" }) }),
-                  /* @__PURE__ */ jsx40("span", { className: "flex-1 truncate font-medium", children: workspace.name }),
-                  isCurrent && /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary bg-background-elevated px-1.5 py-0.5 rounded shrink-0", children: "\u5F53\u524D" })
+                  /* @__PURE__ */ jsx42("span", { className: "shrink-0", children: isCurrent ? /* @__PURE__ */ jsx42("span", { className: "w-2 h-2 rounded-full bg-primary inline-block" }) : /* @__PURE__ */ jsx42("span", { className: "w-2 h-2 rounded-full bg-primary/50 inline-block" }) }),
+                  /* @__PURE__ */ jsx42("span", { className: "flex-1 truncate font-medium", children: workspace.name }),
+                  isCurrent && /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary bg-background-elevated px-1.5 py-0.5 rounded shrink-0", children: "\u5F53\u524D" })
                 ]
               },
               workspace.id
             );
           })
         ] }),
-        fileItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u5F53\u524D\u5DE5\u4F5C\u533A\u6587\u4EF6" }),
+        fileItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u5F53\u524D\u5DE5\u4F5C\u533A\u6587\u4EF6" }),
           fileItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const file = item.data;
             const { dir: dir2, name } = splitPath(file.relativePath);
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335281,27 +335897,27 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsx40("span", { className: "shrink-0", children: file.isDir ? /* @__PURE__ */ jsx40("svg", { className: "w-4 h-4 text-warning", fill: "currentColor", viewBox: "0 0 20 20", children: /* @__PURE__ */ jsx40("path", { d: "M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" }) }) : /* @__PURE__ */ jsx40("svg", { className: "w-4 h-4 text-text-tertiary", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", children: /* @__PURE__ */ jsx40("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }) }) }),
-                  /* @__PURE__ */ jsxs35("div", { className: "flex-1 min-w-0 flex items-center gap-1.5", children: [
-                    dir2 && /* @__PURE__ */ jsxs35("span", { className: "text-text-tertiary text-xs truncate", title: dir2, children: [
+                  /* @__PURE__ */ jsx42("span", { className: "shrink-0", children: file.isDir ? /* @__PURE__ */ jsx42("svg", { className: "w-4 h-4 text-warning", fill: "currentColor", viewBox: "0 0 20 20", children: /* @__PURE__ */ jsx42("path", { d: "M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" }) }) : /* @__PURE__ */ jsx42("svg", { className: "w-4 h-4 text-text-tertiary", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", children: /* @__PURE__ */ jsx42("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" }) }) }),
+                  /* @__PURE__ */ jsxs37("div", { className: "flex-1 min-w-0 flex items-center gap-1.5", children: [
+                    dir2 && /* @__PURE__ */ jsxs37("span", { className: "text-text-tertiary text-xs truncate", title: dir2, children: [
                       dir2,
                       "/"
                     ] }),
-                    /* @__PURE__ */ jsx40("span", { className: "font-medium truncate", title: name, children: name })
+                    /* @__PURE__ */ jsx42("span", { className: "font-medium truncate", title: name, children: name })
                   ] }),
-                  file.extension && !file.isDir && /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary bg-background-elevated px-1.5 py-0.5 rounded shrink-0", children: file.extension })
+                  file.extension && !file.isDir && /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary bg-background-elevated px-1.5 py-0.5 rounded shrink-0", children: file.extension })
                 ]
               },
               file.fullPath
             );
           })
         ] }),
-        snippetItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: t5("chat.groupLabel") }),
+        snippetItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: t5("chat.groupLabel") }),
           snippetItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const snippet2 = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335309,23 +335925,23 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsxs35("span", { className: "font-mono text-sm text-text-primary shrink-0", children: [
+                  /* @__PURE__ */ jsxs37("span", { className: "font-mono text-sm text-text-primary shrink-0", children: [
                     "/",
                     snippet2.name
                   ] }),
-                  snippet2.description && /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: snippet2.description })
+                  snippet2.description && /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: snippet2.description })
                 ]
               },
               snippet2.id
             );
           })
         ] }),
-        cliCommandItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: tChat("cliCommand.groupLabel") }),
+        cliCommandItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: tChat("cliCommand.groupLabel") }),
           cliCommandItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const cmd = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335333,24 +335949,24 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsxs35("span", { className: "font-mono text-sm text-amber-500 shrink-0", children: [
+                  /* @__PURE__ */ jsxs37("span", { className: "font-mono text-sm text-amber-500 shrink-0", children: [
                     "/",
                     cmd.name
                   ] }),
-                  cmd.argumentHint && /* @__PURE__ */ jsx40("span", { className: "font-mono text-xs text-text-tertiary shrink-0", children: cmd.argumentHint }),
-                  /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: tChat(`cliCommand.desc.${cmd.descKey}`) })
+                  cmd.argumentHint && /* @__PURE__ */ jsx42("span", { className: "font-mono text-xs text-text-tertiary shrink-0", children: cmd.argumentHint }),
+                  /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: tChat(`cliCommand.desc.${cmd.descKey}`) })
                 ]
               },
               `cli-${cmd.name}`
             );
           })
         ] }),
-        agentItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u4E13\u5BB6" }),
+        agentItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u4E13\u5BB6" }),
           agentItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const agent = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335358,22 +335974,22 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsx40("span", { className: "shrink-0", children: agent.emoji || "\u{1F916}" }),
-                  /* @__PURE__ */ jsx40("span", { className: "shrink-0 text-sm", children: agent.name }),
-                  /* @__PURE__ */ jsx40("span", { className: "font-mono text-xs text-text-tertiary shrink-0", children: agent.slug }),
-                  /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: agent.description })
+                  /* @__PURE__ */ jsx42("span", { className: "shrink-0", children: agent.emoji || "\u{1F916}" }),
+                  /* @__PURE__ */ jsx42("span", { className: "shrink-0 text-sm", children: agent.name }),
+                  /* @__PURE__ */ jsx42("span", { className: "font-mono text-xs text-text-tertiary shrink-0", children: agent.slug }),
+                  /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: agent.description })
                 ]
               },
               `agent-${agent.slug}`
             );
           })
         ] }),
-        agentMentionItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u4E13\u5BB6" }),
+        agentMentionItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u4E13\u5BB6" }),
           agentMentionItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const agent = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335381,25 +335997,25 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsx40("span", { className: "shrink-0", children: agent.emoji || "\u{1F9E9}" }),
-                  /* @__PURE__ */ jsx40("span", { className: "shrink-0 text-sm", children: agent.name }),
-                  /* @__PURE__ */ jsxs35("span", { className: "font-mono text-xs text-text-tertiary shrink-0", children: [
+                  /* @__PURE__ */ jsx42("span", { className: "shrink-0", children: agent.emoji || "\u{1F9E9}" }),
+                  /* @__PURE__ */ jsx42("span", { className: "shrink-0 text-sm", children: agent.name }),
+                  /* @__PURE__ */ jsxs37("span", { className: "font-mono text-xs text-text-tertiary shrink-0", children: [
                     "@\u4E13\u5BB6:",
                     agent.slug
                   ] }),
-                  /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: agent.description })
+                  /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: agent.description })
                 ]
               },
               `agent-mention-${agent.slug}`
             );
           })
         ] }),
-        skillItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "Skill" }),
+        skillItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "Skill" }),
           skillItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const skill = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335407,23 +336023,23 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsxs35("span", { className: "font-mono text-sm text-green-500 shrink-0", children: [
+                  /* @__PURE__ */ jsxs37("span", { className: "font-mono text-sm text-green-500 shrink-0", children: [
                     "/",
                     skill.name
                   ] }),
-                  skill.description && /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: skill.description })
+                  skill.description && /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: skill.description })
                 ]
               },
               skill.id
             );
           })
         ] }),
-        mcpItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "MCP \u63D2\u4EF6" }),
+        mcpItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "MCP \u63D2\u4EF6" }),
           mcpItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const mcp = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335431,23 +336047,23 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsxs35("span", { className: "font-mono text-sm text-blue-500 shrink-0", children: [
+                  /* @__PURE__ */ jsxs37("span", { className: "font-mono text-sm text-blue-500 shrink-0", children: [
                     "/",
                     mcp.id
                   ] }),
-                  mcp.name && /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: mcp.name })
+                  mcp.name && /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: mcp.name })
                 ]
               },
               mcp.id
             );
           })
         ] }),
-        capItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "cap \u80FD\u529B" }),
+        capItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "cap \u80FD\u529B" }),
           capItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const cap = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335455,21 +336071,21 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsx40("span", { className: "font-mono text-sm text-blue-500 shrink-0", children: cap.id || "/cap" }),
-                  /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary shrink-0", children: cap.name }),
-                  cap.summary && /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary truncate", children: cap.summary })
+                  /* @__PURE__ */ jsx42("span", { className: "font-mono text-sm text-blue-500 shrink-0", children: cap.id || "/cap" }),
+                  /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary shrink-0", children: cap.name }),
+                  cap.summary && /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary truncate", children: cap.summary })
                 ]
               },
               cap.id || "/cap"
             );
           })
         ] }),
-        conversationItems.length > 0 && /* @__PURE__ */ jsxs35(Fragment15, { children: [
-          /* @__PURE__ */ jsx40("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u5386\u53F2\u5BF9\u8BDD" }),
+        conversationItems.length > 0 && /* @__PURE__ */ jsxs37(Fragment15, { children: [
+          /* @__PURE__ */ jsx42("div", { className: "px-3 py-1.5 text-xs text-text-tertiary border-b border-border bg-background-elevated/50 sticky top-0", children: "\u5386\u53F2\u5BF9\u8BDD" }),
           conversationItems.map((item) => {
             const globalIdx = items.findIndex((i2) => i2 === item);
             const conv = item.data;
-            return /* @__PURE__ */ jsxs35(
+            return /* @__PURE__ */ jsxs37(
               "div",
               {
                 "data-index": globalIdx,
@@ -335477,10 +336093,10 @@ function UnifiedSuggestion({
                 onClick: () => onSelect(item),
                 onMouseEnter: () => onHover(globalIdx),
                 children: [
-                  /* @__PURE__ */ jsx40("svg", { className: "w-4 h-4 text-text-tertiary shrink-0", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", children: /* @__PURE__ */ jsx40("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.97 7.97 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" }) }),
-                  /* @__PURE__ */ jsx40("span", { className: "flex-1 truncate font-medium", title: conv.title, children: conv.title }),
-                  /* @__PURE__ */ jsx40("span", { className: "text-xs text-text-tertiary bg-background-elevated px-1.5 py-0.5 rounded shrink-0", children: getEngineDisplayName(conv.engineId) }),
-                  /* @__PURE__ */ jsxs35("span", { className: "text-xs text-text-tertiary shrink-0", children: [
+                  /* @__PURE__ */ jsx42("svg", { className: "w-4 h-4 text-text-tertiary shrink-0", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", children: /* @__PURE__ */ jsx42("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.8L3 20l1.3-3.9A7.97 7.97 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" }) }),
+                  /* @__PURE__ */ jsx42("span", { className: "flex-1 truncate font-medium", title: conv.title, children: conv.title }),
+                  /* @__PURE__ */ jsx42("span", { className: "text-xs text-text-tertiary bg-background-elevated px-1.5 py-0.5 rounded shrink-0", children: getEngineDisplayName(conv.engineId) }),
+                  /* @__PURE__ */ jsxs37("span", { className: "text-xs text-text-tertiary shrink-0", children: [
                     conv.messageCount,
                     "\u6761"
                   ] })
@@ -335499,11 +336115,11 @@ function UnifiedSuggestion({
 init_i18n();
 init_lucide_react();
 init_types();
-import { useState as useState31 } from "react";
-import { jsx as jsx41, jsxs as jsxs36 } from "react/jsx-runtime";
+import { useState as useState32 } from "react";
+import { jsx as jsx43, jsxs as jsxs38 } from "react/jsx-runtime";
 function AttachmentPreview({ attachments, onRemove: onRemove2 }) {
   if (attachments.length === 0) return null;
-  return /* @__PURE__ */ jsx41("div", { className: "flex flex-wrap gap-2 px-2.5 sm:px-3 pt-2 pb-1 border-b border-border-subtle", children: attachments.map((attachment) => /* @__PURE__ */ jsx41(
+  return /* @__PURE__ */ jsx43("div", { className: "flex flex-wrap gap-2 px-2.5 sm:px-3 pt-2 pb-1 border-b border-border-subtle", children: attachments.map((attachment) => /* @__PURE__ */ jsx43(
     AttachmentItem,
     {
       attachment,
@@ -335514,34 +336130,34 @@ function AttachmentPreview({ attachments, onRemove: onRemove2 }) {
 }
 function AttachmentItem({ attachment, onRemove: onRemove2 }) {
   const { t: t5 } = useTranslation("chat");
-  const [imageError, setImageError] = useState31(false);
+  const [imageError, setImageError] = useState32(false);
   const { type: type3, fileName, fileSize, status, error: error3, preview, mimeType } = attachment;
   if (status === "loading") {
-    return /* @__PURE__ */ jsxs36("div", { className: "relative flex items-center gap-2 px-3 py-2 bg-background-elevated rounded-lg border border-border-subtle", children: [
-      /* @__PURE__ */ jsx41(LoaderCircle, { size: 16, className: "animate-spin text-text-tertiary" }),
-      /* @__PURE__ */ jsx41("span", { className: "text-sm text-text-secondary truncate max-w-[120px]", children: fileName })
+    return /* @__PURE__ */ jsxs38("div", { className: "relative flex items-center gap-2 px-3 py-2 bg-background-elevated rounded-lg border border-border-subtle", children: [
+      /* @__PURE__ */ jsx43(LoaderCircle, { size: 16, className: "animate-spin text-text-tertiary" }),
+      /* @__PURE__ */ jsx43("span", { className: "text-sm text-text-secondary truncate max-w-[120px]", children: fileName })
     ] });
   }
   if (status === "error") {
-    return /* @__PURE__ */ jsxs36("div", { className: "relative flex items-center gap-2 px-3 py-2 bg-danger/10 rounded-lg border border-danger/20", children: [
-      /* @__PURE__ */ jsx41(CircleAlert, { size: 16, className: "text-danger" }),
-      /* @__PURE__ */ jsxs36("div", { className: "flex flex-col", children: [
-        /* @__PURE__ */ jsx41("span", { className: "text-sm text-text-primary truncate max-w-[120px]", children: fileName }),
-        /* @__PURE__ */ jsx41("span", { className: "text-xs text-danger", children: error3 || t5("attachment.loadFailed") })
+    return /* @__PURE__ */ jsxs38("div", { className: "relative flex items-center gap-2 px-3 py-2 bg-danger/10 rounded-lg border border-danger/20", children: [
+      /* @__PURE__ */ jsx43(CircleAlert, { size: 16, className: "text-danger" }),
+      /* @__PURE__ */ jsxs38("div", { className: "flex flex-col", children: [
+        /* @__PURE__ */ jsx43("span", { className: "text-sm text-text-primary truncate max-w-[120px]", children: fileName }),
+        /* @__PURE__ */ jsx43("span", { className: "text-xs text-danger", children: error3 || t5("attachment.loadFailed") })
       ] }),
-      /* @__PURE__ */ jsx41(
+      /* @__PURE__ */ jsx43(
         "button",
         {
           onClick: onRemove2,
           className: "ml-1 p-0.5 rounded hover:bg-danger/20 text-danger",
-          children: /* @__PURE__ */ jsx41(X, { size: 14 })
+          children: /* @__PURE__ */ jsx43(X, { size: 14 })
         }
       )
     ] });
   }
   if (type3 === "image" && preview && isPreviewableImage(mimeType) && !imageError) {
-    return /* @__PURE__ */ jsxs36("div", { className: "relative group", children: [
-      /* @__PURE__ */ jsx41("div", { className: "w-16 h-16 rounded-lg overflow-hidden border border-border-subtle bg-background-elevated", children: /* @__PURE__ */ jsx41(
+    return /* @__PURE__ */ jsxs38("div", { className: "relative group", children: [
+      /* @__PURE__ */ jsx43("div", { className: "w-16 h-16 rounded-lg overflow-hidden border border-border-subtle bg-background-elevated", children: /* @__PURE__ */ jsx43(
         "img",
         {
           src: preview,
@@ -335550,31 +336166,31 @@ function AttachmentItem({ attachment, onRemove: onRemove2 }) {
           onError: () => setImageError(true)
         }
       ) }),
-      /* @__PURE__ */ jsx41(
+      /* @__PURE__ */ jsx43(
         "button",
         {
           onClick: onRemove2,
           className: "absolute -top-1.5 -right-1.5 p-1 rounded-full bg-danger text-white opacity-0 group-hover:opacity-100 transition-opacity shadow-sm",
-          children: /* @__PURE__ */ jsx41(X, { size: 10 })
+          children: /* @__PURE__ */ jsx43(X, { size: 10 })
         }
       ),
-      /* @__PURE__ */ jsx41("div", { className: "absolute -bottom-5 left-0 right-0 text-center", children: /* @__PURE__ */ jsx41("span", { className: "text-xs text-text-tertiary truncate block px-1", children: fileName }) })
+      /* @__PURE__ */ jsx43("div", { className: "absolute -bottom-5 left-0 right-0 text-center", children: /* @__PURE__ */ jsx43("span", { className: "text-xs text-text-tertiary truncate block px-1", children: fileName }) })
     ] });
   }
   const iconType = getFileIcon(mimeType, fileName);
   const IconComponent = getFileIconComponent(iconType);
-  return /* @__PURE__ */ jsxs36("div", { className: "relative group flex items-center gap-2 px-3 py-2 bg-background-elevated rounded-lg border border-border-subtle hover:border-border transition-colors", children: [
-    /* @__PURE__ */ jsx41(IconComponent, { size: 20, className: getIconColor(iconType) }),
-    /* @__PURE__ */ jsxs36("div", { className: "flex flex-col min-w-0", children: [
-      /* @__PURE__ */ jsx41("span", { className: "text-sm text-text-primary truncate max-w-[150px]", children: fileName }),
-      /* @__PURE__ */ jsx41("span", { className: "text-xs text-text-tertiary", children: formatFileSize(fileSize) })
+  return /* @__PURE__ */ jsxs38("div", { className: "relative group flex items-center gap-2 px-3 py-2 bg-background-elevated rounded-lg border border-border-subtle hover:border-border transition-colors", children: [
+    /* @__PURE__ */ jsx43(IconComponent, { size: 20, className: getIconColor(iconType) }),
+    /* @__PURE__ */ jsxs38("div", { className: "flex flex-col min-w-0", children: [
+      /* @__PURE__ */ jsx43("span", { className: "text-sm text-text-primary truncate max-w-[150px]", children: fileName }),
+      /* @__PURE__ */ jsx43("span", { className: "text-xs text-text-tertiary", children: formatFileSize(fileSize) })
     ] }),
-    /* @__PURE__ */ jsx41(
+    /* @__PURE__ */ jsx43(
       "button",
       {
         onClick: onRemove2,
         className: "p-1 rounded hover:bg-background-hover text-text-tertiary hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity",
-        children: /* @__PURE__ */ jsx41(X, { size: 14 })
+        children: /* @__PURE__ */ jsx43(X, { size: 14 })
       }
     )
   ] });
@@ -335617,7 +336233,7 @@ function getIconColor(iconType) {
 // src/host/Chat/input/ContextBlockPreview.tsx
 init_i18n();
 init_lucide_react();
-import { useState as useState32 } from "react";
+import { useState as useState33 } from "react";
 
 // src/host/Chat/input/contextBlockRegistry.ts
 init_types();
@@ -335625,7 +336241,7 @@ init_deps();
 init_path();
 init_logger();
 init_deps();
-var log34 = createLogger("ContextBlockRegistry");
+var log35 = createLogger("ContextBlockRegistry");
 var TCB_DIR = ".polaris-handoff";
 var kindRegistry = /* @__PURE__ */ new Map();
 function registerContextBlockKind(kind, spec) {
@@ -335681,7 +336297,7 @@ async function materializeContextBlocks(blocks2, workspacePath) {
         };
       }
     } catch (e3) {
-      log34.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
+      log35.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
     }
   }
   const body = formatContextBlocks(blocks2);
@@ -335699,7 +336315,7 @@ async function packContextBlocksAsReference(blocks2, workspacePath) {
   const relPath = `${TCB_DIR}/${fileName}`;
   const absPath = joinPath(workspacePath, relPath);
   await invoke("create_file", { path: absPath, content: markdown2 });
-  log34.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
+  log35.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
   return { hasContent: true, fileRef: { relPath, absPath } };
 }
 function formatContextBlock(block2) {
@@ -335718,10 +336334,10 @@ function formatContextBlocks(blocks2) {
 }
 
 // src/host/Chat/input/ContextBlockPreview.tsx
-import { jsx as jsx42, jsxs as jsxs37 } from "react/jsx-runtime";
+import { jsx as jsx44, jsxs as jsxs39 } from "react/jsx-runtime";
 function ContextBlockPreview({ blocks: blocks2, onRemove: onRemove2, onUpdateNote }) {
   if (blocks2.length === 0) return null;
-  return /* @__PURE__ */ jsx42("div", { className: "flex flex-col gap-1.5 px-2.5 sm:px-3 pt-2 pb-1 border-b border-border-subtle", children: blocks2.map((block2) => /* @__PURE__ */ jsx42(ContextBlockItem, { block: block2, onRemove: () => onRemove2(block2.id), onUpdateNote }, block2.id)) });
+  return /* @__PURE__ */ jsx44("div", { className: "flex flex-col gap-1.5 px-2.5 sm:px-3 pt-2 pb-1 border-b border-border-subtle", children: blocks2.map((block2) => /* @__PURE__ */ jsx44(ContextBlockItem, { block: block2, onRemove: () => onRemove2(block2.id), onUpdateNote }, block2.id)) });
 }
 function ContextBlockItem({
   block: block2,
@@ -335729,9 +336345,9 @@ function ContextBlockItem({
   onUpdateNote
 }) {
   const { t: t5 } = useTranslation("chat");
-  const [expanded, setExpanded] = useState32(false);
-  const [editingNote, setEditingNote] = useState32(false);
-  const [noteDraft, setNoteDraft] = useState32(block2.userNote ?? "");
+  const [expanded, setExpanded] = useState33(false);
+  const [editingNote, setEditingNote] = useState33(false);
+  const [noteDraft, setNoteDraft] = useState33(block2.userNote ?? "");
   const spec = getKindSpec(block2.kind);
   const isMarquee = block2.kind === "marquee-context";
   const url = isMarquee ? block2.url ?? block2.data?.url : void 0;
@@ -335742,18 +336358,18 @@ function ContextBlockItem({
     if (onUpdateNote) onUpdateNote(block2.id, noteDraft.trim());
     setEditingNote(false);
   };
-  return /* @__PURE__ */ jsxs37("div", { className: `rounded-lg border border-primary/30 bg-primary/5 overflow-hidden ${spec ? "kind-known" : "kind-unknown"}`, children: [
-    /* @__PURE__ */ jsxs37("div", { className: "flex items-center gap-2 px-2.5 py-1.5", children: [
-      /* @__PURE__ */ jsx42("span", { className: "shrink-0 text-primary", children: isMarquee ? /* @__PURE__ */ jsx42(Target, { size: 14 }) : /* @__PURE__ */ jsx42("span", { className: "text-[13px]", children: spec?.icon ?? "\u{1F9E9}" }) }),
-      /* @__PURE__ */ jsx42("span", { className: "shrink-0 text-xs font-medium text-text-primary truncate", children: block2.title }),
-      source && /* @__PURE__ */ jsx42("span", { className: "shrink-0 rounded-full bg-primary/10 px-1.5 py-px text-[9.5px] font-medium text-primary", children: source }),
-      sizeSummary && /* @__PURE__ */ jsx42("span", { className: "hidden sm:inline shrink-0 text-[10px] font-mono text-text-tertiary truncate max-w-[140px]", children: sizeSummary }),
-      block2.userNote && /* @__PURE__ */ jsxs37("span", { className: "shrink-0 max-w-[120px] truncate rounded bg-background-surface px-1.5 py-px text-[9.5px] text-text-secondary", title: block2.userNote, children: [
+  return /* @__PURE__ */ jsxs39("div", { className: `rounded-lg border border-primary/30 bg-primary/5 overflow-hidden ${spec ? "kind-known" : "kind-unknown"}`, children: [
+    /* @__PURE__ */ jsxs39("div", { className: "flex items-center gap-2 px-2.5 py-1.5", children: [
+      /* @__PURE__ */ jsx44("span", { className: "shrink-0 text-primary", children: isMarquee ? /* @__PURE__ */ jsx44(Target, { size: 14 }) : /* @__PURE__ */ jsx44("span", { className: "text-[13px]", children: spec?.icon ?? "\u{1F9E9}" }) }),
+      /* @__PURE__ */ jsx44("span", { className: "shrink-0 text-xs font-medium text-text-primary truncate", children: block2.title }),
+      source && /* @__PURE__ */ jsx44("span", { className: "shrink-0 rounded-full bg-primary/10 px-1.5 py-px text-[9.5px] font-medium text-primary", children: source }),
+      sizeSummary && /* @__PURE__ */ jsx44("span", { className: "hidden sm:inline shrink-0 text-[10px] font-mono text-text-tertiary truncate max-w-[140px]", children: sizeSummary }),
+      block2.userNote && /* @__PURE__ */ jsxs39("span", { className: "shrink-0 max-w-[120px] truncate rounded bg-background-surface px-1.5 py-px text-[9.5px] text-text-secondary", title: block2.userNote, children: [
         "\u{1F4AC} ",
         block2.userNote
       ] }),
-      /* @__PURE__ */ jsxs37("div", { className: "ml-auto flex items-center gap-0.5 shrink-0", children: [
-        onUpdateNote && /* @__PURE__ */ jsx42(
+      /* @__PURE__ */ jsxs39("div", { className: "ml-auto flex items-center gap-0.5 shrink-0", children: [
+        onUpdateNote && /* @__PURE__ */ jsx44(
           "button",
           {
             type: "button",
@@ -335763,10 +336379,10 @@ function ContextBlockItem({
             },
             className: "shrink-0 flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] text-text-secondary hover:bg-background-hover hover:text-primary",
             title: t5("contextBlock.note", { defaultValue: "\u5907\u6CE8" }),
-            children: /* @__PURE__ */ jsx42(MessageSquarePlus, { size: 11 })
+            children: /* @__PURE__ */ jsx44(MessageSquarePlus, { size: 11 })
           }
         ),
-        /* @__PURE__ */ jsxs37(
+        /* @__PURE__ */ jsxs39(
           "button",
           {
             type: "button",
@@ -335775,24 +336391,24 @@ function ContextBlockItem({
             title: expanded ? t5("contextBlock.collapse", { defaultValue: "\u6536\u8D77" }) : t5("contextBlock.expand", { defaultValue: "\u5C55\u5F00\u67E5\u770B" }),
             children: [
               t5("contextBlock.expandView", { defaultValue: expanded ? "\u6536\u8D77" : "\u67E5\u770B" }),
-              /* @__PURE__ */ jsx42(ChevronDown, { size: 11, className: `transition-transform ${expanded ? "rotate-180" : ""}` })
+              /* @__PURE__ */ jsx44(ChevronDown, { size: 11, className: `transition-transform ${expanded ? "rotate-180" : ""}` })
             ]
           }
         ),
-        /* @__PURE__ */ jsx42(
+        /* @__PURE__ */ jsx44(
           "button",
           {
             type: "button",
             onClick: onRemove2,
             className: "shrink-0 p-0.5 rounded text-text-tertiary hover:text-danger",
             title: t5("contextBlock.remove", { defaultValue: "\u79FB\u9664" }),
-            children: /* @__PURE__ */ jsx42(X, { size: 13 })
+            children: /* @__PURE__ */ jsx44(X, { size: 13 })
           }
         )
       ] })
     ] }),
-    editingNote && /* @__PURE__ */ jsxs37("div", { className: "border-t border-primary/20 px-2.5 py-1.5", children: [
-      /* @__PURE__ */ jsx42(
+    editingNote && /* @__PURE__ */ jsxs39("div", { className: "border-t border-primary/20 px-2.5 py-1.5", children: [
+      /* @__PURE__ */ jsx44(
         "textarea",
         {
           value: noteDraft,
@@ -335802,8 +336418,8 @@ function ContextBlockItem({
           className: "w-full rounded-md bg-background-surface border border-border px-2 py-1.5 text-[11px] outline-none focus:border-primary resize-none"
         }
       ),
-      /* @__PURE__ */ jsxs37("div", { className: "mt-1 flex justify-end gap-1.5", children: [
-        /* @__PURE__ */ jsx42(
+      /* @__PURE__ */ jsxs39("div", { className: "mt-1 flex justify-end gap-1.5", children: [
+        /* @__PURE__ */ jsx44(
           "button",
           {
             type: "button",
@@ -335812,23 +336428,23 @@ function ContextBlockItem({
             children: t5("contextBlock.noteCancel", { defaultValue: "\u53D6\u6D88" })
           }
         ),
-        /* @__PURE__ */ jsxs37(
+        /* @__PURE__ */ jsxs39(
           "button",
           {
             type: "button",
             onClick: saveNote,
             className: "flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-[10px] text-primary hover:bg-primary/20",
             children: [
-              /* @__PURE__ */ jsx42(Check, { size: 10 }),
+              /* @__PURE__ */ jsx44(Check, { size: 10 }),
               t5("contextBlock.noteSave", { defaultValue: "\u4FDD\u5B58\u5907\u6CE8" })
             ]
           }
         )
       ] })
     ] }),
-    expanded && /* @__PURE__ */ jsxs37("div", { className: "border-t border-primary/20 px-2.5 py-2", children: [
-      /* @__PURE__ */ jsx42(BlockDetails, { block: block2, isMarquee, url, regions }),
-      /* @__PURE__ */ jsx42("div", { className: "mt-1.5 text-[9.5px] text-text-tertiary", children: t5("contextBlock.sendHint", { defaultValue: "\u53D1\u9001\u65F6\u5C06\u4EE5\u4E0A\u5185\u5BB9\u4F5C\u4E3A\u4E0A\u4E0B\u6587\u9644\u5E26\u7ED9 AI" }) })
+    expanded && /* @__PURE__ */ jsxs39("div", { className: "border-t border-primary/20 px-2.5 py-2", children: [
+      /* @__PURE__ */ jsx44(BlockDetails, { block: block2, isMarquee, url, regions }),
+      /* @__PURE__ */ jsx44("div", { className: "mt-1.5 text-[9.5px] text-text-tertiary", children: t5("contextBlock.sendHint", { defaultValue: "\u53D1\u9001\u65F6\u5C06\u4EE5\u4E0A\u5185\u5BB9\u4F5C\u4E3A\u4E0A\u4E0B\u6587\u9644\u5E26\u7ED9 AI" }) })
     ] })
   ] });
 }
@@ -335840,59 +336456,59 @@ function BlockDetails({
 }) {
   const { t: t5 } = useTranslation("chat");
   if (!isMarquee) {
-    return /* @__PURE__ */ jsxs37("div", { className: "flex flex-col gap-1", children: [
-      /* @__PURE__ */ jsxs37("div", { className: "text-[10px] text-text-tertiary truncate", title: block2.title, children: [
+    return /* @__PURE__ */ jsxs39("div", { className: "flex flex-col gap-1", children: [
+      /* @__PURE__ */ jsxs39("div", { className: "text-[10px] text-text-tertiary truncate", title: block2.title, children: [
         block2.title,
         " \xB7 kind: ",
         block2.kind
       ] }),
-      block2.data && Object.keys(block2.data).length > 0 && /* @__PURE__ */ jsx42("pre", { className: "mt-1 max-h-32 overflow-auto rounded bg-background-elevated px-1.5 py-1 text-[9.5px] font-mono text-text-tertiary whitespace-pre-wrap break-all", children: JSON.stringify(block2.data, null, 2) })
+      block2.data && Object.keys(block2.data).length > 0 && /* @__PURE__ */ jsx44("pre", { className: "mt-1 max-h-32 overflow-auto rounded bg-background-elevated px-1.5 py-1 text-[9.5px] font-mono text-text-tertiary whitespace-pre-wrap break-all", children: JSON.stringify(block2.data, null, 2) })
     ] });
   }
-  return /* @__PURE__ */ jsxs37("div", { children: [
-    /* @__PURE__ */ jsxs37("div", { className: "mb-1.5 text-[10px] text-text-tertiary truncate", title: url, children: [
+  return /* @__PURE__ */ jsxs39("div", { children: [
+    /* @__PURE__ */ jsxs39("div", { className: "mb-1.5 text-[10px] text-text-tertiary truncate", title: url, children: [
       block2.title,
       " \xB7 ",
       url
     ] }),
-    block2.userNote && /* @__PURE__ */ jsxs37("div", { className: "mb-1.5 text-[11px] text-text-secondary", children: [
+    block2.userNote && /* @__PURE__ */ jsxs39("div", { className: "mb-1.5 text-[11px] text-text-secondary", children: [
       "\u{1F4AC} ",
       block2.userNote
     ] }),
-    regions.length > 0 ? /* @__PURE__ */ jsx42("div", { className: "flex flex-col gap-1.5", children: regions.map((region, idx) => /* @__PURE__ */ jsxs37("div", { className: "rounded-md bg-background-surface border border-border-subtle px-2 py-1.5", children: [
-      /* @__PURE__ */ jsxs37("div", { className: "flex items-center gap-1.5 text-[10px] text-text-tertiary font-mono", children: [
-        /* @__PURE__ */ jsx42("span", { className: "rounded bg-primary/15 px-1 py-px font-medium text-primary", children: idx + 1 }),
-        /* @__PURE__ */ jsxs37("span", { children: [
+    regions.length > 0 ? /* @__PURE__ */ jsx44("div", { className: "flex flex-col gap-1.5", children: regions.map((region, idx) => /* @__PURE__ */ jsxs39("div", { className: "rounded-md bg-background-surface border border-border-subtle px-2 py-1.5", children: [
+      /* @__PURE__ */ jsxs39("div", { className: "flex items-center gap-1.5 text-[10px] text-text-tertiary font-mono", children: [
+        /* @__PURE__ */ jsx44("span", { className: "rounded bg-primary/15 px-1 py-px font-medium text-primary", children: idx + 1 }),
+        /* @__PURE__ */ jsxs39("span", { children: [
           "(",
           Math.round(region.rect.x),
           ", ",
           Math.round(region.rect.y),
           ")"
         ] }),
-        /* @__PURE__ */ jsxs37("span", { children: [
+        /* @__PURE__ */ jsxs39("span", { children: [
           Math.round(region.rect.width),
           "\xD7",
           Math.round(region.rect.height)
         ] }),
-        region.count !== void 0 && /* @__PURE__ */ jsxs37("span", { children: [
+        region.count !== void 0 && /* @__PURE__ */ jsxs39("span", { children: [
           "\xB7 ",
           region.count,
           " \u4E2A\u5143\u7D20"
         ] })
       ] }),
-      region.elements && region.elements.length > 0 && /* @__PURE__ */ jsx42("div", { className: "mt-1 text-[10px] text-text-secondary line-clamp-1", children: region.elements.slice(0, 3).map((e3) => `${e3.kind} "${e3.text}"`).join(" \xB7 ") }),
-      region.textSnippet && /* @__PURE__ */ jsx42("div", { className: "mt-0.5 text-[10px] text-text-secondary line-clamp-2", children: region.textSnippet }),
-      region.htmlSnippet && /* @__PURE__ */ jsx42("pre", { className: "mt-1 max-h-16 overflow-auto rounded bg-background-elevated px-1.5 py-1 text-[9.5px] font-mono text-text-tertiary whitespace-pre-wrap break-all", children: region.htmlSnippet })
-    ] }, region.htmlSnippet ? `region-${idx}` : idx)) }) : /* @__PURE__ */ jsx42("div", { className: "text-[10px] text-text-tertiary", children: t5("contextBlock.noRegions", { defaultValue: "\uFF08\u65E0\u533A\u57DF\u8BE6\u60C5\uFF09" }) })
+      region.elements && region.elements.length > 0 && /* @__PURE__ */ jsx44("div", { className: "mt-1 text-[10px] text-text-secondary line-clamp-1", children: region.elements.slice(0, 3).map((e3) => `${e3.kind} "${e3.text}"`).join(" \xB7 ") }),
+      region.textSnippet && /* @__PURE__ */ jsx44("div", { className: "mt-0.5 text-[10px] text-text-secondary line-clamp-2", children: region.textSnippet }),
+      region.htmlSnippet && /* @__PURE__ */ jsx44("pre", { className: "mt-1 max-h-16 overflow-auto rounded bg-background-elevated px-1.5 py-1 text-[9.5px] font-mono text-text-tertiary whitespace-pre-wrap break-all", children: region.htmlSnippet })
+    ] }, region.htmlSnippet ? `region-${idx}` : idx)) }) : /* @__PURE__ */ jsx44("div", { className: "text-[10px] text-text-tertiary", children: t5("contextBlock.noRegions", { defaultValue: "\uFF08\u65E0\u533A\u57DF\u8BE6\u60C5\uFF09" }) })
   ] });
 }
 
 // src/host/Chat/input/AutoResizingTextarea.tsx
-import { forwardRef as forwardRef5, useRef as useRef19, useLayoutEffect } from "react";
-import { jsx as jsx43 } from "react/jsx-runtime";
-var AutoResizingTextarea = forwardRef5(
+import { forwardRef as forwardRef6, useRef as useRef20, useLayoutEffect } from "react";
+import { jsx as jsx45 } from "react/jsx-runtime";
+var AutoResizingTextarea = forwardRef6(
   ({ value: value3, maxHeight = 200, minHeight = 40, className = "", ...props }, ref) => {
-    const innerRef = useRef19(null);
+    const innerRef = useRef20(null);
     const textareaRef = ref || innerRef;
     useLayoutEffect(() => {
       const textarea = textareaRef.current;
@@ -335901,7 +336517,7 @@ var AutoResizingTextarea = forwardRef5(
       const newHeight = Math.min(Math.max(textarea.scrollHeight, minHeight), maxHeight);
       textarea.style.height = `${newHeight}px`;
     }, [value3, minHeight, maxHeight, textareaRef]);
-    return /* @__PURE__ */ jsx43(
+    return /* @__PURE__ */ jsx45(
       "textarea",
       {
         ref: textareaRef,
@@ -335917,11 +336533,11 @@ AutoResizingTextarea.displayName = "AutoResizingTextarea";
 
 // src/host/Chat/input/SnippetParamPanel.tsx
 init_i18n();
-import { useState as useState33 } from "react";
-import { jsx as jsx44, jsxs as jsxs38 } from "react/jsx-runtime";
+import { useState as useState34 } from "react";
+import { jsx as jsx46, jsxs as jsxs40 } from "react/jsx-runtime";
 function SnippetParamPanel({ snippet: snippet2, onExpand, onCancel }) {
   const { t: t5 } = useTranslation("promptSnippet");
-  const [values2, setValues] = useState33(() => {
+  const [values2, setValues] = useState34(() => {
     const init3 = {};
     for (const v5 of snippet2.variables) {
       init3[v5.key] = v5.defaultValue ?? "";
@@ -335935,15 +336551,15 @@ function SnippetParamPanel({ snippet: snippet2, onExpand, onCancel }) {
     }
     onExpand(content);
   };
-  return /* @__PURE__ */ jsx44("div", { className: "absolute bottom-full left-0 right-0 mb-1 px-3 z-10", children: /* @__PURE__ */ jsxs38("div", { className: "bg-background-elevated border border-border rounded-xl shadow-lg p-3 space-y-3", children: [
-    /* @__PURE__ */ jsxs38("div", { className: "flex items-center justify-between", children: [
-      /* @__PURE__ */ jsxs38("span", { className: "text-sm font-medium text-text-primary", children: [
+  return /* @__PURE__ */ jsx46("div", { className: "absolute bottom-full left-0 right-0 mb-1 px-3 z-10", children: /* @__PURE__ */ jsxs40("div", { className: "bg-background-elevated border border-border rounded-xl shadow-lg p-3 space-y-3", children: [
+    /* @__PURE__ */ jsxs40("div", { className: "flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxs40("span", { className: "text-sm font-medium text-text-primary", children: [
         "/",
         snippet2.name,
         " \u2014 ",
         t5("chat.fillParams")
       ] }),
-      /* @__PURE__ */ jsx44(
+      /* @__PURE__ */ jsx46(
         "button",
         {
           onClick: onCancel,
@@ -335952,12 +336568,12 @@ function SnippetParamPanel({ snippet: snippet2, onExpand, onCancel }) {
         }
       )
     ] }),
-    snippet2.variables.map((v5) => /* @__PURE__ */ jsxs38("div", { className: "space-y-1", children: [
-      /* @__PURE__ */ jsxs38("label", { className: "text-xs text-text-secondary", children: [
+    snippet2.variables.map((v5) => /* @__PURE__ */ jsxs40("div", { className: "space-y-1", children: [
+      /* @__PURE__ */ jsxs40("label", { className: "text-xs text-text-secondary", children: [
         v5.label,
-        v5.required && /* @__PURE__ */ jsx44("span", { className: "text-danger ml-1", children: "*" })
+        v5.required && /* @__PURE__ */ jsx46("span", { className: "text-danger ml-1", children: "*" })
       ] }),
-      v5.type === "textarea" ? /* @__PURE__ */ jsx44(
+      v5.type === "textarea" ? /* @__PURE__ */ jsx46(
         "textarea",
         {
           value: values2[v5.key] ?? "",
@@ -335966,7 +336582,7 @@ function SnippetParamPanel({ snippet: snippet2, onExpand, onCancel }) {
           className: "w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-text-primary resize-none focus:outline-none focus:border-primary",
           rows: 3
         }
-      ) : /* @__PURE__ */ jsx44(
+      ) : /* @__PURE__ */ jsx46(
         "input",
         {
           type: "text",
@@ -335977,8 +336593,8 @@ function SnippetParamPanel({ snippet: snippet2, onExpand, onCancel }) {
         }
       )
     ] }, v5.key)),
-    /* @__PURE__ */ jsxs38("div", { className: "flex gap-2 justify-end", children: [
-      /* @__PURE__ */ jsx44(
+    /* @__PURE__ */ jsxs40("div", { className: "flex gap-2 justify-end", children: [
+      /* @__PURE__ */ jsx46(
         "button",
         {
           onClick: onCancel,
@@ -335986,7 +336602,7 @@ function SnippetParamPanel({ snippet: snippet2, onExpand, onCancel }) {
           children: t5("cancel")
         }
       ),
-      /* @__PURE__ */ jsx44(
+      /* @__PURE__ */ jsx46(
         "button",
         {
           onClick: handleExpand,
@@ -336003,21 +336619,21 @@ init_i18n();
 init_lucide_react();
 init_clsx();
 init_stores();
-import { memo as memo29, useEffect as useEffect21, useRef as useRef20, useState as useState34 } from "react";
-import { jsx as jsx45, jsxs as jsxs39 } from "react/jsx-runtime";
-var PendingBriefingCard = memo29(function PendingBriefingCard2() {
+import { memo as memo30, useEffect as useEffect22, useRef as useRef21, useState as useState35 } from "react";
+import { jsx as jsx47, jsxs as jsxs41 } from "react/jsx-runtime";
+var PendingBriefingCard = memo30(function PendingBriefingCard2() {
   const { t: t5 } = useTranslation("chat");
   const briefing = useActiveSessionPendingBriefing2();
   const { setPendingBriefing } = useActiveSessionActions2();
-  const [expanded, setExpanded] = useState34(false);
-  const [editing, setEditing] = useState34(false);
-  const [draft, setDraft] = useState34("");
-  const textareaRef = useRef20(null);
-  useEffect21(() => {
+  const [expanded, setExpanded] = useState35(false);
+  const [editing, setEditing] = useState35(false);
+  const [draft, setDraft] = useState35("");
+  const textareaRef = useRef21(null);
+  useEffect22(() => {
     setExpanded(false);
     setEditing(false);
   }, [briefing]);
-  useEffect21(() => {
+  useEffect22(() => {
     if (editing) {
       setDraft(briefing ?? "");
       setTimeout(() => textareaRef.current?.focus(), 0);
@@ -336028,10 +336644,10 @@ var PendingBriefingCard = memo29(function PendingBriefingCard2() {
     setPendingBriefing(draft.trim() ? draft : null);
     setEditing(false);
   };
-  return /* @__PURE__ */ jsxs39("div", { className: "mx-3 mt-2 rounded-lg border border-primary/30 bg-primary/5 overflow-hidden", children: [
-    /* @__PURE__ */ jsxs39("div", { className: "flex items-center gap-2 px-3 py-1.5", children: [
-      /* @__PURE__ */ jsx45(Archive, { size: 13, className: "text-primary shrink-0" }),
-      /* @__PURE__ */ jsxs39(
+  return /* @__PURE__ */ jsxs41("div", { className: "mx-3 mt-2 rounded-lg border border-primary/30 bg-primary/5 overflow-hidden", children: [
+    /* @__PURE__ */ jsxs41("div", { className: "flex items-center gap-2 px-3 py-1.5", children: [
+      /* @__PURE__ */ jsx47(Archive, { size: 13, className: "text-primary shrink-0" }),
+      /* @__PURE__ */ jsxs41(
         "button",
         {
           type: "button",
@@ -336039,9 +336655,9 @@ var PendingBriefingCard = memo29(function PendingBriefingCard2() {
           className: "flex items-center gap-1 min-w-0 flex-1 text-left",
           title: expanded ? t5("compactHandoff.card.collapse") : t5("compactHandoff.card.expand"),
           children: [
-            /* @__PURE__ */ jsx45("span", { className: "text-xs font-medium text-text-primary truncate", children: t5("compactHandoff.card.title") }),
-            /* @__PURE__ */ jsx45("span", { className: "text-[10px] text-text-tertiary shrink-0", children: t5("compactHandoff.card.hint") }),
-            /* @__PURE__ */ jsx45(
+            /* @__PURE__ */ jsx47("span", { className: "text-xs font-medium text-text-primary truncate", children: t5("compactHandoff.card.title") }),
+            /* @__PURE__ */ jsx47("span", { className: "text-[10px] text-text-tertiary shrink-0", children: t5("compactHandoff.card.hint") }),
+            /* @__PURE__ */ jsx47(
               ChevronDown,
               {
                 size: 12,
@@ -336051,7 +336667,7 @@ var PendingBriefingCard = memo29(function PendingBriefingCard2() {
           ]
         }
       ),
-      !editing && /* @__PURE__ */ jsx45(
+      !editing && /* @__PURE__ */ jsx47(
         "button",
         {
           type: "button",
@@ -336061,22 +336677,22 @@ var PendingBriefingCard = memo29(function PendingBriefingCard2() {
           },
           className: "p-1 rounded text-text-tertiary hover:text-text-primary hover:bg-background-hover shrink-0",
           title: t5("compactHandoff.card.edit"),
-          children: /* @__PURE__ */ jsx45(Pencil, { size: 12 })
+          children: /* @__PURE__ */ jsx47(Pencil, { size: 12 })
         }
       ),
-      /* @__PURE__ */ jsx45(
+      /* @__PURE__ */ jsx47(
         "button",
         {
           type: "button",
           onClick: () => setPendingBriefing(null),
           className: "p-1 rounded text-text-tertiary hover:text-danger hover:bg-background-hover shrink-0",
           title: t5("compactHandoff.card.remove"),
-          children: /* @__PURE__ */ jsx45(X, { size: 13 })
+          children: /* @__PURE__ */ jsx47(X, { size: 13 })
         }
       )
     ] }),
-    expanded && /* @__PURE__ */ jsx45("div", { className: "px-3 pb-2", children: editing ? /* @__PURE__ */ jsxs39("div", { className: "flex flex-col gap-2", children: [
-      /* @__PURE__ */ jsx45(
+    expanded && /* @__PURE__ */ jsx47("div", { className: "px-3 pb-2", children: editing ? /* @__PURE__ */ jsxs41("div", { className: "flex flex-col gap-2", children: [
+      /* @__PURE__ */ jsx47(
         "textarea",
         {
           ref: textareaRef,
@@ -336086,8 +336702,8 @@ var PendingBriefingCard = memo29(function PendingBriefingCard2() {
           className: "w-full px-3 py-2 text-xs bg-background-surface border border-border rounded-lg outline-none focus:border-primary resize-y font-mono leading-relaxed"
         }
       ),
-      /* @__PURE__ */ jsxs39("div", { className: "flex justify-end gap-2", children: [
-        /* @__PURE__ */ jsx45(
+      /* @__PURE__ */ jsxs41("div", { className: "flex justify-end gap-2", children: [
+        /* @__PURE__ */ jsx47(
           "button",
           {
             type: "button",
@@ -336096,20 +336712,20 @@ var PendingBriefingCard = memo29(function PendingBriefingCard2() {
             children: t5("sessionConfig.cancel")
           }
         ),
-        /* @__PURE__ */ jsxs39(
+        /* @__PURE__ */ jsxs41(
           "button",
           {
             type: "button",
             onClick: saveEdit,
             className: "flex items-center gap-1 px-2.5 py-1 text-xs rounded bg-primary text-white hover:bg-primary-hover",
             children: [
-              /* @__PURE__ */ jsx45(Check, { size: 12 }),
+              /* @__PURE__ */ jsx47(Check, { size: 12 }),
               t5("compactHandoff.card.save")
             ]
           }
         )
       ] })
-    ] }) : /* @__PURE__ */ jsx45("div", { className: "max-h-[200px] overflow-y-auto text-xs text-text-secondary whitespace-pre-wrap font-mono leading-relaxed bg-background-surface/60 rounded-lg p-2 border border-border-subtle", children: briefing }) })
+    ] }) : /* @__PURE__ */ jsx47("div", { className: "max-h-[200px] overflow-y-auto text-xs text-text-secondary whitespace-pre-wrap font-mono leading-relaxed bg-background-surface/60 rounded-lg p-2 border border-border-subtle", children: briefing }) })
   ] });
 });
 
@@ -336118,18 +336734,18 @@ init_i18n();
 init_lucide_react();
 init_clsx();
 init_stores();
-import { memo as memo30, useState as useState35 } from "react";
-import { Fragment as Fragment16, jsx as jsx46, jsxs as jsxs40 } from "react/jsx-runtime";
-var PendingQueueCard = memo30(function PendingQueueCard2() {
+import { memo as memo31, useState as useState36 } from "react";
+import { Fragment as Fragment16, jsx as jsx48, jsxs as jsxs42 } from "react/jsx-runtime";
+var PendingQueueCard = memo31(function PendingQueueCard2() {
   const { t: t5 } = useTranslation("chat");
   const pendingQueue = useActiveSessionPendingQueue2();
   const { removePending, clearPendingQueue, sendPendingNow, editPending } = useActiveSessionActions2();
-  const [expanded, setExpanded] = useState35(false);
+  const [expanded, setExpanded] = useState36(false);
   if (pendingQueue.length === 0) return null;
-  return /* @__PURE__ */ jsxs40("div", { className: "mx-3 mt-2 rounded-lg border border-warning/30 bg-warning/5 overflow-hidden", children: [
-    /* @__PURE__ */ jsxs40("div", { className: "flex items-center gap-2 px-3 py-1.5", children: [
-      /* @__PURE__ */ jsx46(ListTodo, { size: 13, className: "text-warning shrink-0" }),
-      /* @__PURE__ */ jsxs40(
+  return /* @__PURE__ */ jsxs42("div", { className: "mx-3 mt-2 rounded-lg border border-warning/30 bg-warning/5 overflow-hidden", children: [
+    /* @__PURE__ */ jsxs42("div", { className: "flex items-center gap-2 px-3 py-1.5", children: [
+      /* @__PURE__ */ jsx48(ListTodo, { size: 13, className: "text-warning shrink-0" }),
+      /* @__PURE__ */ jsxs42(
         "button",
         {
           type: "button",
@@ -336137,9 +336753,9 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
           className: "flex items-center gap-1 min-w-0 flex-1 text-left",
           title: t5("input.queuedHint"),
           children: [
-            /* @__PURE__ */ jsx46("span", { className: "text-xs font-medium text-text-primary truncate", children: t5("input.pendingQueue") }),
-            /* @__PURE__ */ jsx46("span", { className: "text-[10px] text-text-tertiary shrink-0 tabular-nums", children: t5("input.pendingCount", { n: pendingQueue.length }) }),
-            /* @__PURE__ */ jsx46(
+            /* @__PURE__ */ jsx48("span", { className: "text-xs font-medium text-text-primary truncate", children: t5("input.pendingQueue") }),
+            /* @__PURE__ */ jsx48("span", { className: "text-[10px] text-text-tertiary shrink-0 tabular-nums", children: t5("input.pendingCount", { n: pendingQueue.length }) }),
+            /* @__PURE__ */ jsx48(
               ChevronDown,
               {
                 size: 12,
@@ -336149,20 +336765,20 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
           ]
         }
       ),
-      /* @__PURE__ */ jsx46(
+      /* @__PURE__ */ jsx48(
         "button",
         {
           type: "button",
           onClick: clearPendingQueue,
           className: "p-1 rounded text-text-tertiary hover:text-danger hover:bg-background-hover shrink-0",
           title: t5("input.clearQueue"),
-          children: /* @__PURE__ */ jsx46(Trash2, { size: 12 })
+          children: /* @__PURE__ */ jsx48(Trash2, { size: 12 })
         }
       )
     ] }),
-    expanded && /* @__PURE__ */ jsx46("div", { className: "px-2 pb-2 max-h-[220px] overflow-y-auto flex flex-col gap-1", children: pendingQueue.map((msg, i2) => {
+    expanded && /* @__PURE__ */ jsx48("div", { className: "px-2 pb-2 max-h-[220px] overflow-y-auto flex flex-col gap-1", children: pendingQueue.map((msg, i2) => {
       const sending = msg.status === "sending";
-      return /* @__PURE__ */ jsxs40(
+      return /* @__PURE__ */ jsxs42(
         "div",
         {
           className: clsx(
@@ -336170,8 +336786,8 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
             sending && "opacity-60"
           ),
           children: [
-            /* @__PURE__ */ jsx46("span", { className: "text-[10px] text-text-tertiary tabular-nums shrink-0 w-5 text-right", children: i2 + 1 }),
-            /* @__PURE__ */ jsxs40(
+            /* @__PURE__ */ jsx48("span", { className: "text-[10px] text-text-tertiary tabular-nums shrink-0 w-5 text-right", children: i2 + 1 }),
+            /* @__PURE__ */ jsxs42(
               "button",
               {
                 type: "button",
@@ -336180,16 +336796,16 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
                 className: "flex-1 min-w-0 flex items-center gap-1.5 text-left group disabled:cursor-not-allowed",
                 title: t5("input.sendNowHint"),
                 children: [
-                  /* @__PURE__ */ jsx46("span", { className: "flex-1 min-w-0 text-xs text-text-secondary truncate", title: msg.text, children: msg.text }),
-                  /* @__PURE__ */ jsx46("span", { className: "shrink-0 inline-flex items-center gap-0.5 text-[10px] text-text-tertiary group-hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity", children: sending ? /* @__PURE__ */ jsx46("span", { className: "inline-block size-2.5 rounded-full border border-text-tertiary border-t-transparent animate-spin" }) : /* @__PURE__ */ jsxs40(Fragment16, { children: [
-                    /* @__PURE__ */ jsx46(Send, { size: 10 }),
+                  /* @__PURE__ */ jsx48("span", { className: "flex-1 min-w-0 text-xs text-text-secondary truncate", title: msg.text, children: msg.text }),
+                  /* @__PURE__ */ jsx48("span", { className: "shrink-0 inline-flex items-center gap-0.5 text-[10px] text-text-tertiary group-hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity", children: sending ? /* @__PURE__ */ jsx48("span", { className: "inline-block size-2.5 rounded-full border border-text-tertiary border-t-transparent animate-spin" }) : /* @__PURE__ */ jsxs42(Fragment16, { children: [
+                    /* @__PURE__ */ jsx48(Send, { size: 10 }),
                     t5("input.sendNow")
                   ] }) })
                 ]
               }
             ),
-            msg.attachments && msg.attachments.length > 0 && /* @__PURE__ */ jsx46("span", { className: "text-[10px] text-text-tertiary shrink-0", children: t5("input.attachmentCount", { count: msg.attachments.length }) }),
-            /* @__PURE__ */ jsx46(
+            msg.attachments && msg.attachments.length > 0 && /* @__PURE__ */ jsx48("span", { className: "text-[10px] text-text-tertiary shrink-0", children: t5("input.attachmentCount", { count: msg.attachments.length }) }),
+            /* @__PURE__ */ jsx48(
               "button",
               {
                 type: "button",
@@ -336197,10 +336813,10 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
                 disabled: sending,
                 className: "p-0.5 rounded text-text-tertiary hover:text-primary hover:bg-background-hover shrink-0 disabled:opacity-40 disabled:cursor-not-allowed",
                 title: t5("input.editPendingHint"),
-                children: /* @__PURE__ */ jsx46(Pencil, { size: 12 })
+                children: /* @__PURE__ */ jsx48(Pencil, { size: 12 })
               }
             ),
-            /* @__PURE__ */ jsx46(
+            /* @__PURE__ */ jsx48(
               "button",
               {
                 type: "button",
@@ -336208,7 +336824,7 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
                 disabled: sending,
                 className: "p-0.5 rounded text-text-tertiary hover:text-danger hover:bg-background-hover shrink-0 disabled:opacity-40 disabled:cursor-not-allowed",
                 title: t5("input.removePending"),
-                children: /* @__PURE__ */ jsx46(X, { size: 12 })
+                children: /* @__PURE__ */ jsx48(X, { size: 12 })
               }
             )
           ]
@@ -336222,7 +336838,7 @@ var PendingQueueCard = memo30(function PendingQueueCard2() {
 // src/host/Chat/input/InputBanner.tsx
 init_lucide_react();
 init_deps();
-import { jsx as jsx47, jsxs as jsxs41 } from "react/jsx-runtime";
+import { jsx as jsx49, jsxs as jsxs43 } from "react/jsx-runtime";
 var TONE_CLASSES = {
   info: "bg-primary/10 border-primary/20 text-primary",
   warn: "bg-warning/10 border-warning/30 text-warning",
@@ -336236,14 +336852,14 @@ function InputBanner() {
   if (!banner) return null;
   const action = banner.action;
   const toneClass = TONE_CLASSES[banner.tone] ?? TONE_CLASSES.info;
-  return /* @__PURE__ */ jsx47("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs41(
+  return /* @__PURE__ */ jsx49("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs43(
     "div",
     {
       className: `flex items-center gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg border text-xs ${toneClass}`,
       role: "status",
       children: [
-        /* @__PURE__ */ jsx47("span", { className: "flex-1 min-w-0 line-clamp-2 break-words", children: banner.text }),
-        action && /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx49("span", { className: "flex-1 min-w-0 line-clamp-2 break-words", children: banner.text }),
+        action && /* @__PURE__ */ jsx49(
           "button",
           {
             onClick: () => dispatchBannerAction(action),
@@ -336251,13 +336867,13 @@ function InputBanner() {
             children: action.label
           }
         ),
-        /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx49(
           "button",
           {
             onClick: () => setBanner(null),
             className: "shrink-0 p-0.5 rounded hover:bg-background-hover/60 transition-colors",
             title: "\u6E05\u9664\u6A2A\u5E45",
-            children: /* @__PURE__ */ jsx47(X, { size: 12 })
+            children: /* @__PURE__ */ jsx49(X, { size: 12 })
           }
         )
       ]
@@ -336267,7 +336883,7 @@ function InputBanner() {
 
 // src/host/Chat/input/UiSlot.tsx
 init_deps();
-import { jsx as jsx48, jsxs as jsxs42 } from "react/jsx-runtime";
+import { jsx as jsx50, jsxs as jsxs44 } from "react/jsx-runtime";
 function SlotFillView({ fill, slotId }) {
   const props = fill.props ?? {};
   switch (fill.kind) {
@@ -336280,13 +336896,13 @@ function SlotFillView({ fill, slotId }) {
         danger: "bg-danger/10 text-danger"
       }[tone] ?? "bg-background-elevated text-text-secondary";
       const text5 = typeof props.text === "string" ? props.text : "\xB7";
-      return /* @__PURE__ */ jsxs42(
+      return /* @__PURE__ */ jsxs44(
         "span",
         {
           className: `inline-flex shrink-0 items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] leading-none ${toneClass}`,
           "data-slot": slotId,
           children: [
-            /* @__PURE__ */ jsx48("span", { className: "size-1 rounded-full bg-current", "aria-hidden": true }),
+            /* @__PURE__ */ jsx50("span", { className: "size-1 rounded-full bg-current", "aria-hidden": true }),
             text5
           ]
         }
@@ -336295,7 +336911,7 @@ function SlotFillView({ fill, slotId }) {
     case "tooltip-label": {
       const label = typeof props.label === "string" ? props.label : "";
       if (!label) return null;
-      return /* @__PURE__ */ jsx48(
+      return /* @__PURE__ */ jsx50(
         "span",
         {
           className: "shrink-0 text-[11px] text-text-muted",
@@ -336308,7 +336924,7 @@ function SlotFillView({ fill, slotId }) {
     case "quick-action": {
       const label = typeof props.label === "string" ? props.label : "";
       if (!label) return null;
-      return /* @__PURE__ */ jsx48(
+      return /* @__PURE__ */ jsx50(
         "button",
         {
           "data-slot": slotId,
@@ -336325,7 +336941,7 @@ function UiSlot({ slotId }) {
   const slots = useUiSlotStore((s3) => s3.slots);
   const fill = selectSlotFill(slots, slotId);
   if (!fill) return null;
-  return /* @__PURE__ */ jsx48(SlotFillView, { fill, slotId });
+  return /* @__PURE__ */ jsx50(SlotFillView, { fill, slotId });
 }
 
 // src/host/Chat/input/ChatInput.tsx
@@ -336376,7 +336992,7 @@ async function deleteCustomAgent(slug) {
 // src/session-config/agentStore.ts
 init_bridgeTransport();
 init_logger();
-var log35 = createLogger("AgentStore");
+var log36 = createLogger("AgentStore");
 function toCatalogEntry(c4) {
   return {
     slug: c4.slug,
@@ -336408,14 +337024,14 @@ var useAgentStore2 = create()((set5, get6) => ({
       const agents = await invoke2("simple_ai_list_agents");
       set5({ simpleAiAgents: agents });
     } catch (err) {
-      log35.warn("SimpleAI agent list load failed", { error: String(err) });
+      log36.warn("SimpleAI agent list load failed", { error: String(err) });
     }
   },
   loadRosters: async () => {
     try {
       set5({ rosters: await getRosters() });
     } catch (err) {
-      log35.warn("Rosters load failed", { error: String(err) });
+      log36.warn("Rosters load failed", { error: String(err) });
     }
   },
   loadCustomAgents: async () => {
@@ -336423,7 +337039,7 @@ var useAgentStore2 = create()((set5, get6) => ({
       const customAgents = await listCustomAgents();
       set5({ customAgents, catalog: customAgents.map(toCatalogEntry), loaded: true });
     } catch (err) {
-      log35.warn("Custom agents load failed", { error: String(err) });
+      log36.warn("Custom agents load failed", { error: String(err) });
     }
   },
   saveCustom: async (params) => {
@@ -336638,8 +337254,8 @@ init_deps();
 init_misc();
 init_deps();
 init_types();
-import { Fragment as Fragment17, jsx as jsx49, jsxs as jsxs43 } from "react/jsx-runtime";
-var log36 = createLogger("ChatInput");
+import { Fragment as Fragment17, jsx as jsx51, jsxs as jsxs45 } from "react/jsx-runtime";
+var log37 = createLogger("ChatInput");
 var OPTIMIZE_ENGINE_OPTIONS = [
   { id: "claude-code", label: "Claude", Icon: Bot },
   { id: "simple-ai", label: "Simple", Icon: Zap }
@@ -336673,9 +337289,9 @@ function ChatInput({
 }) {
   const { t: t5 } = useTranslation("chat");
   const chatDisplay = useConfigStore((state6) => state6.config?.chatDisplay);
-  const chatDisplayStyle = useMemo16(() => getChatDisplayStyleVars(chatDisplay), [chatDisplay]);
+  const chatDisplayStyle = useMemo17(() => getChatDisplayStyleVars(chatDisplay), [chatDisplay]);
   const pluginStates = usePluginStore((state6) => state6.pluginStates);
-  const enabledMcpServers = useMemo16(() => {
+  const enabledMcpServers = useMemo17(() => {
     const pluginsById = new Map(pluginRegistry.listPlugins().map((p3) => [p3.id, p3]));
     return listEnabledPluginMcpServers(pluginStates).map((server) => ({
       id: server.id,
@@ -336691,11 +337307,11 @@ function ChatInput({
     false
   );
   const defaultEngine = useConfigStore((state6) => state6.config?.defaultEngine);
-  const isClaudeEngine = useMemo16(
+  const isClaudeEngine = useMemo17(
     () => resolveSessionEngine2(activeSessionId ?? "", defaultEngine) === "claude-code",
     [activeSessionId, defaultEngine]
   );
-  const [snippetTriggerBefore, setSnippetTriggerBefore] = useState36(null);
+  const [snippetTriggerBefore, setSnippetTriggerBefore] = useState37(null);
   const inputDraft = useActiveSessionInputDraft2();
   const promptSuggestion = useActiveSessionPromptSuggestion2();
   const {
@@ -336715,18 +337331,18 @@ function ChatInput({
   const optimizePreview = usePromptOptimizePreview2(
     promptOptimize.status === "running" ? promptOptimize.optimizeSessionId : null
   );
-  const [optimizePickerOpen, setOptimizePickerOpen] = useState36(false);
-  const optimizePickerRef = useRef21(null);
-  const optimizeButtonRef = useRef21(null);
-  const [localText, setLocalText] = useState36("");
-  const [localAttachments, setLocalAttachments] = useState36([]);
-  const [localContextBlocks, setLocalContextBlocks] = useState36([]);
-  const contextBlocksRef = useRef21([]);
-  const [activeSnippet, setActiveSnippet] = useState36(null);
-  const sentHistoryRef = useRef21([]);
-  const [historyIndex, setHistoryIndex] = useState36(null);
-  const promptHistoryLoadGenRef = useRef21(0);
-  useEffect22(() => {
+  const [optimizePickerOpen, setOptimizePickerOpen] = useState37(false);
+  const optimizePickerRef = useRef22(null);
+  const optimizeButtonRef = useRef22(null);
+  const [localText, setLocalText] = useState37("");
+  const [localAttachments, setLocalAttachments] = useState37([]);
+  const [localContextBlocks, setLocalContextBlocks] = useState37([]);
+  const contextBlocksRef = useRef22([]);
+  const [activeSnippet, setActiveSnippet] = useState37(null);
+  const sentHistoryRef = useRef22([]);
+  const [historyIndex, setHistoryIndex] = useState37(null);
+  const promptHistoryLoadGenRef = useRef22(0);
+  useEffect23(() => {
     const gen = ++promptHistoryLoadGenRef.current;
     sentHistoryRef.current = [];
     setHistoryIndex(null);
@@ -336762,7 +337378,7 @@ function ChatInput({
     },
     [promptHistoryWorkspacePath]
   );
-  useEffect22(() => {
+  useEffect23(() => {
     if (editMode) {
       setLocalText(editMode.content);
       setHistoryIndex(null);
@@ -336775,13 +337391,13 @@ function ChatInput({
     },
     300
   );
-  useEffect22(() => {
+  useEffect23(() => {
     return () => {
       cancelPersistDraft();
     };
   }, [activeSessionId, cancelPersistDraft]);
-  useEffect22(() => {
-    log36.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
+  useEffect23(() => {
+    log37.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
       textLen: inputDraft.text?.length,
       attachLen: inputDraft.attachments?.length,
       blockLen: inputDraft.contextBlocks?.length ?? 0
@@ -336792,23 +337408,23 @@ function ChatInput({
     contextBlocksRef.current = blocks2;
     setLocalContextBlocks(blocks2);
   }, [inputDraft]);
-  const textareaRef = useRef21(null);
-  const containerRef = useRef21(null);
-  const fileInputRef = useRef21(null);
-  useEffect22(() => {
+  const textareaRef = useRef22(null);
+  const containerRef = useRef22(null);
+  const fileInputRef = useRef22(null);
+  useEffect23(() => {
     return eventBus.on("chat:focus-input", () => {
       setTimeout(() => textareaRef.current?.focus(), 0);
     });
   }, []);
   const value3 = localText;
   const attachments = localAttachments;
-  const [showSuggestions, setShowSuggestions] = useState36(false);
-  const [suggestionItems, setSuggestionItems] = useState36([]);
-  const [selectedIndex, setSelectedIndex] = useState36(0);
-  const [suggestionPosition, setSuggestionPosition] = useState36({ top: 0, left: 0 });
-  const [fileWorkspace, setFileWorkspace] = useState36(null);
-  const [conversationMatches, setConversationMatches] = useState36([]);
-  const [conversationMode, setConversationMode] = useState36(false);
+  const [showSuggestions, setShowSuggestions] = useState37(false);
+  const [suggestionItems, setSuggestionItems] = useState37([]);
+  const [selectedIndex, setSelectedIndex] = useState37(0);
+  const [suggestionPosition, setSuggestionPosition] = useState37({ top: 0, left: 0 });
+  const [fileWorkspace, setFileWorkspace] = useState37(null);
+  const [conversationMatches, setConversationMatches] = useState37([]);
+  const [conversationMode, setConversationMode] = useState37(false);
   const { currentWorkspaceId, workspaces } = useWorkspaceStore();
   const { fileMatches, searchFiles: searchFiles2, clearResults } = useFileSearch();
   const searchConversations = useCallback25(async (query) => {
@@ -336826,7 +337442,7 @@ function ChatInput({
       }));
       setConversationMatches(items);
     } catch (e3) {
-      log36.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
+      log37.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
       setConversationMatches([]);
     }
   }, []);
@@ -336835,13 +337451,13 @@ function ChatInput({
     setAttachmentCount,
     setSuggestionMode
   } = useInputUIStore();
-  useEffect22(() => {
+  useEffect23(() => {
     setInputLength(value3.length);
   }, [value3.length, setInputLength]);
-  useEffect22(() => {
+  useEffect23(() => {
     setAttachmentCount(attachments.length);
   }, [attachments.length, setAttachmentCount]);
-  useEffect22(() => {
+  useEffect23(() => {
     setSuggestionMode(showSuggestions ? "file" : null);
   }, [showSuggestions, setSuggestionMode]);
   const calculateSuggestionPosition = useCallback25(() => {
@@ -336860,7 +337476,7 @@ function ChatInput({
   const addAttachment = useCallback25(async (file, source) => {
     const validation = validateAttachment(file);
     if (!validation.valid) {
-      log36.warn("Attachment validation failed", { error: validation.error });
+      log37.warn("Attachment validation failed", { error: validation.error });
       useToastStore.getState().error(validation.error);
       return;
     }
@@ -336868,7 +337484,7 @@ function ChatInput({
     const newAttachments = [...attachments, attachment];
     const totalValidation = validateAttachments(newAttachments);
     if (!totalValidation.valid) {
-      log36.warn("Total attachment validation failed", { error: totalValidation.error });
+      log37.warn("Total attachment validation failed", { error: totalValidation.error });
       useToastStore.getState().error(totalValidation.error);
       return;
     }
@@ -336933,7 +337549,7 @@ function ChatInput({
   }, []);
   const optimizeRunning = promptOptimize.status === "running";
   const isSlashCommandInput = value3.trimStart().startsWith("/");
-  useEffect22(() => {
+  useEffect23(() => {
     if (!optimizePickerOpen) return;
     const handleClickOutside = (e3) => {
       if (optimizePickerRef.current && !optimizePickerRef.current.contains(e3.target) && optimizeButtonRef.current && !optimizeButtonRef.current.contains(e3.target)) {
@@ -336948,21 +337564,21 @@ function ChatInput({
     updateInputDraft({ text: value3, attachments, contextBlocks: contextBlocksRef.current });
   }, [cancelPersistDraft, updateInputDraft, value3, attachments]);
   const profiles = useModelProfileStore2((s3) => s3.profiles);
-  const [optimizeEngine, setOptimizeEngine] = useState36(
+  const [optimizeEngine, setOptimizeEngine] = useState37(
     () => readStoredOptimizeConfig2(normalizeEngineId(defaultEngine)).engineId
   );
-  const [optimizeMode, setOptimizeMode] = useState36("quick");
-  const [optimizePrivacyNotice, setOptimizePrivacyNotice] = useState36(false);
-  const [optimizeProfileId, setOptimizeProfileId] = useState36("");
-  const [optimizeModel, setOptimizeModel] = useState36("");
-  const [showOptimizeAdvanced, setShowOptimizeAdvanced] = useState36(false);
-  const [optimizeDirection, setOptimizeDirection] = useState36(
+  const [optimizeMode, setOptimizeMode] = useState37("quick");
+  const [optimizePrivacyNotice, setOptimizePrivacyNotice] = useState37(false);
+  const [optimizeProfileId, setOptimizeProfileId] = useState37("");
+  const [optimizeModel, setOptimizeModel] = useState37("");
+  const [showOptimizeAdvanced, setShowOptimizeAdvanced] = useState37(false);
+  const [optimizeDirection, setOptimizeDirection] = useState37(
     () => readStoredOptimizeConfig2(normalizeEngineId(defaultEngine)).direction ?? "structured"
   );
-  const [optimizeCustomText, setOptimizeCustomText] = useState36(
+  const [optimizeCustomText, setOptimizeCustomText] = useState37(
     () => readStoredOptimizeConfig2(normalizeEngineId(defaultEngine)).customDirectionText ?? ""
   );
-  const [optimizeIterations, setOptimizeIterations] = useState36(
+  const [optimizeIterations, setOptimizeIterations] = useState37(
     () => readStoredOptimizeConfig2(normalizeEngineId(defaultEngine)).iterations ?? 1
   );
   const canOptimize = Boolean(
@@ -336976,11 +337592,11 @@ function ChatInput({
     },
     []
   );
-  const optimizeProfileOptions = useMemo16(
+  const optimizeProfileOptions = useMemo17(
     () => profiles.filter((p3) => isProfileForEngine(p3, toProfileEngine(optimizeEngine))).map((p3) => ({ value: p3.id, label: p3.name, description: p3.baseUrl })),
     [profiles, optimizeEngine]
   );
-  const optimizeModelOptions = useMemo16(() => {
+  const optimizeModelOptions = useMemo17(() => {
     const profile = profiles.find((p3) => p3.id === optimizeProfileId);
     const base = profile ? (profile.modelOptions?.length ? profile.modelOptions : [profile.model]).filter(Boolean) : [];
     const set5 = new Set(base);
@@ -337062,7 +337678,7 @@ function ChatInput({
   const showVersionControls = promptOptimize.status === "idle" && promptOptimize.history.length > 1;
   const canUndoVersion = promptOptimize.status === "idle" && promptOptimize.history.length > 0 && (promptOptimize.cursor > 0 || value3 !== optimizeCursorText);
   const canRedoVersion = promptOptimize.status === "idle" && promptOptimize.cursor < promptOptimize.history.length - 1 && value3 === optimizeCursorText;
-  const optimizeTitle = useMemo16(() => {
+  const optimizeTitle = useMemo17(() => {
     if (optimizeRunning) return t5("promptOptimize.running");
     if (editMode) return t5("promptOptimize.editModeBlocked");
     if (isSlashCommandInput) return t5("promptOptimize.slashBlocked");
@@ -337326,7 +337942,7 @@ function ChatInput({
     setSuggestionItems([]);
     clearResults();
   }, [workspaces, searchFiles2, clearResults, calculateSuggestionPosition, buildSuggestionItems, attachments, debouncedPersistDraft, historyIndex, searchConversations, enabledMcpServers, isClaudeEngine]);
-  useEffect22(() => {
+  useEffect23(() => {
     if (conversationMode) return;
     const workspaceItems = suggestionItems.filter((i2) => i2.type === "workspace");
     const fileItems = fileMatches.map((f2) => ({ type: "file", data: f2 }));
@@ -337339,7 +337955,7 @@ function ChatInput({
       }
     }
   }, [fileMatches]);
-  useEffect22(() => {
+  useEffect23(() => {
     if (!conversationMode) return;
     const items = conversationMatches.map((c4) => ({ type: "conversation", data: c4 }));
     setSuggestionItems(items);
@@ -337471,7 +338087,7 @@ function ChatInput({
           const replaced = beforeCursor.replace(/@对话(?:\s+\S*)?$/, `@${fileRef.relPath} `) + afterCursor;
           setLocalText(replaced);
           debouncedPersistDraft(replaced, attachments);
-          log36.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
+          log37.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
           setTimeout(() => {
             textarea.focus();
             const newCursorPos = replaced.length - afterCursor.length;
@@ -337479,7 +338095,7 @@ function ChatInput({
           }, 0);
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log36.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
+          log37.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
           useToastStore.getState().error(t5("handoff.failToast"), err.message);
         }
       })();
@@ -337719,7 +338335,7 @@ ${trailing}` : trailing : trimmed;
     editMode,
     onCancelEdit
   ]);
-  useEffect22(() => {
+  useEffect23(() => {
     const handleClickOutside = () => {
       setShowSuggestions(false);
       setSuggestionItems([]);
@@ -337729,20 +338345,20 @@ ${trailing}` : trailing : trimmed;
   }, []);
   const canSend = (value3.trim() || attachments.length > 0 || contextBlocksRef.current.length > 0) && !disabled;
   const hasDraftToSubmit = value3.trim() || attachments.length > 0 || contextBlocksRef.current.length > 0;
-  const interruptButton = isStreaming && onInterrupt && /* @__PURE__ */ jsx49(
+  const interruptButton = isStreaming && onInterrupt && /* @__PURE__ */ jsx51(
     "button",
     {
       onClick: onInterrupt,
       disabled: isInterrupting,
       className: "shrink-0 p-1.5 rounded-full bg-danger text-white hover:bg-danger-hover transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-soft",
       title: isInterrupting ? t5("input.interrupting", "\u6B63\u5728\u4E2D\u65AD\u2026") : t5("input.interrupt"),
-      children: isInterrupting ? /* @__PURE__ */ jsx49(LoaderCircle, { size: 16, className: "animate-spin" }) : /* @__PURE__ */ jsx49(IconStop, { size: 16 })
+      children: isInterrupting ? /* @__PURE__ */ jsx51(LoaderCircle, { size: 16, className: "animate-spin" }) : /* @__PURE__ */ jsx51(IconStop, { size: 16 })
     }
   );
-  return /* @__PURE__ */ jsxs43("div", { "data-theme-panel": true, className: "chat-input-root border-t border-border bg-background-elevated relative", ref: containerRef, style: chatDisplayStyle, children: [
-    /* @__PURE__ */ jsx49(PendingBriefingCard, {}),
-    /* @__PURE__ */ jsx49(PendingQueueCard, {}),
-    activeSnippet && /* @__PURE__ */ jsx49(
+  return /* @__PURE__ */ jsxs45("div", { "data-theme-panel": true, className: "chat-input-root border-t border-border bg-background-elevated relative", ref: containerRef, style: chatDisplayStyle, children: [
+    /* @__PURE__ */ jsx51(PendingBriefingCard, {}),
+    /* @__PURE__ */ jsx51(PendingQueueCard, {}),
+    activeSnippet && /* @__PURE__ */ jsx51(
       SnippetParamPanel,
       {
         snippet: activeSnippet,
@@ -337768,9 +338384,9 @@ ${trailing}` : trailing : trimmed;
         }
       }
     ),
-    editMode && /* @__PURE__ */ jsxs43("div", { className: "flex items-center gap-2 px-3 py-1.5 bg-primary/10 border-b border-primary/20 text-xs text-primary", children: [
-      /* @__PURE__ */ jsx49("span", { children: t5("input.editingMessage") }),
-      /* @__PURE__ */ jsx49(
+    editMode && /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-2 px-3 py-1.5 bg-primary/10 border-b border-primary/20 text-xs text-primary", children: [
+      /* @__PURE__ */ jsx51("span", { children: t5("input.editingMessage") }),
+      /* @__PURE__ */ jsx51(
         "button",
         {
           onClick: onCancelEdit,
@@ -337779,7 +338395,7 @@ ${trailing}` : trailing : trimmed;
         }
       )
     ] }),
-    promptSuggestion && !value3.trim() && !isStreaming && !editMode && /* @__PURE__ */ jsx49("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs43(
+    promptSuggestion && !value3.trim() && !isStreaming && !editMode && /* @__PURE__ */ jsx51("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs45(
       "button",
       {
         type: "button",
@@ -337792,85 +338408,85 @@ ${trailing}` : trailing : trimmed;
         title: t5("input.promptSuggestionHint"),
         className: "group flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 text-xs text-primary/90 text-left transition-colors",
         children: [
-          /* @__PURE__ */ jsx49(Sparkles, { size: 13, className: "shrink-0 mt-0.5 opacity-70" }),
-          /* @__PURE__ */ jsx49("span", { className: "line-clamp-2 break-words", children: promptSuggestion })
+          /* @__PURE__ */ jsx51(Sparkles, { size: 13, className: "shrink-0 mt-0.5 opacity-70" }),
+          /* @__PURE__ */ jsx51("span", { className: "line-clamp-2 break-words", children: promptSuggestion })
         ]
       }
     ) }),
-    optimizeRunning && /* @__PURE__ */ jsx49("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs43("div", { className: "flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary/90", children: [
-      /* @__PURE__ */ jsx49(LoaderCircle, { size: 13, className: "shrink-0 mt-0.5 animate-spin" }),
-      /* @__PURE__ */ jsx49("span", { className: "flex-1 min-w-0 line-clamp-2 break-words whitespace-pre-wrap", children: optimizePreview.isStreaming && optimizePreview.text.trim() ? optimizePreview.text : optimizeMode === "deep" && !optimizePreview.text.trim() ? t5("promptOptimize.readingContext") : t5("promptOptimize.running") }),
-      promptOptimize.pendingMeta && (promptOptimize.pendingMeta.totalIterations ?? 1) > 1 && /* @__PURE__ */ jsx49("span", { className: "shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-primary/20 text-primary", children: t5("promptOptimize.iterationBadge", {
+    optimizeRunning && /* @__PURE__ */ jsx51("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs45("div", { className: "flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary/90", children: [
+      /* @__PURE__ */ jsx51(LoaderCircle, { size: 13, className: "shrink-0 mt-0.5 animate-spin" }),
+      /* @__PURE__ */ jsx51("span", { className: "flex-1 min-w-0 line-clamp-2 break-words whitespace-pre-wrap", children: optimizePreview.isStreaming && optimizePreview.text.trim() ? optimizePreview.text : optimizeMode === "deep" && !optimizePreview.text.trim() ? t5("promptOptimize.readingContext") : t5("promptOptimize.running") }),
+      promptOptimize.pendingMeta && (promptOptimize.pendingMeta.totalIterations ?? 1) > 1 && /* @__PURE__ */ jsx51("span", { className: "shrink-0 px-1.5 py-0.5 rounded text-[10px] bg-primary/20 text-primary", children: t5("promptOptimize.iterationBadge", {
         defaultValue: "\u7B2C {{cur}}/{{total}} \u8F6E",
         cur: promptOptimize.pendingMeta.iteration ?? 1,
         total: promptOptimize.pendingMeta.totalIterations ?? 1
       }) }),
-      /* @__PURE__ */ jsx49(
+      /* @__PURE__ */ jsx51(
         "button",
         {
           onClick: handleCancelOptimize,
           className: "shrink-0 p-0.5 rounded hover:bg-primary/20 transition-colors",
           title: t5("promptOptimize.cancel"),
-          children: /* @__PURE__ */ jsx49(X, { size: 12 })
+          children: /* @__PURE__ */ jsx51(X, { size: 12 })
         }
       )
     ] }) }),
-    promptOptimize.status === "ready" && promptOptimize.pendingResult && /* @__PURE__ */ jsx49("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs43("div", { className: "flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary/90", children: [
-      /* @__PURE__ */ jsx49(WandSparkles, { size: 13, className: "shrink-0 mt-0.5 opacity-70" }),
-      /* @__PURE__ */ jsxs43("div", { className: "flex-1 min-w-0", children: [
-        /* @__PURE__ */ jsx49("span", { className: "font-medium", children: t5("promptOptimize.readyTitle") }),
-        /* @__PURE__ */ jsx49("p", { className: "line-clamp-2 break-words text-primary/70 mt-0.5", children: promptOptimize.pendingResult })
+    promptOptimize.status === "ready" && promptOptimize.pendingResult && /* @__PURE__ */ jsx51("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs45("div", { className: "flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-primary/10 border border-primary/20 text-xs text-primary/90", children: [
+      /* @__PURE__ */ jsx51(WandSparkles, { size: 13, className: "shrink-0 mt-0.5 opacity-70" }),
+      /* @__PURE__ */ jsxs45("div", { className: "flex-1 min-w-0", children: [
+        /* @__PURE__ */ jsx51("span", { className: "font-medium", children: t5("promptOptimize.readyTitle") }),
+        /* @__PURE__ */ jsx51("p", { className: "line-clamp-2 break-words text-primary/70 mt-0.5", children: promptOptimize.pendingResult })
       ] }),
-      /* @__PURE__ */ jsxs43("div", { className: "flex items-center gap-1 shrink-0", children: [
-        /* @__PURE__ */ jsxs43(
+      /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-1 shrink-0", children: [
+        /* @__PURE__ */ jsxs45(
           "button",
           {
             onClick: handleApplyOptimizeResult,
             className: "flex items-center gap-1 px-2 py-1 text-[11px] text-primary hover:bg-primary/20 rounded transition-colors",
             title: t5("promptOptimize.applyHint"),
             children: [
-              /* @__PURE__ */ jsx49(Check, { size: 12 }),
+              /* @__PURE__ */ jsx51(Check, { size: 12 }),
               t5("promptOptimize.apply")
             ]
           }
         ),
-        /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx51(
           "button",
           {
             onClick: resetPromptOptimize,
             className: "p-0.5 rounded text-primary/60 hover:bg-primary/20 transition-colors",
             title: t5("promptOptimize.discard"),
-            children: /* @__PURE__ */ jsx49(X, { size: 12 })
+            children: /* @__PURE__ */ jsx51(X, { size: 12 })
           }
         )
       ] })
     ] }) }),
-    promptOptimize.status === "idle" && promptOptimize.error && /* @__PURE__ */ jsx49("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs43("div", { className: "flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-danger/10 border border-danger/20 text-xs text-danger", children: [
-      /* @__PURE__ */ jsx49(WandSparkles, { size: 13, className: "shrink-0 mt-0.5 opacity-70" }),
-      /* @__PURE__ */ jsxs43("span", { className: "flex-1 min-w-0 line-clamp-2 break-words", children: [
+    promptOptimize.status === "idle" && promptOptimize.error && /* @__PURE__ */ jsx51("div", { className: "px-2 sm:px-3 pt-2", children: /* @__PURE__ */ jsxs45("div", { className: "flex items-start gap-1.5 max-w-full px-2.5 py-1.5 rounded-lg bg-danger/10 border border-danger/20 text-xs text-danger", children: [
+      /* @__PURE__ */ jsx51(WandSparkles, { size: 13, className: "shrink-0 mt-0.5 opacity-70" }),
+      /* @__PURE__ */ jsxs45("span", { className: "flex-1 min-w-0 line-clamp-2 break-words", children: [
         t5("promptOptimize.errorPrefix"),
         promptOptimize.error
       ] }),
-      /* @__PURE__ */ jsx49(
+      /* @__PURE__ */ jsx51(
         "button",
         {
           onClick: clearPromptOptimizeError,
           className: "shrink-0 p-0.5 rounded hover:bg-danger/20 transition-colors",
           title: t5("promptOptimize.dismissError"),
-          children: /* @__PURE__ */ jsx49(X, { size: 12 })
+          children: /* @__PURE__ */ jsx51(X, { size: 12 })
         }
       )
     ] }) }),
-    /* @__PURE__ */ jsx49(InputBanner, {}),
-    /* @__PURE__ */ jsx49("div", { className: "px-2 sm:px-3 pb-0.5", children: /* @__PURE__ */ jsx49(UiSlot, { slotId: "input-extra" }) }),
-    /* @__PURE__ */ jsx49("div", { className: "p-2 sm:p-3", children: /* @__PURE__ */ jsxs43(
+    /* @__PURE__ */ jsx51(InputBanner, {}),
+    /* @__PURE__ */ jsx51("div", { className: "px-2 sm:px-3 pb-0.5", children: /* @__PURE__ */ jsx51(UiSlot, { slotId: "input-extra" }) }),
+    /* @__PURE__ */ jsx51("div", { className: "p-2 sm:p-3", children: /* @__PURE__ */ jsxs45(
       "div",
       {
         className: "relative flex flex-col bg-background-surface border border-border rounded-lg sm:rounded-xl focus-within:ring-2 focus-within:ring-border focus-within:border-primary shadow-soft hover:shadow-medium",
         onDrop: handleDrop,
         onDragOver: handleDragOver,
         children: [
-          /* @__PURE__ */ jsx49(
+          /* @__PURE__ */ jsx51(
             "input",
             {
               ref: fileInputRef,
@@ -337881,7 +338497,7 @@ ${trailing}` : trailing : trimmed;
               accept: `image/*,${ATTACHMENT_LIMITS.codeExtensions.join(",")}`
             }
           ),
-          /* @__PURE__ */ jsx49(
+          /* @__PURE__ */ jsx51(
             ContextBlockPreview,
             {
               blocks: localContextBlocks,
@@ -337889,14 +338505,14 @@ ${trailing}` : trailing : trimmed;
               onUpdateNote: updateContextBlockNote
             }
           ),
-          /* @__PURE__ */ jsx49(
+          /* @__PURE__ */ jsx51(
             AttachmentPreview,
             {
               attachments,
               onRemove: removeAttachment
             }
           ),
-          /* @__PURE__ */ jsx49(
+          /* @__PURE__ */ jsx51(
             AutoResizingTextarea,
             {
               ref: textareaRef,
@@ -337911,20 +338527,20 @@ ${trailing}` : trailing : trimmed;
               minHeight: 40
             }
           ),
-          /* @__PURE__ */ jsxs43("div", { className: "flex items-center gap-1.5 min-w-0 px-1.5 sm:px-2 pb-1.5 pt-1 rounded-b-lg sm:rounded-b-xl", children: [
-            /* @__PURE__ */ jsxs43("div", { className: "flex items-center gap-1 shrink-0 rounded-full px-0.5 py-0.5", children: [
-              /* @__PURE__ */ jsx49(
+          /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-1.5 min-w-0 px-1.5 sm:px-2 pb-1.5 pt-1 rounded-b-lg sm:rounded-b-xl", children: [
+            /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-1 shrink-0 rounded-full px-0.5 py-0.5", children: [
+              /* @__PURE__ */ jsx51(
                 "button",
                 {
                   onClick: openFileDialog,
                   disabled: disabled || isStreaming,
                   className: "shrink-0 p-1.5 rounded-full text-text-tertiary hover:text-text-primary hover:bg-background-hover transition-colors disabled:opacity-50",
                   title: t5("input.addAttachment"),
-                  children: /* @__PURE__ */ jsx49(IconPaperclip, { size: 16 })
+                  children: /* @__PURE__ */ jsx51(IconPaperclip, { size: 16 })
                 }
               ),
-              /* @__PURE__ */ jsxs43("div", { className: "relative", children: [
-                /* @__PURE__ */ jsx49(
+              /* @__PURE__ */ jsxs45("div", { className: "relative", children: [
+                /* @__PURE__ */ jsx51(
                   "button",
                   {
                     ref: optimizeButtonRef,
@@ -337932,34 +338548,34 @@ ${trailing}` : trailing : trimmed;
                     disabled: !canOptimize,
                     className: "shrink-0 p-1.5 rounded-full text-text-tertiary hover:text-primary hover:bg-primary/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
                     title: optimizeTitle,
-                    children: optimizeRunning ? /* @__PURE__ */ jsx49(LoaderCircle, { size: 16, className: "animate-spin" }) : /* @__PURE__ */ jsx49(WandSparkles, { size: 16 })
+                    children: optimizeRunning ? /* @__PURE__ */ jsx51(LoaderCircle, { size: 16, className: "animate-spin" }) : /* @__PURE__ */ jsx51(WandSparkles, { size: 16 })
                   }
                 ),
-                optimizePickerOpen && /* @__PURE__ */ jsxs43(
+                optimizePickerOpen && /* @__PURE__ */ jsxs45(
                   "div",
                   {
                     ref: optimizePickerRef,
                     className: "absolute left-0 bottom-full mb-1 z-dropdown w-[220px] rounded-lg shadow-lg bg-background-elevated border border-border flex flex-col max-h-[70vh]",
                     children: [
-                      /* @__PURE__ */ jsxs43("div", { className: "overflow-y-auto overscroll-contain py-1.5", children: [
-                        /* @__PURE__ */ jsx49("div", { className: "px-2 pb-1.5 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.selectEngine") }),
-                        OPTIMIZE_ENGINE_OPTIONS.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs43(
+                      /* @__PURE__ */ jsxs45("div", { className: "overflow-y-auto overscroll-contain py-1.5", children: [
+                        /* @__PURE__ */ jsx51("div", { className: "px-2 pb-1.5 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.selectEngine") }),
+                        OPTIMIZE_ENGINE_OPTIONS.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs45(
                           "button",
                           {
                             onClick: () => setOptimizeEngineAndReset(id38),
                             className: "w-full flex items-center gap-2 px-2.5 py-1.5 text-xs transition-colors rounded-md hover:bg-background-hover text-text-secondary hover:text-text-primary",
                             title: getEngineFullName(id38),
                             children: [
-                              /* @__PURE__ */ jsx49(Icon2, { className: "w-3.5 h-3.5" }),
-                              /* @__PURE__ */ jsx49("span", { className: "flex-1 text-left", children: label }),
-                              optimizeEngine === id38 && /* @__PURE__ */ jsx49(Check, { className: "w-3 h-3 text-primary" })
+                              /* @__PURE__ */ jsx51(Icon2, { className: "w-3.5 h-3.5" }),
+                              /* @__PURE__ */ jsx51("span", { className: "flex-1 text-left", children: label }),
+                              optimizeEngine === id38 && /* @__PURE__ */ jsx51(Check, { className: "w-3 h-3 text-primary" })
                             ]
                           },
                           id38
                         )),
-                        /* @__PURE__ */ jsx49("div", { className: "my-1.5 border-t border-border" }),
-                        /* @__PURE__ */ jsx49("div", { className: "px-2 pb-1 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.mode") }),
-                        OPTIMIZE_MODE_OPTIONS.map(({ key, label, hint, costHint, Icon: ModeIcon }) => /* @__PURE__ */ jsxs43(
+                        /* @__PURE__ */ jsx51("div", { className: "my-1.5 border-t border-border" }),
+                        /* @__PURE__ */ jsx51("div", { className: "px-2 pb-1 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.mode") }),
+                        OPTIMIZE_MODE_OPTIONS.map(({ key, label, hint, costHint, Icon: ModeIcon }) => /* @__PURE__ */ jsxs45(
                           "button",
                           {
                             onClick: () => {
@@ -337970,22 +338586,22 @@ ${trailing}` : trailing : trimmed;
                             },
                             className: "w-full flex items-center gap-2 px-2.5 py-1.5 text-xs transition-colors rounded-md hover:bg-background-hover text-text-secondary hover:text-text-primary",
                             children: [
-                              /* @__PURE__ */ jsx49(ModeIcon, { className: "w-3.5 h-3.5" }),
-                              /* @__PURE__ */ jsxs43("span", { className: "flex-1 text-left flex flex-col gap-0.5", children: [
-                                /* @__PURE__ */ jsxs43("span", { className: "text-xs flex items-center gap-1.5", children: [
+                              /* @__PURE__ */ jsx51(ModeIcon, { className: "w-3.5 h-3.5" }),
+                              /* @__PURE__ */ jsxs45("span", { className: "flex-1 text-left flex flex-col gap-0.5", children: [
+                                /* @__PURE__ */ jsxs45("span", { className: "text-xs flex items-center gap-1.5", children: [
                                   t5(label),
-                                  key === "deep" && costHint && /* @__PURE__ */ jsx49("span", { className: "text-[10px] text-warning/70 font-normal", children: t5(costHint) })
+                                  key === "deep" && costHint && /* @__PURE__ */ jsx51("span", { className: "text-[10px] text-warning/70 font-normal", children: t5(costHint) })
                                 ] }),
-                                /* @__PURE__ */ jsx49("span", { className: "text-[10px] text-text-tertiary", children: t5(hint) })
+                                /* @__PURE__ */ jsx51("span", { className: "text-[10px] text-text-tertiary", children: t5(hint) })
                               ] }),
-                              optimizeMode === key && /* @__PURE__ */ jsx49(Check, { className: "w-3 h-3 text-primary" })
+                              optimizeMode === key && /* @__PURE__ */ jsx51(Check, { className: "w-3 h-3 text-primary" })
                             ]
                           },
                           key
                         )),
-                        /* @__PURE__ */ jsx49("div", { className: "my-1.5 border-t border-border" }),
-                        /* @__PURE__ */ jsx49("div", { className: "px-2 pb-1 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.direction") }),
-                        /* @__PURE__ */ jsx49("div", { className: "flex flex-wrap gap-1 px-2 pb-1", children: OPTIMIZE_DIRECTION_OPTIONS.map(({ key, label }) => /* @__PURE__ */ jsx49(
+                        /* @__PURE__ */ jsx51("div", { className: "my-1.5 border-t border-border" }),
+                        /* @__PURE__ */ jsx51("div", { className: "px-2 pb-1 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.direction") }),
+                        /* @__PURE__ */ jsx51("div", { className: "flex flex-wrap gap-1 px-2 pb-1", children: OPTIMIZE_DIRECTION_OPTIONS.map(({ key, label }) => /* @__PURE__ */ jsx51(
                           "button",
                           {
                             onClick: () => setOptimizeDirection(key),
@@ -337994,8 +338610,8 @@ ${trailing}` : trailing : trimmed;
                           },
                           key
                         )) }),
-                        optimizeDirection === "custom" && /* @__PURE__ */ jsxs43("div", { className: "px-2 pb-1", children: [
-                          /* @__PURE__ */ jsx49(
+                        optimizeDirection === "custom" && /* @__PURE__ */ jsxs45("div", { className: "px-2 pb-1", children: [
+                          /* @__PURE__ */ jsx51(
                             "textarea",
                             {
                               value: optimizeCustomText,
@@ -338005,11 +338621,11 @@ ${trailing}` : trailing : trimmed;
                               className: `w-full px-2 py-1.5 text-[11px] rounded-md bg-background border rounded-md resize-none focus:outline-none transition-colors ${!optimizeCustomText.trim() ? "border-danger/50" : "border-border focus:border-primary"}`
                             }
                           ),
-                          !optimizeCustomText.trim() && /* @__PURE__ */ jsx49("p", { className: "text-[10px] text-danger mt-0.5", children: t5("promptOptimize.customDirectionRequired") })
+                          !optimizeCustomText.trim() && /* @__PURE__ */ jsx51("p", { className: "text-[10px] text-danger mt-0.5", children: t5("promptOptimize.customDirectionRequired") })
                         ] }),
-                        /* @__PURE__ */ jsx49("div", { className: "my-1 border-t border-border" }),
-                        /* @__PURE__ */ jsx49("div", { className: "px-2 pb-1 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.iterations") }),
-                        /* @__PURE__ */ jsx49("div", { className: "flex flex-wrap gap-1 px-2 pb-1", children: OPTIMIZE_ITERATION_OPTIONS.map((n2) => /* @__PURE__ */ jsx49(
+                        /* @__PURE__ */ jsx51("div", { className: "my-1 border-t border-border" }),
+                        /* @__PURE__ */ jsx51("div", { className: "px-2 pb-1 text-[11px] font-medium text-text-tertiary", children: t5("promptOptimize.iterations") }),
+                        /* @__PURE__ */ jsx51("div", { className: "flex flex-wrap gap-1 px-2 pb-1", children: OPTIMIZE_ITERATION_OPTIONS.map((n2) => /* @__PURE__ */ jsx51(
                           "button",
                           {
                             onClick: () => setOptimizeIterations(n2),
@@ -338018,23 +338634,23 @@ ${trailing}` : trailing : trimmed;
                           },
                           n2
                         )) }),
-                        optimizeIterations > 1 && /* @__PURE__ */ jsx49("p", { className: "px-2 pb-1 text-[10px] text-text-tertiary leading-relaxed", children: t5("promptOptimize.iterationHint") }),
-                        /* @__PURE__ */ jsx49("div", { className: "my-1 border-t border-border" }),
-                        /* @__PURE__ */ jsxs43(
+                        optimizeIterations > 1 && /* @__PURE__ */ jsx51("p", { className: "px-2 pb-1 text-[10px] text-text-tertiary leading-relaxed", children: t5("promptOptimize.iterationHint") }),
+                        /* @__PURE__ */ jsx51("div", { className: "my-1 border-t border-border" }),
+                        /* @__PURE__ */ jsxs45(
                           "button",
                           {
                             onClick: () => setShowOptimizeAdvanced((v5) => !v5),
                             className: "w-full flex items-center justify-between px-2.5 py-1.5 text-xs text-text-secondary hover:text-text-primary hover:bg-background-hover transition-colors",
                             children: [
-                              /* @__PURE__ */ jsx49("span", { children: t5("promptOptimize.advanced") }),
-                              /* @__PURE__ */ jsx49(ChevronDown, { className: `w-3.5 h-3.5 transition-transform ${showOptimizeAdvanced ? "rotate-180" : ""}` })
+                              /* @__PURE__ */ jsx51("span", { children: t5("promptOptimize.advanced") }),
+                              /* @__PURE__ */ jsx51(ChevronDown, { className: `w-3.5 h-3.5 transition-transform ${showOptimizeAdvanced ? "rotate-180" : ""}` })
                             ]
                           }
                         ),
-                        showOptimizeAdvanced && /* @__PURE__ */ jsxs43(Fragment17, { children: [
-                          /* @__PURE__ */ jsxs43("div", { className: "px-3 py-1", children: [
-                            /* @__PURE__ */ jsx49("span", { className: "text-[10px] text-text-tertiary block mb-1", children: t5("promptOptimize.profile") }),
-                            optimizeProfileOptions.length > 0 ? optimizeProfileOptions.map((p3) => /* @__PURE__ */ jsxs43(
+                        showOptimizeAdvanced && /* @__PURE__ */ jsxs45(Fragment17, { children: [
+                          /* @__PURE__ */ jsxs45("div", { className: "px-3 py-1", children: [
+                            /* @__PURE__ */ jsx51("span", { className: "text-[10px] text-text-tertiary block mb-1", children: t5("promptOptimize.profile") }),
+                            optimizeProfileOptions.length > 0 ? optimizeProfileOptions.map((p3) => /* @__PURE__ */ jsxs45(
                               "button",
                               {
                                 onClick: () => {
@@ -338043,23 +338659,23 @@ ${trailing}` : trailing : trimmed;
                                 },
                                 className: "w-full flex items-center justify-between px-1 py-0.5 text-xs rounded hover:bg-background-hover text-text-secondary hover:text-text-primary",
                                 children: [
-                                  /* @__PURE__ */ jsx49("span", { className: "truncate", children: p3.label }),
-                                  optimizeProfileId === p3.value && /* @__PURE__ */ jsx49(Check, { className: "w-3 h-3 text-primary shrink-0" })
+                                  /* @__PURE__ */ jsx51("span", { className: "truncate", children: p3.label }),
+                                  optimizeProfileId === p3.value && /* @__PURE__ */ jsx51(Check, { className: "w-3 h-3 text-primary shrink-0" })
                                 ]
                               },
                               p3.value
-                            )) : /* @__PURE__ */ jsx49("span", { className: "text-[10px] text-text-tertiary italic px-1", children: t5("promptOptimize.noProfiles") })
+                            )) : /* @__PURE__ */ jsx51("span", { className: "text-[10px] text-text-tertiary italic px-1", children: t5("promptOptimize.noProfiles") })
                           ] }),
-                          optimizeProfileId && optimizeModelOptions.length > 0 && /* @__PURE__ */ jsxs43("div", { className: "px-3 py-1 pb-1.5", children: [
-                            /* @__PURE__ */ jsx49("span", { className: "text-[10px] text-text-tertiary block mb-1", children: t5("promptOptimize.model") }),
-                            optimizeModelOptions.map((m4) => /* @__PURE__ */ jsxs43(
+                          optimizeProfileId && optimizeModelOptions.length > 0 && /* @__PURE__ */ jsxs45("div", { className: "px-3 py-1 pb-1.5", children: [
+                            /* @__PURE__ */ jsx51("span", { className: "text-[10px] text-text-tertiary block mb-1", children: t5("promptOptimize.model") }),
+                            optimizeModelOptions.map((m4) => /* @__PURE__ */ jsxs45(
                               "button",
                               {
                                 onClick: () => setOptimizeModel(m4.value),
                                 className: "w-full flex items-center justify-between px-1 py-0.5 text-xs rounded hover:bg-background-hover text-text-secondary hover:text-text-primary",
                                 children: [
-                                  /* @__PURE__ */ jsx49("span", { className: "truncate", children: m4.label }),
-                                  optimizeModel === m4.value && /* @__PURE__ */ jsx49(Check, { className: "w-3 h-3 text-primary shrink-0" })
+                                  /* @__PURE__ */ jsx51("span", { className: "truncate", children: m4.label }),
+                                  optimizeModel === m4.value && /* @__PURE__ */ jsx51(Check, { className: "w-3 h-3 text-primary shrink-0" })
                                 ]
                               },
                               m4.value
@@ -338067,15 +338683,15 @@ ${trailing}` : trailing : trimmed;
                           ] })
                         ] })
                       ] }),
-                      /* @__PURE__ */ jsx49("div", { className: "sticky bottom-0 bg-background-elevated border-t border-border px-2 py-2 rounded-b-lg", children: /* @__PURE__ */ jsxs43(
+                      /* @__PURE__ */ jsx51("div", { className: "sticky bottom-0 bg-background-elevated border-t border-border px-2 py-2 rounded-b-lg", children: /* @__PURE__ */ jsxs45(
                         "button",
                         {
                           onClick: handleOptimizeWithConfig,
                           disabled: !canOptimize,
                           className: "w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md bg-primary text-white text-xs font-medium hover:bg-primary-hover transition-colors disabled:opacity-45 disabled:cursor-not-allowed",
                           children: [
-                            optimizeMode === "deep" && /* @__PURE__ */ jsx49(LoaderCircle, { className: "w-3 h-3" }),
-                            /* @__PURE__ */ jsx49("span", { children: optimizeMode === "deep" ? optimizeIterations > 1 ? t5("promptOptimize.optimizeDeepIter", { defaultValue: "\u6DF1\u5EA6\u4F18\u5316(\u8FED\u4EE3 {{n}} \u8F6E)", n: optimizeIterations }) : t5("promptOptimize.optimizeDeep") : optimizeIterations > 1 ? t5("promptOptimize.optimizeIter", { defaultValue: "\u4F18\u5316(\u8FED\u4EE3 {{n}} \u8F6E)", n: optimizeIterations }) : t5("promptOptimize.optimize") })
+                            optimizeMode === "deep" && /* @__PURE__ */ jsx51(LoaderCircle, { className: "w-3 h-3" }),
+                            /* @__PURE__ */ jsx51("span", { children: optimizeMode === "deep" ? optimizeIterations > 1 ? t5("promptOptimize.optimizeDeepIter", { defaultValue: "\u6DF1\u5EA6\u4F18\u5316(\u8FED\u4EE3 {{n}} \u8F6E)", n: optimizeIterations }) : t5("promptOptimize.optimizeDeep") : optimizeIterations > 1 ? t5("promptOptimize.optimizeIter", { defaultValue: "\u4F18\u5316(\u8FED\u4EE3 {{n}} \u8F6E)", n: optimizeIterations }) : t5("promptOptimize.optimize") })
                           ]
                         }
                       ) })
@@ -338083,15 +338699,15 @@ ${trailing}` : trailing : trimmed;
                   }
                 )
               ] }),
-              showVersionControls && /* @__PURE__ */ jsxs43("div", { className: "flex items-center gap-0.5 shrink-0 text-text-tertiary", children: [
-                /* @__PURE__ */ jsx49(
+              showVersionControls && /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-0.5 shrink-0 text-text-tertiary", children: [
+                /* @__PURE__ */ jsx51(
                   "button",
                   {
                     onClick: handleUndoOptimize,
                     disabled: !canUndoVersion,
                     className: "p-1 rounded-md hover:text-text-primary hover:bg-background-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
                     title: t5("promptOptimize.undo"),
-                    children: /* @__PURE__ */ jsx49(Undo2, { size: 14 })
+                    children: /* @__PURE__ */ jsx51(Undo2, { size: 14 })
                   }
                 ),
                 (() => {
@@ -338101,36 +338717,36 @@ ${trailing}` : trailing : trimmed;
                   const dirLabel = v5?.direction && v5.direction !== "structured" ? ` \xB7 ${t5(`promptOptimize.dir${v5.direction.charAt(0).toUpperCase()}${v5.direction.slice(1)}`)}` : "";
                   const engineLabel = v5?.engineId ? ` \xB7 ${getEngineFullName(v5.engineId)}` : "";
                   const originLabel = v5?.origin === "original" ? t5("promptOptimize.versionOriginal") : v5?.origin === "edited" ? t5("promptOptimize.versionEdited") : `${t5("promptOptimize.versionOptimized")}${iter}${dirLabel}${engineLabel}`;
-                  return /* @__PURE__ */ jsxs43("span", { className: "text-[10px] tabular-nums px-0.5 select-none cursor-default", title: originLabel, children: [
+                  return /* @__PURE__ */ jsxs45("span", { className: "text-[10px] tabular-nums px-0.5 select-none cursor-default", title: originLabel, children: [
                     promptOptimize.cursor + 1,
                     "/",
                     promptOptimize.history.length
                   ] });
                 })(),
-                /* @__PURE__ */ jsx49(
+                /* @__PURE__ */ jsx51(
                   "button",
                   {
                     onClick: handleRedoOptimize,
                     disabled: !canRedoVersion,
                     className: "p-1 rounded-md hover:text-text-primary hover:bg-background-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed",
                     title: t5("promptOptimize.redo"),
-                    children: /* @__PURE__ */ jsx49(Redo2, { size: 14 })
+                    children: /* @__PURE__ */ jsx51(Redo2, { size: 14 })
                   }
                 )
               ] })
             ] }),
-            statusBarSlot && /* @__PURE__ */ jsx49("div", { className: "flex-1 min-w-0 flex items-center px-0.5", children: statusBarSlot }),
-            !statusBarSlot && /* @__PURE__ */ jsx49("div", { className: "flex-1" }),
-            /* @__PURE__ */ jsxs43("div", { className: "flex items-center gap-1 shrink-0", children: [
-              statusBarSlot && value3.length > 0 && /* @__PURE__ */ jsx49("span", { className: "hidden sm:inline-flex text-[11px] text-text-tertiary tabular-nums px-1", children: value3.length }),
-              interruptButton && !hasDraftToSubmit ? interruptButton : /* @__PURE__ */ jsx49(
+            statusBarSlot && /* @__PURE__ */ jsx51("div", { className: "flex-1 min-w-0 flex items-center px-0.5", children: statusBarSlot }),
+            !statusBarSlot && /* @__PURE__ */ jsx51("div", { className: "flex-1" }),
+            /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-1 shrink-0", children: [
+              statusBarSlot && value3.length > 0 && /* @__PURE__ */ jsx51("span", { className: "hidden sm:inline-flex text-[11px] text-text-tertiary tabular-nums px-1", children: value3.length }),
+              interruptButton && !hasDraftToSubmit ? interruptButton : /* @__PURE__ */ jsx51(
                 "button",
                 {
                   onClick: handleSend,
                   disabled: !canSend,
                   className: "shrink-0 p-1.5 rounded-full bg-primary text-white hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-soft",
                   title: isStreaming ? t5("input.sendQueued") : t5("input.send"),
-                  children: /* @__PURE__ */ jsx49(IconSend, { size: 16 })
+                  children: /* @__PURE__ */ jsx51(IconSend, { size: 16 })
                 }
               ),
               interruptButton && hasDraftToSubmit ? interruptButton : null
@@ -338139,7 +338755,7 @@ ${trailing}` : trailing : trimmed;
         ]
       }
     ) }),
-    showSuggestions && suggestionItems.length > 0 && /* @__PURE__ */ jsx49(
+    showSuggestions && suggestionItems.length > 0 && /* @__PURE__ */ jsx51(
       UnifiedSuggestion,
       {
         items: suggestionItems,
@@ -338150,11 +338766,11 @@ ${trailing}` : trailing : trimmed;
         currentWorkspaceId
       }
     ),
-    optimizePrivacyNotice && /* @__PURE__ */ jsx49("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/40", onClick: () => setOptimizePrivacyNotice(false), children: /* @__PURE__ */ jsxs43("div", { className: "w-[380px] max-w-[92vw] rounded-lg border border-border bg-background-surface p-4 shadow-xl", onClick: (e3) => e3.stopPropagation(), children: [
-      /* @__PURE__ */ jsx49("div", { className: "text-sm font-medium text-text-primary mb-2", children: t5("promptOptimize.privacyNoticeTitle") }),
-      /* @__PURE__ */ jsx49("p", { className: "text-xs text-text-secondary leading-relaxed mb-4", children: t5("promptOptimize.privacyNoticeBody") }),
-      /* @__PURE__ */ jsxs43("div", { className: "flex justify-end gap-2", children: [
-        /* @__PURE__ */ jsx49(
+    optimizePrivacyNotice && /* @__PURE__ */ jsx51("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/40", onClick: () => setOptimizePrivacyNotice(false), children: /* @__PURE__ */ jsxs45("div", { className: "w-[380px] max-w-[92vw] rounded-lg border border-border bg-background-surface p-4 shadow-xl", onClick: (e3) => e3.stopPropagation(), children: [
+      /* @__PURE__ */ jsx51("div", { className: "text-sm font-medium text-text-primary mb-2", children: t5("promptOptimize.privacyNoticeTitle") }),
+      /* @__PURE__ */ jsx51("p", { className: "text-xs text-text-secondary leading-relaxed mb-4", children: t5("promptOptimize.privacyNoticeBody") }),
+      /* @__PURE__ */ jsxs45("div", { className: "flex justify-end gap-2", children: [
+        /* @__PURE__ */ jsx51(
           "button",
           {
             type: "button",
@@ -338163,7 +338779,7 @@ ${trailing}` : trailing : trimmed;
             children: t5("promptOptimize.privacyNoticeCancel")
           }
         ),
-        /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx51(
           "button",
           {
             type: "button",
@@ -338178,7 +338794,7 @@ ${trailing}` : trailing : trimmed;
         )
       ] })
     ] }) }),
-    /* @__PURE__ */ jsx49("div", { className: "h-[env(safe-area-inset-bottom)]", "aria-hidden": "true" })
+    /* @__PURE__ */ jsx51("div", { className: "h-[env(safe-area-inset-bottom)]", "aria-hidden": "true" })
   ] });
 }
 
@@ -338191,7 +338807,7 @@ init_sessionConfigStore();
 init_lucide_react();
 init_clsx();
 init_deps();
-import { useState as useState39, useCallback as useCallback27 } from "react";
+import { useState as useState40, useCallback as useCallback27 } from "react";
 
 // src/host/Chat/session/SessionConfigSelector.tsx
 init_i18n();
@@ -338199,7 +338815,7 @@ init_lucide_react();
 init_clsx();
 init_types();
 init_cliInfoStore();
-import React3, { useState as useState37, useCallback as useCallback26, useRef as useRef22, useEffect as useEffect23, useMemo as useMemo17 } from "react";
+import React3, { useState as useState38, useCallback as useCallback26, useRef as useRef23, useEffect as useEffect24, useMemo as useMemo18 } from "react";
 init_deps();
 init_modelProfileStore();
 init_engineMetadataStore();
@@ -338227,17 +338843,17 @@ function deriveSelectorsFromCapabilities(engineId) {
   if (caps.stdinInput) selectors.push("permission");
   return selectors;
 }
-function getEngineEffortOptions(engineId) {
+function getEngineEffortOptions2(engineId) {
   const id38 = normalizeEngineId(engineId);
   const meta3 = useEngineMetadataStore.getState().getEngine(id38);
   return meta3?.sessionConfig?.effortOptions ?? null;
 }
-function getEnginePermissionOptions(engineId) {
+function getEnginePermissionOptions2(engineId) {
   const id38 = normalizeEngineId(engineId);
   const meta3 = useEngineMetadataStore.getState().getEngine(id38);
   return meta3?.sessionConfig?.permissionOptions ?? null;
 }
-function getEngineSelectors(engineId) {
+function getEngineSelectors2(engineId) {
   const id38 = normalizeEngineId(engineId);
   return deriveSelectorsFromCapabilities(id38);
 }
@@ -338246,7 +338862,7 @@ function getEngineSelectors(engineId) {
 init_types();
 init_stores();
 init_engineDisplay();
-import { jsx as jsx50, jsxs as jsxs44 } from "react/jsx-runtime";
+import { jsx as jsx52, jsxs as jsxs46 } from "react/jsx-runtime";
 function wireApiBadge(wireApi) {
   switch (wireApi) {
     case "openai-chat-completions":
@@ -338274,11 +338890,11 @@ function SessionConfigSelector({
   writeThroughToSession = true
 }) {
   const { t: t5 } = useTranslation("chat");
-  const [openDropdown, setOpenDropdown] = useState37(null);
-  const [customInput, setCustomInput] = useState37(null);
-  const containerRef = useRef22(null);
-  const inputRef = useRef22(null);
-  useEffect23(() => {
+  const [openDropdown, setOpenDropdown] = useState38(null);
+  const [customInput, setCustomInput] = useState38(null);
+  const containerRef = useRef23(null);
+  const inputRef = useRef23(null);
+  useEffect24(() => {
     const handleClickOutside = (e3) => {
       if (containerRef.current && !containerRef.current.contains(e3.target)) {
         setOpenDropdown(null);
@@ -338295,19 +338911,19 @@ function SessionConfigSelector({
   const activeEngineId = normalizeEngineId(engineOverride ?? activeMeta?.engineId ?? defaultEngine);
   const currentEngine = activeEngineId === "simple-ai" ? "simple-ai" : activeEngineId === "claude-code" ? "claude" : activeEngineId;
   const isSimpleAiEngine = currentEngine === "simple-ai";
-  useEffect23(() => {
+  useEffect24(() => {
     if (isSimpleAiEngine) {
       void useAgentStore2.getState().loadSimpleAiAgents();
     }
   }, [isSimpleAiEngine]);
   const engineMetadatas = useEngineMetadataStore2((s3) => s3.metadatas);
-  const engineDeclaredModels = useMemo17(
+  const engineDeclaredModels = useMemo18(
     () => engineMetadatas.find((m4) => m4.id === currentEngine)?.models?.filter(Boolean) ?? null,
     [engineMetadatas, currentEngine]
   );
   const dynamicAgents = useCliInfoStore2((s3) => s3.agents);
   const simpleAiAgents = useAgentStore2((s3) => s3.simpleAiAgents);
-  const agentList = useMemo17(() => {
+  const agentList = useMemo18(() => {
     const emptyOption = { id: "", name: t5("sessionConfig.noAgent"), description: t5("sessionConfig.noAgentDesc") };
     if (isSimpleAiEngine) {
       return [
@@ -338331,7 +338947,7 @@ function SessionConfigSelector({
     }
     return PRESET_AGENTS;
   }, [dynamicAgents, simpleAiAgents, isSimpleAiEngine, t5]);
-  const modelList = useMemo17(() => {
+  const modelList = useMemo18(() => {
     if (engineDeclaredModels && engineDeclaredModels.length > 0) {
       return [
         { id: "", name: t5("sessionConfig.noModel"), description: "", supportsStreaming: true },
@@ -338361,14 +338977,14 @@ function SessionConfigSelector({
       supportsStreaming: true
     }));
   }, [config3.modelProfileId, profiles, currentEngine, engineDeclaredModels, t5]);
-  useEffect23(() => {
+  useEffect24(() => {
     if (disabled || config3.profileMode !== "profile" || !config3.modelProfileId) return;
     const profile = profiles.find((p3) => p3.id === config3.modelProfileId);
     if (!profile || !config3.model) return;
     if (profileModelOptions(profile).includes(config3.model)) return;
     onChange({ ...config3, model: "" });
   }, [profiles, config3.modelProfileId, config3.profileMode, disabled]);
-  const compatibleProfiles = useMemo17(() => {
+  const compatibleProfiles = useMemo18(() => {
     return profiles.filter((p3) => isProfileForEngine(p3, currentEngine));
   }, [profiles, currentEngine]);
   const getAgentLabel = useCallback26((agentId) => {
@@ -338391,14 +339007,14 @@ function SessionConfigSelector({
   }, [t5, profiles, config3.modelProfileId]);
   const getEffortLabel = useCallback26((effort) => {
     if (!effort) return t5("sessionConfig.noEffort");
-    const declared = getEngineEffortOptions(currentEngine)?.find((o2) => o2.value === effort);
+    const declared = getEngineEffortOptions2(currentEngine)?.find((o2) => o2.value === effort);
     if (declared) return declared.label;
     const opt = EFFORT_OPTIONS.find((o2) => o2.value === effort);
     return opt?.label || effort;
   }, [t5, currentEngine]);
   const getPermissionLabel = useCallback26((mode) => {
     if (!mode) return t5("sessionConfig.noPermission");
-    const declared = getEnginePermissionOptions(currentEngine)?.find((o2) => o2.value === mode);
+    const declared = getEnginePermissionOptions2(currentEngine)?.find((o2) => o2.value === mode);
     if (declared) return declared.label;
     const opt = PERMISSION_MODE_OPTIONS.find((o2) => o2.value === mode);
     return opt?.label || mode;
@@ -338473,7 +339089,7 @@ function SessionConfigSelector({
         })));
         break;
       case "effort": {
-        const opts = getEngineEffortOptions(currentEngine) ?? EFFORT_OPTIONS;
+        const opts = getEngineEffortOptions2(currentEngine) ?? EFFORT_OPTIONS;
         items.push(...opts.map((o2) => ({
           value: o2.value,
           label: o2.label,
@@ -338482,7 +339098,7 @@ function SessionConfigSelector({
         break;
       }
       case "permission": {
-        const opts = getEnginePermissionOptions(currentEngine) ?? PERMISSION_MODE_OPTIONS;
+        const opts = getEnginePermissionOptions2(currentEngine) ?? PERMISSION_MODE_OPTIONS;
         items.push(...opts.map((o2) => ({
           value: o2.value,
           label: o2.label,
@@ -338536,13 +339152,13 @@ function SessionConfigSelector({
       }
     };
     const currentValue = getCurrentValue();
-    return /* @__PURE__ */ jsxs44("div", { className: clsx(
+    return /* @__PURE__ */ jsxs46("div", { className: clsx(
       "absolute bottom-full left-0 mb-1",
       "bg-background-elevated border border-border rounded-lg shadow-lg",
       "min-w-[180px] max-h-[240px] overflow-y-auto",
       "z-dropdown animate-panel-in"
     ), children: [
-      items.map((item) => /* @__PURE__ */ jsxs44(
+      items.map((item) => /* @__PURE__ */ jsxs46(
         "button",
         {
           onClick: () => !item.disabled && handleSelect(type3, item.value),
@@ -338556,14 +339172,14 @@ function SessionConfigSelector({
             currentValue === item.value && "bg-primary/10 text-primary"
           ),
           children: [
-            /* @__PURE__ */ jsx50("span", { className: "font-medium", children: item.label }),
-            item.description && /* @__PURE__ */ jsx50("span", { className: "text-text-tertiary text-[10px]", children: item.description })
+            /* @__PURE__ */ jsx52("span", { className: "font-medium", children: item.label }),
+            item.description && /* @__PURE__ */ jsx52("span", { className: "text-text-tertiary text-[10px]", children: item.description })
           ]
         },
         item.value
       )),
-      /* @__PURE__ */ jsx50("div", { className: "border-t border-border my-1" }),
-      /* @__PURE__ */ jsxs44(
+      /* @__PURE__ */ jsx52("div", { className: "border-t border-border my-1" }),
+      /* @__PURE__ */ jsxs46(
         "button",
         {
           onClick: () => openCustomInput(type3),
@@ -338582,27 +339198,27 @@ function SessionConfigSelector({
   };
   const selectorMeta = {
     agent: {
-      icon: /* @__PURE__ */ jsx50(Bot, { size: 12 }),
+      icon: /* @__PURE__ */ jsx52(Bot, { size: 12 }),
       label: t5("sessionConfig.agent"),
       getValue: () => getAgentLabel(config3.agent)
     },
     model: {
-      icon: /* @__PURE__ */ jsx50(Cpu, { size: 12 }),
+      icon: /* @__PURE__ */ jsx52(Cpu, { size: 12 }),
       label: t5("sessionConfig.model"),
       getValue: () => getModelLabel(config3.model)
     },
     effort: {
-      icon: /* @__PURE__ */ jsx50(Zap, { size: 12 }),
+      icon: /* @__PURE__ */ jsx52(Zap, { size: 12 }),
       label: t5("sessionConfig.effort"),
       getValue: () => getEffortLabel(config3.effort)
     },
     permission: {
-      icon: /* @__PURE__ */ jsx50(Shield, { size: 12 }),
+      icon: /* @__PURE__ */ jsx52(Shield, { size: 12 }),
       label: t5("sessionConfig.permission"),
       getValue: () => getPermissionLabel(config3.permissionMode)
     },
     profile: {
-      icon: /* @__PURE__ */ jsx50(Plug, { size: 12 }),
+      icon: /* @__PURE__ */ jsx52(Plug, { size: 12 }),
       label: t5("sessionConfig.provider"),
       getValue: () => {
         const mode = config3.profileMode ?? "profile";
@@ -338624,8 +339240,8 @@ function SessionConfigSelector({
   const renderSelector = (type3, mode) => {
     const { icon: icon2, label, getValue: getValue4 } = selectorMeta[type3];
     const currentValue = getValue4();
-    return /* @__PURE__ */ jsxs44("div", { className: clsx("relative", mode === "panel" && "w-full"), children: [
-      /* @__PURE__ */ jsxs44(
+    return /* @__PURE__ */ jsxs46("div", { className: clsx("relative", mode === "panel" && "w-full"), children: [
+      /* @__PURE__ */ jsxs46(
         "button",
         {
           onClick: () => !disabled && setOpenDropdown(openDropdown === type3 ? null : type3),
@@ -338638,10 +339254,10 @@ function SessionConfigSelector({
           ),
           title: t5(`sessionConfig.${type3}Tooltip`),
           children: [
-            /* @__PURE__ */ jsx50("span", { className: "shrink-0", children: icon2 }),
-            mode === "panel" && /* @__PURE__ */ jsx50("span", { className: "shrink-0 text-text-muted", children: label }),
-            /* @__PURE__ */ jsx50("span", { className: clsx("truncate", mode === "panel" ? "flex-1 text-left" : VALUE_MAX_W[type3]), children: currentValue }),
-            /* @__PURE__ */ jsx50(ChevronDown, { size: 12, className: "opacity-50 shrink-0" })
+            /* @__PURE__ */ jsx52("span", { className: "shrink-0", children: icon2 }),
+            mode === "panel" && /* @__PURE__ */ jsx52("span", { className: "shrink-0 text-text-muted", children: label }),
+            /* @__PURE__ */ jsx52("span", { className: clsx("truncate", mode === "panel" ? "flex-1 text-left" : VALUE_MAX_W[type3]), children: currentValue }),
+            /* @__PURE__ */ jsx52(ChevronDown, { size: 12, className: "opacity-50 shrink-0" })
           ]
         }
       ),
@@ -338649,13 +339265,13 @@ function SessionConfigSelector({
     ] });
   };
   const ALL_TYPES = ["agent", "model", "effort", "permission", "profile"];
-  const allowedByEngine = getEngineSelectors(activeEngineId);
+  const allowedByEngine = getEngineSelectors2(activeEngineId);
   const typesToShow = (visibleTypes ?? ALL_TYPES).filter((t6) => allowedByEngine.includes(t6));
-  return /* @__PURE__ */ jsxs44("div", { ref: containerRef, className: clsx(variant === "panel" ? "flex flex-col gap-0.5 w-full" : "flex items-center gap-1"), children: [
-    typesToShow.map((type3) => /* @__PURE__ */ jsx50(React3.Fragment, { children: renderSelector(type3, variant) }, type3)),
-    customInput && /* @__PURE__ */ jsx50("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/30", children: /* @__PURE__ */ jsxs44("div", { className: "bg-background-elevated border border-border rounded-lg p-4 min-w-[280px] shadow-xl", children: [
-      /* @__PURE__ */ jsx50("div", { className: "text-xs text-text-secondary mb-2", children: t5("sessionConfig.customInputLabel", { type: selectorMeta[customInput.type].label }) }),
-      /* @__PURE__ */ jsx50(
+  return /* @__PURE__ */ jsxs46("div", { ref: containerRef, className: clsx(variant === "panel" ? "flex flex-col gap-0.5 w-full" : "flex items-center gap-1"), children: [
+    typesToShow.map((type3) => /* @__PURE__ */ jsx52(React3.Fragment, { children: renderSelector(type3, variant) }, type3)),
+    customInput && /* @__PURE__ */ jsx52("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/30", children: /* @__PURE__ */ jsxs46("div", { className: "bg-background-elevated border border-border rounded-lg p-4 min-w-[280px] shadow-xl", children: [
+      /* @__PURE__ */ jsx52("div", { className: "text-xs text-text-secondary mb-2", children: t5("sessionConfig.customInputLabel", { type: selectorMeta[customInput.type].label }) }),
+      /* @__PURE__ */ jsx52(
         "input",
         {
           ref: inputRef,
@@ -338670,8 +339286,8 @@ function SessionConfigSelector({
           placeholder: t5("sessionConfig.customInputPlaceholder", { type: customInput.type })
         }
       ),
-      /* @__PURE__ */ jsxs44("div", { className: "flex justify-end gap-2 mt-3", children: [
-        /* @__PURE__ */ jsx50(
+      /* @__PURE__ */ jsxs46("div", { className: "flex justify-end gap-2 mt-3", children: [
+        /* @__PURE__ */ jsx52(
           "button",
           {
             onClick: () => setCustomInput(null),
@@ -338679,7 +339295,7 @@ function SessionConfigSelector({
             children: t5("sessionConfig.cancel")
           }
         ),
-        /* @__PURE__ */ jsx50(
+        /* @__PURE__ */ jsx52(
           "button",
           {
             onClick: () => handleCustomInputConfirm(customInput.type),
@@ -338696,8 +339312,8 @@ function SessionConfigSelector({
 init_clsx();
 init_deps();
 init_deps();
-import { useState as useState38, useRef as useRef23 } from "react";
-import { Fragment as Fragment18, jsx as jsx51, jsxs as jsxs45 } from "react/jsx-runtime";
+import { useState as useState39, useRef as useRef24 } from "react";
+import { Fragment as Fragment18, jsx as jsx53, jsxs as jsxs47 } from "react/jsx-runtime";
 function engineHasAutoCompact(engineId) {
   return engineId === "simple-ai" || engineId === "claude-code";
 }
@@ -338724,10 +339340,10 @@ function isFocusStillInside(relatedTarget, anchorRef, cardRef) {
   return anchor2.contains(relatedTarget) || card2.contains(relatedTarget);
 }
 function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, streamRate, streaming }) {
-  const [active, setActive] = useState38(false);
-  const [showRaw, setShowRaw] = useState38(false);
-  const anchorRef = useRef23(null);
-  const cardRef = useRef23(null);
+  const [active, setActive] = useState39(false);
+  const [showRaw, setShowRaw] = useState39(false);
+  const anchorRef = useRef24(null);
+  const cardRef = useRef24(null);
   const cw = usage.contextWindow ?? contextWindow ?? 2e5;
   const used = usage.input + usage.cacheCreation + usage.cacheRead;
   const pct = cw > 0 ? used / cw : 0;
@@ -338762,7 +339378,7 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
     if (active !== true) return streamRate?.wallClockMs ?? null;
     return Math.max(0, now4 - startMs);
   })();
-  return /* @__PURE__ */ jsxs45(
+  return /* @__PURE__ */ jsxs47(
     "div",
     {
       ref: anchorRef,
@@ -338780,7 +339396,7 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
         }
       },
       children: [
-        /* @__PURE__ */ jsxs45(
+        /* @__PURE__ */ jsxs47(
           "svg",
           {
             width: "22",
@@ -338789,7 +339405,7 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
             className: clsx("shrink-0 -rotate-90", accentColor),
             "aria-hidden": "true",
             children: [
-              /* @__PURE__ */ jsx51(
+              /* @__PURE__ */ jsx53(
                 "circle",
                 {
                   cx: "12",
@@ -338801,7 +339417,7 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                   className: "opacity-20"
                 }
               ),
-              /* @__PURE__ */ jsx51(
+              /* @__PURE__ */ jsx53(
                 "circle",
                 {
                   cx: "12",
@@ -338819,8 +339435,8 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
             ]
           }
         ),
-        mainLabel && /* @__PURE__ */ jsx51("span", { className: clsx("font-mono text-[11px] tabular-nums whitespace-nowrap", labelColor), children: mainLabel }),
-        active && /* @__PURE__ */ jsx51(
+        mainLabel && /* @__PURE__ */ jsx53("span", { className: clsx("font-mono text-[11px] tabular-nums whitespace-nowrap", labelColor), children: mainLabel }),
+        active && /* @__PURE__ */ jsx53(
           "div",
           {
             ref: cardRef,
@@ -338835,10 +339451,10 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
             },
             children: showRaw && usage.rawPayload ? (
               /* 原始报文查看模式 */
-              /* @__PURE__ */ jsxs45("div", { className: "max-h-[400px] overflow-auto", children: [
-                /* @__PURE__ */ jsxs45("div", { className: "flex items-center justify-between mb-2", children: [
-                  /* @__PURE__ */ jsx51("span", { className: "text-[11px] uppercase tracking-wide text-text-muted", children: "\u539F\u59CB result \u62A5\u6587" }),
-                  /* @__PURE__ */ jsx51(
+              /* @__PURE__ */ jsxs47("div", { className: "max-h-[400px] overflow-auto", children: [
+                /* @__PURE__ */ jsxs47("div", { className: "flex items-center justify-between mb-2", children: [
+                  /* @__PURE__ */ jsx53("span", { className: "text-[11px] uppercase tracking-wide text-text-muted", children: "\u539F\u59CB result \u62A5\u6587" }),
+                  /* @__PURE__ */ jsx53(
                     "button",
                     {
                       className: "text-[11px] text-primary hover:underline",
@@ -338847,13 +339463,13 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                     }
                   )
                 ] }),
-                /* @__PURE__ */ jsx51("pre", { className: "text-[11px] font-mono text-text-secondary whitespace-pre-wrap break-all leading-relaxed", children: JSON.stringify(usage.rawPayload, null, 2) })
+                /* @__PURE__ */ jsx53("pre", { className: "text-[11px] font-mono text-text-secondary whitespace-pre-wrap break-all leading-relaxed", children: JSON.stringify(usage.rawPayload, null, 2) })
               ] })
-            ) : /* @__PURE__ */ jsxs45(Fragment18, { children: [
-              /* @__PURE__ */ jsxs45("div", { className: "flex items-center justify-between mb-2", children: [
-                /* @__PURE__ */ jsxs45("span", { className: "text-[11px] uppercase tracking-wide text-text-muted", children: [
+            ) : /* @__PURE__ */ jsxs47(Fragment18, { children: [
+              /* @__PURE__ */ jsxs47("div", { className: "flex items-center justify-between mb-2", children: [
+                /* @__PURE__ */ jsxs47("span", { className: "text-[11px] uppercase tracking-wide text-text-muted", children: [
                   "\u4E0A\u4E0B\u6587\u7528\u91CF",
-                  usage.contextSource === "cumulative" && /* @__PURE__ */ jsx51(
+                  usage.contextSource === "cumulative" && /* @__PURE__ */ jsx53(
                     "span",
                     {
                       className: "ml-1 normal-case tracking-normal text-amber-400/80",
@@ -338862,17 +339478,17 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                     }
                   )
                 ] }),
-                /* @__PURE__ */ jsxs45("span", { className: clsx("font-mono text-[11px]", labelColor), children: [
+                /* @__PURE__ */ jsxs47("span", { className: clsx("font-mono text-[11px]", labelColor), children: [
                   percentLabel,
                   " \xB7 ",
                   winLabel
                 ] })
               ] }),
-              /* @__PURE__ */ jsxs45("div", { className: "h-2 rounded bg-background-tertiary overflow-hidden flex mb-2.5 relative", children: [
-                /* @__PURE__ */ jsx51("div", { className: "h-full bg-primary", style: { width: `${wi}%` } }),
-                /* @__PURE__ */ jsx51("div", { className: "h-full bg-amber-500", style: { width: `${wc}%` } }),
-                /* @__PURE__ */ jsx51("div", { className: "h-full bg-purple-400", style: { width: `${wr2}%` } }),
-                /* @__PURE__ */ jsx51(
+              /* @__PURE__ */ jsxs47("div", { className: "h-2 rounded bg-background-tertiary overflow-hidden flex mb-2.5 relative", children: [
+                /* @__PURE__ */ jsx53("div", { className: "h-full bg-primary", style: { width: `${wi}%` } }),
+                /* @__PURE__ */ jsx53("div", { className: "h-full bg-amber-500", style: { width: `${wc}%` } }),
+                /* @__PURE__ */ jsx53("div", { className: "h-full bg-purple-400", style: { width: `${wr2}%` } }),
+                /* @__PURE__ */ jsx53(
                   "div",
                   {
                     className: "absolute top-[-1px] h-[10px] w-px bg-text-tertiary",
@@ -338880,14 +339496,14 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                   }
                 )
               ] }),
-              /* @__PURE__ */ jsxs45("div", { className: "grid grid-cols-[1fr_auto] gap-y-1.5 gap-x-3 text-[12px]", children: [
-                /* @__PURE__ */ jsx51(MeterRow, { color: "bg-primary", label: "\u8F93\u5165 input", value: usage.input }),
-                usage.cacheCreation > 0 && /* @__PURE__ */ jsx51(MeterRow, { color: "bg-amber-500", label: "\u7F13\u5B58\u5199\u5165", value: usage.cacheCreation }),
-                usage.cacheRead > 0 && /* @__PURE__ */ jsx51(MeterRow, { color: "bg-purple-400", label: "\u7F13\u5B58\u8BFB\u53D6", value: usage.cacheRead }),
-                /* @__PURE__ */ jsx51(MeterRow, { color: "bg-text-tertiary", label: "\u8F93\u51FA(\u672C\u8F6E)", value: usage.output, dim: true })
+              /* @__PURE__ */ jsxs47("div", { className: "grid grid-cols-[1fr_auto] gap-y-1.5 gap-x-3 text-[12px]", children: [
+                /* @__PURE__ */ jsx53(MeterRow, { color: "bg-primary", label: "\u8F93\u5165 input", value: usage.input }),
+                usage.cacheCreation > 0 && /* @__PURE__ */ jsx53(MeterRow, { color: "bg-amber-500", label: "\u7F13\u5B58\u5199\u5165", value: usage.cacheCreation }),
+                usage.cacheRead > 0 && /* @__PURE__ */ jsx53(MeterRow, { color: "bg-purple-400", label: "\u7F13\u5B58\u8BFB\u53D6", value: usage.cacheRead }),
+                /* @__PURE__ */ jsx53(MeterRow, { color: "bg-text-tertiary", label: "\u8F93\u51FA(\u672C\u8F6E)", value: usage.output, dim: true })
               ] }),
-              hitRate != null && /* @__PURE__ */ jsxs45("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle flex items-center justify-between", children: [
-                /* @__PURE__ */ jsx51(
+              hitRate != null && /* @__PURE__ */ jsxs47("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle flex items-center justify-between", children: [
+                /* @__PURE__ */ jsx53(
                   "span",
                   {
                     className: "text-[11px] text-text-muted",
@@ -338895,21 +339511,21 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                     children: "\u7F13\u5B58\u547D\u4E2D\u7387"
                   }
                 ),
-                /* @__PURE__ */ jsxs45("span", { className: "font-mono text-[12px] text-purple-400", children: [
+                /* @__PURE__ */ jsxs47("span", { className: "font-mono text-[12px] text-purple-400", children: [
                   hitRate,
                   "%"
                 ] })
               ] }),
-              usage.actualModel && /* @__PURE__ */ jsxs45("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle flex items-center justify-between gap-2", children: [
-                /* @__PURE__ */ jsx51("span", { className: "text-[11px] text-text-muted shrink-0", children: "\u5B9E\u9645\u6A21\u578B" }),
-                /* @__PURE__ */ jsxs45(
+              usage.actualModel && /* @__PURE__ */ jsxs47("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle flex items-center justify-between gap-2", children: [
+                /* @__PURE__ */ jsx53("span", { className: "text-[11px] text-text-muted shrink-0", children: "\u5B9E\u9645\u6A21\u578B" }),
+                /* @__PURE__ */ jsxs47(
                   "span",
                   {
                     className: "font-mono text-[11px] text-text-secondary truncate",
                     title: routedModels.length > 1 ? `\u672C\u4F1A\u8BDD\u5B9E\u9645\u8DEF\u7531\u8FC7\uFF1A${routedModels.join(" \u2192 ")}` : void 0,
                     children: [
                       usage.actualModel,
-                      routedModels.length > 1 && /* @__PURE__ */ jsxs45("span", { className: "text-text-muted", children: [
+                      routedModels.length > 1 && /* @__PURE__ */ jsxs47("span", { className: "text-text-muted", children: [
                         " +",
                         routedModels.length - 1
                       ] })
@@ -338917,9 +339533,9 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                   }
                 )
               ] }),
-              (rateTpsLabel || rateTtft || rateGen || rateWall != null) && /* @__PURE__ */ jsxs45("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: [
-                /* @__PURE__ */ jsxs45("div", { className: "flex items-center justify-between mb-1.5", children: [
-                  /* @__PURE__ */ jsx51(
+              (rateTpsLabel || rateTtft || rateGen || rateWall != null) && /* @__PURE__ */ jsxs47("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: [
+                /* @__PURE__ */ jsxs47("div", { className: "flex items-center justify-between mb-1.5", children: [
+                  /* @__PURE__ */ jsx53(
                     "span",
                     {
                       className: "text-[11px] text-text-muted",
@@ -338927,36 +339543,36 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                       children: "\u751F\u6210\u901F\u7387"
                     }
                   ),
-                  /* @__PURE__ */ jsxs45("span", { className: "text-[10px] text-text-muted", children: [
+                  /* @__PURE__ */ jsxs47("span", { className: "text-[10px] text-text-muted", children: [
                     streaming ? "\u5373\u65F6" : "\u5E73\u5747",
                     streamRate?.providerTokens != null ? ` \xB7 ${streamRate.providerTokens.toLocaleString()} tok` : ""
                   ] })
                 ] }),
-                /* @__PURE__ */ jsxs45("div", { className: "grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px]", children: [
-                  rateTpsLabel && /* @__PURE__ */ jsxs45(Fragment18, { children: [
-                    /* @__PURE__ */ jsx51("span", { className: "text-text-muted", children: "\u901F\u7387 TPS" }),
-                    /* @__PURE__ */ jsxs45("span", { className: "font-mono text-right tabular-nums text-primary", children: [
+                /* @__PURE__ */ jsxs47("div", { className: "grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px]", children: [
+                  rateTpsLabel && /* @__PURE__ */ jsxs47(Fragment18, { children: [
+                    /* @__PURE__ */ jsx53("span", { className: "text-text-muted", children: "\u901F\u7387 TPS" }),
+                    /* @__PURE__ */ jsxs47("span", { className: "font-mono text-right tabular-nums text-primary", children: [
                       rateTpsLabel,
-                      /* @__PURE__ */ jsx51("span", { className: "text-text-muted ml-1", children: "tok/s" })
+                      /* @__PURE__ */ jsx53("span", { className: "text-text-muted ml-1", children: "tok/s" })
                     ] })
                   ] }),
-                  rateTtft != null && /* @__PURE__ */ jsxs45(Fragment18, { children: [
-                    /* @__PURE__ */ jsx51("span", { className: "text-text-muted", children: "\u9996 token" }),
-                    /* @__PURE__ */ jsx51("span", { className: "font-mono text-right tabular-nums text-text-secondary", children: fmtSeconds(rateTtft) })
+                  rateTtft != null && /* @__PURE__ */ jsxs47(Fragment18, { children: [
+                    /* @__PURE__ */ jsx53("span", { className: "text-text-muted", children: "\u9996 token" }),
+                    /* @__PURE__ */ jsx53("span", { className: "font-mono text-right tabular-nums text-text-secondary", children: fmtSeconds(rateTtft) })
                   ] }),
-                  rateGen != null && /* @__PURE__ */ jsxs45(Fragment18, { children: [
-                    /* @__PURE__ */ jsx51("span", { className: "text-text-muted", children: "\u751F\u6210\u8017\u65F6" }),
-                    /* @__PURE__ */ jsx51("span", { className: "font-mono text-right tabular-nums text-text-secondary", children: fmtSeconds(rateGen) })
+                  rateGen != null && /* @__PURE__ */ jsxs47(Fragment18, { children: [
+                    /* @__PURE__ */ jsx53("span", { className: "text-text-muted", children: "\u751F\u6210\u8017\u65F6" }),
+                    /* @__PURE__ */ jsx53("span", { className: "font-mono text-right tabular-nums text-text-secondary", children: fmtSeconds(rateGen) })
                   ] }),
-                  rateWall != null && /* @__PURE__ */ jsxs45(Fragment18, { children: [
-                    /* @__PURE__ */ jsx51("span", { className: "text-text-muted", children: "\u8FD0\u884C\u65F6\u957F" }),
-                    /* @__PURE__ */ jsx51("span", { className: "font-mono text-right tabular-nums text-text-secondary", children: fmtSeconds(rateWall) })
+                  rateWall != null && /* @__PURE__ */ jsxs47(Fragment18, { children: [
+                    /* @__PURE__ */ jsx53("span", { className: "text-text-muted", children: "\u8FD0\u884C\u65F6\u957F" }),
+                    /* @__PURE__ */ jsx53("span", { className: "font-mono text-right tabular-nums text-text-secondary", children: fmtSeconds(rateWall) })
                   ] })
                 ] })
               ] }),
-              totals && totals.runs > 0 && /* @__PURE__ */ jsxs45("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: [
-                /* @__PURE__ */ jsxs45("div", { className: "flex items-center justify-between mb-1.5", children: [
-                  /* @__PURE__ */ jsx51(
+              totals && totals.runs > 0 && /* @__PURE__ */ jsxs47("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: [
+                /* @__PURE__ */ jsxs47("div", { className: "flex items-center justify-between mb-1.5", children: [
+                  /* @__PURE__ */ jsx53(
                     "span",
                     {
                       className: "text-[11px] text-text-muted",
@@ -338964,28 +339580,28 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                       children: "\u4F1A\u8BDD\u7D2F\u8BA1"
                     }
                   ),
-                  /* @__PURE__ */ jsxs45("span", { className: "text-[10px] text-text-muted", children: [
+                  /* @__PURE__ */ jsxs47("span", { className: "text-[10px] text-text-muted", children: [
                     totals.runs,
                     " \u6761\u6D88\u606F"
                   ] })
                 ] }),
-                /* @__PURE__ */ jsxs45("div", { className: "grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px]", children: [
-                  /* @__PURE__ */ jsx51(MeterRow, { color: "bg-primary/60", label: "\u8F93\u5165\u5408\u8BA1", value: totals.input, dim: true }),
-                  totals.cacheCreation > 0 && /* @__PURE__ */ jsx51(MeterRow, { color: "bg-amber-500/60", label: "\u7F13\u5B58\u5199\u5165\u5408\u8BA1", value: totals.cacheCreation, dim: true }),
-                  totals.cacheRead > 0 && /* @__PURE__ */ jsx51(MeterRow, { color: "bg-purple-400/60", label: "\u7F13\u5B58\u8BFB\u53D6\u5408\u8BA1", value: totals.cacheRead, dim: true }),
-                  /* @__PURE__ */ jsx51(MeterRow, { color: "bg-text-tertiary/60", label: "\u8F93\u51FA\u5408\u8BA1", value: totals.output, dim: true }),
-                  totals.costUsd > 0 && /* @__PURE__ */ jsxs45(Fragment18, { children: [
-                    /* @__PURE__ */ jsxs45("span", { className: "text-text-muted flex items-center gap-1", children: [
-                      /* @__PURE__ */ jsx51("span", { className: "w-2 h-2 rounded-sm shrink-0 bg-transparent" }),
+                /* @__PURE__ */ jsxs47("div", { className: "grid grid-cols-[1fr_auto] gap-x-3 gap-y-0.5 text-[11px]", children: [
+                  /* @__PURE__ */ jsx53(MeterRow, { color: "bg-primary/60", label: "\u8F93\u5165\u5408\u8BA1", value: totals.input, dim: true }),
+                  totals.cacheCreation > 0 && /* @__PURE__ */ jsx53(MeterRow, { color: "bg-amber-500/60", label: "\u7F13\u5B58\u5199\u5165\u5408\u8BA1", value: totals.cacheCreation, dim: true }),
+                  totals.cacheRead > 0 && /* @__PURE__ */ jsx53(MeterRow, { color: "bg-purple-400/60", label: "\u7F13\u5B58\u8BFB\u53D6\u5408\u8BA1", value: totals.cacheRead, dim: true }),
+                  /* @__PURE__ */ jsx53(MeterRow, { color: "bg-text-tertiary/60", label: "\u8F93\u51FA\u5408\u8BA1", value: totals.output, dim: true }),
+                  totals.costUsd > 0 && /* @__PURE__ */ jsxs47(Fragment18, { children: [
+                    /* @__PURE__ */ jsxs47("span", { className: "text-text-muted flex items-center gap-1", children: [
+                      /* @__PURE__ */ jsx53("span", { className: "w-2 h-2 rounded-sm shrink-0 bg-transparent" }),
                       "\u603B\u82B1\u8D39"
                     ] }),
-                    /* @__PURE__ */ jsx51("span", { className: "font-mono text-right tabular-nums text-text-muted", children: fmtCost(totals.costUsd) })
+                    /* @__PURE__ */ jsx53("span", { className: "font-mono text-right tabular-nums text-text-muted", children: fmtCost(totals.costUsd) })
                   ] })
                 ] })
               ] }),
-              modelCount > 0 && /* @__PURE__ */ jsxs45("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: [
-                /* @__PURE__ */ jsxs45("div", { className: "flex items-center justify-between mb-1.5", children: [
-                  /* @__PURE__ */ jsx51(
+              modelCount > 0 && /* @__PURE__ */ jsxs47("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: [
+                /* @__PURE__ */ jsxs47("div", { className: "flex items-center justify-between mb-1.5", children: [
+                  /* @__PURE__ */ jsx53(
                     "span",
                     {
                       className: "text-[11px] text-text-muted",
@@ -338993,56 +339609,56 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                       children: "\u672C\u8F6E\u7D2F\u8BA1 \xB7 \u6309\u6A21\u578B"
                     }
                   ),
-                  /* @__PURE__ */ jsxs45("span", { className: "text-[10px] text-text-muted", children: [
+                  /* @__PURE__ */ jsxs47("span", { className: "text-[10px] text-text-muted", children: [
                     modelCount,
                     " \u6A21\u578B"
                   ] })
                 ] }),
                 modelUsage && Object.entries(modelUsage).map(([model, m4]) => {
                   const routed = routedModels.filter((am) => am !== model);
-                  return /* @__PURE__ */ jsxs45("div", { className: "mb-2 last:mb-0", children: [
-                    /* @__PURE__ */ jsxs45(
+                  return /* @__PURE__ */ jsxs47("div", { className: "mb-2 last:mb-0", children: [
+                    /* @__PURE__ */ jsxs47(
                       "div",
                       {
                         className: "text-[11px] font-medium text-text-secondary mb-1 truncate",
                         title: routed.length > 0 ? `\u914D\u7F6E\u6A21\u578B ${model}\uFF0C\u5B9E\u9645\u8DEF\u7531\uFF1A${routedModels.join(" / ")}` : void 0,
                         children: [
                           model,
-                          routed.length > 0 && /* @__PURE__ */ jsxs45("span", { className: "font-normal text-text-muted", children: [
+                          routed.length > 0 && /* @__PURE__ */ jsxs47("span", { className: "font-normal text-text-muted", children: [
                             " \xB7 \u5B9E\u9645 ",
                             routed.join(" / ")
                           ] })
                         ]
                       }
                     ),
-                    /* @__PURE__ */ jsxs45("div", { className: "grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 text-[11px]", children: [
-                      /* @__PURE__ */ jsx51(MeterRow, { color: "bg-primary/60", label: "\u8F93\u5165", value: m4.inputTokens, dim: true }),
-                      m4.cacheCreationInputTokens != null && m4.cacheCreationInputTokens > 0 ? /* @__PURE__ */ jsx51(MeterRow, { color: "bg-amber-500/60", label: "\u7F13\u5B58\u5199\u5165", value: m4.cacheCreationInputTokens, dim: true }) : null,
-                      m4.cacheReadInputTokens != null && m4.cacheReadInputTokens > 0 ? /* @__PURE__ */ jsx51(MeterRow, { color: "bg-purple-400/60", label: "\u7F13\u5B58\u8BFB\u53D6", value: m4.cacheReadInputTokens, dim: true }) : null,
-                      /* @__PURE__ */ jsx51(MeterRow, { color: "bg-text-tertiary/60", label: "\u8F93\u51FA", value: m4.outputTokens, dim: true }),
-                      m4.costUsd != null && m4.costUsd > 0 ? /* @__PURE__ */ jsxs45(Fragment18, { children: [
-                        /* @__PURE__ */ jsxs45("span", { className: "text-text-muted flex items-center gap-1", children: [
-                          /* @__PURE__ */ jsx51("span", { className: "w-2 h-2 rounded-sm shrink-0 bg-transparent" }),
+                    /* @__PURE__ */ jsxs47("div", { className: "grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 text-[11px]", children: [
+                      /* @__PURE__ */ jsx53(MeterRow, { color: "bg-primary/60", label: "\u8F93\u5165", value: m4.inputTokens, dim: true }),
+                      m4.cacheCreationInputTokens != null && m4.cacheCreationInputTokens > 0 ? /* @__PURE__ */ jsx53(MeterRow, { color: "bg-amber-500/60", label: "\u7F13\u5B58\u5199\u5165", value: m4.cacheCreationInputTokens, dim: true }) : null,
+                      m4.cacheReadInputTokens != null && m4.cacheReadInputTokens > 0 ? /* @__PURE__ */ jsx53(MeterRow, { color: "bg-purple-400/60", label: "\u7F13\u5B58\u8BFB\u53D6", value: m4.cacheReadInputTokens, dim: true }) : null,
+                      /* @__PURE__ */ jsx53(MeterRow, { color: "bg-text-tertiary/60", label: "\u8F93\u51FA", value: m4.outputTokens, dim: true }),
+                      m4.costUsd != null && m4.costUsd > 0 ? /* @__PURE__ */ jsxs47(Fragment18, { children: [
+                        /* @__PURE__ */ jsxs47("span", { className: "text-text-muted flex items-center gap-1", children: [
+                          /* @__PURE__ */ jsx53("span", { className: "w-2 h-2 rounded-sm shrink-0 bg-transparent" }),
                           "\u82B1\u8D39"
                         ] }),
-                        /* @__PURE__ */ jsx51("span", { className: "font-mono text-right tabular-nums text-text-muted", children: fmtCost(m4.costUsd) })
+                        /* @__PURE__ */ jsx53("span", { className: "font-mono text-right tabular-nums text-text-muted", children: fmtCost(m4.costUsd) })
                       ] }) : null
                     ] })
                   ] }, model);
                 })
               ] }),
-              usage.rawPayload && /* @__PURE__ */ jsx51("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: /* @__PURE__ */ jsxs45(
+              usage.rawPayload && /* @__PURE__ */ jsx53("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: /* @__PURE__ */ jsxs47(
                 "button",
                 {
                   className: "flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors",
                   onClick: () => setShowRaw(true),
                   children: [
-                    /* @__PURE__ */ jsx51("span", { className: "text-xs", children: "\u{1F4C4}" }),
+                    /* @__PURE__ */ jsx53("span", { className: "text-xs", children: "\u{1F4C4}" }),
                     "\u67E5\u770B\u539F\u59CB\u62A5\u6587"
                   ]
                 }
               ) }),
-              /* @__PURE__ */ jsx51("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: /* @__PURE__ */ jsxs45(
+              /* @__PURE__ */ jsx53("div", { className: "mt-2.5 pt-2.5 border-t border-border-subtle", children: /* @__PURE__ */ jsxs47(
                 "button",
                 {
                   className: "flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors",
@@ -339051,12 +339667,12 @@ function ContextMeter({ usage, contextWindow, labelMode = "full", engineId, stre
                     setActive(false);
                   },
                   children: [
-                    /* @__PURE__ */ jsx51("span", { className: "text-xs", children: "\u{1F4CA}" }),
+                    /* @__PURE__ */ jsx53("span", { className: "text-xs", children: "\u{1F4CA}" }),
                     "\u67E5\u770B Token \u7EDF\u8BA1"
                   ]
                 }
               ) }),
-              level !== "ok" && /* @__PURE__ */ jsx51(
+              level !== "ok" && /* @__PURE__ */ jsx53(
                 "div",
                 {
                   className: clsx(
@@ -339079,78 +339695,13 @@ function MeterRow({
   value: value3,
   dim
 }) {
-  return /* @__PURE__ */ jsxs45(Fragment18, { children: [
-    /* @__PURE__ */ jsxs45("span", { className: clsx("flex items-center gap-2", dim ? "text-text-muted" : "text-text-secondary"), children: [
-      /* @__PURE__ */ jsx51("span", { className: clsx("w-2 h-2 rounded-sm shrink-0", color2) }),
+  return /* @__PURE__ */ jsxs47(Fragment18, { children: [
+    /* @__PURE__ */ jsxs47("span", { className: clsx("flex items-center gap-2", dim ? "text-text-muted" : "text-text-secondary"), children: [
+      /* @__PURE__ */ jsx53("span", { className: clsx("w-2 h-2 rounded-sm shrink-0", color2) }),
       label
     ] }),
-    /* @__PURE__ */ jsx51("span", { className: clsx("font-mono text-right tabular-nums", dim ? "text-text-muted" : "text-text-primary"), children: value3.toLocaleString() })
+    /* @__PURE__ */ jsx53("span", { className: clsx("font-mono text-right tabular-nums", dim ? "text-text-muted" : "text-text-primary"), children: value3.toLocaleString() })
   ] });
-}
-
-// src/shims/engineDisplay.ts
-init_stores();
-function normalizeEngineId2(engineId) {
-  if (!engineId) return "claude-code";
-  const metadatas = useEngineMetadataStore.getState().metadatas;
-  if (metadatas.length === 0) {
-    const fallback = ["claude-code", "simple-ai"];
-    return fallback.includes(engineId) ? engineId : "claude-code";
-  }
-  return metadatas.some((m4) => m4.id === engineId) ? engineId : "claude-code";
-}
-function getEngineFullName2(engineId) {
-  const id38 = normalizeEngineId2(engineId);
-  return useEngineMetadataStore.getState().getEngineFullName(id38);
-}
-
-// src/shims/engineHealth.ts
-init_stores();
-function resolveEngineHealthFromStatus(engineId, health) {
-  if (!health) return { available: false };
-  const fieldMap = {
-    "claude-code": { available: "claudeAvailable", version: "claudeVersion" }
-  };
-  const fields = fieldMap[engineId];
-  if (fields) {
-    return {
-      available: !!health[fields.available],
-      version: health[fields.version]
-    };
-  }
-  return { available: false };
-}
-function getSelectedEngineHealth(config3, health, engineOverride) {
-  const engineId = normalizeEngineId2(engineOverride ?? config3?.defaultEngine);
-  if (engineId === "simple-ai") {
-    const hasProfile = (config3?.modelProfiles ?? []).some(
-      (p3) => p3.baseUrl && p3.apiKey && p3.model
-    );
-    return {
-      engineId,
-      name: getEngineFullName2(engineId),
-      healthPrefix: "simple-ai",
-      command: "",
-      cliPath: "",
-      available: hasProfile,
-      version: void 0
-    };
-  }
-  const status = resolveEngineHealthFromStatus(engineId, health);
-  const cliConfig = config3?.[engineId === "claude-code" ? "claudeCode" : engineId];
-  const cliPath = cliConfig?.cliPath || "";
-  const commandMap = {
-    "claude-code": "claude"
-  };
-  return {
-    engineId,
-    name: getEngineFullName2(engineId),
-    healthPrefix: engineId,
-    command: commandMap[engineId] ?? engineId,
-    cliPath,
-    available: status.available,
-    version: status.version
-  };
 }
 
 // src/host/Chat/common/ChatStatusBar.tsx
@@ -339158,7 +339709,7 @@ init_engineDisplay();
 init_stores();
 init_deps();
 init_deps();
-import { jsx as jsx52, jsxs as jsxs46 } from "react/jsx-runtime";
+import { jsx as jsx54, jsxs as jsxs48 } from "react/jsx-runtime";
 var BREAKPOINTS = {
   /** 主行可容纳 profile + model + effort，并显示版本号文字 */
   wide: 720,
@@ -339203,14 +339754,14 @@ function ChatStatusBar({ children: children2, embedded = false }) {
   const { ref: containerRef, width: containerWidth } = useContainerWidth();
   const activeSessionMetadata = sessionMetadataList.find((session) => session.id === activeSessionId);
   const activeEngineId = normalizeEngineId(activeSessionMetadata?.engineId || config3?.defaultEngine);
-  const engineSelectors = getEngineSelectors(activeEngineId);
+  const engineSelectors = getEngineSelectors2(activeEngineId);
   const visibleTypes = getVisibleTypes(containerWidth, engineSelectors);
   const hiddenTypes = getHiddenTypes(visibleTypes, engineSelectors);
   const showVersionText = containerWidth >= BREAKPOINTS.wide;
   const contextLabelMode = containerWidth >= BREAKPOINTS.wide ? "full" : containerWidth >= BREAKPOINTS.medium ? "percent" : "icon";
   const showInputHintText = containerWidth >= BREAKPOINTS.medium;
-  const [expanded, setExpanded] = useState39(false);
-  const [syncing, setSyncing] = useState39(false);
+  const [expanded, setExpanded] = useState40(false);
+  const [syncing, setSyncing] = useState40(false);
   const handleSyncRecover = useCallback27(async () => {
     if (syncing) return;
     setSyncing(true);
@@ -339253,15 +339804,15 @@ function ChatStatusBar({ children: children2, embedded = false }) {
   const inputHint = getInputHint();
   const selectedEngineHealth = getSelectedEngineHealth(config3, healthStatus, activeEngineId);
   const engineTooltip = selectedEngineHealth.available ? `${selectedEngineHealth.name}${selectedEngineHealth.version ? ` ${selectedEngineHealth.version}` : ""}` : t5("statusBar.engineUnavailable", "\u5F15\u64CE\u4E0D\u53EF\u7528");
-  const healthIndicator = /* @__PURE__ */ jsxs46("div", { className: "flex items-center gap-1 shrink-0", title: engineTooltip, children: [
-    /* @__PURE__ */ jsx52("span", { className: clsx(
+  const healthIndicator = /* @__PURE__ */ jsxs48("div", { className: "flex items-center gap-1 shrink-0", title: engineTooltip, children: [
+    /* @__PURE__ */ jsx54("span", { className: clsx(
       "w-1.5 h-1.5 rounded-full",
       selectedEngineHealth.available ? "bg-green-500" : "bg-text-muted"
     ) }),
-    showVersionText && selectedEngineHealth.version && /* @__PURE__ */ jsx52("span", { className: "text-text-muted", children: selectedEngineHealth.version })
+    showVersionText && selectedEngineHealth.version && /* @__PURE__ */ jsx54("span", { className: "text-text-muted", children: selectedEngineHealth.version })
   ] });
   const hasOverflow = hiddenTypes.length > 0;
-  return /* @__PURE__ */ jsxs46(
+  return /* @__PURE__ */ jsxs48(
     "div",
     {
       ref: containerRef,
@@ -339274,14 +339825,14 @@ function ChatStatusBar({ children: children2, embedded = false }) {
         gridTemplateRows: expanded ? "auto auto" : "auto 0fr"
       },
       children: [
-        /* @__PURE__ */ jsxs46("div", { className: clsx(
+        /* @__PURE__ */ jsxs48("div", { className: clsx(
           "flex items-center gap-1.5 min-w-0",
           embedded ? "py-0" : "py-1.5 gap-2"
         ), children: [
-          /* @__PURE__ */ jsxs46("div", { className: "flex items-center gap-1.5 min-w-0 flex-1", children: [
-            children2 && /* @__PURE__ */ jsx52("div", { className: "flex items-center gap-1 shrink-0", children: children2 }),
-            children2 && !embedded && /* @__PURE__ */ jsx52("span", { className: "w-px h-3.5 bg-border-subtle shrink-0", "aria-hidden": "true" }),
-            visibleTypes.length > 0 && /* @__PURE__ */ jsx52("div", { className: "min-w-0", children: /* @__PURE__ */ jsx52(
+          /* @__PURE__ */ jsxs48("div", { className: "flex items-center gap-1.5 min-w-0 flex-1", children: [
+            children2 && /* @__PURE__ */ jsx54("div", { className: "flex items-center gap-1 shrink-0", children: children2 }),
+            children2 && !embedded && /* @__PURE__ */ jsx54("span", { className: "w-px h-3.5 bg-border-subtle shrink-0", "aria-hidden": "true" }),
+            visibleTypes.length > 0 && /* @__PURE__ */ jsx54("div", { className: "min-w-0", children: /* @__PURE__ */ jsx54(
               SessionConfigSelector,
               {
                 config: sessionConfig,
@@ -339290,7 +339841,7 @@ function ChatStatusBar({ children: children2, embedded = false }) {
                 visibleTypes
               }
             ) }),
-            hasOverflow && /* @__PURE__ */ jsx52(
+            hasOverflow && /* @__PURE__ */ jsx54(
               "button",
               {
                 onClick: () => setExpanded((prev2) => !prev2),
@@ -339300,12 +339851,12 @@ function ChatStatusBar({ children: children2, embedded = false }) {
                 ),
                 title: expanded ? t5("statusBar.collapse", "\u6536\u8D77") : t5("statusBar.more", "\u66F4\u591A\u8BBE\u7F6E"),
                 "aria-expanded": expanded,
-                children: /* @__PURE__ */ jsx52(Ellipsis, { size: 14 })
+                children: /* @__PURE__ */ jsx54(Ellipsis, { size: 14 })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs46("div", { className: "flex items-center justify-end gap-1.5 shrink-0 min-w-0", children: [
-            currentMode === "http" && /* @__PURE__ */ jsx52(
+          /* @__PURE__ */ jsxs48("div", { className: "flex items-center justify-end gap-1.5 shrink-0 min-w-0", children: [
+            currentMode === "http" && /* @__PURE__ */ jsx54(
               "button",
               {
                 onClick: handleSyncRecover,
@@ -339315,13 +339866,13 @@ function ChatStatusBar({ children: children2, embedded = false }) {
                   syncing ? "text-primary cursor-wait" : "text-text-tertiary hover:text-text-primary hover:bg-background-hover"
                 ),
                 title: t5("statusBar.syncRecover", "\u540C\u6B65\u6062\u590D\uFF1A\u91CD\u8FDE\u5E76\u8865\u56DE\u65AD\u7EBF\u4E22\u5931\u7684\u5185\u5BB9"),
-                children: /* @__PURE__ */ jsx52(RefreshCw, { size: 13, className: syncing ? "animate-spin" : "" })
+                children: /* @__PURE__ */ jsx54(RefreshCw, { size: 13, className: syncing ? "animate-spin" : "" })
               }
             ),
             healthIndicator,
-            usageStats && /* @__PURE__ */ jsx52(ContextMeter, { usage: usageStats, contextWindow: activeProfileContextWindow, labelMode: contextLabelMode, engineId: activeEngineId, streamRate, streaming: isStreaming }),
-            !embedded && (isStreaming || inputHint || inputLength > 0) && /* @__PURE__ */ jsx52("span", { className: "w-px h-3.5 bg-border-subtle shrink-0", "aria-hidden": "true" }),
-            inputHint && /* @__PURE__ */ jsxs46(
+            usageStats && /* @__PURE__ */ jsx54(ContextMeter, { usage: usageStats, contextWindow: activeProfileContextWindow, labelMode: contextLabelMode, engineId: activeEngineId, streamRate, streaming: isStreaming }),
+            !embedded && (isStreaming || inputHint || inputLength > 0) && /* @__PURE__ */ jsx54("span", { className: "w-px h-3.5 bg-border-subtle shrink-0", "aria-hidden": "true" }),
+            inputHint && /* @__PURE__ */ jsxs48(
               "span",
               {
                 className: clsx(
@@ -339331,23 +339882,23 @@ function ChatStatusBar({ children: children2, embedded = false }) {
                 ),
                 title: inputHint.text,
                 children: [
-                  inputHint.type !== "default" && /* @__PURE__ */ jsx52("span", { className: "w-1.5 h-1.5 bg-current rounded-full animate-pulse shrink-0" }),
-                  attachmentCount > 0 && inputHint.type === "default" && /* @__PURE__ */ jsx52(Paperclip, { size: 12, className: "shrink-0" }),
-                  showInputHintText && /* @__PURE__ */ jsx52("span", { className: "truncate max-w-[140px]", children: inputHint.text })
+                  inputHint.type !== "default" && /* @__PURE__ */ jsx54("span", { className: "w-1.5 h-1.5 bg-current rounded-full animate-pulse shrink-0" }),
+                  attachmentCount > 0 && inputHint.type === "default" && /* @__PURE__ */ jsx54(Paperclip, { size: 12, className: "shrink-0" }),
+                  showInputHintText && /* @__PURE__ */ jsx54("span", { className: "truncate max-w-[140px]", children: inputHint.text })
                 ]
               }
             ),
-            !embedded && inputLength > 0 && /* @__PURE__ */ jsx52("span", { className: "text-text-tertiary", children: inputLength })
+            !embedded && inputLength > 0 && /* @__PURE__ */ jsx54("span", { className: "text-text-tertiary", children: inputLength })
           ] })
         ] }),
-        hasOverflow && /* @__PURE__ */ jsx52("div", { className: clsx(
+        hasOverflow && /* @__PURE__ */ jsx54("div", { className: clsx(
           "transition-opacity duration-200",
           embedded && "absolute bottom-full left-0 right-0 mb-1 z-20",
           expanded ? "opacity-100 overflow-visible" : "opacity-0 overflow-hidden pointer-events-none"
-        ), children: /* @__PURE__ */ jsx52("div", { className: clsx(
+        ), children: /* @__PURE__ */ jsx54("div", { className: clsx(
           "flex flex-col gap-2 py-2",
           embedded ? "px-3 rounded-xl bg-background-elevated border border-border-subtle shadow-xl" : "border-t border-border-subtle/50"
-        ), children: /* @__PURE__ */ jsx52(
+        ), children: /* @__PURE__ */ jsx54(
           SessionConfigSelector,
           {
             config: sessionConfig,
@@ -339368,8 +339919,8 @@ init_lucide_react();
 init_deps();
 init_stores();
 init_types();
-import { useCallback as useCallback28, useMemo as useMemo18 } from "react";
-import { jsx as jsx53, jsxs as jsxs47 } from "react/jsx-runtime";
+import { useCallback as useCallback28, useMemo as useMemo19 } from "react";
+import { jsx as jsx55, jsxs as jsxs49 } from "react/jsx-runtime";
 function mapStoredAttachmentsForRetry(stored) {
   if (!stored || stored.length === 0) return void 0;
   const mapped = [];
@@ -339398,7 +339949,7 @@ function ErrorBanner({ error: error3 }) {
     (state6) => state6.workspaces.find((w5) => w5.id === state6.currentWorkspaceId) || null
   );
   const displayError = error3.startsWith("errors:") ? t5(error3.slice(7), { ns: "errors" }) : error3;
-  const lastUserMessage = useMemo18(() => {
+  const lastUserMessage = useMemo19(() => {
     for (let i2 = messages.length - 1; i2 >= 0; i2--) {
       const msg = messages[i2];
       if (isUserMessage(msg)) {
@@ -339419,25 +339970,25 @@ function ErrorBanner({ error: error3 }) {
       mapStoredAttachmentsForRetry(lastUserMessage.attachments)
     );
   }, [lastUserMessage, currentWorkspace, clearError, sendMessage]);
-  return /* @__PURE__ */ jsxs47("div", { className: "mx-4 mt-4 p-3 bg-danger-faint border border-danger/30 rounded-xl text-danger text-sm shrink-0 flex items-start gap-2", children: [
-    /* @__PURE__ */ jsx53("div", { className: "flex-1 min-w-0 break-words", children: displayError }),
-    /* @__PURE__ */ jsxs47("div", { className: "flex items-center gap-1 shrink-0", children: [
-      lastUserMessage && /* @__PURE__ */ jsx53(
+  return /* @__PURE__ */ jsxs49("div", { className: "mx-4 mt-4 p-3 bg-danger-faint border border-danger/30 rounded-xl text-danger text-sm shrink-0 flex items-start gap-2", children: [
+    /* @__PURE__ */ jsx55("div", { className: "flex-1 min-w-0 break-words", children: displayError }),
+    /* @__PURE__ */ jsxs49("div", { className: "flex items-center gap-1 shrink-0", children: [
+      lastUserMessage && /* @__PURE__ */ jsx55(
         "button",
         {
           onClick: handleRetry,
           className: "p-1 text-danger/70 hover:text-danger hover:bg-danger/10 rounded transition-colors",
           title: t5("retry"),
-          children: /* @__PURE__ */ jsx53(RotateCcw, { className: "w-3.5 h-3.5" })
+          children: /* @__PURE__ */ jsx55(RotateCcw, { className: "w-3.5 h-3.5" })
         }
       ),
-      /* @__PURE__ */ jsx53(
+      /* @__PURE__ */ jsx55(
         "button",
         {
           onClick: handleDismiss,
           className: "p-1 text-danger/70 hover:text-danger hover:bg-danger/10 rounded transition-colors",
           title: t5("close"),
-          children: /* @__PURE__ */ jsx53(X, { className: "w-3.5 h-3.5" })
+          children: /* @__PURE__ */ jsx55(X, { className: "w-3.5 h-3.5" })
         }
       )
     ] })
@@ -339449,22 +340000,40 @@ init_i18n();
 init_lucide_react();
 init_clsx();
 init_stores();
-import { memo as memo31, useState as useState41 } from "react";
+import { memo as memo32, useState as useState42 } from "react";
 import { lazy, Suspense as Suspense3 } from "react";
-import { Fragment as Fragment19, jsx as jsx55, jsxs as jsxs49 } from "react/jsx-runtime";
+
+// src/sessionHandoff.ts
+init_i18n();
+function handoffService() {
+  return window.__POLARIS_APP_CORE__?.services?.sessionHandoff;
+}
+function getHandoffEligibility3(sessionId) {
+  const svc = handoffService();
+  if (svc) return svc.getHandoffEligibility(sessionId);
+  return { enabled: false, reasonKey: "handoff.reasonNoSession" };
+}
+async function handoffSessionToNewSession3(sessionId, targetEngineId) {
+  const svc = handoffService();
+  if (svc) return svc.handoffSessionToNewSession(sessionId, targetEngineId);
+  return { ok: false, error: i18n_default.t("chat:handoff.reasonNoSession") };
+}
+
+// src/host/Chat/compact-handoff/CompactHandoffButton.tsx
+import { Fragment as Fragment19, jsx as jsx57, jsxs as jsxs51 } from "react/jsx-runtime";
 var CompactHandoffModal2 = lazy(
   () => Promise.resolve().then(() => (init_CompactHandoffModal(), CompactHandoffModal_exports)).then((m4) => ({ default: m4.CompactHandoffModal }))
 );
-var CompactHandoffButton = memo31(function CompactHandoffButton2() {
+var CompactHandoffButton = memo32(function CompactHandoffButton2() {
   const { t: t5 } = useTranslation("chat");
   const activeSessionId = useActiveSessionId();
   const sessionMetadataList = useSessionMetadataList();
-  const [open2, setOpen] = useState41(false);
+  const [open2, setOpen] = useState42(false);
   const meta3 = sessionMetadataList.find((s3) => s3.id === activeSessionId);
-  const eligibility = activeSessionId ? getHandoffEligibility2(activeSessionId) : { enabled: false };
+  const eligibility = activeSessionId ? getHandoffEligibility3(activeSessionId) : { enabled: false };
   if (!activeSessionId || !meta3) return null;
-  return /* @__PURE__ */ jsxs49(Fragment19, { children: [
-    /* @__PURE__ */ jsx55(
+  return /* @__PURE__ */ jsxs51(Fragment19, { children: [
+    /* @__PURE__ */ jsx57(
       "button",
       {
         onClick: () => eligibility.enabled && setOpen(true),
@@ -339474,10 +340043,10 @@ var CompactHandoffButton = memo31(function CompactHandoffButton2() {
           eligibility.enabled ? "text-text-tertiary hover:text-text-primary hover:bg-background-hover" : "text-text-muted cursor-not-allowed"
         ),
         title: eligibility.enabled ? t5("compactHandoff.entryTooltip") : t5(eligibility.reasonKey ?? "compactHandoff.notEligible"),
-        children: /* @__PURE__ */ jsx55(Archive, { size: 14 })
+        children: /* @__PURE__ */ jsx57(Archive, { size: 14 })
       }
     ),
-    open2 && /* @__PURE__ */ jsx55(Suspense3, { fallback: null, children: /* @__PURE__ */ jsx55(
+    open2 && /* @__PURE__ */ jsx57(Suspense3, { fallback: null, children: /* @__PURE__ */ jsx57(
       CompactHandoffModal2,
       {
         sessionId: activeSessionId,
@@ -339493,7 +340062,7 @@ var CompactHandoffButton = memo31(function CompactHandoffButton2() {
 init_i18n();
 init_lucide_react();
 init_deps();
-import { jsx as jsx56, jsxs as jsxs50 } from "react/jsx-runtime";
+import { jsx as jsx58, jsxs as jsxs52 } from "react/jsx-runtime";
 var STAGE_KEYS = {
   loading: "compactHandoff.stageLoading",
   packing: "compactHandoff.stagePacking",
@@ -339505,19 +340074,19 @@ function CompactHandoffProgress() {
   const task = useCompactHandoffStore((s3) => s3.task);
   const cancel = useCompactHandoffStore((s3) => s3.cancel);
   if (!task) return null;
-  return /* @__PURE__ */ jsxs50("div", { className: "fixed bottom-24 right-4 z-dropdown flex items-center gap-2 pl-3 pr-2 py-2 rounded-full bg-background-elevated border border-border shadow-lg max-w-[320px]", children: [
-    /* @__PURE__ */ jsx56(LoaderCircle, { size: 14, className: "animate-spin text-primary shrink-0" }),
-    /* @__PURE__ */ jsxs50("div", { className: "flex flex-col min-w-0", children: [
-      /* @__PURE__ */ jsx56("span", { className: "text-xs font-medium text-text-primary truncate", children: t5("compactHandoff.progressTitle", { title: task.sourceTitle }) }),
-      /* @__PURE__ */ jsx56("span", { className: "text-[10px] text-text-tertiary truncate", children: t5(STAGE_KEYS[task.stage]) })
+  return /* @__PURE__ */ jsxs52("div", { className: "fixed bottom-24 right-4 z-dropdown flex items-center gap-2 pl-3 pr-2 py-2 rounded-full bg-background-elevated border border-border shadow-lg max-w-[320px]", children: [
+    /* @__PURE__ */ jsx58(LoaderCircle, { size: 14, className: "animate-spin text-primary shrink-0" }),
+    /* @__PURE__ */ jsxs52("div", { className: "flex flex-col min-w-0", children: [
+      /* @__PURE__ */ jsx58("span", { className: "text-xs font-medium text-text-primary truncate", children: t5("compactHandoff.progressTitle", { title: task.sourceTitle }) }),
+      /* @__PURE__ */ jsx58("span", { className: "text-[10px] text-text-tertiary truncate", children: t5(STAGE_KEYS[task.stage]) })
     ] }),
-    /* @__PURE__ */ jsx56(
+    /* @__PURE__ */ jsx58(
       "button",
       {
         onClick: cancel,
         className: "p-1 rounded-full text-text-tertiary hover:text-danger hover:bg-background-hover shrink-0",
         title: t5("compactHandoff.cancelRun"),
-        children: /* @__PURE__ */ jsx56(X, { size: 14 })
+        children: /* @__PURE__ */ jsx58(X, { size: 14 })
       }
     )
   ] });
@@ -339528,19 +340097,19 @@ init_i18n();
 init_clsx();
 init_lucide_react();
 init_deps();
-import { memo as memo32, useCallback as useCallback29, useState as useState42, useRef as useRef25, useEffect as useEffect25 } from "react";
-import { jsx as jsx57, jsxs as jsxs51 } from "react/jsx-runtime";
+import { memo as memo33, useCallback as useCallback29, useState as useState43, useRef as useRef26, useEffect as useEffect26 } from "react";
+import { jsx as jsx59, jsxs as jsxs53 } from "react/jsx-runtime";
 var WIDTH_PRESETS = [250, 450, 650, 850];
-var MultiWindowMenu = memo32(function MultiWindowMenu2() {
+var MultiWindowMenu = memo33(function MultiWindowMenu2() {
   const { t: t5 } = useTranslation("chat");
   const multiSessionRows = useViewStore((state6) => state6.multiSessionRows);
   const multiSessionCellWidth = useViewStore((state6) => state6.multiSessionCellWidth);
   const setMultiSessionRows = useViewStore((state6) => state6.setMultiSessionRows);
   const setMultiSessionCellWidth = useViewStore((state6) => state6.setMultiSessionCellWidth);
-  const [isOpen, setIsOpen] = useState42(false);
-  const panelRef = useRef25(null);
-  const buttonRef = useRef25(null);
-  useEffect25(() => {
+  const [isOpen, setIsOpen] = useState43(false);
+  const panelRef = useRef26(null);
+  const buttonRef = useRef26(null);
+  useEffect26(() => {
     if (!isOpen) return;
     const handleClickOutside = (e3) => {
       if (panelRef.current && !panelRef.current.contains(e3.target) && buttonRef.current && !buttonRef.current.contains(e3.target)) {
@@ -339557,8 +340126,8 @@ var MultiWindowMenu = memo32(function MultiWindowMenu2() {
   const handleSelectPreset = useCallback29((width3) => {
     setMultiSessionCellWidth(width3);
   }, [setMultiSessionCellWidth]);
-  return /* @__PURE__ */ jsxs51("div", { className: "relative", children: [
-    /* @__PURE__ */ jsx57(
+  return /* @__PURE__ */ jsxs53("div", { className: "relative", children: [
+    /* @__PURE__ */ jsx59(
       "button",
       {
         ref: buttonRef,
@@ -339571,10 +340140,10 @@ var MultiWindowMenu = memo32(function MultiWindowMenu2() {
         "aria-label": t5("multiWindow.settings"),
         "aria-expanded": isOpen,
         "aria-haspopup": "menu",
-        children: /* @__PURE__ */ jsx57(Grid3x3, { className: "w-4 h-4" })
+        children: /* @__PURE__ */ jsx59(Grid3x3, { className: "w-4 h-4" })
       }
     ),
-    isOpen && /* @__PURE__ */ jsxs51(
+    isOpen && /* @__PURE__ */ jsxs53(
       "div",
       {
         ref: panelRef,
@@ -339585,11 +340154,11 @@ var MultiWindowMenu = memo32(function MultiWindowMenu2() {
         ),
         role: "menu",
         children: [
-          /* @__PURE__ */ jsx57("div", { className: "my-2 border-t border-border-subtle" }),
-          /* @__PURE__ */ jsxs51("div", { className: "mb-3", children: [
-            /* @__PURE__ */ jsx57("div", { className: "text-xs text-text-muted mb-1.5 px-1", children: t5("multiWindow.layout") }),
-            /* @__PURE__ */ jsxs51("div", { className: "flex gap-1", children: [
-              /* @__PURE__ */ jsxs51(
+          /* @__PURE__ */ jsx59("div", { className: "my-2 border-t border-border-subtle" }),
+          /* @__PURE__ */ jsxs53("div", { className: "mb-3", children: [
+            /* @__PURE__ */ jsx59("div", { className: "text-xs text-text-muted mb-1.5 px-1", children: t5("multiWindow.layout") }),
+            /* @__PURE__ */ jsxs53("div", { className: "flex gap-1", children: [
+              /* @__PURE__ */ jsxs53(
                 "button",
                 {
                   onClick: () => setMultiSessionRows(1),
@@ -339601,12 +340170,12 @@ var MultiWindowMenu = memo32(function MultiWindowMenu2() {
                   role: "menuitemradio",
                   "aria-checked": multiSessionRows === 1,
                   children: [
-                    /* @__PURE__ */ jsx57(Rows2, { className: "w-3.5 h-3.5" }),
-                    /* @__PURE__ */ jsx57("span", { children: t5("multiWindow.row1") })
+                    /* @__PURE__ */ jsx59(Rows2, { className: "w-3.5 h-3.5" }),
+                    /* @__PURE__ */ jsx59("span", { children: t5("multiWindow.row1") })
                   ]
                 }
               ),
-              /* @__PURE__ */ jsxs51(
+              /* @__PURE__ */ jsxs53(
                 "button",
                 {
                   onClick: () => setMultiSessionRows(2),
@@ -339618,40 +340187,40 @@ var MultiWindowMenu = memo32(function MultiWindowMenu2() {
                   role: "menuitemradio",
                   "aria-checked": multiSessionRows === 2,
                   children: [
-                    /* @__PURE__ */ jsx57(Columns2, { className: "w-3.5 h-3.5" }),
-                    /* @__PURE__ */ jsx57("span", { children: t5("multiWindow.row2") })
+                    /* @__PURE__ */ jsx59(Columns2, { className: "w-3.5 h-3.5" }),
+                    /* @__PURE__ */ jsx59("span", { children: t5("multiWindow.row2") })
                   ]
                 }
               )
             ] })
           ] }),
-          /* @__PURE__ */ jsxs51("div", { children: [
-            /* @__PURE__ */ jsx57("div", { className: "text-xs text-text-muted mb-1.5 px-1", children: t5("multiWindow.cellWidth") }),
-            /* @__PURE__ */ jsxs51("div", { className: "flex items-center gap-2 mb-2", children: [
-              /* @__PURE__ */ jsx57(
+          /* @__PURE__ */ jsxs53("div", { children: [
+            /* @__PURE__ */ jsx59("div", { className: "text-xs text-text-muted mb-1.5 px-1", children: t5("multiWindow.cellWidth") }),
+            /* @__PURE__ */ jsxs53("div", { className: "flex items-center gap-2 mb-2", children: [
+              /* @__PURE__ */ jsx59(
                 "button",
                 {
                   onClick: () => handleAdjustWidth(-25),
                   className: "p-1 rounded text-text-muted hover:text-text-primary hover:bg-background-hover",
                   "aria-label": t5("multiWindow.decreaseWidth"),
-                  children: /* @__PURE__ */ jsx57(Minus, { className: "w-3.5 h-3.5" })
+                  children: /* @__PURE__ */ jsx59(Minus, { className: "w-3.5 h-3.5" })
                 }
               ),
-              /* @__PURE__ */ jsxs51("div", { className: "flex-1 text-center text-sm font-medium tabular-nums", children: [
+              /* @__PURE__ */ jsxs53("div", { className: "flex-1 text-center text-sm font-medium tabular-nums", children: [
                 multiSessionCellWidth,
                 "px"
               ] }),
-              /* @__PURE__ */ jsx57(
+              /* @__PURE__ */ jsx59(
                 "button",
                 {
                   onClick: () => handleAdjustWidth(25),
                   className: "p-1 rounded text-text-muted hover:text-text-primary hover:bg-background-hover",
                   "aria-label": t5("multiWindow.increaseWidth"),
-                  children: /* @__PURE__ */ jsx57(Plus, { className: "w-3.5 h-3.5" })
+                  children: /* @__PURE__ */ jsx59(Plus, { className: "w-3.5 h-3.5" })
                 }
               )
             ] }),
-            /* @__PURE__ */ jsx57("div", { className: "flex gap-1", children: WIDTH_PRESETS.map((width3) => /* @__PURE__ */ jsx57(
+            /* @__PURE__ */ jsx59("div", { className: "flex gap-1", children: WIDTH_PRESETS.map((width3) => /* @__PURE__ */ jsx59(
               "button",
               {
                 onClick: () => handleSelectPreset(width3),
@@ -339674,7 +340243,7 @@ var MultiWindowMenu = memo32(function MultiWindowMenu2() {
 init_i18n();
 init_clsx();
 init_lucide_react();
-import { memo as memo34, useCallback as useCallback31, useState as useState44, useRef as useRef27 } from "react";
+import { memo as memo35, useCallback as useCallback31, useState as useState45, useRef as useRef28 } from "react";
 
 // src/host/Chat/session/NewSessionPanel.tsx
 init_i18n();
@@ -339686,14 +340255,14 @@ init_stores();
 init_misc();
 init_engineDisplay();
 init_engineMetadataStore();
-import { memo as memo33, useCallback as useCallback30, useState as useState43, useRef as useRef26, useEffect as useEffect26, useMemo as useMemo20 } from "react";
-import { createPortal as createPortal2 } from "react-dom";
+import { memo as memo34, useCallback as useCallback30, useState as useState44, useRef as useRef27, useEffect as useEffect27, useMemo as useMemo21 } from "react";
+import { createPortal as createPortal3 } from "react-dom";
 init_sessionConfigStore();
 init_newSessionPrefsService();
 init_types();
 init_modelProfileStore();
-import { jsx as jsx58, jsxs as jsxs52 } from "react/jsx-runtime";
-var NewSessionPanel = memo33(function NewSessionPanel2({
+import { jsx as jsx60, jsxs as jsxs54 } from "react/jsx-runtime";
+var NewSessionPanel = memo34(function NewSessionPanel2({
   getAnchorRect,
   anchorEl = null,
   onClose,
@@ -339705,24 +340274,24 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
   const defaultEngineId = normalizeEngineId(config3?.defaultEngine);
   const workspaces = useWorkspaceStore((state6) => state6.workspaces);
   const currentWorkspaceId = useWorkspaceStore((state6) => state6.currentWorkspaceId);
-  const sortedWorkspaces = useMemo20(() => {
+  const sortedWorkspaces = useMemo21(() => {
     return [...workspaces].sort(
       (a3, b12) => new Date(b12.lastAccessed).getTime() - new Date(a3.lastAccessed).getTime()
     );
   }, [workspaces]);
   const allSessionMetadata = useSessionMetadataList();
-  const [selectedEngineId, setSelectedEngineId] = useState43(defaultEngineId);
+  const [selectedEngineId, setSelectedEngineId] = useState44(defaultEngineId);
   const globalSessionConfig = useSessionConfig2((s3) => s3.config);
   const globalActiveProfileId = useConfigStore((s3) => s3.config?.activeModelProfileId) ?? null;
-  const [providerConfig, setProviderConfig] = useState43(() => ({
+  const [providerConfig, setProviderConfig] = useState44(() => ({
     profileMode: globalSessionConfig.profileMode ?? "profile",
     modelProfileId: globalSessionConfig.modelProfileId || globalActiveProfileId || "",
     model: globalSessionConfig.model
   }));
-  const providerModeRef = useRef26(providerConfig.profileMode ?? "profile");
-  const modelProfileIdRef = useRef26(providerConfig.modelProfileId ?? "");
-  const modelRef = useRef26(providerConfig.model ?? "");
-  useEffect26(() => {
+  const providerModeRef = useRef27(providerConfig.profileMode ?? "profile");
+  const modelProfileIdRef = useRef27(providerConfig.modelProfileId ?? "");
+  const modelRef = useRef27(providerConfig.model ?? "");
+  useEffect27(() => {
     providerModeRef.current = providerConfig.profileMode ?? "profile";
     modelProfileIdRef.current = providerConfig.modelProfileId ?? "";
     modelRef.current = providerConfig.model ?? "";
@@ -339734,17 +340303,17 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
       model: modelRef.current
     });
   };
-  const [searchQuery, setSearchQuery] = useState43("");
-  const [pendingPrimaryId, setPendingPrimaryId] = useState43(null);
-  const [pendingContextIds, setPendingContextIds] = useState43([]);
-  const dropdownRef = useRef26(null);
-  const searchInputRef = useRef26(null);
+  const [searchQuery, setSearchQuery] = useState44("");
+  const [pendingPrimaryId, setPendingPrimaryId] = useState44(null);
+  const [pendingContextIds, setPendingContextIds] = useState44([]);
+  const dropdownRef = useRef27(null);
+  const searchInputRef = useRef27(null);
   const incrementOverlay = useOverlayStore((s3) => s3.increment);
   const decrementOverlay = useOverlayStore((s3) => s3.decrement);
   const claimPopover = useOverlayStore((s3) => s3.claimPopover);
   const releasePopover = useOverlayStore((s3) => s3.releasePopover);
-  const popoverId = useMemo20(() => `new-session-panel-${Math.random().toString(36).slice(2)}`, []);
-  useEffect26(() => {
+  const popoverId = useMemo21(() => `new-session-panel-${Math.random().toString(36).slice(2)}`, []);
+  useEffect27(() => {
     incrementOverlay();
     claimPopover(popoverId);
     return () => {
@@ -339753,7 +340322,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
     };
   }, [incrementOverlay, decrementOverlay, claimPopover, releasePopover, popoverId]);
   const isRightCenter = placement === "right-center";
-  const [panelPos, setPanelPos] = useState43(null);
+  const [panelPos, setPanelPos] = useState44(null);
   const PANEL_WIDTH = 288;
   const PANEL_MARGIN = 8;
   const updatePanelPos = useCallback30(() => {
@@ -339764,7 +340333,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
     const bottom2 = Math.max(PANEL_MARGIN, window.innerHeight - rect2.top + 4);
     setPanelPos({ left: left3, bottom: bottom2 });
   }, [getAnchorRect]);
-  useEffect26(() => {
+  useEffect27(() => {
     if (isRightCenter) return;
     updatePanelPos();
     window.addEventListener("resize", updatePanelPos);
@@ -339774,7 +340343,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
   const filteredWorkspaces = useWorkspaceFilter(sortedWorkspaces, showSearch ? searchQuery : "");
   const canPickContext = sortedWorkspaces.length > 1 && pendingPrimaryId !== null;
   const engineMetadatas = useEngineMetadataStore2((s3) => s3.metadatas);
-  const engineOptions = useMemo20(() => {
+  const engineOptions = useMemo21(() => {
     if (engineMetadatas.length > 0) {
       return engineMetadatas.map((meta3) => ({
         id: meta3.id,
@@ -339787,13 +340356,13 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
       { id: "simple-ai", label: "Simple", Icon: Zap }
     ];
   }, [engineMetadatas]);
-  useEffect26(() => {
+  useEffect27(() => {
     if (!engineOptions.some((o2) => o2.id === selectedEngineId)) {
       setSelectedEngineId(defaultEngineId);
     }
   }, [engineOptions, selectedEngineId, defaultEngineId]);
-  const restoredEngineRef = useRef26(null);
-  useEffect26(() => {
+  const restoredEngineRef = useRef27(null);
+  useEffect27(() => {
     if (restoredEngineRef.current === selectedEngineId) return;
     restoredEngineRef.current = selectedEngineId;
     let cancelled = false;
@@ -339822,7 +340391,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
       cancelled = true;
     };
   }, [selectedEngineId]);
-  useEffect26(() => {
+  useEffect27(() => {
     const handleClickOutside = (e3) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e3.target) && !(anchorEl && anchorEl.contains(e3.target))) {
         onClose();
@@ -339891,8 +340460,8 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
     // top/bottom 双 0 + margin auto + fit-content 是无 transform 的等价居中
     { right: 12, top: 0, bottom: 0, height: "fit-content", marginTop: "auto", marginBottom: "auto" }
   ) : panelPos ? { left: panelPos.left, bottom: panelPos.bottom } : void 0;
-  return createPortal2(
-    /* @__PURE__ */ jsxs52(
+  return createPortal3(
+    /* @__PURE__ */ jsxs54(
       "div",
       {
         ref: dropdownRef,
@@ -339907,9 +340476,9 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
         ),
         style: panelStyle,
         children: [
-          /* @__PURE__ */ jsxs52("div", { className: "shrink-0 px-2 pb-2 border-b border-border-subtle", children: [
-            /* @__PURE__ */ jsx58("div", { className: "px-1 py-1 text-[11px] font-medium text-text-tertiary", children: t5("newSession.aiEngine") }),
-            /* @__PURE__ */ jsx58("div", { className: "grid grid-cols-2 gap-1", children: engineOptions.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs52(
+          /* @__PURE__ */ jsxs54("div", { className: "shrink-0 px-2 pb-2 border-b border-border-subtle", children: [
+            /* @__PURE__ */ jsx60("div", { className: "px-1 py-1 text-[11px] font-medium text-text-tertiary", children: t5("newSession.aiEngine") }),
+            /* @__PURE__ */ jsx60("div", { className: "grid grid-cols-2 gap-1", children: engineOptions.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs54(
               "button",
               {
                 onClick: () => {
@@ -339921,13 +340490,13 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
                 ),
                 title: getEngineFullName(id38),
                 children: [
-                  /* @__PURE__ */ jsx58(Icon2, { className: "w-3.5 h-3.5" }),
-                  /* @__PURE__ */ jsx58("span", { children: label })
+                  /* @__PURE__ */ jsx60(Icon2, { className: "w-3.5 h-3.5" }),
+                  /* @__PURE__ */ jsx60("span", { children: label })
                 ]
               },
               id38
             )) }),
-            /* @__PURE__ */ jsx58("div", { className: "px-1 pt-2 mt-2 border-t border-border-subtle", children: /* @__PURE__ */ jsx58(
+            /* @__PURE__ */ jsx60("div", { className: "px-1 pt-2 mt-2 border-t border-border-subtle", children: /* @__PURE__ */ jsx60(
               SessionConfigSelector,
               {
                 config: providerConfig,
@@ -339938,7 +340507,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
               }
             ) })
           ] }),
-          /* @__PURE__ */ jsxs52(
+          /* @__PURE__ */ jsxs54(
             "button",
             {
               onClick: handleCreateNoWorkspace,
@@ -339948,15 +340517,15 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
                 "transition-colors"
               ),
               children: [
-                /* @__PURE__ */ jsx58(Folder, { className: "w-4 h-4 text-text-muted" }),
-                /* @__PURE__ */ jsx58("span", { children: t5("newSession.noWorkspace") })
+                /* @__PURE__ */ jsx60(Folder, { className: "w-4 h-4 text-text-muted" }),
+                /* @__PURE__ */ jsx60("span", { children: t5("newSession.noWorkspace") })
               ]
             }
           ),
-          sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx58("div", { className: "my-1 border-t border-border-subtle shrink-0" }),
-          showSearch && /* @__PURE__ */ jsx58("div", { className: "px-2 py-1 shrink-0", children: /* @__PURE__ */ jsxs52("div", { className: "relative", children: [
-            /* @__PURE__ */ jsx58("div", { className: "absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none", children: /* @__PURE__ */ jsx58(Search, { className: "w-3 h-3 text-text-tertiary" }) }),
-            /* @__PURE__ */ jsx58(
+          sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx60("div", { className: "my-1 border-t border-border-subtle shrink-0" }),
+          showSearch && /* @__PURE__ */ jsx60("div", { className: "px-2 py-1 shrink-0", children: /* @__PURE__ */ jsxs54("div", { className: "relative", children: [
+            /* @__PURE__ */ jsx60("div", { className: "absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none", children: /* @__PURE__ */ jsx60(Search, { className: "w-3 h-3 text-text-tertiary" }) }),
+            /* @__PURE__ */ jsx60(
               "input",
               {
                 ref: searchInputRef,
@@ -339969,13 +340538,13 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
               }
             )
           ] }) }),
-          /* @__PURE__ */ jsxs52("div", { className: "max-h-[260px] min-h-0 overflow-y-auto shrink", children: [
-            filteredWorkspaces.length === 0 && sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx58("div", { className: "py-4 text-center text-xs text-text-tertiary", children: t5("newSession.noResults", "\u65E0\u5339\u914D\u5DE5\u4F5C\u533A") }),
+          /* @__PURE__ */ jsxs54("div", { className: "max-h-[260px] min-h-0 overflow-y-auto shrink", children: [
+            filteredWorkspaces.length === 0 && sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx60("div", { className: "py-4 text-center text-xs text-text-tertiary", children: t5("newSession.noResults", "\u65E0\u5339\u914D\u5DE5\u4F5C\u533A") }),
             filteredWorkspaces.map((workspace) => {
               const isPrimary = workspace.id === pendingPrimaryId;
               const isContext = pendingContextIds.includes(workspace.id);
               const showContextBtn = canPickContext && workspace.id !== pendingPrimaryId;
-              return /* @__PURE__ */ jsxs52(
+              return /* @__PURE__ */ jsxs54(
                 "div",
                 {
                   className: clsx(
@@ -339984,8 +340553,8 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
                     workspace.id === currentWorkspaceId && !isPrimary && "bg-background-hover/50"
                   ),
                   children: [
-                    workspace.id === currentWorkspaceId && /* @__PURE__ */ jsx58("div", { className: "absolute left-0 top-0 bottom-0 w-0.5 bg-primary/40" }),
-                    /* @__PURE__ */ jsxs52(
+                    workspace.id === currentWorkspaceId && /* @__PURE__ */ jsx60("div", { className: "absolute left-0 top-0 bottom-0 w-0.5 bg-primary/40" }),
+                    /* @__PURE__ */ jsxs54(
                       "button",
                       {
                         onClick: () => setPendingPrimaryId(workspace.id),
@@ -339994,19 +340563,19 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
                           isPrimary ? "text-primary" : "text-text-secondary hover:text-text-primary hover:bg-background-hover"
                         ),
                         children: [
-                          /* @__PURE__ */ jsxs52("div", { className: "flex items-center gap-1.5 pr-8", children: [
-                            isPrimary && /* @__PURE__ */ jsx58(Check, { className: "w-3.5 h-3.5 shrink-0" }),
-                            /* @__PURE__ */ jsx58(Folder, { className: clsx("w-3.5 h-3.5 shrink-0", isPrimary ? "text-primary" : "text-text-muted") }),
-                            /* @__PURE__ */ jsx58("span", { className: "font-medium truncate", children: workspace.name })
+                          /* @__PURE__ */ jsxs54("div", { className: "flex items-center gap-1.5 pr-8", children: [
+                            isPrimary && /* @__PURE__ */ jsx60(Check, { className: "w-3.5 h-3.5 shrink-0" }),
+                            /* @__PURE__ */ jsx60(Folder, { className: clsx("w-3.5 h-3.5 shrink-0", isPrimary ? "text-primary" : "text-text-muted") }),
+                            /* @__PURE__ */ jsx60("span", { className: "font-medium truncate", children: workspace.name })
                           ] }),
-                          /* @__PURE__ */ jsx58("div", { className: clsx(
+                          /* @__PURE__ */ jsx60("div", { className: clsx(
                             "text-xs truncate mt-0.5 pl-5",
                             isPrimary ? "text-primary/70" : "text-text-tertiary"
                           ), children: workspace.path })
                         ]
                       }
                     ),
-                    showContextBtn && /* @__PURE__ */ jsx58(
+                    showContextBtn && /* @__PURE__ */ jsx60(
                       "button",
                       {
                         onClick: (e3) => {
@@ -340018,7 +340587,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
                           isContext ? "text-primary bg-primary/10" : "text-text-tertiary hover:text-primary hover:bg-background-hover opacity-0 group-hover:opacity-100"
                         ),
                         title: isContext ? t5("newSession.removeContext") : t5("newSession.addContext"),
-                        children: isContext ? /* @__PURE__ */ jsx58(Check, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx58(Plus, { className: "w-3.5 h-3.5" })
+                        children: isContext ? /* @__PURE__ */ jsx60(Check, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx60(Plus, { className: "w-3.5 h-3.5" })
                       }
                     )
                   ]
@@ -340027,12 +340596,12 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
               );
             })
           ] }),
-          /* @__PURE__ */ jsx58("div", { className: "border-t border-border-subtle px-2 py-1.5 shrink-0", children: pendingPrimaryId ? /* @__PURE__ */ jsxs52("div", { className: "flex items-center justify-between gap-2", children: [
-            /* @__PURE__ */ jsxs52("span", { className: "flex items-center gap-1 text-[11px] text-text-tertiary truncate", children: [
-              /* @__PURE__ */ jsx58(Link, { className: "w-3 h-3 shrink-0" }),
+          /* @__PURE__ */ jsx60("div", { className: "border-t border-border-subtle px-2 py-1.5 shrink-0", children: pendingPrimaryId ? /* @__PURE__ */ jsxs54("div", { className: "flex items-center justify-between gap-2", children: [
+            /* @__PURE__ */ jsxs54("span", { className: "flex items-center gap-1 text-[11px] text-text-tertiary truncate", children: [
+              /* @__PURE__ */ jsx60(Link, { className: "w-3 h-3 shrink-0" }),
               t5("newSession.contextCount", { count: pendingContextIds.length })
             ] }),
-            /* @__PURE__ */ jsx58(
+            /* @__PURE__ */ jsx60(
               "button",
               {
                 onClick: handleCreateWithWorkspace,
@@ -340043,7 +340612,7 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
                 children: t5("newSession.create")
               }
             )
-          ] }) : /* @__PURE__ */ jsx58("div", { className: "text-[11px] text-text-tertiary text-center py-0.5", children: t5("newSession.selectPrimaryHint") }) })
+          ] }) : /* @__PURE__ */ jsx60("div", { className: "text-[11px] text-text-tertiary text-center py-0.5", children: t5("newSession.selectPrimaryHint") }) })
         ]
       }
     ),
@@ -340052,14 +340621,14 @@ var NewSessionPanel = memo33(function NewSessionPanel2({
 });
 
 // src/host/Chat/session/NewSessionButton.tsx
-import { jsx as jsx59, jsxs as jsxs53 } from "react/jsx-runtime";
-var NewSessionButton = memo34(function NewSessionButton2() {
+import { jsx as jsx61, jsxs as jsxs55 } from "react/jsx-runtime";
+var NewSessionButton = memo35(function NewSessionButton2() {
   const { t: t5 } = useTranslation("chat");
-  const [isOpen, setIsOpen] = useState44(false);
-  const buttonRef = useRef27(null);
+  const [isOpen, setIsOpen] = useState45(false);
+  const buttonRef = useRef28(null);
   const handleClose = useCallback31(() => setIsOpen(false), []);
-  return /* @__PURE__ */ jsxs53("div", { className: "relative", children: [
-    /* @__PURE__ */ jsx59(
+  return /* @__PURE__ */ jsxs55("div", { className: "relative", children: [
+    /* @__PURE__ */ jsx61(
       "button",
       {
         ref: buttonRef,
@@ -340069,10 +340638,10 @@ var NewSessionButton = memo34(function NewSessionButton2() {
           isOpen ? "bg-primary/10 text-primary" : "text-text-muted hover:text-text-primary hover:bg-background-hover"
         ),
         title: t5("newSession.title"),
-        children: /* @__PURE__ */ jsx59(Plus, { className: "w-4 h-4" })
+        children: /* @__PURE__ */ jsx61(Plus, { className: "w-4 h-4" })
       }
     ),
-    isOpen && /* @__PURE__ */ jsx59(
+    isOpen && /* @__PURE__ */ jsx61(
       NewSessionPanel,
       {
         getAnchorRect: () => buttonRef.current?.getBoundingClientRect() ?? null,
@@ -340088,54 +340657,14 @@ init_stores();
 init_sessionDirectoryStore();
 
 // src/QuickSwitchPanel/QuickSwitchPanel.tsx
-import { memo as memo39, useState as useState49, useCallback as useCallback34, useRef as useRef31, useEffect as useEffect30, useMemo as useMemo24 } from "react";
-import { createPortal as createPortal5 } from "react-dom";
-
-// src/shims/utils.ts
-init_uuid();
-init_path();
-
-// src/shims/engineCapabilities.ts
-init_stores();
-
-// src/shims/utils.ts
-init_diffExtractor();
-init_patchParser();
-init_messageCompactor();
-init_path();
-init_clsx();
-function mkLogger(scope) {
-  const emit5 = (level, msg, args) => {
-    if (level === "debug") return;
-    const text5 = `[chat-desk] ${scope} ${msg}`.trim();
-    console[level === "warn" ? "warn" : level === "error" ? "error" : "log"](text5, ...args);
-  };
-  return {
-    debug: (m4, ...a3) => emit5("debug", m4, a3),
-    info: (m4, ...a3) => emit5("info", m4, a3),
-    warn: (m4, ...a3) => emit5("warn", m4, a3),
-    error: (m4, ...a3) => emit5("error", m4, a3)
-  };
-}
-var loggers = /* @__PURE__ */ new Map();
-function createLogger2(scope) {
-  let lg = loggers.get(scope);
-  if (!lg) {
-    lg = mkLogger(scope);
-    loggers.set(scope, lg);
-  }
-  return lg;
-}
-var logger2 = createLogger2("utils");
-function cn2(...inputs) {
-  return clsx(inputs);
-}
+import { memo as memo40, useState as useState50, useCallback as useCallback34, useRef as useRef32, useEffect as useEffect31, useMemo as useMemo25 } from "react";
+import { createPortal as createPortal6 } from "react-dom";
 
 // src/QuickSwitchPanel/QuickSwitchTrigger.tsx
-import { memo as memo35 } from "react";
+import { memo as memo36 } from "react";
 
 // src/QuickSwitchPanel/StatusSymbol.tsx
-import { jsx as jsx60, jsxs as jsxs54 } from "react/jsx-runtime";
+import { jsx as jsx62, jsxs as jsxs56 } from "react/jsx-runtime";
 var sizeConfig = {
   sm: {
     container: "w-3 h-3",
@@ -340164,8 +340693,8 @@ function StatusSymbol({ status, size: size4 = "sm", className }) {
   const { glow } = statusConfig[status];
   switch (status) {
     case "running":
-      return /* @__PURE__ */ jsxs54("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: [
-        /* @__PURE__ */ jsx60(
+      return /* @__PURE__ */ jsxs56("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: [
+        /* @__PURE__ */ jsx62(
           "div",
           {
             className: cn2(
@@ -340178,11 +340707,11 @@ function StatusSymbol({ status, size: size4 = "sm", className }) {
             style: { animationDuration: "2s" }
           }
         ),
-        /* @__PURE__ */ jsx60("div", { className: cn2(config3.dotSize, "rounded-full bg-success absolute", glow) })
+        /* @__PURE__ */ jsx62("div", { className: cn2(config3.dotSize, "rounded-full bg-success absolute", glow) })
       ] });
     case "waiting":
-      return /* @__PURE__ */ jsxs54("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: [
-        /* @__PURE__ */ jsx60(
+      return /* @__PURE__ */ jsxs56("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: [
+        /* @__PURE__ */ jsx62(
           "div",
           {
             className: cn2(
@@ -340193,7 +340722,7 @@ function StatusSymbol({ status, size: size4 = "sm", className }) {
             )
           }
         ),
-        /* @__PURE__ */ jsx60(
+        /* @__PURE__ */ jsx62(
           "div",
           {
             className: cn2(
@@ -340206,7 +340735,7 @@ function StatusSymbol({ status, size: size4 = "sm", className }) {
         )
       ] });
     case "error":
-      return /* @__PURE__ */ jsx60("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: /* @__PURE__ */ jsx60(
+      return /* @__PURE__ */ jsx62("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: /* @__PURE__ */ jsx62(
         "div",
         {
           className: cn2(
@@ -340218,7 +340747,7 @@ function StatusSymbol({ status, size: size4 = "sm", className }) {
         }
       ) });
     case "background-running":
-      return /* @__PURE__ */ jsx60("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: /* @__PURE__ */ jsx60(
+      return /* @__PURE__ */ jsx62("div", { className: cn2(config3.container, "relative flex items-center justify-center", className), children: /* @__PURE__ */ jsx62(
         "div",
         {
           className: cn2(
@@ -340232,19 +340761,19 @@ function StatusSymbol({ status, size: size4 = "sm", className }) {
       ) });
     case "idle":
     default:
-      return /* @__PURE__ */ jsx60("div", { className: cn2(config3.container, "flex items-center justify-center", className), children: /* @__PURE__ */ jsx60("div", { className: cn2(config3.lineWidth, "rounded-full bg-text-muted") }) });
+      return /* @__PURE__ */ jsx62("div", { className: cn2(config3.container, "flex items-center justify-center", className), children: /* @__PURE__ */ jsx62("div", { className: cn2(config3.lineWidth, "rounded-full bg-text-muted") }) });
   }
 }
 
 // src/QuickSwitchPanel/QuickSwitchTrigger.tsx
-import { jsx as jsx61, jsxs as jsxs55 } from "react/jsx-runtime";
-var QuickSwitchTrigger = memo35(function QuickSwitchTrigger2({
+import { jsx as jsx63, jsxs as jsxs57 } from "react/jsx-runtime";
+var QuickSwitchTrigger = memo36(function QuickSwitchTrigger2({
   status,
   isHovering,
   onMouseEnter,
   onMouseLeave
 }) {
-  return /* @__PURE__ */ jsxs55(
+  return /* @__PURE__ */ jsxs57(
     "div",
     {
       className: cn2(
@@ -340260,7 +340789,7 @@ var QuickSwitchTrigger = memo35(function QuickSwitchTrigger2({
       onMouseEnter,
       onMouseLeave,
       children: [
-        /* @__PURE__ */ jsx61(
+        /* @__PURE__ */ jsx63(
           "div",
           {
             className: cn2(
@@ -340277,7 +340806,7 @@ var QuickSwitchTrigger = memo35(function QuickSwitchTrigger2({
             )
           }
         ),
-        /* @__PURE__ */ jsx61(
+        /* @__PURE__ */ jsx63(
           "div",
           {
             className: cn2(
@@ -340289,7 +340818,7 @@ var QuickSwitchTrigger = memo35(function QuickSwitchTrigger2({
             )
           }
         ),
-        /* @__PURE__ */ jsxs55(
+        /* @__PURE__ */ jsxs57(
           "div",
           {
             className: cn2(
@@ -340299,10 +340828,10 @@ var QuickSwitchTrigger = memo35(function QuickSwitchTrigger2({
               isHovering && "scale-110"
             ),
             children: [
-              /* @__PURE__ */ jsx61(StatusSymbol, { status, size: "sm" }),
-              /* @__PURE__ */ jsxs55("div", { className: "flex items-center gap-0.5", children: [
-                /* @__PURE__ */ jsx61("div", { className: "w-0 h-0 border-t-[3px] border-t-transparent border-r-[3px] border-r-text-muted border-b-[3px] border-b-transparent" }),
-                /* @__PURE__ */ jsx61("div", { className: "w-0 h-0 border-t-[3px] border-t-transparent border-l-[3px] border-l-text-muted border-b-[3px] border-b-transparent" })
+              /* @__PURE__ */ jsx63(StatusSymbol, { status, size: "sm" }),
+              /* @__PURE__ */ jsxs57("div", { className: "flex items-center gap-0.5", children: [
+                /* @__PURE__ */ jsx63("div", { className: "w-0 h-0 border-t-[3px] border-t-transparent border-r-[3px] border-r-text-muted border-b-[3px] border-b-transparent" }),
+                /* @__PURE__ */ jsx63("div", { className: "w-0 h-0 border-t-[3px] border-t-transparent border-l-[3px] border-l-text-muted border-b-[3px] border-b-transparent" })
               ] })
             ]
           }
@@ -340314,8 +340843,8 @@ var QuickSwitchTrigger = memo35(function QuickSwitchTrigger2({
 
 // src/QuickSwitchPanel/QuickSwitchContent.tsx
 init_i18n();
-import { memo as memo37, useMemo as useMemo21, useState as useState46, useRef as useRef28, useEffect as useEffect27, useLayoutEffect as useLayoutEffect2 } from "react";
-import { createPortal as createPortal3 } from "react-dom";
+import { memo as memo38, useMemo as useMemo22, useState as useState47, useRef as useRef29, useEffect as useEffect28, useLayoutEffect as useLayoutEffect2 } from "react";
+import { createPortal as createPortal4 } from "react-dom";
 init_lucide_react();
 
 // src/Session/RemoteSessionsPanel.tsx
@@ -340323,7 +340852,7 @@ init_esm();
 init_i18n();
 init_lucide_react();
 init_deps();
-import { memo as memo36, useState as useState45 } from "react";
+import { memo as memo37, useState as useState46 } from "react";
 
 // src/remoteSessionFollower.ts
 init_esm();
@@ -340332,7 +340861,7 @@ init_logger();
 function sessionManager() {
   return window.__POLARIS_APP_CORE__?.stores?.sessionStoreManager;
 }
-var log37 = createLogger("RemoteSessionFollower");
+var log38 = createLogger("RemoteSessionFollower");
 var DISCOVERY_INTERVAL_MS = 2e3;
 var store3 = createStore((set5, get6) => ({
   sessions: /* @__PURE__ */ new Map(),
@@ -340343,7 +340872,7 @@ var store3 = createStore((set5, get6) => ({
     set5({ followerStarted: true });
     void discoveryLoop();
     attachLiveListener();
-    log37.info("\u8DE8\u7AEF\u4F1A\u8BDD\u8DDF\u968F\u5DF2\u542F\u52A8");
+    log38.info("\u8DE8\u7AEF\u4F1A\u8BDD\u8DDF\u968F\u5DF2\u542F\u52A8");
   },
   stopFollower: () => {
     set5({ followerStarted: false });
@@ -340372,10 +340901,10 @@ async function discoveryLoop() {
     lastSeq = 0;
   }
   await seedRunningSessions().catch(
-    (e3) => log37.warn("running \u4F1A\u8BDD\u5168\u91CF\u8865\u9F50\u5931\u8D25", { error: String(e3) })
+    (e3) => log38.warn("running \u4F1A\u8BDD\u5168\u91CF\u8865\u9F50\u5931\u8D25", { error: String(e3) })
   );
   discoveryTimer = setInterval(() => {
-    void pollOnce().catch((e3) => log37.debug("\u53D1\u73B0\u8F6E\u8BE2\u5931\u8D25", { error: String(e3) }));
+    void pollOnce().catch((e3) => log38.debug("\u53D1\u73B0\u8F6E\u8BE2\u5931\u8D25", { error: String(e3) }));
   }, DISCOVERY_INTERVAL_MS);
 }
 async function seedRunningSessions() {
@@ -340505,7 +341034,7 @@ async function backfillSession(conversationId) {
       upsertSession(conversationId, { backfilled: true });
     }
   } catch (e3) {
-    log37.warn("\u56DE\u8865\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+    log38.warn("\u56DE\u8865\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
   }
 }
 function entryToFollowerMessage(e3) {
@@ -340659,11 +341188,11 @@ function applyLiveEvent(conversationId, s3, payload) {
 async function joinRemoteSession(conversationId) {
   const s3 = store3.getState().sessions.get(conversationId);
   if (!s3) {
-    log37.warn("\u52A0\u5165\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0D\u5728\u8DDF\u968F\u5217\u8868", { conversationId });
+    log38.warn("\u52A0\u5165\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0D\u5728\u8DDF\u968F\u5217\u8868", { conversationId });
     return null;
   }
   if (isLocalConversation(conversationId)) {
-    log37.info("\u8BE5\u4F1A\u8BDD\u5DF2\u5728\u672C\u7AEF\uFF0C\u76F4\u63A5\u5207\u6362", { conversationId });
+    log38.info("\u8BE5\u4F1A\u8BDD\u5DF2\u5728\u672C\u7AEF\uFF0C\u76F4\u63A5\u5207\u6362", { conversationId });
     return null;
   }
   try {
@@ -340723,17 +341252,17 @@ async function joinRemoteSession(conversationId) {
           }
         }
       } catch (e3) {
-        log37.warn("\u52A0\u5165\u4F1A\u8BDD\u7684\u6D41\u5F0F\u72B6\u6001\u6821\u6B63\u5931\u8D25", {
+        log38.warn("\u52A0\u5165\u4F1A\u8BDD\u7684\u6D41\u5F0F\u72B6\u6001\u6821\u6B63\u5931\u8D25", {
           conversationId,
           error: e3 instanceof Error ? e3.message : String(e3)
         });
       }
     }
     removeFollowerEntry(conversationId);
-    log37.info("\u8FDC\u7AEF\u4F1A\u8BDD\u5DF2\u52A0\u5165\u672C\u7AEF\u7A97\u53E3", { conversationId, sessionId, title: title2, engineId });
+    log38.info("\u8FDC\u7AEF\u4F1A\u8BDD\u5DF2\u52A0\u5165\u672C\u7AEF\u7A97\u53E3", { conversationId, sessionId, title: title2, engineId });
     return sessionId;
   } catch (e3) {
-    log37.error("\u52A0\u5165\u8FDC\u7AEF\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), {
+    log38.error("\u52A0\u5165\u8FDC\u7AEF\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), {
       conversationId
     });
     return null;
@@ -340766,11 +341295,11 @@ function isListableRemote2(s3) {
 }
 
 // src/Session/RemoteSessionsPanel.tsx
-import { jsx as jsx62, jsxs as jsxs56 } from "react/jsx-runtime";
-var RemoteSessionsNavSection = memo36(function RemoteSessionsNavSection2() {
+import { jsx as jsx64, jsxs as jsxs58 } from "react/jsx-runtime";
+var RemoteSessionsNavSection = memo37(function RemoteSessionsNavSection2() {
   const { t: t5 } = useTranslation("chat");
   const sessions = useStore(remoteSessionFollower2.store, (s3) => s3.sessions);
-  const [joiningId, setJoiningId] = useState45(null);
+  const [joiningId, setJoiningId] = useState46(null);
   const list = [...sessions.values()].filter(isListableRemote2).sort((a3, b12) => b12.startedAt - a3.startedAt);
   if (list.length === 0) return null;
   const handleJoin = async (conversationId) => {
@@ -340793,32 +341322,32 @@ var RemoteSessionsNavSection = memo36(function RemoteSessionsNavSection2() {
       setJoiningId(null);
     }
   };
-  return /* @__PURE__ */ jsxs56("div", { className: "border-b border-border-subtle bg-warning/[0.04]", children: [
-    /* @__PURE__ */ jsxs56("div", { className: "flex items-center gap-1.5 px-3 pt-2.5 pb-1 text-[10.5px] font-semibold text-warning", children: [
-      /* @__PURE__ */ jsx62(Radio, { className: "w-3 h-3" }),
+  return /* @__PURE__ */ jsxs58("div", { className: "border-b border-border-subtle bg-warning/[0.04]", children: [
+    /* @__PURE__ */ jsxs58("div", { className: "flex items-center gap-1.5 px-3 pt-2.5 pb-1 text-[10.5px] font-semibold text-warning", children: [
+      /* @__PURE__ */ jsx64(Radio, { className: "w-3 h-3" }),
       t5("remoteSession.navTitle", "\u5176\u4ED6\u8BBE\u5907\u8FDB\u884C\u4E2D"),
       " (",
       list.length,
       ")"
     ] }),
-    list.map((s3) => /* @__PURE__ */ jsxs56(
+    list.map((s3) => /* @__PURE__ */ jsxs58(
       "div",
       {
         className: "mx-2 mb-2 rounded-lg border border-warning/30 bg-background-surface p-2.5",
         children: [
-          /* @__PURE__ */ jsxs56("div", { className: "flex items-center gap-1.5 min-w-0", children: [
-            s3.status === "running" ? /* @__PURE__ */ jsx62("span", { className: "w-1.5 h-1.5 rounded-full bg-warning animate-pulse shrink-0" }) : /* @__PURE__ */ jsx62("span", { className: "w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" }),
-            /* @__PURE__ */ jsx62("span", { className: "text-xs font-medium text-text-primary truncate flex-1", children: shortNavTitle(s3.conversationId) }),
-            s3.status !== "running" && /* @__PURE__ */ jsx62("span", { className: "text-[10px] text-text-muted shrink-0", children: t5("remoteSession.ended", "\u5DF2\u7ED3\u675F") })
+          /* @__PURE__ */ jsxs58("div", { className: "flex items-center gap-1.5 min-w-0", children: [
+            s3.status === "running" ? /* @__PURE__ */ jsx64("span", { className: "w-1.5 h-1.5 rounded-full bg-warning animate-pulse shrink-0" }) : /* @__PURE__ */ jsx64("span", { className: "w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" }),
+            /* @__PURE__ */ jsx64("span", { className: "text-xs font-medium text-text-primary truncate flex-1", children: shortNavTitle(s3.conversationId) }),
+            s3.status !== "running" && /* @__PURE__ */ jsx64("span", { className: "text-[10px] text-text-muted shrink-0", children: t5("remoteSession.ended", "\u5DF2\u7ED3\u675F") })
           ] }),
-          /* @__PURE__ */ jsxs56("p", { className: "text-[10.5px] text-text-tertiary mt-0.5 ml-3", children: [
+          /* @__PURE__ */ jsxs58("p", { className: "text-[10.5px] text-text-tertiary mt-0.5 ml-3", children: [
             s3.engineId ? `${s3.engineId} \xB7 ` : "",
             t5("remoteSession.startedAt", "\u59CB\u4E8E"),
             " ",
             relativeTime(s3.startedAt)
           ] }),
-          /* @__PURE__ */ jsxs56("div", { className: "flex gap-1.5 ml-3 mt-1.5", children: [
-            /* @__PURE__ */ jsx62(
+          /* @__PURE__ */ jsxs58("div", { className: "flex gap-1.5 ml-3 mt-1.5", children: [
+            /* @__PURE__ */ jsx64(
               "button",
               {
                 onClick: () => void remoteSessionFollower2.openSession(s3.conversationId),
@@ -340826,14 +341355,14 @@ var RemoteSessionsNavSection = memo36(function RemoteSessionsNavSection2() {
                 children: t5("remoteSession.view", "\u67E5\u770B")
               }
             ),
-            /* @__PURE__ */ jsxs56(
+            /* @__PURE__ */ jsxs58(
               "button",
               {
                 onClick: () => void handleJoin(s3.conversationId),
                 disabled: joiningId === s3.conversationId,
                 className: "px-2.5 py-1 rounded-md text-[11px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-1",
                 children: [
-                  joiningId === s3.conversationId ? /* @__PURE__ */ jsx62(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx62(LogIn, { className: "w-3 h-3" }),
+                  joiningId === s3.conversationId ? /* @__PURE__ */ jsx64(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx64(LogIn, { className: "w-3 h-3" }),
                   t5("remoteSession.join", "\u52A0\u5165\u7A97\u53E3")
                 ]
               }
@@ -340854,10 +341383,10 @@ function relativeTime(ts2) {
   if (diff2 < 36e5) return `${Math.floor(diff2 / 6e4)} \u5206\u949F\u524D`;
   return new Date(ts2).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
 }
-var RemoteSessionsQuickSection = memo36(function RemoteSessionsQuickSection2() {
+var RemoteSessionsQuickSection = memo37(function RemoteSessionsQuickSection2() {
   const { t: t5 } = useTranslation("chat");
   const sessions = useStore(remoteSessionFollower2.store, (s3) => s3.sessions);
-  const [joiningId, setJoiningId] = useState45(null);
+  const [joiningId, setJoiningId] = useState46(null);
   const list = [...sessions.values()].filter(isListableRemote2).sort((a3, b12) => b12.startedAt - a3.startedAt);
   if (list.length === 0) return null;
   const handleJoin = async (conversationId) => {
@@ -340880,32 +341409,32 @@ var RemoteSessionsQuickSection = memo36(function RemoteSessionsQuickSection2() {
       setJoiningId(null);
     }
   };
-  return /* @__PURE__ */ jsxs56("div", { className: "px-2 pt-2 pb-1 border-b border-border-subtle/20", children: [
-    /* @__PURE__ */ jsxs56("div", { className: "flex items-center gap-1.5 text-[10.5px] font-semibold text-warning mb-1.5", children: [
-      /* @__PURE__ */ jsx62(Radio, { className: "w-3 h-3" }),
+  return /* @__PURE__ */ jsxs58("div", { className: "px-2 pt-2 pb-1 border-b border-border-subtle/20", children: [
+    /* @__PURE__ */ jsxs58("div", { className: "flex items-center gap-1.5 text-[10.5px] font-semibold text-warning mb-1.5", children: [
+      /* @__PURE__ */ jsx64(Radio, { className: "w-3 h-3" }),
       t5("remoteSession.navTitle", "\u5176\u4ED6\u8BBE\u5907\u8FDB\u884C\u4E2D"),
       " (",
       list.length,
       ")"
     ] }),
-    /* @__PURE__ */ jsx62("div", { className: "space-y-1.5 max-h-56 overflow-y-auto", children: list.map((s3) => /* @__PURE__ */ jsxs56(
+    /* @__PURE__ */ jsx64("div", { className: "space-y-1.5 max-h-56 overflow-y-auto", children: list.map((s3) => /* @__PURE__ */ jsxs58(
       "div",
       {
         className: "rounded-lg border border-warning/25 bg-background-surface px-2.5 py-2",
         children: [
-          /* @__PURE__ */ jsxs56("div", { className: "flex items-center gap-1.5 min-w-0", children: [
-            s3.status === "running" ? /* @__PURE__ */ jsx62("span", { className: "w-1.5 h-1.5 rounded-full bg-warning animate-pulse shrink-0" }) : /* @__PURE__ */ jsx62("span", { className: "w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" }),
-            /* @__PURE__ */ jsx62("span", { className: "text-[11.5px] font-medium text-text-primary truncate flex-1", children: shortNavTitle(s3.conversationId) }),
-            s3.status !== "running" && /* @__PURE__ */ jsx62("span", { className: "text-[9.5px] text-text-muted shrink-0", children: t5("remoteSession.ended", "\u5DF2\u7ED3\u675F") })
+          /* @__PURE__ */ jsxs58("div", { className: "flex items-center gap-1.5 min-w-0", children: [
+            s3.status === "running" ? /* @__PURE__ */ jsx64("span", { className: "w-1.5 h-1.5 rounded-full bg-warning animate-pulse shrink-0" }) : /* @__PURE__ */ jsx64("span", { className: "w-1.5 h-1.5 rounded-full bg-text-muted shrink-0" }),
+            /* @__PURE__ */ jsx64("span", { className: "text-[11.5px] font-medium text-text-primary truncate flex-1", children: shortNavTitle(s3.conversationId) }),
+            s3.status !== "running" && /* @__PURE__ */ jsx64("span", { className: "text-[9.5px] text-text-muted shrink-0", children: t5("remoteSession.ended", "\u5DF2\u7ED3\u675F") })
           ] }),
-          /* @__PURE__ */ jsxs56("p", { className: "text-[10px] text-text-tertiary mt-0.5 ml-3", children: [
+          /* @__PURE__ */ jsxs58("p", { className: "text-[10px] text-text-tertiary mt-0.5 ml-3", children: [
             s3.engineId ? `${s3.engineId} \xB7 ` : "",
             t5("remoteSession.startedAt", "\u59CB\u4E8E"),
             " ",
             relativeTime(s3.startedAt)
           ] }),
-          /* @__PURE__ */ jsxs56("div", { className: "flex gap-1.5 ml-3 mt-1.5", children: [
-            /* @__PURE__ */ jsx62(
+          /* @__PURE__ */ jsxs58("div", { className: "flex gap-1.5 ml-3 mt-1.5", children: [
+            /* @__PURE__ */ jsx64(
               "button",
               {
                 onClick: () => void remoteSessionFollower2.openSession(s3.conversationId),
@@ -340913,14 +341442,14 @@ var RemoteSessionsQuickSection = memo36(function RemoteSessionsQuickSection2() {
                 children: t5("remoteSession.view", "\u67E5\u770B")
               }
             ),
-            /* @__PURE__ */ jsxs56(
+            /* @__PURE__ */ jsxs58(
               "button",
               {
                 onClick: () => void handleJoin(s3.conversationId),
                 disabled: joiningId === s3.conversationId,
                 className: "px-2 py-0.5 rounded text-[10.5px] font-semibold bg-primary text-white hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed transition-colors flex items-center gap-1",
                 children: [
-                  joiningId === s3.conversationId ? /* @__PURE__ */ jsx62(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx62(LogIn, { className: "w-3 h-3" }),
+                  joiningId === s3.conversationId ? /* @__PURE__ */ jsx64(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx64(LogIn, { className: "w-3 h-3" }),
                   t5("remoteSession.join", "\u52A0\u5165\u7A97\u53E3")
                 ]
               }
@@ -340937,9 +341466,9 @@ var RemoteSessionsQuickSection = memo36(function RemoteSessionsQuickSection2() {
 init_misc();
 init_misc();
 init_logger();
-import { Fragment as Fragment20, jsx as jsx63, jsxs as jsxs57 } from "react/jsx-runtime";
-var log38 = createLogger("QuickSwitchContent");
-var QuickSwitchContent = memo37(function QuickSwitchContent2({
+import { Fragment as Fragment20, jsx as jsx65, jsxs as jsxs59 } from "react/jsx-runtime";
+var log39 = createLogger("QuickSwitchContent");
+var QuickSwitchContent = memo38(function QuickSwitchContent2({
   sessions,
   workspace,
   workspaces,
@@ -340961,24 +341490,24 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
   onMouseLeave
 }) {
   const { t: t5 } = useTranslation("chat");
-  const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState46(false);
-  const workspaceButtonRef = useRef28(null);
-  const [dropdownPosition, setDropdownPosition] = useState46({ top: 0, left: 0 });
+  const [isWorkspaceDropdownOpen, setIsWorkspaceDropdownOpen] = useState47(false);
+  const workspaceButtonRef = useRef29(null);
+  const [dropdownPosition, setDropdownPosition] = useState47({ top: 0, left: 0 });
   const activeSession = sessions.find((s3) => s3.isActive);
   const workspaceDisplayName = workspace?.name || "\u5DE5\u4F5C\u533A";
-  useEffect27(() => {
+  useEffect28(() => {
     if (workspaceDropdownOpenRef) {
       workspaceDropdownOpenRef.current = isWorkspaceDropdownOpen;
     }
   }, [isWorkspaceDropdownOpen, workspaceDropdownOpenRef]);
   const handleToggleDropdown = (open2) => {
-    log38.info("handleToggleDropdown", { open: open2, currentRef: workspaceDropdownOpenRef?.current });
+    log39.info("handleToggleDropdown", { open: open2, currentRef: workspaceDropdownOpenRef?.current });
     if (workspaceDropdownOpenRef) {
       workspaceDropdownOpenRef.current = open2;
     }
     if (open2 && workspaceButtonRef.current) {
       const rect2 = workspaceButtonRef.current.getBoundingClientRect();
-      log38.info("\u7ACB\u5373\u8BA1\u7B97\u4E0B\u62C9\u4F4D\u7F6E", { top: rect2.bottom + 4, left: rect2.left });
+      log39.info("\u7ACB\u5373\u8BA1\u7B97\u4E0B\u62C9\u4F4D\u7F6E", { top: rect2.bottom + 4, left: rect2.left });
       setDropdownPosition({
         top: rect2.bottom + 4,
         left: rect2.left
@@ -340986,16 +341515,16 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
     }
     setIsWorkspaceDropdownOpen(open2);
   };
-  useEffect27(() => {
+  useEffect28(() => {
     if (!isWorkspaceDropdownOpen) return;
-    log38.info("\u6CE8\u518C\u70B9\u51FB\u5916\u90E8\u76D1\u542C");
+    log39.info("\u6CE8\u518C\u70B9\u51FB\u5916\u90E8\u76D1\u542C");
     const handleClickOutside = (e3) => {
       const target = e3.target;
       const clickedButton = workspaceButtonRef.current?.contains(target);
       const clickedDropdown = !!target.closest("[data-workspace-dropdown]");
-      log38.info("handleClickOutside", { clickedButton, clickedDropdown, targetTag: target.tagName });
+      log39.info("handleClickOutside", { clickedButton, clickedDropdown, targetTag: target.tagName });
       if (workspaceButtonRef.current && !clickedButton && !clickedDropdown) {
-        log38.info("\u70B9\u51FB\u5916\u90E8\uFF0C\u5173\u95ED\u4E0B\u62C9");
+        log39.info("\u70B9\u51FB\u5916\u90E8\uFF0C\u5173\u95ED\u4E0B\u62C9");
         handleToggleDropdown(false);
       }
     };
@@ -341011,7 +341540,7 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
       });
     }
   }, [isWorkspaceDropdownOpen]);
-  const sortedWorkspaces = useMemo21(() => {
+  const sortedWorkspaces = useMemo22(() => {
     return [...workspaces].sort((a3, b12) => {
       if (a3.isMain) return -1;
       if (b12.isMain) return 1;
@@ -341021,7 +341550,7 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
     });
   }, [workspaces]);
   const totalContextCount = contextWorkspaceIds.length + (workspace ? 1 : 0);
-  return /* @__PURE__ */ jsxs57(
+  return /* @__PURE__ */ jsxs59(
     "div",
     {
       className: cn2(
@@ -341042,12 +341571,12 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
       onMouseEnter,
       onMouseLeave,
       children: [
-        /* @__PURE__ */ jsx63("div", { className: "h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" }),
-        /* @__PURE__ */ jsx63("div", { className: "px-3 py-2.5 border-b border-border-subtle/30", children: /* @__PURE__ */ jsx63("div", { className: "flex items-center gap-2", children: activeSession && /* @__PURE__ */ jsxs57(Fragment20, { children: [
-          /* @__PURE__ */ jsx63(StatusSymbol, { status: activeSession.status, size: "sm" }),
-          /* @__PURE__ */ jsxs57("div", { className: "flex-1 min-w-0", children: [
-            /* @__PURE__ */ jsx63("div", { className: "text-xs font-medium text-text-primary truncate", children: activeSession.title }),
-            /* @__PURE__ */ jsxs57(
+        /* @__PURE__ */ jsx65("div", { className: "h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" }),
+        /* @__PURE__ */ jsx65("div", { className: "px-3 py-2.5 border-b border-border-subtle/30", children: /* @__PURE__ */ jsx65("div", { className: "flex items-center gap-2", children: activeSession && /* @__PURE__ */ jsxs59(Fragment20, { children: [
+          /* @__PURE__ */ jsx65(StatusSymbol, { status: activeSession.status, size: "sm" }),
+          /* @__PURE__ */ jsxs59("div", { className: "flex-1 min-w-0", children: [
+            /* @__PURE__ */ jsx65("div", { className: "text-xs font-medium text-text-primary truncate", children: activeSession.title }),
+            /* @__PURE__ */ jsxs59(
               "button",
               {
                 ref: workspaceButtonRef,
@@ -341059,13 +341588,13 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                   "transition-colors"
                 ),
                 children: [
-                  /* @__PURE__ */ jsx63(FolderOpen, { className: "w-2.5 h-2.5" }),
-                  /* @__PURE__ */ jsx63("span", { className: "truncate max-w-[100px]", children: workspaceDisplayName }),
-                  totalContextCount > 1 && /* @__PURE__ */ jsxs57("span", { className: "text-primary", children: [
+                  /* @__PURE__ */ jsx65(FolderOpen, { className: "w-2.5 h-2.5" }),
+                  /* @__PURE__ */ jsx65("span", { className: "truncate max-w-[100px]", children: workspaceDisplayName }),
+                  totalContextCount > 1 && /* @__PURE__ */ jsxs59("span", { className: "text-primary", children: [
                     "+",
                     totalContextCount - 1
                   ] }),
-                  /* @__PURE__ */ jsx63(ChevronDown, { className: cn2(
+                  /* @__PURE__ */ jsx65(ChevronDown, { className: cn2(
                     "w-2.5 h-2.5 transition-transform",
                     isWorkspaceDropdownOpen && "rotate-180"
                   ) })
@@ -341074,11 +341603,11 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
             )
           ] })
         ] }) }) }),
-        /* @__PURE__ */ jsx63(RemoteSessionsQuickSection, {}),
-        /* @__PURE__ */ jsx63("div", { className: "py-1.5", children: /* @__PURE__ */ jsx63("div", { className: "max-h-52 overflow-y-auto custom-scrollbar", children: sessions.length === 0 ? /* @__PURE__ */ jsxs57("div", { className: "flex flex-col items-center justify-center py-6 px-3 text-center", children: [
-          /* @__PURE__ */ jsx63("p", { className: "text-xs text-text-muted mb-2", children: "\u6682\u65E0\u4F1A\u8BDD" }),
-          /* @__PURE__ */ jsx63("p", { className: "text-[10px] text-text-tertiary", children: "\u70B9\u51FB\u4E0B\u65B9\u6309\u94AE\u65B0\u5EFA\u4F1A\u8BDD" })
-        ] }) : sessions.map((session) => /* @__PURE__ */ jsxs57(
+        /* @__PURE__ */ jsx65(RemoteSessionsQuickSection, {}),
+        /* @__PURE__ */ jsx65("div", { className: "py-1.5", children: /* @__PURE__ */ jsx65("div", { className: "max-h-52 overflow-y-auto custom-scrollbar", children: sessions.length === 0 ? /* @__PURE__ */ jsxs59("div", { className: "flex flex-col items-center justify-center py-6 px-3 text-center", children: [
+          /* @__PURE__ */ jsx65("p", { className: "text-xs text-text-muted mb-2", children: "\u6682\u65E0\u4F1A\u8BDD" }),
+          /* @__PURE__ */ jsx65("p", { className: "text-[10px] text-text-tertiary", children: "\u70B9\u51FB\u4E0B\u65B9\u6309\u94AE\u65B0\u5EFA\u4F1A\u8BDD" })
+        ] }) : sessions.map((session) => /* @__PURE__ */ jsxs59(
           "div",
           {
             className: cn2(
@@ -341087,21 +341616,21 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
               session.isActive ? "bg-primary/10 border border-primary/15" : "hover:bg-background-hover/50 border border-transparent"
             ),
             children: [
-              session.isActive && /* @__PURE__ */ jsx63("div", { className: "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full shadow-[0_0_6px_rgb(var(--c-primary)/0.4)]" }),
-              /* @__PURE__ */ jsx63(StatusSymbol, { status: session.status, size: "sm" }),
-              /* @__PURE__ */ jsx63(
+              session.isActive && /* @__PURE__ */ jsx65("div", { className: "absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary rounded-full shadow-[0_0_6px_rgb(var(--c-primary)/0.4)]" }),
+              /* @__PURE__ */ jsx65(StatusSymbol, { status: session.status, size: "sm" }),
+              /* @__PURE__ */ jsx65(
                 "button",
                 {
                   onClick: () => onSwitchSession(session.id),
                   className: "flex-1 min-w-0 text-left",
-                  children: /* @__PURE__ */ jsx63("span", { className: cn2(
+                  children: /* @__PURE__ */ jsx65("span", { className: cn2(
                     "truncate block",
                     session.isActive ? "text-primary font-medium" : "text-text-secondary"
                   ), children: session.title })
                 }
               ),
-              session.status === "running" && /* @__PURE__ */ jsx63(LoaderCircle, { className: "w-3 h-3 animate-spin text-success shrink-0" }),
-              onHandoffSession && /* @__PURE__ */ jsx63(
+              session.status === "running" && /* @__PURE__ */ jsx65(LoaderCircle, { className: "w-3 h-3 animate-spin text-success shrink-0" }),
+              onHandoffSession && /* @__PURE__ */ jsx65(
                 "button",
                 {
                   onClick: (e3) => {
@@ -341114,10 +341643,10 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                     session.canHandoff ? "text-text-muted hover:text-primary hover:bg-primary/10" : "text-text-muted/50 cursor-not-allowed"
                   ),
                   title: session.canHandoff ? t5("handoff.menuItem") : t5(session.handoffReasonKey || "handoff.notEligible"),
-                  children: /* @__PURE__ */ jsx63(GitBranchPlus, { className: "w-3 h-3" })
+                  children: /* @__PURE__ */ jsx65(GitBranchPlus, { className: "w-3 h-3" })
                 }
               ),
-              session.canDelete && /* @__PURE__ */ jsx63(
+              session.canDelete && /* @__PURE__ */ jsx65(
                 "button",
                 {
                   onClick: () => onDeleteSession(session.id),
@@ -341128,15 +341657,15 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                   ),
                   title: t5("history.deleteSession"),
                   "aria-label": t5("history.deleteSession"),
-                  children: /* @__PURE__ */ jsx63(X, { className: "w-3 h-3" })
+                  children: /* @__PURE__ */ jsx65(X, { className: "w-3 h-3" })
                 }
               )
             ]
           },
           session.id
         )) }) }),
-        /* @__PURE__ */ jsxs57("div", { className: "px-2 pb-2 pt-1 border-t border-border-subtle/20", children: [
-          /* @__PURE__ */ jsxs57(
+        /* @__PURE__ */ jsxs59("div", { className: "px-2 pb-2 pt-1 border-t border-border-subtle/20", children: [
+          /* @__PURE__ */ jsxs59(
             "button",
             {
               onClick: () => onCreateSession(),
@@ -341149,13 +341678,13 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                 "flex items-center justify-center gap-1"
               ),
               children: [
-                /* @__PURE__ */ jsx63(Plus, { className: "w-3 h-3" }),
-                /* @__PURE__ */ jsx63("span", { children: "New Session" })
+                /* @__PURE__ */ jsx65(Plus, { className: "w-3 h-3" }),
+                /* @__PURE__ */ jsx65("span", { children: "New Session" })
               ]
             }
           ),
-          /* @__PURE__ */ jsxs57("div", { className: "flex items-center justify-center gap-1 mt-1.5", children: [
-            onExport && /* @__PURE__ */ jsxs57(
+          /* @__PURE__ */ jsxs59("div", { className: "flex items-center justify-center gap-1 mt-1.5", children: [
+            onExport && /* @__PURE__ */ jsxs59(
               "button",
               {
                 onClick: onExport,
@@ -341168,12 +341697,12 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                   "disabled:opacity-50 disabled:cursor-not-allowed"
                 ),
                 children: [
-                  isExporting ? /* @__PURE__ */ jsx63(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx63(Download, { className: "w-3 h-3" }),
-                  /* @__PURE__ */ jsx63("span", { children: "\u5BFC\u51FA" })
+                  isExporting ? /* @__PURE__ */ jsx65(LoaderCircle, { className: "w-3 h-3 animate-spin" }) : /* @__PURE__ */ jsx65(Download, { className: "w-3 h-3" }),
+                  /* @__PURE__ */ jsx65("span", { children: "\u5BFC\u51FA" })
                 ]
               }
             ),
-            onOpenHistory && /* @__PURE__ */ jsxs57(
+            onOpenHistory && /* @__PURE__ */ jsxs59(
               "button",
               {
                 onClick: onOpenHistory,
@@ -341184,12 +341713,12 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                   "transition-colors"
                 ),
                 children: [
-                  /* @__PURE__ */ jsx63(Clock, { className: "w-3 h-3" }),
-                  /* @__PURE__ */ jsx63("span", { children: "\u5386\u53F2" })
+                  /* @__PURE__ */ jsx65(Clock, { className: "w-3 h-3" }),
+                  /* @__PURE__ */ jsx65("span", { children: "\u5386\u53F2" })
                 ]
               }
             ),
-            onTogglePin && /* @__PURE__ */ jsxs57(
+            onTogglePin && /* @__PURE__ */ jsxs59(
               "button",
               {
                 onClick: onTogglePin,
@@ -341201,15 +341730,15 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
                 ),
                 title: isPinned ? "\u53D6\u6D88\u9489\u4F4F" : "\u9489\u4F4F\u9762\u677F",
                 children: [
-                  isPinned ? /* @__PURE__ */ jsx63(PinOff, { className: "w-3 h-3" }) : /* @__PURE__ */ jsx63(Pin, { className: "w-3 h-3" }),
-                  /* @__PURE__ */ jsx63("span", { children: isPinned ? "\u53D6\u6D88\u9489" : "\u9489\u4F4F" })
+                  isPinned ? /* @__PURE__ */ jsx65(PinOff, { className: "w-3 h-3" }) : /* @__PURE__ */ jsx65(Pin, { className: "w-3 h-3" }),
+                  /* @__PURE__ */ jsx65("span", { children: isPinned ? "\u53D6\u6D88\u9489" : "\u9489\u4F4F" })
                 ]
               }
             )
           ] })
         ] }),
-        isWorkspaceDropdownOpen && createPortal3(
-          /* @__PURE__ */ jsx63(
+        isWorkspaceDropdownOpen && createPortal4(
+          /* @__PURE__ */ jsx65(
             WorkspaceDropdown,
             {
               sessionId: activeSession?.id || null,
@@ -341229,7 +341758,7 @@ var QuickSwitchContent = memo37(function QuickSwitchContent2({
     }
   );
 });
-var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
+var WorkspaceDropdown = memo38(function WorkspaceDropdown2({
   sessionId,
   workspaces,
   currentWorkspaceId,
@@ -341241,9 +341770,9 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
   onClose: _onClose
 }) {
   const { t: t5 } = useTranslation("workspace");
-  const [showCreateModal, setShowCreateModal] = useState46(false);
-  const [searchQuery, setSearchQuery] = useState46("");
-  const dropdownRef = useRef28(null);
+  const [showCreateModal, setShowCreateModal] = useState47(false);
+  const [searchQuery, setSearchQuery] = useState47("");
+  const dropdownRef = useRef29(null);
   const filteredWorkspaces = useWorkspaceFilter(workspaces, searchQuery);
   const handleSetMain = (workspaceId) => {
     if (isLocked || !sessionId) return;
@@ -341253,7 +341782,7 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
     if (!sessionId) return;
     onToggleContext(workspaceId);
   };
-  return /* @__PURE__ */ jsx63(Fragment20, { children: /* @__PURE__ */ jsxs57(
+  return /* @__PURE__ */ jsx65(Fragment20, { children: /* @__PURE__ */ jsxs59(
     "div",
     {
       ref: dropdownRef,
@@ -341270,11 +341799,11 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
         "animate-dialog-in"
       ),
       children: [
-        isLocked && /* @__PURE__ */ jsxs57("div", { className: "px-2.5 py-1.5 bg-warning/10 border-b border-border-subtle flex items-center gap-1.5 text-[10px] text-warning", children: [
-          /* @__PURE__ */ jsx63(Lock, { className: "w-3 h-3" }),
-          /* @__PURE__ */ jsx63("span", { children: "\u521B\u5EFA\u65F6\u5DF2\u6307\u5B9A\u4E3B\u5DE5\u4F5C\u533A\uFF0C\u4E0D\u53EF\u4FEE\u6539" })
+        isLocked && /* @__PURE__ */ jsxs59("div", { className: "px-2.5 py-1.5 bg-warning/10 border-b border-border-subtle flex items-center gap-1.5 text-[10px] text-warning", children: [
+          /* @__PURE__ */ jsx65(Lock, { className: "w-3 h-3" }),
+          /* @__PURE__ */ jsx65("span", { children: "\u521B\u5EFA\u65F6\u5DF2\u6307\u5B9A\u4E3B\u5DE5\u4F5C\u533A\uFF0C\u4E0D\u53EF\u4FEE\u6539" })
         ] }),
-        workspaces.length > 3 && /* @__PURE__ */ jsx63("div", { className: "p-2 border-b border-border-subtle", children: /* @__PURE__ */ jsx63(
+        workspaces.length > 3 && /* @__PURE__ */ jsx65("div", { className: "p-2 border-b border-border-subtle", children: /* @__PURE__ */ jsx65(
           WorkspaceSearchInput,
           {
             value: searchQuery,
@@ -341282,10 +341811,10 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
             autoFocus: true
           }
         ) }),
-        /* @__PURE__ */ jsx63("div", { className: "max-h-48 overflow-y-auto", children: filteredWorkspaces.length === 0 ? /* @__PURE__ */ jsx63("div", { className: "py-3 text-center text-xs text-text-tertiary", children: t5("search.noResults") }) : filteredWorkspaces.map((ws) => {
+        /* @__PURE__ */ jsx65("div", { className: "max-h-48 overflow-y-auto", children: filteredWorkspaces.length === 0 ? /* @__PURE__ */ jsx65("div", { className: "py-3 text-center text-xs text-text-tertiary", children: t5("search.noResults") }) : filteredWorkspaces.map((ws) => {
           const isCurrent = ws.id === currentWorkspaceId;
           const isContext = contextWorkspaceIds.includes(ws.id);
-          return /* @__PURE__ */ jsxs57(
+          return /* @__PURE__ */ jsxs59(
             "div",
             {
               className: cn2(
@@ -341293,9 +341822,9 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
                 isCurrent && (isLocked ? "bg-primary/5 opacity-80" : "bg-primary/5")
               ),
               children: [
-                isCurrent && /* @__PURE__ */ jsx63("div", { className: "absolute left-0 top-0 bottom-0 w-0.5 bg-primary" }),
-                isCurrent && isLocked && /* @__PURE__ */ jsx63("div", { className: "px-2", children: /* @__PURE__ */ jsx63(Lock, { className: "w-3 h-3 text-text-muted" }) }),
-                /* @__PURE__ */ jsx63(
+                isCurrent && /* @__PURE__ */ jsx65("div", { className: "absolute left-0 top-0 bottom-0 w-0.5 bg-primary" }),
+                isCurrent && isLocked && /* @__PURE__ */ jsx65("div", { className: "px-2", children: /* @__PURE__ */ jsx65(Lock, { className: "w-3 h-3 text-text-muted" }) }),
+                /* @__PURE__ */ jsx65(
                   "button",
                   {
                     onClick: () => handleSetMain(ws.id),
@@ -341305,14 +341834,14 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
                       isCurrent ? "text-primary" : isLocked ? "text-text-tertiary cursor-not-allowed" : "text-text-secondary hover:text-text-primary hover:bg-background-hover",
                       isLocked && isCurrent && "cursor-not-allowed"
                     ),
-                    children: /* @__PURE__ */ jsxs57("div", { className: "font-medium truncate flex items-center gap-1.5", children: [
-                      isCurrent && !isLocked && /* @__PURE__ */ jsx63("span", { className: "w-1 h-1 rounded-full bg-primary shrink-0" }),
+                    children: /* @__PURE__ */ jsxs59("div", { className: "font-medium truncate flex items-center gap-1.5", children: [
+                      isCurrent && !isLocked && /* @__PURE__ */ jsx65("span", { className: "w-1 h-1 rounded-full bg-primary shrink-0" }),
                       ws.name
                     ] })
                   }
                 ),
-                isCurrent && /* @__PURE__ */ jsx63("span", { className: "px-1.5 text-[10px] text-primary", children: "\u4E3B" }),
-                !isCurrent && filteredWorkspaces.length > 1 && /* @__PURE__ */ jsx63(
+                isCurrent && /* @__PURE__ */ jsx65("span", { className: "px-1.5 text-[10px] text-primary", children: "\u4E3B" }),
+                !isCurrent && filteredWorkspaces.length > 1 && /* @__PURE__ */ jsx65(
                   "button",
                   {
                     onClick: () => handleToggleContext(ws.id),
@@ -341321,7 +341850,7 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
                       isContext ? "text-primary bg-primary/10" : "text-text-tertiary hover:text-primary hover:bg-background-hover opacity-0 group-hover:opacity-100"
                     ),
                     title: isContext ? "\u79FB\u9664\u5173\u8054" : "\u6DFB\u52A0\u5173\u8054",
-                    children: /* @__PURE__ */ jsx63(Check, { className: "w-3 h-3" })
+                    children: /* @__PURE__ */ jsx65(Check, { className: "w-3 h-3" })
                   }
                 )
               ]
@@ -341329,8 +341858,8 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
             ws.id
           );
         }) }),
-        /* @__PURE__ */ jsx63("div", { className: "border-t border-border-subtle" }),
-        /* @__PURE__ */ jsxs57(
+        /* @__PURE__ */ jsx65("div", { className: "border-t border-border-subtle" }),
+        /* @__PURE__ */ jsxs59(
           "button",
           {
             onClick: () => setShowCreateModal(true),
@@ -341340,12 +341869,12 @@ var WorkspaceDropdown = memo37(function WorkspaceDropdown2({
               "transition-colors"
             ),
             children: [
-              /* @__PURE__ */ jsx63(FolderPlus, { className: "w-3.5 h-3.5 text-text-muted" }),
-              /* @__PURE__ */ jsx63("span", { children: "\u65B0\u589E\u5DE5\u4F5C\u533A" })
+              /* @__PURE__ */ jsx65(FolderPlus, { className: "w-3.5 h-3.5 text-text-muted" }),
+              /* @__PURE__ */ jsx65("span", { children: "\u65B0\u589E\u5DE5\u4F5C\u533A" })
             ]
           }
         ),
-        showCreateModal && /* @__PURE__ */ jsx63(CreateWorkspaceModal, { onClose: () => setShowCreateModal(false) })
+        showCreateModal && /* @__PURE__ */ jsx65(CreateWorkspaceModal, { onClose: () => setShowCreateModal(false) })
       ]
     }
   ) });
@@ -341361,8 +341890,8 @@ init_sessionDirectoryStore();
 init_misc();
 init_engineDisplay();
 init_engineMetadataStore();
-import { memo as memo38, useCallback as useCallback33, useState as useState48, useRef as useRef30, useEffect as useEffect29, useMemo as useMemo23 } from "react";
-import { createPortal as createPortal4 } from "react-dom";
+import { memo as memo39, useCallback as useCallback33, useState as useState49, useRef as useRef31, useEffect as useEffect30, useMemo as useMemo24 } from "react";
+import { createPortal as createPortal5 } from "react-dom";
 
 // src/Session/SessionConfigSelector.tsx
 init_i18n();
@@ -341370,14 +341899,14 @@ init_lucide_react();
 init_clsx();
 init_types();
 init_cliInfoStore();
-import React4, { useState as useState47, useCallback as useCallback32, useRef as useRef29, useEffect as useEffect28, useMemo as useMemo22 } from "react";
+import React4, { useState as useState48, useCallback as useCallback32, useRef as useRef30, useEffect as useEffect29, useMemo as useMemo23 } from "react";
 init_deps();
 init_modelProfileStore();
 init_engineMetadataStore();
 init_types();
 init_sessionDirectoryStore();
 init_engineDisplay();
-import { jsx as jsx64, jsxs as jsxs58 } from "react/jsx-runtime";
+import { jsx as jsx66, jsxs as jsxs60 } from "react/jsx-runtime";
 function sessionStoreManager3() {
   return window.__POLARIS_APP_CORE__?.stores?.sessionStoreManager;
 }
@@ -341408,11 +341937,11 @@ function SessionConfigSelector2({
   writeThroughToSession = true
 }) {
   const { t: t5 } = useTranslation("chat");
-  const [openDropdown, setOpenDropdown] = useState47(null);
-  const [customInput, setCustomInput] = useState47(null);
-  const containerRef = useRef29(null);
-  const inputRef = useRef29(null);
-  useEffect28(() => {
+  const [openDropdown, setOpenDropdown] = useState48(null);
+  const [customInput, setCustomInput] = useState48(null);
+  const containerRef = useRef30(null);
+  const inputRef = useRef30(null);
+  useEffect29(() => {
     const handleClickOutside = (e3) => {
       if (containerRef.current && !containerRef.current.contains(e3.target)) {
         setOpenDropdown(null);
@@ -341429,19 +341958,19 @@ function SessionConfigSelector2({
   const activeEngineId = normalizeEngineId(engineOverride ?? activeMeta?.engineId ?? defaultEngine);
   const currentEngine = activeEngineId === "simple-ai" ? "simple-ai" : activeEngineId === "claude-code" ? "claude" : activeEngineId;
   const isSimpleAiEngine = currentEngine === "simple-ai";
-  useEffect28(() => {
+  useEffect29(() => {
     if (isSimpleAiEngine) {
       void useAgentStore2.getState().loadSimpleAiAgents();
     }
   }, [isSimpleAiEngine]);
   const engineMetadatas = useEngineMetadataStore2((s3) => s3.metadatas);
-  const engineDeclaredModels = useMemo22(
+  const engineDeclaredModels = useMemo23(
     () => engineMetadatas.find((m4) => m4.id === currentEngine)?.models?.filter(Boolean) ?? null,
     [engineMetadatas, currentEngine]
   );
   const dynamicAgents = useCliInfoStore2((s3) => s3.agents);
   const simpleAiAgents = useAgentStore2((s3) => s3.simpleAiAgents);
-  const agentList = useMemo22(() => {
+  const agentList = useMemo23(() => {
     const emptyOption = { id: "", name: t5("sessionConfig.noAgent"), description: t5("sessionConfig.noAgentDesc") };
     if (isSimpleAiEngine) {
       return [
@@ -341465,7 +341994,7 @@ function SessionConfigSelector2({
     }
     return PRESET_AGENTS;
   }, [dynamicAgents, simpleAiAgents, isSimpleAiEngine, t5]);
-  const modelList = useMemo22(() => {
+  const modelList = useMemo23(() => {
     if (engineDeclaredModels && engineDeclaredModels.length > 0) {
       return [
         { id: "", name: t5("sessionConfig.noModel"), description: "", supportsStreaming: true },
@@ -341495,14 +342024,14 @@ function SessionConfigSelector2({
       supportsStreaming: true
     }));
   }, [config3.modelProfileId, profiles, currentEngine, engineDeclaredModels, t5]);
-  useEffect28(() => {
+  useEffect29(() => {
     if (disabled || config3.profileMode !== "profile" || !config3.modelProfileId) return;
     const profile = profiles.find((p3) => p3.id === config3.modelProfileId);
     if (!profile || !config3.model) return;
     if (profileModelOptions(profile).includes(config3.model)) return;
     onChange({ ...config3, model: "" });
   }, [profiles, config3.modelProfileId, config3.profileMode, disabled]);
-  const compatibleProfiles = useMemo22(() => {
+  const compatibleProfiles = useMemo23(() => {
     return profiles.filter((p3) => isProfileForEngine(p3, currentEngine));
   }, [profiles, currentEngine]);
   const getAgentLabel = useCallback32((agentId) => {
@@ -341525,14 +342054,14 @@ function SessionConfigSelector2({
   }, [t5, profiles, config3.modelProfileId]);
   const getEffortLabel = useCallback32((effort) => {
     if (!effort) return t5("sessionConfig.noEffort");
-    const declared = getEngineEffortOptions(currentEngine)?.find((o2) => o2.value === effort);
+    const declared = getEngineEffortOptions2(currentEngine)?.find((o2) => o2.value === effort);
     if (declared) return declared.label;
     const opt = EFFORT_OPTIONS.find((o2) => o2.value === effort);
     return opt?.label || effort;
   }, [t5, currentEngine]);
   const getPermissionLabel = useCallback32((mode) => {
     if (!mode) return t5("sessionConfig.noPermission");
-    const declared = getEnginePermissionOptions(currentEngine)?.find((o2) => o2.value === mode);
+    const declared = getEnginePermissionOptions2(currentEngine)?.find((o2) => o2.value === mode);
     if (declared) return declared.label;
     const opt = PERMISSION_MODE_OPTIONS.find((o2) => o2.value === mode);
     return opt?.label || mode;
@@ -341607,7 +342136,7 @@ function SessionConfigSelector2({
         })));
         break;
       case "effort": {
-        const opts = getEngineEffortOptions(currentEngine) ?? EFFORT_OPTIONS;
+        const opts = getEngineEffortOptions2(currentEngine) ?? EFFORT_OPTIONS;
         items.push(...opts.map((o2) => ({
           value: o2.value,
           label: o2.label,
@@ -341616,7 +342145,7 @@ function SessionConfigSelector2({
         break;
       }
       case "permission": {
-        const opts = getEnginePermissionOptions(currentEngine) ?? PERMISSION_MODE_OPTIONS;
+        const opts = getEnginePermissionOptions2(currentEngine) ?? PERMISSION_MODE_OPTIONS;
         items.push(...opts.map((o2) => ({
           value: o2.value,
           label: o2.label,
@@ -341670,13 +342199,13 @@ function SessionConfigSelector2({
       }
     };
     const currentValue = getCurrentValue();
-    return /* @__PURE__ */ jsxs58("div", { className: clsx(
+    return /* @__PURE__ */ jsxs60("div", { className: clsx(
       "absolute bottom-full left-0 mb-1",
       "bg-background-elevated border border-border rounded-lg shadow-lg",
       "min-w-[180px] max-h-[240px] overflow-y-auto",
       "z-dropdown animate-panel-in"
     ), children: [
-      items.map((item) => /* @__PURE__ */ jsxs58(
+      items.map((item) => /* @__PURE__ */ jsxs60(
         "button",
         {
           onClick: () => !item.disabled && handleSelect(type3, item.value),
@@ -341690,14 +342219,14 @@ function SessionConfigSelector2({
             currentValue === item.value && "bg-primary/10 text-primary"
           ),
           children: [
-            /* @__PURE__ */ jsx64("span", { className: "font-medium", children: item.label }),
-            item.description && /* @__PURE__ */ jsx64("span", { className: "text-text-tertiary text-[10px]", children: item.description })
+            /* @__PURE__ */ jsx66("span", { className: "font-medium", children: item.label }),
+            item.description && /* @__PURE__ */ jsx66("span", { className: "text-text-tertiary text-[10px]", children: item.description })
           ]
         },
         item.value
       )),
-      /* @__PURE__ */ jsx64("div", { className: "border-t border-border my-1" }),
-      /* @__PURE__ */ jsxs58(
+      /* @__PURE__ */ jsx66("div", { className: "border-t border-border my-1" }),
+      /* @__PURE__ */ jsxs60(
         "button",
         {
           onClick: () => openCustomInput(type3),
@@ -341716,27 +342245,27 @@ function SessionConfigSelector2({
   };
   const selectorMeta = {
     agent: {
-      icon: /* @__PURE__ */ jsx64(Bot, { size: 12 }),
+      icon: /* @__PURE__ */ jsx66(Bot, { size: 12 }),
       label: t5("sessionConfig.agent"),
       getValue: () => getAgentLabel(config3.agent)
     },
     model: {
-      icon: /* @__PURE__ */ jsx64(Cpu, { size: 12 }),
+      icon: /* @__PURE__ */ jsx66(Cpu, { size: 12 }),
       label: t5("sessionConfig.model"),
       getValue: () => getModelLabel(config3.model)
     },
     effort: {
-      icon: /* @__PURE__ */ jsx64(Zap, { size: 12 }),
+      icon: /* @__PURE__ */ jsx66(Zap, { size: 12 }),
       label: t5("sessionConfig.effort"),
       getValue: () => getEffortLabel(config3.effort)
     },
     permission: {
-      icon: /* @__PURE__ */ jsx64(Shield, { size: 12 }),
+      icon: /* @__PURE__ */ jsx66(Shield, { size: 12 }),
       label: t5("sessionConfig.permission"),
       getValue: () => getPermissionLabel(config3.permissionMode)
     },
     profile: {
-      icon: /* @__PURE__ */ jsx64(Plug, { size: 12 }),
+      icon: /* @__PURE__ */ jsx66(Plug, { size: 12 }),
       label: t5("sessionConfig.provider"),
       getValue: () => {
         const mode = config3.profileMode ?? "profile";
@@ -341758,8 +342287,8 @@ function SessionConfigSelector2({
   const renderSelector = (type3, mode) => {
     const { icon: icon2, label, getValue: getValue4 } = selectorMeta[type3];
     const currentValue = getValue4();
-    return /* @__PURE__ */ jsxs58("div", { className: clsx("relative", mode === "panel" && "w-full"), children: [
-      /* @__PURE__ */ jsxs58(
+    return /* @__PURE__ */ jsxs60("div", { className: clsx("relative", mode === "panel" && "w-full"), children: [
+      /* @__PURE__ */ jsxs60(
         "button",
         {
           onClick: () => !disabled && setOpenDropdown(openDropdown === type3 ? null : type3),
@@ -341772,10 +342301,10 @@ function SessionConfigSelector2({
           ),
           title: t5(`sessionConfig.${type3}Tooltip`),
           children: [
-            /* @__PURE__ */ jsx64("span", { className: "shrink-0", children: icon2 }),
-            mode === "panel" && /* @__PURE__ */ jsx64("span", { className: "shrink-0 text-text-muted", children: label }),
-            /* @__PURE__ */ jsx64("span", { className: clsx("truncate", mode === "panel" ? "flex-1 text-left" : VALUE_MAX_W[type3]), children: currentValue }),
-            /* @__PURE__ */ jsx64(ChevronDown, { size: 12, className: "opacity-50 shrink-0" })
+            /* @__PURE__ */ jsx66("span", { className: "shrink-0", children: icon2 }),
+            mode === "panel" && /* @__PURE__ */ jsx66("span", { className: "shrink-0 text-text-muted", children: label }),
+            /* @__PURE__ */ jsx66("span", { className: clsx("truncate", mode === "panel" ? "flex-1 text-left" : VALUE_MAX_W[type3]), children: currentValue }),
+            /* @__PURE__ */ jsx66(ChevronDown, { size: 12, className: "opacity-50 shrink-0" })
           ]
         }
       ),
@@ -341783,13 +342312,13 @@ function SessionConfigSelector2({
     ] });
   };
   const ALL_TYPES = ["agent", "model", "effort", "permission", "profile"];
-  const allowedByEngine = getEngineSelectors(activeEngineId);
+  const allowedByEngine = getEngineSelectors2(activeEngineId);
   const typesToShow = (visibleTypes ?? ALL_TYPES).filter((t6) => allowedByEngine.includes(t6));
-  return /* @__PURE__ */ jsxs58("div", { ref: containerRef, className: clsx(variant === "panel" ? "flex flex-col gap-0.5 w-full" : "flex items-center gap-1"), children: [
-    typesToShow.map((type3) => /* @__PURE__ */ jsx64(React4.Fragment, { children: renderSelector(type3, variant) }, type3)),
-    customInput && /* @__PURE__ */ jsx64("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/30", children: /* @__PURE__ */ jsxs58("div", { className: "bg-background-elevated border border-border rounded-lg p-4 min-w-[280px] shadow-xl", children: [
-      /* @__PURE__ */ jsx64("div", { className: "text-xs text-text-secondary mb-2", children: t5("sessionConfig.customInputLabel", { type: selectorMeta[customInput.type].label }) }),
-      /* @__PURE__ */ jsx64(
+  return /* @__PURE__ */ jsxs60("div", { ref: containerRef, className: clsx(variant === "panel" ? "flex flex-col gap-0.5 w-full" : "flex items-center gap-1"), children: [
+    typesToShow.map((type3) => /* @__PURE__ */ jsx66(React4.Fragment, { children: renderSelector(type3, variant) }, type3)),
+    customInput && /* @__PURE__ */ jsx66("div", { className: "fixed inset-0 z-modal flex items-center justify-center bg-black/30", children: /* @__PURE__ */ jsxs60("div", { className: "bg-background-elevated border border-border rounded-lg p-4 min-w-[280px] shadow-xl", children: [
+      /* @__PURE__ */ jsx66("div", { className: "text-xs text-text-secondary mb-2", children: t5("sessionConfig.customInputLabel", { type: selectorMeta[customInput.type].label }) }),
+      /* @__PURE__ */ jsx66(
         "input",
         {
           ref: inputRef,
@@ -341804,8 +342333,8 @@ function SessionConfigSelector2({
           placeholder: t5("sessionConfig.customInputPlaceholder", { type: customInput.type })
         }
       ),
-      /* @__PURE__ */ jsxs58("div", { className: "flex justify-end gap-2 mt-3", children: [
-        /* @__PURE__ */ jsx64(
+      /* @__PURE__ */ jsxs60("div", { className: "flex justify-end gap-2 mt-3", children: [
+        /* @__PURE__ */ jsx66(
           "button",
           {
             onClick: () => setCustomInput(null),
@@ -341813,7 +342342,7 @@ function SessionConfigSelector2({
             children: t5("sessionConfig.cancel")
           }
         ),
-        /* @__PURE__ */ jsx64(
+        /* @__PURE__ */ jsx66(
           "button",
           {
             onClick: () => handleCustomInputConfirm(customInput.type),
@@ -341831,8 +342360,8 @@ init_sessionConfigStore();
 init_newSessionPrefsService();
 init_types();
 init_modelProfileStore();
-import { jsx as jsx65, jsxs as jsxs59 } from "react/jsx-runtime";
-var NewSessionPanel3 = memo38(function NewSessionPanel4({
+import { jsx as jsx67, jsxs as jsxs61 } from "react/jsx-runtime";
+var NewSessionPanel3 = memo39(function NewSessionPanel4({
   getAnchorRect,
   anchorEl = null,
   onClose,
@@ -341844,24 +342373,24 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
   const defaultEngineId = normalizeEngineId(config3?.defaultEngine);
   const workspaces = useWorkspaceStore((state6) => state6.workspaces);
   const currentWorkspaceId = useWorkspaceStore((state6) => state6.currentWorkspaceId);
-  const sortedWorkspaces = useMemo23(() => {
+  const sortedWorkspaces = useMemo24(() => {
     return [...workspaces].sort(
       (a3, b12) => new Date(b12.lastAccessed).getTime() - new Date(a3.lastAccessed).getTime()
     );
   }, [workspaces]);
   const allSessionMetadata = useSessionDirectorySessions();
-  const [selectedEngineId, setSelectedEngineId] = useState48(defaultEngineId);
+  const [selectedEngineId, setSelectedEngineId] = useState49(defaultEngineId);
   const globalSessionConfig = useSessionConfig2((s3) => s3.config);
   const globalActiveProfileId = useConfigStore((s3) => s3.config?.activeModelProfileId) ?? null;
-  const [providerConfig, setProviderConfig] = useState48(() => ({
+  const [providerConfig, setProviderConfig] = useState49(() => ({
     profileMode: globalSessionConfig.profileMode ?? "profile",
     modelProfileId: globalSessionConfig.modelProfileId || globalActiveProfileId || "",
     model: globalSessionConfig.model
   }));
-  const providerModeRef = useRef30(providerConfig.profileMode ?? "profile");
-  const modelProfileIdRef = useRef30(providerConfig.modelProfileId ?? "");
-  const modelRef = useRef30(providerConfig.model ?? "");
-  useEffect29(() => {
+  const providerModeRef = useRef31(providerConfig.profileMode ?? "profile");
+  const modelProfileIdRef = useRef31(providerConfig.modelProfileId ?? "");
+  const modelRef = useRef31(providerConfig.model ?? "");
+  useEffect30(() => {
     providerModeRef.current = providerConfig.profileMode ?? "profile";
     modelProfileIdRef.current = providerConfig.modelProfileId ?? "";
     modelRef.current = providerConfig.model ?? "";
@@ -341873,17 +342402,17 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
       model: modelRef.current
     });
   };
-  const [searchQuery, setSearchQuery] = useState48("");
-  const [pendingPrimaryId, setPendingPrimaryId] = useState48(null);
-  const [pendingContextIds, setPendingContextIds] = useState48([]);
-  const dropdownRef = useRef30(null);
-  const searchInputRef = useRef30(null);
+  const [searchQuery, setSearchQuery] = useState49("");
+  const [pendingPrimaryId, setPendingPrimaryId] = useState49(null);
+  const [pendingContextIds, setPendingContextIds] = useState49([]);
+  const dropdownRef = useRef31(null);
+  const searchInputRef = useRef31(null);
   const incrementOverlay = useOverlayStore((s3) => s3.increment);
   const decrementOverlay = useOverlayStore((s3) => s3.decrement);
   const claimPopover = useOverlayStore((s3) => s3.claimPopover);
   const releasePopover = useOverlayStore((s3) => s3.releasePopover);
-  const popoverId = useMemo23(() => `new-session-panel-${Math.random().toString(36).slice(2)}`, []);
-  useEffect29(() => {
+  const popoverId = useMemo24(() => `new-session-panel-${Math.random().toString(36).slice(2)}`, []);
+  useEffect30(() => {
     incrementOverlay();
     claimPopover(popoverId);
     return () => {
@@ -341892,7 +342421,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
     };
   }, [incrementOverlay, decrementOverlay, claimPopover, releasePopover, popoverId]);
   const isRightCenter = placement === "right-center";
-  const [panelPos, setPanelPos] = useState48(null);
+  const [panelPos, setPanelPos] = useState49(null);
   const PANEL_WIDTH = 288;
   const PANEL_MARGIN = 8;
   const updatePanelPos = useCallback33(() => {
@@ -341903,7 +342432,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
     const bottom2 = Math.max(PANEL_MARGIN, window.innerHeight - rect2.top + 4);
     setPanelPos({ left: left3, bottom: bottom2 });
   }, [getAnchorRect]);
-  useEffect29(() => {
+  useEffect30(() => {
     if (isRightCenter) return;
     updatePanelPos();
     window.addEventListener("resize", updatePanelPos);
@@ -341913,7 +342442,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
   const filteredWorkspaces = useWorkspaceFilter(sortedWorkspaces, showSearch ? searchQuery : "");
   const canPickContext = sortedWorkspaces.length > 1 && pendingPrimaryId !== null;
   const engineMetadatas = useEngineMetadataStore2((s3) => s3.metadatas);
-  const engineOptions = useMemo23(() => {
+  const engineOptions = useMemo24(() => {
     if (engineMetadatas.length > 0) {
       return engineMetadatas.map((meta3) => ({
         id: meta3.id,
@@ -341926,13 +342455,13 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
       { id: "simple-ai", label: "Simple", Icon: Zap }
     ];
   }, [engineMetadatas]);
-  useEffect29(() => {
+  useEffect30(() => {
     if (!engineOptions.some((o2) => o2.id === selectedEngineId)) {
       setSelectedEngineId(defaultEngineId);
     }
   }, [engineOptions, selectedEngineId, defaultEngineId]);
-  const restoredEngineRef = useRef30(null);
-  useEffect29(() => {
+  const restoredEngineRef = useRef31(null);
+  useEffect30(() => {
     if (restoredEngineRef.current === selectedEngineId) return;
     restoredEngineRef.current = selectedEngineId;
     let cancelled = false;
@@ -341961,7 +342490,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
       cancelled = true;
     };
   }, [selectedEngineId]);
-  useEffect29(() => {
+  useEffect30(() => {
     const handleClickOutside = (e3) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e3.target) && !(anchorEl && anchorEl.contains(e3.target))) {
         onClose();
@@ -342030,8 +342559,8 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
     // top/bottom 双 0 + margin auto + fit-content 是无 transform 的等价居中
     { right: 12, top: 0, bottom: 0, height: "fit-content", marginTop: "auto", marginBottom: "auto" }
   ) : panelPos ? { left: panelPos.left, bottom: panelPos.bottom } : void 0;
-  return createPortal4(
-    /* @__PURE__ */ jsxs59(
+  return createPortal5(
+    /* @__PURE__ */ jsxs61(
       "div",
       {
         ref: dropdownRef,
@@ -342046,9 +342575,9 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
         ),
         style: panelStyle,
         children: [
-          /* @__PURE__ */ jsxs59("div", { className: "shrink-0 px-2 pb-2 border-b border-border-subtle", children: [
-            /* @__PURE__ */ jsx65("div", { className: "px-1 py-1 text-[11px] font-medium text-text-tertiary", children: t5("newSession.aiEngine") }),
-            /* @__PURE__ */ jsx65("div", { className: "grid grid-cols-2 gap-1", children: engineOptions.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs59(
+          /* @__PURE__ */ jsxs61("div", { className: "shrink-0 px-2 pb-2 border-b border-border-subtle", children: [
+            /* @__PURE__ */ jsx67("div", { className: "px-1 py-1 text-[11px] font-medium text-text-tertiary", children: t5("newSession.aiEngine") }),
+            /* @__PURE__ */ jsx67("div", { className: "grid grid-cols-2 gap-1", children: engineOptions.map(({ id: id38, label, Icon: Icon2 }) => /* @__PURE__ */ jsxs61(
               "button",
               {
                 onClick: () => {
@@ -342060,13 +342589,13 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
                 ),
                 title: getEngineFullName(id38),
                 children: [
-                  /* @__PURE__ */ jsx65(Icon2, { className: "w-3.5 h-3.5" }),
-                  /* @__PURE__ */ jsx65("span", { children: label })
+                  /* @__PURE__ */ jsx67(Icon2, { className: "w-3.5 h-3.5" }),
+                  /* @__PURE__ */ jsx67("span", { children: label })
                 ]
               },
               id38
             )) }),
-            /* @__PURE__ */ jsx65("div", { className: "px-1 pt-2 mt-2 border-t border-border-subtle", children: /* @__PURE__ */ jsx65(
+            /* @__PURE__ */ jsx67("div", { className: "px-1 pt-2 mt-2 border-t border-border-subtle", children: /* @__PURE__ */ jsx67(
               SessionConfigSelector2,
               {
                 config: providerConfig,
@@ -342077,7 +342606,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
               }
             ) })
           ] }),
-          /* @__PURE__ */ jsxs59(
+          /* @__PURE__ */ jsxs61(
             "button",
             {
               onClick: handleCreateNoWorkspace,
@@ -342087,15 +342616,15 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
                 "transition-colors"
               ),
               children: [
-                /* @__PURE__ */ jsx65(Folder, { className: "w-4 h-4 text-text-muted" }),
-                /* @__PURE__ */ jsx65("span", { children: t5("newSession.noWorkspace") })
+                /* @__PURE__ */ jsx67(Folder, { className: "w-4 h-4 text-text-muted" }),
+                /* @__PURE__ */ jsx67("span", { children: t5("newSession.noWorkspace") })
               ]
             }
           ),
-          sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx65("div", { className: "my-1 border-t border-border-subtle shrink-0" }),
-          showSearch && /* @__PURE__ */ jsx65("div", { className: "px-2 py-1 shrink-0", children: /* @__PURE__ */ jsxs59("div", { className: "relative", children: [
-            /* @__PURE__ */ jsx65("div", { className: "absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none", children: /* @__PURE__ */ jsx65(Search, { className: "w-3 h-3 text-text-tertiary" }) }),
-            /* @__PURE__ */ jsx65(
+          sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx67("div", { className: "my-1 border-t border-border-subtle shrink-0" }),
+          showSearch && /* @__PURE__ */ jsx67("div", { className: "px-2 py-1 shrink-0", children: /* @__PURE__ */ jsxs61("div", { className: "relative", children: [
+            /* @__PURE__ */ jsx67("div", { className: "absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none", children: /* @__PURE__ */ jsx67(Search, { className: "w-3 h-3 text-text-tertiary" }) }),
+            /* @__PURE__ */ jsx67(
               "input",
               {
                 ref: searchInputRef,
@@ -342108,13 +342637,13 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
               }
             )
           ] }) }),
-          /* @__PURE__ */ jsxs59("div", { className: "max-h-[260px] min-h-0 overflow-y-auto shrink", children: [
-            filteredWorkspaces.length === 0 && sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx65("div", { className: "py-4 text-center text-xs text-text-tertiary", children: t5("newSession.noResults", "\u65E0\u5339\u914D\u5DE5\u4F5C\u533A") }),
+          /* @__PURE__ */ jsxs61("div", { className: "max-h-[260px] min-h-0 overflow-y-auto shrink", children: [
+            filteredWorkspaces.length === 0 && sortedWorkspaces.length > 0 && /* @__PURE__ */ jsx67("div", { className: "py-4 text-center text-xs text-text-tertiary", children: t5("newSession.noResults", "\u65E0\u5339\u914D\u5DE5\u4F5C\u533A") }),
             filteredWorkspaces.map((workspace) => {
               const isPrimary = workspace.id === pendingPrimaryId;
               const isContext = pendingContextIds.includes(workspace.id);
               const showContextBtn = canPickContext && workspace.id !== pendingPrimaryId;
-              return /* @__PURE__ */ jsxs59(
+              return /* @__PURE__ */ jsxs61(
                 "div",
                 {
                   className: clsx(
@@ -342123,8 +342652,8 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
                     workspace.id === currentWorkspaceId && !isPrimary && "bg-background-hover/50"
                   ),
                   children: [
-                    workspace.id === currentWorkspaceId && /* @__PURE__ */ jsx65("div", { className: "absolute left-0 top-0 bottom-0 w-0.5 bg-primary/40" }),
-                    /* @__PURE__ */ jsxs59(
+                    workspace.id === currentWorkspaceId && /* @__PURE__ */ jsx67("div", { className: "absolute left-0 top-0 bottom-0 w-0.5 bg-primary/40" }),
+                    /* @__PURE__ */ jsxs61(
                       "button",
                       {
                         onClick: () => setPendingPrimaryId(workspace.id),
@@ -342133,19 +342662,19 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
                           isPrimary ? "text-primary" : "text-text-secondary hover:text-text-primary hover:bg-background-hover"
                         ),
                         children: [
-                          /* @__PURE__ */ jsxs59("div", { className: "flex items-center gap-1.5 pr-8", children: [
-                            isPrimary && /* @__PURE__ */ jsx65(Check, { className: "w-3.5 h-3.5 shrink-0" }),
-                            /* @__PURE__ */ jsx65(Folder, { className: clsx("w-3.5 h-3.5 shrink-0", isPrimary ? "text-primary" : "text-text-muted") }),
-                            /* @__PURE__ */ jsx65("span", { className: "font-medium truncate", children: workspace.name })
+                          /* @__PURE__ */ jsxs61("div", { className: "flex items-center gap-1.5 pr-8", children: [
+                            isPrimary && /* @__PURE__ */ jsx67(Check, { className: "w-3.5 h-3.5 shrink-0" }),
+                            /* @__PURE__ */ jsx67(Folder, { className: clsx("w-3.5 h-3.5 shrink-0", isPrimary ? "text-primary" : "text-text-muted") }),
+                            /* @__PURE__ */ jsx67("span", { className: "font-medium truncate", children: workspace.name })
                           ] }),
-                          /* @__PURE__ */ jsx65("div", { className: clsx(
+                          /* @__PURE__ */ jsx67("div", { className: clsx(
                             "text-xs truncate mt-0.5 pl-5",
                             isPrimary ? "text-primary/70" : "text-text-tertiary"
                           ), children: workspace.path })
                         ]
                       }
                     ),
-                    showContextBtn && /* @__PURE__ */ jsx65(
+                    showContextBtn && /* @__PURE__ */ jsx67(
                       "button",
                       {
                         onClick: (e3) => {
@@ -342157,7 +342686,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
                           isContext ? "text-primary bg-primary/10" : "text-text-tertiary hover:text-primary hover:bg-background-hover opacity-0 group-hover:opacity-100"
                         ),
                         title: isContext ? t5("newSession.removeContext") : t5("newSession.addContext"),
-                        children: isContext ? /* @__PURE__ */ jsx65(Check, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx65(Plus, { className: "w-3.5 h-3.5" })
+                        children: isContext ? /* @__PURE__ */ jsx67(Check, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx67(Plus, { className: "w-3.5 h-3.5" })
                       }
                     )
                   ]
@@ -342166,12 +342695,12 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
               );
             })
           ] }),
-          /* @__PURE__ */ jsx65("div", { className: "border-t border-border-subtle px-2 py-1.5 shrink-0", children: pendingPrimaryId ? /* @__PURE__ */ jsxs59("div", { className: "flex items-center justify-between gap-2", children: [
-            /* @__PURE__ */ jsxs59("span", { className: "flex items-center gap-1 text-[11px] text-text-tertiary truncate", children: [
-              /* @__PURE__ */ jsx65(Link, { className: "w-3 h-3 shrink-0" }),
+          /* @__PURE__ */ jsx67("div", { className: "border-t border-border-subtle px-2 py-1.5 shrink-0", children: pendingPrimaryId ? /* @__PURE__ */ jsxs61("div", { className: "flex items-center justify-between gap-2", children: [
+            /* @__PURE__ */ jsxs61("span", { className: "flex items-center gap-1 text-[11px] text-text-tertiary truncate", children: [
+              /* @__PURE__ */ jsx67(Link, { className: "w-3 h-3 shrink-0" }),
               t5("newSession.contextCount", { count: pendingContextIds.length })
             ] }),
-            /* @__PURE__ */ jsx65(
+            /* @__PURE__ */ jsx67(
               "button",
               {
                 onClick: handleCreateWithWorkspace,
@@ -342182,7 +342711,7 @@ var NewSessionPanel3 = memo38(function NewSessionPanel4({
                 children: t5("newSession.create")
               }
             )
-          ] }) : /* @__PURE__ */ jsx65("div", { className: "text-[11px] text-text-tertiary text-center py-0.5", children: t5("newSession.selectPrimaryHint") }) })
+          ] }) : /* @__PURE__ */ jsx67("div", { className: "text-[11px] text-text-tertiary text-center py-0.5", children: t5("newSession.selectPrimaryHint") }) })
         ]
       }
     ),
@@ -342223,8 +342752,8 @@ function readSessionMessages(conversationId, afterTimestamp, limit2) {
 // src/QuickSwitchPanel/QuickSwitchPanel.tsx
 init_deps();
 init_logger();
-import { jsx as jsx66, jsxs as jsxs60 } from "react/jsx-runtime";
-var log39 = createLogger("QuickSwitchPanel");
+import { jsx as jsx68, jsxs as jsxs62 } from "react/jsx-runtime";
+var log40 = createLogger("QuickSwitchPanel");
 var SHOW_DELAY2 = 0;
 var HIDE_DELAY2 = 150;
 var PINNED_STORAGE_KEY = "quick-switch-panel-pinned";
@@ -342241,18 +342770,18 @@ function savePinnedState(pinned) {
   } catch {
   }
 }
-var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
+var QuickSwitchPanel = memo40(function QuickSwitchPanel2({
   className
 }) {
-  const [isPanelVisible, setIsPanelVisible] = useState49(false);
-  const [isPinned, setIsPinned] = useState49(getPinnedState);
-  const [isNewSessionOpen, setIsNewSessionOpen] = useState49(false);
-  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState49(null);
-  const workspaceDropdownOpenRef = useRef31(false);
-  const isHoveringTriggerRef = useRef31(false);
-  const isHoveringPanelRef = useRef31(false);
-  const hideTimerRef = useRef31(null);
-  const showTimerRef = useRef31(null);
+  const [isPanelVisible, setIsPanelVisible] = useState50(false);
+  const [isPinned, setIsPinned] = useState50(getPinnedState);
+  const [isNewSessionOpen, setIsNewSessionOpen] = useState50(false);
+  const [deleteConfirmTarget, setDeleteConfirmTarget] = useState50(null);
+  const workspaceDropdownOpenRef = useRef32(false);
+  const isHoveringTriggerRef = useRef32(false);
+  const isHoveringPanelRef = useRef32(false);
+  const hideTimerRef = useRef32(null);
+  const showTimerRef = useRef32(null);
   const sessions = useSessionDirectorySessions();
   const activeSessionId = useSessionDirectoryActiveId();
   const deleteSession2 = deleteSession;
@@ -342276,29 +342805,29 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
     }, SHOW_DELAY2);
   }, [clearTimers]);
   const scheduleHide = useCallback34(() => {
-    log39.info("scheduleHide \u8C03\u7528", {
+    log40.info("scheduleHide \u8C03\u7528", {
       dropdownRefCurrent: workspaceDropdownOpenRef.current,
       isHoveringTrigger: isHoveringTriggerRef.current,
       isHoveringPanel: isHoveringPanelRef.current,
       isPinned
     });
     if (isPinned) {
-      log39.info("\u9762\u677F\u5DF2\u9489\u4F4F\uFF0C\u8DF3\u8FC7\u5173\u95ED");
+      log40.info("\u9762\u677F\u5DF2\u9489\u4F4F\uFF0C\u8DF3\u8FC7\u5173\u95ED");
       return;
     }
     clearTimers();
     hideTimerRef.current = setTimeout(() => {
       if (workspaceDropdownOpenRef.current) {
-        log39.info("\u4E0B\u62C9\u6253\u5F00\u4E2D\uFF0C\u8DF3\u8FC7\u5173\u95ED\u9762\u677F");
+        log40.info("\u4E0B\u62C9\u6253\u5F00\u4E2D\uFF0C\u8DF3\u8FC7\u5173\u95ED\u9762\u677F");
         return;
       }
       if (!isHoveringTriggerRef.current && !isHoveringPanelRef.current) {
-        log39.info("\u5173\u95ED\u9762\u677F");
+        log40.info("\u5173\u95ED\u9762\u677F");
         setIsPanelVisible(false);
       }
     }, HIDE_DELAY2);
   }, [clearTimers, isPinned]);
-  useEffect30(() => {
+  useEffect31(() => {
     return () => clearTimers();
   }, [clearTimers]);
   const handleTriggerMouseEnter = useCallback34(() => {
@@ -342310,12 +342839,12 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
     scheduleHide();
   }, [scheduleHide]);
   const handlePanelMouseEnter = useCallback34(() => {
-    log39.info("handlePanelMouseEnter");
+    log40.info("handlePanelMouseEnter");
     isHoveringPanelRef.current = true;
     clearTimers();
   }, [clearTimers]);
   const handlePanelMouseLeave = useCallback34(() => {
-    log39.info("handlePanelMouseLeave");
+    log40.info("handlePanelMouseLeave");
     isHoveringPanelRef.current = false;
     scheduleHide();
   }, [scheduleHide]);
@@ -342333,7 +342862,7 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
     deleteSession2(id38);
   }, [deleteConfirmTarget, deleteSession2]);
   const handleHandoffSession = useCallback34(async (sessionId) => {
-    const result = await handoffSessionToNewSession2(sessionId);
+    const result = await handoffSessionToNewSession3(sessionId);
     if (result.ok) {
       useToastStore.getState().success(
         "\u5DF2\u7EED\u63A5\u5230\u65B0\u4F1A\u8BDD",
@@ -342352,12 +342881,12 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
     const newPinned = !isPinned;
     setIsPinned(newPinned);
     savePinnedState(newPinned);
-    log39.info("\u5207\u6362\u9489\u4F4F\u72B6\u6001", { newPinned });
+    log40.info("\u5207\u6362\u9489\u4F4F\u72B6\u6001", { newPinned });
   }, [isPinned]);
-  const sessionList = useMemo24(() => {
+  const sessionList = useMemo25(() => {
     const visibleSessions = sessions.filter((s3) => !s3.silentMode);
     return visibleSessions.map((session) => {
-      const handoff = getHandoffEligibility2(session.id);
+      const handoff = getHandoffEligibility3(session.id);
       return {
         id: session.id,
         title: session.title,
@@ -342369,7 +342898,7 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
       };
     });
   }, [sessions, activeSessionId]);
-  const workspaceInfo = useMemo24(() => {
+  const workspaceInfo = useMemo25(() => {
     const activeSession = sessions.find((s3) => s3.id === activeSessionId);
     if (!activeSession?.workspaceId) return null;
     const workspace = workspaces.find((w5) => w5.id === activeSession.workspaceId);
@@ -342383,7 +342912,7 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
       contextCount: activeSession.contextWorkspaceIds?.length || 0
     };
   }, [sessions, activeSessionId, workspaces]);
-  const workspaceList = useMemo24(() => {
+  const workspaceList = useMemo25(() => {
     const activeSession = sessions.find((s3) => s3.id === activeSessionId);
     const mainWorkspaceId = activeSession?.workspaceId;
     const contextIds = activeSession?.contextWorkspaceIds || [];
@@ -342395,11 +342924,11 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
       isContext: contextIds.includes(w5.id)
     }));
   }, [sessions, activeSessionId, workspaces]);
-  const contextWorkspaceIds = useMemo24(() => {
+  const contextWorkspaceIds = useMemo25(() => {
     const activeSession = sessions.find((s3) => s3.id === activeSessionId);
     return activeSession?.contextWorkspaceIds || [];
   }, [sessions, activeSessionId]);
-  const isWorkspaceLocked = useMemo24(() => {
+  const isWorkspaceLocked = useMemo25(() => {
     const activeSession = sessions.find((s3) => s3.id === activeSessionId);
     return activeSession?.workspaceLocked || false;
   }, [sessions, activeSessionId]);
@@ -342415,7 +342944,7 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
       addContextWorkspace(activeSessionId, workspaceId);
     }
   }, [activeSessionId, contextWorkspaceIds, addContextWorkspace, removeContextWorkspace]);
-  const [isExporting, setIsExporting] = useState49(false);
+  const [isExporting, setIsExporting] = useState50(false);
   const handleExport = useCallback34(async () => {
     if (!activeSessionId || isExporting) return;
     setIsExporting(true);
@@ -342423,7 +342952,7 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
       try {
         const status = await getSessionStatus(activeSessionId);
         if (!status) {
-          log39.warn("\u4F1A\u8BDD\u5DF2\u4E0D\u5B58\u5728\uFF0C\u53D6\u6D88\u5BFC\u51FA", { activeSessionId });
+          log40.warn("\u4F1A\u8BDD\u5DF2\u4E0D\u5B58\u5728\uFF0C\u53D6\u6D88\u5BFC\u51FA", { activeSessionId });
           return;
         }
       } catch {
@@ -342431,17 +342960,17 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
       const entries2 = await readSessionMessages(activeSessionId);
       const messages = entries2.map((e3) => e3.content);
       if (messages.length === 0) {
-        log39.info("\u4F1A\u8BDD\u65E0\u6D88\u606F\uFF0C\u8DF3\u8FC7\u5BFC\u51FA", { activeSessionId });
+        log40.info("\u4F1A\u8BDD\u65E0\u6D88\u606F\uFF0C\u8DF3\u8FC7\u5BFC\u51FA", { activeSessionId });
         return;
       }
       const content = exportToMarkdown(messages);
       const fileName = generateFileName("md");
       const filePath = await saveChatToFile(content, fileName);
       if (filePath) {
-        log39.info("\u5BFC\u51FA\u804A\u5929\u6210\u529F", { path: filePath });
+        log40.info("\u5BFC\u51FA\u804A\u5929\u6210\u529F", { path: filePath });
       }
     } catch (error3) {
-      log39.error(
+      log40.error(
         "\u5BFC\u51FA\u804A\u5929\u5931\u8D25",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -342452,13 +342981,13 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
   const handleOpenHistory = useCallback34(() => {
     toggleSessionHistory();
   }, [toggleSessionHistory]);
-  const currentStatus = useMemo24(() => {
+  const currentStatus = useMemo25(() => {
     const activeSession = sessions.find((s3) => s3.id === activeSessionId);
     return activeSession ? mapSessionStatus(activeSession.status) : "idle";
   }, [sessions, activeSessionId]);
-  return /* @__PURE__ */ jsxs60("div", { className: cn2("fixed right-0 top-0 bottom-0 pointer-events-none z-20", className), children: [
-    /* @__PURE__ */ jsxs60("div", { className: "absolute right-0 top-[25%] -translate-y-1/2 pointer-events-auto", children: [
-      /* @__PURE__ */ jsx66(
+  return /* @__PURE__ */ jsxs62("div", { className: cn2("fixed right-0 top-0 bottom-0 pointer-events-none z-20", className), children: [
+    /* @__PURE__ */ jsxs62("div", { className: "absolute right-0 top-[25%] -translate-y-1/2 pointer-events-auto", children: [
+      /* @__PURE__ */ jsx68(
         QuickSwitchTrigger,
         {
           status: currentStatus,
@@ -342467,7 +342996,7 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
           onMouseLeave: handleTriggerMouseLeave
         }
       ),
-      (isPanelVisible || isPinned) && /* @__PURE__ */ jsx66("div", { className: "absolute right-10 top-0", children: /* @__PURE__ */ jsx66(
+      (isPanelVisible || isPinned) && /* @__PURE__ */ jsx68("div", { className: "absolute right-10 top-0", children: /* @__PURE__ */ jsx68(
         QuickSwitchContent,
         {
           sessions: sessionList,
@@ -342492,15 +343021,15 @@ var QuickSwitchPanel = memo39(function QuickSwitchPanel2({
         }
       ) })
     ] }),
-    isNewSessionOpen && /* @__PURE__ */ jsx66(
+    isNewSessionOpen && /* @__PURE__ */ jsx68(
       NewSessionPanel3,
       {
         placement: "right-center",
         onClose: () => setIsNewSessionOpen(false)
       }
     ),
-    deleteConfirmTarget && createPortal5(
-      /* @__PURE__ */ jsx66(
+    deleteConfirmTarget && createPortal6(
+      /* @__PURE__ */ jsx68(
         ConfirmDialog,
         {
           title: "\u5220\u9664\u4F1A\u8BDD",
@@ -342533,280 +343062,6 @@ function mapSessionStatus(status) {
     default:
       return "idle";
   }
-}
-
-// src/Session/WorkspaceBadge.tsx
-import { memo as memo40, forwardRef as forwardRef6 } from "react";
-init_lucide_react();
-import { jsx as jsx67, jsxs as jsxs61 } from "react/jsx-runtime";
-var WorkspaceBadge2 = memo40(
-  forwardRef6(function WorkspaceBadge3({ workspaceId, workspaceName, contextWorkspaceCount = 0, onClick }, ref) {
-    if (!workspaceId) {
-      return /* @__PURE__ */ jsx67(
-        "button",
-        {
-          ref,
-          onClick,
-          className: cn2(
-            "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs",
-            "bg-gray-500/20 text-gray-400",
-            "hover:bg-gray-500/30 transition-colors",
-            "shrink-0"
-          ),
-          title: "\u9009\u62E9\u5DE5\u4F5C\u533A",
-          "aria-label": "\u9009\u62E9\u5DE5\u4F5C\u533A",
-          children: /* @__PURE__ */ jsx67(Plus, { className: "w-3 h-3" })
-        }
-      );
-    }
-    return /* @__PURE__ */ jsxs61(
-      "button",
-      {
-        ref,
-        onClick,
-        className: cn2(
-          "flex items-center gap-1 px-1.5 py-0.5 rounded text-xs",
-          "bg-blue-500/20 text-blue-400",
-          "hover:bg-blue-500/30 transition-colors",
-          "shrink-0 max-w-[120px]"
-        ),
-        title: `\u5DE5\u4F5C\u533A: ${workspaceName || "\u672A\u547D\u540D"}${contextWorkspaceCount > 0 ? ` (+${contextWorkspaceCount} \u5173\u8054)` : ""}`,
-        "aria-label": `\u5DE5\u4F5C\u533A: ${workspaceName || "\u672A\u547D\u540D"}`,
-        children: [
-          /* @__PURE__ */ jsx67(Folder, { className: "w-3 h-3 shrink-0" }),
-          /* @__PURE__ */ jsx67("span", { className: "truncate", children: workspaceName || "\u672A\u547D\u540D" }),
-          contextWorkspaceCount > 0 && /* @__PURE__ */ jsxs61("span", { className: "px-1 bg-blue-500/40 rounded shrink-0", children: [
-            "+",
-            contextWorkspaceCount
-          ] })
-        ]
-      }
-    );
-  })
-);
-
-// src/Session/WorkspaceMenu.tsx
-init_i18n();
-init_logger();
-import { useState as useState50, useRef as useRef32, useEffect as useEffect31, useMemo as useMemo25 } from "react";
-import { createPortal as createPortal6 } from "react-dom";
-init_lucide_react();
-init_deps();
-init_sessionDirectoryStore();
-init_misc();
-init_misc();
-import { jsx as jsx68, jsxs as jsxs62 } from "react/jsx-runtime";
-var log40 = createLogger("WorkspaceMenu");
-function WorkspaceMenu2({ sessionId, anchorEl, onClose }) {
-  const { t: t5 } = useTranslation("workspace");
-  const workspacesRaw = useWorkspaceStore((state6) => state6.workspaces);
-  const workspaces = useMemo25(
-    () => workspacesRaw.slice().sort(
-      (a3, b12) => new Date(b12.lastAccessed).getTime() - new Date(a3.lastAccessed).getTime()
-    ),
-    [workspacesRaw]
-  );
-  const sessions = useSessionDirectorySessions();
-  const updateSessionWorkspace2 = updateSessionWorkspace;
-  const addContextWorkspace2 = addContextWorkspace;
-  const removeContextWorkspace2 = removeContextWorkspace;
-  const [showCreateModal, setShowCreateModal] = useState50(false);
-  const [searchQuery, setSearchQuery] = useState50("");
-  const filteredWorkspaces = useWorkspaceFilter(workspaces, searchQuery);
-  const [position5, setPosition] = useState50({ top: 0, left: 0 });
-  const menuRef = useRef32(null);
-  useEffect31(() => {
-    if (anchorEl) {
-      const rect2 = anchorEl.getBoundingClientRect();
-      setPosition({
-        top: rect2.bottom + 4,
-        // 徽章下方 4px
-        left: rect2.left
-      });
-    }
-  }, [anchorEl]);
-  useEffect31(() => {
-    const handleClickOutside = (event3) => {
-      if (menuRef.current && !menuRef.current.contains(event3.target)) {
-        onClose();
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [onClose]);
-  const session = sessions.find((s3) => s3.id === sessionId);
-  if (!session) {
-    return null;
-  }
-  const effectiveWorkspaceId = session.workspaceId;
-  const contextWorkspaceIds = session.contextWorkspaceIds || [];
-  const isLocked = session.workspaceLocked || false;
-  const handleWorkspaceClick = (workspaceId) => {
-    if (isLocked) return;
-    log40.debug("Switch workspace", { sessionId, workspaceId });
-    updateSessionWorkspace2(sessionId, workspaceId);
-  };
-  const handleToggleContext = (workspaceId) => {
-    log40.debug("Toggle context workspace", { sessionId, workspaceId });
-    if (contextWorkspaceIds.includes(workspaceId)) {
-      removeContextWorkspace2(sessionId, workspaceId);
-    } else {
-      addContextWorkspace2(sessionId, workspaceId);
-    }
-  };
-  const currentWorkspace = workspaces.find((w5) => w5.id === effectiveWorkspaceId);
-  const contextWorkspaces = workspaces.filter((w5) => contextWorkspaceIds.includes(w5.id));
-  const menuContent = /* @__PURE__ */ jsxs62(
-    "div",
-    {
-      ref: menuRef,
-      className: "fixed w-64 bg-background-elevated border border-border rounded-xl shadow-lg overflow-hidden z-popover",
-      style: {
-        top: `${position5.top}px`,
-        left: `${position5.left}px`
-      },
-      children: [
-        /* @__PURE__ */ jsxs62("div", { className: "px-3 py-2 text-xs font-medium text-text-tertiary border-b border-border-subtle flex items-center justify-between", children: [
-          /* @__PURE__ */ jsx68("span", { children: "\u4F1A\u8BDD\u5DE5\u4F5C\u533A" }),
-          /* @__PURE__ */ jsx68(
-            "button",
-            {
-              onClick: () => setShowCreateModal(true),
-              className: "text-primary hover:text-primary-hover transition-colors",
-              children: "+ \u65B0\u589E"
-            }
-          )
-        ] }),
-        isLocked && /* @__PURE__ */ jsxs62("div", { className: "px-3 py-2 bg-warning/10 border-b border-border-subtle flex items-center gap-2 text-xs text-warning", children: [
-          /* @__PURE__ */ jsx68(Lock, { className: "w-3.5 h-3.5" }),
-          /* @__PURE__ */ jsx68("span", { children: "\u521B\u5EFA\u65F6\u5DF2\u6307\u5B9A\u4E3B\u5DE5\u4F5C\u533A\uFF0C\u4E0D\u53EF\u4FEE\u6539" })
-        ] }),
-        workspaces.length > 3 && /* @__PURE__ */ jsx68("div", { className: "px-3 py-2 border-b border-border-subtle", children: /* @__PURE__ */ jsx68(
-          WorkspaceSearchInput,
-          {
-            value: searchQuery,
-            onChange: setSearchQuery,
-            autoFocus: true
-          }
-        ) }),
-        /* @__PURE__ */ jsx68("div", { className: "max-h-48 overflow-y-auto", children: filteredWorkspaces.length === 0 ? /* @__PURE__ */ jsx68("div", { className: "py-4 text-center text-sm text-text-tertiary", children: t5("search.noResults") }) : filteredWorkspaces.map((workspace) => {
-          const isCurrent = workspace.id === effectiveWorkspaceId;
-          const isContext = contextWorkspaceIds.includes(workspace.id);
-          return /* @__PURE__ */ jsxs62(
-            "div",
-            {
-              className: cn2(
-                "group relative flex items-center",
-                isCurrent && (isLocked ? "bg-primary/10 opacity-80" : "bg-primary/10")
-              ),
-              children: [
-                isCurrent && /* @__PURE__ */ jsx68("div", { className: "absolute left-0 top-0 bottom-0 w-1 bg-primary" }),
-                isCurrent && isLocked && /* @__PURE__ */ jsx68("div", { className: "px-2", children: /* @__PURE__ */ jsx68(Lock, { className: "w-3.5 h-3.5 text-text-muted" }) }),
-                /* @__PURE__ */ jsxs62(
-                  "button",
-                  {
-                    onClick: (e3) => {
-                      e3.stopPropagation();
-                      handleWorkspaceClick(workspace.id);
-                    },
-                    disabled: isLocked && isCurrent,
-                    className: cn2(
-                      "flex-1 text-left px-3 py-2 text-sm transition-colors",
-                      isCurrent ? "text-primary" : isLocked ? "text-text-secondary cursor-not-allowed" : "text-text-secondary hover:text-text-primary hover:bg-background-hover",
-                      isLocked && isCurrent && "cursor-not-allowed"
-                    ),
-                    children: [
-                      /* @__PURE__ */ jsxs62("div", { className: "pr-16 font-medium truncate flex items-center gap-2", children: [
-                        isCurrent && !isLocked && /* @__PURE__ */ jsx68("span", { className: "w-1.5 h-1.5 rounded-full bg-primary" }),
-                        workspace.name
-                      ] }),
-                      /* @__PURE__ */ jsx68("div", { className: "text-xs truncate text-text-tertiary", children: workspace.path })
-                    ]
-                  }
-                ),
-                isCurrent && /* @__PURE__ */ jsx68("span", { className: "px-2 text-xs text-primary", children: "\u4E3B" }),
-                filteredWorkspaces.length > 1 && !isCurrent && /* @__PURE__ */ jsx68(
-                  "button",
-                  {
-                    onClick: (e3) => {
-                      e3.stopPropagation();
-                      handleToggleContext(workspace.id);
-                    },
-                    className: cn2(
-                      "absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded transition-colors",
-                      isContext ? "text-primary bg-primary/10" : "text-text-tertiary hover:text-text-primary hover:bg-background-hover opacity-0 group-hover:opacity-100"
-                    ),
-                    title: isContext ? "\u79FB\u9664\u5173\u8054" : "\u6DFB\u52A0\u5173\u8054",
-                    children: isContext ? /* @__PURE__ */ jsx68(Check, { className: "w-3.5 h-3.5" }) : /* @__PURE__ */ jsx68(Plus, { className: "w-3.5 h-3.5" })
-                  }
-                )
-              ]
-            },
-            workspace.id
-          );
-        }) }),
-        /* @__PURE__ */ jsxs62("div", { className: "border-t border-border-subtle", children: [
-          /* @__PURE__ */ jsxs62("div", { className: "px-3 py-2 text-xs text-text-tertiary flex items-center gap-1", children: [
-            /* @__PURE__ */ jsx68(Link, { className: "w-3 h-3" }),
-            "\u5173\u8054\u5DE5\u4F5C\u533A (",
-            contextWorkspaceIds.length,
-            ")"
-          ] }),
-          contextWorkspaces.length > 0 ? /* @__PURE__ */ jsxs62("div", { className: "max-h-32 overflow-y-auto", children: [
-            currentWorkspace && /* @__PURE__ */ jsxs62("div", { className: "group flex items-center px-3 py-1.5 text-sm text-text-secondary bg-primary/5", children: [
-              /* @__PURE__ */ jsx68("span", { className: "w-2 h-2 rounded-full bg-primary mr-2" }),
-              /* @__PURE__ */ jsx68("span", { className: "flex-1 truncate", children: currentWorkspace.name }),
-              /* @__PURE__ */ jsx68("span", { className: "text-xs text-text-tertiary mr-2", children: "\u4E3B" })
-            ] }),
-            contextWorkspaces.map((workspace) => /* @__PURE__ */ jsxs62(
-              "div",
-              {
-                className: "group flex items-center px-3 py-1.5 text-sm text-text-secondary hover:bg-background-hover",
-                children: [
-                  /* @__PURE__ */ jsx68("span", { className: "w-2 h-2 rounded-full bg-primary/50 mr-2" }),
-                  /* @__PURE__ */ jsx68("span", { className: "flex-1 truncate", children: workspace.name }),
-                  /* @__PURE__ */ jsx68(
-                    "button",
-                    {
-                      onClick: (e3) => {
-                        e3.stopPropagation();
-                        handleToggleContext(workspace.id);
-                      },
-                      className: "p-1 rounded text-text-tertiary hover:text-danger opacity-0 group-hover:opacity-100 transition-opacity",
-                      title: "\u79FB\u9664\u5173\u8054",
-                      children: /* @__PURE__ */ jsx68(X, { className: "w-3 h-3" })
-                    }
-                  )
-                ]
-              },
-              workspace.id
-            ))
-          ] }) : /* @__PURE__ */ jsx68("div", { className: "px-3 py-2 text-xs text-text-tertiary text-center", children: effectiveWorkspaceId ? "\u65E0\u5173\u8054\u5DE5\u4F5C\u533A" : "\u70B9\u51FB\u5DE5\u4F5C\u533A\u53F3\u4FA7\u7684 + \u6DFB\u52A0\u5173\u8054" }),
-          effectiveWorkspaceId && /* @__PURE__ */ jsx68("div", { className: "border-t border-border-subtle p-1.5", children: /* @__PURE__ */ jsxs62(
-            "button",
-            {
-              onClick: (e3) => {
-                e3.stopPropagation();
-                log40.debug("Detach workspace -> free session", { sessionId });
-                updateSessionWorkspace2(sessionId, null);
-              },
-              className: "w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs text-text-tertiary hover:text-danger hover:bg-danger/10 rounded transition-colors",
-              title: "\u79FB\u9664\u6B64\u5DE5\u4F5C\u533A\uFF0C\u8F6C\u4E3A\u81EA\u7531\u4F1A\u8BDD\uFF08\u4F1A\u8986\u76D6\u521B\u5EFA\u65F6\u7684\u9501\u5B9A\uFF09",
-              children: [
-                /* @__PURE__ */ jsx68(X, { className: "w-3 h-3" }),
-                "\u79FB\u9664\u6B64\u5DE5\u4F5C\u533A\uFF08\u81EA\u7531\u4F1A\u8BDD\uFF09"
-              ]
-            }
-          ) })
-        ] }),
-        contextWorkspaces.length > 0 && /* @__PURE__ */ jsx68("div", { className: "mx-2 my-2 p-2 bg-primary/5 border border-primary/20 rounded text-xs text-text-secondary", children: "AI \u53EF\u4EE5\u8BBF\u95EE\u5173\u8054\u5DE5\u4F5C\u533A\u4E2D\u7684\u6587\u4EF6" }),
-        showCreateModal && /* @__PURE__ */ jsx68(CreateWorkspaceModal, { onClose: () => setShowCreateModal(false) })
-      ]
-    }
-  );
-  return createPortal6(menuContent, document.body);
 }
 
 // src/Session/CreateSessionModal.tsx
@@ -342996,14 +343251,14 @@ function SessionConfigSelector3({
   }, [t5, profiles, config3.modelProfileId]);
   const getEffortLabel = useCallback35((effort) => {
     if (!effort) return t5("sessionConfig.noEffort");
-    const declared = getEngineEffortOptions(currentEngine)?.find((o2) => o2.value === effort);
+    const declared = getEngineEffortOptions2(currentEngine)?.find((o2) => o2.value === effort);
     if (declared) return declared.label;
     const opt = EFFORT_OPTIONS2.find((o2) => o2.value === effort);
     return opt?.label || effort;
   }, [t5, currentEngine]);
   const getPermissionLabel = useCallback35((mode) => {
     if (!mode) return t5("sessionConfig.noPermission");
-    const declared = getEnginePermissionOptions(currentEngine)?.find((o2) => o2.value === mode);
+    const declared = getEnginePermissionOptions2(currentEngine)?.find((o2) => o2.value === mode);
     if (declared) return declared.label;
     const opt = PERMISSION_MODE_OPTIONS2.find((o2) => o2.value === mode);
     return opt?.label || mode;
@@ -343076,7 +343331,7 @@ function SessionConfigSelector3({
         })));
         break;
       case "effort": {
-        const opts = getEngineEffortOptions(currentEngine) ?? EFFORT_OPTIONS2;
+        const opts = getEngineEffortOptions2(currentEngine) ?? EFFORT_OPTIONS2;
         items.push(...opts.map((o2) => ({
           value: o2.value,
           label: o2.label,
@@ -343085,7 +343340,7 @@ function SessionConfigSelector3({
         break;
       }
       case "permission": {
-        const opts = getEnginePermissionOptions(currentEngine) ?? PERMISSION_MODE_OPTIONS2;
+        const opts = getEnginePermissionOptions2(currentEngine) ?? PERMISSION_MODE_OPTIONS2;
         items.push(...opts.map((o2) => ({
           value: o2.value,
           label: o2.label,
@@ -343252,7 +343507,7 @@ function SessionConfigSelector3({
     ] });
   };
   const ALL_TYPES = ["agent", "model", "effort", "permission", "profile"];
-  const allowedByEngine = getEngineSelectors(activeEngineId);
+  const allowedByEngine = getEngineSelectors2(activeEngineId);
   const typesToShow = (visibleTypes ?? ALL_TYPES).filter((t6) => allowedByEngine.includes(t6));
   return /* @__PURE__ */ jsxs63("div", { ref: containerRef, className: clsx(variant === "panel" ? "flex flex-col gap-0.5 w-full" : "flex items-center gap-1"), children: [
     typesToShow.map((type3) => /* @__PURE__ */ jsx69(React5.Fragment, { children: renderSelector(type3, variant) }, type3)),

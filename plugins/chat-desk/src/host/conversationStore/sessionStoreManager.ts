@@ -974,6 +974,10 @@ export const sessionStoreManager =
         return created
       })())
 
+// 自挂全局注册表：shims/stores 对本模块的转发是惰性 Proxy（防 esbuild init
+// 循环把 export 固化为 undefined），运行时经此键取真身。
+;(globalThis as unknown as Record<string, unknown>).__CHAT_DESK_LOCAL_MANAGER__ = sessionStoreManager
+
 /**
  * 缓存的 actions 对象，确保引用稳定
  */

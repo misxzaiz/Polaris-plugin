@@ -69,15 +69,30 @@ export const useCompactHandoffStore: any = (...args: unknown[]) =>
    (window as unknown as Record<string, any>).__CHAT_DESK_LOCAL_STORES__?.useCompactHandoffStore)(...args)
 export const useDispatchStore = useStoreHook('useDispatchStore') as any
 
-// sessionStoreManager（P6：单写者随域迁入插件）——直接用本地实现
+// sessionStoreManager（P6：单写者随域迁入插件）——本地实现
 // （host/conversationStore/sessionStoreManager，宿主同源）。bootstrap 会把该
 // 实例回挂到宿主反向桥，供 sessionDirectory 与 chrome 消费。
-import { sessionStoreManager as _localManager } from '../host/conversationStore/sessionStoreManager'
-export const sessionStoreManager: any = _localManager
+//
+// 循环初始化陷阱（K-F2 真机实证）：本文件若顶层 import host/.../sessionStoreManager，
+// esbuild bundle 的 init 顺序会变成 sessionStoreManager 块 → createConversationStore
+// 块 → 本块（重入被跳过）→ 本块后续行把尚未赋值的 sessionStoreManager2 固化进
+// export → ChatDeskEntry 渲染期 sessionStoreManager 恒为 undefined。
+// 修法与 useCompactHandoffStore 同款：惰性转发，运行时才解引用。
+import * as _localManagerNs from '../host/conversationStore/sessionStoreManager'
+export const sessionStoreManager: any = new Proxy({}, {
+  get: (_t, p) => {
+    const m = ((globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_MANAGER__ ??
+      (window as unknown as Record<string, any>).__CHAT_DESK_LOCAL_MANAGER__ ??
+      (_localManagerNs as Record<string, any>).sessionStoreManager)
+    return m?.[p as string]
+  },
+})
 
 /** 兼容旧桥读写的取 manager 入口（恒为插件内实现） */
 function localManager(): any {
-  return _localManager
+  return ((globalThis as unknown as Record<string, any>).__CHAT_DESK_LOCAL_MANAGER__ ??
+    (window as unknown as Record<string, any>).__CHAT_DESK_LOCAL_MANAGER__ ??
+    (_localManagerNs as Record<string, any>).sessionStoreManager)
 }
 
 // ── 非 hook 具名导出（宿主单例转发）──
