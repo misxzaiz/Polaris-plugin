@@ -1,0 +1,31 @@
+{
+  "id": "snippet-desk",
+  "name": "提示词工作台",
+  "version": "0.1.0",
+  "description": "把「写过的提示词散落在聊天记录里」变成可复用资产：快捷片段 CRUD（变量占位符自动提取/参数面板联动）、变量试填、skill 路径配置与已发现 Skill 列表。与 chat-desk 的 @snippet 输入链路两端协作；数据走 cap.prompt_snippet 总线，本地面板零外联。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "snippet-desk.panel",
+        "area": "activityBar",
+        "panelType": "snippet-desk",
+        "icon": "ClipboardList",
+        "labelKey": "plugins.snippetDesk",
+        "labelDefault": "提示词工作台",
+        "order": 96
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {},
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/snippet-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/snippet-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/snippet-desk/snippet-desk.zip"
+  }
+}

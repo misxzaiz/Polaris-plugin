@@ -1,0 +1,23 @@
+{
+  "name": "snippet-desk-panel",
+  "version": "0.1.0",
+  "private": true,
+  "description": "snippet-desk 插件(打包用)：提示词工作台——快捷片段 CRUD/变量试填/skill 配置",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.1",
+    "esbuild": "^0.23.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "zustand": "^5.1.0"
+  }
+}
