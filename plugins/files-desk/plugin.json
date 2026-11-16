@@ -1,0 +1,33 @@
+{
+  "id": "files-desk",
+  "name": "文件工作台",
+  "version": "0.1.0",
+  "description": "文件浏览器 + 代码编辑器 + Diff 查看器三合一工作台。tabStore/fileEditorStore 留宿主（跨域共享），面板经 __POLARIS_APP_CORE__ 取同一实例。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "files-desk.panel",
+        "area": "activityBar",
+        "panelType": "files-desk",
+        "icon": "Files",
+        "labelKey": "plugins.filesDesk",
+        "labelDefault": "文件工作台",
+        "order": 5,
+        "slot": "files",
+        "slotMode": "shadow"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {},
+  "origin": {
+    "repository": "https://github.com/misxzaiz/Polaris-plugin",
+    "homepage": "https://github.com/misxzaiz/Polaris-plugin/tree/main/plugins/files-desk",
+    "updateUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/files-desk/update.json",
+    "downloadUrl": "https://cdn.jsdelivr.net/gh/misxzaiz/Polaris-plugin@main/plugins/files-desk/files-desk.zip"
+  }
+}
