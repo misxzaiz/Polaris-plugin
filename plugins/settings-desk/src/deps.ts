@@ -58,14 +58,44 @@ export const useFocusModeStore: any = forwardStore('useFocusModeStore')
 export const useContainerWidth: any = (...args: any[]) => core().hooks.useContainerWidth(...args)
 
 // ── components（宿主共享 UI 件）──
-export const Button: any = (...args: any[]) => core().components.Button(...args)
-export const ExternalLink: any = (...args: any[]) => core().components.ExternalLink(...args)
+// Button/ExternalLink 是 React 组件（JSX 用法 <Button .../>），不能包成
+// 「调用即转发」函数——JSX 编译为 React.createElement(Button, ...)，要求
+// 传入的本身就是组件类型。用 lazyComponent 同款 Proxy：construct/get 均
+// 转发宿主组件本体。
+function forwardComponent(ns: 'components', name: string): any {
+  // React 19 的 forwardRef 组件是 { $$typeof, render } 对象（typeof !== 'function'），
+  // JSX <Button/> 走 createElement(Button)（读属性、不调用），故 get 透传组件
+  // 本体成员即可命中；apply/construct 兜底直接调用/构造（render 两参形态）。
+  return new Proxy(function () {}, {
+    construct: (_t, args) => {
+      const v = core()[ns][name]
+      return new v(...args)
+    },
+    get: (_t, prop) => {
+      const v = core()[ns][name]
+      const m = (v as any)?.[prop]
+      return typeof m === 'function' ? m.bind(v) : m
+    },
+    apply: (_t, _thisArg, args) => {
+      const v = core()[ns][name] as any
+      if (v && typeof v === 'object' && typeof v.render === 'function') return v.render(...args)
+      return v(...args)
+    },
+  })
+}
+export const Button: any = forwardComponent('components', 'Button')
+export const ExternalLink: any = forwardComponent('components', 'ExternalLink')
 
 // ── plugin-system ──
 export const pluginRegistry: any = new Proxy({}, { get: (_t, p) => (core().pluginSystem as any).pluginRegistry?.[p] })
 export const listPluginMcpServerStatuses: any = (...args: any[]) => core().pluginSystem.listPluginMcpServerStatuses(...args)
 export const listEnabledPluginMcpServers: any = (...args: any[]) => core().pluginSystem.listEnabledPluginMcpServers(...args)
-export const getPluginIconComponent: any = (...args: any[]) => core().services.getPluginIconComponent(...args)
+// getPluginIconComponent 返回 React 组件（<Icon size={..}/> JSX 用法），与
+// Button 同理走 forwardComponent 代理；它挂在 services 命名空间。
+export const getPluginIconComponent: any = new Proxy(function () {}, {
+  apply: (_t, _this, args) => core().services.getPluginIconComponent(...args),
+  construct: (_t, args) => new (core().services.getPluginIconComponent(...args))(...args),
+})
 export const pluginServiceManager: any = new Proxy({}, { get: (_t, p) => (core().services.pluginServiceManager as any)?.[p] })
 export const pluginConfig: any = new Proxy({}, { get: (_t, p) => (core().services.pluginConfig as any)?.[p] })
 

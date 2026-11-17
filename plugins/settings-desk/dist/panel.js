@@ -2290,11 +2290,34 @@ var useEngineMetadataStore = forwardStore("useEngineMetadataStore");
 var useThemeStore = forwardStore("useThemeStore");
 var useFocusModeStore = forwardStore("useFocusModeStore");
 var useContainerWidth = (...args) => core().hooks.useContainerWidth(...args);
-var Button = (...args) => core().components.Button(...args);
-var ExternalLink = (...args) => core().components.ExternalLink(...args);
+function forwardComponent(ns, name) {
+  return new Proxy(function() {
+  }, {
+    construct: (_t, args) => {
+      const v = core()[ns][name];
+      return new v(...args);
+    },
+    get: (_t, prop) => {
+      const v = core()[ns][name];
+      const m = v?.[prop];
+      return typeof m === "function" ? m.bind(v) : m;
+    },
+    apply: (_t, _thisArg, args) => {
+      const v = core()[ns][name];
+      if (v && typeof v === "object" && typeof v.render === "function") return v.render(...args);
+      return v(...args);
+    }
+  });
+}
+var Button = forwardComponent("components", "Button");
+var ExternalLink = forwardComponent("components", "ExternalLink");
 var pluginRegistry = new Proxy({}, { get: (_t, p) => core().pluginSystem.pluginRegistry?.[p] });
 var listPluginMcpServerStatuses = (...args) => core().pluginSystem.listPluginMcpServerStatuses(...args);
-var getPluginIconComponent = (...args) => core().services.getPluginIconComponent(...args);
+var getPluginIconComponent = new Proxy(function() {
+}, {
+  apply: (_t, _this, args) => core().services.getPluginIconComponent(...args),
+  construct: (_t, args) => new (core().services.getPluginIconComponent(...args))(...args)
+});
 var pluginServiceManager = new Proxy({}, { get: (_t, p) => core().services.pluginServiceManager?.[p] });
 var pluginConfig = new Proxy({}, { get: (_t, p) => core().services.pluginConfig?.[p] });
 function invoke(cmd, args) {
