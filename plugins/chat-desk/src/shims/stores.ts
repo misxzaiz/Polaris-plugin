@@ -54,7 +54,7 @@ export const useModelProfileStore = useStoreHook('useModelProfileStore') as any
 export const useSessionConfig = useStoreHook('useSessionConfig') as any
 export const useEngineMetadataStore = useStoreHook('useEngineMetadataStore') as any
 export const useCliInfoStore = useStoreHook('useCliInfoStore') as any
-export const useAgentStore = useStoreHook('useAgentStore') as any
+export { useAgentStore } from '../host/stores/agentStore'
 export const useCapCatalogStore = useStoreHook('useCapCatalogStore') as any
 export const usePluginStore = useStoreHook('usePluginStore') as any
 export const useOverlayStore = useStoreHook('useOverlayStore') as any
