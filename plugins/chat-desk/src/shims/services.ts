@@ -98,6 +98,9 @@ export const cancelCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown a
 import * as _localPromptOptimize from '../host/services/promptOptimizeService'
 export const runPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).runPromptOptimize)(...args)
 import * as _localPromptHistory from '../host/services/kvBacked/promptHistoryService'
+import * as _localStreamRateTracker from '../host/services/streamRateTracker'
+import * as _localCliSlashCommands from '../host/services/cliSlashCommands'
+import * as _localAgentSlashCommand from '../host/services/agentSlashCommand'
 import * as _localNewSessionPrefs from '../newSessionPrefsService'
 import * as _localClaudeSettings from '../host/services/kvBacked/claudeSettingsService'
 import * as _localImageSave from '../host/services/kvBacked/imageSaveService'
@@ -116,10 +119,10 @@ export const dispatchFromUser: AnyFn = (...args) => (coreService<Record<string, 
 export const initDispatchTaskListener: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('dispatchTaskService').initDispatchTaskListener)(...args)
 
 // ── 流速/UIDispatch/斜杠命令目录 ──
-export const getTracker: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('streamRateTracker').getTracker)(...args)
-export const resetTracker: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('streamRateTracker').resetTracker)(...args)
-export const dropTracker: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('streamRateTracker').dropTracker)(...args)
-export const estimateTokens: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('streamRateTracker').estimateTokens)(...args)
+export const getTracker: AnyFn = (...args) => (_localStreamRateTracker.getTracker(...args as unknown as unknown[]))
+export const resetTracker: AnyFn = (...args) => (_localStreamRateTracker.resetTracker(...args as unknown as unknown[]))
+export const dropTracker: AnyFn = (...args) => (_localStreamRateTracker.dropTracker(...args as unknown as unknown[]))
+export const estimateTokens: AnyFn = (...args) => (_localStreamRateTracker.estimateTokens(...args as unknown as unknown[]))
 
 export const consumeCapUiDispatch: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('uiDispatchService').consumeCapUiDispatch)(...args)
 export const dispatchCapUiAction: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('uiDispatchService').dispatchCapUiAction)(...args)
@@ -130,17 +133,17 @@ export const buildCapDigestBlock: AnyFn = (...args) => (coreService<Record<strin
 export const buildCapDetailBlock: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('capSlashCommand').buildCapDetailBlock)(...args)
 export const buildCapReferenceBlock: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('capSlashCommand').buildCapReferenceBlock)(...args)
 
-export const getCliCommandSuggestions: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('cliSlashCommands').getCliCommandSuggestions)(...args)
-export const matchBlockedCliCommand: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('cliSlashCommands').matchBlockedCliCommand)(...args)
-export const parseAssaultSlashCommand: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('cliSlashCommands').parseAssaultSlashCommand)(...args)
-export const CLI_SUGGESTED_COMMANDS = coreService<Record<string, unknown>>('cliSlashCommands').CLI_SUGGESTED_COMMANDS
-export const CLI_KNOWN_HIDDEN_COMMANDS = coreService<Record<string, unknown>>('cliSlashCommands').CLI_KNOWN_HIDDEN_COMMANDS
-export const CLI_BLOCKED_COMMANDS = coreService<Record<string, unknown>>('cliSlashCommands').CLI_BLOCKED_COMMANDS
+export const getCliCommandSuggestions: AnyFn = (...args) => (_localCliSlashCommands.getCliCommandSuggestions(...args as unknown as unknown[]))
+export const matchBlockedCliCommand: AnyFn = (...args) => (_localCliSlashCommands.matchBlockedCliCommand(...args as unknown as unknown[]))
+export const parseAssaultSlashCommand: AnyFn = (...args) => (_localCliSlashCommands.parseAssaultSlashCommand(...args as unknown as unknown[]))
+export const CLI_SUGGESTED_COMMANDS = _localCliSlashCommands.CLI_SUGGESTED_COMMANDS
+export const CLI_KNOWN_HIDDEN_COMMANDS = _localCliSlashCommands.CLI_KNOWN_HIDDEN_COMMANDS
+export const CLI_BLOCKED_COMMANDS = _localCliSlashCommands.CLI_BLOCKED_COMMANDS
 
-export const parseNexusSlashCommand: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('agentSlashCommand').parseNexusSlashCommand)(...args)
-export const parseAgentSlashCommand: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('agentSlashCommand').parseAgentSlashCommand)(...args)
-export const rewriteDispatchPromptWithAgent: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('agentSlashCommand').rewriteDispatchPromptWithAgent)(...args)
-export const NEXUS_SCENARIOS: readonly string[] = (coreService<{ NEXUS_SCENARIOS: readonly string[] }>('agentSlashCommand').NEXUS_SCENARIOS)
+export const parseNexusSlashCommand: AnyFn = (...args) => (_localAgentSlashCommand.parseNexusSlashCommand(...args as unknown as unknown[]))
+export const parseAgentSlashCommand: AnyFn = (...args) => (_localAgentSlashCommand.parseAgentSlashCommand(...args as unknown as unknown[]))
+export const rewriteDispatchPromptWithAgent: AnyFn = (...args) => (_localAgentSlashCommand.rewriteDispatchPromptWithAgent(...args as unknown as unknown[]))
+export const NEXUS_SCENARIOS: readonly string[] = _localAgentSlashCommand.NEXUS_SCENARIOS
 
 // ── 打包/偏好/文件搜索/权限/图片/外链 ──
 export const packForReference: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('conversationPackager').packForReference)(...args)

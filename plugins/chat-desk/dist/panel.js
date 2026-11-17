@@ -12343,6 +12343,352 @@ var init_promptHistoryService = __esm({
   }
 });
 
+// src/host/services/streamRateTracker.ts
+function estimateTokens2(text5) {
+  if (!text5.trim()) return 0;
+  let cjk = 0;
+  for (const ch of text5) {
+    if (CJK_RE.test(ch)) cjk++;
+  }
+  return Math.max(1, cjk * 1.5 + (text5.length - cjk) / 4);
+}
+function overlapLength(entry, start2, now4) {
+  return Math.min(entry.at, now4) - Math.max(entry.from, start2);
+}
+function weightedTokens(entries2, start2, now4) {
+  let tokens2 = 0;
+  for (const e3 of entries2) {
+    if (e3.at <= start2 || e3.from >= now4) continue;
+    const len = e3.at - e3.from;
+    const overlap = overlapLength(e3, start2, now4);
+    if (overlap <= 0) continue;
+    tokens2 += len > 0 ? e3.count * overlap / len : e3.count;
+  }
+  return tokens2;
+}
+function getTracker2(sessionId) {
+  let t5 = trackers.get(sessionId);
+  if (!t5) {
+    t5 = new TokenRateTracker();
+    trackers.set(sessionId, t5);
+  }
+  return t5;
+}
+function resetTracker2(sessionId, startAt) {
+  getTracker2(sessionId).reset(startAt);
+}
+function dropTracker(sessionId) {
+  trackers.delete(sessionId);
+}
+var DEFAULT_ROLLING_WINDOW_MS, MIN_RATE_SPAN_MS, MAX_BUFFER_SIZE, MIN_PROVIDER_RATIO, MAX_PROVIDER_RATIO, FLUSH_GAP_MS, EMIT_INTERVAL_MS, EMPTY_SNAPSHOT, CJK_RE, TokenRateTracker, trackers;
+var init_streamRateTracker = __esm({
+  "src/host/services/streamRateTracker.ts"() {
+    DEFAULT_ROLLING_WINDOW_MS = 1e3;
+    MIN_RATE_SPAN_MS = 50;
+    MAX_BUFFER_SIZE = 256;
+    MIN_PROVIDER_RATIO = 0.5;
+    MAX_PROVIDER_RATIO = 2;
+    FLUSH_GAP_MS = 5;
+    EMIT_INTERVAL_MS = 100;
+    EMPTY_SNAPSHOT = {
+      tps: null,
+      avgTps: null,
+      ttftMs: null,
+      generationMs: null,
+      wallClockMs: null,
+      periodStartMs: null,
+      tokens: 0,
+      providerTokens: null,
+      settled: false
+    };
+    CJK_RE = /[㐀-䶿一-鿿぀-ヿ㄰-㆏가-힯豈-﫿︐-︟ﹰ-ﹹ＀-￯]/;
+    TokenRateTracker = class {
+      constructor() {
+        this.periodStart = null;
+        this.origin = null;
+        this.lastChunkAt = null;
+        this.entries = [];
+        this.ratedTokens = 0;
+        this.totalTokens = 0;
+        this.providerTokens = null;
+        this.endedAt = null;
+        this.lastEmitAt = 0;
+      }
+      /**
+       * 重置为一轮新起点。`startAt` 作为计时基准（session_start / cli_init 到达时刻），
+       * 若缺省则回退到首块到达时刻。
+       */
+      reset(startAt) {
+        this.periodStart = startAt ?? null;
+        this.origin = null;
+        this.lastChunkAt = null;
+        this.entries = [];
+        this.ratedTokens = 0;
+        this.totalTokens = 0;
+        this.providerTokens = null;
+        this.endedAt = null;
+        this.lastEmitAt = 0;
+      }
+      /**
+       * 记录一个内容增量。返回 true 表示需要通知 UI（按 {@link EMIT_INTERVAL_MS} 节流）。
+       * `text` 经 {@link estimateTokens} 估算 token 数；也可传 `count` 直接给定。
+       */
+      recordDelta(at2, text5, count2) {
+        if (!at2) return false;
+        const tokens2 = count2 ?? estimateTokens2(text5);
+        if (tokens2 <= 0) return false;
+        this.totalTokens += tokens2;
+        if (this.lastChunkAt == null) {
+          this.origin = at2;
+          this.lastChunkAt = at2;
+          return true;
+        }
+        const from2 = this.lastChunkAt;
+        if (from2 < at2 - FLUSH_GAP_MS) {
+          this.entries.push({ from: from2, at: at2, count: tokens2 });
+          this.ratedTokens += tokens2;
+          this.prune();
+        } else {
+          const last3 = this.entries[this.entries.length - 1];
+          if (last3) {
+            last3.at = at2;
+            last3.count += tokens2;
+          } else {
+            this.entries.push({ from: this.origin ?? at2, at: at2, count: tokens2 });
+            this.ratedTokens += tokens2;
+          }
+        }
+        this.lastChunkAt = at2;
+        return this.shouldEmit(at2);
+      }
+      /**
+       * 记录 provider 的精确输出 token（流末到达）。返回 true 表示需要通知 UI。
+       * 不推进 {@link lastEmitAt} —— 该字段只用于增量节流，混用会让流末校正后的
+       * 快照之后的增量事件被错误地抑制。
+       */
+      markProviderUsage(outputTokens) {
+        if (!outputTokens || outputTokens <= 0) return false;
+        const prev2 = this.providerTokens;
+        this.providerTokens = Math.max(prev2 ?? 0, outputTokens);
+        return prev2 !== this.providerTokens;
+      }
+      /** 标记一轮结束（session_end 到达时刻） */
+      markEnd(at2) {
+        if (at2) this.endedAt = at2;
+      }
+      isSettled() {
+        return this.endedAt != null;
+      }
+      /** 返回不可变快照；无内容时返回 {@link EMPTY_SNAPSHOT}
+       *  守卫同时要求 origin 与 totalTokens 为空 —— 二者由 recordDelta 同时置位，
+       *  reset 后若未收到任何增量必然都为空，因此不会误算出 0ms 的 TTFT。 */
+      snapshot(now4) {
+        if (this.origin == null && this.totalTokens === 0) return EMPTY_SNAPSHOT;
+        const spanEnd = this.endedAt ?? this.lastChunkAt ?? this.origin;
+        const wallEnd = this.endedAt ?? now4 ?? Date.now();
+        return {
+          tps: this.instantTps(now4),
+          avgTps: this.averageTps(),
+          ttftMs: this.periodStart != null && this.origin != null && this.origin >= this.periodStart ? this.origin - this.periodStart : null,
+          generationMs: this.origin != null && spanEnd != null && spanEnd > this.origin ? spanEnd - this.origin : null,
+          // periodStart = session_start.receivedAtMs；缺省（旧引擎未带）时为 null，
+          // 不显示运行时长，避免 NaN。结束态用 endedAt 定格，运行态用 wallEnd。
+          wallClockMs: this.periodStart != null && wallEnd >= this.periodStart ? wallEnd - this.periodStart : null,
+          periodStartMs: this.periodStart,
+          tokens: this.totalTokens,
+          providerTokens: this.providerTokens,
+          settled: this.endedAt != null
+        };
+      }
+      /** 是否还有有效数据（供清空判断） */
+      isEmpty() {
+        return this.origin == null && this.totalTokens === 0;
+      }
+      /** 全程平均速率（含 provider 精确值校正），不可测时为 null。供测试与外部校验读取。 */
+      getAverageTps() {
+        return this.averageTps();
+      }
+      /** 即时速率（滚窗加权），不可测时为 null。供测试与外部校验读取。 */
+      getInstantTps(now4) {
+        return this.instantTps(now4);
+      }
+      instantTps(now4) {
+        if (this.origin == null || this.entries.length === 0) return null;
+        const t5 = now4 ?? this.lastChunkAt ?? this.origin;
+        if (t5 <= this.origin) return null;
+        let windowStart = Math.max(t5 - DEFAULT_ROLLING_WINDOW_MS, this.origin);
+        const inWindow = this.entries.filter((e3) => e3.at > windowStart && e3.from < t5);
+        if (inWindow.length > 0) {
+          const firstAt = inWindow[0].at;
+          const allSame = inWindow.every((e3) => e3.at === firstAt);
+          if (allSame) {
+            let prev2;
+            for (const e3 of this.entries) {
+              if (e3.at <= windowStart) prev2 = e3;
+              else break;
+            }
+            if (prev2) windowStart = prev2.at;
+          }
+        }
+        const spanMs = t5 - windowStart;
+        if (spanMs < MIN_RATE_SPAN_MS) return null;
+        const tokens2 = weightedTokens(this.entries, windowStart, t5);
+        if (tokens2 <= 0) return 0;
+        return tokens2 / (spanMs / 1e3);
+      }
+      averageTps() {
+        if (this.origin == null || this.lastChunkAt == null) return null;
+        const spanMs = this.lastChunkAt - this.origin;
+        if (spanMs < MIN_RATE_SPAN_MS) return null;
+        let avg = this.ratedTokens / (spanMs / 1e3);
+        if (avg <= 0) return 0;
+        if (this.providerTokens != null && this.ratedTokens > 0) {
+          const ratio = this.providerTokens / this.ratedTokens;
+          if (ratio >= MIN_PROVIDER_RATIO && ratio <= MAX_PROVIDER_RATIO) {
+            avg = avg * ratio;
+          }
+        }
+        return avg;
+      }
+      shouldEmit(at2) {
+        const first4 = this.lastEmitAt === 0;
+        const ok = first4 || at2 - this.lastEmitAt >= EMIT_INTERVAL_MS;
+        if (ok) this.lastEmitAt = at2;
+        return ok;
+      }
+      /**
+       * 超过 {@link MAX_BUFFER_SIZE} 时合并最老两个区间，而非丢弃 ——
+       * 丢弃会让窗口下界静默少算 token，合并只使区间边界变粗。
+       */
+      prune() {
+        while (this.entries.length > MAX_BUFFER_SIZE) {
+          const [a3, b12] = this.entries;
+          if (!a3 || !b12) break;
+          this.entries.splice(0, 2, { from: Math.min(a3.from, b12.from), at: b12.at, count: a3.count + b12.count });
+        }
+      }
+    };
+    trackers = /* @__PURE__ */ new Map();
+  }
+});
+
+// src/host/services/cliSlashCommands.ts
+function matchBlockedCliCommand(text5) {
+  if (!text5.startsWith("/")) return null;
+  const name = text5.slice(1).split(/\s/, 1)[0]?.toLowerCase() ?? "";
+  return CLI_BLOCKED_COMMANDS.includes(name) ? name : null;
+}
+function parseAssaultSlashCommand(text5) {
+  if (!text5.startsWith("/assault")) return null;
+  const rest = text5.slice("/assault".length);
+  if (rest && !/^\s/.test(rest)) return null;
+  return text5.slice(1);
+}
+function getCliCommandSuggestions(query, dynamicNames, excludeNames) {
+  const q5 = query.toLowerCase();
+  const matchMeta = (meta3) => meta3.name.includes(q5) || (meta3.aliases?.some((a3) => a3.includes(q5)) ?? false);
+  const curated = CLI_SUGGESTED_COMMANDS.filter(matchMeta).map((meta3) => ({
+    name: meta3.name,
+    argumentHint: meta3.argumentHint,
+    descKey: meta3.descKey
+  }));
+  const knownNames = /* @__PURE__ */ new Set([
+    ...CLI_SUGGESTED_COMMANDS.flatMap((m4) => [m4.name, ...m4.aliases ?? []]),
+    ...CLI_KNOWN_HIDDEN_COMMANDS,
+    ...CLI_BLOCKED_COMMANDS
+  ]);
+  const dynamic = dynamicNames.filter(
+    (name) => !name.startsWith("__") && !knownNames.has(name) && !excludeNames.has(name) && name.toLowerCase().includes(q5)
+  ).slice(0, MAX_DYNAMIC_SUGGESTIONS).map((name) => ({ name, descKey: "custom", dynamic: true }));
+  const rank2 = (s3) => s3.name.toLowerCase().startsWith(q5) ? 0 : 1;
+  return [...curated, ...dynamic].sort((a3, b12) => rank2(a3) - rank2(b12));
+}
+var CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, MAX_DYNAMIC_SUGGESTIONS;
+var init_cliSlashCommands = __esm({
+  "src/host/services/cliSlashCommands.ts"() {
+    CLI_SUGGESTED_COMMANDS = [
+      { name: "compact", argumentHint: "[instructions]", descKey: "compact" },
+      { name: "context", descKey: "context" },
+      { name: "usage", aliases: ["cost", "stats"], descKey: "usage" },
+      { name: "mcp", descKey: "mcp" },
+      { name: "model", descKey: "model" },
+      { name: "recap", descKey: "recap" },
+      { name: "assault", argumentHint: "<profile> <problem>", descKey: "assault" }
+    ];
+    CLI_KNOWN_HIDDEN_COMMANDS = [
+      "agents",
+      "color",
+      "config",
+      "settings",
+      "effort",
+      "fast",
+      "heapdump",
+      "init",
+      "insights",
+      "reload-skills",
+      "rename",
+      "name",
+      "review",
+      "security-review",
+      "doctor",
+      "checkup",
+      "goal",
+      "team-onboarding"
+    ];
+    CLI_BLOCKED_COMMANDS = ["clear", "reset", "new"];
+    MAX_DYNAMIC_SUGGESTIONS = 6;
+  }
+});
+
+// src/host/services/agentSlashCommand.ts
+function parseAgentSlashCommand(text5) {
+  if (!text5.startsWith("/agent")) return null;
+  const rest = text5.slice("/agent".length);
+  if (rest && !/^\s/.test(rest)) return null;
+  const slug = rest.trim();
+  return { slug: slug || null };
+}
+function rewriteDispatchPromptWithAgent(prompt, catalog, _installDir) {
+  const spaceIdx = prompt.search(/\s/);
+  const first4 = spaceIdx > 0 ? prompt.slice(0, spaceIdx) : prompt;
+  const agent = catalog.find((a3) => a3.slug === first4);
+  if (!agent) return null;
+  const task = spaceIdx > 0 ? prompt.slice(spaceIdx).trim() : "";
+  if (!task) return null;
+  return {
+    slug: agent.slug,
+    prompt: task,
+    title: `${agent.emoji ? agent.emoji + " " : ""}${agent.name}`,
+    systemPrompt: agent.systemPrompt
+  };
+}
+function parseNexusSlashCommand(text5) {
+  if (!text5.startsWith("/nexus")) return null;
+  const rest = text5.slice("/nexus".length);
+  if (rest && !/^\s/.test(rest)) return null;
+  let trimmed = rest.trim();
+  let mode;
+  if (trimmed === "micro" || trimmed.startsWith("micro ")) {
+    mode = "micro";
+    trimmed = trimmed.slice("micro".length).trim();
+  }
+  const spaceIdx = trimmed.search(/\s/);
+  const scenario = spaceIdx > 0 ? trimmed.slice(0, spaceIdx) : trimmed;
+  const goal = spaceIdx > 0 ? trimmed.slice(spaceIdx).trim() : "";
+  return mode ? { scenario, goal, mode } : { scenario, goal };
+}
+var NEXUS_SCENARIOS;
+var init_agentSlashCommand = __esm({
+  "src/host/services/agentSlashCommand.ts"() {
+    NEXUS_SCENARIOS = [
+      "startup-mvp",
+      "enterprise-feature",
+      "marketing-campaign",
+      "incident-response"
+    ];
+  }
+});
+
 // src/newSessionPrefsService.ts
 function normalizeNewSessionPrefs(raw) {
   if (!raw || typeof raw !== "object") return null;
@@ -12755,10 +13101,10 @@ var init_imageSaveService = __esm({
 // src/shims/services.ts
 var services_exports = {};
 __export(services_exports, {
-  CLI_BLOCKED_COMMANDS: () => CLI_BLOCKED_COMMANDS,
-  CLI_KNOWN_HIDDEN_COMMANDS: () => CLI_KNOWN_HIDDEN_COMMANDS,
-  CLI_SUGGESTED_COMMANDS: () => CLI_SUGGESTED_COMMANDS,
-  NEXUS_SCENARIOS: () => NEXUS_SCENARIOS,
+  CLI_BLOCKED_COMMANDS: () => CLI_BLOCKED_COMMANDS2,
+  CLI_KNOWN_HIDDEN_COMMANDS: () => CLI_KNOWN_HIDDEN_COMMANDS2,
+  CLI_SUGGESTED_COMMANDS: () => CLI_SUGGESTED_COMMANDS2,
+  NEXUS_SCENARIOS: () => NEXUS_SCENARIOS2,
   addClaudePermissionRules: () => addClaudePermissionRules2,
   aiChatDispatch: () => aiChatDispatch2,
   aiChatDispatchStream: () => aiChatDispatchStream2,
@@ -12779,15 +13125,15 @@ __export(services_exports, {
   dialogStorageService: () => dialogStorageService,
   dispatchCapUiAction: () => dispatchCapUiAction,
   dispatchFromUser: () => dispatchFromUser,
-  dropTracker: () => dropTracker,
+  dropTracker: () => dropTracker2,
   emit: () => emit,
   ensureEventRouterInitialized: () => ensureEventRouterInitialized,
   ensureWorkspace: () => ensureWorkspace2,
-  estimateTokens: () => estimateTokens2,
+  estimateTokens: () => estimateTokens3,
   eventBus: () => eventBus,
   forkSession: () => forkSession2,
   getClaudeSettingsPath: () => getClaudeSettingsPath2,
-  getCliCommandSuggestions: () => getCliCommandSuggestions,
+  getCliCommandSuggestions: () => getCliCommandSuggestions2,
   getDefaultCompactInstruction: () => getDefaultCompactInstruction2,
   getEventRouter: () => getEventRouter2,
   getHandoffEligibility: () => getHandoffEligibility2,
@@ -12807,7 +13153,7 @@ __export(services_exports, {
   loadMessagesForItem: () => loadMessagesForItem2,
   manualReconnect: () => manualReconnect,
   manualRefreshActiveSession: () => manualRefreshActiveSession2,
-  matchBlockedCliCommand: () => matchBlockedCliCommand,
+  matchBlockedCliCommand: () => matchBlockedCliCommand2,
   matchCaps: () => matchCaps,
   maybeAutoMigrateOpfs: () => maybeAutoMigrateOpfs,
   openExternal: () => openExternal,
@@ -12815,11 +13161,11 @@ __export(services_exports, {
   packForReference: () => packForReference,
   packToFile: () => packToFile2,
   packToSummary: () => packToSummary2,
-  parseAgentSlashCommand: () => parseAgentSlashCommand,
-  parseAssaultSlashCommand: () => parseAssaultSlashCommand,
+  parseAgentSlashCommand: () => parseAgentSlashCommand2,
+  parseAssaultSlashCommand: () => parseAssaultSlashCommand2,
   parseCapSlashCommand: () => parseCapSlashCommand,
   parseDispatchSlashCommand: () => parseDispatchSlashCommand,
-  parseNexusSlashCommand: () => parseNexusSlashCommand,
+  parseNexusSlashCommand: () => parseNexusSlashCommand2,
   parseWorkspaceReferences: () => parseWorkspaceReferences,
   persistNewSessionPrefs: () => persistNewSessionPrefs2,
   persistPromptHistoryEntries: () => persistPromptHistoryEntries2,
@@ -12840,7 +13186,7 @@ __export(services_exports, {
   respondPluginCard: () => respondPluginCard,
   restoreFromHistory: () => restoreFromHistory2,
   resyncAfterResumeGap: () => resyncAfterResumeGap2,
-  rewriteDispatchPromptWithAgent: () => rewriteDispatchPromptWithAgent,
+  rewriteDispatchPromptWithAgent: () => rewriteDispatchPromptWithAgent2,
   runPromptOptimize: () => runPromptOptimize2,
   saveChatToFile: () => saveChatToFile,
   saveMarkdownImage: () => saveMarkdownImage2,
@@ -12867,7 +13213,7 @@ function aiChatDispatch2(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker, estimateTokens2, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions, matchBlockedCliCommand, parseAssaultSlashCommand, CLI_SUGGESTED_COMMANDS, CLI_KNOWN_HIDDEN_COMMANDS, CLI_BLOCKED_COMMANDS, parseNexusSlashCommand, parseAgentSlashCommand, rewriteDispatchPromptWithAgent, NEXUS_SCENARIOS, packForReference, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -12878,6 +13224,9 @@ var init_services = __esm({
     init_contextCompactHandoff();
     init_promptOptimizeService();
     init_promptHistoryService();
+    init_streamRateTracker();
+    init_cliSlashCommands();
+    init_agentSlashCommand();
     init_newSessionPrefsService();
     init_claudeSettingsService();
     init_imageSaveService();
@@ -12929,10 +13278,10 @@ var init_services = __esm({
     parseDispatchSlashCommand = (...args) => coreService("dispatchTaskService").parseDispatchSlashCommand(...args);
     dispatchFromUser = (...args) => coreService("dispatchTaskService").dispatchFromUser(...args);
     initDispatchTaskListener = (...args) => coreService("dispatchTaskService").initDispatchTaskListener(...args);
-    getTracker = (...args) => coreService("streamRateTracker").getTracker(...args);
-    resetTracker = (...args) => coreService("streamRateTracker").resetTracker(...args);
-    dropTracker = (...args) => coreService("streamRateTracker").dropTracker(...args);
-    estimateTokens2 = (...args) => coreService("streamRateTracker").estimateTokens(...args);
+    getTracker = (...args) => getTracker2(...args);
+    resetTracker = (...args) => resetTracker2(...args);
+    dropTracker2 = (...args) => dropTracker(...args);
+    estimateTokens3 = (...args) => estimateTokens2(...args);
     consumeCapUiDispatch = (...args) => coreService("uiDispatchService").consumeCapUiDispatch(...args);
     dispatchCapUiAction = (...args) => coreService("uiDispatchService").dispatchCapUiAction(...args);
     parseCapSlashCommand = (...args) => coreService("capSlashCommand").parseCapSlashCommand(...args);
@@ -12940,16 +13289,16 @@ var init_services = __esm({
     buildCapDigestBlock = (...args) => coreService("capSlashCommand").buildCapDigestBlock(...args);
     buildCapDetailBlock = (...args) => coreService("capSlashCommand").buildCapDetailBlock(...args);
     buildCapReferenceBlock = (...args) => coreService("capSlashCommand").buildCapReferenceBlock(...args);
-    getCliCommandSuggestions = (...args) => coreService("cliSlashCommands").getCliCommandSuggestions(...args);
-    matchBlockedCliCommand = (...args) => coreService("cliSlashCommands").matchBlockedCliCommand(...args);
-    parseAssaultSlashCommand = (...args) => coreService("cliSlashCommands").parseAssaultSlashCommand(...args);
-    CLI_SUGGESTED_COMMANDS = coreService("cliSlashCommands").CLI_SUGGESTED_COMMANDS;
-    CLI_KNOWN_HIDDEN_COMMANDS = coreService("cliSlashCommands").CLI_KNOWN_HIDDEN_COMMANDS;
-    CLI_BLOCKED_COMMANDS = coreService("cliSlashCommands").CLI_BLOCKED_COMMANDS;
-    parseNexusSlashCommand = (...args) => coreService("agentSlashCommand").parseNexusSlashCommand(...args);
-    parseAgentSlashCommand = (...args) => coreService("agentSlashCommand").parseAgentSlashCommand(...args);
-    rewriteDispatchPromptWithAgent = (...args) => coreService("agentSlashCommand").rewriteDispatchPromptWithAgent(...args);
-    NEXUS_SCENARIOS = coreService("agentSlashCommand").NEXUS_SCENARIOS;
+    getCliCommandSuggestions2 = (...args) => getCliCommandSuggestions(...args);
+    matchBlockedCliCommand2 = (...args) => matchBlockedCliCommand(...args);
+    parseAssaultSlashCommand2 = (...args) => parseAssaultSlashCommand(...args);
+    CLI_SUGGESTED_COMMANDS2 = CLI_SUGGESTED_COMMANDS;
+    CLI_KNOWN_HIDDEN_COMMANDS2 = CLI_KNOWN_HIDDEN_COMMANDS;
+    CLI_BLOCKED_COMMANDS2 = CLI_BLOCKED_COMMANDS;
+    parseNexusSlashCommand2 = (...args) => parseNexusSlashCommand(...args);
+    parseAgentSlashCommand2 = (...args) => parseAgentSlashCommand(...args);
+    rewriteDispatchPromptWithAgent2 = (...args) => rewriteDispatchPromptWithAgent(...args);
+    NEXUS_SCENARIOS2 = NEXUS_SCENARIOS;
     packForReference = (...args) => coreService("conversationPackager").packForReference(...args);
     packToFile2 = (...args) => coreService("conversationPackager").packToFile(...args);
     packToSummary2 = (...args) => coreService("conversationPackager").packToSummary(...args);
@@ -168975,7 +169324,7 @@ function isHorizontalSegment(a3, b12, epsilon8 = EPS2) {
 function isVerticalSegment(a3, b12, epsilon8 = EPS2) {
   return sameX(a3, b12, epsilon8) && Math.abs(a3.y - b12.y) > epsilon8;
 }
-function overlapLength(a1, a22, b12, b22) {
+function overlapLength2(a1, a22, b12, b22) {
   return Math.max(
     0,
     Math.min(Math.max(a1, a22), Math.max(b12, b22)) - Math.max(Math.min(a1, a22), Math.min(b12, b22))
@@ -168983,10 +169332,10 @@ function overlapLength(a1, a22, b12, b22) {
 }
 function sameAxisSegmentOverlapLength(a3, b12, epsilon8 = EPS2) {
   if (a3.horizontal && b12.horizontal && sameY(a3.a, b12.a, epsilon8)) {
-    return overlapLength(a3.a.x, a3.b.x, b12.a.x, b12.b.x);
+    return overlapLength2(a3.a.x, a3.b.x, b12.a.x, b12.b.x);
   }
   if (a3.vertical && b12.vertical && sameX(a3.a, b12.a, epsilon8)) {
-    return overlapLength(a3.a.y, a3.b.y, b12.a.y, b12.b.y);
+    return overlapLength2(a3.a.y, a3.b.y, b12.a.y, b12.b.y);
   }
   return 0;
 }
@@ -169274,10 +169623,10 @@ function sameAxisSegmentsOverlap(a1, b12, a22, b22, epsilon8 = EPS2) {
   const s2H = sameY(a22, b22, epsilon8);
   const s2V = sameX(a22, b22, epsilon8);
   if (s1V && s2V && sameX(a1, a22, epsilon8)) {
-    return overlapLength(a1.y, b12.y, a22.y, b22.y) > epsilon8;
+    return overlapLength2(a1.y, b12.y, a22.y, b22.y) > epsilon8;
   }
   if (s1H && s2H && sameY(a1, a22, epsilon8)) {
-    return overlapLength(a1.x, b12.x, a22.x, b22.x) > epsilon8;
+    return overlapLength2(a1.x, b12.x, a22.x, b22.x) > epsilon8;
   }
   return false;
 }
@@ -170676,10 +171025,10 @@ function liftObstacleHuggingSameSideRails(edges3, nodeByIdMap) {
       }
       const rect2 = entry.rect;
       if (rail.horizontal) {
-        const xOverlap = overlapLength(rail.a.x, rail.b.x, rect2.left, rect2.right);
+        const xOverlap = overlapLength2(rail.a.x, rail.b.x, rect2.left, rect2.right);
         return xOverlap >= MIN_SHARED && rail.a.y >= rect2.top - BUFFER && rail.a.y <= rect2.bottom + BUFFER;
       }
-      const yOverlap = overlapLength(rail.a.y, rail.b.y, rect2.top, rect2.bottom);
+      const yOverlap = overlapLength2(rail.a.y, rail.b.y, rect2.top, rect2.bottom);
       return yOverlap >= MIN_SHARED && rail.a.x >= rect2.left - BUFFER && rail.a.x <= rect2.right + BUFFER;
     });
   }, "blockingRectsFor");
@@ -170806,7 +171155,7 @@ function liftTopLaneTitleBandsAboveRails(edges3, nodeByIdMap, layoutDirection) {
     if (y8 < rect2.top - EPS_LOCAL || y8 > rect2.bottom + EPS_LOCAL) {
       return false;
     }
-    return overlapLength(segment.a.x, segment.b.x, rect2.left, rect2.right) >= MIN_SHARED;
+    return overlapLength2(segment.a.x, segment.b.x, rect2.left, rect2.right) >= MIN_SHARED;
   }, "horizontalSegmentIntersectsTitle");
   const lanes2 = [...nodeByIdMap.values()].map(topLaneTitleFor).filter((lane) => Boolean(lane));
   if (lanes2.length === 0) {
@@ -170886,7 +171235,7 @@ function shiftLeftLaneTitleBandsLeftOfRails(edges3, nodeByIdMap, layoutDirection
     if (x7 < rect2.left - EPS_LOCAL || x7 > rect2.right + EPS_LOCAL) {
       return false;
     }
-    return overlapLength(segment.a.y, segment.b.y, rect2.top, rect2.bottom) >= MIN_SHARED;
+    return overlapLength2(segment.a.y, segment.b.y, rect2.top, rect2.bottom) >= MIN_SHARED;
   }, "verticalSegmentIntersectsTitle");
   const horizontalSegmentIntersectsTitle = /* @__PURE__ */ __name((segment, rect2) => {
     if (!segment.horizontal) {
@@ -170896,7 +171245,7 @@ function shiftLeftLaneTitleBandsLeftOfRails(edges3, nodeByIdMap, layoutDirection
     if (y8 < rect2.top - EPS_LOCAL || y8 > rect2.bottom + EPS_LOCAL) {
       return false;
     }
-    return overlapLength(segment.a.x, segment.b.x, rect2.left, rect2.right) >= MIN_SHARED;
+    return overlapLength2(segment.a.x, segment.b.x, rect2.left, rect2.right) >= MIN_SHARED;
   }, "horizontalSegmentIntersectsTitle");
   const lanes2 = [...nodeByIdMap.values()].map(leftLaneTitleFor).filter((lane) => Boolean(lane));
   if (lanes2.length === 0) {
@@ -171210,7 +171559,7 @@ function reassignCrossingExternalRailChannels(edges3, nodeByIdMap) {
     }
     return rails;
   }, "collectExternalRails");
-  const railsInteract = /* @__PURE__ */ __name((a3, b12) => a3.edge !== b12.edge && a3.axis === b12.axis && a3.side === b12.side && overlapLength(a3.min, a3.max, b12.min, b12.max) >= MIN_SHARED, "railsInteract");
+  const railsInteract = /* @__PURE__ */ __name((a3, b12) => a3.edge !== b12.edge && a3.axis === b12.axis && a3.side === b12.side && overlapLength2(a3.min, a3.max, b12.min, b12.max) >= MIN_SHARED, "railsInteract");
   const connectedComponents = /* @__PURE__ */ __name((rails) => {
     const result = [];
     const seen = /* @__PURE__ */ new Set();
@@ -171436,12 +171785,12 @@ function shortcutRedundantOrthogonalJogs(edges3, nodeByIdMap) {
     if (segment.horizontal) {
       const y8 = segment.a.y;
       const onBorder2 = Math.abs(y8 - rect2.top) < 1 || Math.abs(y8 - rect2.bottom) < 1;
-      return onBorder2 && overlapLength(segment.a.x, segment.b.x, rect2.left, rect2.right) >= MIN_SHARED;
+      return onBorder2 && overlapLength2(segment.a.x, segment.b.x, rect2.left, rect2.right) >= MIN_SHARED;
     }
     if (segment.vertical) {
       const x7 = segment.a.x;
       const onBorder2 = Math.abs(x7 - rect2.left) < 1 || Math.abs(x7 - rect2.right) < 1;
-      return onBorder2 && overlapLength(segment.a.y, segment.b.y, rect2.top, rect2.bottom) >= MIN_SHARED;
+      return onBorder2 && overlapLength2(segment.a.y, segment.b.y, rect2.top, rect2.bottom) >= MIN_SHARED;
     }
     return false;
   }, "segmentRunsAlongRectBorder");
@@ -172978,10 +173327,10 @@ function nudgeSharedInteriorSubpaths(edges3, nodeByIdMap) {
   }, "allSegments");
   const hasCrowdedParallelTrack = /* @__PURE__ */ __name((a3, b12) => {
     if (a3.horizontal && b12.horizontal) {
-      return overlapLength(a3.a.x, a3.b.x, b12.a.x, b12.b.x) >= MIN_SHARED3 && Math.abs(a3.a.y - b12.a.y) < MIN_TRACK_GAP;
+      return overlapLength2(a3.a.x, a3.b.x, b12.a.x, b12.b.x) >= MIN_SHARED3 && Math.abs(a3.a.y - b12.a.y) < MIN_TRACK_GAP;
     }
     if (a3.vertical && b12.vertical) {
-      return overlapLength(a3.a.y, a3.b.y, b12.a.y, b12.b.y) >= MIN_SHARED3 && Math.abs(a3.a.x - b12.a.x) < MIN_TRACK_GAP;
+      return overlapLength2(a3.a.y, a3.b.y, b12.a.y, b12.b.y) >= MIN_SHARED3 && Math.abs(a3.a.x - b12.a.x) < MIN_TRACK_GAP;
     }
     return false;
   }, "hasCrowdedParallelTrack");
@@ -176790,7 +177139,7 @@ var init_swimlanes_UMQ2AFYF = __esm({
     __name(sameY, "sameY");
     __name(isHorizontalSegment, "isHorizontalSegment");
     __name(isVerticalSegment, "isVerticalSegment");
-    __name(overlapLength, "overlapLength");
+    __name(overlapLength2, "overlapLength");
     __name(sameAxisSegmentOverlapLength, "sameAxisSegmentOverlapLength");
     __name(orthogonalSegmentsForPoints, "orthogonalSegmentsForPoints");
     __name(countOrthogonalBends, "countOrthogonalBends");
@@ -337807,10 +338156,10 @@ ${detail}` : detail };
 
 ${digest}` : digest };
   }
-  const nexusCmd = parseNexusSlashCommand(trimmed);
+  const nexusCmd = parseNexusSlashCommand2(trimmed);
   if (nexusCmd) {
-    if (!nexusCmd.goal || !NEXUS_SCENARIOS.includes(nexusCmd.scenario)) {
-      useToastStore.getState().info("/nexus", `\u7528\u6CD5\uFF1A/nexus <${NEXUS_SCENARIOS.join("|")}> \u56E2\u961F\u76EE\u6807`);
+    if (!nexusCmd.goal || !NEXUS_SCENARIOS2.includes(nexusCmd.scenario)) {
+      useToastStore.getState().info("/nexus", `\u7528\u6CD5\uFF1A/nexus <${NEXUS_SCENARIOS2.join("|")}> \u56E2\u961F\u76EE\u6807`);
       return { handled: true };
     }
     void invoke("nexus_start_roster", {
@@ -337829,7 +338178,7 @@ ${digest}` : digest };
     });
     return { handled: true };
   }
-  const agentCmd = parseAgentSlashCommand(trimmed);
+  const agentCmd = parseAgentSlashCommand2(trimmed);
   if (agentCmd) {
     const { catalog, customAgents } = useAgentStore2.getState();
     const knownSlug = (slug) => catalog.some((a3) => a3.slug === slug) || customAgents.some((c4) => c4.slug === slug);
@@ -337852,7 +338201,7 @@ ${digest}` : digest };
   if (dispatchCmd) {
     if (!dispatchCmd.role) {
       const agentState = useAgentStore2.getState();
-      const rewrite = rewriteDispatchPromptWithAgent(
+      const rewrite = rewriteDispatchPromptWithAgent2(
         dispatchCmd.prompt,
         [
           ...agentState.customAgents.map((c4) => ({
@@ -337878,7 +338227,7 @@ ${digest}` : digest };
     void dispatchFromUser(dispatchCmd);
     return { handled: true };
   }
-  const assaultText = parseAssaultSlashCommand(trimmed);
+  const assaultText = parseAssaultSlashCommand2(trimmed);
   if (assaultText) {
     return { handled: true, sendText: assaultText };
   }
@@ -338423,7 +338772,7 @@ function ChatInput({
         void useCapCatalogStore.getState().ensure();
       }
       const isMessageStart = slashMatch.index === 0 && slashMatch[1] === "";
-      const cliCommandItems = isClaudeEngine && isMessageStart ? getCliCommandSuggestions(
+      const cliCommandItems = isClaudeEngine && isMessageStart ? getCliCommandSuggestions2(
         query,
         useCliInfoStore2.getState().slashCommands,
         new Set(skills.flatMap((s3) => [s3.id, s3.name]))
@@ -338857,7 +339206,7 @@ ${trailing}` : cmd.sendText;
       return;
     }
     if (isClaudeEngine) {
-      const blocked = matchBlockedCliCommand(trimmed);
+      const blocked = matchBlockedCliCommand2(trimmed);
       if (blocked) {
         useToastStore.getState().info(
           t5("cliCommand.clearBlockedTitle", { command: `/${blocked}` }),
