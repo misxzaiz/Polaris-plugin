@@ -14,7 +14,7 @@
         "labelKey": "plugins.browser-desk",
         "labelDefault": "浏览器",
         "order": 31,
-        "slot": "browser",
+        "slot": "browser.panel",
         "slotMode": "shadow"
       }
     ],
