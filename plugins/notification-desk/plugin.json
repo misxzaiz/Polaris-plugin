@@ -1,0 +1,25 @@
+{
+  "id": "notification-desk",
+  "name": "消息中心",
+  "version": "0.1.0",
+  "description": "消息中心面板（原宿主 NotificationCenterPanel）：通知历史回看/全部已读/清空/会话切换。经 __POLARIS_NOTIFICATION_OVERLAY__ 席位由宿主 overlay 承载。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "notification-desk.panel",
+        "area": "notificationOverlay",
+        "panelType": "notification-desk",
+        "icon": "Bell",
+        "labelKey": "labels.notificationDesk",
+        "labelDefault": "消息中心",
+        "order": 10
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    }
+  },
+  "permissions": {}
+}

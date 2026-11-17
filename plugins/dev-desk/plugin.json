@@ -1,0 +1,27 @@
+{
+  "id": "dev-desk",
+  "name": "开发者调试台",
+  "version": "0.1.0",
+  "description": "AIEvent 原始流调试器（原宿主 DeveloperPanel）：按 taskId/sessionId/事件类型过滤，自动滚动，复制事件 JSON。shadow 接管宿主 developer 席位。",
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "dev-desk.panel",
+        "area": "activityBar",
+        "panelType": "dev-desk",
+        "icon": "Code2",
+        "labelKey": "labels.devDesk",
+        "labelDefault": "Developer",
+        "order": 81,
+        "slot": "developer.panel",
+        "slotMode": "shadow"
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": true
+    }
+  },
+  "permissions": {}
+}
