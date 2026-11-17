@@ -1,0 +1,8 @@
+{
+  "workingIn": "You are working in the {{name}} project.",
+  "projectPath": "Project path: {{path}}",
+  "fileRefSyntax": "File reference syntax: @/path",
+  "contextWorkspaces": "Context workspaces:",
+  "refSyntax": "Reference syntax: @{{name}}:path",
+  "workspaceToolGuidance": "When handling scheduled tasks, prefer workspace-scoped MCP tools instead of direct .polaris/*.json file-editing instructions."
+}

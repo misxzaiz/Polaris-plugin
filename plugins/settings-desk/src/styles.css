@@ -1,0 +1,8 @@
+
+/* settings-desk 专属补齐类（宿主 tailwind content 不含本插件源码，产物无这些工具类） */
+.bg-surface { background-color: rgb(var(--c-bg-surface) / calc(var(--window-opacity, 1) * 1)); }
+.bg-surface-hover { background-color: rgb(var(--c-bg-hover)); }
+.text-primary-content { color: rgb(var(--c-on-primary)); }
+.bg-green\/5 { background-color: rgb(var(--c-status-success) / 0.05); }
+.border-green\/20 { border-color: rgb(var(--c-status-success) / 0.2); }
+.theme-preview-strip { background: repeating-linear-gradient(90deg, rgb(var(--c-bg-surface)) 0 8px, rgb(var(--c-bg-hover)) 8px 16px); }

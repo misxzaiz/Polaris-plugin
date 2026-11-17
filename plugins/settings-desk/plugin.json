@@ -1,0 +1,37 @@
+{
+  "id": "settings-desk",
+  "name": "设置管理台",
+  "version": "0.1.0",
+  "description": "设置域插件（plans/settings-desk-extraction-spec.md）：原宿主 SettingsPage 全量迁入——通用/主题/AI 引擎/插件管理/应用更新/Web 服务/性能/高级八 Tab + 引擎安装面板 + 插件开发指南。设置保存走 cap.config patch；插件管理面走 cap.pluginDiscovery / cap.pluginServiceManager / cap.mcp；应用自更新走 cap.app.update。area='settings' 覆盖层席位，宿主 App settingsRendering 层渲染。",
+  "core": true,
+  "enabledByDefault": true,
+  "contributes": {
+    "views": [
+      {
+        "id": "settings-desk.panel",
+        "area": "settings",
+        "panelType": "settings-desk",
+        "icon": "Settings",
+        "labelKey": "plugins.settingsDesk",
+        "labelDefault": "设置管理台",
+        "order": 10
+      }
+    ],
+    "panel": {
+      "entry": "./dist/panel.js",
+      "supportsFullscreen": false
+    },
+    "styles": [
+      {
+        "id": "panel",
+        "target": "global",
+        "css": "\n/* settings-desk 专属补齐类（宿主 tailwind content 不含本插件源码，产物无这些工具类） */\n.bg-surface { background-color: rgb(var(--c-bg-surface) / calc(var(--window-opacity, 1) * 1)); }\n.bg-surface-hover { background-color: rgb(var(--c-bg-hover)); }\n.text-primary-content { color: rgb(var(--c-on-primary)); }\n.bg-green\\/5 { background-color: rgb(var(--c-status-success) / 0.05); }\n.border-green\\/20 { border-color: rgb(var(--c-status-success) / 0.2); }\n.theme-preview-strip { background: repeating-linear-gradient(90deg, rgb(var(--c-bg-surface)) 0 8px, rgb(var(--c-bg-hover)) 8px 16px); }\n",
+        "description": "settings-desk 补齐类"
+      }
+    ]
+  },
+  "permissions": {
+    "appConfigRead": true,
+    "appConfigWrite": true
+  }
+}

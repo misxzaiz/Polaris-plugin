@@ -1,0 +1,8 @@
+{
+  "workingIn": "你正在 {{name}} 项目中工作。",
+  "projectPath": "项目路径: {{path}}",
+  "fileRefSyntax": "文件引用语法: @/path",
+  "contextWorkspaces": "关联工作区:",
+  "refSyntax": "引用语法: @{{name}}:path",
+  "workspaceToolGuidance": "当需要处理待办、定时任务或需求库时，优先使用当前工作区提供的 MCP 工具，不要依赖直接读写 .polaris/*.json 的提示流程。"
+}
