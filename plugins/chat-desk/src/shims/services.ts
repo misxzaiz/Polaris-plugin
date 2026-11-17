@@ -101,6 +101,7 @@ import * as _localPromptHistory from '../host/services/kvBacked/promptHistorySer
 import * as _localStreamRateTracker from '../host/services/streamRateTracker'
 import * as _localCliSlashCommands from '../host/services/cliSlashCommands'
 import * as _localAgentSlashCommand from '../host/services/agentSlashCommand'
+import * as _localWorkspaceReference from '../host/services/workspaceReference'
 import * as _localNewSessionPrefs from '../newSessionPrefsService'
 import * as _localClaudeSettings from '../host/services/kvBacked/claudeSettingsService'
 import * as _localImageSave from '../host/services/kvBacked/imageSaveService'
@@ -166,9 +167,9 @@ export const registerExternalLinkGlobalHandler: AnyFn = (...args) => (coreServic
 export const openExternal: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('linkExternal').openExternal)(...args)
 
 // ── workspaceReference / transport/detector / contextCompactHandoff 补充转发 ──
-export const getUserSystemPrompt: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('workspaceReference').getUserSystemPrompt)(...args)
-export const parseWorkspaceReferences: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('workspaceReference').parseWorkspaceReferences)(...args)
-export const resolveTemplateVariables: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('workspaceReference').resolveTemplateVariables)(...args)
+export const getUserSystemPrompt: AnyFn = (...args) => (_localWorkspaceReference.getUserSystemPrompt(...args as unknown as unknown[]))
+export const parseWorkspaceReferences: AnyFn = (...args) => (_localWorkspaceReference.parseWorkspaceReferences(...args as unknown as unknown[]))
+export const resolveTemplateVariables: AnyFn = (...args) => (_localWorkspaceReference.resolveTemplateVariables(...args as unknown as unknown[]))
 export const detectClientDescriptor: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('detector').detectClientDescriptor)(...args)
 export const getDefaultCompactInstruction: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('contextCompactHandoff').getDefaultCompactInstruction)(...args)
 

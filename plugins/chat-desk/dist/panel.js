@@ -12689,6 +12689,168 @@ var init_agentSlashCommand = __esm({
   }
 });
 
+// src/host/services/workspaceReference.ts
+function getSystemPromptConfigDirect(...args) {
+  const core5 = globalThis.__POLARIS_APP_CORE__;
+  const fn3 = core5?.services?.systemPromptStore?.getSystemPromptConfigDirect;
+  if (typeof fn3 !== "function") throw new Error("\u5BBF\u4E3B systemPromptStore \u4E0D\u53EF\u7528");
+  return fn3(...args);
+}
+function looksLikeFilePath(str2) {
+  return str2.includes("/") || str2.includes("\\") || str2.includes(".");
+}
+function parseWorkspaceReferences2(message2, workspaces, contextWorkspaces, currentWorkspaceId) {
+  const references = [];
+  let processed2 = message2;
+  const currentWorkspace = workspaces.find((w5) => w5.id === currentWorkspaceId);
+  const workspaceByName = /* @__PURE__ */ new Map();
+  for (const w5 of workspaces) {
+    if (w5 && w5.name) {
+      workspaceByName.set(w5.name.toLowerCase(), w5);
+    }
+  }
+  const matches33 = [];
+  WORKSPACE_REF_PATTERN.lastIndex = 0;
+  let match3;
+  while ((match3 = WORKSPACE_REF_PATTERN.exec(message2)) !== null) {
+    const fullMatch = match3[0];
+    const capturedWorkspaceName = match3[1];
+    const capturedPath = match3[2];
+    let workspaceName = null;
+    let relativePath;
+    if (capturedWorkspaceName) {
+      const pathLooksLikeFile = looksLikeFilePath(capturedPath);
+      if (pathLooksLikeFile) {
+        const isKnownWorkspace = workspaceByName.has(capturedWorkspaceName.toLowerCase());
+        if (isKnownWorkspace) {
+          workspaceName = capturedWorkspaceName;
+          relativePath = capturedPath;
+        } else {
+          continue;
+        }
+      } else {
+        continue;
+      }
+    } else {
+      relativePath = capturedPath;
+      if (relativePath.startsWith("/")) {
+        relativePath = relativePath.slice(1);
+      }
+      if (!looksLikeFilePath(relativePath)) {
+        continue;
+      }
+    }
+    matches33.push({
+      fullMatch,
+      workspaceName,
+      relativePath,
+      startIndex: match3.index,
+      endIndex: match3.index + fullMatch.length
+    });
+  }
+  for (let i2 = matches33.length - 1; i2 >= 0; i2--) {
+    const { fullMatch, workspaceName, relativePath, startIndex, endIndex } = matches33[i2];
+    let workspace;
+    let actualWorkspaceName;
+    if (workspaceName) {
+      workspace = workspaceByName.get(workspaceName.toLowerCase());
+      actualWorkspaceName = workspaceName;
+    } else {
+      workspace = currentWorkspace;
+      actualWorkspaceName = currentWorkspace?.name || "\u5F53\u524D\u5DE5\u4F5C\u533A";
+    }
+    if (workspace && workspace.path) {
+      const absolutePath = joinPath(workspace.path, relativePath);
+      references.unshift({
+        workspaceName: actualWorkspaceName,
+        workspacePath: workspace.path,
+        relativePath,
+        absolutePath,
+        originalText: fullMatch
+      });
+      processed2 = processed2.substring(0, startIndex) + `@${absolutePath}` + processed2.substring(endIndex);
+    }
+  }
+  const contextHeader = generateContextHeader(references, contextWorkspaces, workspaces, currentWorkspaceId);
+  return {
+    processedMessage: processed2,
+    references,
+    contextHeader
+  };
+}
+function generateContextHeader(references, contextWorkspaces, allWorkspaces, currentWorkspaceId) {
+  const safeContextWorkspaces = contextWorkspaces ?? [];
+  if (references.length === 0 && safeContextWorkspaces.length === 0) {
+    return "";
+  }
+  const currentWorkspace = allWorkspaces.find((w5) => w5.id === currentWorkspaceId);
+  let header = "\n";
+  header += "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n";
+  header += "                        \u5DE5\u4F5C\u533A\u4FE1\u606F\n";
+  header += "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n";
+  header += `\u5F53\u524D\u5DE5\u4F5C\u533A: ${currentWorkspace?.name || "\u672A\u8BBE\u7F6E"}
+`;
+  if (currentWorkspace) {
+    header += `  \u8DEF\u5F84: ${currentWorkspace.path}
+`;
+    header += `  \u5F15\u7528\u8BED\u6CD5: @path \u6216 @/path
+`;
+  }
+  if (safeContextWorkspaces.length > 0) {
+    header += "\n\u5173\u8054\u5DE5\u4F5C\u533A:\n";
+    safeContextWorkspaces.forEach((w5) => {
+      if (w5 && w5.name && w5.path) {
+        header += `  \u2022 ${w5.name}
+`;
+        header += `    \u8DEF\u5F84: ${w5.path}
+`;
+        header += `    \u5F15\u7528\u8BED\u6CD5: @${w5.name}:path
+`;
+      }
+    });
+  }
+  if (references.length > 0) {
+    const referencedWorkspaces = new Set(references.map((r3) => r3.workspaceName));
+    header += "\n\u672C\u6B21\u5F15\u7528\u7684\u5DE5\u4F5C\u533A:\n";
+    referencedWorkspaces.forEach((name) => {
+      header += `  \u2022 ${name}
+`;
+    });
+  }
+  header += "\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n";
+  return header;
+}
+function resolveTemplateVariables(template, context) {
+  const now4 = /* @__PURE__ */ new Date();
+  const contextList = context.contextWorkspaces.filter((w5) => w5?.name && w5?.path).map((w5) => `- ${w5.name} (${w5.path})`).join("\n");
+  return template.replace(/\{\{workspaceName\}\}/g, context.workspaceName).replace(/\{\{workspacePath\}\}/g, context.workspacePath).replace(/\{\{contextWorkspaces\}\}/g, contextList).replace(/\{\{date\}\}/g, now4.toLocaleDateString()).replace(/\{\{time\}\}/g, now4.toLocaleTimeString());
+}
+function getUserSystemPrompt2(currentWorkspace, contextWorkspaces) {
+  const config3 = getSystemPromptConfigDirect();
+  log17.info("\u7CFB\u7EDF\u63D0\u793A\u8BCD\u914D\u7F6E", { enabled: config3?.enabled, hasCustomPrompt: !!config3?.customPrompt?.trim() });
+  if (!config3?.enabled || !config3.customPrompt?.trim()) {
+    log17.info("\u672A\u542F\u7528\u6216\u65E0\u5185\u5BB9\uFF0C\u8FD4\u56DE null");
+    return null;
+  }
+  const resolvedPrompt = resolveTemplateVariables(config3.customPrompt, {
+    workspaceName: currentWorkspace.name,
+    workspacePath: currentWorkspace.path,
+    contextWorkspaces
+  });
+  log17.info("\u7528\u6237\u81EA\u5B9A\u4E49\u63D0\u793A\u8BCD\u5DF2\u751F\u6210", { length: resolvedPrompt.length });
+  return resolvedPrompt;
+}
+var log17, WORKSPACE_REF_PATTERN;
+var init_workspaceReference = __esm({
+  "src/host/services/workspaceReference.ts"() {
+    init_i18n();
+    init_path();
+    init_logger2();
+    log17 = createLogger2("WorkspaceReference");
+    WORKSPACE_REF_PATTERN = /@(?:([\w\u4e00-\u9fa5-]+):)?([^\s]+)/g;
+  }
+});
+
 // src/newSessionPrefsService.ts
 function normalizeNewSessionPrefs(raw) {
   if (!raw || typeof raw !== "object") return null;
@@ -12728,7 +12890,7 @@ async function readNewSessionPrefs(engineId) {
     const result = await dispatchKv2("get", { key: newSessionPrefsKey(engineId) });
     return normalizeNewSessionPrefs(result.value);
   } catch (e3) {
-    log17.warn("\u8BFB\u53D6\u65B0\u5EFA\u4F1A\u8BDD\u504F\u597D\u5931\u8D25\uFF0C\u6309\u5168\u5C40\u9ED8\u8BA4\u964D\u7EA7", { engineId, error: String(e3) });
+    log18.warn("\u8BFB\u53D6\u65B0\u5EFA\u4F1A\u8BDD\u504F\u597D\u5931\u8D25\uFF0C\u6309\u5168\u5C40\u9ED8\u8BA4\u964D\u7EA7", { engineId, error: String(e3) });
     return null;
   }
 }
@@ -12741,15 +12903,15 @@ async function persistNewSessionPrefs(engineId, prefs) {
       value: normalized
     });
   } catch (e3) {
-    log17.warn("\u5199\u5165\u65B0\u5EFA\u4F1A\u8BDD\u504F\u597D\u5931\u8D25", { engineId, error: String(e3) });
+    log18.warn("\u5199\u5165\u65B0\u5EFA\u4F1A\u8BDD\u504F\u597D\u5931\u8D25", { engineId, error: String(e3) });
   }
 }
-var log17;
+var log18;
 var init_newSessionPrefsService = __esm({
   "src/newSessionPrefsService.ts"() {
     init_deps();
     init_logger();
-    log17 = createLogger("NewSessionPrefs");
+    log18 = createLogger("NewSessionPrefs");
   }
 });
 
@@ -13182,7 +13344,7 @@ __export(services_exports, {
   requestCompactHandoff: () => requestCompactHandoff,
   resetEventRouter: () => resetEventRouter,
   resetTracker: () => resetTracker,
-  resolveTemplateVariables: () => resolveTemplateVariables,
+  resolveTemplateVariables: () => resolveTemplateVariables2,
   respondPluginCard: () => respondPluginCard,
   restoreFromHistory: () => restoreFromHistory2,
   resyncAfterResumeGap: () => resyncAfterResumeGap2,
@@ -13213,7 +13375,7 @@ function aiChatDispatch2(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables2, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -13227,6 +13389,7 @@ var init_services = __esm({
     init_streamRateTracker();
     init_cliSlashCommands();
     init_agentSlashCommand();
+    init_workspaceReference();
     init_newSessionPrefsService();
     init_claudeSettingsService();
     init_imageSaveService();
@@ -13312,9 +13475,9 @@ var init_services = __esm({
     saveMarkdownImage2 = (...args) => saveMarkdownImage(...args);
     registerExternalLinkGlobalHandler = (...args) => coreService("linkExternal").registerExternalLinkGlobalHandler(...args);
     openExternal = (...args) => coreService("linkExternal").openExternal(...args);
-    getUserSystemPrompt = (...args) => coreService("workspaceReference").getUserSystemPrompt(...args);
-    parseWorkspaceReferences = (...args) => coreService("workspaceReference").parseWorkspaceReferences(...args);
-    resolveTemplateVariables = (...args) => coreService("workspaceReference").resolveTemplateVariables(...args);
+    getUserSystemPrompt = (...args) => getUserSystemPrompt2(...args);
+    parseWorkspaceReferences = (...args) => parseWorkspaceReferences2(...args);
+    resolveTemplateVariables2 = (...args) => resolveTemplateVariables(...args);
     detectClientDescriptor = (...args) => coreService("detector").detectClientDescriptor(...args);
     getDefaultCompactInstruction2 = (...args) => coreService("contextCompactHandoff").getDefaultCompactInstruction(...args);
     openExternalLink = (...args) => coreService("linkExternal").openExternal(...args);
@@ -33464,7 +33627,7 @@ var require_dayjs_min = __commonJS({
 });
 
 // node_modules/mermaid/dist/chunks/mermaid.core/chunk-X3CZISLH.mjs
-var import_dayjs, LEVELS, log23, setLogLevel, format;
+var import_dayjs, LEVELS, log24, setLogLevel, format;
 var init_chunk_X3CZISLH = __esm({
   "node_modules/mermaid/dist/chunks/mermaid.core/chunk-X3CZISLH.mjs"() {
     init_chunk_Y2CYZVJY();
@@ -33477,7 +33640,7 @@ var init_chunk_X3CZISLH = __esm({
       error: 4,
       fatal: 5
     };
-    log23 = {
+    log24 = {
       trace: /* @__PURE__ */ __name((..._args) => {
       }, "trace"),
       debug: /* @__PURE__ */ __name((..._args) => {
@@ -33500,35 +33663,35 @@ var init_chunk_X3CZISLH = __esm({
       } else if (typeof level === "number") {
         numericLevel = level;
       }
-      log23.trace = () => {
+      log24.trace = () => {
       };
-      log23.debug = () => {
+      log24.debug = () => {
       };
-      log23.info = () => {
+      log24.info = () => {
       };
-      log23.warn = () => {
+      log24.warn = () => {
       };
-      log23.error = () => {
+      log24.error = () => {
       };
-      log23.fatal = () => {
+      log24.fatal = () => {
       };
       if (numericLevel <= LEVELS.fatal) {
-        log23.fatal = console.error ? console.error.bind(console, format("FATAL"), "color: orange") : console.log.bind(console, "\x1B[35m", format("FATAL"));
+        log24.fatal = console.error ? console.error.bind(console, format("FATAL"), "color: orange") : console.log.bind(console, "\x1B[35m", format("FATAL"));
       }
       if (numericLevel <= LEVELS.error) {
-        log23.error = console.error ? console.error.bind(console, format("ERROR"), "color: orange") : console.log.bind(console, "\x1B[31m", format("ERROR"));
+        log24.error = console.error ? console.error.bind(console, format("ERROR"), "color: orange") : console.log.bind(console, "\x1B[31m", format("ERROR"));
       }
       if (numericLevel <= LEVELS.warn) {
-        log23.warn = console.warn ? console.warn.bind(console, format("WARN"), "color: orange") : console.log.bind(console, `\x1B[33m`, format("WARN"));
+        log24.warn = console.warn ? console.warn.bind(console, format("WARN"), "color: orange") : console.log.bind(console, `\x1B[33m`, format("WARN"));
       }
       if (numericLevel <= LEVELS.info) {
-        log23.info = console.info ? console.info.bind(console, format("INFO"), "color: lightblue") : console.log.bind(console, "\x1B[34m", format("INFO"));
+        log24.info = console.info ? console.info.bind(console, format("INFO"), "color: lightblue") : console.log.bind(console, "\x1B[34m", format("INFO"));
       }
       if (numericLevel <= LEVELS.debug) {
-        log23.debug = console.debug ? console.debug.bind(console, format("DEBUG"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("DEBUG"));
+        log24.debug = console.debug ? console.debug.bind(console, format("DEBUG"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("DEBUG"));
       }
       if (numericLevel <= LEVELS.trace) {
-        log23.trace = console.debug ? console.debug.bind(console, format("TRACE"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("TRACE"));
+        log24.trace = console.debug ? console.debug.bind(console, format("TRACE"), "color: lightgreen") : console.log.bind(console, "\x1B[32m", format("TRACE"));
       }
     }, "setLogLevel");
     format = /* @__PURE__ */ __name((level) => {
@@ -34488,7 +34651,7 @@ function setupDompurifyHooks() {
 function cssStyleSheetToString(cssStyleSheet) {
   return [...cssStyleSheet.cssRules].map((rule) => rule.cssText).join("\n");
 }
-var directiveRegex, whitespace, stripAnyComments, isLineBreak, lastLineBreakInWhitespaceRun, matchFrontMatter, UnknownDiagramError, detectors, detectType, registerLazyLoadedDiagrams, addDetector, getDiagramLoader, assignWithDepth, assignWithDepth_default, oldAttributeBackgroundColorOdd, oldAttributeBackgroundColorEven, mkBorder, isPlainObject, applyOverride, Theme, getThemeVariables, Theme2, getThemeVariables2, Theme3, getThemeVariables3, Theme4, getThemeVariables4, Theme5, getThemeVariables5, Theme6, getThemeVariables6, Theme7, getThemeVariables7, Theme8, getThemeVariables8, Theme9, getThemeVariables9, Theme10, getThemeVariables10, Theme11, getThemeVariables11, themes_default, config_schema_default, config, keyify, configKeys, defaultConfig_default, DIAGRAM_CONFIG_KEY_ALIASES, getDiagramConfigKey, DICTIONARY_CONFIG_PATTERNS, sanitizeDictionaryConfig, sanitizeDirective, sanitizeCss, defaultConfig, APPEARANCE_KEYS, LOOKS, isUsableAppearance, readAppearance, evaluate, siteConfig, configFromInitialize, siteConfigDelta, directives, currentConfig, diagramConfigKey, resolveAppearance, updateCurrentConfig, setDiagramConfigScope, setSiteConfig, saveConfigFromInitialize, updateSiteConfig, getSiteConfig, setConfig, getConfig, sanitize, addDirective, reset, ConfigWarning, issuedWarnings, issueWarning, checkConfig, getUserDefinedConfig, getEffectiveHtmlLabels, lineBreakRegex, lineBreakTestRegex, getRows, setupDompurifyHooksIfNotSetup, removeScript, sanitizeMore, sanitizeText, sanitizeTextOrArray, hasBreaks, splitBreaks, placeholderToBreak, breakToPlaceholder, getUrl, getMax, getMin, parseGenericTypes, countOccurrence, shouldCombineSets, processSet, isMathMLSupported, katexRegex, hasKatex, calculateMathMLDimensions, renderKatexUnsanitized, renderKatexSanitized, common_default, d3Attrs, calculateSvgSizeAttrs, configureSvgSize, setupGraphViewbox, themes, getStyles, addStylesForDiagram, styles_default, commonDb_exports, accTitle, diagramTitle, accDescription, sanitizeText2, clear, setAccTitle, getAccTitle, setAccDescription, getAccDescription, setDiagramTitle, getDiagramTitle, log24, setLogLevel2, getConfig2, setConfig2, defaultConfig2, sanitizeText3, setupGraphViewbox2, getCommonDb, diagrams, registerDiagram, getDiagram, DiagramNotFoundError;
+var directiveRegex, whitespace, stripAnyComments, isLineBreak, lastLineBreakInWhitespaceRun, matchFrontMatter, UnknownDiagramError, detectors, detectType, registerLazyLoadedDiagrams, addDetector, getDiagramLoader, assignWithDepth, assignWithDepth_default, oldAttributeBackgroundColorOdd, oldAttributeBackgroundColorEven, mkBorder, isPlainObject, applyOverride, Theme, getThemeVariables, Theme2, getThemeVariables2, Theme3, getThemeVariables3, Theme4, getThemeVariables4, Theme5, getThemeVariables5, Theme6, getThemeVariables6, Theme7, getThemeVariables7, Theme8, getThemeVariables8, Theme9, getThemeVariables9, Theme10, getThemeVariables10, Theme11, getThemeVariables11, themes_default, config_schema_default, config, keyify, configKeys, defaultConfig_default, DIAGRAM_CONFIG_KEY_ALIASES, getDiagramConfigKey, DICTIONARY_CONFIG_PATTERNS, sanitizeDictionaryConfig, sanitizeDirective, sanitizeCss, defaultConfig, APPEARANCE_KEYS, LOOKS, isUsableAppearance, readAppearance, evaluate, siteConfig, configFromInitialize, siteConfigDelta, directives, currentConfig, diagramConfigKey, resolveAppearance, updateCurrentConfig, setDiagramConfigScope, setSiteConfig, saveConfigFromInitialize, updateSiteConfig, getSiteConfig, setConfig, getConfig, sanitize, addDirective, reset, ConfigWarning, issuedWarnings, issueWarning, checkConfig, getUserDefinedConfig, getEffectiveHtmlLabels, lineBreakRegex, lineBreakTestRegex, getRows, setupDompurifyHooksIfNotSetup, removeScript, sanitizeMore, sanitizeText, sanitizeTextOrArray, hasBreaks, splitBreaks, placeholderToBreak, breakToPlaceholder, getUrl, getMax, getMin, parseGenericTypes, countOccurrence, shouldCombineSets, processSet, isMathMLSupported, katexRegex, hasKatex, calculateMathMLDimensions, renderKatexUnsanitized, renderKatexSanitized, common_default, d3Attrs, calculateSvgSizeAttrs, configureSvgSize, setupGraphViewbox, themes, getStyles, addStylesForDiagram, styles_default, commonDb_exports, accTitle, diagramTitle, accDescription, sanitizeText2, clear, setAccTitle, getAccTitle, setAccDescription, getAccDescription, setDiagramTitle, getDiagramTitle, log25, setLogLevel2, getConfig2, setConfig2, defaultConfig2, sanitizeText3, setupGraphViewbox2, getCommonDb, diagrams, registerDiagram, getDiagram, DiagramNotFoundError;
 var init_chunk_BG4553SI = __esm({
   "node_modules/mermaid/dist/chunks/mermaid.core/chunk-BG4553SI.mjs"() {
     init_chunk_X3CZISLH();
@@ -34618,10 +34781,10 @@ var init_chunk_BG4553SI = __esm({
     }, "registerLazyLoadedDiagrams");
     addDetector = /* @__PURE__ */ __name((key, detector38, loader38) => {
       if (detectors[key]) {
-        log23.warn(`Detector with key ${key} already exists. Overwriting.`);
+        log24.warn(`Detector with key ${key} already exists. Overwriting.`);
       }
       detectors[key] = { detector: detector38, loader: loader38 };
-      log23.debug(`Detector with key ${key} added${loader38 ? " with loader" : ""}`);
+      log24.debug(`Detector with key ${key} added${loader38 ? " with loader" : ""}`);
     }, "addDetector");
     getDiagramLoader = /* @__PURE__ */ __name((key) => {
       return detectors[key].loader;
@@ -39484,13 +39647,13 @@ var init_chunk_BG4553SI = __esm({
       for (const key of Object.keys(dict)) {
         const value3 = dict[key];
         if (key.startsWith("__") || key.includes("proto") || key.includes("constr") || typeof value3 !== "string" || !valuePattern.test(value3)) {
-          log23.debug("sanitize deleting dictionary entry:", key, value3);
+          log24.debug("sanitize deleting dictionary entry:", key, value3);
           delete dict[key];
         }
       }
     }, "sanitizeDictionaryConfig");
     sanitizeDirective = /* @__PURE__ */ __name((args) => {
-      log23.debug("sanitizeDirective called with", args);
+      log24.debug("sanitizeDirective called with", args);
       if (typeof args !== "object" || args == null) {
         return;
       }
@@ -39499,9 +39662,9 @@ var init_chunk_BG4553SI = __esm({
         return;
       }
       for (const key of Object.keys(args)) {
-        log23.debug("Checking key", key);
+        log24.debug("Checking key", key);
         if (key.startsWith("__") || key.includes("proto") || key.includes("constr") || !configKeys.has(key) || args[key] == null) {
-          log23.debug("sanitize deleting key: ", key);
+          log24.debug("sanitize deleting key: ", key);
           delete args[key];
           continue;
         }
@@ -39510,7 +39673,7 @@ var init_chunk_BG4553SI = __esm({
           if (valuePattern) {
             sanitizeDictionaryConfig(args[key], valuePattern);
           } else {
-            log23.debug("sanitizing object", key);
+            log24.debug("sanitizing object", key);
             sanitizeDirective(args[key]);
           }
           continue;
@@ -39518,7 +39681,7 @@ var init_chunk_BG4553SI = __esm({
         const cssMatchers = ["themeCSS", "fontFamily", "altFontFamily"];
         for (const cssKey of cssMatchers) {
           if (key.includes(cssKey)) {
-            log23.debug("sanitizing css option", key);
+            log24.debug("sanitizing css option", key);
             args[key] = sanitizeCss(args[key]);
           }
         }
@@ -39531,7 +39694,7 @@ var init_chunk_BG4553SI = __esm({
           }
         }
       }
-      log23.debug("After sanitization", args);
+      log24.debug("After sanitization", args);
     }, "sanitizeDirective");
     sanitizeCss = /* @__PURE__ */ __name((str2) => {
       let startCnt = 0;
@@ -39664,7 +39827,7 @@ var init_chunk_BG4553SI = __esm({
       }
       ["secure", ...siteConfig.secure ?? []].forEach((key) => {
         if (Object.hasOwn(options2, key)) {
-          log23.debug(`Denied attempt to modify a secure key ${key}`, options2[key]);
+          log24.debug(`Denied attempt to modify a secure key ${key}`, options2[key]);
           delete options2[key];
         }
       });
@@ -39707,7 +39870,7 @@ var init_chunk_BG4553SI = __esm({
       if (issuedWarnings[warning]) {
         return;
       }
-      log23.warn(ConfigWarning[warning]);
+      log24.warn(ConfigWarning[warning]);
       issuedWarnings[warning] = true;
     }, "issueWarning");
     checkConfig = /* @__PURE__ */ __name((config22) => {
@@ -39955,13 +40118,13 @@ var init_chunk_BG4553SI = __esm({
       const svgBounds = svgElem.node().getBBox();
       const sWidth = svgBounds.width;
       const sHeight = svgBounds.height;
-      log23.info(`SVG bounds: ${sWidth}x${sHeight}`, svgBounds);
+      log24.info(`SVG bounds: ${sWidth}x${sHeight}`, svgBounds);
       let width3 = 0;
       let height2 = 0;
-      log23.info(`Graph bounds: ${width3}x${height2}`, graph);
+      log24.info(`Graph bounds: ${width3}x${height2}`, graph);
       width3 = sWidth + padding * 2;
       height2 = sHeight + padding * 2;
-      log23.info(`Calculated bounds: ${width3}x${height2}`);
+      log24.info(`Calculated bounds: ${width3}x${height2}`);
       configureSvgSize(svgElem, height2, width3, useMaxWidth);
       const vBox = `${svgBounds.x - padding} ${svgBounds.y - padding} ${svgBounds.width + 2 * padding} ${svgBounds.height + 2 * padding}`;
       svgElem.attr("viewBox", vBox);
@@ -39973,7 +40136,7 @@ var init_chunk_BG4553SI = __esm({
       if (type3 in themes && themes[type3]) {
         diagramStyles = themes[type3]({ ...options2, svgId });
       } else {
-        log23.warn(`No theme found for ${type3}`);
+        log24.warn(`No theme found for ${type3}`);
       }
       return `& {
     font-family: ${options2.fontFamily};
@@ -40135,7 +40298,7 @@ var init_chunk_BG4553SI = __esm({
       diagramTitle = sanitizeText2(txt);
     }, "setDiagramTitle");
     getDiagramTitle = /* @__PURE__ */ __name(() => diagramTitle, "getDiagramTitle");
-    log24 = log23;
+    log25 = log24;
     setLogLevel2 = setLogLevel;
     getConfig2 = getConfig;
     setConfig2 = setConfig;
@@ -40148,7 +40311,7 @@ var init_chunk_BG4553SI = __esm({
     diagrams = {};
     registerDiagram = /* @__PURE__ */ __name((id38, diagram38, detector38) => {
       if (diagrams[id38]) {
-        log24.warn(`Diagram with id ${id38} already registered. Overwriting.`);
+        log25.warn(`Diagram with id ${id38} already registered. Overwriting.`);
       }
       diagrams[id38] = diagram38;
       if (detector38) {
@@ -40156,7 +40319,7 @@ var init_chunk_BG4553SI = __esm({
       }
       addStylesForDiagram(id38, diagram38.styles);
       diagram38.injectUtils?.(
-        log24,
+        log25,
         setLogLevel2,
         getConfig2,
         sanitizeText3,
@@ -40703,13 +40866,13 @@ var init_chunk_R3KSYZAL = __esm({
             'Invalid icon loader. Must have a "name" property with non-empty string value.'
           );
         }
-        log23.debug("Registering icon pack:", iconLoader.name);
+        log24.debug("Registering icon pack:", iconLoader.name);
         if ("loader" in iconLoader) {
           loaderStore.set(iconLoader.name, iconLoader.loader);
         } else if ("icons" in iconLoader) {
           iconsStore.set(iconLoader.name, iconLoader.icons);
         } else {
-          log23.error("Invalid icon loader:", iconLoader);
+          log24.error("Invalid icon loader:", iconLoader);
           throw new Error('Invalid icon loader. Must have either "icons" or "loader" property.');
         }
       }
@@ -40735,7 +40898,7 @@ var init_chunk_R3KSYZAL = __esm({
           icons = { ...loaded, prefix };
           iconsStore.set(prefix, icons);
         } catch (e3) {
-          log23.error(e3);
+          log24.error(e3);
           throw new Error(`Failed to load icon set: ${data6.prefix}`);
         }
       }
@@ -40758,7 +40921,7 @@ var init_chunk_R3KSYZAL = __esm({
       try {
         iconData = await getRegisteredIconData(iconName, customisations?.fallbackPrefix);
       } catch (e3) {
-        log23.error(e3);
+        log24.error(e3);
         iconData = unknownIcon;
       }
       const renderData = iconToSVG(iconData, customisations);
@@ -45194,7 +45357,7 @@ function azimuthalInvert(angle2) {
   };
 }
 function mercatorRaw(lambda, phi2) {
-  return [lambda, log25(tan((halfPi3 + phi2) / 2))];
+  return [lambda, log26(tan((halfPi3 + phi2) / 2))];
 }
 function equirectangularRaw(lambda, phi2) {
   return [lambda, phi2];
@@ -45225,9 +45388,9 @@ function stereographicRaw(x7, y8) {
   return [cy * sin(x7) / k6, sin(y8) / k6];
 }
 function transverseMercatorRaw(lambda, phi2) {
-  return [log25(tan((halfPi3 + phi2) / 2)), -lambda];
+  return [log26(tan((halfPi3 + phi2) / 2)), -lambda];
 }
-var epsilon4, epsilon22, pi4, halfPi3, quarterPi, tau5, degrees3, radians2, abs2, atan, atan2, cos, exp, log25, sin, sign, sqrt, tan, areaRingSum$1, areaSum$1, clipAntimeridian, clipMax, clipMin, areaSum, areaRingSum, x0$2, x1, lengthSum, cosMinDistance, transformRadians, azimuthalEqualAreaRaw, azimuthalEquidistantRaw, A1, A22, A3, A4, M2, iterations;
+var epsilon4, epsilon22, pi4, halfPi3, quarterPi, tau5, degrees3, radians2, abs2, atan, atan2, cos, exp, log26, sin, sign, sqrt, tan, areaRingSum$1, areaSum$1, clipAntimeridian, clipMax, clipMin, areaSum, areaRingSum, x0$2, x1, lengthSum, cosMinDistance, transformRadians, azimuthalEqualAreaRaw, azimuthalEquidistantRaw, A1, A22, A3, A4, M2, iterations;
 var init_d3_geo = __esm({
   "node_modules/d3-geo/dist/d3-geo.mjs"() {
     init_d3_array();
@@ -45244,7 +45407,7 @@ var init_d3_geo = __esm({
     atan2 = Math.atan2;
     cos = Math.cos;
     exp = Math.exp;
-    log25 = Math.log;
+    log26 = Math.log;
     sin = Math.sin;
     sign = Math.sign || function(x7) {
       return x7 > 0 ? 1 : x7 < 0 ? -1 : 0;
@@ -49591,7 +49754,7 @@ function calcLabelPosition(points) {
 }
 function calcTerminalLabelPosition(terminalMarkerSize, position5, _points) {
   const points = structuredClone(_points);
-  log23.info("our points", points);
+  log24.info("our points", points);
   if (position5 !== "start_left" && position5 !== "start_right") {
     points.reverse();
   }
@@ -49733,7 +49896,7 @@ var init_chunk_6MUBBAK2 = __esm({
           "ig"
         );
         text5 = text5.trim().replace(commentWithoutDirectives, "").replace(/'/gm, '"');
-        log23.debug(
+        log24.debug(
           `Detecting diagram directive${type3 !== null ? " type:" + type3 : ""} based on the text:${text5}`
         );
         let match3;
@@ -49753,7 +49916,7 @@ var init_chunk_6MUBBAK2 = __esm({
         }
         return result.length === 1 ? result[0] : result;
       } catch (error3) {
-        log23.error(
+        log24.error(
           `ERROR: ${error3.message} - Unable to parse directive type: '${type3}' based on the text: '${text5}'`
         );
         return { type: void 0, args: null };
@@ -49780,7 +49943,7 @@ var init_chunk_6MUBBAK2 = __esm({
       for (let i2 = 0; i2 < len; i2++) {
         obj = obj[arrPaths[i2]];
         if (!obj) {
-          log23.error(`Function name: ${functionName} not found in window`);
+          log24.error(`Function name: ${functionName} not found in window`);
           return;
         }
       }
@@ -49825,7 +49988,7 @@ var init_chunk_6MUBBAK2 = __esm({
       throw new Error("Could not find a suitable point for the given distance");
     }, "calculatePoint");
     calcCardinalityPosition = /* @__PURE__ */ __name((isRelationTypePresent, points, initialPosition) => {
-      log23.info(`our points ${JSON.stringify(points)}`);
+      log24.info(`our points ${JSON.stringify(points)}`);
       if (points[0] !== initialPosition) {
         points = points.reverse();
       }
@@ -51388,7 +51551,7 @@ function markdownToHTML(markdown2, { markdownAutoWrap } = {}) {
     } else if (node2.type === "escape") {
       return node2.text;
     }
-    log23.warn(`Unsupported markdown: ${node2.type}`);
+    log24.warn(`Unsupported markdown: ${node2.type}`);
     return node2.raw;
   }
   __name(output2, "output");
@@ -52090,7 +52253,7 @@ ${lines.join("\n")}`);
       minWidth = 0,
       addSvgBackground = false
     } = {}, config3) => {
-      log23.debug(
+      log24.debug(
         "XYZ createText",
         text5,
         style3,
@@ -53547,7 +53710,7 @@ function anchor(parent4, node2) {
   circleElem.attr("class", "anchor").attr("style", handleUndefinedAttr(cssStyles));
   updateNodeBounds(node2, circleElem);
   node2.intersect = function(point3) {
-    log23.info("Circle intersect", node2, radius2, point3);
+    log24.info("Circle intersect", node2, radius2, point3);
     return intersect_default.circle(node2, radius2, point3);
   };
   return shapeSvg;
@@ -53955,7 +54118,7 @@ async function circle(parent4, node2, options2) {
     return intersect_default.circle(bounds4, radius22, point3);
   };
   node2.intersect = function(point3) {
-    log23.info("Circle intersect", node2, radius2, point3);
+    log24.info("Circle intersect", node2, radius2, point3);
     return intersect_default.circle(node2, radius2, point3);
   };
   return shapeSvg;
@@ -54053,7 +54216,7 @@ function crossedCircle(parent4, node2) {
   }
   updateNodeBounds(node2, crossedCircle2);
   node2.intersect = function(point3) {
-    log23.info("crossedCircle intersect", node2, { radius: radius2, point: point3 });
+    log24.info("crossedCircle intersect", node2, { radius: radius2, point: point3 });
     const pos = intersect_default.circle(node2, radius2, point3);
     return pos;
   };
@@ -54688,7 +54851,7 @@ async function doublecircle(parent4, node2) {
   }
   updateNodeBounds(node2, circleGroup);
   node2.intersect = function(point3) {
-    log23.info("DoubleCircle intersect", node2, outerRadius, point3);
+    log24.info("DoubleCircle intersect", node2, outerRadius, point3);
     return intersect_default.circle(node2, outerRadius, point3);
   };
   return shapeSvg;
@@ -54753,7 +54916,7 @@ function filledCircle(parent4, node2, { config: { themeVariables } }) {
   }
   updateNodeBounds(node2, filledCircle2);
   node2.intersect = function(point3) {
-    log23.info("filledCircle intersect", node2, { radius: radius2, point: point3 });
+    log24.info("filledCircle intersect", node2, { radius: radius2, point: point3 });
     const pos = intersect_default.circle(node2, radius2, point3);
     return pos;
   };
@@ -54807,7 +54970,7 @@ async function flippedTriangle(parent4, node2) {
     `translate(${-bbox.width / 2 - (bbox.x - (bbox.left ?? 0))}, ${-h2 / 2 + (node2.padding ?? 0) / 2 + (bbox.y - (bbox.top ?? 0))})`
   );
   node2.intersect = function(point3) {
-    log23.info("Triangle intersect", node2, points, point3);
+    log24.info("Triangle intersect", node2, points, point3);
     return intersect_default.polygon(node2, points, point3);
   };
   return shapeSvg;
@@ -54952,7 +55115,7 @@ async function halfRoundedRectangle(parent4, node2) {
   }
   updateNodeBounds(node2, polygon2);
   node2.intersect = function(point3) {
-    log23.info("Pill intersect", node2, { radius: radius2, point: point3 });
+    log24.info("Pill intersect", node2, { radius: radius2, point: point3 });
     const pos = intersect_default.polygon(node2, points, point3);
     return pos;
   };
@@ -55043,7 +55206,7 @@ async function hourglass(parent4, node2) {
   polygon2.attr("transform", `translate(${-w5 / 2}, ${-h2 / 2})`);
   updateNodeBounds(node2, polygon2);
   node2.intersect = function(point3) {
-    log23.info("Pill intersect", node2, { points });
+    log24.info("Pill intersect", node2, { points });
     const pos = intersect_default.polygon(node2, points, point3);
     return pos;
   };
@@ -55112,7 +55275,7 @@ async function icon(parent4, node2, { config: { themeVariables, flowchart } }) {
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log23.info("iconSquare intersect", node2, point3);
+    log24.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -55211,7 +55374,7 @@ async function iconCircle(parent4, node2, { config: { themeVariables, flowchart 
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log23.info("iconSquare intersect", node2, point3);
+    log24.info("iconSquare intersect", node2, point3);
     const pos = intersect_default.rect(node2, point3);
     return pos;
   };
@@ -55286,7 +55449,7 @@ async function iconRounded(parent4, node2, { config: { themeVariables, flowchart
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log23.info("iconSquare intersect", node2, point3);
+    log24.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -55391,7 +55554,7 @@ async function iconSquare(parent4, node2, { config: { themeVariables, flowchart 
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log23.info("iconSquare intersect", node2, point3);
+    log24.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -55487,7 +55650,7 @@ async function imageSquare(parent4, node2, { config: { flowchart } }) {
   );
   updateNodeBounds(node2, outerShape);
   node2.intersect = function(point3) {
-    log23.info("iconSquare intersect", node2, point3);
+    log24.info("iconSquare intersect", node2, point3);
     if (!node2.label) {
       return intersect_default.rect(node2, point3);
     }
@@ -55696,7 +55859,7 @@ function lightningBolt(parent4, node2) {
   lightningBolt2.attr("transform", `translate(-${width3 / 2},${-height2})`);
   updateNodeBounds(node2, lightningBolt2);
   node2.intersect = function(point3) {
-    log23.info("lightningBolt intersect", node2, point3);
+    log24.info("lightningBolt intersect", node2, point3);
     const pos = intersect_default.polygon(node2, points, point3);
     return pos;
   };
@@ -56411,7 +56574,7 @@ async function rectWithTitle(parent4, node2) {
     dv2.attr("width", bbox.width);
     dv2.attr("height", bbox.height);
   }
-  log23.info("Text 2", description);
+  log24.info("Text 2", description);
   const textRows = description || [];
   const titleBox = text22.getBBox();
   const descr = await createLabel_default(
@@ -56461,11 +56624,11 @@ async function rectWithTitle(parent4, node2) {
       options2
     );
     innerLine = shapeSvg.insert(() => {
-      log23.debug("Rough node insert CXC", roughNode);
+      log24.debug("Rough node insert CXC", roughNode);
       return roughLine;
     }, ":first-child");
     rect2 = shapeSvg.insert(() => {
-      log23.debug("Rough node insert CXC", roughNode);
+      log24.debug("Rough node insert CXC", roughNode);
       return roughNode;
     }, ":first-child");
   } else {
@@ -57173,7 +57336,7 @@ async function triangle(parent4, node2) {
     `translate(${-bbox.width / 2 - (bbox.x - (bbox.left ?? 0))}, ${h2 / 2 - (bbox.height + (node2.padding ?? 0) / (useHtmlLabels ? 2 : 1) - (bbox.y - (bbox.top ?? 0)))})`
   );
   node2.intersect = function(point3) {
-    log23.info("Triangle intersect", node2, points, point3);
+    log24.info("Triangle intersect", node2, points, point3);
     return intersect_default.polygon(node2, points, point3);
   };
   return shapeSvg;
@@ -58266,7 +58429,7 @@ async function bang(parent4, node2) {
     return intersect_default.rect(bounds4, point3);
   };
   node2.intersect = function(point3) {
-    log23.info("Bang intersect", node2, point3);
+    log24.info("Bang intersect", node2, point3);
     return intersect_default.rect(node2, point3);
   };
   return shapeSvg;
@@ -58318,7 +58481,7 @@ async function cloud(parent4, node2) {
     return intersect_default.rect(bounds4, point3);
   };
   node2.intersect = function(point3) {
-    log23.info("Cloud intersect", node2, point3);
+    log24.info("Cloud intersect", node2, point3);
     return intersect_default.rect(node2, point3);
   };
   return shapeSvg;
@@ -60249,7 +60412,7 @@ var init_chunk_LEVMRMFU = __esm({
     }, "clear");
     positionNode = /* @__PURE__ */ __name((node2) => {
       const el = nodeElems.get(node2.id);
-      log23.trace(
+      log24.trace(
         "Transforming node",
         node2.diff,
         node2,
@@ -60406,7 +60569,7 @@ var init_chunk_M57EVK23 = __esm({
         const labelY = laneTop + (titleHeight - bbox.height) / 2;
         labelEl.attr("transform", `translate(${labelX}, ${labelY})`);
       }
-      log23.trace("Swimlane data ", node2, JSON.stringify(node2));
+      log24.trace("Swimlane data ", node2, JSON.stringify(node2));
       if (labelStyles) {
         const span = labelEl.select("span");
         if (span) {
@@ -60423,7 +60586,7 @@ var init_chunk_M57EVK23 = __esm({
       return { cluster: shapeSvg, labelBBox: bbox };
     }, "swimlane");
     rect = /* @__PURE__ */ __name(async (parent4, node2) => {
-      log23.info("Creating subgraph rect for ", node2.id, node2);
+      log24.info("Creating subgraph rect for ", node2.id, node2);
       const siteConfig2 = getConfig2();
       const { theme, themeVariables, handDrawnSeed } = siteConfig2;
       const { clusterBkg, clusterBorder, borderColorArray } = themeVariables;
@@ -60460,7 +60623,7 @@ var init_chunk_M57EVK23 = __esm({
       const height2 = node2.height;
       const x7 = node2.x - width3 / 2;
       const y8 = node2.y - height2 / 2;
-      log23.trace("Data ", node2, JSON.stringify(node2));
+      log24.trace("Data ", node2, JSON.stringify(node2));
       let rect2;
       if (node2.look === "handDrawn") {
         const rc = at.svg(shapeSvg);
@@ -60474,7 +60637,7 @@ var init_chunk_M57EVK23 = __esm({
         });
         const roughNode = rc.path(createRoundedRectPathD(x7, y8, width3, height2, 0), options2);
         rect2 = shapeSvg.insert(() => {
-          log23.debug("Rough node insert CXC", roughNode);
+          log24.debug("Rough node insert CXC", roughNode);
           return roughNode;
         }, ":first-child");
         rect2.select("path:nth-child(2)").attr("style", borderStyles.join(";"));
@@ -60600,7 +60763,7 @@ var init_chunk_M57EVK23 = __esm({
       return { cluster: shapeSvg, labelBBox: bbox };
     }, "roundedWithTitle");
     kanbanSection = /* @__PURE__ */ __name(async (parent4, node2) => {
-      log23.info("Creating subgraph rect for ", node2.id, node2);
+      log24.info("Creating subgraph rect for ", node2.id, node2);
       const siteConfig2 = getConfig2();
       const { themeVariables, handDrawnSeed } = siteConfig2;
       const { clusterBkg, clusterBorder } = themeVariables;
@@ -60631,7 +60794,7 @@ var init_chunk_M57EVK23 = __esm({
       const height2 = node2.height;
       const x7 = node2.x - width3 / 2;
       const y8 = node2.y - height2 / 2;
-      log23.trace("Data ", node2, JSON.stringify(node2));
+      log24.trace("Data ", node2, JSON.stringify(node2));
       let rect2;
       if (node2.look === "handDrawn") {
         const rc = at.svg(shapeSvg);
@@ -60645,7 +60808,7 @@ var init_chunk_M57EVK23 = __esm({
         });
         const roughNode = rc.path(createRoundedRectPathD(x7, y8, width3, height2, node2.rx), options2);
         rect2 = shapeSvg.insert(() => {
-          log23.debug("Rough node insert CXC", roughNode);
+          log24.debug("Rough node insert CXC", roughNode);
           return roughNode;
         }, ":first-child");
         rect2.select("path:nth-child(2)").attr("style", borderStyles.join(";"));
@@ -60733,7 +60896,7 @@ var init_chunk_M57EVK23 = __esm({
       return { cluster: shapeSvg, labelBBox: {} };
     }, "divider");
     createContainerGroup = /* @__PURE__ */ __name(async (parent4, node2, opts) => {
-      log23.info(`Creating ${opts.cssClass} for `, node2.id, node2);
+      log24.info(`Creating ${opts.cssClass} for `, node2.id, node2);
       const siteConfig2 = getConfig2();
       const { theme, themeVariables, handDrawnSeed } = siteConfig2;
       const { borderColorArray } = themeVariables;
@@ -60852,7 +61015,7 @@ var init_chunk_M57EVK23 = __esm({
       };
     }, "getUsecaseSystemBoundaryGeometry");
     usecaseSystemBoundary = /* @__PURE__ */ __name(async (parent4, node2) => {
-      log23.info("Creating usecase system boundary for ", node2.id, node2);
+      log24.info("Creating usecase system boundary for ", node2.id, node2);
       const siteConfig2 = getConfig2();
       const { theme, themeVariables, handDrawnSeed } = siteConfig2;
       const { clusterBkg, clusterBorder, borderColorArray } = themeVariables;
@@ -61698,7 +61861,7 @@ var init_chunk_DQASFODM = __esm({
       const arrowTypeInfo = arrowTypesMap[arrowType];
       const marginSupport = arrowTypeInfo && arrowTypesWithMarginSupport.includes(arrowTypeInfo.type);
       if (!arrowTypeInfo) {
-        log23.warn(`Unknown arrow type: ${arrowType}`);
+        log24.warn(`Unknown arrow type: ${arrowType}`);
         return;
       }
       const endMarkerType = arrowTypeInfo.type;
@@ -61773,7 +61936,7 @@ var init_chunk_DQASFODM = __esm({
         config3
       );
       label.node().appendChild(labelElement);
-      log23.info("abc82", edge, edge.labelType);
+      log24.info("abc82", edge, edge.labelType);
       let bbox;
       let transformBbox;
       if (useHtmlLabels) {
@@ -61928,13 +62091,13 @@ var init_chunk_DQASFODM = __esm({
       return { x: x7, y: y8 };
     }, "resolveEdgeLabelPosition");
     positionEdgeLabel = /* @__PURE__ */ __name((edge, paths) => {
-      log23.debug("Moving label abc88 ", edge.id, edge.label, edgeLabels.get(edge.id), paths);
+      log24.debug("Moving label abc88 ", edge.id, edge.label, edgeLabels.get(edge.id), paths);
       const siteConfig2 = getConfig2();
       const { subGraphTitleTotalMargin } = getSubGraphTitleMargins(siteConfig2);
       if (edge.label) {
         const el = edgeLabels.get(edge.id);
         const { x: x7, y: y8 } = resolveEdgeLabelPosition(edge, paths);
-        log23.debug(
+        log24.debug(
           "Moving label " + edge.label + " from (",
           edge.x,
           ",",
@@ -62036,7 +62199,7 @@ var init_chunk_DQASFODM = __esm({
       return dx >= w5 || dy >= h2;
     }, "outsideNode");
     intersection = /* @__PURE__ */ __name((node2, outsidePoint, insidePoint) => {
-      log23.debug(`intersection calc abc89:
+      log24.debug(`intersection calc abc89:
   outsidePoint: ${JSON.stringify(outsidePoint)}
   insidePoint : ${JSON.stringify(insidePoint)}
   node        : x:${node2.x} y:${node2.y} w:${node2.width} h:${node2.height}`);
@@ -62065,7 +62228,7 @@ var init_chunk_DQASFODM = __esm({
         if (Q4 === 0) {
           res.y = outsidePoint.y;
         }
-        log23.debug(`abc89 top/bottom calc, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, res);
+        log24.debug(`abc89 top/bottom calc, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, res);
         return res;
       } else {
         if (insidePoint.x < outsidePoint.x) {
@@ -62076,7 +62239,7 @@ var init_chunk_DQASFODM = __esm({
         let q5 = Q4 * r3 / R2;
         let _x = insidePoint.x < outsidePoint.x ? insidePoint.x + R2 - r3 : insidePoint.x - R2 + r3;
         let _y = insidePoint.y < outsidePoint.y ? insidePoint.y + q5 : insidePoint.y - q5;
-        log23.debug(`sides calc abc89, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, { _x, _y });
+        log24.debug(`sides calc abc89, Q ${Q4}, q ${q5}, R ${R2}, r ${r3}`, { _x, _y });
         if (r3 === 0) {
           _x = outsidePoint.x;
           _y = outsidePoint.y;
@@ -62091,16 +62254,16 @@ var init_chunk_DQASFODM = __esm({
       }
     }, "intersection");
     cutPathAtIntersect = /* @__PURE__ */ __name((_points, boundaryNode) => {
-      log23.warn("abc88 cutPathAtIntersect", _points, boundaryNode);
+      log24.warn("abc88 cutPathAtIntersect", _points, boundaryNode);
       let points = [];
       let lastPointOutside = _points[0];
       let isInside2 = false;
       _points.forEach((point22) => {
-        log23.info("abc88 checking point", point22, boundaryNode);
+        log24.info("abc88 checking point", point22, boundaryNode);
         if (!outsideNode(boundaryNode, point22) && !isInside2) {
           const inter = intersection(boundaryNode, lastPointOutside, point22);
-          log23.debug("abc88 inside", point22, lastPointOutside, inter);
-          log23.debug("abc88 intersection", inter, boundaryNode);
+          log24.debug("abc88 inside", point22, lastPointOutside, inter);
+          log24.debug("abc88 intersection", inter, boundaryNode);
           let pointPresent = false;
           points.forEach((p3) => {
             pointPresent = pointPresent || p3.x === inter.x && p3.y === inter.y;
@@ -62108,18 +62271,18 @@ var init_chunk_DQASFODM = __esm({
           if (!points.some((e3) => e3.x === inter.x && e3.y === inter.y)) {
             points.push(inter);
           } else {
-            log23.warn("abc88 no intersect", inter, points);
+            log24.warn("abc88 no intersect", inter, points);
           }
           isInside2 = true;
         } else {
-          log23.warn("abc88 outside", point22, lastPointOutside);
+          log24.warn("abc88 outside", point22, lastPointOutside);
           lastPointOutside = point22;
           if (!isInside2) {
             points.push(point22);
           }
         }
       });
-      log23.debug("returning points", points);
+      log24.debug("returning points", points);
       return points;
     }, "cutPathAtIntersect");
     __name(extractCornerPoints, "extractCornerPoints");
@@ -62146,7 +62309,7 @@ var init_chunk_DQASFODM = __esm({
           const a3 = Math.sqrt(2) * 2;
           let newCornerPoint = { x: cornerPoint.x, y: cornerPoint.y };
           if (Math.abs(nextPoint.x - prevPoint.x) > 10 && Math.abs(nextPoint.y - prevPoint.y) >= 10) {
-            log23.debug(
+            log24.debug(
               "Corner point fixing",
               Math.abs(nextPoint.x - prevPoint.x),
               Math.abs(nextPoint.y - prevPoint.y)
@@ -62164,7 +62327,7 @@ var init_chunk_DQASFODM = __esm({
               };
             }
           } else {
-            log23.debug(
+            log24.debug(
               "Corner point skipping fixing",
               Math.abs(nextPoint.x - prevPoint.x),
               Math.abs(nextPoint.y - prevPoint.y)
@@ -62241,12 +62404,12 @@ var init_chunk_DQASFODM = __esm({
       }
       const pointsStr = btoa(JSON.stringify(points));
       if (edge.toCluster) {
-        log23.info("to cluster abc88", clusterDb2.get(edge.toCluster));
+        log24.info("to cluster abc88", clusterDb2.get(edge.toCluster));
         points = cutPathAtIntersect(edge.points, clusterDb2.get(edge.toCluster).node);
         pointsHasChanged = true;
       }
       if (edge.fromCluster) {
-        log23.debug(
+        log24.debug(
           "from cluster abc88",
           clusterDb2.get(edge.fromCluster),
           JSON.stringify(points, null, 2)
@@ -62404,8 +62567,8 @@ var init_chunk_DQASFODM = __esm({
         url = window.location.protocol + "//" + window.location.host + window.location.pathname + window.location.search;
         url = url.replace(/\(/g, "\\(").replace(/\)/g, "\\)");
       }
-      log23.info("arrowTypeStart", edge.arrowTypeStart);
-      log23.info("arrowTypeEnd", edge.arrowTypeEnd);
+      log24.info("arrowTypeStart", edge.arrowTypeStart);
+      log24.info("arrowTypeEnd", edge.arrowTypeEnd);
       const useMargin = !animatedEdge && edge?.look === "neo";
       addEdgeMarkers(svgPath, edge, url, diagramId3, diagramType, useMargin, strokeColor);
       const midIndex = Math.floor(points.length / 2);
@@ -62429,7 +62592,7 @@ var init_chunk_DQASFODM = __esm({
       });
     }, "insertMarkers");
     extension = /* @__PURE__ */ __name((elem, type3, id38) => {
-      log23.trace("Making markers for ", id38);
+      log24.trace("Making markers for ", id38);
       elem.append("defs").append("marker").attr("id", id38 + "_" + type3 + "-extensionStart").attr("class", "marker extension " + type3).attr("refX", 18).attr("refY", 7).attr("markerWidth", 20).attr("markerHeight", 28).attr("orient", "auto").attr("markerUnits", "userSpaceOnUse").append("path").attr("d", "M 1,7 L18,13 V 1 Z");
       elem.append("defs").append("marker").attr("id", id38 + "_" + type3 + "-extensionEnd").attr("class", "marker extension " + type3).attr("refX", 1).attr("refY", 7).attr("markerWidth", 20).attr("markerHeight", 28).attr("orient", "auto").attr("markerUnits", "userSpaceOnUse").append("path").attr("d", "M 1,1 V 13 L18,7 Z");
       elem.append("marker").attr("id", id38 + "_" + type3 + "-extensionStart-margin").attr("class", "marker extension " + type3).attr("refX", 18).attr("refY", 7).attr("markerWidth", 20).attr("markerHeight", 28).attr("orient", "auto").attr("markerUnits", "userSpaceOnUse").attr("viewBox", "0 0 20 14").append("polygon").attr("points", "10,7 18,13 18,1").style("stroke-width", 2).style("stroke-dasharray", "0");
@@ -68708,24 +68871,24 @@ var init_chunk_KQLB2F66 = __esm({
     }, "clear");
     isDescendant = /* @__PURE__ */ __name((id38, ancestorId) => {
       const ancestorDescendants = descendants.get(ancestorId) || [];
-      log23.trace("In isDescendant", ancestorId, " ", id38, " = ", ancestorDescendants.includes(id38));
+      log24.trace("In isDescendant", ancestorId, " ", id38, " = ", ancestorDescendants.includes(id38));
       return ancestorDescendants.includes(id38);
     }, "isDescendant");
     edgeInCluster = /* @__PURE__ */ __name((edge, clusterId) => {
       const clusterDescendants = descendants.get(clusterId) || [];
-      log23.info("Descendants of ", clusterId, " is ", clusterDescendants);
-      log23.info("Edge is ", edge);
+      log24.info("Descendants of ", clusterId, " is ", clusterDescendants);
+      log24.info("Edge is ", edge);
       if (edge.v === clusterId || edge.w === clusterId) {
         return false;
       }
       if (!clusterDescendants) {
-        log23.debug("Tilt, ", clusterId, ",not in descendants");
+        log24.debug("Tilt, ", clusterId, ",not in descendants");
         return false;
       }
       return clusterDescendants.includes(edge.v) || isDescendant(edge.v, clusterId) || isDescendant(edge.w, clusterId) || clusterDescendants.includes(edge.w);
     }, "edgeInCluster");
     copy = /* @__PURE__ */ __name((clusterId, graph, newGraph, rootId) => {
-      log23.debug(
+      log24.debug(
         "Copying children of ",
         clusterId,
         "root",
@@ -68738,24 +68901,24 @@ var init_chunk_KQLB2F66 = __esm({
       if (clusterId !== rootId) {
         nodes5.push(clusterId);
       }
-      log23.debug("Copying (nodes) clusterId", clusterId, "nodes", nodes5);
+      log24.debug("Copying (nodes) clusterId", clusterId, "nodes", nodes5);
       nodes5.forEach((node2) => {
         if (graph.children(node2).length > 0) {
           copy(node2, graph, newGraph, rootId);
         } else {
           const data6 = graph.node(node2);
-          log23.info("cp ", node2, " to ", rootId, " with parent ", clusterId);
+          log24.info("cp ", node2, " to ", rootId, " with parent ", clusterId);
           newGraph.setNode(node2, data6);
           if (rootId !== graph.parent(node2)) {
-            log23.debug("Setting parent", node2, graph.parent(node2));
+            log24.debug("Setting parent", node2, graph.parent(node2));
             newGraph.setParent(node2, graph.parent(node2));
           }
           if (clusterId !== rootId && node2 !== clusterId) {
-            log23.debug("Setting parent", node2, clusterId);
+            log24.debug("Setting parent", node2, clusterId);
             newGraph.setParent(node2, clusterId);
           } else {
-            log23.info("In copy ", clusterId, "root", rootId, "data", graph.node(clusterId), rootId);
-            log23.debug(
+            log24.info("In copy ", clusterId, "root", rootId, "data", graph.node(clusterId), rootId);
+            log24.debug(
               "Not Setting parent for node=",
               node2,
               "cluster!==rootId",
@@ -68765,18 +68928,18 @@ var init_chunk_KQLB2F66 = __esm({
             );
           }
           const edges3 = graph.edges(node2);
-          log23.debug("Copying Edges", edges3);
+          log24.debug("Copying Edges", edges3);
           edges3.forEach((edge) => {
-            log23.info("Edge", edge);
+            log24.info("Edge", edge);
             const data22 = graph.edge(edge.v, edge.w, edge.name);
-            log23.info("Edge data", data22, rootId);
+            log24.info("Edge data", data22, rootId);
             try {
               if (edgeInCluster(edge, rootId)) {
-                log23.info("Copying as ", edge.v, edge.w, data22, edge.name);
+                log24.info("Copying as ", edge.v, edge.w, data22, edge.name);
                 newGraph.setEdge(edge.v, edge.w, data22, edge.name);
-                log23.info("newGraph edges ", newGraph.edges(), newGraph.edge(newGraph.edges()[0]));
+                log24.info("newGraph edges ", newGraph.edges(), newGraph.edge(newGraph.edges()[0]));
               } else {
-                log23.info(
+                log24.info(
                   "Skipping copy of edge ",
                   edge.v,
                   "-->",
@@ -68788,11 +68951,11 @@ var init_chunk_KQLB2F66 = __esm({
                 );
               }
             } catch (e3) {
-              log23.error(e3);
+              log24.error(e3);
             }
           });
         }
-        log23.debug("Removing node", node2);
+        log24.debug("Removing node", node2);
         graph.removeNode(node2);
       });
     }, "copy");
@@ -68821,7 +68984,7 @@ var init_chunk_KQLB2F66 = __esm({
     }, "findCommonEdges");
     findNonClusterChild = /* @__PURE__ */ __name((id38, graph, clusterId) => {
       const children2 = graph.children(id38);
-      log23.trace("Searching children of id ", id38, children2);
+      log24.trace("Searching children of id ", id38, children2);
       if (children2.length < 1) {
         return id38;
       }
@@ -68853,15 +69016,15 @@ var init_chunk_KQLB2F66 = __esm({
     }, "getAnchorId");
     adjustClustersAndEdges = /* @__PURE__ */ __name((graph, depth) => {
       if (!graph || depth > 10) {
-        log23.debug("Opting out, no graph ");
+        log24.debug("Opting out, no graph ");
         return;
       } else {
-        log23.debug("Opting in, graph ");
+        log24.debug("Opting in, graph ");
       }
       graph.nodes().forEach(function(id38) {
         const children2 = graph.children(id38);
         if (children2.length > 0) {
-          log23.debug(
+          log24.debug(
             "Cluster identified",
             id38,
             " Replacement id in edges: ",
@@ -68875,18 +69038,18 @@ var init_chunk_KQLB2F66 = __esm({
         const children2 = graph.children(id38);
         const edges3 = graph.edges();
         if (children2.length > 0) {
-          log23.debug("Cluster identified", id38, descendants);
+          log24.debug("Cluster identified", id38, descendants);
           edges3.forEach((edge) => {
             const d1 = isDescendant(edge.v, id38);
             const d22 = isDescendant(edge.w, id38);
             if (d1 ^ d22) {
-              log23.debug("Edge: ", edge, " leaves cluster ", id38);
-              log23.debug("Descendants of XXX ", id38, ": ", descendants.get(id38));
+              log24.debug("Edge: ", edge, " leaves cluster ", id38);
+              log24.debug("Descendants of XXX ", id38, ": ", descendants.get(id38));
               clusterDb.get(id38).externalConnections = true;
             }
           });
         } else {
-          log23.debug("Not a cluster ", id38, descendants);
+          log24.debug("Not a cluster ", id38, descendants);
         }
       });
       for (let id38 of clusterDb.keys()) {
@@ -68905,11 +69068,11 @@ var init_chunk_KQLB2F66 = __esm({
       }
       graph.edges().forEach(function(e3) {
         const edge = graph.edge(e3);
-        log23.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
-        log23.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(graph.edge(e3)));
+        log24.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
+        log24.debug("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(graph.edge(e3)));
         let v5 = e3.v;
         let w5 = e3.w;
-        log23.debug(
+        log24.debug(
           "Fix XXX",
           clusterDb,
           "ids:",
@@ -68921,7 +69084,7 @@ var init_chunk_KQLB2F66 = __esm({
           clusterDb.get(e3.w)
         );
         if (clusterDb.get(e3.v) || clusterDb.get(e3.w)) {
-          log23.debug("Fixing and trying - removing XXX", e3.v, e3.w, e3.name);
+          log24.debug("Fixing and trying - removing XXX", e3.v, e3.w, e3.name);
           v5 = getAnchorId(e3.v);
           w5 = getAnchorId(e3.w);
           graph.removeEdge(e3.v, e3.w, e3.name);
@@ -68935,16 +69098,16 @@ var init_chunk_KQLB2F66 = __esm({
             clusterDb.get(parent4).externalConnections = true;
             edge.toCluster = e3.w;
           }
-          log23.debug("Fix Replacing with XXX", v5, w5, e3.name);
+          log24.debug("Fix Replacing with XXX", v5, w5, e3.name);
           graph.setEdge(v5, w5, edge, e3.name);
         }
       });
       extractor(graph, 0);
-      log23.trace(clusterDb);
+      log24.trace(clusterDb);
     }, "adjustClustersAndEdges");
     extractor = /* @__PURE__ */ __name((graph, depth) => {
       if (depth > 10) {
-        log23.error("Bailing out");
+        log24.error("Bailing out");
         return;
       }
       let nodes5 = graph.nodes();
@@ -68954,12 +69117,12 @@ var init_chunk_KQLB2F66 = __esm({
         hasChildren = hasChildren || children2.length > 0;
       }
       if (!hasChildren) {
-        log23.debug("Done, no node has children", graph.nodes());
+        log24.debug("Done, no node has children", graph.nodes());
         return;
       }
-      log23.debug("Nodes = ", nodes5, depth);
+      log24.debug("Nodes = ", nodes5, depth);
       for (const node2 of nodes5) {
-        log23.debug(
+        log24.debug(
           "Extracting node",
           node2,
           clusterDb,
@@ -68971,9 +69134,9 @@ var init_chunk_KQLB2F66 = __esm({
           depth
         );
         if (!clusterDb.has(node2)) {
-          log23.debug("Not a cluster", node2, depth);
+          log24.debug("Not a cluster", node2, depth);
         } else if (!clusterDb.get(node2).externalConnections && graph.children(node2) && graph.children(node2).length > 0) {
-          log23.debug(
+          log24.debug(
             "Cluster without external connections, without a parent and with children",
             node2,
             depth
@@ -68982,7 +69145,7 @@ var init_chunk_KQLB2F66 = __esm({
           let dir2 = graphSettings.rankdir === "TB" ? "LR" : "TB";
           if (clusterDb.get(node2)?.clusterData?.dir) {
             dir2 = clusterDb.get(node2).clusterData.dir;
-            log23.debug("Fixing dir", clusterDb.get(node2).clusterData.dir, dir2);
+            log24.debug("Fixing dir", clusterDb.get(node2).clusterData.dir, dir2);
           }
           const clusterGraph = new Graph({
             multigraph: true,
@@ -69005,7 +69168,7 @@ var init_chunk_KQLB2F66 = __esm({
             graph: clusterGraph
           });
         } else {
-          log23.debug(
+          log24.debug(
             "Cluster ** ",
             node2,
             " **not meeting the criteria !externalConnections:",
@@ -69017,14 +69180,14 @@ var init_chunk_KQLB2F66 = __esm({
             graph.children("D"),
             depth
           );
-          log23.debug(clusterDb);
+          log24.debug(clusterDb);
         }
       }
       nodes5 = graph.nodes();
-      log23.debug("New list of nodes", nodes5);
+      log24.debug("New list of nodes", nodes5);
       for (const node2 of nodes5) {
         const data6 = graph.node(node2);
-        log23.debug(" Now next level", node2, data6);
+        log24.debug(" Now next level", node2, data6);
         if (data6?.clusterNode) {
           extractor(data6.graph, depth + 1);
         }
@@ -163336,12 +163499,12 @@ function clearContainerAlgorithmOptions(layoutOptions) {
   layoutOptions["spacing.baseValue"] = DEFAULT_SUBGRAPH_SPACING_BASE_VALUE;
   layoutOptions["spacing.nodeNode"] = DEFAULT_SUBGRAPH_NODE_SPACING;
 }
-function resolveContainerAlgorithm(requested, log43) {
+function resolveContainerAlgorithm(requested, log44) {
   if (typeof requested !== "string") {
     return void 0;
   }
   if (!CONTAINER_ALGORITHMS.has(requested)) {
-    log43?.warn(
+    log44?.warn(
       `Unknown container layout algorithm "${requested}". Supported values: ${[...CONTAINER_ALGORITHMS].join(", ")}. Falling back to the diagram's layout algorithm.`
     );
     return void 0;
@@ -163378,7 +163541,7 @@ function groupTitleSizeOptions(node2) {
     "nodeSize.minimum": `(${groupTitleWidth(node2)}, 0)`
   };
 }
-function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log43) {
+function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log44) {
   const labelW = node2.labelData?.width ?? 0;
   const pad4 = node2.padding ?? 0;
   const minWidth = labelW + 2 * pad4;
@@ -163446,7 +163609,7 @@ function buildSubgraphLayoutOptions(node2, elkConfig, algorithm, log43) {
     // cross-boundary edge attaches to the frame rather than to a node inside it.
     "elk.spacing.portsSurrounding": PORTS_SURROUNDING
   };
-  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log43);
+  const algo = resolveContainerAlgorithm(node2.metadata?.algorithm, log44);
   if (algo) {
     const padTop = labelH + CONTAINER_PADDING;
     layoutOptions["nodeSize.constraints"] = "[MINIMUM_SIZE, NODE_LABELS]";
@@ -163752,10 +163915,10 @@ function createRootElkGraph(data4Layout, algorithm, rootLayoutOptions) {
   );
   return graph;
 }
-function addSubGraphs(nodeArr, log43) {
+function addSubGraphs(nodeArr, log44) {
   const parentLookupDb = { parentById: {}, childrenById: {} };
   const subgraphs = nodeArr.filter((node2) => node2.isGroup);
-  log43.info("Subgraphs - ", subgraphs);
+  log44.info("Subgraphs - ", subgraphs);
   subgraphs.forEach((subgraph) => {
     const children2 = nodeArr.filter((node2) => node2.parentId === subgraph.id);
     children2.forEach((node2) => {
@@ -163919,39 +164082,39 @@ function configureSubgraphNodes(data4Layout, nodeDb2, parentLookupDb, elkContext
     delete node2.height;
   });
 }
-function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log43) {
-  log43.debug("APA01 processing edges, count:", elkGraph.edges.length);
+function configureCrossHierarchyEdges(elkGraph, nodeDb2, parentLookupDb, log44) {
+  log44.debug("APA01 processing edges, count:", elkGraph.edges.length);
   elkGraph.edges.forEach((edge, index2) => {
-    log43.debug("APA01 processing edge", index2, ":", edge);
+    log44.debug("APA01 processing edge", index2, ":", edge);
     const source = edge.sources[0];
     const target = edge.targets[0];
-    log43.debug("APA01 source:", source, "target:", target);
-    log43.debug("APA01 nodeDb[source]:", nodeDb2[source]);
-    log43.debug("APA01 nodeDb[target]:", nodeDb2[target]);
+    log44.debug("APA01 source:", source, "target:", target);
+    log44.debug("APA01 nodeDb[source]:", nodeDb2[source]);
+    log44.debug("APA01 nodeDb[target]:", nodeDb2[target]);
     if (nodeDb2[source] && nodeDb2[target] && nodeDb2[source].parentId !== nodeDb2[target].parentId) {
       const ancestorId = findCommonAncestor(source, target, parentLookupDb);
-      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log43);
-      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log43);
+      setIncludeChildrenPolicy(nodeDb2, source, ancestorId, log44);
+      setIncludeChildrenPolicy(nodeDb2, target, ancestorId, log44);
     }
   });
 }
-function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log43) {
+function setIncludeChildrenPolicy(nodeDb2, nodeId, ancestorId, log44) {
   const node2 = nodeDb2[nodeId];
   if (!node2) {
     return;
   }
   node2.layoutOptions ??= {};
   if (node2.layoutOptions["elk.hierarchyHandling"] === "SEPARATE_CHILDREN" && resolveContainerAlgorithm(node2.metadata?.algorithm)) {
-    log43.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
+    log44.debug("Dropping explicit algorithm for node", node2.id, "due to cross-boundary edges");
     clearContainerAlgorithmOptions(node2.layoutOptions);
     Object.assign(node2.layoutOptions, groupTitleSizeOptions(node2));
   }
   node2.layoutOptions["elk.hierarchyHandling"] = "INCLUDE_CHILDREN";
   if (node2.id !== ancestorId && node2.parentId) {
-    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log43);
+    setIncludeChildrenPolicy(nodeDb2, node2.parentId, ancestorId, log44);
   }
 }
-async function runElkLayout(elk, elkGraph, log43) {
+async function runElkLayout(elk, elkGraph, log44) {
   const profiler4 = globalThis.__mermaidProfiler;
   try {
     profiler4?.begin("layoutCore");
@@ -163961,19 +164124,19 @@ async function runElkLayout(elk, elkGraph, log43) {
     } finally {
       profiler4?.end();
     }
-    log43.debug("APA01 after - success");
-    log43.debug("APA01 layout result:", graph);
+    log44.debug("APA01 after - success");
+    log44.debug("APA01 layout result:", graph);
     return graph;
   } catch (error3) {
-    log43.error("ELK layout error:", error3);
+    log44.error("ELK layout error:", error3);
     throw error3;
   }
 }
-function applyElkLayoutResult(data4Layout, graph, layoutState, log43) {
+function applyElkLayoutResult(data4Layout, graph, layoutState, log44) {
   const nodeById = new Map(data4Layout.nodes.map((node2) => [node2.id, node2]));
-  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log43);
+  applyElkNodePositions(graph.children ?? [], layoutState, nodeById, 0, 0, 0, log44);
   evenGroupFrames(graph.children ?? [], layoutState, nodeById, graph);
-  applyElkEdgeLayout(data4Layout, graph, layoutState, log43);
+  applyElkEdgeLayout(data4Layout, graph, layoutState, log44);
 }
 function collectDescendantIds(elkNode, into = /* @__PURE__ */ new Set()) {
   for (const child of elkNode.children ?? []) {
@@ -164064,7 +164227,7 @@ function evenGroupFrames(elkNodes, layoutState, nodeById, graph = {}) {
     }
   }
 }
-function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log43) {
+function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, depth, log44) {
   nodeArray.forEach((node2) => {
     if (!node2) {
       return;
@@ -164096,7 +164259,7 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
       layoutNodeLabels.labels = node2.labels;
     }
     if (node2.isGroup) {
-      log43.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
+      log44.debug("Id abc88 subgraph = ", node2.id, node2.x, node2.y, node2.labelData);
       applyElkNodePositions(
         node2.children ?? [],
         layoutState,
@@ -164104,10 +164267,10 @@ function applyElkNodePositions(nodeArray, layoutState, nodeById, relX, relY, dep
         offset.posX,
         offset.posY,
         depth + 1,
-        log43
+        log44
       );
     } else {
-      log43.info(
+      log44.info(
         "Id NODE = ",
         node2.id,
         node2.x,
@@ -164297,7 +164460,7 @@ function straightenEdgeTerminals(edges3) {
   }
   return changed;
 }
-function applyElkEdgeLayout(data4Layout, graph, layoutState, log43) {
+function applyElkEdgeLayout(data4Layout, graph, layoutState, log44) {
   const edgeById = new Map(data4Layout.edges.map((edge) => [edge.id, edge]));
   const straightenEdges = data4Layout.config.elk?.straightenEdges !== false;
   const terminalLabelPorts = /* @__PURE__ */ new Map();
@@ -164363,20 +164526,20 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log43) {
       startNode.y = from2.y;
       endNode.x = to2.x;
       endNode.y = to2.y;
-      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log43);
+      const straightPoints = sanitizeElkEdgePoints([from2, to2], startNode, endNode, log44);
       layoutEdge.points = straightPoints;
       layoutEdge.curve = "linear";
       const lineStart = straightPoints[0];
       const lineEnd = straightPoints[straightPoints.length - 1];
       layoutEdge.x = (lineStart.x + lineEnd.x) / 2;
       layoutEdge.y = (lineStart.y + lineEnd.y) / 2;
-      log43.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
+      log44.debug("APA18 no edge sections, using a straight line", edge.id, layoutEdge.points);
       return;
     }
     const sourceId = edge.start ?? edge.sourceId ?? startId;
     const targetId = edge.end ?? edge.targetId ?? endId;
     const offset = calcOffset(sourceId, targetId, layoutState.parentLookupDb, layoutState.nodeDb);
-    log43.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
+    log44.debug("APA18 offset", offset, sourceId, " ==> ", targetId, "edge:", edge, startNode);
     const section = edge.sections[0];
     const points = createEdgePointsFromSection(section, offset);
     if (reversed) {
@@ -164393,17 +164556,17 @@ function applyElkEdgeLayout(data4Layout, graph, layoutState, log43) {
     if (endNode.shape !== "rect33") {
       points.push({ x: endNode.x, y: endNode.y });
     }
-    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log43);
+    const clipped = sanitizeElkEdgePoints(points, startNode, endNode, log44);
     layoutEdge.points = ensureStartMarkerSegmentLength(
       ensureEndMarkerSegmentLength(
         clipped,
         boundsFor(endNode),
         getEndMarkerPathOffset(layoutEdge),
-        log43
+        log44
       ),
       boundsFor(startNode),
       getStartMarkerPathOffset(layoutEdge),
-      log43
+      log44
     );
     layoutEdge.curve = "rounded";
     const label = edge.labels?.[0];
@@ -164668,10 +164831,10 @@ function calcOffset(src, dest, parentLookupDb, nodeDb2) {
     y: ancestorOffset?.posY ?? 0
   };
 }
-function sanitizeElkEdgePoints(points, startNode, endNode, log43) {
+function sanitizeElkEdgePoints(points, startNode, endNode, log44) {
   const prevPoints = Array.isArray(points) ? [...points] : [];
   const endBounds = boundsFor(endNode);
-  log43.debug(
+  log44.debug(
     "PPP cutter2: Points before cutter2:",
     JSON.stringify(points),
     "endBounds:",
@@ -164706,12 +164869,12 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log43) {
     }
     if (skipStart || skipEnd) {
       if (!skipStart) {
-        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log43);
+        applyStartIntersectionIfNeeded(prevPoints, startNode, startBounds, log44);
       }
       if (!skipEnd) {
-        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log43);
+        applyEndIntersectionIfNeeded(prevPoints, endNode, endBounds2, log44);
       }
-      log43.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
+      log44.debug("PPP cutter2: skipping cutter2 due to on-border group endpoint(s)", {
         skipStart,
         skipEnd,
         startCenterApprox,
@@ -164721,22 +164884,22 @@ function sanitizeElkEdgePoints(points, startNode, endNode, log43) {
       });
       clippedPoints = prevPoints;
     } else {
-      clippedPoints = cutter2(startNode, endNode, prevPoints, log43);
+      clippedPoints = cutter2(startNode, endNode, prevPoints, log44);
     }
   }
-  log43.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
+  log44.debug("PPP cutter2: Points after cutter2:", JSON.stringify(clippedPoints));
   if (!Array.isArray(clippedPoints) || clippedPoints.length < 2 || hasInvalidPoint(clippedPoints)) {
-    log43.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
+    log44.warn("POI cutter2: Invalid points from cutter2, falling back to prevPoints", clippedPoints);
     const cleaned = prevPoints.filter((p3) => Number.isFinite(p3?.x) && Number.isFinite(p3?.y));
     clippedPoints = cleaned.length >= 2 ? cleaned : prevPoints;
   }
-  log43.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
-  return dedupeConsecutivePoints(clippedPoints, log43);
+  log44.debug("UIO cutter2: Points after cutter2 (sanitized):", clippedPoints);
+  return dedupeConsecutivePoints(clippedPoints, log44);
 }
 function hasInvalidPoint(points) {
   return points?.some((point3) => !Number.isFinite(point3?.x) || !Number.isFinite(point3?.y));
 }
-function dedupeConsecutivePoints(points, log43) {
+function dedupeConsecutivePoints(points, log44) {
   const deduped = points.filter((point3, index2, arr) => {
     if (index2 === 0) {
       return true;
@@ -164745,7 +164908,7 @@ function dedupeConsecutivePoints(points, log43) {
     return Math.abs(point3.x - prev2.x) > 1e-6 || Math.abs(point3.y - prev2.y) > 1e-6;
   });
   if (deduped.length !== points.length) {
-    log43.debug("UIO cutter2: removed consecutive duplicate points", {
+    log44.debug("UIO cutter2: removed consecutive duplicate points", {
       before: points,
       after: deduped
     });
@@ -164758,7 +164921,7 @@ function getEndMarkerPathOffset(edge) {
 function getStartMarkerPathOffset(edge) {
   return markerPathOffset(edge.arrowTypeStart);
 }
-function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log43) {
+function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log44) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -164772,7 +164935,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log43
     return points;
   }
   const adjusted = [start2, ...points.slice(2)];
-  log43.debug("UIO cutter2: removed short start marker segment", {
+  log44.debug("UIO cutter2: removed short start marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -164780,7 +164943,7 @@ function ensureStartMarkerSegmentLength(points, startBounds, markerOffset, log43
   });
   return adjusted;
 }
-function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log43) {
+function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log44) {
   if (markerOffset <= 0 || points.length < 3) {
     return points;
   }
@@ -164794,7 +164957,7 @@ function ensureEndMarkerSegmentLength(points, endBounds, markerOffset, log43) {
     return points;
   }
   const adjusted = [...points.slice(0, -2), end];
-  log43.debug("UIO cutter2: removed short end marker segment", {
+  log44.debug("UIO cutter2: removed short end marker segment", {
     before: points,
     after: adjusted,
     markerOffset,
@@ -164964,7 +165127,7 @@ function clipGroupEndpoint(points, bounds4, side) {
   }
   return true;
 }
-function applyStartIntersectionIfNeeded(points, startNode, startBounds, log43) {
+function applyStartIntersectionIfNeeded(points, startNode, startBounds, log44) {
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (outsideNode2(startBounds, point3)) {
@@ -164982,10 +165145,10 @@ function applyStartIntersectionIfNeeded(points, startNode, startBounds, log43) {
       startCenter
     );
     replaceEndpoint(points, "start", startIntersection);
-    log43.debug("UIO cutter2: start-only intersection applied", { startIntersection });
+    log44.debug("UIO cutter2: start-only intersection applied", { startIntersection });
   }
 }
-function applyEndIntersectionIfNeeded(points, endNode, endBounds, log43) {
+function applyEndIntersectionIfNeeded(points, endNode, endBounds, log44) {
   let outsideIndexForEnd = -1;
   for (let index2 = points.length - 1; index2 >= 0; index2--) {
     if (outsideNode2(endBounds, points[index2])) {
@@ -165003,7 +165166,7 @@ function applyEndIntersectionIfNeeded(points, endNode, endBounds, log43) {
       endCenter
     );
     replaceEndpoint(points, "end", endIntersection);
-    log43.debug("UIO cutter2: end-only intersection applied", { endIntersection });
+    log44.debug("UIO cutter2: end-only intersection applied", { endIntersection });
   }
 }
 function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
@@ -165017,7 +165180,7 @@ function attachAlongDepartureAxis(node2, bounds4, points, portIndex, step4) {
   }
   return outlineAttachPoint(node2, bounds4, port, next3);
 }
-function cutter2(startNode, endNode, originalPoints, log43) {
+function cutter2(startNode, endNode, originalPoints, log44) {
   const startBounds = boundsFor(startNode);
   const endBounds = boundsFor(endNode);
   if (originalPoints.length === 0) {
@@ -165026,8 +165189,8 @@ function cutter2(startNode, endNode, originalPoints, log43) {
   const points = [...originalPoints];
   const startCenter = points[0];
   const endCenter = points[points.length - 1];
-  log43.debug("PPP cutter2: bounds", { startBounds, endBounds });
-  log43.debug("PPP cutter2: original points", originalPoints);
+  log44.debug("PPP cutter2: bounds", { startBounds, endBounds });
+  log44.debug("PPP cutter2: original points", originalPoints);
   let firstOutsideStartIndex = -1;
   for (const [index2, point3] of points.entries()) {
     if (firstOutsideStartIndex === -1 && outsideNode2(startBounds, point3)) {
@@ -165042,7 +165205,7 @@ function cutter2(startNode, endNode, originalPoints, log43) {
       // is all a non-axis-aligned or shapeless endpoint can offer.
       attachAlongDepartureAxis(startNode, startBounds, points, firstOutsideStartIndex, 1) ?? computeNodeIntersection(startNode, startBounds, outsidePointForStart, startCenter)
     );
-    log43.debug("UIO cutter2: start intersection", startIntersection);
+    log44.debug("UIO cutter2: start intersection", startIntersection);
     replaceEndpoint(points, "start", startIntersection);
   }
   let outsidePointForEnd = null;
@@ -165060,7 +165223,7 @@ function cutter2(startNode, endNode, originalPoints, log43) {
   }
   if (outsidePointForEnd) {
     const endIntersection = attachAlongDepartureAxis(endNode, endBounds, points, outsideIndexForEnd, -1) ?? computeNodeIntersection(endNode, endBounds, outsidePointForEnd, endCenter);
-    log43.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
+    log44.debug("UIO cutter2: end intersection", { endIntersection, outsideIndexForEnd });
     replaceEndpoint(points, "end", endIntersection);
   }
   if (points.length > 1) {
@@ -165070,7 +165233,7 @@ function cutter2(startNode, endNode, originalPoints, log43) {
       (lastPoint2.x - secondLastPoint.x) ** 2 + (lastPoint2.y - secondLastPoint.y) ** 2
     );
     if (distance3 < 2) {
-      log43.debug("UIO cutter2: trimming tail point (too close)", {
+      log44.debug("UIO cutter2: trimming tail point (too close)", {
         distance: distance3,
         lastPoint: lastPoint2,
         secondLastPoint
@@ -165078,7 +165241,7 @@ function cutter2(startNode, endNode, originalPoints, log43) {
       points.pop();
     }
   }
-  log43.debug("UIO cutter2: final points", points);
+  log44.debug("UIO cutter2: final points", points);
   return points;
 }
 var import_elk_bundled, findCommonAncestor, ROOT, JUMP_RADIUS, PLACEMENT_OPTIONS, EDGE_ROUTING_OPTIONS, ROOT_EXPERIMENT_OVERRIDES, SUBGRAPH_EXPERIMENT_OVERRIDES, EPS, PUSH_OUT, onBorder, intersection2, outsideNode2, ensureTrulyOutside, makeInsidePoint, tryNodeIntersect, fallbackIntersection, OUTLINE_RAY_STEPS, DEPARTURE_AXIS_EPS, insideOutline, outlineAttachPoint, computeNodeIntersection, replaceEndpoint, MIN_END_MARKER_SEGMENT_LENGTH, markerPathOffset, ARROW_MAP, PORTS_SURROUNDING_MARGIN, PORTS_SURROUNDING, SUBGRAPH_PADDING, DEFAULT_SUBGRAPH_SPACING_BASE_VALUE, DEFAULT_SUBGRAPH_NODE_SPACING, CONTAINER_PADDING, RECTPACKING_CONTAINER_PADDING, RECTPACKING_OPTIONS, CONTAINER_ALGORITHM_OVERRIDES, CONTAINER_ALGORITHMS, render3, ELK_PRESETS, TERMINAL_LABEL_MARKER_CLEARANCE, TERMINAL_JOG_MAX, TERMINAL_RUN_MAX, JOG_EPS, labelBox, OPPOSITE_LABEL_MIN_GAP, boxesOverlap, TERMINAL_LABEL_FRAME_CLEARANCE;
@@ -168218,7 +168381,7 @@ var init_dagre_SPEB5RXH = __esm({
       siteConfig: siteConfig2
     }) => {
       const dir2 = graph.graph().rankdir;
-      log23.trace("Dir in recursive render - dir:", dir2);
+      log24.trace("Dir in recursive render - dir:", dir2);
       const {
         clusters,
         edgePaths,
@@ -168229,12 +168392,12 @@ var init_dagre_SPEB5RXH = __esm({
         edgePathsClass: "edgePaths"
       });
       if (!graph.nodes()) {
-        log23.info("No nodes found for", graph);
+        log24.info("No nodes found for", graph);
       } else {
-        log23.info("Recursive render XXX", graph.nodes());
+        log24.info("Recursive render XXX", graph.nodes());
       }
       if (graph.edges().length > 0) {
-        log23.info("Recursive edges", graph.edge(graph.edges()[0]));
+        log24.info("Recursive edges", graph.edge(graph.edges()[0]));
       }
       const mergeSelfLoops = shouldMergeSelfLoopSegments(diagramType);
       await Promise.all(
@@ -168242,7 +168405,7 @@ var init_dagre_SPEB5RXH = __esm({
           const node2 = graph.node(v5);
           if (parentCluster !== void 0) {
             const data6 = JSON.parse(JSON.stringify(parentCluster.clusterData));
-            log23.trace(
+            log24.trace(
               "Setting data for parent cluster XXX\n Node.id = ",
               v5,
               "\n data=",
@@ -168252,13 +168415,13 @@ var init_dagre_SPEB5RXH = __esm({
             );
             graph.setNode(parentCluster.id, data6);
             if (!graph.parent(v5)) {
-              log23.trace("Setting parent", v5, parentCluster.id);
+              log24.trace("Setting parent", v5, parentCluster.id);
               graph.setParent(v5, parentCluster.id, data6);
             }
           }
-          log23.info("(Insert) Node XXX" + v5 + ": " + JSON.stringify(graph.node(v5)));
+          log24.info("(Insert) Node XXX" + v5 + ": " + JSON.stringify(graph.node(v5)));
           if (node2?.clusterNode) {
-            log23.info("Cluster identified XBX", v5, node2.width, graph.node(v5));
+            log24.info("Cluster identified XBX", v5, node2.width, graph.node(v5));
             const { ranksep, nodesep } = graph.graph();
             node2.graph.setGraph({
               ...node2.graph.graph(),
@@ -168276,7 +168439,7 @@ var init_dagre_SPEB5RXH = __esm({
             const newEl = o2.elem;
             updateNodeBounds(node2, newEl);
             node2.diff = o2.diff || 0;
-            log23.info(
+            log24.info(
               "New compound node after recursive render XAX",
               v5,
               "width",
@@ -168290,7 +168453,7 @@ var init_dagre_SPEB5RXH = __esm({
             setNodeElem(newEl, node2);
           } else {
             if (graph.children(v5).length > 0) {
-              log23.trace(
+              log24.trace(
                 "Cluster - the non recursive path XBX",
                 v5,
                 node2.id,
@@ -168299,10 +168462,10 @@ var init_dagre_SPEB5RXH = __esm({
                 "Graph:",
                 graph
               );
-              log23.trace(findNonClusterChild(node2.id, graph));
+              log24.trace(findNonClusterChild(node2.id, graph));
               clusterDb.set(node2.id, { id: findNonClusterChild(node2.id, graph), node: node2 });
             } else {
-              log23.trace("Node - the non recursive path XAX", v5, nodes5, graph.node(v5), dir2);
+              log24.trace("Node - the non recursive path XAX", v5, nodes5, graph.node(v5), dir2);
               await insertMeasuredNode(nodes5, graph.node(v5), { config: siteConfig2, dir: dir2 });
             }
           }
@@ -168311,9 +168474,9 @@ var init_dagre_SPEB5RXH = __esm({
       const processEdges = /* @__PURE__ */ __name(async () => {
         const edgePromises = graph.edges().map(async function(e3) {
           const edge = graph.edge(e3.v, e3.w, e3.name);
-          log23.info("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
-          log23.info("Edge " + e3.v + " -> " + e3.w + ": ", e3, " ", JSON.stringify(graph.edge(e3)));
-          log23.info(
+          log24.info("Edge " + e3.v + " -> " + e3.w + ": " + JSON.stringify(e3));
+          log24.info("Edge " + e3.v + " -> " + e3.w + ": ", e3, " ", JSON.stringify(graph.edge(e3)));
+          log24.info(
             "Fix",
             clusterDb,
             "ids:",
@@ -168359,9 +168522,9 @@ var init_dagre_SPEB5RXH = __esm({
       };
     }, "measureDagreGraph");
     runDagreGraphLayout = /* @__PURE__ */ __name((graph) => {
-      log23.info("############################################# XXX");
-      log23.info("###                Layout                 ### XXX");
-      log23.info("############################################# XXX");
+      log24.info("############################################# XXX");
+      log24.info("###                Layout                 ### XXX");
+      log24.info("############################################# XXX");
       if (false) {
         profiler.begin("layoutCore");
       }
@@ -168434,7 +168597,7 @@ var init_dagre_SPEB5RXH = __esm({
       await Promise.all(
         sortNodesByHierarchy(graph).map(async function(v5) {
           const node2 = graph.node(v5);
-          log23.info(
+          log24.info(
             "Position XBX => " + v5 + ": (" + node2.x,
             "," + node2.y,
             ") width: ",
@@ -168444,7 +168607,7 @@ var init_dagre_SPEB5RXH = __esm({
           );
           if (node2?.clusterNode) {
             node2.y += subGraphTitleTotalMargin;
-            log23.info(
+            log24.info(
               "A tainted cluster node XBX1",
               v5,
               node2.id,
@@ -168458,7 +168621,7 @@ var init_dagre_SPEB5RXH = __esm({
             positionNode(node2);
           } else {
             if (graph.children(v5).length > 0) {
-              log23.info(
+              log24.info(
                 "A pure cluster node XBX1",
                 v5,
                 node2.id,
@@ -168473,13 +168636,13 @@ var init_dagre_SPEB5RXH = __esm({
               const halfPadding = node2?.padding / 2 || 0;
               const labelHeight = node2?.labelBBox?.height || 0;
               const offsetY = labelHeight - halfPadding || 0;
-              log23.debug("OffsetY", offsetY, "labelHeight", labelHeight, "halfPadding", halfPadding);
+              log24.debug("OffsetY", offsetY, "labelHeight", labelHeight, "halfPadding", halfPadding);
               await insertCluster(clusters, node2);
               clusterDb.get(node2.id).node = node2;
             } else {
               const parent4 = graph.node(node2.parentId);
               node2.y += subGraphTitleTotalMargin / 2;
-              log23.info(
+              log24.info(
                 "A regular node XBX1 - using the padding",
                 node2.id,
                 "parent",
@@ -168503,7 +168666,7 @@ var init_dagre_SPEB5RXH = __esm({
       const edgeOffsetY = subGraphTitleTotalMargin / 2;
       const edgesToRender = getEdgesToRender(graph, edgeOffsetY, { mergeSelfLoops });
       edgesToRender.forEach(function({ edge, start: start2, end }) {
-        log23.info("Edge " + start2 + " -> " + end + ": " + JSON.stringify(edge), edge);
+        log24.info("Edge " + start2 + " -> " + end + ": " + JSON.stringify(edge), edge);
         edge.points.forEach((point3) => point3.y += edgeOffsetY);
         const startNode = graph.node(start2);
         const endNode = graph.node(end);
@@ -168512,12 +168675,12 @@ var init_dagre_SPEB5RXH = __esm({
       });
       graph.nodes().forEach(function(v5) {
         const n2 = graph.node(v5);
-        log23.info(v5, n2.type, n2.diff);
+        log24.info(v5, n2.type, n2.diff);
         if (n2.isGroup) {
           diff2 = n2.diff;
         }
       });
-      log23.warn("Returning from recursive render XAX", elem, diff2);
+      log24.warn("Returning from recursive render XAX", elem, diff2);
       return { elem, diff: diff2 };
     }, "paintDagreLayoutCore");
     renderDagreSubgraph = /* @__PURE__ */ __name(async (options2) => {
@@ -168550,7 +168713,7 @@ var init_dagre_SPEB5RXH = __esm({
           graph.setParent(node2.id, node2.parentId);
         }
       });
-      log23.debug("Edges:", data4Layout.edges);
+      log24.debug("Edges:", data4Layout.edges);
       data4Layout.edges.forEach((edge) => {
         if (edge.start === edge.end) {
           const nodeId = edge.start;
@@ -168938,7 +169101,7 @@ function dropLanesEmptiedBySharedNodes(layout7, nodes5) {
   for (const { node: node2, keptBy, droppedFrom } of sharedMembers(layout7)) {
     const keptByLane = laneIdOrSelf(model, keptBy);
     if (keptByLane && keptByLane !== droppedFrom && laneIds.has(droppedFrom)) {
-      log23.warn(
+      log24.warn(
         `Swimlane node "${node2}" is listed in lanes "${keptByLane}" and "${droppedFrom}"; it is drawn in "${keptByLane}" only.`
       );
       emptied.add(droppedFrom);
@@ -168949,7 +169112,7 @@ function dropLanesEmptiedBySharedNodes(layout7, nodes5) {
 function warnAboutNestedGroups(nodes5, model) {
   for (const node2 of nodes5) {
     if (node2.isGroup && !model.isLane(node2.id) && !model.isPool(node2.id)) {
-      log23.warn(
+      log24.warn(
         `Swimlane subgraph "${node2.id}" is nested in "${node2.parentId}"; only top-level subgraphs are lanes, so it is drawn as a plain box.`
       );
     }
@@ -169236,7 +169399,7 @@ function createEdgeLabelNodes(data6) {
     const sourceNode = edge.start ? nodeById.get(edge.start) : void 0;
     const targetNode = edge.end ? nodeById.get(edge.end) : void 0;
     if (!sourceNode || !targetNode) {
-      log23.warn(EDGE_LABEL_LOG_PREFIX, `Edge ${edge.id} has missing source or target node`);
+      log24.warn(EDGE_LABEL_LOG_PREFIX, `Edge ${edge.id} has missing source or target node`);
       continue;
     }
     const labelNodeId = `edge-label-${edge.start}-${edge.end}-${edge.id}`;
@@ -173625,11 +173788,11 @@ function validateSwimlanesLayout(layout7) {
   if (issues.length > 0) {
     const overlaps = issues.filter((i2) => i2.type === "edge-node-overlap").length;
     const crossings = issues.filter((i2) => i2.type === "edge-edge-crossing").length;
-    log23.warn(
+    log24.warn(
       `[SWIMLANE_VALIDATE] ${issues.length} issue(s) detected: ${overlaps} edge-node overlap(s), ${crossings} edge crossing(s)`
     );
     for (const issue of issues) {
-      log23.warn(`[SWIMLANE_VALIDATE]   ${issue.type}: ${issue.detail}`);
+      log24.warn(`[SWIMLANE_VALIDATE]   ${issue.type}: ${issue.detail}`);
     }
   }
   return issues;
@@ -181011,7 +181174,7 @@ function getModule(type3, name, moduleType, moduleName) {
     keys: [type3, name, moduleType, moduleName]
   });
 }
-var _window, navigator2, typeofstr, typeofobj, typeoffn, typeofhtmlele, instanceStr, string2, fn$6, array5, plainObject, object2, number$12, integer, htmlElement, elementOrCollection, element, collection, core3, stylesheet, event, emptyString, domElement, boundingBox, promise, ms, memoize3, camel2dash, dash2camel, prependCamel, capitalize, endsWith, number6, rgba3, rgbaNoBackRefs, hsla2, hslaNoBackRefs, hex3, hex6, ascending3, descending2, extend2, hex2tuple, hsl2tuple, rgb2tuple, colorname2tuple, color2tuple, colors2, setMap, getMap, commonjsGlobal, isObject_1, hasRequiredIsObject, _freeGlobal, hasRequired_freeGlobal, _root, hasRequired_root, now_1, hasRequiredNow, _trimmedEndIndex, hasRequired_trimmedEndIndex, _baseTrim, hasRequired_baseTrim, _Symbol, hasRequired_Symbol, _getRawTag, hasRequired_getRawTag, _objectToString, hasRequired_objectToString, _baseGetTag, hasRequired_baseGetTag, isObjectLike_1, hasRequiredIsObjectLike, isSymbol_1, hasRequiredIsSymbol, toNumber_1, hasRequiredToNumber, debounce_1, hasRequiredDebounce, debounceExports, debounce, performance$1, pnow, raf, requestAnimationFrame2, performanceNow, DEFAULT_HASH_SEED, K6, DEFAULT_HASH_SEED_ALT, hashIterableInts, hashInt, hashIntAlt, combineHashes, combineHashesArray, hashArrays, hashIntsArray, hashString2, hashStrings, hashStringsArray, movePointByBoxAspect, warningsEnabled, warnSupported, traceSupported, MAX_INT$1, trueify, falsify, zeroify, noop$1, error, warnings, warn, clone3, copy2, copyArray2, uuid, _staticEmptyObject, staticEmptyObject, defaults$g, removeFromArray, clearArray, push, getPrefixedProperty, setPrefixedProperty, ObjectMap, Map$1, undef, ObjectSet, Set$1, Element2, defineSearch, elesfn$v, heap$2, heap$1, hasRequiredHeap$1, heap, hasRequiredHeap, heapExports, Heap, dijkstraDefaults, elesfn$u, elesfn$t, aStarDefaults, elesfn$s, floydWarshallDefaults, elesfn$r, bellmanFordDefaults, elesfn$q, sqrt22, collapse, contractUntil, elesfn$p, _Math$hypot, copyPosition, modelToRenderedPosition$1, renderedToModelPosition, array2point, min5, max5, mean, median2, _gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple, deg2rad, getAngleFromDisp, log26, signum, dist, sqdist, inPlaceSumNormalize, qbezierAt, qbezierPtAt, lineAt, bound, makeBoundingBox, copyBoundingBox, clearBoundingBox, updateBoundingBox, expandBoundingBoxByPoint, expandBoundingBox, expandBoundingBoxSides, assignBoundingBox, boundingBoxesIntersect, inBoundingBox, pointInBoundingBox, boundingBoxInBoundingBox, hypot, roundRectangleIntersectLine, inLineVicinity, inBezierVicinity, solveQuadratic, solveCubic, sqdistToQuadraticBezier, sqdistToFiniteLine, pointInsidePolygonPoints, pointInsidePolygon, pointInsideRoundPolygon, joinLines, expandPolygon, intersectLineEllipse, checkInEllipse, intersectLineCircle, midOfThree, finiteLinesIntersect, transformPoints, polygonIntersectLine, roundPolygonIntersectLine, shortenIntersection, generateUnitNgonPointsFitToSquare, fitPolygonToSquare, generateUnitNgonPoints, getRoundRectangleRadius, getRoundPolygonRadius, getCutRectangleCornerLength, bezierPtsToQuadCoeff, getBarrelCurveConstants, getRotatedLabelBox$1, pageRankDefaults, elesfn$o, defaults$f, elesfn$n, defaults$e, elesfn$m, defaults$d, elesfn$l, defaults$c, setOptions$3, getSimilarity$1, addLoops, normalize2, mmult, expand, inflate, hasConverged, assign$2, isDuplicate, removeDuplicates, markovClustering, markovClustering$1, identity$12, absDiff, addAbsDiff, addSquaredDiff, sqrt4, maxAbsDiff, getDistance, distances, defaults$b, setOptions$2, getDist, randomCentroids, classify, buildCluster, haveValuesConverged, haveMatricesConverged, seenBefore, randomMedoids, findCost, kMeans, kMedoids, updateCentroids, updateMembership, assign$1, fuzzyCMeans, kClustering, defaults$a, linkageAliases, setOptions$1, mergeClosest, _getAllChildren, _buildDendrogram, _buildClustersFromTree, hierarchicalClustering, hierarchicalClustering$1, defaults$9, setOptions4, getSimilarity2, getPreference, findExemplars, assignClusters, assign3, affinityPropagation, affinityPropagation$1, hierholzerDefaults, elesfn$k, hopcroftTarjanBiconnected, hopcroftTarjanBiconnected$1, tarjanStronglyConnected, tarjanStronglyConnected$1, elesfn$j, STATE_PENDING, STATE_FULFILLED, STATE_REJECTED, _api, deliver, execute, execute_handlers, resolver, _resolve, Promise$1, Animation, anifn, define$3, isArray_1, hasRequiredIsArray, _isKey, hasRequired_isKey, isFunction_1, hasRequiredIsFunction, _coreJsData, hasRequired_coreJsData, _isMasked, hasRequired_isMasked, _toSource, hasRequired_toSource, _baseIsNative, hasRequired_baseIsNative, _getValue, hasRequired_getValue, _getNative, hasRequired_getNative, _nativeCreate, hasRequired_nativeCreate, _hashClear, hasRequired_hashClear, _hashDelete, hasRequired_hashDelete, _hashGet, hasRequired_hashGet, _hashHas, hasRequired_hashHas, _hashSet, hasRequired_hashSet, _Hash, hasRequired_Hash, _listCacheClear, hasRequired_listCacheClear, eq_1, hasRequiredEq, _assocIndexOf, hasRequired_assocIndexOf, _listCacheDelete, hasRequired_listCacheDelete, _listCacheGet, hasRequired_listCacheGet, _listCacheHas, hasRequired_listCacheHas, _listCacheSet, hasRequired_listCacheSet, _ListCache, hasRequired_ListCache, _Map, hasRequired_Map, _mapCacheClear, hasRequired_mapCacheClear, _isKeyable, hasRequired_isKeyable, _getMapData, hasRequired_getMapData, _mapCacheDelete, hasRequired_mapCacheDelete, _mapCacheGet, hasRequired_mapCacheGet, _mapCacheHas, hasRequired_mapCacheHas, _mapCacheSet, hasRequired_mapCacheSet, _MapCache, hasRequired_MapCache, memoize_1, hasRequiredMemoize, _memoizeCapped, hasRequired_memoizeCapped, _stringToPath, hasRequired_stringToPath, _arrayMap, hasRequired_arrayMap, _baseToString, hasRequired_baseToString, toString_1, hasRequiredToString, _castPath, hasRequired_castPath, _toKey, hasRequired_toKey, _baseGet, hasRequired_baseGet, get_1, hasRequiredGet, getExports, get4, _defineProperty, hasRequired_defineProperty, _baseAssignValue, hasRequired_baseAssignValue, _assignValue, hasRequired_assignValue, _isIndex, hasRequired_isIndex, _baseSet, hasRequired_baseSet, set_1, hasRequiredSet2, setExports, set4, _copyArray, hasRequired_copyArray, toPath_1, hasRequiredToPath, toPathExports, toPath, define$2, define$1, define3, elesfn$i, elesfn$h, tokens, newQuery, Type3, stateSelectors, lookup, stateSelectorMatches, stateSelectorRegex, cleanMetaChars, replaceLastQuery, exprs, consumeExpr, consumeWhitespace, parse, toString2, parse$1, valCmp, boolCmp, existCmp, data$1, meta, match, matches$1, filter3, matches31, matching, Selector, selfn, elesfn$g, cache, elesfn$f, fn$5, elesfn$e, data3, elesfn$d, fn$4, elesfn$c, beforePositionSet, positionDef, position2, labelHalign, labelValign, labelJustification, fn$3, elesfn$b, getLabelPolygon, noninf, updateBounds, updateBoundsFromBox, prefixedProperty, getRotatedLabelBox2, updateBoundsFromArrow, updateBoundsFromLabel, updateBoundsFromOutline, updateBoundsFromMiter, updateBoundsFromMiterBorder, boundingBoxImpl, getKey, getBoundingBoxPosKey, cachedBoundingBoxImpl, getLabelPolygonPosKey, defBbOpts, defBbOptsKey, filledBbOpts, bounds, fn$2, elesfn$a, defineDimFns, widthHeight, ifEdge, ifEdgeRenderedPosition, ifEdgeRenderedPositions, controlPoints2, segmentPoints, sourceEndpoint, targetEndpoint, midpoint, pts, renderedName, edgePoints, dimensions, Event, eventRegex, universalNamespace, defaults$8, defaultsKeys, emptyOpts, p2, forEachEvent, makeEventObj, forEachEventObj, emitterOptions$1, argSelector$1, elesfn$9, elesfn$8, fn$1, elesfn$7, zIndexSort, elesfn$6, defineSymbolIterator, getLayoutDimensionOptions, elesfn$5, elesfn$4, eleTakesUpSpace, eleInteractive, parentInteractive, eleVisible, edgeVisibleViaNode, elesfn$3, elesfn$2, defineDagExtremity, defineDagOneHop, defineDagAllHops, Collection, elesfn$1, corefn$9, cbrt, generateSpringRK4, cubicBezier, easings, corefn$8, emitterOptions, argSelector2, elesfn, corefn$7, corefn$6, corefn$5, rendererDefaults, corefn$4, corefn$3, styfn$8, TRUE, FALSE, styfn$7, styfn$6, styfn$5, styfn$4, styfn$3, arrowPrefixes, getArrowScale, styfn$2, styfn$1, _Style, styfn, corefn$2, defaultSelectionType, corefn$1, fn2, Core, corefn, defaults$7, deprecatedOptionDefaults, getInfo, setInfo, defaults$6, defaults$5, DEBUG, defaults$4, createLayoutInfo, findLCA, _findLCA_aux, printLayoutInfo, randomizePositions, getScaleInBoundsFn, refreshPositions, step2, calculateNodeForces, randomDistance, nodeRepulsion2, nodesOverlap, findClippingPoint, calculateEdgeForces, calculateGravityForces, propagateForces, updatePositions, limitForce, _updateAncestryBoundaries, separateComponents, defaults$3, defaults$2, defaults$1, defaults3, layout4, noop7, throwImgErr, BRp$f, BRp$e, BRp$d, x5, y6, v1, v22, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius, limit, startX, startY, stopX, stopY, lastPoint, asVec, invertVec, calcCornerArc, AVOID_IMPOSSIBLE_BEZIER_CONSTANT, AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L, BRp$c, BRp$b, BRp$a, BRp$9, lineAngleFromDelta, lineAngle, bezierAngle, BRp$8, TOO_SMALL_CUT_RECT, warnedCutRect, BRp$7, BRp$6, BRp$5, BRp$4, setGrabState, setGrabbed, setFreed, BRp$3, BRp$2, BRp$1, beforeRenderCallbacks, BaseRenderer, BR, BRp, fullFpsTime, defs, ElementTextureCacheLookup, minTxrH, txrStepH, minLvl$1, maxLvl$1, maxZoom$1, eleTxrSpacing, defTxrWidth, maxTxrW, maxTxrH, minUtility, maxFullness, maxFullnessChecks, deqCost$1, deqAvgCost$1, deqNoDrawCost$1, deqFastCost$1, deqRedrawThreshold$1, maxDeqSize$1, getTxrReasons, initDefaults, ElementTextureCache, ETCp, defNumLayers, minLvl, maxLvl, maxZoom2, deqRedrawThreshold, refineEleDebounceTime, deqCost, deqAvgCost, deqNoDrawCost, deqFastCost, maxDeqSize, invalidThreshold, maxLayerArea, maxLayerDim, useHighQualityEleTxrReqs, LayeredTextureCache, LTCp, layerIdPool, MAX_INT, CRp$b, impl, CRp$a, getZeroRotation, getLabelRotation, getSourceLabelRotation, getTargetLabelRotation, getOpacity, getTextOpacity, CRp$9, drawEdgeOverlayUnderlay, CRp$8, CRp$7, CRp$6, drawNodeOverlayUnderlay, CRp$5, motionBlurDelay, colorAlpha, effectiveAlpha, fpsHeight, ARRAY_TYPE, Atlas, AtlasCollection, AtlasManager, AtlasBatchManager, circleSD, rectangleSD, roundRectangleSD, ellipseSD, RENDER_TARGET, TEX_PICKING_MODE, TEXTURE, EDGE_STRAIGHT, EDGE_CURVE_SEGMENT, EDGE_ARROW, RECTANGLE, ROUND_RECTANGLE, BOTTOM_ROUND_RECTANGLE, ELLIPSE, ElementDrawingWebGL, CRp$4, getStyleKeysForLabel, getBoundingBoxForLabel, CRp$3, sin0, cos0, sin3, cos3, ellipseStepSize, i2, CRp$2, CRp$1, CR, CRp, pathsImpld, renderer2, incExts, extensions, modules, extension2, _Stylesheet, sheetfn, version2, cytoscape2;
+var _window, navigator2, typeofstr, typeofobj, typeoffn, typeofhtmlele, instanceStr, string2, fn$6, array5, plainObject, object2, number$12, integer, htmlElement, elementOrCollection, element, collection, core3, stylesheet, event, emptyString, domElement, boundingBox, promise, ms, memoize3, camel2dash, dash2camel, prependCamel, capitalize, endsWith, number6, rgba3, rgbaNoBackRefs, hsla2, hslaNoBackRefs, hex3, hex6, ascending3, descending2, extend2, hex2tuple, hsl2tuple, rgb2tuple, colorname2tuple, color2tuple, colors2, setMap, getMap, commonjsGlobal, isObject_1, hasRequiredIsObject, _freeGlobal, hasRequired_freeGlobal, _root, hasRequired_root, now_1, hasRequiredNow, _trimmedEndIndex, hasRequired_trimmedEndIndex, _baseTrim, hasRequired_baseTrim, _Symbol, hasRequired_Symbol, _getRawTag, hasRequired_getRawTag, _objectToString, hasRequired_objectToString, _baseGetTag, hasRequired_baseGetTag, isObjectLike_1, hasRequiredIsObjectLike, isSymbol_1, hasRequiredIsSymbol, toNumber_1, hasRequiredToNumber, debounce_1, hasRequiredDebounce, debounceExports, debounce, performance$1, pnow, raf, requestAnimationFrame2, performanceNow, DEFAULT_HASH_SEED, K6, DEFAULT_HASH_SEED_ALT, hashIterableInts, hashInt, hashIntAlt, combineHashes, combineHashesArray, hashArrays, hashIntsArray, hashString2, hashStrings, hashStringsArray, movePointByBoxAspect, warningsEnabled, warnSupported, traceSupported, MAX_INT$1, trueify, falsify, zeroify, noop$1, error, warnings, warn, clone3, copy2, copyArray2, uuid, _staticEmptyObject, staticEmptyObject, defaults$g, removeFromArray, clearArray, push, getPrefixedProperty, setPrefixedProperty, ObjectMap, Map$1, undef, ObjectSet, Set$1, Element2, defineSearch, elesfn$v, heap$2, heap$1, hasRequiredHeap$1, heap, hasRequiredHeap, heapExports, Heap, dijkstraDefaults, elesfn$u, elesfn$t, aStarDefaults, elesfn$s, floydWarshallDefaults, elesfn$r, bellmanFordDefaults, elesfn$q, sqrt22, collapse, contractUntil, elesfn$p, _Math$hypot, copyPosition, modelToRenderedPosition$1, renderedToModelPosition, array2point, min5, max5, mean, median2, _gcd, gcdMultipleZeroIfNonInt, isIntegerMultiple, deg2rad, getAngleFromDisp, log27, signum, dist, sqdist, inPlaceSumNormalize, qbezierAt, qbezierPtAt, lineAt, bound, makeBoundingBox, copyBoundingBox, clearBoundingBox, updateBoundingBox, expandBoundingBoxByPoint, expandBoundingBox, expandBoundingBoxSides, assignBoundingBox, boundingBoxesIntersect, inBoundingBox, pointInBoundingBox, boundingBoxInBoundingBox, hypot, roundRectangleIntersectLine, inLineVicinity, inBezierVicinity, solveQuadratic, solveCubic, sqdistToQuadraticBezier, sqdistToFiniteLine, pointInsidePolygonPoints, pointInsidePolygon, pointInsideRoundPolygon, joinLines, expandPolygon, intersectLineEllipse, checkInEllipse, intersectLineCircle, midOfThree, finiteLinesIntersect, transformPoints, polygonIntersectLine, roundPolygonIntersectLine, shortenIntersection, generateUnitNgonPointsFitToSquare, fitPolygonToSquare, generateUnitNgonPoints, getRoundRectangleRadius, getRoundPolygonRadius, getCutRectangleCornerLength, bezierPtsToQuadCoeff, getBarrelCurveConstants, getRotatedLabelBox$1, pageRankDefaults, elesfn$o, defaults$f, elesfn$n, defaults$e, elesfn$m, defaults$d, elesfn$l, defaults$c, setOptions$3, getSimilarity$1, addLoops, normalize2, mmult, expand, inflate, hasConverged, assign$2, isDuplicate, removeDuplicates, markovClustering, markovClustering$1, identity$12, absDiff, addAbsDiff, addSquaredDiff, sqrt4, maxAbsDiff, getDistance, distances, defaults$b, setOptions$2, getDist, randomCentroids, classify, buildCluster, haveValuesConverged, haveMatricesConverged, seenBefore, randomMedoids, findCost, kMeans, kMedoids, updateCentroids, updateMembership, assign$1, fuzzyCMeans, kClustering, defaults$a, linkageAliases, setOptions$1, mergeClosest, _getAllChildren, _buildDendrogram, _buildClustersFromTree, hierarchicalClustering, hierarchicalClustering$1, defaults$9, setOptions4, getSimilarity2, getPreference, findExemplars, assignClusters, assign3, affinityPropagation, affinityPropagation$1, hierholzerDefaults, elesfn$k, hopcroftTarjanBiconnected, hopcroftTarjanBiconnected$1, tarjanStronglyConnected, tarjanStronglyConnected$1, elesfn$j, STATE_PENDING, STATE_FULFILLED, STATE_REJECTED, _api, deliver, execute, execute_handlers, resolver, _resolve, Promise$1, Animation, anifn, define$3, isArray_1, hasRequiredIsArray, _isKey, hasRequired_isKey, isFunction_1, hasRequiredIsFunction, _coreJsData, hasRequired_coreJsData, _isMasked, hasRequired_isMasked, _toSource, hasRequired_toSource, _baseIsNative, hasRequired_baseIsNative, _getValue, hasRequired_getValue, _getNative, hasRequired_getNative, _nativeCreate, hasRequired_nativeCreate, _hashClear, hasRequired_hashClear, _hashDelete, hasRequired_hashDelete, _hashGet, hasRequired_hashGet, _hashHas, hasRequired_hashHas, _hashSet, hasRequired_hashSet, _Hash, hasRequired_Hash, _listCacheClear, hasRequired_listCacheClear, eq_1, hasRequiredEq, _assocIndexOf, hasRequired_assocIndexOf, _listCacheDelete, hasRequired_listCacheDelete, _listCacheGet, hasRequired_listCacheGet, _listCacheHas, hasRequired_listCacheHas, _listCacheSet, hasRequired_listCacheSet, _ListCache, hasRequired_ListCache, _Map, hasRequired_Map, _mapCacheClear, hasRequired_mapCacheClear, _isKeyable, hasRequired_isKeyable, _getMapData, hasRequired_getMapData, _mapCacheDelete, hasRequired_mapCacheDelete, _mapCacheGet, hasRequired_mapCacheGet, _mapCacheHas, hasRequired_mapCacheHas, _mapCacheSet, hasRequired_mapCacheSet, _MapCache, hasRequired_MapCache, memoize_1, hasRequiredMemoize, _memoizeCapped, hasRequired_memoizeCapped, _stringToPath, hasRequired_stringToPath, _arrayMap, hasRequired_arrayMap, _baseToString, hasRequired_baseToString, toString_1, hasRequiredToString, _castPath, hasRequired_castPath, _toKey, hasRequired_toKey, _baseGet, hasRequired_baseGet, get_1, hasRequiredGet, getExports, get4, _defineProperty, hasRequired_defineProperty, _baseAssignValue, hasRequired_baseAssignValue, _assignValue, hasRequired_assignValue, _isIndex, hasRequired_isIndex, _baseSet, hasRequired_baseSet, set_1, hasRequiredSet2, setExports, set4, _copyArray, hasRequired_copyArray, toPath_1, hasRequiredToPath, toPathExports, toPath, define$2, define$1, define3, elesfn$i, elesfn$h, tokens, newQuery, Type3, stateSelectors, lookup, stateSelectorMatches, stateSelectorRegex, cleanMetaChars, replaceLastQuery, exprs, consumeExpr, consumeWhitespace, parse, toString2, parse$1, valCmp, boolCmp, existCmp, data$1, meta, match, matches$1, filter3, matches31, matching, Selector, selfn, elesfn$g, cache, elesfn$f, fn$5, elesfn$e, data3, elesfn$d, fn$4, elesfn$c, beforePositionSet, positionDef, position2, labelHalign, labelValign, labelJustification, fn$3, elesfn$b, getLabelPolygon, noninf, updateBounds, updateBoundsFromBox, prefixedProperty, getRotatedLabelBox2, updateBoundsFromArrow, updateBoundsFromLabel, updateBoundsFromOutline, updateBoundsFromMiter, updateBoundsFromMiterBorder, boundingBoxImpl, getKey, getBoundingBoxPosKey, cachedBoundingBoxImpl, getLabelPolygonPosKey, defBbOpts, defBbOptsKey, filledBbOpts, bounds, fn$2, elesfn$a, defineDimFns, widthHeight, ifEdge, ifEdgeRenderedPosition, ifEdgeRenderedPositions, controlPoints2, segmentPoints, sourceEndpoint, targetEndpoint, midpoint, pts, renderedName, edgePoints, dimensions, Event, eventRegex, universalNamespace, defaults$8, defaultsKeys, emptyOpts, p2, forEachEvent, makeEventObj, forEachEventObj, emitterOptions$1, argSelector$1, elesfn$9, elesfn$8, fn$1, elesfn$7, zIndexSort, elesfn$6, defineSymbolIterator, getLayoutDimensionOptions, elesfn$5, elesfn$4, eleTakesUpSpace, eleInteractive, parentInteractive, eleVisible, edgeVisibleViaNode, elesfn$3, elesfn$2, defineDagExtremity, defineDagOneHop, defineDagAllHops, Collection, elesfn$1, corefn$9, cbrt, generateSpringRK4, cubicBezier, easings, corefn$8, emitterOptions, argSelector2, elesfn, corefn$7, corefn$6, corefn$5, rendererDefaults, corefn$4, corefn$3, styfn$8, TRUE, FALSE, styfn$7, styfn$6, styfn$5, styfn$4, styfn$3, arrowPrefixes, getArrowScale, styfn$2, styfn$1, _Style, styfn, corefn$2, defaultSelectionType, corefn$1, fn2, Core, corefn, defaults$7, deprecatedOptionDefaults, getInfo, setInfo, defaults$6, defaults$5, DEBUG, defaults$4, createLayoutInfo, findLCA, _findLCA_aux, printLayoutInfo, randomizePositions, getScaleInBoundsFn, refreshPositions, step2, calculateNodeForces, randomDistance, nodeRepulsion2, nodesOverlap, findClippingPoint, calculateEdgeForces, calculateGravityForces, propagateForces, updatePositions, limitForce, _updateAncestryBoundaries, separateComponents, defaults$3, defaults$2, defaults$1, defaults3, layout4, noop7, throwImgErr, BRp$f, BRp$e, BRp$d, x5, y6, v1, v22, sinA, sinA90, radDirection, drawDirection, angle, halfAngle, cRadius, lenOut, radius, limit, startX, startY, stopX, stopY, lastPoint, asVec, invertVec, calcCornerArc, AVOID_IMPOSSIBLE_BEZIER_CONSTANT, AVOID_IMPOSSIBLE_BEZIER_CONSTANT_L, BRp$c, BRp$b, BRp$a, BRp$9, lineAngleFromDelta, lineAngle, bezierAngle, BRp$8, TOO_SMALL_CUT_RECT, warnedCutRect, BRp$7, BRp$6, BRp$5, BRp$4, setGrabState, setGrabbed, setFreed, BRp$3, BRp$2, BRp$1, beforeRenderCallbacks, BaseRenderer, BR, BRp, fullFpsTime, defs, ElementTextureCacheLookup, minTxrH, txrStepH, minLvl$1, maxLvl$1, maxZoom$1, eleTxrSpacing, defTxrWidth, maxTxrW, maxTxrH, minUtility, maxFullness, maxFullnessChecks, deqCost$1, deqAvgCost$1, deqNoDrawCost$1, deqFastCost$1, deqRedrawThreshold$1, maxDeqSize$1, getTxrReasons, initDefaults, ElementTextureCache, ETCp, defNumLayers, minLvl, maxLvl, maxZoom2, deqRedrawThreshold, refineEleDebounceTime, deqCost, deqAvgCost, deqNoDrawCost, deqFastCost, maxDeqSize, invalidThreshold, maxLayerArea, maxLayerDim, useHighQualityEleTxrReqs, LayeredTextureCache, LTCp, layerIdPool, MAX_INT, CRp$b, impl, CRp$a, getZeroRotation, getLabelRotation, getSourceLabelRotation, getTargetLabelRotation, getOpacity, getTextOpacity, CRp$9, drawEdgeOverlayUnderlay, CRp$8, CRp$7, CRp$6, drawNodeOverlayUnderlay, CRp$5, motionBlurDelay, colorAlpha, effectiveAlpha, fpsHeight, ARRAY_TYPE, Atlas, AtlasCollection, AtlasManager, AtlasBatchManager, circleSD, rectangleSD, roundRectangleSD, ellipseSD, RENDER_TARGET, TEX_PICKING_MODE, TEXTURE, EDGE_STRAIGHT, EDGE_CURVE_SEGMENT, EDGE_ARROW, RECTANGLE, ROUND_RECTANGLE, BOTTOM_ROUND_RECTANGLE, ELLIPSE, ElementDrawingWebGL, CRp$4, getStyleKeysForLabel, getBoundingBoxForLabel, CRp$3, sin0, cos0, sin3, cos3, ellipseStepSize, i2, CRp$2, CRp$1, CR, CRp, pathsImpld, renderer2, incExts, extensions, modules, extension2, _Stylesheet, sheetfn, version2, cytoscape2;
 var init_cytoscape_esm = __esm({
   "node_modules/cytoscape/dist/cytoscape.esm.mjs"() {
     _window = typeof window === "undefined" ? null : window;
@@ -182910,7 +183073,7 @@ var init_cytoscape_esm = __esm({
     getAngleFromDisp = function getAngleFromDisp2(dispX, dispY) {
       return Math.atan2(dispY, dispX) - Math.PI / 2;
     };
-    log26 = Math.log2 || function(n2) {
+    log27 = Math.log2 || function(n2) {
       return Math.log(n2) / Math.log(2);
     };
     signum = function signum2(x7) {
@@ -203089,7 +203252,7 @@ var init_cytoscape_esm = __esm({
         return null;
       }
       if (lvl == null) {
-        lvl = Math.ceil(log26(zoom3 * pxRatio));
+        lvl = Math.ceil(log27(zoom3 * pxRatio));
       }
       if (lvl < minLvl$1) {
         lvl = minLvl$1;
@@ -203477,7 +203640,7 @@ var init_cytoscape_esm = __esm({
       var firstGet = self2.firstGet;
       self2.firstGet = false;
       if (lvl == null) {
-        lvl = Math.ceil(log26(zoom3 * pxRatio));
+        lvl = Math.ceil(log27(zoom3 * pxRatio));
         if (lvl < minLvl) {
           lvl = minLvl;
         } else if (zoom3 >= maxZoom2 || lvl > maxLvl) {
@@ -204527,7 +204690,7 @@ var init_cytoscape_esm = __esm({
       if (!scale3) {
         var zoom3 = ele.cy().zoom();
         var pxRatio = this.getPixelRatio();
-        var lvl = Math.ceil(log26(zoom3 * pxRatio));
+        var lvl = Math.ceil(log27(zoom3 * pxRatio));
         scale3 = Math.pow(2, lvl);
       }
       var computedSize = ele.pstyle("font-size").pfValue * scale3;
@@ -212788,7 +212951,7 @@ function createCytoscapeInstance(data6) {
     };
     cy.layout(layoutConfig).run();
     cy.ready((e3) => {
-      log23.info("Cytoscape ready", e3);
+      log24.info("Cytoscape ready", e3);
       resolve2(cy);
     });
   });
@@ -212834,19 +212997,19 @@ function extractPositionedEdges(cy) {
   });
 }
 async function executeCoseBilkentLayout(data6, _config) {
-  log23.debug("Starting cose-bilkent layout algorithm");
+  log24.debug("Starting cose-bilkent layout algorithm");
   try {
     validateLayoutData(data6);
     const cy = await createCytoscapeInstance(data6);
     const positionedNodes = extractPositionedNodes(cy);
     const positionedEdges = extractPositionedEdges(cy);
-    log23.debug(`Layout completed: ${positionedNodes.length} nodes, ${positionedEdges.length} edges`);
+    log24.debug(`Layout completed: ${positionedNodes.length} nodes, ${positionedEdges.length} edges`);
     return {
       nodes: positionedNodes,
       edges: positionedEdges
     };
   } catch (error3) {
-    log23.error("Error in cose-bilkent layout algorithm:", error3);
+    log24.error("Error in cose-bilkent layout algorithm:", error3);
     throw error3;
   }
 }
@@ -213032,7 +213195,7 @@ var init_chunk_CFHHFPVC = __esm({
       insertNode,
       interpolateToCurve,
       labelHelper,
-      log: log23,
+      log: log24,
       positionEdgeLabel
     };
     ELK_ALGORITHMS = [
@@ -213105,7 +213268,7 @@ var init_chunk_CFHHFPVC = __esm({
       }
       for (const candidate of [fallback, LAST_RESORT_LAYOUT]) {
         if (Object.hasOwn(layoutAlgorithms, candidate)) {
-          log23.warn(`Layout algorithm ${algorithm} is not registered. Using ${candidate} as fallback.`);
+          log24.warn(`Layout algorithm ${algorithm} is not registered. Using ${candidate} as fallback.`);
           return candidate;
         }
       }
@@ -216035,7 +216198,7 @@ var init_c4Diagram_KJ2TOQU5 = __esm({
       db14.setWrap(conf.wrap);
       c4ShapeInRow2 = db14.getC4ShapeInRow();
       c4BoundaryInRow2 = db14.getC4BoundaryInRow();
-      log23.debug(`C:${JSON.stringify(conf, null, 2)}`);
+      log24.debug(`C:${JSON.stringify(conf, null, 2)}`);
       const diagram210 = root4.select(`[id="${id38}"]`);
       svgDraw_default.insertComputerIcon(diagram210, id38);
       svgDraw_default.insertDatabaseIcon(diagram210, id38);
@@ -216076,7 +216239,7 @@ var init_c4Diagram_KJ2TOQU5 = __esm({
         "viewBox",
         boxStartx - conf.diagramMarginX + " -" + (conf.diagramMarginY + extraVertForTitle) + " " + width3 + " " + (height2 + extraVertForTitle)
       );
-      log23.debug(`models:`, box);
+      log24.debug(`models:`, box);
     }, "draw");
     c4Renderer_default = {
       drawPersonOrSystemArray: drawC4ShapeArray,
@@ -216207,7 +216370,7 @@ var init_chunk_TU62E6Q5 = __esm({
       configureSvgSize(svg3, height2, width3, useMaxWidth);
       const viewBox = createViewBox(x7, y8, width3, height2, padding);
       svg3.attr("viewBox", viewBox);
-      log23.debug(`viewBox configured: ${viewBox} with padding: ${padding}`);
+      log24.debug(`viewBox configured: ${viewBox} with padding: ${padding}`);
     }, "setupViewPortForSVG");
     calculateDimensionsWithPadding = /* @__PURE__ */ __name((svg3, padding) => {
       const bounds4 = svg3.node()?.getBBox() || { width: 0, height: 0, x: 0, y: 0 };
@@ -216380,7 +216543,7 @@ var init_chunk_QB3YPZ4I = __esm({
             if (isStepEdge(edgeDoc)) {
               edge.step = edgeDoc.step;
             } else {
-              log23.warn(`Ignoring step on edge ${id38}: expected a positive integer`, edgeDoc.step);
+              log24.warn(`Ignoring step on edge ${id38}: expected a positive integer`, edgeDoc.step);
             }
           }
           return;
@@ -216389,7 +216552,7 @@ var init_chunk_QB3YPZ4I = __esm({
         let vertex = this.vertices.get(id38);
         if (vertex === void 0) {
           if (textObj === void 0 && type3 === void 0 && style3 !== void 0 && style3 !== null) {
-            log23.warn(
+            log24.warn(
               `Style applied to unknown node "${id38}". This may indicate a typo. The node will be created automatically.`
             );
           }
@@ -216496,7 +216659,7 @@ var init_chunk_QB3YPZ4I = __esm({
           isUserDefinedId: false,
           interpolate: this.edges.defaultInterpolate
         };
-        log23.info("abc78 Got edge...", edge);
+        log24.info("abc78 Got edge...", edge);
         const linkTextObj = type3.text;
         if (linkTextObj !== void 0) {
           edge.text = this.sanitizeText(linkTextObj.text.trim());
@@ -216525,7 +216688,7 @@ var init_chunk_QB3YPZ4I = __esm({
           }
         }
         if (this.edges.length < (this.config.maxEdges ?? 500)) {
-          log23.info("Pushing edge...");
+          log24.info("Pushing edge...");
           this.edges.push(edge);
         } else {
           throw new Error(
@@ -216542,7 +216705,7 @@ You have to call mermaid.initialize.`
       }
       addLink(_start, _end, linkData) {
         const id38 = this.isLinkData(linkData) ? linkData.id.replace("@", "") : void 0;
-        log23.info("addLink", _start, _end, id38);
+        log24.info("addLink", _start, _end, id38);
         for (const start2 of _start) {
           for (const end of _end) {
             const isLastStart = start2 === _start[_start.length - 1];
@@ -216857,7 +217020,7 @@ You have to call mermaid.initialize.`
           dir: dir2,
           labelType: this.sanitizeNodeLabelType(_title?.type)
         };
-        log23.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
+        log24.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
         const uniqueNodes = this.makeUniq(subGraph, this.subGraphs).nodes;
         this.recordDroppedMembers(subGraph, uniqueNodes);
         subGraph.nodes = uniqueNodes.filter((nodeId) => nodeId !== id38);
@@ -217390,13 +217553,13 @@ You have to call mermaid.initialize.`
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw2 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log23.info("REF0:");
-      log23.info("Drawing state diagram (v2)", id38);
+      log24.info("REF0:");
+      log24.info("Drawing state diagram (v2)", id38);
       const { securityLevel, flowchart: conf4, layout: layout7 } = getConfig2();
       diag.db.setDiagramId(id38);
-      log23.debug("Before getData: ");
+      log24.debug("Before getData: ");
       const data4Layout = diag.db.getData();
-      log23.debug("Data: ", data4Layout);
+      log24.debug("Data: ", data4Layout);
       const svg3 = getDiagramElement(id38, securityLevel);
       const direction2 = diag.db.getDirection();
       data4Layout.type = diag.type;
@@ -217406,7 +217569,7 @@ You have to call mermaid.initialize.`
       data4Layout.rankSpacing = conf4?.rankSpacing || 50;
       data4Layout.markers = ["point", "circle", "cross"];
       data4Layout.diagramId = id38;
-      log23.debug("REF1:", data4Layout);
+      log24.debug("REF1:", data4Layout);
       await render7(data4Layout, svg3);
       const padding = data4Layout.config.flowchart?.diagramPadding ?? 8;
       utils_default2.insertTitle(
@@ -218996,7 +219159,7 @@ function normaliseNodeShapes(nodes5, sink) {
       if (sink?.emitError) {
         sink.emitError("SHAPE_REMOVED", msg, { nodeId: node2.id });
       } else {
-        log23.warn(`agentflow: ${msg}`);
+        log24.warn(`agentflow: ${msg}`);
       }
       node2.shape = DEFAULT_SHAPE;
       continue;
@@ -219006,7 +219169,7 @@ function normaliseNodeShapes(nodes5, sink) {
       if (sink?.emitWarning) {
         sink.emitWarning("SHAPE_UNSUPPORTED", msg, { nodeId: node2.id });
       } else {
-        log23.warn(`agentflow: ${msg}`);
+        log24.warn(`agentflow: ${msg}`);
       }
       node2.shape = DEFAULT_SHAPE;
     }
@@ -219732,7 +219895,7 @@ ${snippet2.join("\n")}`,
           isUserDefinedId: false,
           interpolate: this.edges.defaultInterpolate
         };
-        log23.info("abc78 Got edge...", edge);
+        log24.info("abc78 Got edge...", edge);
         const linkTextObj = type3.text;
         if (linkTextObj !== void 0) {
           edge.text = this.sanitizeText(linkTextObj.text.trim());
@@ -219764,7 +219927,7 @@ ${snippet2.join("\n")}`,
           }
         }
         if (this.edges.length < (this.config.maxEdges ?? 500)) {
-          log23.info("Pushing edge...");
+          log24.info("Pushing edge...");
           this.edges.push(edge);
         } else {
           throw new Error(
@@ -219781,7 +219944,7 @@ You have to call mermaid.initialize.`
       }
       addLink(_start, _end, linkData) {
         const id38 = this.isLinkData(linkData) ? linkData.id.replace("@", "") : void 0;
-        log23.info("addLink", _start, _end, id38);
+        log24.info("addLink", _start, _end, id38);
         for (const start2 of _start) {
           for (const end of _end) {
             const isLastStart = start2 === _start[_start.length - 1];
@@ -220150,7 +220313,7 @@ You have to call mermaid.initialize.`
           labelType: this.sanitizeNodeLabelType(_title?.type),
           type: type3 ?? "flow"
         };
-        log23.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
+        log24.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
         subGraph.nodes = this.makeUniq(subGraph, this.subGraphs).nodes;
         const existingPos = this.getPosForId(id38);
         if (existingPos !== -1) {
@@ -221112,9 +221275,9 @@ You have to call mermaid.initialize.`
         this.diagnostics.push(diagnostic);
         const formatted = `agentflow[${id38}]: ${message2}`;
         if (severity === "error") {
-          log23.error(formatted);
+          log24.error(formatted);
         } else {
-          log23.warn(formatted);
+          log24.warn(formatted);
         }
       }
       emitWarning(id38, message2, ctx) {
@@ -221136,18 +221299,18 @@ You have to call mermaid.initialize.`
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw3 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log23.debug("Drawing agentflow diagram", id38);
+      log24.debug("Drawing agentflow diagram", id38);
       const { securityLevel, agentflow: conf4, layout: layout7 } = getConfig2();
       diag.db.setDiagramId(id38);
-      log23.debug("Before getData: ");
+      log24.debug("Before getData: ");
       const data4Layout = diag.db.getData();
-      log23.debug("Data: ", data4Layout);
+      log24.debug("Data: ", data4Layout);
       const svg3 = getDiagramElement(id38, securityLevel);
       const direction2 = diag.db.getDirection();
       data4Layout.type = diag.type;
       data4Layout.layoutAlgorithm = getRegisteredLayoutAlgorithm(layout7);
       if (data4Layout.layoutAlgorithm === "dagre" && layout7 === "elk") {
-        log23.warn(
+        log24.warn(
           "flowchart-elk was moved to an external package in Mermaid v11. Please refer [release notes](https://github.com/mermaid-js/mermaid/releases/tag/v11.0.0) for more details. This diagram will be rendered using `dagre` layout as a fallback."
         );
       }
@@ -221156,7 +221319,7 @@ You have to call mermaid.initialize.`
       data4Layout.rankSpacing = conf4?.rankSpacing || 50;
       data4Layout.markers = ["point", "circle", "cross", "hierarchy"];
       data4Layout.diagramId = id38;
-      log23.debug("REF1:", data4Layout);
+      log24.debug("REF1:", data4Layout);
       await render7(data4Layout, svg3);
       const padding = conf4?.diagramPadding ?? 8;
       utils_default2.insertTitle(
@@ -223859,10 +224022,10 @@ var init_erDiagram_EYBAPDEH = __esm({
             cssStyles: [],
             labelType: "markdown"
           });
-          log23.info("Added new entity :", name);
+          log24.info("Added new entity :", name);
         } else if (!this.entities.get(name)?.alias && alias) {
           this.entities.get(name).alias = alias;
-          log23.info(`Add alias '${alias}' to entity '${name}'`);
+          log24.info(`Add alias '${alias}' to entity '${name}'`);
         }
         return this.entities.get(name);
       }
@@ -223886,7 +224049,7 @@ var init_erDiagram_EYBAPDEH = __esm({
             attribs[i2].comment = "";
           }
           entity.attributes.push(attribs[i2]);
-          log23.debug("Added attribute ", attribs[i2].name);
+          log24.debug("Added attribute ", attribs[i2].name);
         }
       }
       /**
@@ -223925,7 +224088,7 @@ var init_erDiagram_EYBAPDEH = __esm({
           relSpec: rSpec
         };
         this.relationships.push(rel2);
-        log23.debug("Added new relationship :", rel2);
+        log24.debug("Added new relationship :", rel2);
       }
       getRelationships() {
         return this.relationships;
@@ -224033,7 +224196,7 @@ var init_erDiagram_EYBAPDEH = __esm({
           dir: dir2,
           labelType: this.sanitizeNodeLabelType(_title?.type)
         };
-        log23.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
+        log24.info("Adding", subGraph.id, subGraph.nodes, subGraph.dir);
         subGraph.nodes = this.makeUniq(subGraph, this.subGraphs).nodes;
         this.subGraphs.push(subGraph);
         this.subGraphLookup.set(id38, subGraph);
@@ -224079,7 +224242,7 @@ var init_erDiagram_EYBAPDEH = __esm({
         const res = [];
         subGraph.nodes.forEach((_id, pos) => {
           if (existingNodes.has(_id)) {
-            log23.warn(`Entity '${_id}' already belongs to another subgraph and will be ignored`);
+            log24.warn(`Entity '${_id}' already belongs to another subgraph and will be ignored`);
           } else {
             res.push(subGraph.nodes[pos]);
           }
@@ -224191,8 +224354,8 @@ var init_erDiagram_EYBAPDEH = __esm({
       draw: () => draw4
     });
     draw4 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log23.info("REF0:");
-      log23.info("Drawing er diagram (unified)", id38);
+      log24.info("REF0:");
+      log24.info("Drawing er diagram (unified)", id38);
       const { securityLevel, er: conf4, layout: layout7 } = getConfig2();
       const data4Layout = diag.db.getData();
       const svg3 = getDiagramElement(id38, securityLevel);
@@ -253992,7 +254155,7 @@ function prettyPrintCommitHistory(commitArr) {
       label.push(branch2);
     }
   }
-  log23.debug(label.join(" "));
+  log24.debug(label.join(" "));
   if (commit22.parents && commit22.parents.length == 2 && commit22.parents[0] && commit22.parents[1]) {
     const newCommit = state3.records.commits.get(commit22.parents[0]);
     upsert(commitArr, commit22, newCommit);
@@ -254058,13 +254221,13 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       state3.records.direction = dir2;
     }, "setDirection");
     setOptions6 = /* @__PURE__ */ __name(function(rawOptString) {
-      log23.debug("options str", rawOptString);
+      log24.debug("options str", rawOptString);
       rawOptString = rawOptString?.trim();
       rawOptString = rawOptString || "{}";
       try {
         state3.records.options = JSON.parse(rawOptString);
       } catch (e3) {
-        log23.error("error while parsing gitGraph options", e3.message);
+        log24.error("error while parsing gitGraph options", e3.message);
       }
     }, "setOptions");
     getOptions = /* @__PURE__ */ __name(function() {
@@ -254075,8 +254238,8 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       let id38 = commitDB.id;
       const type3 = commitDB.type;
       let tags2 = commitDB.tags;
-      log23.info("commit", msg, id38, type3, tags2);
-      log23.debug("Entering commit:", msg, id38, type3, tags2);
+      log24.info("commit", msg, id38, type3, tags2);
+      log24.debug("Entering commit:", msg, id38, type3, tags2);
       const config3 = getConfig3();
       id38 = common_default.sanitizeText(id38, config3);
       msg = common_default.sanitizeText(msg, config3);
@@ -254091,13 +254254,13 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
         branch: state3.records.currBranch
       };
       state3.records.head = newCommit;
-      log23.info("main branch", config3.mainBranchName);
+      log24.info("main branch", config3.mainBranchName);
       if (state3.records.commits.has(newCommit.id)) {
-        log23.warn(`Commit ID ${newCommit.id} already exists`);
+        log24.warn(`Commit ID ${newCommit.id} already exists`);
       }
       state3.records.commits.set(newCommit.id, newCommit);
       state3.records.branches.set(state3.records.currBranch, newCommit.id);
-      log23.debug("in pushCommit " + newCommit.id);
+      log24.debug("in pushCommit " + newCommit.id);
     }, "commit");
     branch = /* @__PURE__ */ __name(function(branchDB) {
       let name = branchDB.name;
@@ -254111,7 +254274,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       state3.records.branches.set(name, state3.records.head != null ? state3.records.head.id : null);
       state3.records.branchConfig.set(name, { name, order: order2 });
       checkout(name);
-      log23.debug("in createBranch");
+      log24.debug("in createBranch");
     }, "branch");
     merge6 = /* @__PURE__ */ __name((mergeDB) => {
       let otherBranch = mergeDB.branch;
@@ -254209,15 +254372,15 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       state3.records.head = commit22;
       state3.records.commits.set(commit22.id, commit22);
       state3.records.branches.set(state3.records.currBranch, commit22.id);
-      log23.debug(state3.records.branches);
-      log23.debug("in mergeBranch");
+      log24.debug(state3.records.branches);
+      log24.debug("in mergeBranch");
     }, "merge");
     cherryPick = /* @__PURE__ */ __name(function(cherryPickDB) {
       let sourceId = cherryPickDB.id;
       let targetId = cherryPickDB.targetId;
       let tags2 = cherryPickDB.tags;
       let parentCommitId = cherryPickDB.parent;
-      log23.debug("Entering cherryPick:", sourceId, targetId, tags2);
+      log24.debug("Entering cherryPick:", sourceId, targetId, tags2);
       const config3 = getConfig3();
       sourceId = common_default.sanitizeText(sourceId, config3);
       targetId = common_default.sanitizeText(targetId, config3);
@@ -254301,8 +254464,8 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
         state3.records.head = commit22;
         state3.records.commits.set(commit22.id, commit22);
         state3.records.branches.set(state3.records.currBranch, commit22.id);
-        log23.debug(state3.records.branches);
-        log23.debug("in cherryPick");
+        log24.debug(state3.records.branches);
+        log24.debug("in cherryPick");
       }
     }, "cherryPick");
     checkout = /* @__PURE__ */ __name(function(branch2) {
@@ -254330,7 +254493,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     __name(upsert, "upsert");
     __name(prettyPrintCommitHistory, "prettyPrintCommitHistory");
     prettyPrint = /* @__PURE__ */ __name(function() {
-      log23.debug(state3.records.commits);
+      log24.debug(state3.records.commits);
       const node2 = getCommitsArray()[0];
       prettyPrintCommitHistory([node2]);
     }, "prettyPrint");
@@ -254359,7 +254522,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     getCommitsArray = /* @__PURE__ */ __name(function() {
       const commitArr = [...state3.records.commits.values()];
       commitArr.forEach(function(o2) {
-        log23.debug(o2.id);
+        log24.debug(o2.id);
       });
       commitArr.sort((a3, b12) => a3.seq - b12.seq);
       return commitArr;
@@ -254422,7 +254585,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
       if (parser210) {
         parser210(statement);
       } else {
-        log23.error(`Unknown statement type: ${statement.$type}`);
+        log24.error(`Unknown statement type: ${statement.$type}`);
       }
     }, "parseStatement");
     parseCommit = /* @__PURE__ */ __name((commit22) => {
@@ -254466,7 +254629,7 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     parser6 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("gitGraph", input);
-        log23.debug(ast);
+        log24.debug(ast);
         populate15(ast, db);
       }, "parse")
     };
@@ -255250,10 +255413,10 @@ var init_gitGraphDiagram_STJD7YCW = __esm({
     }, "setBranchPosition");
     draw5 = /* @__PURE__ */ __name(function(txt, id38, ver, diagObj) {
       clear32();
-      log23.debug("in gitgraph renderer", txt + "\n", "id:", id38, ver);
+      log24.debug("in gitgraph renderer", txt + "\n", "id:", id38, ver);
       const db22 = diagObj.db;
       if (!db22.getConfig) {
-        log23.error("getConfig method is not available on db");
+        log24.error("getConfig method is not available on db");
         return;
       }
       const gitGraphConfig = db22.getConfig();
@@ -257211,7 +257374,7 @@ var init_ganttDiagram_23REXITY = __esm({
       return [endTime, renderEndTime];
     }, "fixTaskDates");
     warnAboutUnknownTaskIds = /* @__PURE__ */ __name(function(keyword2, ids) {
-      log23.warn(
+      log24.warn(
         `Gantt: the "${keyword2}" statement references unknown task id(s): ${ids.join(", ")}. Make sure the referenced tasks exist and declare an id. Milestones need both an id and a duration, e.g. "Milestone :milestone, m1, 2023-01-01, 0d".`
       );
     }, "warnAboutUnknownTaskIds");
@@ -257254,8 +257417,8 @@ var init_ganttDiagram_23REXITY = __esm({
       if (mDate.isValid()) {
         return mDate.toDate();
       } else {
-        log23.debug("Invalid date:" + str2);
-        log23.debug("With date format:" + dateFormat2.trim());
+        log24.debug("Invalid date:" + str2);
+        log24.debug("With date format:" + dateFormat2.trim());
         const d3 = new Date(str2);
         if (d3 === void 0 || isNaN(d3.getTime()) || // WebKit browsers can mis-parse invalid dates to be ridiculously
         // huge numbers, e.g. new Date('202304') gets parsed as January 1, 202304.
@@ -257313,7 +257476,7 @@ var init_ganttDiagram_23REXITY = __esm({
       let endTime = (0, import_dayjs2.default)(prevTime);
       const [durationValue, durationUnit] = parseDuration(str2);
       if (Number.isNaN(durationValue)) {
-        log23.warn(
+        log24.warn(
           `Gantt: "${str2}" is neither a valid date for the "${dateFormat2.trim()}" date format nor a valid duration (e.g. "3d"), so it is ignored and the task gets a zero duration. Milestones need a duration too, e.g. "Milestone :milestone, m1, 2023-01-01, 0d".`
         );
       } else {
@@ -257651,7 +257814,7 @@ var init_ganttDiagram_23REXITY = __esm({
     __name(getTaskTags, "getTaskTags");
     import_dayjs3.default.extend(import_duration.default);
     setConf2 = /* @__PURE__ */ __name(function() {
-      log23.debug("Something is calling, setConf, remove the call");
+      log24.debug("Something is calling, setConf, remove the call");
     }, "setConf");
     mapWeekdayToTimeFunction = {
       monday: timeMonday,
@@ -257993,7 +258156,7 @@ var init_ganttDiagram_23REXITY = __esm({
           return;
         }
         if ((0, import_dayjs3.default)(maxTime).diff((0, import_dayjs3.default)(minTime), "year") > 5) {
-          log23.warn(
+          log24.warn(
             "The difference between the min and max time is more than 5 years. This will cause performance issues. Skipping drawing exclude days."
           );
           return;
@@ -258057,7 +258220,7 @@ var init_ganttDiagram_23REXITY = __esm({
         if (resultTickInterval !== null) {
           const every2 = parseInt(resultTickInterval[1], 10);
           if (isNaN(every2) || every2 <= 0) {
-            log23.warn(
+            log24.warn(
               `Invalid tick interval value: "${resultTickInterval[1]}". Skipping custom tick interval.`
             );
           } else {
@@ -258068,7 +258231,7 @@ var init_ganttDiagram_23REXITY = __esm({
             const maxTime = domain[1];
             const estimatedTicks = getEstimatedTickCount(minTime, maxTime, every2, interval);
             if (estimatedTicks > MAX_TICK_COUNT) {
-              log23.warn(
+              log24.warn(
                 `The tick interval "${every2}${interval}" would generate ${estimatedTicks} ticks, which exceeds the maximum allowed (${MAX_TICK_COUNT}). This may indicate an invalid date or time range. Skipping custom tick interval.`
               );
             } else {
@@ -258104,7 +258267,7 @@ var init_ganttDiagram_23REXITY = __esm({
           if (resultTickInterval !== null) {
             const every2 = parseInt(resultTickInterval[1], 10);
             if (isNaN(every2) || every2 <= 0) {
-              log23.warn(
+              log24.warn(
                 `Invalid tick interval value: "${resultTickInterval[1]}". Skipping custom tick interval.`
               );
             } else {
@@ -258527,7 +258690,7 @@ var init_infoDiagram_KBXO4MBG = __esm({
     parser8 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("info", input);
-        log23.debug(ast);
+        log24.debug(ast);
       }, "parse")
     };
     DEFAULT_INFO_DB = {
@@ -258538,7 +258701,7 @@ var init_infoDiagram_KBXO4MBG = __esm({
       getVersion
     };
     draw7 = /* @__PURE__ */ __name((text5, id38, version3) => {
-      log23.debug("rendering info diagram\n" + text5);
+      log24.debug("rendering info diagram\n" + text5);
       const svg3 = selectSvgElement(id38);
       configureSvgSize(svg3, 100, 400, true);
       const group2 = svg3.append("g");
@@ -258592,7 +258755,7 @@ var init_pieDiagram_J4AKIIQI = __esm({
       }
       if (!sections2.has(label)) {
         sections2.set(label, value3);
-        log23.debug(`added new section: ${label}, with value: ${value3}`);
+        log24.debug(`added new section: ${label}, with value: ${value3}`);
       }
     }, "addSection");
     getSections2 = /* @__PURE__ */ __name(() => sections2, "getSections");
@@ -258622,7 +258785,7 @@ var init_pieDiagram_J4AKIIQI = __esm({
     parser9 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("pie", input);
-        log23.debug(ast);
+        log24.debug(ast);
         populateDb(ast, db3);
       }, "parse")
     };
@@ -258672,7 +258835,7 @@ var init_pieDiagram_J4AKIIQI = __esm({
       return pie3(pieData);
     }, "createPieArcs");
     draw8 = /* @__PURE__ */ __name((text5, id38, _version, diagObj) => {
-      log23.debug("rendering pie chart\n" + text5);
+      log24.debug("rendering pie chart\n" + text5);
       const db22 = diagObj.db;
       const globalConfig = getConfig2();
       const pieConfig = cleanAndMerge(db22.getConfig(), globalConfig.pie);
@@ -259770,7 +259933,7 @@ var init_quadrantDiagram_XTYBLID2 = __esm({
         this.themeConfig = this.getDefaultThemeConfig();
         this.data = this.getDefaultData();
         this.classes = /* @__PURE__ */ new Map();
-        log23.info("clear called");
+        log24.info("clear called");
       }
       setData(data6) {
         this.data = { ...this.data, ...data6 };
@@ -259782,11 +259945,11 @@ var init_quadrantDiagram_XTYBLID2 = __esm({
         this.classes.set(className, styles7);
       }
       setConfig(config3) {
-        log23.trace("setConfig called with: ", config3);
+        log24.trace("setConfig called with: ", config3);
         this.config = { ...this.config, ...config3 };
       }
       setThemeConfig(themeConfig) {
-        log23.trace("setThemeConfig called with: ", themeConfig);
+        log24.trace("setThemeConfig called with: ", themeConfig);
         this.themeConfig = { ...this.themeConfig, ...themeConfig };
       }
       calculateSpace(xAxisPosition, showXAxis, showYAxis, showTitle) {
@@ -260173,7 +260336,7 @@ var init_quadrantDiagram_XTYBLID2 = __esm({
       }
       __name(getTransformation, "getTransformation");
       const conf4 = getConfig2();
-      log23.debug("Rendering quadrant chart\n" + txt);
+      log24.debug("Rendering quadrant chart\n" + txt);
       const securityLevel = conf4.securityLevel;
       let sandboxElement;
       if (securityLevel === "sandbox") {
@@ -261577,7 +261740,7 @@ var init_xychartDiagram_GGNKY7IX = __esm({
       }
       recalculateScale() {
         this.scale = band().domain(this.categories).range(this.getRange()).paddingInner(1).paddingOuter(0).align(0.5);
-        log23.trace("BandAxis axis final categories, range: ", this.categories, this.getRange());
+        log24.trace("BandAxis axis final categories, range: ", this.categories, this.getRange());
       }
       getTickValues() {
         return this.categories;
@@ -262273,7 +262436,7 @@ var init_xychartDiagram_GGNKY7IX = __esm({
         return `translate(${data6.x}, ${data6.y}) rotate(${data6.rotation || 0})`;
       }
       __name(getTextTransformation, "getTextTransformation");
-      log23.debug("Rendering xychart chart\n" + txt);
+      log24.debug("Rendering xychart chart\n" + txt);
       const svg3 = selectSvgElement(id38);
       const group2 = svg3.append("g").attr("class", "main");
       const background = group2.append("rect").attr("width", chartConfig.width).attr("height", chartConfig.height).attr("class", "background");
@@ -263406,7 +263569,7 @@ var init_requirementDiagram_Y7LWUY3S = __esm({
             cssStyles: [],
             classes: ["default"]
           });
-          log23.info("Added new element: ", name);
+          log24.info("Added new element: ", name);
         }
         this.resetLatestElement();
         return this.elements.get(name);
@@ -263658,8 +263821,8 @@ var init_requirementDiagram_Y7LWUY3S = __esm({
       draw: () => draw11
     });
     draw11 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log23.info("REF0:");
-      log23.info("Drawing requirement diagram (unified)", id38);
+      log24.info("REF0:");
+      log24.info("Drawing requirement diagram (unified)", id38);
       const { securityLevel, state: conf4, layout: layout7, look } = getConfig2();
       const data4Layout = diag.db.getData();
       const svg3 = getDiagramElement(id38, securityLevel);
@@ -263746,7 +263909,7 @@ function adjustLoopHeightForWrap(loopWidths, msg, preMargin, postMargin, addLoop
     const textDims = utils_default2.calculateTextDimensions(msg.message, textConf);
     const totalOffset = common_default.getMax(textDims.height, conf2.labelBoxHeight);
     heightAdjust = postMargin + totalOffset;
-    log23.debug(`${totalOffset} - ${msg.message}`);
+    log24.debug(`${totalOffset} - ${msg.message}`);
   }
   addLoopFn(msg);
   bounds2.bumpVerticalPos(heightAdjust);
@@ -263884,7 +264047,7 @@ async function getMaxMessageWidthPerActor(actors2, messages, diagObj) {
       }
     }
   }
-  log23.debug("maxMessageWidthPerActor:", maxMessageWidthPerActor);
+  log24.debug("maxMessageWidthPerActor:", maxMessageWidthPerActor);
   return maxMessageWidthPerActor;
 }
 async function calculateActorMargins(actors2, actorToMessageWidth, boxes) {
@@ -265374,7 +265537,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           text: cleanedText,
           wrap: wrap3
         };
-        log23.debug(`parseMessage: ${JSON.stringify(message2)}`);
+        log24.debug(`parseMessage: ${JSON.stringify(message2)}`);
         return message2;
       }
       // We expect the box statement to be color first then description
@@ -265432,7 +265595,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           const links3 = JSON.parse(sanitizedText);
           this.insertLinks(actor, links3);
         } catch (e3) {
-          log23.error("error while parsing actor link text", e3);
+          log24.error("error while parsing actor link text", e3);
         }
       }
       addALink(actorId, text5) {
@@ -265448,7 +265611,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           links3[label] = link3;
           this.insertLinks(actor, links3);
         } catch (e3) {
-          log23.error("error while parsing actor link text", e3);
+          log24.error("error while parsing actor link text", e3);
         }
       }
       insertLinks(actor, links3) {
@@ -265467,7 +265630,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           const properties = JSON.parse(sanitizedText);
           this.insertProperties(actor, properties);
         } catch (e3) {
-          log23.error("error while parsing actor properties text", e3);
+          log24.error("error while parsing actor properties text", e3);
         }
       }
       insertProperties(actor, properties) {
@@ -265495,7 +265658,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
             this.insertLinks(actor, details.links);
           }
         } catch (e3) {
-          log23.error("error while parsing actor details text", e3);
+          log24.error("error while parsing actor details text", e3);
         }
       }
       getActorProperty(actor, key) {
@@ -267725,7 +267888,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
       const root4 = securityLevel === "sandbox" ? select(sandboxElement.nodes()[0].contentDocument.body) : select("body");
       const doc = securityLevel === "sandbox" ? sandboxElement.nodes()[0].contentDocument : document;
       bounds2.init();
-      log23.debug(diagObj.db);
+      log24.debug(diagObj.db);
       const diagram210 = securityLevel === "sandbox" ? root4.select(`[id="${id38}"]`) : select(`[id="${id38}"]`);
       const actors2 = diagObj.db.getActors();
       const createdActors = diagObj.db.getCreatedActors();
@@ -267979,7 +268142,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
               messagesToDraw.push({ messageModel: msgModel, lineStartY, msg });
               bounds2.models.addMessage(msgModel);
             } catch (e3) {
-              log23.error("error while drawing message", e3);
+              log24.error("error while drawing message", e3);
             }
         }
         if ([
@@ -268014,8 +268177,8 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
         }
         index2++;
       }
-      log23.debug("createdActors", createdActors);
-      log23.debug("destroyedActors", destroyedActors);
+      log24.debug("createdActors", createdActors);
+      log24.debug("destroyedActors", destroyedActors);
       await drawActors(diagram210, actors2, actorKeys, false, id38, diagObj, actorIndexMap);
       for (const e3 of messagesToDraw) {
         await drawMessage(diagram210, e3.messageModel, e3.lineStartY, diagObj, e3.msg, id38);
@@ -268076,7 +268239,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
         "viewBox",
         box.startx - conf2.diagramMarginX + " -" + (conf2.diagramMarginY + extraVertForTitle) + " " + width3 + " " + (height2 + extraVertForTitle + extraHeightForNeoActors)
       );
-      log23.debug(`models:`, bounds2.models);
+      log24.debug(`models:`, bounds2.models);
     }, "draw");
     __name(getMaxMessageWidthPerActor, "getMaxMessageWidthPerActor");
     getRequiredPopupWidth = /* @__PURE__ */ __name(function(actor) {
@@ -268141,7 +268304,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
           noteFont(conf2)
         );
       }
-      log23.debug(
+      log24.debug(
         `NM:[${noteModel.startx},${noteModel.stopx},${noteModel.starty},${noteModel.stopy}:${noteModel.width},${noteModel.height}=${msg.message}]`
       );
       return noteModel;
@@ -268411,7 +268574,7 @@ var init_sequenceDiagram_5NDRBG5M = __esm({
         }
       }
       bounds2.activations = [];
-      log23.debug("Loop type widths:", loops);
+      log24.debug("Loop type widths:", loops);
       return loops;
     }, "calculateLoopBounds");
     sequenceRenderer_default = {
@@ -269791,7 +269954,7 @@ var init_classDiagram_v2_L25IHNXF = __esm({
         return this.notes;
       }
       addRelation(classRelation) {
-        log23.debug("Adding relation: " + JSON.stringify(classRelation));
+        log24.debug("Adding relation: " + JSON.stringify(classRelation));
         const invalidTypes = [
           this.relationType.LOLLIPOP,
           this.relationType.AGGREGATION,
@@ -270570,8 +270733,8 @@ g.classGroup line {
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw13 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log23.info("REF0:");
-      log23.info("Drawing class diagram (v3)", id38);
+      log24.info("REF0:");
+      log24.info("Drawing class diagram (v3)", id38);
       const { securityLevel, state: conf4, layout: layout7 } = getConfig2();
       diag.db.setDiagramId(id38);
       const data4Layout = diag.db.getData();
@@ -271638,7 +271801,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
     }, "colorSlotFor");
     __name(stateDomId, "stateDomId");
     setupDoc = /* @__PURE__ */ __name((parentParsedItem, doc, diagramStates2, nodes5, edges3, altFlag, look, classes3) => {
-      log23.trace("items", doc);
+      log24.trace("items", doc);
       doc.forEach((item) => {
         switch (item.stmt) {
           case STMT_STATE:
@@ -271714,7 +271877,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
       const style3 = getStylesFromDbInfo(dbState);
       const config3 = getConfig2();
       const userStyled = classStr.trim() !== "" || style3.length > 0;
-      log23.info("dataFetcher parsedItem", parsedItem, dbState, style3);
+      log24.info("dataFetcher parsedItem", parsedItem, dbState, style3);
       if (itemId !== "root") {
         let shape = SHAPE_STATE;
         if (parsedItem.start === true) {
@@ -271762,7 +271925,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           }
         }
         if (!newNode.type && parsedItem.doc) {
-          log23.info("Setting cluster for XCX", itemId, getDir2(parsedItem));
+          log24.info("Setting cluster for XCX", itemId, getDir2(parsedItem));
           newNode.type = "group";
           newNode.isGroup = true;
           newNode.dir = getDir2(parsedItem);
@@ -271793,7 +271956,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           nodeData2.label = "";
         }
         if (parent4 && parent4.id !== "root") {
-          log23.trace("Setting node ", itemId, " to be child of its parent ", parent4.id);
+          log24.trace("Setting node ", itemId, " to be child of its parent ", parent4.id);
           nodeData2.parentId = parent4.id;
         }
         nodeData2.centerLabel = true;
@@ -271881,7 +272044,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
         }
       }
       if (parsedItem.doc) {
-        log23.trace("Adding nodes children ");
+        log24.trace("Adding nodes children ");
         setupDoc(parsedItem, parsedItem.doc, diagramStates2, nodes5, edges3, !altFlag, look, classes3);
       }
     }, "dataFetcher");
@@ -271907,8 +272070,8 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
       return diagramObj.db.getClasses();
     }, "getClasses");
     draw14 = /* @__PURE__ */ __name(async function(text5, id38, _version, diag) {
-      log23.info("REF0:");
-      log23.info("Drawing state diagram (v2)", id38);
+      log24.info("REF0:");
+      log24.info("Drawing state diagram (v2)", id38);
       const { securityLevel, state: conf4, layout: layout7 } = getConfig2();
       diag.db.extract(diag.db.getRootDocV2());
       const data4Layout = diag.db.getData();
@@ -271932,7 +272095,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           const stateId = typeof key === "string" ? key : typeof key?.id === "string" ? key.id : "";
           const stateNode = data4Layout.nodes.find((node2) => node2.id === stateId);
           if (!stateId) {
-            log23.warn("\u26A0\uFE0F Invalid or missing stateId from key:", JSON.stringify(key));
+            log24.warn("\u26A0\uFE0F Invalid or missing stateId from key:", JSON.stringify(key));
             return;
           }
           const allNodes = svg3.node()?.querySelectorAll("g.node, g.rough-node");
@@ -271944,12 +272107,12 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
             }
           });
           if (!matchedElem) {
-            log23.warn("\u26A0\uFE0F Could not find node matching text:", stateId);
+            log24.warn("\u26A0\uFE0F Could not find node matching text:", stateId);
             return;
           }
           const parent4 = matchedElem.parentNode;
           if (!parent4) {
-            log23.warn("\u26A0\uFE0F Node has no parent, cannot wrap:", stateId);
+            log24.warn("\u26A0\uFE0F Node has no parent, cannot wrap:", stateId);
             return;
           }
           const a3 = document.createElementNS("http://www.w3.org/2000/svg", "a");
@@ -271963,10 +272126,10 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           }
           parent4.replaceChild(a3, matchedElem);
           a3.appendChild(matchedElem);
-          log23.info("\u{1F517} Wrapped node in <a> tag for:", stateId, linkInfo.url);
+          log24.info("\u{1F517} Wrapped node in <a> tag for:", stateId, linkInfo.url);
         });
       } catch (err) {
-        log23.error("\u274C Error injecting clickable links:", err);
+        log24.error("\u274C Error injecting clickable links:", err);
       }
       utils_default2.insertTitle(
         svg3,
@@ -272110,7 +272273,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
         }
       }
       setRootDoc(o2) {
-        log23.info("Setting root doc", o2);
+        log24.info("Setting root doc", o2);
         this.rootDoc = o2;
         if (this.version === 1) {
           this.extract(o2);
@@ -272178,7 +272341,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
       addState(id38, type3 = DEFAULT_STATE_TYPE, doc = void 0, descr = void 0, note2 = void 0, classes3 = void 0, styles7 = void 0, textStyles = void 0) {
         const trimmedId = id38?.trim();
         if (!this.currentDocument.states.has(trimmedId)) {
-          log23.info("Adding state ", trimmedId, descr);
+          log24.info("Adding state ", trimmedId, descr);
           this.currentDocument.states.set(trimmedId, {
             stmt: STMT_STATE,
             id: trimmedId,
@@ -272203,7 +272366,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           }
         }
         if (descr) {
-          log23.info("Setting state description", trimmedId, descr);
+          log24.info("Setting state description", trimmedId, descr);
           const descriptions = Array.isArray(descr) ? descr : [descr];
           descriptions.forEach((des) => this.addDescription(trimmedId, des.trim()));
         }
@@ -272216,17 +272379,17 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
           doc2.note.text = common_default.sanitizeText(doc2.note.text, getConfig2());
         }
         if (classes3) {
-          log23.info("Setting state classes", trimmedId, classes3);
+          log24.info("Setting state classes", trimmedId, classes3);
           const classesList = Array.isArray(classes3) ? classes3 : [classes3];
           classesList.forEach((cssClass) => this.setCssClass(trimmedId, cssClass.trim()));
         }
         if (styles7) {
-          log23.info("Setting state styles", trimmedId, styles7);
+          log24.info("Setting state styles", trimmedId, styles7);
           const stylesList = Array.isArray(styles7) ? styles7 : [styles7];
           stylesList.forEach((style3) => this.setStyle(trimmedId, style3.trim()));
         }
         if (textStyles) {
-          log23.info("Setting state styles", trimmedId, styles7);
+          log24.info("Setting state styles", trimmedId, styles7);
           const textStylesList = Array.isArray(textStyles) ? textStyles : [textStyles];
           textStylesList.forEach((textStyle) => this.setTextStyle(trimmedId, textStyle.trim()));
         }
@@ -272251,7 +272414,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
         return this.currentDocument.states;
       }
       logDocuments() {
-        log23.info("Documents = ", this.documents);
+        log24.info("Documents = ", this.documents);
       }
       getRelations() {
         return this.currentDocument.relations;
@@ -272261,7 +272424,7 @@ var init_stateDiagram_v2_FJ4FJNEA = __esm({
        */
       addLink(stateId, url, tooltip) {
         this.links.set(stateId, { url, tooltip });
-        log23.warn("Adding link", stateId, url, tooltip);
+        log24.warn("Adding link", stateId, url, tooltip);
       }
       /**
        * Get all registered links.
@@ -275144,7 +275307,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
       const { look, theme, themeVariables } = conf4;
       const { useGradient, gradientStart, gradientStop } = themeVariables;
       const LEFT_MARGIN = conf4.timeline?.leftMargin ?? 50;
-      log23.debug("timeline", diagObj.db);
+      log24.debug("timeline", diagObj.db);
       const securityLevel = conf4.securityLevel;
       let sandboxElement;
       if (securityLevel === "sandbox") {
@@ -275155,10 +275318,10 @@ var init_timeline_definition_SEUHKTQE = __esm({
       svg3.append("g");
       const tasks22 = diagObj.db.getTasks();
       const title2 = diagObj.db.getCommonDb().getDiagramTitle();
-      log23.debug("task", tasks22);
+      log24.debug("task", tasks22);
       svgDraw_default4.initGraphics(svg3, id38);
       const sections22 = diagObj.db.getSections();
-      log23.debug("sections", sections22);
+      log24.debug("sections", sections22);
       let maxSectionHeight = 0;
       let maxTaskHeight = 0;
       let depthY = 0;
@@ -275178,12 +275341,12 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxSectionHeight
         };
         const sectionHeight = svgDraw_default4.getVirtualNodeHeight(svg3, sectionNode, conf4);
-        log23.debug("sectionHeight before draw", sectionHeight);
+        log24.debug("sectionHeight before draw", sectionHeight);
         maxSectionHeight = Math.max(maxSectionHeight, sectionHeight + 20);
       });
       let maxEventCount = 0;
       let maxEventLineLength = 0;
-      log23.debug("tasks.length", tasks22.length);
+      log24.debug("tasks.length", tasks22.length);
       for (const [i2, task] of tasks22.entries()) {
         const taskNode = {
           number: i2,
@@ -275194,7 +275357,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxTaskHeight
         };
         const taskHeight = svgDraw_default4.getVirtualNodeHeight(svg3, taskNode, conf4);
-        log23.debug("taskHeight before draw", taskHeight);
+        log24.debug("taskHeight before draw", taskHeight);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight + 20);
         maxEventCount = Math.max(maxEventCount, task.events.length);
         let maxEventLineLengthTemp = 0;
@@ -275214,8 +275377,8 @@ var init_timeline_definition_SEUHKTQE = __esm({
         }
         maxEventLineLength = Math.max(maxEventLineLength, maxEventLineLengthTemp);
       }
-      log23.debug("maxSectionHeight before draw", maxSectionHeight);
-      log23.debug("maxTaskHeight before draw", maxTaskHeight);
+      log24.debug("maxSectionHeight before draw", maxSectionHeight);
+      log24.debug("maxTaskHeight before draw", maxTaskHeight);
       if (sections22 && sections22.length > 0) {
         sections22.forEach((section) => {
           const tasksForSection = tasks22.filter((task) => task.section === section);
@@ -275227,10 +275390,10 @@ var init_timeline_definition_SEUHKTQE = __esm({
             padding: 20,
             maxHeight: maxSectionHeight
           };
-          log23.debug("sectionNode", sectionNode);
+          log24.debug("sectionNode", sectionNode);
           const sectionNodeWrapper = svg3.append("g");
           const node2 = svgDraw_default4.drawNode(sectionNodeWrapper, sectionNode, sectionNumber, conf4, id38);
-          log23.debug("sectionNode output", node2);
+          log24.debug("sectionNode output", node2);
           sectionNodeWrapper.attr("transform", `translate(${masterX}, ${sectionBeginY})`);
           masterY += maxSectionHeight + 50;
           if (tasksForSection.length > 0) {
@@ -275271,7 +275434,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
         );
       }
       const box = svg3.node().getBBox();
-      log23.debug("bounds", box);
+      log24.debug("bounds", box);
       if (title2) {
         svg3.append("text").text(title2).attr("x", look === "neo" ? box.x * 2 + LEFT_MARGIN : box.width / 2 - LEFT_MARGIN).attr("font-size", "4ex").attr("font-weight", "bold").attr("y", 20);
       }
@@ -275302,11 +275465,11 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: 20,
           maxHeight: maxTaskHeight
         };
-        log23.debug("taskNode", taskNode);
+        log24.debug("taskNode", taskNode);
         const taskWrapper = diagram210.append("g").attr("class", "taskWrapper");
         const node2 = svgDraw_default4.drawNode(taskWrapper, taskNode, sectionColor, conf4, diagramId3);
         const taskHeight = node2.height;
-        log23.debug("taskHeight after draw", taskHeight);
+        log24.debug("taskHeight after draw", taskHeight);
         taskWrapper.attr("transform", `translate(${masterX}, ${masterY})`);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight);
         if (task.events) {
@@ -275337,7 +275500,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: 20,
           maxHeight: 50
         };
-        log23.debug("eventNode", eventNode);
+        log24.debug("eventNode", eventNode);
         const eventWrapper = diagram210.append("g").attr("class", "eventWrapper");
         const node2 = svgDraw_default4.drawNode(eventWrapper, eventNode, sectionColor, conf4, diagramId3, true);
         const eventHeight = node2.height;
@@ -275367,15 +275530,15 @@ var init_timeline_definition_SEUHKTQE = __esm({
     draw22 = /* @__PURE__ */ __name(function(text5, id38, version3, diagObj) {
       const conf4 = getConfig2();
       const LEFT_MARGIN = conf4.timeline?.leftMargin ?? 50;
-      log23.debug("timeline", diagObj.db);
+      log24.debug("timeline", diagObj.db);
       const svg3 = selectSvgElement(id38);
       svg3.append("g");
       const tasks22 = diagObj.db.getTasks();
       const title2 = diagObj.db.getCommonDb().getDiagramTitle();
-      log23.debug("task", tasks22);
+      log24.debug("task", tasks22);
       svgDraw_default4.initGraphics(svg3);
       const sections22 = diagObj.db.getSections();
-      log23.debug("sections", sections22);
+      log24.debug("sections", sections22);
       let maxSectionHeight = 0;
       let maxTaskHeight = 0;
       const masterX = 50 + LEFT_MARGIN;
@@ -275399,11 +275562,11 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxSectionHeight
         };
         const sectionHeight = svgDraw_default4.getVirtualNodeHeight(svg3, sectionNode, conf4);
-        log23.debug("sectionHeight before draw", sectionHeight);
+        log24.debug("sectionHeight before draw", sectionHeight);
         maxSectionHeight = Math.max(maxSectionHeight, sectionHeight);
       });
       let maxEventStackHeight = 0;
-      log23.debug("tasks.length", tasks22.length);
+      log24.debug("tasks.length", tasks22.length);
       for (const [i2, task] of tasks22.entries()) {
         const taskNode = {
           number: i2,
@@ -275414,7 +275577,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           maxHeight: maxTaskHeight
         };
         const taskHeight = svgDraw_default4.getVirtualNodeHeight(svg3, taskNode, conf4);
-        log23.debug("taskHeight before draw", taskHeight);
+        log24.debug("taskHeight before draw", taskHeight);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight);
         let maxEventStackHeightTemp = 0;
         for (const event3 of task.events) {
@@ -275433,8 +275596,8 @@ var init_timeline_definition_SEUHKTQE = __esm({
         }
         maxEventStackHeight = Math.max(maxEventStackHeight, maxEventStackHeightTemp) + EVENT_VERTICAL_GAP;
       }
-      log23.debug("maxSectionHeight before draw", maxSectionHeight);
-      log23.debug("maxTaskHeight before draw", maxTaskHeight);
+      log24.debug("maxSectionHeight before draw", maxSectionHeight);
+      log24.debug("maxTaskHeight before draw", maxTaskHeight);
       const taskBlockHeight = Math.max(maxTaskHeight, maxEventStackHeight);
       const taskSpacing = taskBlockHeight + TASK_VERTICAL_GAP;
       if (hasSections) {
@@ -275448,10 +275611,10 @@ var init_timeline_definition_SEUHKTQE = __esm({
             padding: NODE_PADDING2,
             maxHeight: maxSectionHeight
           };
-          log23.debug("sectionNode", sectionNode);
+          log24.debug("sectionNode", sectionNode);
           const sectionNodeWrapper = svg3.append("g");
           const node2 = svgDraw_default4.drawNode(sectionNodeWrapper, sectionNode, sectionNumber, conf4);
-          log23.debug("sectionNode output", node2);
+          log24.debug("sectionNode output", node2);
           const sectionX = timelineX - leftWidth;
           sectionNodeWrapper.attr("transform", `translate(${sectionX}, ${masterY})`);
           const taskStartY = masterY + node2.height + SECTION_TASK_GAP;
@@ -275490,14 +275653,14 @@ var init_timeline_definition_SEUHKTQE = __esm({
       if (!box) {
         throw new Error("bbox not found");
       }
-      log23.debug("bounds", box);
+      log24.debug("bounds", box);
       if (title2) {
         svg3.append("text").text(title2).attr("x", box.width / 2 - LEFT_MARGIN).attr("font-size", "4ex").attr("font-weight", "bold").attr("y", 20);
         box = svg3.node()?.getBBox();
         if (!box) {
           throw new Error("bbox not found");
         }
-        log23.debug("bounds after title", box);
+        log24.debug("bounds after title", box);
       }
       const [fontSize] = parseFontSize(conf4.fontSize);
       const arrowTopOffset = (fontSize ?? 16) * 2;
@@ -275522,11 +275685,11 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: NODE_PADDING2,
           maxHeight: maxTaskHeight
         };
-        log23.debug("taskNode", taskNode);
+        log24.debug("taskNode", taskNode);
         const taskWrapper = diagram210.append("g").attr("class", "taskWrapper");
         const node2 = svgDraw_default4.drawNode(taskWrapper, taskNode, sectionColor, conf4);
         const taskHeight = node2.height;
-        log23.debug("taskHeight after draw", taskHeight);
+        log24.debug("taskHeight after draw", taskHeight);
         const taskX = timelineX - TASK_AXIS_GAP - node2.width;
         taskWrapper.attr("transform", `translate(${taskX}, ${masterY})`);
         maxTaskHeight = Math.max(maxTaskHeight, taskHeight);
@@ -275552,7 +275715,7 @@ var init_timeline_definition_SEUHKTQE = __esm({
           padding: NODE_PADDING2,
           maxHeight: 0
         };
-        log23.debug("eventNode", eventNode);
+        log24.debug("eventNode", eventNode);
         const eventWrapper = diagram210.append("g").attr("class", "eventWrapper");
         const node2 = svgDraw_default4.drawNode(eventWrapper, eventNode, sectionColor, conf4);
         const eventHeight = node2.height;
@@ -276492,7 +276655,7 @@ var init_mindmap_definition_I2QAS2VK = __esm({
         return this.nodes.length > 0 ? this.nodes[0] : null;
       }
       addNode(level, id38, descr, type3) {
-        log23.info("addNode", level, id38, descr, type3);
+        log24.info("addNode", level, id38, descr, type3);
         let isRoot = false;
         if (this.nodes.length === 0) {
           this.baseLevel = level;
@@ -276537,7 +276700,7 @@ var init_mindmap_definition_I2QAS2VK = __esm({
         }
       }
       getType(startStr, endStr) {
-        log23.debug("In get type", startStr, endStr);
+        log24.debug("In get type", startStr, endStr);
         switch (startStr) {
           case "[":
             return this.nodeType.RECT;
@@ -276742,13 +276905,13 @@ var init_mindmap_definition_I2QAS2VK = __esm({
             config: finalConfig
           };
         }
-        log23.debug("getData: mindmapRoot", mindmapRoot, config3);
+        log24.debug("getData: mindmapRoot", mindmapRoot, config3);
         this.assignSections(mindmapRoot, void 0, 0, config3.mindmap?.colorBy === "depth");
         const processedNodes = [];
         const processedEdges = [];
         this.flattenNodes(mindmapRoot, processedNodes);
         this.generateEdges(mindmapRoot, processedEdges);
-        log23.debug(
+        log24.debug(
           `getData: processed ${processedNodes.length} nodes and ${processedEdges.length} edges`
         );
         const shapes3 = /* @__PURE__ */ new Map();
@@ -276783,11 +276946,11 @@ var init_mindmap_definition_I2QAS2VK = __esm({
       }
       // Expose logger to grammar
       getLogger() {
-        return log23;
+        return log24;
       }
     };
     draw17 = /* @__PURE__ */ __name(async (text5, id38, _version, diagObj) => {
-      log23.debug("Rendering mindmap diagram\n" + text5);
+      log24.debug("Rendering mindmap diagram\n" + text5);
       const db14 = diagObj.db;
       const data4Layout = db14.getData();
       const svg3 = getDiagramElement(id38, data4Layout.config.securityLevel);
@@ -277839,7 +278002,7 @@ var init_kanban_definition_BZKZHSQY = __esm({
       HEXAGON: 6
     };
     getType = /* @__PURE__ */ __name((startStr, endStr) => {
-      log23.debug("In get type", startStr, endStr);
+      log24.debug("In get type", startStr, endStr);
       switch (startStr) {
         case "[":
           return nodeType2.RECT;
@@ -277894,7 +278057,7 @@ var init_kanban_definition_BZKZHSQY = __esm({
           return "no-border";
       }
     }, "type2Str");
-    getLogger = /* @__PURE__ */ __name(() => log23, "getLogger");
+    getLogger = /* @__PURE__ */ __name(() => log24, "getLogger");
     getElementById2 = /* @__PURE__ */ __name((id38) => elements[id38], "getElementById");
     db4 = {
       clear: clear7,
@@ -277911,7 +278074,7 @@ var init_kanban_definition_BZKZHSQY = __esm({
     };
     kanbanDb_default = db4;
     draw18 = /* @__PURE__ */ __name(async (text5, id38, _version, diagObj) => {
-      log23.debug("Rendering kanban diagram\n" + text5);
+      log24.debug("Rendering kanban diagram\n" + text5);
       const db22 = diagObj.db;
       const data4Layout = db22.getData();
       const conf4 = getConfig2();
@@ -279574,7 +279737,7 @@ var init_diagram_DNEMPZML = __esm({
         end ??= start2 + (bits ?? 1) - 1;
         bits ??= end - start2 + 1;
         lastBit = end;
-        log23.debug(`Packet block ${start2} - ${lastBit} with label ${label}`);
+        log24.debug(`Packet block ${start2} - ${lastBit} with label ${label}`);
         while (word.length <= bitsPerRow + 1 && db14.getPacket().length < maxPacketSize) {
           const [block2, nextBlock] = getNextFittingBlock({ start: start2, end, bits, label }, row, bitsPerRow);
           word.push(block2);
@@ -279632,7 +279795,7 @@ var init_diagram_DNEMPZML = __esm({
             "parser.parser?.yy was not a PacketDB. This is due to a bug within Mermaid, please report this issue at https://github.com/mermaid-js/mermaid/issues."
           );
         }
-        log23.debug(ast);
+        log24.debug(ast);
         populate16(ast, db14);
       }, "parse")
     };
@@ -279883,7 +280046,7 @@ var init_diagram_L3MUGCDN = __esm({
         graticule: optionMap.graticule?.value ?? defaultOptions.graticule
       };
       if (data4.options.ticks > MAX_TICKS) {
-        log23.warn(
+        log24.warn(
           `Radar diagram ticks (${data4.options.ticks}) exceeds maximum allowed (${MAX_TICKS}). Using ${MAX_TICKS} instead.`
         );
         data4.options.ticks = MAX_TICKS;
@@ -279919,7 +280082,7 @@ var init_diagram_L3MUGCDN = __esm({
     parser22 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("radar", input);
-        log23.debug(ast);
+        log24.debug(ast);
         populate17(ast);
       }, "parse")
     };
@@ -280065,12 +280228,12 @@ __export(blockDiagram_APKKGZFW_exports, {
   diagram: () => diagram23
 });
 function typeStr2Type(typeStr) {
-  log23.debug("typeStr2Type", typeStr);
+  log24.debug("typeStr2Type", typeStr);
   switch (typeStr) {
     case "[]":
       return "square";
     case "()":
-      log23.debug("we have a round");
+      log24.debug("we have a round");
       return "round";
     case "(())":
       return "circle";
@@ -280103,7 +280266,7 @@ function typeStr2Type(typeStr) {
   }
 }
 function edgeTypeStr2Type(typeStr) {
-  log23.debug("typeStr2Type", typeStr);
+  log24.debug("typeStr2Type", typeStr);
   switch (typeStr) {
     case "==":
       return "thick";
@@ -280164,7 +280327,7 @@ function calculateBlockPosition(columns, position5) {
   return { px, py };
 }
 function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, padding = 8) {
-  log23.debug(
+  log24.debug(
     "setBlockSizes abc95 (start)",
     block2.id,
     block2?.size?.x,
@@ -280190,17 +280353,17 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
     const childSize = getMaxChildSize(block2);
     maxWidth2 = childSize.width;
     maxHeight = childSize.height;
-    log23.debug("setBlockSizes abc95 maxWidth of", block2.id, ":s children is ", maxWidth2, maxHeight);
+    log24.debug("setBlockSizes abc95 maxWidth of", block2.id, ":s children is ", maxWidth2, maxHeight);
     for (const child of block2.children) {
       if (child.size) {
-        log23.debug(
+        log24.debug(
           `abc95 Setting size of children of ${block2.id} id=${child.id} ${maxWidth2} ${maxHeight} ${JSON.stringify(child.size)}`
         );
         child.size.width = maxWidth2 * (child.widthInColumns ?? 1) + padding * ((child.widthInColumns ?? 1) - 1);
         child.size.height = maxHeight;
         child.size.x = 0;
         child.size.y = 0;
-        log23.debug(
+        log24.debug(
           `abc95 updating size of ${block2.id} children child:${child.id} maxWidth:${maxWidth2} maxHeight:${maxHeight}`
         );
       }
@@ -280221,16 +280384,16 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
     let width3 = xSize * (maxWidth2 + padding) + padding;
     let height2 = ySize * (maxHeight + padding) + padding;
     if (width3 < siblingWidth) {
-      log23.debug(
+      log24.debug(
         `Detected to small sibling: abc95 ${block2.id} siblingWidth ${siblingWidth} siblingHeight ${siblingHeight} width ${width3}`
       );
       width3 = siblingWidth;
       height2 = siblingHeight;
       const childWidth = (siblingWidth - xSize * padding - padding) / xSize;
       const childHeight = (siblingHeight - ySize * padding - padding) / ySize;
-      log23.debug("Size indata abc88", block2.id, "childWidth", childWidth, "maxWidth", maxWidth2);
-      log23.debug("Size indata abc88", block2.id, "childHeight", childHeight, "maxHeight", maxHeight);
-      log23.debug("Size indata abc88 xSize", xSize, "padding", padding);
+      log24.debug("Size indata abc88", block2.id, "childWidth", childWidth, "maxWidth", maxWidth2);
+      log24.debug("Size indata abc88", block2.id, "childHeight", childHeight, "maxHeight", maxHeight);
+      log24.debug("Size indata abc88 xSize", xSize, "padding", padding);
       for (const child of block2.children) {
         if (child.size) {
           child.size.width = childWidth;
@@ -280240,7 +280403,7 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
         }
       }
     }
-    log23.debug(
+    log24.debug(
       `abc95 (finale calc) ${block2.id} xSize ${xSize} ySize ${ySize} columns ${columns}${block2.children.length} width=${Math.max(width3, block2.size?.width || 0)}`
     );
     if (width3 < (block2?.size?.width || 0)) {
@@ -280248,7 +280411,7 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
       const num = columns > 0 ? Math.min(block2.children.length, columns) : block2.children.length;
       if (num > 0) {
         const childWidth = (width3 - num * padding - padding) / num;
-        log23.debug("abc95 (growing to fit) width", block2.id, width3, block2.size?.width, childWidth);
+        log24.debug("abc95 (growing to fit) width", block2.id, width3, block2.size?.width, childWidth);
         for (const child of block2.children) {
           if (child.size) {
             child.size.width = childWidth;
@@ -280263,7 +280426,7 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
       y: 0
     };
   }
-  log23.debug(
+  log24.debug(
     "setBlockSizes abc94 (done)",
     block2.id,
     block2?.size?.x,
@@ -280273,16 +280436,16 @@ function setBlockSizes(block2, db22, siblingWidth = 0, siblingHeight = 0, paddin
   );
 }
 function layoutBlocks(block2, db22, padding = 8) {
-  log23.debug(
+  log24.debug(
     `abc85 layout blocks (=>layoutBlocks) ${block2.id} x: ${block2?.size?.x} y: ${block2?.size?.y} width: ${block2?.size?.width}`
   );
   const columns = block2.columns ?? -1;
-  log23.debug("layoutBlocks columns abc95", block2.id, "=>", columns, block2);
+  log24.debug("layoutBlocks columns abc95", block2.id, "=>", columns, block2);
   if (block2.children && // find max width of children
   block2.children.length > 0) {
     const width3 = block2?.children[0]?.size?.width ?? 0;
     const widthOfChildren = block2.children.length * width3 + (block2.children.length - 1) * padding;
-    log23.debug("widthOfChildren 88", widthOfChildren, "posX");
+    log24.debug("widthOfChildren 88", widthOfChildren, "posX");
     const rowHeights = /* @__PURE__ */ new Map();
     {
       let colPos = 0;
@@ -280312,7 +280475,7 @@ function layoutBlocks(block2, db22, padding = 8) {
       }
     }
     let columnPos = 0;
-    log23.debug("abc91 block?.size?.x", block2.id, block2?.size?.x);
+    log24.debug("abc91 block?.size?.x", block2.id, block2?.size?.x);
     let startingPosX = block2?.size?.x ? block2?.size?.x + (-block2?.size?.width / 2 || 0) : -padding;
     let rowPos = 0;
     for (const child of block2.children) {
@@ -280325,22 +280488,22 @@ function layoutBlocks(block2, db22, padding = 8) {
       if (py != rowPos) {
         rowPos = py;
         startingPosX = block2?.size?.x ? block2?.size?.x + (-block2?.size?.width / 2 || 0) : -padding;
-        log23.debug("New row in layout for block", block2.id, " and child ", child.id, rowPos);
+        log24.debug("New row in layout for block", block2.id, " and child ", child.id, rowPos);
       }
-      log23.debug(
+      log24.debug(
         `abc89 layout blocks (child) id: ${child.id} Pos: ${columnPos} (px, py) ${px},${py} (${parent4?.size?.x},${parent4?.size?.y}) parent: ${parent4.id} width: ${width22}${padding}`
       );
       if (parent4.size) {
         const halfWidth = width22 / 2;
         child.size.x = startingPosX + padding + halfWidth;
-        log23.debug(
+        log24.debug(
           `abc91 layout blocks (calc) px, pyid:${child.id} startingPos=X${startingPosX} new startingPosX${child.size.x} ${halfWidth} padding=${padding} width=${width22} halfWidth=${halfWidth} => x:${child.size.x} y:${child.size.y} ${child.widthInColumns} (width * (child?.w || 1)) / 2 ${width22 * (child?.widthInColumns ?? 1) / 2}`
         );
         startingPosX = child.size.x + halfWidth;
         const rowYOffset = rowYOffsets.get(py) ?? 0;
         const rowHeight = rowHeights.get(py) ?? height2;
         child.size.y = parent4.size.y - parent4.size.height / 2 + rowYOffset + rowHeight / 2 + padding;
-        log23.debug(
+        log24.debug(
           `abc88 layout blocks (calc) px, pyid:${child.id}startingPosX${startingPosX}${padding}${halfWidth}=>x:${child.size.x}y:${child.size.y}${child.widthInColumns}(width * (child?.w || 1)) / 2${width22 * (child?.widthInColumns ?? 1) / 2}`
         );
       }
@@ -280352,10 +280515,10 @@ function layoutBlocks(block2, db22, padding = 8) {
         columnsFilled = Math.min(columnsFilled, columns - columnPos % columns);
       }
       columnPos += columnsFilled;
-      log23.debug("abc88 columnsPos", child, columnPos);
+      log24.debug("abc88 columnsPos", child, columnPos);
     }
   }
-  log23.debug(
+  log24.debug(
     `layout blocks (<==layoutBlocks) ${block2.id} x: ${block2?.size?.x} y: ${block2?.size?.y} width: ${block2?.size?.width}`
   );
 }
@@ -280390,7 +280553,7 @@ function layout5(db22) {
   const padding = getConfig2()?.block?.padding ?? 8;
   setBlockSizes(root4, db22, 0, 0, padding);
   layoutBlocks(root4, db22, padding);
-  log23.debug("getBlocks", JSON.stringify(root4, null, 2));
+  log24.debug("getBlocks", JSON.stringify(root4, null, 2));
   const { minX, minY, maxX, maxY } = findBounds(root4);
   const height2 = maxY - minY;
   const width3 = maxX - minX;
@@ -281747,7 +281910,7 @@ var init_blockDiagram_APKKGZFW = __esm({
       const column2 = columnSettingBlock?.columns ?? -1;
       for (const block2 of blockList) {
         if (typeof column2 === "number" && column2 > 0 && block2.type !== "column-setting" && typeof block2.widthInColumns === "number" && block2.widthInColumns > column2) {
-          log23.warn(
+          log24.warn(
             `Block ${block2.id} width ${block2.widthInColumns} exceeds configured column width ${column2}`
           );
         }
@@ -281818,7 +281981,7 @@ var init_blockDiagram_APKKGZFW = __esm({
     blocks = [];
     rootBlock = { id: "root", type: "composite", children: [], columns: -1 };
     clear211 = /* @__PURE__ */ __name(() => {
-      log23.debug("Clear called");
+      log24.debug("Clear called");
       clear();
       rootBlock = { id: "root", type: "composite", children: [], columns: -1 };
       blockDatabase = /* @__PURE__ */ new Map([["root", rootBlock]]);
@@ -281877,7 +282040,7 @@ var init_blockDiagram_APKKGZFW = __esm({
       diagramId2 = id38;
     }, "setDiagramId");
     getDiagramId = /* @__PURE__ */ __name(() => diagramId2, "getDiagramId");
-    getLogger2 = /* @__PURE__ */ __name(() => log23, "getLogger");
+    getLogger2 = /* @__PURE__ */ __name(() => log24, "getLogger");
     getClasses5 = /* @__PURE__ */ __name(function() {
       return classes2;
     }, "getClasses");
@@ -282069,7 +282232,7 @@ var init_blockDiagram_APKKGZFW = __esm({
       let maxHeight = 0;
       for (const child of block2.children) {
         const { width: width3, height: height2, x: x7, y: y8 } = child.size ?? { width: 0, height: 0, x: 0, y: 0 };
-        log23.debug(
+        log24.debug(
           "getMaxChildSize abc95 child:",
           child.id,
           "width:",
@@ -282138,7 +282301,7 @@ var init_blockDiagram_APKKGZFW = __esm({
         const width3 = bounds22.width + 10;
         const { useMaxWidth } = conf4;
         configureSvgSize(svg3, height2, width3, !!useMaxWidth);
-        log23.debug("Here Bounds", bounds4, bounds22);
+        log24.debug("Here Bounds", bounds4, bounds22);
         svg3.attr(
           "viewBox",
           `${bounds22.x - 5} ${bounds22.y - 5} ${bounds22.width + 10} ${bounds22.height + 10}`
@@ -282427,7 +282590,7 @@ var init_diagram_XPFHEONP = __esm({
         const { text: text5, lineMap } = preprocessBoxDrawing(input);
         try {
           const ast = await parse4("treeView", text5);
-          log23.debug(ast);
+          log24.debug(ast);
           populate18(ast);
         } catch (error3) {
           if (lineMap.size > 0 && error3 instanceof Error) {
@@ -282577,7 +282740,7 @@ var init_diagram_XPFHEONP = __esm({
       return { totalHeight, totalWidth };
     }, "drawTree");
     draw24 = /* @__PURE__ */ __name(async (text5, id38, _ver, diagObj) => {
-      log23.debug("Rendering treeView diagram\n" + text5);
+      log24.debug("Rendering treeView diagram\n" + text5);
       const db22 = diagObj.db;
       const root4 = db22.getRoot();
       const config3 = db22.getConfig();
@@ -290773,7 +290936,7 @@ function layoutArchitecture(services, junctions, groups, edges3, db14, { spatial
       throw err;
     }
     cy.ready((e3) => {
-      log23.info("Ready", e3);
+      log24.info("Ready", e3);
       resolve2(cy);
     });
   });
@@ -291247,7 +291410,7 @@ var init_architectureDiagram_YGSQEFNW = __esm({
       },
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("architecture", input);
-        log23.debug(ast);
+        log24.debug(ast);
         const db14 = parser25.parser?.yy;
         if (!(db14 instanceof ArchitectureDB)) {
           throw new Error(
@@ -291631,7 +291794,7 @@ function getState() {
     });
     let sourceFrames = void 0;
     if (hasSourceFrame(frame2)) {
-      log23.debug(`source frame`, frame2.sourceFrames);
+      log24.debug(`source frame`, frame2.sourceFrames);
       sourceFrames = ast.frames.filter((currentFrame) => {
         return frame2.sourceFrames.some((sf) => sf.$refText === currentFrame.name);
       });
@@ -291843,7 +292006,7 @@ function calculateTextProps(frame2, dataEntities, diagramProps2) {
     width: calculatedWidthFix,
     height: dimensions2.height
   };
-  log23.debug(`[${frame2.name}] ${frame2.entityIdentifier} text`, props);
+  log24.debug(`[${frame2.name}] ${frame2.entityIdentifier} text`, props);
   return props;
 }
 function decidePositionFrame(state6, _command) {
@@ -292038,7 +292201,7 @@ function decide(state6, command) {
     return [];
   }
   const events = fn3(state6, command);
-  log23.debug(`decided events`, events);
+  log24.debug(`decided events`, events);
   return events;
 }
 function evolve(state6, events) {
@@ -292049,7 +292212,7 @@ function evolve(state6, events) {
     }
     return fn3(previousState, event3);
   }, state6);
-  log23.debug(`evolve events`, { state: state6, newState: newState2, events });
+  log24.debug(`evolve events`, { state: state6, newState: newState2, events });
   return newState2;
 }
 function dispatch2(state6, command) {
@@ -292079,7 +292242,7 @@ function renderD3Relation(diagram210, diagramProps2, arrowheadId, themeVariables
     const targetX = relation.targetBox.x + relation.targetBox.dimension.width / 3;
     let sourceY;
     let targetY;
-    log23.debug(`rendering relation up=${upwards} for `, {
+    log24.debug(`rendering relation up=${upwards} for `, {
       sourceBox: relation.sourceBox,
       targetBox: relation.targetBox
     });
@@ -292119,7 +292282,7 @@ var init_diagram_MHCOC4E2 = __esm({
     PositionRelationKind = "position relation";
     RelationPositionedKind = "relation positioned";
     setOptions8 = /* @__PURE__ */ __name(function(_rawOptString) {
-      log23.debug("options str", _rawOptString);
+      log24.debug("options str", _rawOptString);
     }, "setOptions");
     getOptions3 = /* @__PURE__ */ __name(function() {
       return {};
@@ -292219,7 +292382,7 @@ var init_diagram_MHCOC4E2 = __esm({
     parser26 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("eventmodeling", input);
-        log23.debug(ast);
+        log24.debug(ast);
         db8.setAst(ast);
         populateCommonDb(ast, db8);
       }, "parse")
@@ -292243,7 +292406,7 @@ var init_diagram_MHCOC4E2 = __esm({
     __name(renderD3Relation, "renderD3Relation");
     __name(renderD3Swimlane, "renderD3Swimlane");
     draw26 = /* @__PURE__ */ __name(function(txt, id38, ver, diagObj) {
-      log23.debug("in eventmodeling renderer", txt + "\n", "id:", id38, ver);
+      log24.debug("in eventmodeling renderer", txt + "\n", "id:", id38, ver);
       if (!DEFAULT_EVENTMODELING_CONFIG2) {
         throw new Error("EventModeling config not found");
       }
@@ -296011,7 +296174,7 @@ var init_diagram_LA4NIPWU = __esm({
         try {
           const parseFunc = parse4;
           const ast = await parseFunc("treemap", text5);
-          log23.debug("Treemap AST:", ast);
+          log24.debug("Treemap AST:", ast);
           const db14 = parser29.parser?.yy;
           if (!(db14 instanceof TreeMapDB)) {
             throw new Error(
@@ -296020,7 +296183,7 @@ var init_diagram_LA4NIPWU = __esm({
           }
           populate19(ast, db14);
         } catch (error3) {
-          log23.error("Error parsing treemap:", error3);
+          log24.error("Error parsing treemap:", error3);
           throw error3;
         }
       }, "parse")
@@ -296062,7 +296225,7 @@ var init_diagram_LA4NIPWU = __esm({
           valueFormat = format2(formatStr);
         }
       } catch (error3) {
-        log23.error("Error creating format function:", error3);
+        log24.error("Error creating format function:", error3);
         valueFormat = format2(",");
       }
       const colorScale = ordinal().range([
@@ -307019,7 +307182,7 @@ var init_usecaseDiagram_AFA6YXN4 = __esm({
       svg3.style("--mermaid-usecase-actor-font-size", `${data6.actorFontSize}px`).style("--mermaid-usecase-actor-font-family", data6.actorFontFamily).style("--mermaid-usecase-actor-font-weight", data6.actorFontWeight).style("--mermaid-usecase-font-size", `${data6.usecaseFontSize}px`).style("--mermaid-usecase-font-family", data6.usecaseFontFamily).style("--mermaid-usecase-font-weight", data6.usecaseFontWeight);
     }, "applyUsecaseFonts");
     draw30 = /* @__PURE__ */ __name(async (_text, id38, _version, diag) => {
-      log23.info("Drawing usecase diagram (unified)", id38);
+      log24.info("Drawing usecase diagram (unified)", id38);
       const { layout: layout7 } = getConfig2();
       const usecaseDb = diag.db;
       const data4Layout = usecaseDb.getData();
@@ -307629,7 +307792,7 @@ var init_wardleyDiagram_S7YFUSEH = __esm({
       },
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("wardley", input);
-        log23.debug(ast);
+        log24.debug(ast);
         const db14 = parser31.parser?.yy;
         if (!db14 || typeof db14.addNode !== "function") {
           throw new Error(
@@ -307843,7 +308006,7 @@ var init_wardleyDiagram_S7YFUSEH = __esm({
       };
     }, "getConfigValues");
     draw31 = /* @__PURE__ */ __name((text5, id38, _version, diagObj) => {
-      log23.debug("Rendering Wardley map\n" + text5);
+      log24.debug("Rendering Wardley map\n" + text5);
       const configValues = getConfigValues();
       const theme = getTheme();
       const squareSize = configValues.nodeRadius * 1.6;
@@ -308490,7 +308653,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
       }
       data5.transitions = transitions.filter((t5) => {
         if (t5.from === t5.to) {
-          log23.warn(
+          log24.warn(
             `Cynefin: self-loop transition on domain "${t5.from}" is not meaningful and will be skipped.`
           );
           return false;
@@ -308534,7 +308697,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
     parser32 = {
       parse: /* @__PURE__ */ __name(async (input) => {
         const ast = await parse4("cynefin", input);
-        log23.debug(ast);
+        log24.debug(ast);
         populate20(ast);
       }, "parse")
     };
@@ -308579,7 +308742,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
       const accDescription3 = db22.getAccDescription();
       const config3 = db22.getConfig();
       const domainColors = getCynefinDomainColors();
-      log23.debug("Rendering Cynefin diagram");
+      log24.debug("Rendering Cynefin diagram");
       const width3 = config3.width;
       const height2 = config3.height;
       const padding = config3.padding;
@@ -308709,7 +308872,7 @@ var init_cynefinDiagram_L36ESFBY = __esm({
             return;
           }
           if (transition2.from === transition2.to) {
-            log23.warn(`Cynefin renderer: skipping self-loop on domain "${transition2.from}"`);
+            log24.warn(`Cynefin renderer: skipping self-loop on domain "${transition2.from}"`);
             return;
           }
           const x12 = fromLayout.cx;
@@ -308863,11 +309026,11 @@ var init_chunk_OY52VR5R = __esm({
       rules.length = 0;
       ruleMap.clear();
       clear();
-      log23.debug("[Railroad] Database cleared");
+      log24.debug("[Railroad] Database cleared");
     }, "clear");
     setTitle2 = /* @__PURE__ */ __name((text5) => {
       diagramTitle2 = sanitizeText23(text5);
-      log23.debug("[Railroad] Title set:", text5);
+      log24.debug("[Railroad] Title set:", text5);
     }, "setTitle");
     getTitle2 = /* @__PURE__ */ __name(() => {
       return diagramTitle2;
@@ -308879,9 +309042,9 @@ var init_chunk_OY52VR5R = __esm({
         definition: sanitizeAstNode(rule.definition),
         comment: rule.comment ? sanitizeText23(rule.comment) : void 0
       };
-      log23.debug("[Railroad] Adding rule:", sanitizedRule.name);
+      log24.debug("[Railroad] Adding rule:", sanitizedRule.name);
       if (ruleMap.has(sanitizedRule.name)) {
-        log23.warn(`[Railroad] Rule '${sanitizedRule.name}' is already defined. Overwriting.`);
+        log24.warn(`[Railroad] Rule '${sanitizedRule.name}' is already defined. Overwriting.`);
       }
       rules.push(sanitizedRule);
       ruleMap.set(sanitizedRule.name, sanitizedRule);
@@ -308894,14 +309057,14 @@ var init_chunk_OY52VR5R = __esm({
     }, "getRule");
     setAccTitle2 = /* @__PURE__ */ __name((text5) => {
       accTitle2 = sanitizeText23(text5).replace(/^\s+/g, "");
-      log23.debug("[Railroad] Accessibility title set:", text5);
+      log24.debug("[Railroad] Accessibility title set:", text5);
     }, "setAccTitle");
     getAccTitle2 = /* @__PURE__ */ __name(() => {
       return accTitle2;
     }, "getAccTitle");
     setAccDescription2 = /* @__PURE__ */ __name((text5) => {
       accDescription2 = sanitizeText23(text5).replace(/\n\s+/g, "\n");
-      log23.debug("[Railroad] Accessibility description set:", text5);
+      log24.debug("[Railroad] Accessibility description set:", text5);
     }, "setAccDescription");
     getAccDescription2 = /* @__PURE__ */ __name(() => {
       return accDescription2;
@@ -309657,25 +309820,25 @@ var init_chunk_OY52VR5R = __esm({
       svg3.attr("viewBox", `0 0 ${dimensions2.width} ${dimensions2.height}`);
     }, "configureRailroadSvgSize");
     draw33 = /* @__PURE__ */ __name((text5, id38, _version) => {
-      log23.debug("[Railroad] Rendering diagram\n" + text5);
+      log24.debug("[Railroad] Rendering diagram\n" + text5);
       try {
         const svg3 = selectSvgElement(id38);
         svg3.attr("class", "railroad-diagram");
         const railroadConfig = getConfig().railroad;
         const useMaxWidth = railroadConfig?.useMaxWidth ?? true;
         const rules2 = db12.getRules();
-        log23.debug(`[Railroad] Rendering ${rules2.length} rules`);
+        log24.debug(`[Railroad] Rendering ${rules2.length} rules`);
         if (rules2.length === 0) {
-          log23.warn("[Railroad] No rules to render");
+          log24.warn("[Railroad] No rules to render");
           configureRailroadSvgSize(svg3, { height: 100, width: 200 }, useMaxWidth);
           return;
         }
         const renderer22 = new RailroadRenderer(svg3, buildRailroadStyleOptions());
         const dimensions2 = renderer22.renderDiagram(rules2);
         configureRailroadSvgSize(svg3, dimensions2, useMaxWidth);
-        log23.debug("[Railroad] Render complete");
+        log24.debug("[Railroad] Render complete");
       } catch (error3) {
-        log23.error("[Railroad] Render error:", error3);
+        log24.error("[Railroad] Render error:", error3);
         throw error3;
       }
     }, "draw");
@@ -309764,15 +309927,15 @@ var init_railroadDiagram_MRQ6NCDL = __esm({
     parser33 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log23.debug("[Railroad Parser] Starting Langium parse");
+        log24.debug("[Railroad Parser] Starting Langium parse");
         const result = langiumParser.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log23.debug("[Railroad Parser] Parsed rules:", ast.rules.length);
+        log24.debug("[Railroad Parser] Parsed rules:", ast.rules.length);
         populateDb4(ast);
-        log23.debug("[Railroad Parser] Parse complete");
+        log24.debug("[Railroad Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -309914,15 +310077,15 @@ var init_ebnfDiagram_UZSYDL2S = __esm({
     parser34 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log23.debug("[EBNF Parser] Starting Langium parse");
+        log24.debug("[EBNF Parser] Starting Langium parse");
         const result = langiumParser2.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log23.debug("[EBNF Parser] Parsed rules:", ast.rules.length);
+        log24.debug("[EBNF Parser] Parsed rules:", ast.rules.length);
         populateDb5(ast);
-        log23.debug("[EBNF Parser] Parse complete");
+        log24.debug("[EBNF Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -310043,15 +310206,15 @@ var init_abnfDiagram_S7VZAUFO = __esm({
     parser35 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log23.debug("[ABNF Parser] Starting Langium parse");
+        log24.debug("[ABNF Parser] Starting Langium parse");
         const result = langiumParser3.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log23.debug("[ABNF Parser] Parsed rules:", ast.rules.length);
+        log24.debug("[ABNF Parser] Parsed rules:", ast.rules.length);
         populateDb6(ast);
-        log23.debug("[ABNF Parser] Parse complete");
+        log24.debug("[ABNF Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -310180,15 +310343,15 @@ var init_pegDiagram_FD4XPPHP = __esm({
     parser36 = {
       parse: /* @__PURE__ */ __name((input) => {
         db12.clear();
-        log23.debug("[PEG Parser] Starting Langium parse");
+        log24.debug("[PEG Parser] Starting Langium parse");
         const result = langiumParser4.parse(input);
         if (result.lexerErrors.length > 0 || result.parserErrors.length > 0) {
           throw new MermaidParseError(result);
         }
         const ast = result.value;
-        log23.debug("[PEG Parser] Parsed rules:", ast.rules.length);
+        log24.debug("[PEG Parser] Parsed rules:", ast.rules.length);
         populateDb7(ast);
-        log23.debug("[PEG Parser] Parse complete");
+        log24.debug("[PEG Parser] Parse complete");
       }, "parse"),
       parser: {
         yy: db12
@@ -310620,7 +310783,7 @@ var init_mermaid_core = __esm({
       return lines;
     }, "wrapErrorMessage");
     draw34 = /* @__PURE__ */ __name((_text, id38, version3, diag) => {
-      log23.debug("rendering svg for syntax error\n");
+      log24.debug("rendering svg for syntax error\n");
       const svg3 = selectSvgElement(id38);
       const g3 = svg3.append("g");
       const messageLines = wrapErrorMessage(diag?.db.getErrorMessage?.() ?? "");
@@ -311046,7 +311209,7 @@ var init_mermaid_core = __esm({
       );
     }, "addDiagrams");
     loadRegisteredDiagrams = /* @__PURE__ */ __name(async () => {
-      log23.debug(`Loading registered diagrams`);
+      log24.debug(`Loading registered diagrams`);
       const results = await Promise.allSettled(
         Object.entries(detectors).map(async ([key, { detector: detector38, loader: loader38 }]) => {
           if (!loader38) {
@@ -311059,7 +311222,7 @@ var init_mermaid_core = __esm({
               const { diagram: diagram210, id: id38 } = await loader38();
               registerDiagram(id38, diagram210, detector38);
             } catch (err) {
-              log23.error(`Failed to load external diagram with key ${key}. Removing from detectors.`);
+              log24.error(`Failed to load external diagram with key ${key}. Removing from detectors.`);
               delete detectors[key];
               throw err;
             }
@@ -311068,9 +311231,9 @@ var init_mermaid_core = __esm({
       );
       const failed = results.filter((result) => result.status === "rejected");
       if (failed.length > 0) {
-        log23.error(`Failed to load ${failed.length} external diagrams`);
+        log24.error(`Failed to load ${failed.length} external diagrams`);
         for (const res of failed) {
-          log23.error(res);
+          log24.error(res);
         }
         throw new Error(`Failed to load ${failed.length} external diagrams`);
       }
@@ -311116,7 +311279,7 @@ var init_mermaid_core = __esm({
         if (db22.preserveCommentsWhenParsing && code.withComments) {
           const maxTextSize = config3.maxTextSize ?? defaultConfig_default.maxTextSize;
           if (code.withComments.length > maxTextSize) {
-            log23.warn(
+            log24.warn(
               `Comment-preserving source exceeds maxTextSize (${code.withComments.length} > ${maxTextSize}); parsing the comment-stripped text instead. Reported source positions will not account for comment lines.`
             );
           } else {
@@ -311306,7 +311469,7 @@ var init_mermaid_core = __esm({
                 // needed for Mermaid's animation feature
               ];
               if (!allowedAtRules.includes(element3.type)) {
-                log23.warn(`Removing unsupported at-rule ${element3.type} from CSS`);
+                log24.warn(`Removing unsupported at-rule ${element3.type} from CSS`);
                 element3.type = COMMENT;
               }
             }
@@ -311372,7 +311535,7 @@ var init_mermaid_core = __esm({
       let code = processed2.code;
       text5 = code.cleaned;
       const config3 = getConfig();
-      log23.debug(config3);
+      log24.debug(config3);
       if (text5.length > (config3?.maxTextSize ?? MAX_TEXTLENGTH)) {
         text5 = MAX_TEXTLENGTH_EXCEEDED_MSG;
         code = { raw: text5, cleaned: text5 };
@@ -311459,7 +311622,7 @@ var init_mermaid_core = __esm({
       const serializeSvg = /* @__PURE__ */ __name(() => {
         root4.select(`[id="${id38}"]`).selectAll("foreignobject > *").attr("xmlns", XMLNS_XHTML_STD);
         let code2 = root4.select(enclosingDivID_selector).node().innerHTML;
-        log23.debug("config.arrowMarkerAbsolute", config3.arrowMarkerAbsolute);
+        log24.debug("config.arrowMarkerAbsolute", config3.arrowMarkerAbsolute);
         code2 = cleanUpSvgCode(code2, isSandboxed, evaluate(config3.arrowMarkerAbsolute));
         if (isSandboxed) {
           const svgEl = root4.select(enclosingDivID_selector + " svg").node();
@@ -311525,7 +311688,7 @@ var init_mermaid_core = __esm({
     setLogLevel(getConfig().logLevel);
     reset(getConfig());
     handleError = /* @__PURE__ */ __name((error3, errors, parseError) => {
-      log23.warn(error3);
+      log24.warn(error3);
       if (isDetailedError(error3)) {
         if (parseError) {
           parseError(error3.str, error3.hash);
@@ -311552,13 +311715,13 @@ var init_mermaid_core = __esm({
         await runThrowsErrors(options2);
       } catch (e3) {
         if (isDetailedError(e3)) {
-          log23.error(e3.str);
+          log24.error(e3.str);
         }
         if (mermaid.parseError) {
           mermaid.parseError(e3);
         }
         if (!options2.suppressErrors) {
-          log23.error("Use the suppressErrors option to suppress these errors");
+          log24.error("Use the suppressErrors option to suppress these errors");
           throw e3;
         }
       }
@@ -311567,7 +311730,7 @@ var init_mermaid_core = __esm({
       querySelector: ".mermaid"
     }) {
       const conf4 = mermaidAPI.getConfig();
-      log23.debug(`${!postRenderCallback ? "No " : ""}Callback function found`);
+      log24.debug(`${!postRenderCallback ? "No " : ""}Callback function found`);
       let nodesToProcess;
       if (nodes5) {
         nodesToProcess = nodes5;
@@ -311576,16 +311739,16 @@ var init_mermaid_core = __esm({
       } else {
         throw new Error("Nodes and querySelector are both undefined");
       }
-      log23.debug(`Found ${nodesToProcess.length} diagrams`);
+      log24.debug(`Found ${nodesToProcess.length} diagrams`);
       if (conf4?.startOnLoad !== void 0) {
-        log23.debug("Start On Load: " + conf4?.startOnLoad);
+        log24.debug("Start On Load: " + conf4?.startOnLoad);
         mermaidAPI.updateSiteConfig({ startOnLoad: conf4?.startOnLoad });
       }
       const idGenerator = new utils_default2.InitIDGenerator(conf4.deterministicIds, conf4.deterministicIDSeed);
       let txt;
       const errors = [];
       for (const element3 of Array.from(nodesToProcess)) {
-        log23.info("Rendering diagram: " + element3.id);
+        log24.info("Rendering diagram: " + element3.id);
         if (element3.getAttribute("data-processed")) {
           continue;
         }
@@ -311595,7 +311758,7 @@ var init_mermaid_core = __esm({
         txt = dedent(utils_default2.entityDecode(txt)).trim().replace(/<br\s*\/?>/gi, "<br/>");
         const init22 = utils_default2.detectInit(txt);
         if (init22) {
-          log23.debug("Detected early reinit: ", init22);
+          log24.debug("Detected early reinit: ", init22);
         }
         try {
           const { svg: svg3, bindFunctions: bindFunctions2 } = await render23(id38, txt, element3);
@@ -311618,7 +311781,7 @@ var init_mermaid_core = __esm({
       mermaidAPI.initialize(config3);
     }, "initialize");
     init2 = /* @__PURE__ */ __name(async function(config3, nodes5, callback) {
-      log23.warn("mermaid.init is deprecated. Please use run instead.");
+      log24.warn("mermaid.init is deprecated. Please use run instead.");
       if (config3) {
         initialize22(config3);
       }
@@ -311647,7 +311810,7 @@ var init_mermaid_core = __esm({
       if (mermaid.startOnLoad) {
         const { startOnLoad } = mermaidAPI.getConfig();
         if (startOnLoad) {
-          mermaid.run().catch((err) => log23.error("Mermaid failed to initialize", err));
+          mermaid.run().catch((err) => log24.error("Mermaid failed to initialize", err));
         }
       }
     }, "contentLoaded");
@@ -311670,7 +311833,7 @@ var init_mermaid_core = __esm({
           try {
             await f2();
           } catch (e3) {
-            log23.error("Error executing queue", e3);
+            log24.error("Error executing queue", e3);
           }
         }
       }
@@ -311685,7 +311848,7 @@ var init_mermaid_core = __esm({
               resolve2(r3);
             },
             (e3) => {
-              log23.error("Error parsing", e3);
+              log24.error("Error parsing", e3);
               mermaid.parseError?.(e3);
               rej(e3);
               reject2(e3);
@@ -311705,7 +311868,7 @@ var init_mermaid_core = __esm({
               resolve2(r3);
             },
             (e3) => {
-              log23.error("Error parsing", e3);
+              log24.error("Error parsing", e3);
               mermaid.parseError?.(e3);
               rej(e3);
               reject2(e3);
@@ -319915,7 +320078,7 @@ init_lucide_react();
 init_logger();
 import { Component } from "react";
 import { jsx as jsx4, jsxs as jsxs4 } from "react/jsx-runtime";
-var log18 = createLogger("ContentBlockErrorBoundary");
+var log19 = createLogger("ContentBlockErrorBoundary");
 var ContentBlockErrorBoundary = class extends Component {
   constructor(props) {
     super(props);
@@ -319933,7 +320096,7 @@ var ContentBlockErrorBoundary = class extends Component {
   }
   componentDidCatch(error3, errorInfo) {
     const { blockType, blockId } = this.props;
-    log18.error("\u5185\u5BB9\u5757\u6E32\u67D3\u9519\u8BEF", error3, {
+    log19.error("\u5185\u5BB9\u5757\u6E32\u67D3\u9519\u8BEF", error3, {
       blockType,
       blockId,
       componentStack: errorInfo.componentStack
@@ -319993,7 +320156,7 @@ init_misc();
 init_stores();
 import { memo as memo4, useReducer, useCallback as useCallback7, useEffect as useEffect5, useMemo as useMemo2, useRef as useRef6 } from "react";
 import { Fragment as Fragment3, jsx as jsx5, jsxs as jsxs5 } from "react/jsx-runtime";
-var log19 = createLogger("AskQuestionCard");
+var log20 = createLogger("AskQuestionCard");
 function reducer(state6, action) {
   switch (action.type) {
     case "TOGGLE_OPTION": {
@@ -320149,7 +320312,7 @@ var AskQuestionCard = memo4(function AskQuestionCard2({ block: block2 }) {
         store4?.updateQuestionBlock(block2.id, {
           status: "pending"
         });
-        log19.error(
+        log20.error(
           "\u63D0\u4EA4\u7B54\u6848\u5931\u8D25:",
           error3 instanceof Error ? error3 : new Error(String(error3))
         );
@@ -320522,7 +320685,7 @@ init_deps();
 init_misc();
 import { memo as memo5, useCallback as useCallback8, useRef as useRef7, useState as useState7 } from "react";
 import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
-var log20 = createLogger("FormCard");
+var log21 = createLogger("FormCard");
 var buildCardStyle = (style3) => {
   if (!style3) return {};
   const out = {};
@@ -320625,7 +320788,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
         private: privateSubmit
       });
     } catch (error3) {
-      log20.error(
+      log21.error(
         "\u8868\u5355\u63D0\u4EA4\u5931\u8D25:",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -320648,7 +320811,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
         formId: block2.id
       });
     } catch (error3) {
-      log20.error(
+      log21.error(
         "\u8868\u5355\u8DF3\u8FC7\u5931\u8D25:",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -320675,7 +320838,7 @@ var FormCard = memo5(function FormCard2({ block: block2 }) {
         res.name || ""
       );
     } catch (error3) {
-      log20.error(
+      log21.error(
         "\u4FDD\u5B58\u6A21\u677F\u5931\u8D25:",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -321023,7 +321186,7 @@ init_stores();
 init_misc();
 import { memo as memo6, useState as useState8, useCallback as useCallback9, useRef as useRef8, useEffect as useEffect6 } from "react";
 import { jsx as jsx7, jsxs as jsxs7 } from "react/jsx-runtime";
-var log21 = createLogger("PlanModeBlock");
+var log22 = createLogger("PlanModeBlock");
 var PLAN_STATUS_CONFIG = {
   drafting: {
     color: "text-violet-500",
@@ -321158,7 +321321,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
         await continueChat(approvalPrompt);
       }
     } catch (error3) {
-      log21.error("\u6279\u51C6\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log22.error("\u6279\u51C6\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
       useToastStore.getState().error(
         t5("plan.approveFailed", "\u6279\u51C6\u8BA1\u5212\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"),
         error3 instanceof Error ? error3.message : String(error3)
@@ -321184,7 +321347,7 @@ var PlanModeBlockRenderer = memo6(function PlanModeBlockRenderer2({
       setRejectFeedback("");
       setShowFeedbackInput(false);
     } catch (error3) {
-      log21.error("\u62D2\u7EDD\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log22.error("\u62D2\u7EDD\u8BA1\u5212\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
       useToastStore.getState().error(
         t5("plan.rejectFailed", "\u62D2\u7EDD\u8BA1\u5212\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"),
         error3 instanceof Error ? error3.message : String(error3)
@@ -322732,7 +322895,7 @@ init_misc();
 init_deps();
 import { memo as memo9, useState as useState11, useCallback as useCallback10, useRef as useRef9, useEffect as useEffect7, useMemo as useMemo4 } from "react";
 import { Fragment as Fragment4, jsx as jsx10, jsxs as jsxs10 } from "react/jsx-runtime";
-var log22 = createLogger("PermissionRequest");
+var log23 = createLogger("PermissionRequest");
 function getToolIcon(toolName) {
   const n2 = toolName.toLowerCase();
   if (n2 === "write" || n2 === "edit" || n2 === "multiedit") return FileText;
@@ -322905,7 +323068,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
         }
       }
     } catch (error3) {
-      log22.error("\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log23.error("\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
     } finally {
       setIsProcessing(false);
     }
@@ -322923,7 +323086,7 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
       )];
       const store4 = getStoreByConversationId(block2.sessionId);
       if (!store4) {
-        log22.warn("\u672A\u627E\u5230\u5BF9\u5E94\u7684 store", { conversationId: block2.sessionId });
+        log23.warn("\u672A\u627E\u5230\u5BF9\u5E94\u7684 store", { conversationId: block2.sessionId });
         return;
       }
       await store4.continueChat(
@@ -322943,12 +323106,12 @@ var PermissionRequestRenderer = memo9(function PermissionRequestRenderer2({ bloc
             const rules2 = [...new Set(approvedDenials.map(buildGlobalRule))];
             await addClaudePermissionRules2(rules2, "allow");
           } catch (e3) {
-            log22.error("\u5199\u5165\u5168\u5C40\u6743\u9650\u89C4\u5219\u5931\u8D25:", e3 instanceof Error ? e3 : new Error(String(e3)));
+            log23.error("\u5199\u5165\u5168\u5C40\u6743\u9650\u89C4\u5219\u5931\u8D25:", e3 instanceof Error ? e3 : new Error(String(e3)));
           }
         }
       }
     } catch (error3) {
-      log22.error("\u63D0\u4EA4\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
+      log23.error("\u63D0\u4EA4\u6743\u9650\u51B3\u7B56\u5931\u8D25:", error3 instanceof Error ? error3 : new Error(String(error3)));
       useToastStore.getState().error(
         t5("permission.submitFailed", "\u6743\u9650\u51B3\u7B56\u63D0\u4EA4\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5"),
         error3 instanceof Error ? error3.message : String(error3)
@@ -323430,7 +323593,7 @@ function removeDiagramState(id38) {
 
 // src/host/Chat/common/DeferredMermaidDiagram.tsx
 import { Fragment as Fragment5, jsx as jsx11, jsxs as jsxs11 } from "react/jsx-runtime";
-var log27 = createLogger("DeferredMermaidDiagram");
+var log28 = createLogger("DeferredMermaidDiagram");
 var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
   code,
   id: id38,
@@ -323477,7 +323640,7 @@ var DeferredMermaidDiagram = memo10(function DeferredMermaidDiagram2({
       setSvg(svg4);
       setRenderState("success");
     } catch (err) {
-      log27.error("Mermaid render error", err instanceof Error ? err : new Error(String(err)));
+      log28.error("Mermaid render error", err instanceof Error ? err : new Error(String(err)));
       setRenderState("error");
       setSvg("");
     }
@@ -323726,7 +323889,7 @@ var core_default = import_core5.default;
 
 // src/shims/lru-cache.ts
 init_logger();
-var log28 = createLogger("LRUCache");
+var log29 = createLogger("LRUCache");
 var LRUCache2 = class {
   constructor(config3) {
     this.capacity = config3?.maxSize ?? 100;
@@ -323745,7 +323908,7 @@ var LRUCache2 = class {
     }
     this.moveToHead(node2);
     if (this.verbose) {
-      log28.debug("Cache hit", { key: String(key) });
+      log29.debug("Cache hit", { key: String(key) });
     }
     return node2.value;
   }
@@ -323758,7 +323921,7 @@ var LRUCache2 = class {
       node2.value = value3;
       this.moveToHead(node2);
       if (this.verbose) {
-        log28.debug("Cache updated", { key: String(key) });
+        log29.debug("Cache updated", { key: String(key) });
       }
     } else {
       const newNode = {
@@ -323773,7 +323936,7 @@ var LRUCache2 = class {
         this.removeTail();
       }
       if (this.verbose) {
-        log28.debug("Cache added", { key: String(key), size: this.cache.size, capacity: this.capacity });
+        log29.debug("Cache added", { key: String(key), size: this.cache.size, capacity: this.capacity });
       }
     }
   }
@@ -323803,7 +323966,7 @@ var LRUCache2 = class {
     }
     this.cache.delete(key);
     if (this.verbose) {
-      log28.debug("Cache deleted", { key: String(key) });
+      log29.debug("Cache deleted", { key: String(key) });
     }
     return true;
   }
@@ -323815,7 +323978,7 @@ var LRUCache2 = class {
     this.head = null;
     this.tail = null;
     if (this.verbose) {
-      log28.debug("Cache cleared");
+      log29.debug("Cache cleared");
     }
   }
   /**
@@ -323917,7 +324080,7 @@ var LRUCache2 = class {
     this.tail = this.tail.prev;
     this.cache.delete(removedKey);
     if (this.verbose) {
-      log28.debug("Cache evicted", { key: String(removedKey) });
+      log29.debug("Cache evicted", { key: String(removedKey) });
     }
   }
 };
@@ -331880,7 +332043,7 @@ function useChatSessionId() {
 init_logger();
 init_services();
 import { jsx as jsx21, jsxs as jsxs20 } from "react/jsx-runtime";
-var log29 = createLogger("PluginCardHost");
+var log30 = createLogger("PluginCardHost");
 function LoadingFallback() {
   return /* @__PURE__ */ jsxs20("div", { className: "my-2 flex items-center gap-2 rounded-lg border border-border bg-background-elevated px-3 py-3", children: [
     /* @__PURE__ */ jsx21("div", { className: "h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" }),
@@ -331974,7 +332137,7 @@ function PluginCardHost({ block: block2, onSendToChat }) {
       setComponent(() => C5);
     } catch (e3) {
       const message2 = e3 instanceof Error ? e3.message : String(e3);
-      log29.warn("\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u56DE\u843D\u515C\u5E95\u6E32\u67D3", { toolName: block2.toolName, cardKey, error: message2 });
+      log30.warn("\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u56DE\u843D\u515C\u5E95\u6E32\u67D3", { toolName: block2.toolName, cardKey, error: message2 });
       setError(message2);
     } finally {
       setLoading(false);
@@ -332487,7 +332650,7 @@ init_misc();
 init_logger();
 import { Component as Component3, Suspense as Suspense2, useCallback as useCallback17, useEffect as useEffect12, useState as useState21 } from "react";
 import { jsx as jsx25, jsxs as jsxs24 } from "react/jsx-runtime";
-var log30 = createLogger("BlockCardOverrideHost");
+var log31 = createLogger("BlockCardOverrideHost");
 function blockToCardProps(block2, entry) {
   const status = block2.type === "tool_call" ? block2.status === "completed" ? "ready" : block2.status === "failed" ? "failed" : "pending" : "ready";
   return {
@@ -332511,7 +332674,7 @@ var OverrideErrorBoundary = class extends Component3 {
     return { hasError: true };
   }
   componentDidCatch(error3, info2) {
-    log30.error("\u63D2\u4EF6\u8986\u76D6\u6E32\u67D3\u5D29\u6E83", error3, { componentStack: info2.componentStack });
+    log31.error("\u63D2\u4EF6\u8986\u76D6\u6E32\u67D3\u5D29\u6E83", error3, { componentStack: info2.componentStack });
     this.props.onError(error3);
   }
   render() {
@@ -332552,7 +332715,7 @@ function BlockCardOverrideHost({ block: block2, entry, cardKey }) {
       setComponent(() => C5);
     } catch (e3) {
       const message2 = e3 instanceof Error ? e3.message : String(e3);
-      log30.warn("\u63D2\u4EF6\u8986\u76D6\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u663E\u793A\u9519\u8BEF\u5361\u7247", {
+      log31.warn("\u63D2\u4EF6\u8986\u76D6\u5361\u7247\u52A0\u8F7D\u5931\u8D25\uFF0C\u663E\u793A\u9519\u8BEF\u5361\u7247", {
         cardKey,
         pluginId: entry.pluginId,
         error: message2
@@ -335583,7 +335746,7 @@ init_sessionDirectoryStore();
 init_misc();
 init_misc();
 import { jsx as jsx39, jsxs as jsxs34 } from "react/jsx-runtime";
-var log31 = createLogger("WorkspaceMenu");
+var log32 = createLogger("WorkspaceMenu");
 function WorkspaceMenu2({ sessionId, anchorEl, onClose }) {
   const { t: t5 } = useTranslation("workspace");
   const workspacesRaw = useWorkspaceStore((state6) => state6.workspaces);
@@ -335632,11 +335795,11 @@ function WorkspaceMenu2({ sessionId, anchorEl, onClose }) {
   const isLocked = session.workspaceLocked || false;
   const handleWorkspaceClick = (workspaceId) => {
     if (isLocked) return;
-    log31.debug("Switch workspace", { sessionId, workspaceId });
+    log32.debug("Switch workspace", { sessionId, workspaceId });
     updateSessionWorkspace2(sessionId, workspaceId);
   };
   const handleToggleContext = (workspaceId) => {
-    log31.debug("Toggle context workspace", { sessionId, workspaceId });
+    log32.debug("Toggle context workspace", { sessionId, workspaceId });
     if (contextWorkspaceIds.includes(workspaceId)) {
       removeContextWorkspace2(sessionId, workspaceId);
     } else {
@@ -335776,7 +335939,7 @@ function WorkspaceMenu2({ sessionId, anchorEl, onClose }) {
             {
               onClick: (e3) => {
                 e3.stopPropagation();
-                log31.debug("Detach workspace -> free session", { sessionId });
+                log32.debug("Detach workspace -> free session", { sessionId });
                 updateSessionWorkspace2(sessionId, null);
               },
               className: "w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs text-text-tertiary hover:text-danger hover:bg-danger/10 rounded transition-colors",
@@ -336140,7 +336303,7 @@ init_useKernelSessionState();
 init_stores();
 init_logger();
 init_i18n();
-var log32 = createLogger("DispatchTask");
+var log33 = createLogger("DispatchTask");
 var ACTIVITY_REPORT_INTERVAL_MS = 3e3;
 async function reportStatus(dispatchId, status, extra) {
   try {
@@ -336161,7 +336324,7 @@ async function reportStatus(dispatchId, status, extra) {
       });
     }
   } catch (e3) {
-    log32.warn("\u56DE\u62A5\u6D3E\u53D1\u72B6\u6001\u5931\u8D25", { dispatchId, status, error: String(e3) });
+    log33.warn("\u56DE\u62A5\u6D3E\u53D1\u72B6\u6001\u5931\u8D25", { dispatchId, status, error: String(e3) });
   }
 }
 function extractSummary2(sessionId) {
@@ -336229,7 +336392,7 @@ function attachDispatchSessionHandler(dispatchId, sessionId) {
       const realConversationId = aiEvent.sessionId;
       if (realConversationId && realConversationId !== reportedConversationId) {
         reportedConversationId = realConversationId;
-        log32.info("\u56DE\u5199\u6D3E\u53D1\u4F1A\u8BDD\u771F\u5B9E conversationId", { dispatchId, realConversationId });
+        log33.info("\u56DE\u5199\u6D3E\u53D1\u4F1A\u8BDD\u771F\u5B9E conversationId", { dispatchId, realConversationId });
         void reportStatus(dispatchId, "running", { conversationId: realConversationId });
       }
     }
@@ -336268,7 +336431,7 @@ function attachDispatchSessionHandler(dispatchId, sessionId) {
 async function handleDispatchTaskRequest(event3, options2) {
   const { dispatchId, sessionId, prompt } = event3;
   if (!dispatchId || !sessionId || !prompt?.trim()) {
-    log32.warn("\u6D3E\u53D1\u8BF7\u6C42\u7F3A\u5C11\u5FC5\u8981\u5B57\u6BB5\uFF0C\u5FFD\u7565", { dispatchId, sessionId });
+    log33.warn("\u6D3E\u53D1\u8BF7\u6C42\u7F3A\u5C11\u5FC5\u8981\u5B57\u6BB5\uFF0C\u5FFD\u7565", { dispatchId, sessionId });
     return;
   }
   const title2 = event3.title?.trim() || i18n_default.t("chat:dispatch.defaultTitle", "\u6D3E\u53D1\u4EFB\u52A1");
@@ -336281,7 +336444,7 @@ async function handleDispatchTaskRequest(event3, options2) {
       })
     );
     if (!allowed) {
-      log32.info("\u7528\u6237\u62D2\u7EDD\u6D3E\u53D1", { dispatchId });
+      log33.info("\u7528\u6237\u62D2\u7EDD\u6D3E\u53D1", { dispatchId });
       void reportStatus(dispatchId, "failed", {
         summary: i18n_default.t("chat:dispatch.userDeclined", "\u7528\u6237\u62D2\u7EDD\u4E86\u672C\u6B21\u6D3E\u53D1")
       });
@@ -336290,7 +336453,7 @@ async function handleDispatchTaskRequest(event3, options2) {
   }
   const { workDir, workspaceId } = resolveWorkspace(event3);
   const engineId = resolveEngineId(event3);
-  log32.info("\u6536\u5230\u6D3E\u53D1\u8BF7\u6C42", { dispatchId, sessionId, title: title2, workDir, engineId, role: event3.role });
+  log33.info("\u6536\u5230\u6D3E\u53D1\u8BF7\u6C42", { dispatchId, sessionId, title: title2, workDir, engineId, role: event3.role });
   const manager2 = sessionStoreManager2.getState();
   manager2.createSession({
     id: sessionId,
@@ -336330,12 +336493,12 @@ async function handleDispatchTaskRequest(event3, options2) {
         permissionMode: event3.permissionMode || void 0
       }
     });
-    log32.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u542F\u52A8", { dispatchId, sessionId, conversationId });
+    log33.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u542F\u52A8", { dispatchId, sessionId, conversationId });
     useDispatchStore.getState().updateTask(dispatchId, { status: "running" });
     void reportStatus(dispatchId, "running", { conversationId });
   } catch (e3) {
     const message2 = e3 instanceof Error ? e3.message : String(e3);
-    log32.error("\u6D3E\u53D1\u4F1A\u8BDD\u542F\u52A8\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message2), { dispatchId });
+    log33.error("\u6D3E\u53D1\u4F1A\u8BDD\u542F\u52A8\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message2), { dispatchId });
     unsubscribe();
     useDispatchStore.getState().finishTask(dispatchId, "failed", message2, message2);
     void reportStatus(dispatchId, "failed", { summary: message2 });
@@ -336464,15 +336627,15 @@ async function interruptDispatchedTask(dispatchId) {
   const store4 = sessionStoreManager2.getState().stores.get(task.sessionId);
   const conversationId = store4?.getState().conversationId;
   if (!conversationId) {
-    log32.warn("\u4E2D\u65AD\u5931\u8D25\uFF1A\u6D3E\u53D1\u4F1A\u8BDD\u65E0 conversationId", { dispatchId });
+    log33.warn("\u4E2D\u65AD\u5931\u8D25\uFF1A\u6D3E\u53D1\u4F1A\u8BDD\u65E0 conversationId", { dispatchId });
     return;
   }
   const engineId = sessionStoreManager2.getState().sessionMetadata.get(task.sessionId)?.engineId;
   try {
     await aiChatDispatch({ action: "interrupt", sessionId: conversationId, engineId });
-    log32.info("\u6D3E\u53D1\u4EFB\u52A1\u5DF2\u4E2D\u65AD", { dispatchId });
+    log33.info("\u6D3E\u53D1\u4EFB\u52A1\u5DF2\u4E2D\u65AD", { dispatchId });
   } catch (e3) {
-    log32.error("\u4E2D\u65AD\u6D3E\u53D1\u4EFB\u52A1\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { dispatchId });
+    log33.error("\u4E2D\u65AD\u6D3E\u53D1\u4EFB\u52A1\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), { dispatchId });
   }
 }
 async function continueDispatchedTask(dispatchId, prompt, options2) {
@@ -336481,11 +336644,11 @@ async function continueDispatchedTask(dispatchId, prompt, options2) {
   const dispatchStore = useDispatchStore.getState();
   const task = dispatchStore.getTask(dispatchId);
   if (!task) {
-    log32.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u672C\u5730\u65E0\u4EFB\u52A1\u89C6\u56FE", { dispatchId });
+    log33.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u672C\u5730\u65E0\u4EFB\u52A1\u89C6\u56FE", { dispatchId });
     return false;
   }
   if (task.status === "running" || task.status === "pending") {
-    log32.warn("\u7EED\u6D3E\u62D2\u7EDD\uFF1A\u4EFB\u52A1\u4ECD\u5728\u6267\u884C", { dispatchId });
+    log33.warn("\u7EED\u6D3E\u62D2\u7EDD\uFF1A\u4EFB\u52A1\u4ECD\u5728\u6267\u884C", { dispatchId });
     return false;
   }
   const manager2 = sessionStoreManager2.getState();
@@ -336501,10 +336664,10 @@ async function continueDispatchedTask(dispatchId, prompt, options2) {
     });
     store4 = sessionStoreManager2.getState().stores.get(task.sessionId);
     store4?.setState({ conversationId });
-    log32.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u6062\u590D\uFF08\u5386\u53F2\u672A\u52A0\u8F7D\uFF09", { dispatchId, sessionId: task.sessionId });
+    log33.info("\u6D3E\u53D1\u4F1A\u8BDD\u5DF2\u6062\u590D\uFF08\u5386\u53F2\u672A\u52A0\u8F7D\uFF09", { dispatchId, sessionId: task.sessionId });
   }
   if (!store4 || !conversationId) {
-    log32.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0E conversationId \u5747\u4E0D\u53EF\u7528", { dispatchId });
+    log33.warn("\u7EED\u6D3E\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0E conversationId \u5747\u4E0D\u53EF\u7528", { dispatchId });
     return false;
   }
   sessionStoreManager2.getState().addToBackground(task.sessionId);
@@ -336527,11 +336690,11 @@ async function continueDispatchedTask(dispatchId, prompt, options2) {
       }
     });
     void reportStatus(dispatchId, "running", { conversationId });
-    log32.info("\u6D3E\u53D1\u4EFB\u52A1\u7EED\u6D3E\u6210\u529F", { dispatchId });
+    log33.info("\u6D3E\u53D1\u4EFB\u52A1\u7EED\u6D3E\u6210\u529F", { dispatchId });
     return true;
   } catch (e3) {
     const message2 = e3 instanceof Error ? e3.message : String(e3);
-    log32.error("\u7EED\u6D3E\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message2), { dispatchId });
+    log33.error("\u7EED\u6D3E\u5931\u8D25", e3 instanceof Error ? e3 : new Error(message2), { dispatchId });
     unsubscribe();
     useDispatchStore.getState().finishTask(dispatchId, "failed", message2, message2);
     void reportStatus(dispatchId, "failed", { summary: message2 });
@@ -336565,14 +336728,14 @@ __export(sessionArchive_exports, {
 });
 init_deps();
 init_logger();
-var log33 = createLogger("SessionBackendMessages");
+var log34 = createLogger("SessionBackendMessages");
 async function loadBackendMessages2(conversationId) {
   if (!conversationId) return [];
   try {
     const entries2 = await invoke("message_read", { conversationId });
     return (entries2 ?? []).map((e3) => e3?.content).filter((c4) => !!c4 && typeof c4 === "object" && "type" in c4);
   } catch (e3) {
-    log33.warn("\u8BFB\u53D6\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+    log34.warn("\u8BFB\u53D6\u540E\u7AEF\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
     return [];
   }
 }
@@ -336701,7 +336864,7 @@ var useToastStore2 = create()(
 // src/host/stores/compactHandoffStore.ts
 init_sessionStoreManager();
 init_contextCompactHandoff();
-var log34 = createLogger("CompactHandoffStore");
+var log35 = createLogger("CompactHandoffStore");
 async function onCopyPromptReady(briefing, sourceTitle) {
   try {
     await copyToClipboard(briefing);
@@ -336716,7 +336879,7 @@ async function onCopyPromptReady(briefing, sourceTitle) {
       i18n_default.t("chat:compactHandoff.failToast"),
       i18n_default.t("chat:compactHandoff.copyPromptCopyFailed")
     );
-    log34.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log35.error("\u590D\u5236\u7B80\u62A5\u5230\u526A\u8D34\u677F\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 var activeAbort = null;
@@ -336751,10 +336914,10 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
           }
         });
         if (cancelled) {
-          log34.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
+          log35.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u88AB\u7528\u6237\u53D6\u6D88", { id: id38 });
         } else if (result.ok && result.briefing && params.mode === "copyPrompt") {
           await onCopyPromptReady(result.briefing, params.sourceTitle);
-          log34.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
+          log35.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210\uFF08copyPrompt\uFF09", { briefingLength: result.briefing.length });
         } else if (result.ok && result.newSessionId) {
           const newSessionId = result.newSessionId;
           useToastStore2.getState().addToast({
@@ -336768,7 +336931,7 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
               onClick: () => sessionStoreManager2.getState().switchSession(newSessionId)
             }
           });
-          log34.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
+          log35.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5B8C\u6210", { newSessionId });
         } else {
           useToastStore2.getState().error(
             i18n_default.t("chat:compactHandoff.failToast"),
@@ -336777,10 +336940,10 @@ var useCompactHandoffStore2 = create((set5, get6) => ({
         }
       } catch (e3) {
         if (cancelled) {
-          log34.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
+          log35.info("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u53D6\u6D88\u5B8C\u6210", { id: id38 });
         } else {
           useToastStore2.getState().error(i18n_default.t("chat:compactHandoff.failToast"), String(e3));
-          log34.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
+          log35.error("\u540E\u53F0\u538B\u7F29\u4EA4\u63A5\u5F02\u5E38", e3 instanceof Error ? e3 : new Error(String(e3)));
         }
       } finally {
         if (activeAbort === abort) activeAbort = null;
@@ -336805,7 +336968,7 @@ if (typeof window !== "undefined") {
 
 // src/bootstrap.ts
 init_logger();
-var log35 = createLogger("chat-desk:bootstrap");
+var log36 = createLogger("chat-desk:bootstrap");
 var bootstrapped = false;
 function ensureChatDomainBootstrapped() {
   if (bootstrapped) return;
@@ -336829,10 +336992,10 @@ function ensureChatDomainBootstrapped() {
       ;
       remoteSessionFollower.start?.();
     } catch (e3) {
-      log35.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
+      log36.warn("remoteSessionFollower \u542F\u52A8\u5931\u8D25\uFF08\u4E0D\u963B\u585E\u9762\u677F\uFF09", { error: String(e3) });
     }
   } catch (e3) {
-    log35.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
+    log36.error("chat-desk \u4F1A\u8BDD\u57DF\u5F15\u5BFC\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)));
   }
 }
 
@@ -337287,7 +337450,7 @@ init_deps();
 init_path();
 init_logger();
 init_deps();
-var log36 = createLogger("ContextBlockRegistry");
+var log37 = createLogger("ContextBlockRegistry");
 var TCB_DIR = ".polaris-handoff";
 var kindRegistry = /* @__PURE__ */ new Map();
 function registerContextBlockKind(kind, spec) {
@@ -337343,7 +337506,7 @@ async function materializeContextBlocks(blocks2, workspacePath) {
         };
       }
     } catch (e3) {
-      log36.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
+      log37.warn("\u4E0A\u4E0B\u6587\u5757\u843D\u76D8\u5931\u8D25\uFF0C\u964D\u7EA7\u4E3A\u672B\u5C3E\u5168\u6587\u76F4\u62FC", { error: String(e3) });
     }
   }
   const body = formatContextBlocks(blocks2);
@@ -337361,7 +337524,7 @@ async function packContextBlocksAsReference(blocks2, workspacePath) {
   const relPath = `${TCB_DIR}/${fileName}`;
   const absPath = joinPath(workspacePath, relPath);
   await invoke("create_file", { path: absPath, content: markdown2 });
-  log36.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
+  log37.info("\u5F15\u7528\u4E0A\u4E0B\u6587\u5DF2\u843D\u76D8", { absPath, blockCount: blocks2.length });
   return { hasContent: true, fileRef: { relPath, absPath } };
 }
 function formatContextBlock(block2) {
@@ -338038,7 +338201,7 @@ async function deleteCustomAgent(slug) {
 // src/session-config/agentStore.ts
 init_bridgeTransport();
 init_logger();
-var log37 = createLogger("AgentStore");
+var log38 = createLogger("AgentStore");
 function toCatalogEntry(c4) {
   return {
     slug: c4.slug,
@@ -338070,14 +338233,14 @@ var useAgentStore2 = create()((set5, get6) => ({
       const agents = await invoke2("simple_ai_list_agents");
       set5({ simpleAiAgents: agents });
     } catch (err) {
-      log37.warn("SimpleAI agent list load failed", { error: String(err) });
+      log38.warn("SimpleAI agent list load failed", { error: String(err) });
     }
   },
   loadRosters: async () => {
     try {
       set5({ rosters: await getRosters() });
     } catch (err) {
-      log37.warn("Rosters load failed", { error: String(err) });
+      log38.warn("Rosters load failed", { error: String(err) });
     }
   },
   loadCustomAgents: async () => {
@@ -338085,7 +338248,7 @@ var useAgentStore2 = create()((set5, get6) => ({
       const customAgents = await listCustomAgents();
       set5({ customAgents, catalog: customAgents.map(toCatalogEntry), loaded: true });
     } catch (err) {
-      log37.warn("Custom agents load failed", { error: String(err) });
+      log38.warn("Custom agents load failed", { error: String(err) });
     }
   },
   saveCustom: async (params) => {
@@ -338243,7 +338406,7 @@ init_misc();
 init_deps();
 init_types();
 import { Fragment as Fragment17, jsx as jsx51, jsxs as jsxs45 } from "react/jsx-runtime";
-var log38 = createLogger("ChatInput");
+var log39 = createLogger("ChatInput");
 var OPTIMIZE_ENGINE_OPTIONS = [
   { id: "claude-code", label: "Claude", Icon: Bot },
   { id: "simple-ai", label: "Simple", Icon: Zap }
@@ -338385,7 +338548,7 @@ function ChatInput({
     };
   }, [activeSessionId, cancelPersistDraft]);
   useEffect23(() => {
-    log38.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
+    log39.info("[TCB] ChatInput \u540C\u6B65 effect \u89E6\u53D1", {
       textLen: inputDraft.text?.length,
       attachLen: inputDraft.attachments?.length,
       blockLen: inputDraft.contextBlocks?.length ?? 0
@@ -338430,7 +338593,7 @@ function ChatInput({
       }));
       setConversationMatches(items);
     } catch (e3) {
-      log38.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
+      log39.warn("\u52A0\u8F7D\u5386\u53F2\u5BF9\u8BDD\u5217\u8868\u5931\u8D25", { error: String(e3) });
       setConversationMatches([]);
     }
   }, []);
@@ -338464,7 +338627,7 @@ function ChatInput({
   const addAttachment = useCallback25(async (file, source) => {
     const validation = validateAttachment(file);
     if (!validation.valid) {
-      log38.warn("Attachment validation failed", { error: validation.error });
+      log39.warn("Attachment validation failed", { error: validation.error });
       useToastStore.getState().error(validation.error);
       return;
     }
@@ -338472,7 +338635,7 @@ function ChatInput({
     const newAttachments = [...attachments, attachment];
     const totalValidation = validateAttachments(newAttachments);
     if (!totalValidation.valid) {
-      log38.warn("Total attachment validation failed", { error: totalValidation.error });
+      log39.warn("Total attachment validation failed", { error: totalValidation.error });
       useToastStore.getState().error(totalValidation.error);
       return;
     }
@@ -338951,7 +339114,7 @@ function ChatInput({
     setSelectedIndex(0);
   }, [conversationMatches, conversationMode]);
   const resolveSnippetAutoVars = useCallback25((content) => {
-    return resolveTemplateVariables(content, {
+    return resolveTemplateVariables2(content, {
       workspaceName: currentWorkspace?.name ?? "",
       workspacePath: currentWorkspace?.path ?? "",
       contextWorkspaces: []
@@ -339075,7 +339238,7 @@ function ChatInput({
           const replaced = beforeCursor.replace(/@对话(?:\s+\S*)?$/, `@${fileRef.relPath} `) + afterCursor;
           setLocalText(replaced);
           debouncedPersistDraft(replaced, attachments);
-          log38.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
+          log39.info("@\u5BF9\u8BDD \u5F15\u7528\u5DF2\u63D2\u5165", { externalId: conv.externalId, ref: fileRef.relPath });
           setTimeout(() => {
             textarea.focus();
             const newCursorPos = replaced.length - afterCursor.length;
@@ -339083,7 +339246,7 @@ function ChatInput({
           }, 0);
         } catch (e3) {
           const err = e3 instanceof Error ? e3 : new Error(String(e3));
-          log38.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
+          log39.error("@\u5BF9\u8BDD \u5F15\u7528\u63D2\u5165\u5931\u8D25", err, { externalId: conv.externalId });
           useToastStore.getState().error(t5("handoff.failToast"), err.message);
         }
       })();
@@ -341849,7 +342012,7 @@ init_logger();
 function sessionManager() {
   return window.__POLARIS_APP_CORE__?.stores?.sessionStoreManager;
 }
-var log39 = createLogger("RemoteSessionFollower");
+var log40 = createLogger("RemoteSessionFollower");
 var DISCOVERY_INTERVAL_MS = 2e3;
 var store3 = createStore((set5, get6) => ({
   sessions: /* @__PURE__ */ new Map(),
@@ -341860,7 +342023,7 @@ var store3 = createStore((set5, get6) => ({
     set5({ followerStarted: true });
     void discoveryLoop();
     attachLiveListener();
-    log39.info("\u8DE8\u7AEF\u4F1A\u8BDD\u8DDF\u968F\u5DF2\u542F\u52A8");
+    log40.info("\u8DE8\u7AEF\u4F1A\u8BDD\u8DDF\u968F\u5DF2\u542F\u52A8");
   },
   stopFollower: () => {
     set5({ followerStarted: false });
@@ -341889,10 +342052,10 @@ async function discoveryLoop() {
     lastSeq = 0;
   }
   await seedRunningSessions().catch(
-    (e3) => log39.warn("running \u4F1A\u8BDD\u5168\u91CF\u8865\u9F50\u5931\u8D25", { error: String(e3) })
+    (e3) => log40.warn("running \u4F1A\u8BDD\u5168\u91CF\u8865\u9F50\u5931\u8D25", { error: String(e3) })
   );
   discoveryTimer = setInterval(() => {
-    void pollOnce().catch((e3) => log39.debug("\u53D1\u73B0\u8F6E\u8BE2\u5931\u8D25", { error: String(e3) }));
+    void pollOnce().catch((e3) => log40.debug("\u53D1\u73B0\u8F6E\u8BE2\u5931\u8D25", { error: String(e3) }));
   }, DISCOVERY_INTERVAL_MS);
 }
 async function seedRunningSessions() {
@@ -342022,7 +342185,7 @@ async function backfillSession(conversationId) {
       upsertSession(conversationId, { backfilled: true });
     }
   } catch (e3) {
-    log39.warn("\u56DE\u8865\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
+    log40.warn("\u56DE\u8865\u4F1A\u8BDD\u6D88\u606F\u5931\u8D25", { conversationId, error: String(e3) });
   }
 }
 function entryToFollowerMessage(e3) {
@@ -342176,11 +342339,11 @@ function applyLiveEvent(conversationId, s3, payload) {
 async function joinRemoteSession(conversationId) {
   const s3 = store3.getState().sessions.get(conversationId);
   if (!s3) {
-    log39.warn("\u52A0\u5165\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0D\u5728\u8DDF\u968F\u5217\u8868", { conversationId });
+    log40.warn("\u52A0\u5165\u5931\u8D25\uFF1A\u4F1A\u8BDD\u4E0D\u5728\u8DDF\u968F\u5217\u8868", { conversationId });
     return null;
   }
   if (isLocalConversation(conversationId)) {
-    log39.info("\u8BE5\u4F1A\u8BDD\u5DF2\u5728\u672C\u7AEF\uFF0C\u76F4\u63A5\u5207\u6362", { conversationId });
+    log40.info("\u8BE5\u4F1A\u8BDD\u5DF2\u5728\u672C\u7AEF\uFF0C\u76F4\u63A5\u5207\u6362", { conversationId });
     return null;
   }
   try {
@@ -342240,17 +342403,17 @@ async function joinRemoteSession(conversationId) {
           }
         }
       } catch (e3) {
-        log39.warn("\u52A0\u5165\u4F1A\u8BDD\u7684\u6D41\u5F0F\u72B6\u6001\u6821\u6B63\u5931\u8D25", {
+        log40.warn("\u52A0\u5165\u4F1A\u8BDD\u7684\u6D41\u5F0F\u72B6\u6001\u6821\u6B63\u5931\u8D25", {
           conversationId,
           error: e3 instanceof Error ? e3.message : String(e3)
         });
       }
     }
     removeFollowerEntry(conversationId);
-    log39.info("\u8FDC\u7AEF\u4F1A\u8BDD\u5DF2\u52A0\u5165\u672C\u7AEF\u7A97\u53E3", { conversationId, sessionId, title: title2, engineId });
+    log40.info("\u8FDC\u7AEF\u4F1A\u8BDD\u5DF2\u52A0\u5165\u672C\u7AEF\u7A97\u53E3", { conversationId, sessionId, title: title2, engineId });
     return sessionId;
   } catch (e3) {
-    log39.error("\u52A0\u5165\u8FDC\u7AEF\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), {
+    log40.error("\u52A0\u5165\u8FDC\u7AEF\u4F1A\u8BDD\u5931\u8D25", e3 instanceof Error ? e3 : new Error(String(e3)), {
       conversationId
     });
     return null;
@@ -342455,7 +342618,7 @@ init_misc();
 init_misc();
 init_logger();
 import { Fragment as Fragment20, jsx as jsx65, jsxs as jsxs59 } from "react/jsx-runtime";
-var log40 = createLogger("QuickSwitchContent");
+var log41 = createLogger("QuickSwitchContent");
 var QuickSwitchContent = memo38(function QuickSwitchContent2({
   sessions,
   workspace,
@@ -342489,13 +342652,13 @@ var QuickSwitchContent = memo38(function QuickSwitchContent2({
     }
   }, [isWorkspaceDropdownOpen, workspaceDropdownOpenRef]);
   const handleToggleDropdown = (open3) => {
-    log40.info("handleToggleDropdown", { open: open3, currentRef: workspaceDropdownOpenRef?.current });
+    log41.info("handleToggleDropdown", { open: open3, currentRef: workspaceDropdownOpenRef?.current });
     if (workspaceDropdownOpenRef) {
       workspaceDropdownOpenRef.current = open3;
     }
     if (open3 && workspaceButtonRef.current) {
       const rect2 = workspaceButtonRef.current.getBoundingClientRect();
-      log40.info("\u7ACB\u5373\u8BA1\u7B97\u4E0B\u62C9\u4F4D\u7F6E", { top: rect2.bottom + 4, left: rect2.left });
+      log41.info("\u7ACB\u5373\u8BA1\u7B97\u4E0B\u62C9\u4F4D\u7F6E", { top: rect2.bottom + 4, left: rect2.left });
       setDropdownPosition({
         top: rect2.bottom + 4,
         left: rect2.left
@@ -342505,14 +342668,14 @@ var QuickSwitchContent = memo38(function QuickSwitchContent2({
   };
   useEffect28(() => {
     if (!isWorkspaceDropdownOpen) return;
-    log40.info("\u6CE8\u518C\u70B9\u51FB\u5916\u90E8\u76D1\u542C");
+    log41.info("\u6CE8\u518C\u70B9\u51FB\u5916\u90E8\u76D1\u542C");
     const handleClickOutside = (e3) => {
       const target = e3.target;
       const clickedButton = workspaceButtonRef.current?.contains(target);
       const clickedDropdown = !!target.closest("[data-workspace-dropdown]");
-      log40.info("handleClickOutside", { clickedButton, clickedDropdown, targetTag: target.tagName });
+      log41.info("handleClickOutside", { clickedButton, clickedDropdown, targetTag: target.tagName });
       if (workspaceButtonRef.current && !clickedButton && !clickedDropdown) {
-        log40.info("\u70B9\u51FB\u5916\u90E8\uFF0C\u5173\u95ED\u4E0B\u62C9");
+        log41.info("\u70B9\u51FB\u5916\u90E8\uFF0C\u5173\u95ED\u4E0B\u62C9");
         handleToggleDropdown(false);
       }
     };
@@ -343741,7 +343904,7 @@ function readSessionMessages(conversationId, afterTimestamp, limit2) {
 init_deps();
 init_logger();
 import { jsx as jsx68, jsxs as jsxs62 } from "react/jsx-runtime";
-var log41 = createLogger("QuickSwitchPanel");
+var log42 = createLogger("QuickSwitchPanel");
 var SHOW_DELAY2 = 0;
 var HIDE_DELAY2 = 150;
 var PINNED_STORAGE_KEY = "quick-switch-panel-pinned";
@@ -343793,24 +343956,24 @@ var QuickSwitchPanel = memo40(function QuickSwitchPanel2({
     }, SHOW_DELAY2);
   }, [clearTimers]);
   const scheduleHide = useCallback34(() => {
-    log41.info("scheduleHide \u8C03\u7528", {
+    log42.info("scheduleHide \u8C03\u7528", {
       dropdownRefCurrent: workspaceDropdownOpenRef.current,
       isHoveringTrigger: isHoveringTriggerRef.current,
       isHoveringPanel: isHoveringPanelRef.current,
       isPinned
     });
     if (isPinned) {
-      log41.info("\u9762\u677F\u5DF2\u9489\u4F4F\uFF0C\u8DF3\u8FC7\u5173\u95ED");
+      log42.info("\u9762\u677F\u5DF2\u9489\u4F4F\uFF0C\u8DF3\u8FC7\u5173\u95ED");
       return;
     }
     clearTimers();
     hideTimerRef.current = setTimeout(() => {
       if (workspaceDropdownOpenRef.current) {
-        log41.info("\u4E0B\u62C9\u6253\u5F00\u4E2D\uFF0C\u8DF3\u8FC7\u5173\u95ED\u9762\u677F");
+        log42.info("\u4E0B\u62C9\u6253\u5F00\u4E2D\uFF0C\u8DF3\u8FC7\u5173\u95ED\u9762\u677F");
         return;
       }
       if (!isHoveringTriggerRef.current && !isHoveringPanelRef.current) {
-        log41.info("\u5173\u95ED\u9762\u677F");
+        log42.info("\u5173\u95ED\u9762\u677F");
         setIsPanelVisible(false);
       }
     }, HIDE_DELAY2);
@@ -343827,12 +343990,12 @@ var QuickSwitchPanel = memo40(function QuickSwitchPanel2({
     scheduleHide();
   }, [scheduleHide]);
   const handlePanelMouseEnter = useCallback34(() => {
-    log41.info("handlePanelMouseEnter");
+    log42.info("handlePanelMouseEnter");
     isHoveringPanelRef.current = true;
     clearTimers();
   }, [clearTimers]);
   const handlePanelMouseLeave = useCallback34(() => {
-    log41.info("handlePanelMouseLeave");
+    log42.info("handlePanelMouseLeave");
     isHoveringPanelRef.current = false;
     scheduleHide();
   }, [scheduleHide]);
@@ -343869,7 +344032,7 @@ var QuickSwitchPanel = memo40(function QuickSwitchPanel2({
     const newPinned = !isPinned;
     setIsPinned(newPinned);
     savePinnedState(newPinned);
-    log41.info("\u5207\u6362\u9489\u4F4F\u72B6\u6001", { newPinned });
+    log42.info("\u5207\u6362\u9489\u4F4F\u72B6\u6001", { newPinned });
   }, [isPinned]);
   const sessionList = useMemo25(() => {
     const visibleSessions = sessions.filter((s3) => !s3.silentMode);
@@ -343940,7 +344103,7 @@ var QuickSwitchPanel = memo40(function QuickSwitchPanel2({
       try {
         const status = await getSessionStatus(activeSessionId);
         if (!status) {
-          log41.warn("\u4F1A\u8BDD\u5DF2\u4E0D\u5B58\u5728\uFF0C\u53D6\u6D88\u5BFC\u51FA", { activeSessionId });
+          log42.warn("\u4F1A\u8BDD\u5DF2\u4E0D\u5B58\u5728\uFF0C\u53D6\u6D88\u5BFC\u51FA", { activeSessionId });
           return;
         }
       } catch {
@@ -343948,17 +344111,17 @@ var QuickSwitchPanel = memo40(function QuickSwitchPanel2({
       const entries2 = await readSessionMessages(activeSessionId);
       const messages = entries2.map((e3) => e3.content);
       if (messages.length === 0) {
-        log41.info("\u4F1A\u8BDD\u65E0\u6D88\u606F\uFF0C\u8DF3\u8FC7\u5BFC\u51FA", { activeSessionId });
+        log42.info("\u4F1A\u8BDD\u65E0\u6D88\u606F\uFF0C\u8DF3\u8FC7\u5BFC\u51FA", { activeSessionId });
         return;
       }
       const content = exportToMarkdown(messages);
       const fileName = generateFileName("md");
       const filePath = await saveChatToFile(content, fileName);
       if (filePath) {
-        log41.info("\u5BFC\u51FA\u804A\u5929\u6210\u529F", { path: filePath });
+        log42.info("\u5BFC\u51FA\u804A\u5929\u6210\u529F", { path: filePath });
       }
     } catch (error3) {
-      log41.error(
+      log42.error(
         "\u5BFC\u51FA\u804A\u5929\u5931\u8D25",
         error3 instanceof Error ? error3 : new Error(String(error3))
       );
@@ -344543,7 +344706,7 @@ init_sessionConfigStore();
 init_newSessionPrefsService();
 init_types();
 import { jsx as jsx70, jsxs as jsxs64 } from "react/jsx-runtime";
-var log42 = createLogger("CreateSessionModal");
+var log43 = createLogger("CreateSessionModal");
 function CreateSessionModal({ onClose, onCreated }) {
   const { t: t5 } = useTranslation("workspace");
   const workspacesRaw = useWorkspaceStore((state6) => state6.workspaces);
@@ -344700,7 +344863,7 @@ function CreateSessionModal({ onClose, onCreated }) {
           ...providerOverride
         }
       );
-      log42.info("\u521B\u5EFA\u4F1A\u8BDD\u6210\u529F", { sessionId, primaryWorkspaceId, isFreeMode, engineId });
+      log43.info("\u521B\u5EFA\u4F1A\u8BDD\u6210\u529F", { sessionId, primaryWorkspaceId, isFreeMode, engineId });
       onCreated?.(sessionId);
       onClose();
     } catch (err) {
