@@ -220,7 +220,8 @@ var colorMap = {
   info: "text-primary",
   session_complete: "text-success"
 };
-function NotificationCenterPanel({ onClose }) {
+function NotificationCenterPanel(props) {
+  const { onClose } = props ?? {};
   const { t } = useTranslation("common");
   const notifications = useToastStore((s) => s.notifications);
   const markAllNotificationsRead = useToastStore((s) => s.markAllNotificationsRead);

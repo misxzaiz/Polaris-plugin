@@ -51,7 +51,8 @@ interface NotificationCenterPanelProps {
   onClose?: () => void
 }
 
-export function NotificationCenterPanel({ onClose }: NotificationCenterPanelProps) {
+export function NotificationCenterPanel(props?: NotificationCenterPanelProps) {
+  const { onClose } = props ?? {}
   const { t } = useTranslation('common')
   const notifications = useToastStore((s) => s.notifications)
   const markAllNotificationsRead = useToastStore((s) => s.markAllNotificationsRead)

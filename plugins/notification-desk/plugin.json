@@ -10,7 +10,7 @@
         "id": "notification-desk.panel",
         "area": "notificationOverlay",
         "panelType": "notification-desk",
-        "icon": "Bell",
+        "icon": "Activity",
         "labelKey": "labels.notificationDesk",
         "labelDefault": "消息中心",
         "order": 10
