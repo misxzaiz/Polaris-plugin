@@ -162,6 +162,11 @@ export const readClaudeSettings: AnyFn = (...args) => (_localClaudeSettings.read
 export const writeClaudeSettings: AnyFn = (...args) => (_localClaudeSettings.writeClaudeSettings(...args as unknown as unknown[]))
 export const getClaudeSettingsPath: AnyFn = (...args) => (_localClaudeSettings.getClaudeSettingsPath(...args as unknown as unknown[]))
 
+// tauri fileService 片段（skillStore 消费；经宿主桥 services.tauri 全量 fileService）
+export const readDirectory: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('tauri').readDirectory)(...args)
+export const readFile: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('tauri').readFile)(...args)
+export const getDataRootInfo: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('dataRootService').getDataRootInfo)(...args)
+
 export const saveMarkdownImage: AnyFn = (...args) => (_localImageSave.saveMarkdownImage(...args as unknown as unknown[]))
 
 export const registerExternalLinkGlobalHandler: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('linkExternal').registerExternalLinkGlobalHandler)(...args)

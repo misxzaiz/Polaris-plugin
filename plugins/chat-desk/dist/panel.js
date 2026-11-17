@@ -13396,6 +13396,7 @@ __export(services_exports, {
   forkSession: () => forkSession2,
   getClaudeSettingsPath: () => getClaudeSettingsPath2,
   getCliCommandSuggestions: () => getCliCommandSuggestions2,
+  getDataRootInfo: () => getDataRootInfo,
   getDefaultCompactInstruction: () => getDefaultCompactInstruction2,
   getEventRouter: () => getEventRouter2,
   getHandoffEligibility: () => getHandoffEligibility2,
@@ -13433,6 +13434,8 @@ __export(services_exports, {
   persistPromptHistoryEntries: () => persistPromptHistoryEntries2,
   promptHistoryKey: () => promptHistoryKey2,
   readClaudeSettings: () => readClaudeSettings2,
+  readDirectory: () => readDirectory,
+  readFile: () => readFile,
   readNewSessionPrefs: () => readNewSessionPrefs2,
   readPromptHistoryEntries: () => readPromptHistoryEntries2,
   readStoredOptimizeConfig: () => readStoredOptimizeConfig2,
@@ -13475,7 +13478,7 @@ function aiChatDispatch2(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference2, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables2, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference2, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, readDirectory, readFile, getDataRootInfo, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables2, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -13573,6 +13576,9 @@ var init_services = __esm({
     readClaudeSettings2 = (...args) => readClaudeSettings(...args);
     writeClaudeSettings2 = (...args) => writeClaudeSettings(...args);
     getClaudeSettingsPath2 = (...args) => getClaudeSettingsPath(...args);
+    readDirectory = (...args) => coreService("tauri").readDirectory(...args);
+    readFile = (...args) => coreService("tauri").readFile(...args);
+    getDataRootInfo = (...args) => coreService("dataRootService").getDataRootInfo(...args);
     saveMarkdownImage2 = (...args) => saveMarkdownImage(...args);
     registerExternalLinkGlobalHandler = (...args) => coreService("linkExternal").registerExternalLinkGlobalHandler(...args);
     openExternal = (...args) => coreService("linkExternal").openExternal(...args);
