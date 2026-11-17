@@ -97,14 +97,19 @@ export const cancelCompactHandoff: AnyFn = (...args) => ((_localCCH as unknown a
 
 import * as _localPromptOptimize from '../host/services/promptOptimizeService'
 export const runPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).runPromptOptimize)(...args)
+import * as _localPromptHistory from '../host/services/kvBacked/promptHistoryService'
+import * as _localNewSessionPrefs from '../newSessionPrefsService'
+import * as _localClaudeSettings from '../host/services/kvBacked/claudeSettingsService'
+import * as _localImageSave from '../host/services/kvBacked/imageSaveService'
+
 export const cancelPromptOptimize: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).cancelPromptOptimize)(...args)
 export const readStoredOptimizeConfig: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).readStoredOptimizeConfig)(...args)
 export const storeOptimizeConfig: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).storeOptimizeConfig)(...args)
 export const usePromptOptimizePreview: AnyFn = (...args) => ((_localPromptOptimize as unknown as Record<string, AnyFn>).usePromptOptimizePreview)(...args)
 
-export const promptHistoryKey: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptHistoryService').promptHistoryKey)(...args)
-export const readPromptHistoryEntries: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptHistoryService').readPromptHistoryEntries)(...args)
-export const persistPromptHistoryEntries: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('promptHistoryService').persistPromptHistoryEntries)(...args)
+export const promptHistoryKey: AnyFn = (...args) => (_localPromptHistory.promptHistoryKey(...args as unknown as unknown[]))
+export const readPromptHistoryEntries: AnyFn = (...args) => (_localPromptHistory.readPromptHistoryEntries(...args as unknown as unknown[]))
+export const persistPromptHistoryEntries: AnyFn = (...args) => (_localPromptHistory.persistPromptHistoryEntries(...args as unknown as unknown[]))
 
 export const parseDispatchSlashCommand: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('dispatchTaskService').parseDispatchSlashCommand)(...args)
 export const dispatchFromUser: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('dispatchTaskService').dispatchFromUser)(...args)
@@ -142,17 +147,17 @@ export const packForReference: AnyFn = (...args) => (coreService<Record<string, 
 export const packToFile: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('conversationPackager').packToFile)(...args)
 export const packToSummary: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('conversationPackager').packToSummary)(...args)
 
-export const readNewSessionPrefs: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('newSessionPrefsService').readNewSessionPrefs)(...args)
-export const persistNewSessionPrefs: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('newSessionPrefsService').persistNewSessionPrefs)(...args)
+export const readNewSessionPrefs: AnyFn = (...args) => (_localNewSessionPrefs.readNewSessionPrefs(...args as unknown as unknown[]))
+export const persistNewSessionPrefs: AnyFn = (...args) => (_localNewSessionPrefs.persistNewSessionPrefs(...args as unknown as unknown[]))
 
 export const searchFiles: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('fileSearch').searchFiles)(...args)
 
-export const addClaudePermissionRules: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('claudeSettingsService').addClaudePermissionRules)(...args)
-export const readClaudeSettings: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('claudeSettingsService').readClaudeSettings)(...args)
-export const writeClaudeSettings: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('claudeSettingsService').writeClaudeSettings)(...args)
-export const getClaudeSettingsPath: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('claudeSettingsService').getClaudeSettingsPath)(...args)
+export const addClaudePermissionRules: AnyFn = (...args) => (_localClaudeSettings.addClaudePermissionRules(...args as unknown as unknown[]))
+export const readClaudeSettings: AnyFn = (...args) => (_localClaudeSettings.readClaudeSettings(...args as unknown as unknown[]))
+export const writeClaudeSettings: AnyFn = (...args) => (_localClaudeSettings.writeClaudeSettings(...args as unknown as unknown[]))
+export const getClaudeSettingsPath: AnyFn = (...args) => (_localClaudeSettings.getClaudeSettingsPath(...args as unknown as unknown[]))
 
-export const saveMarkdownImage: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('imageSaveService').saveMarkdownImage)(...args)
+export const saveMarkdownImage: AnyFn = (...args) => (_localImageSave.saveMarkdownImage(...args as unknown as unknown[]))
 
 export const registerExternalLinkGlobalHandler: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('linkExternal').registerExternalLinkGlobalHandler)(...args)
 export const openExternal: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('linkExternal').openExternal)(...args)
