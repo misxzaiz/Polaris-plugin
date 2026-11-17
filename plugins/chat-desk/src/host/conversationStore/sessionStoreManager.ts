@@ -706,6 +706,20 @@ function createSessionManagerStore() {
         log.warn('EventBus emit 失败', { error: String(e) })
       }
 
+      // 转发到宿主 aiEventBus（tools-usage-observation-fix）：宿主
+      // pluginToolUsageObserver 订阅的是宿主侧 getEventBus()（services/aiEventBus
+      // 模块级单例），与本插件 ai-runtime/event-bus 的单例互不相通——此前只发本
+      // 插件实例，宿主 toolusage 观测永远收不到 tool_call_end。eventBus shim 指向
+      // 宿主 services/eventBus（UI 事件总线，PolarisEventMap），不承载 AIEvent，
+      // 故经 __POLARIS_APP_CORE__.services.hostAiEventBus 反向桥转发（宿主
+      // appCoreBridge 挂载 getEventBus() 实例）。
+      try {
+        const hostAiEventBus = (globalThis as unknown as {
+          __POLARIS_APP_CORE__?: { services?: { hostAiEventBus?: { emit: (e: unknown) => void } } }
+        }).__POLARIS_APP_CORE__?.services?.hostAiEventBus
+        hostAiEventBus?.emit(event)
+      } catch { /* 宿主过旧或转发失败：观测降级，不阻断会话 */ }
+
       // 更新元数据状态（仅在 status 实际变化时创建新 Map，避免高频事件下无谓重建）
       // 兜底投递时用 targetSessionId（活跃会话）；正常路径 targetSessionId === routeSessionId，语义不变。
       const metadata = get().sessionMetadata.get(targetSessionId)

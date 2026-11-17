@@ -83,7 +83,10 @@ export const DiffViewer: any = lazyComponent('DiffViewer')
 export const WorkspaceBadge: any = lazyComponent('WorkspaceBadge')
 export const WorkspaceMenu: any = lazyComponent('WorkspaceMenu')
 export const WorkspaceSearchInput: any = lazyComponent('WorkspaceSearchInput')
-export const useWorkspaceFilter: any = new Proxy({}, { get: (_t, p) => (core().components as Record<string, any>).useWorkspaceFilter?.[p as string] })
+// useWorkspaceFilter 是普通函数（非组件），调用方直接 `useWorkspaceFilter(items, query)`。
+// 必须与 lazyComponent 同款带 apply trap 的 callable 转发；此前误用裸对象 Proxy
+// （get trap 不拦截调用），插件侧 5 处直接调用会 TypeError: not a function。
+export const useWorkspaceFilter: any = lazyComponent('useWorkspaceFilter')
 export const CreateWorkspaceModal: any = lazyComponent('CreateWorkspaceModal')
 export const Icons: any = new Proxy({}, { get: () => (core().components as Record<string, any>).Icons })
 

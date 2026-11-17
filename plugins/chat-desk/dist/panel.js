@@ -5195,7 +5195,7 @@ var init_misc = __esm({
     WorkspaceBadge = lazyComponent("WorkspaceBadge");
     WorkspaceMenu = lazyComponent("WorkspaceMenu");
     WorkspaceSearchInput = lazyComponent("WorkspaceSearchInput");
-    useWorkspaceFilter = new Proxy({}, { get: (_t, p3) => core().components.useWorkspaceFilter?.[p3] });
+    useWorkspaceFilter = lazyComponent("useWorkspaceFilter");
     CreateWorkspaceModal = lazyComponent("CreateWorkspaceModal");
     Icons = new Proxy({}, { get: () => core().components.Icons });
     parseEventToLog = (...args) => globalThis.__POLARIS_APP_CORE__.services.schedulerStoreUtils.parseEventToLog(...args);
@@ -9791,6 +9791,11 @@ function createSessionManagerStore() {
         getEventBus().emit(event3);
       } catch (e3) {
         log8.warn("EventBus emit \u5931\u8D25", { error: String(e3) });
+      }
+      try {
+        const hostAiEventBus = globalThis.__POLARIS_APP_CORE__?.services?.hostAiEventBus;
+        hostAiEventBus?.emit(event3);
+      } catch {
       }
       const metadata = get6().sessionMetadata.get(targetSessionId);
       if (metadata) {
