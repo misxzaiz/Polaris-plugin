@@ -11153,6 +11153,13 @@ async function packToSummary(messages, title2, idSeed, workspacePath) {
     markdown: markdown2
   };
 }
+async function packForReference(messages, title2, idSeed, workspacePath) {
+  const estimated = estimateTokens(messages);
+  if (estimated < TOKEN_FULL_CAP) {
+    return packToFile(messages, title2, idSeed, workspacePath);
+  }
+  return packToSummary(messages, title2, idSeed, workspacePath);
+}
 var log12, HANDOFF_DIR, ENGINE_FORK_CAPABILITY, TOKEN_FULL_CAP, TOKEN_MSG_HISTORY_CAP;
 var init_conversationPackager = __esm({
   "src/host/services/conversationPackager/index.ts"() {
@@ -13320,7 +13327,7 @@ __export(services_exports, {
   maybeAutoMigrateOpfs: () => maybeAutoMigrateOpfs,
   openExternal: () => openExternal,
   openExternalLink: () => openExternalLink,
-  packForReference: () => packForReference,
+  packForReference: () => packForReference2,
   packToFile: () => packToFile2,
   packToSummary: () => packToSummary2,
   parseAgentSlashCommand: () => parseAgentSlashCommand2,
@@ -13375,7 +13382,7 @@ function aiChatDispatch2(payload) {
 function isListableRemote(s3) {
   return s3.status !== "ended" || !s3.endedAt;
 }
-var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables2, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
+var emit, manualReconnect, currentMode, aiChatDispatchStream2, dialogStorageService, maybeAutoMigrateOpfs, getEventRouter2, eventBus, remoteSessionFollower, resyncAfterResumeGap2, manualRefreshActiveSession2, registerPendingQuestion, answerQuestion, respondPluginCard, getPendingQuestions, clearAnsweredQuestions, registerPendingPlan, approvePlan, rejectPlan, getPendingPlans, clearProcessedPlans, sendInput, saveChatToFile, restoreFromHistory2, forkSession2, ensureWorkspace2, loadMessagesForItem2, loadBackendMessages, aiHistoryDispatch, getHandoffEligibility2, handoffSessionToNewSession2, getHistoryHandoffEligibility2, handoffHistorySessionToNewSession2, loadConversationMessages2, compactAndHandoff2, requestCompactHandoff, cancelCompactHandoff, runPromptOptimize2, cancelPromptOptimize2, readStoredOptimizeConfig2, storeOptimizeConfig2, usePromptOptimizePreview2, promptHistoryKey2, readPromptHistoryEntries2, persistPromptHistoryEntries2, parseDispatchSlashCommand, dispatchFromUser, initDispatchTaskListener, getTracker, resetTracker, dropTracker2, estimateTokens3, consumeCapUiDispatch, dispatchCapUiAction, parseCapSlashCommand, matchCaps, buildCapDigestBlock, buildCapDetailBlock, buildCapReferenceBlock, getCliCommandSuggestions2, matchBlockedCliCommand2, parseAssaultSlashCommand2, CLI_SUGGESTED_COMMANDS2, CLI_KNOWN_HIDDEN_COMMANDS2, CLI_BLOCKED_COMMANDS2, parseNexusSlashCommand2, parseAgentSlashCommand2, rewriteDispatchPromptWithAgent2, NEXUS_SCENARIOS2, packForReference2, packToFile2, packToSummary2, readNewSessionPrefs2, persistNewSessionPrefs2, searchFiles, addClaudePermissionRules2, readClaudeSettings2, writeClaudeSettings2, getClaudeSettingsPath2, saveMarkdownImage2, registerExternalLinkGlobalHandler, openExternal, getUserSystemPrompt, parseWorkspaceReferences, resolveTemplateVariables2, detectClientDescriptor, getDefaultCompactInstruction2, openExternalLink;
 var init_services = __esm({
   "src/shims/services.ts"() {
     init_core();
@@ -13390,6 +13397,7 @@ var init_services = __esm({
     init_cliSlashCommands();
     init_agentSlashCommand();
     init_workspaceReference();
+    init_conversationPackager();
     init_newSessionPrefsService();
     init_claudeSettingsService();
     init_imageSaveService();
@@ -13462,9 +13470,9 @@ var init_services = __esm({
     parseAgentSlashCommand2 = (...args) => parseAgentSlashCommand(...args);
     rewriteDispatchPromptWithAgent2 = (...args) => rewriteDispatchPromptWithAgent(...args);
     NEXUS_SCENARIOS2 = NEXUS_SCENARIOS;
-    packForReference = (...args) => coreService("conversationPackager").packForReference(...args);
-    packToFile2 = (...args) => coreService("conversationPackager").packToFile(...args);
-    packToSummary2 = (...args) => coreService("conversationPackager").packToSummary(...args);
+    packForReference2 = (...args) => packForReference(...args);
+    packToFile2 = (...args) => packToFile(...args);
+    packToSummary2 = (...args) => packToSummary(...args);
     readNewSessionPrefs2 = (...args) => readNewSessionPrefs(...args);
     persistNewSessionPrefs2 = (...args) => persistNewSessionPrefs(...args);
     searchFiles = (...args) => coreService("fileSearch").searchFiles(...args);
@@ -339234,7 +339242,7 @@ function ChatInput({
             useToastStore.getState().error(t5("handoff.failToast"), t5("handoff.emptyContent"));
             return;
           }
-          const { fileRef } = await packForReference(messages, conv.title, conv.externalId, workspacePath);
+          const { fileRef } = await packForReference2(messages, conv.title, conv.externalId, workspacePath);
           const replaced = beforeCursor.replace(/@对话(?:\s+\S*)?$/, `@${fileRef.relPath} `) + afterCursor;
           setLocalText(replaced);
           debouncedPersistDraft(replaced, attachments);

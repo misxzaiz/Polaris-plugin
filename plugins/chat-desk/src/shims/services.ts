@@ -102,6 +102,7 @@ import * as _localStreamRateTracker from '../host/services/streamRateTracker'
 import * as _localCliSlashCommands from '../host/services/cliSlashCommands'
 import * as _localAgentSlashCommand from '../host/services/agentSlashCommand'
 import * as _localWorkspaceReference from '../host/services/workspaceReference'
+import * as _localConversationPackager from '../host/services/conversationPackager'
 import * as _localNewSessionPrefs from '../newSessionPrefsService'
 import * as _localClaudeSettings from '../host/services/kvBacked/claudeSettingsService'
 import * as _localImageSave from '../host/services/kvBacked/imageSaveService'
@@ -147,9 +148,9 @@ export const rewriteDispatchPromptWithAgent: AnyFn = (...args) => (_localAgentSl
 export const NEXUS_SCENARIOS: readonly string[] = _localAgentSlashCommand.NEXUS_SCENARIOS
 
 // ── 打包/偏好/文件搜索/权限/图片/外链 ──
-export const packForReference: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('conversationPackager').packForReference)(...args)
-export const packToFile: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('conversationPackager').packToFile)(...args)
-export const packToSummary: AnyFn = (...args) => (coreService<Record<string, AnyFn>>('conversationPackager').packToSummary)(...args)
+export const packForReference: AnyFn = (...args) => (_localConversationPackager.packForReference(...args as unknown as unknown[]))
+export const packToFile: AnyFn = (...args) => (_localConversationPackager.packToFile(...args as unknown as unknown[]))
+export const packToSummary: AnyFn = (...args) => (_localConversationPackager.packToSummary(...args as unknown as unknown[]))
 
 export const readNewSessionPrefs: AnyFn = (...args) => (_localNewSessionPrefs.readNewSessionPrefs(...args as unknown as unknown[]))
 export const persistNewSessionPrefs: AnyFn = (...args) => (_localNewSessionPrefs.persistNewSessionPrefs(...args as unknown as unknown[]))
